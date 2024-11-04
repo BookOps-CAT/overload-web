@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "overload-web"
+version = "0.1.0"
+description = "BookOps Cataloging Department browser-based toolbox"
+authors = ["Charlotte Kostelic <charlottekostelic@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+Flask = "^3.0.3"
+pymarc = "^5.2.2"
+bookops-worldcat = "^1.0.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+pytest-cov = "^6.0.0"
+pytest-mock = "^3.14.0"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+	"livetest: mark a test hitting live web services",
+]
+
+[tool.coverage.run]
+relative_files = true
+source = ["."]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
