@@ -8,9 +8,8 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-Flask = "^3.0.3"
 pymarc = "^5.2.2"
-bookops-worldcat = "^1.0.1"
+bookops-worldcat = "^1.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
@@ -18,6 +17,7 @@ pytest-cov = "^6.0.0"
 pytest-mock = "^3.14.0"
 
 [tool.pytest.ini_options]
+pythonpath = "src"
 testpaths = ["tests"]
 markers = [
 	"livetest: mark a test hitting live web services",
