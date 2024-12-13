@@ -1,6 +1,11 @@
 from datetime import datetime
 import pytest
-from src.overload_web.domain.model import Order, FixedOrderData, VariableOrderData
+from src.overload_web.domain.model import (
+    Order,
+    OrderBib,
+    FixedOrderData,
+    VariableOrderData,
+)
 
 
 @pytest.fixture
@@ -10,6 +15,15 @@ def stub_Order(stub_order_fixed_field, stub_order_variable_field):
         library="nypl",
         variable_field=stub_order_variable_field,
     )
+
+
+@pytest.fixture
+def stub_OrderBib(stub_Order):
+    order = stub_Order
+    order.isbn = "9781234567890"
+    order.oclc_number = "ocm00000123"
+    order.upc = "123456"
+    return OrderBib(order, bib_id="b123456789")
 
 
 @pytest.fixture

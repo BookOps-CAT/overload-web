@@ -11,9 +11,27 @@ def attach(order_data: Order, matched_bib_id: str) -> OrderBib:
     return order
 
 
+def match(
+    order_data: Order, bib: OrderBib, matchpoints: List[str]
+) -> Optional[Union[str, int]]:
+    bib_id = None
+    for match in matchpoints:
+        if match == "bib_id" and order_data.bib_id == bib.bib_id:
+            bib_id = bib.bib_id
+        elif match == "oclc_number" and order_data.oclc_number == bib.oclc_number:
+            bib_id = bib.bib_id
+        elif match == "isbn" and order_data.isbn == bib.isbn:
+            bib_id = bib.bib_id
+        elif match == "upc" and order_data.upc == bib.upc:
+            bib_id = bib.bib_id
+        if bib_id:
+            return bib_id
+    return bib_id
+
+
 class OrderBib:
     def __init__(self, order: Order, bib_id: Optional[Union[str, int]] = None) -> None:
-        self.control_number = order.control_number
+        self.upc = order.upc
         self.isbn = order.isbn
         self.library = order.library
         self.oclc_number = order.oclc_number
@@ -35,7 +53,7 @@ class Order:
     library: str
     variable_field: VariableOrderData
     bib_id: Optional[Union[str, int]] = None
-    control_number: Optional[Union[str, int]] = None
+    upc: Optional[Union[str, int]] = None
     isbn: Optional[Union[str, int]] = None
     oclc_number: Optional[Union[str, int]] = None
 

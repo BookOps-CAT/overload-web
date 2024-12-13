@@ -1,10 +1,12 @@
 from datetime import datetime
+import pytest
 from src.overload_web.domain.model import (
     OrderBib,
     Order,
     FixedOrderData,
     VariableOrderData,
     attach,
+    match,
 )
 
 
@@ -17,7 +19,7 @@ def test_Order(stub_order_fixed_field, stub_order_variable_field):
     )
     assert order.isbn == "9781234567890"
     assert order.oclc_number is None
-    assert order.control_number is None
+    assert order.upc is None
     assert order.bib_id is None
     assert order.fixed_field is not None
     assert order.variable_field is not None
@@ -80,3 +82,39 @@ def test_attach(stub_Order):
     order = attach(stub_Order, "b111111111")
     assert isinstance(order, OrderBib)
     assert order.bib_id == "b111111111"
+
+
+@pytest.mark.parametrize(
+    "num, expectation", [("b123456789", "b123456789"), ("b111111111", None)]
+)
+def test_match_bib_id(stub_Order, stub_OrderBib, num, expectation):
+    stub_Order.bib_id = num
+    matched_id = match(stub_Order, stub_OrderBib, ["bib_id"])
+    assert matched_id == expectation
+
+
+@pytest.mark.parametrize(
+    "num, expectation", [("ocm00000123", "b123456789"), ("(OCoLC)1234567890", None)]
+)
+def test_match_oclc_number(stub_Order, stub_OrderBib, num, expectation):
+    stub_Order.oclc_number = num
+    matched_id = match(stub_Order, stub_OrderBib, ["oclc_number"])
+    assert matched_id == expectation
+
+
+@pytest.mark.parametrize(
+    "num, expectation", [("9781234567890", "b123456789"), ("1111111111", None)]
+)
+def test_match_isbn(stub_Order, stub_OrderBib, num, expectation):
+    stub_Order.isbn = num
+    matched_id = match(stub_Order, stub_OrderBib, ["isbn"])
+    assert matched_id == expectation
+
+
+@pytest.mark.parametrize(
+    "num, expectation", [("123456", "b123456789"), ("654321", None)]
+)
+def test_match_upc(stub_Order, stub_OrderBib, num, expectation):
+    stub_Order.upc = num
+    matched_id = match(stub_Order, stub_OrderBib, ["upc"])
+    assert matched_id == expectation
