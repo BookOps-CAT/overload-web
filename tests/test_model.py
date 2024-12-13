@@ -1,62 +1,32 @@
 from datetime import datetime
-from src.overload_web.domain.model import ModelBib, OrderFixedField, OrderVariableField
+from src.overload_web.domain.model import (
+    OrderBib,
+    Order,
+    FixedOrderData,
+    VariableOrderData,
+    attach,
+)
 
 
-def test_ModelBib(stub_order_fixed_field, stub_order_variable_field):
-    bib = ModelBib(
-        bib_format="b",
-        control_number="ocm00001234",
+def test_Order(stub_order_fixed_field, stub_order_variable_field):
+    order = Order(
+        fixed_field=stub_order_fixed_field,
         library="nypl",
-        order_fixed_field=stub_order_fixed_field,
-        order_variable_field=stub_order_variable_field,
+        variable_field=stub_order_variable_field,
+        isbn="9781234567890",
     )
-    assert bib.bib_id is None
+    assert order.isbn == "9781234567890"
+    assert order.oclc_number is None
+    assert order.control_number is None
+    assert order.bib_id is None
+    assert order.fixed_field is not None
+    assert order.variable_field is not None
+    assert isinstance(order.fixed_field, FixedOrderData)
+    assert isinstance(order.variable_field, VariableOrderData)
 
 
-def test_ModelBib_eq(stub_ModelBib, stub_order_fixed_field, stub_order_variable_field):
-    bib = ModelBib(
-        "b",
-        "ocm00001234",
-        "nypl",
-        stub_order_fixed_field,
-        stub_order_variable_field,
-    )
-    other_bib = ModelBib(
-        "b",
-        "ocm00000001",
-        "nypl",
-        stub_order_fixed_field,
-        stub_order_variable_field,
-    )
-    assert bib != stub_ModelBib
-    assert other_bib == stub_ModelBib
-    other_bib.library = "bpl"
-    assert other_bib != stub_ModelBib
-
-
-def test_ModelBib_eq_false(stub_ModelBib):
-    other_bib = "Bib"
-    assert stub_ModelBib != other_bib
-
-
-def test_ModelBib_merge_bib_id(
-    stub_ModelBib, stub_order_fixed_field, stub_order_variable_field
-):
-    other_bib = ModelBib(
-        "b",
-        "ocm00000001",
-        "nypl",
-        stub_order_fixed_field,
-        stub_order_variable_field,
-        "b123456789",
-    )
-    assert stub_ModelBib.bib_id is None
-    stub_ModelBib.merge_bib_id(other_bib)
-    assert stub_ModelBib.bib_id == "b123456789"
-
-
-def test_OrderFixedField():
-    order_data = OrderFixedField(
+def test_FixedOrderData():
+    order_data = FixedOrderData(
         datetime(2024, 12, 12),
         ["fwa0f"],
         ["0f"],
@@ -77,8 +47,36 @@ def test_OrderFixedField():
     assert order_data.fund == "25240adbk"
 
 
-def test_OrderVariableField():
-    order_data = OrderVariableField(
+def test_VariableOrderData():
+    order_data = VariableOrderData(
         None, ["9781101906118", "1101906111"], "HOLDS", None, None
     )
     assert order_data.isbn == ["9781101906118", "1101906111"]
+
+
+def test_OrderBib(stub_Order):
+    bib = OrderBib(order=stub_Order)
+    other_bib = OrderBib(order=stub_Order, bib_id="b123456789")
+    assert bib.bib_id is None
+    assert other_bib.bib_id == "b123456789"
+
+
+def test_OrderBib_bib_id(stub_order_fixed_field, stub_order_variable_field):
+    order = Order(
+        stub_order_fixed_field, "nypl", stub_order_variable_field, "b123456789"
+    )
+    bib = OrderBib(order=order)
+    assert bib.bib_id == "b123456789"
+
+
+def test_OrderBib_attach(stub_Order):
+    bib = OrderBib(stub_Order)
+    assert bib.bib_id is None
+    bib.attach("b111111111")
+    assert bib.bib_id == "b111111111"
+
+
+def test_attach(stub_Order):
+    order = attach(stub_Order, "b111111111")
+    assert isinstance(order, OrderBib)
+    assert order.bib_id == "b111111111"

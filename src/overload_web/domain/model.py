@@ -5,39 +5,43 @@ import datetime
 from typing import List, Optional, Union
 
 
-class ModelBib:
-    def __init__(
-        self,
-        bib_format: str,
-        control_number: str,
-        library: str,
-        order_fixed_field: OrderFixedField,
-        order_variable_field: OrderVariableField,
-        bib_id: Optional[str] = None,
-    ) -> None:
-        self.bib_id = bib_id
-        self.bib_format = bib_format
-        self.control_number = control_number
-        self.library = library
-        self.order_fixed_field = order_fixed_field
-        self.order_variable_field = order_variable_field
+def attach(order_data: Order, matched_bib_id: str) -> OrderBib:
+    order = OrderBib(order=order_data)
+    order.bib_id = matched_bib_id
+    return order
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, ModelBib):
-            return NotImplemented
+
+class OrderBib:
+    def __init__(self, order: Order, bib_id: Optional[Union[str, int]] = None) -> None:
+        self.control_number = order.control_number
+        self.isbn = order.isbn
+        self.library = order.library
+        self.oclc_number = order.oclc_number
+        self.fixed_order_data = order.fixed_field
+        self.variable_order_data = order.variable_field
+
+        if not bib_id:
+            self.bib_id = order.bib_id
         else:
-            return (
-                other.control_number == self.control_number
-                and other.library == self.library
-            )
+            self.bib_id = bib_id
 
-    def merge_bib_id(self, other: ModelBib) -> None:
-        if self == other and other.bib_id is not None:
-            self.bib_id = other.bib_id
+    def attach(self, bib_id: Union[str, int]) -> None:
+        self.bib_id = bib_id
 
 
 @dataclass
-class OrderFixedField:
+class Order:
+    fixed_field: FixedOrderData
+    library: str
+    variable_field: VariableOrderData
+    bib_id: Optional[Union[str, int]] = None
+    control_number: Optional[Union[str, int]] = None
+    isbn: Optional[Union[str, int]] = None
+    oclc_number: Optional[Union[str, int]] = None
+
+
+@dataclass
+class FixedOrderData:
     create_date: Union[datetime.datetime, str]
     locations: List[str]
     shelves: List[str]
@@ -56,7 +60,7 @@ class OrderFixedField:
 
 
 @dataclass
-class OrderVariableField:
+class VariableOrderData:
     internal_note: Optional[List[str]]
     isbn: Optional[List[str]]
     vendor_notes: Optional[str]
