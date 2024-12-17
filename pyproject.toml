@@ -19,6 +19,7 @@ pytest = "^8.3.3"
 pytest-cov = "^6.0.0"
 pytest-mock = "^3.14.0"
 types-requests = "^2.32.0.20241016"
+types-pyyaml = "^6.0.12.20240917"
 
 [tool.pytest.ini_options]
 pythonpath = "src"
