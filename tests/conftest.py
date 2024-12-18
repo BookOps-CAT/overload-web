@@ -5,9 +5,9 @@ import pytest
 
 from overload_web.domain.model import (
     Order,
-    OrderBib,
     FixedOrderData,
     VariableOrderData,
+    OrderTemplate,
 )
 from overload_web.sierra_adapters import PlatformToken
 
@@ -72,15 +72,6 @@ def mock_sierra_session_response(monkeypatch, request):
 
 
 @pytest.fixture
-def stub_Order(stub_order_fixed_field, stub_order_variable_field):
-    return Order(
-        fixed_field=stub_order_fixed_field,
-        library="nypl",
-        variable_field=stub_order_variable_field,
-    )
-
-
-@pytest.fixture
 def stub_bpl_order(stub_order_fixed_field, stub_order_variable_field):
     return Order(
         bib_id="123456789",
@@ -107,20 +98,11 @@ def stub_nypl_order(stub_order_fixed_field, stub_order_variable_field):
 
 
 @pytest.fixture
-def stub_OrderBib(stub_Order):
-    order = stub_Order
-    order.isbn = "9781234567890"
-    order.oclc_number = "ocm00000123"
-    order.upc = "123456"
-    return OrderBib(order, bib_id="b123456789")
-
-
-@pytest.fixture
 def stub_order_fixed_field():
     return FixedOrderData(
         datetime(2024, 1, 1),
         ["(4)fwa0f", "(2)bca0f", "gka0f"],
-        ["0f", "0f"],
+        ["0f", "0f", "0f"],
         "$5.00",
         "25240adbk",
         "7",
@@ -139,3 +121,29 @@ def stub_order_fixed_field():
 @pytest.fixture
 def stub_order_variable_field():
     return VariableOrderData(None, None, None, None, None)
+
+
+@pytest.fixture
+def stub_template():
+    return OrderTemplate(
+        datetime(2024, 1, 1),
+        ["(2)tbca0f", "cna0f", "cia0f", "csa0f"],
+        ["0f", "0f", "0f", "0f"],
+        "$20.00",
+        "10001adbk",
+        "7",
+        "spa",
+        "xxu",
+        "0049",
+        "a",
+        "b",
+        ["a", "a", "a", "a"],
+        "d",
+        "p",
+        "o",
+        "foo",
+        None,
+        "bar",
+        None,
+        None,
+    )

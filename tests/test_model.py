@@ -3,10 +3,11 @@ import pytest
 from overload_web.domain.model import (
     OrderBib,
     Order,
+    OrderTemplate,
     FixedOrderData,
     VariableOrderData,
+    apply_template,
     attach,
-    match,
 )
 
 
@@ -25,6 +26,51 @@ def test_Order(stub_order_fixed_field, stub_order_variable_field):
     assert order.variable_field is not None
     assert isinstance(order.fixed_field, FixedOrderData)
     assert isinstance(order.variable_field, VariableOrderData)
+
+
+def test_OrderTemplate():
+    template = OrderTemplate(
+        datetime(2024, 1, 1),
+        ["(4)fwa0f", "(2)bca0f", "gka0f"],
+        ["0f", "0f"],
+        "$5.00",
+        "25240adbk",
+        "7",
+        "eng",
+        "xxu",
+        "0049",
+        "a",
+        "b",
+        ["a", "a", "a"],
+        "d",
+        "p",
+        "o",
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+    assert template.create_date == datetime(2024, 1, 1)
+    assert template.locations == ["(4)fwa0f", "(2)bca0f", "gka0f"]
+    assert template.shelves == ["0f", "0f"]
+    assert template.price == "$5.00"
+    assert template.fund == "25240adbk"
+    assert template.copies == "7"
+    assert template.lang == "eng"
+    assert template.country == "xxu"
+    assert template.vendor_code == "0049"
+    assert template.format == "a"
+    assert template.selector == "b"
+    assert template.audience == ["a", "a", "a"]
+    assert template.source == "d"
+    assert template.order_type == "p"
+    assert template.status == "o"
+    assert template.internal_note is None
+    assert template.isbn is None
+    assert template.vendor_notes is None
+    assert template.vendor_title_no is None
+    assert template.blanket_po is None
 
 
 def test_FixedOrderData():
@@ -56,65 +102,50 @@ def test_VariableOrderData():
     assert order_data.isbn == ["9781101906118", "1101906111"]
 
 
-def test_OrderBib(stub_Order):
-    bib = OrderBib(order=stub_Order)
-    other_bib = OrderBib(order=stub_Order, bib_id="b123456789")
-    assert bib.bib_id is None
-    assert other_bib.bib_id == "b123456789"
-
-
-def test_OrderBib_bib_id(stub_order_fixed_field, stub_order_variable_field):
+@pytest.mark.parametrize("library", ["nypl", "bpl"])
+def test_OrderBib(library, stub_order_fixed_field, stub_order_variable_field):
     order = Order(
-        stub_order_fixed_field, "nypl", stub_order_variable_field, "b123456789"
+        fixed_field=stub_order_fixed_field,
+        variable_field=stub_order_variable_field,
+        library=library,
+    )
+    bib = OrderBib(order=order)
+    assert order.bib_id is None
+    assert bib.bib_id is None
+
+
+@pytest.mark.parametrize("library", ["nypl", "bpl"])
+def test_OrderBib_bib_id(library, stub_order_fixed_field, stub_order_variable_field):
+    order = Order(
+        stub_order_fixed_field, library, stub_order_variable_field, "b123456789"
     )
     bib = OrderBib(order=order)
     assert bib.bib_id == "b123456789"
 
 
-def test_OrderBib_attach(stub_Order):
-    bib = OrderBib(stub_Order)
+@pytest.mark.parametrize("library", ["nypl", "bpl"])
+def test_model_attach(library, stub_order_fixed_field, stub_order_variable_field):
+    order = Order(
+        fixed_field=stub_order_fixed_field,
+        variable_field=stub_order_variable_field,
+        library=library,
+    )
+    bib = OrderBib(order=order)
     assert bib.bib_id is None
-    bib.attach("b111111111")
-    assert bib.bib_id == "b111111111"
+    new_bib = attach(order, "b111111111")
+    assert new_bib.bib_id == "b111111111"
 
 
-def test_attach(stub_Order):
-    order = attach(stub_Order, "b111111111")
-    assert isinstance(order, OrderBib)
-    assert order.bib_id == "b111111111"
-
-
-@pytest.mark.parametrize(
-    "num, expectation", [("b123456789", "b123456789"), ("b111111111", None)]
-)
-def test_match_bib_id(stub_Order, stub_OrderBib, num, expectation):
-    stub_Order.bib_id = num
-    matched_id = match(stub_Order, stub_OrderBib, ["bib_id"])
-    assert matched_id == expectation
-
-
-@pytest.mark.parametrize(
-    "num, expectation", [("ocm00000123", "b123456789"), ("(OCoLC)1234567890", None)]
-)
-def test_match_oclc_number(stub_Order, stub_OrderBib, num, expectation):
-    stub_Order.oclc_number = num
-    matched_id = match(stub_Order, stub_OrderBib, ["oclc_number"])
-    assert matched_id == expectation
-
-
-@pytest.mark.parametrize(
-    "num, expectation", [("9781234567890", "b123456789"), ("1111111111", None)]
-)
-def test_match_isbn(stub_Order, stub_OrderBib, num, expectation):
-    stub_Order.isbn = num
-    matched_id = match(stub_Order, stub_OrderBib, ["isbn"])
-    assert matched_id == expectation
-
-
-@pytest.mark.parametrize(
-    "num, expectation", [("123456", "b123456789"), ("654321", None)]
-)
-def test_match_upc(stub_Order, stub_OrderBib, num, expectation):
-    stub_Order.upc = num
-    matched_id = match(stub_Order, stub_OrderBib, ["upc"])
-    assert matched_id == expectation
+@pytest.mark.parametrize("library", ["nypl", "bpl"])
+def test_model_apply_template(
+    library, stub_template, stub_order_fixed_field, stub_order_variable_field
+):
+    order = Order(
+        fixed_field=stub_order_fixed_field,
+        variable_field=stub_order_variable_field,
+        library=library,
+    )
+    bib = OrderBib(order=order)
+    assert bib.fund == "25240adbk"
+    updated_bib = apply_template(bib, stub_template)
+    assert updated_bib.fund == "10001adbk"
