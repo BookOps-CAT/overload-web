@@ -1,6 +1,6 @@
 import os
 import pytest
-from src.overload_web.sierra_adapters import (
+from overload_web.sierra_adapters import (
     BPLSolrSession,
     NYPLPlatformSession,
     AbstractSierraSession,

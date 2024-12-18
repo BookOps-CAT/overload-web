@@ -7,7 +7,7 @@ from typing import List, Optional
 from bookops_nypl_platform import PlatformSession, PlatformToken
 from bookops_bpl_solr import SolrSession
 
-from src.overload_web.domain import model
+from overload_web.domain import model
 from . import __title__, __version__
 
 logger = logging.getLogger(__name__)

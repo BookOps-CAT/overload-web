@@ -1,6 +1,6 @@
 from datetime import datetime
 import pytest
-from src.overload_web.domain.model import (
+from overload_web.domain.model import (
     OrderBib,
     Order,
     FixedOrderData,

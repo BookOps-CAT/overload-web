@@ -3,13 +3,13 @@ import os
 import yaml
 import pytest
 
-from src.overload_web.domain.model import (
+from overload_web.domain.model import (
     Order,
     OrderBib,
     FixedOrderData,
     VariableOrderData,
 )
-from src.overload_web.sierra_adapters import PlatformToken
+from overload_web.sierra_adapters import PlatformToken
 
 
 @pytest.fixture
