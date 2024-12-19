@@ -146,7 +146,7 @@ def stub_template():
         "bar",
         None,
         None,
-        "bib_id",
         "isbn",
+        None,
         None,
     )
