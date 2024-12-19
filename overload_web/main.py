@@ -7,16 +7,6 @@ from overload_web.domain import model
 app = FastAPI()
 
 
-@app.get("/")
-def root(application: str = "Overload Web"):
-    return {"application": application}
-
-
-@app.get("/about")
-def about(application: str = "Overload Web"):
-    return {"application": application}
-
-
 @app.post("/attach")
 def attach_endpoint(bib_id: str, order: model.Order):
     bib = services.attach(order_data=order, matched_bib_id=bib_id)
