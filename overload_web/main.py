@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 
-from overload_web import services
+from overload_web import services, config
 from overload_web.domain import model
-from overload_web.entry_points import config
+
 
 app = FastAPI()
 
