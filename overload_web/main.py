@@ -20,7 +20,14 @@ templates = Jinja2Templates(directory=f"{BASE_PATH}/templates")
 @app.get("/", response_class=HTMLResponse)
 def root(request: Request, application: str = "Overload Web"):
     return templates.TemplateResponse(
-        request=request, name="base.html", context={"application": application}
+        request=request, name="home.html", context={"application": application}
+    )
+
+
+@app.get("/about", response_class=HTMLResponse)
+def about(request: Request, application: str = "Overload Web"):
+    return templates.TemplateResponse(
+        request=request, name="about.html", context={"application": application}
     )
 
 
