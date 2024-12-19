@@ -1,16 +1,19 @@
 <!doctype html>
-<title>{% block title %}{% endblock %} - Overload</title>
-<link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
-<nav>
-  <h1><a href="{{ url_for('root') }}">{{ application }}</a></h1>
-</nav>
-<section class="apps">
-    <header>
-      {% block header %}{% endblock %}
-    </header>
-    <ul>
-        <li><a href="{{ url_for('process_vendor_file') }}">Process Vendor File</a>
-        <li><a href="{{ url_for('match_endpoint') }}">Match</a>            
-    </ul>
-    {% block content %}{% endblock %}
-  </section>
+<head>
+  {% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">  
+  <title>{% block title %}{% endblock %} - {{ application }}</title>
+  {% endblock %}
+</head>
+<body>
+  <nav>
+    {% block nav %}
+    <h1><a href="{{ url_for('root') }}">{{ application }}</a></h1>
+    {% endblock %}
+  </nav>
+  <header><h2>{% block header %}{% endblock %}</h2></header>
+  <div id="content">{% block content %}{% endblock %}</div>
+    {% block apps %}{% endblock %}
+  <div id="footer">{% block footer %}{% endblock %}</div>
+</body>
+</html>
