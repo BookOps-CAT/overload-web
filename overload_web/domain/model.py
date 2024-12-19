@@ -66,7 +66,7 @@ class OrderTemplate:
     locations: Optional[List[str]]
     shelves: Optional[List[str]]
     price: Optional[Union[str, int]]
-    fund: Optional[List[str]]
+    fund: Optional[str]
     copies: Optional[Union[str, int]]
     lang: Optional[str]
     country: Optional[str]
@@ -105,7 +105,7 @@ class FixedOrderData:
     locations: List[str]
     shelves: List[str]
     price: Union[str, int]
-    fund: List[str]
+    fund: str
     copies: Union[str, int]
     lang: str
     country: str
