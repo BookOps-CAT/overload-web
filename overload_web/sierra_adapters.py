@@ -2,12 +2,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 import logging
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from bookops_nypl_platform import PlatformSession, PlatformToken
 from bookops_bpl_solr import SolrSession
-
-from overload_web.domain import model
 
 from . import __title__, __version__
 
@@ -20,16 +18,19 @@ class AbstractSierraSession(ABC):
     def __init__(self):
         pass
 
-    def match_order(
-        self, order: model.Order, matchpoints: List[str]
-    ) -> Optional[List[str]]:
-        return self._match_order(order, matchpoints)
-
     @abstractmethod
-    def _match_order(
-        self, order: model.Order, matchpoints: List[str]
-    ) -> Optional[List[str]]:
+    def _match_order(self, matchpoints: Dict[str, str]) -> Optional[List[str]]:
         pass
+
+    def match_bib(self, matchpoints: Dict[str, str]) -> Optional[str]:
+        bibs = self._match_order(matchpoints)
+        if bibs:
+            return bibs[0]
+        else:
+            return None
+
+    def order_matches(self, matchpoints: Dict[str, str]) -> Optional[List[str]]:
+        return self._match_order(matchpoints)
 
 
 class BPLSolrSession(SolrSession, AbstractSierraSession):
@@ -40,20 +41,18 @@ class BPLSolrSession(SolrSession, AbstractSierraSession):
     ):
         super().__init__(authorization, endpoint=endpoint, agent=AGENT)
 
-    def _match_order(
-        self, order: model.Order, matchpoints: List[str]
-    ) -> Optional[List[str]]:
+    def _match_order(self, matchpoints: Dict[str, str]) -> Optional[List[str]]:
         hit = None
         json_response = None
-        for matchpoint in matchpoints:
-            if matchpoint == "bib_id":
-                hit = self.search_bibNo(str(order.bib_id))
-            elif matchpoint == "oclc_number":
-                hit = self.search_controlNo(str(order.oclc_number))
-            elif matchpoint == "isbn":
-                hit = self.search_isbns([str(order.isbn)])
-            elif matchpoint == "upc":
-                hit = self.search_upcs([str(order.upc)])
+        for k, v in matchpoints.items():
+            if k == "bib_id":
+                hit = self.search_bibNo(str(v))
+            elif k == "oclc_number":
+                hit = self.search_controlNo(str(v))
+            elif k == "isbn":
+                hit = self.search_isbns([str(v)])
+            elif k == "upc":
+                hit = self.search_upcs([str(v)])
             else:
                 raise ValueError(
                     "Invalid matchpoint. Available matchpoints are: bib_id, "
@@ -78,20 +77,18 @@ class NYPLPlatformSession(PlatformSession, AbstractSierraSession):
     ):
         super().__init__(authorization, target=target, agent=AGENT)
 
-    def _match_order(
-        self, order: model.Order, matchpoints: List[str]
-    ) -> Optional[List[str]]:
+    def _match_order(self, matchpoints: Dict[str, str]) -> Optional[List[str]]:
         hit = None
         json_response = None
-        for matchpoint in matchpoints:
-            if matchpoint == "bib_id":
-                hit = self.search_bibNos(str(order.bib_id))
-            elif matchpoint == "oclc_number":
-                hit = self.search_controlNos(str(order.oclc_number))
-            elif matchpoint == "isbn":
-                hit = self.search_standardNos(str(order.isbn))
-            elif matchpoint == "upc":
-                hit = self.search_standardNos(str(order.upc))
+        for k, v in matchpoints.items():
+            if k == "bib_id":
+                hit = self.search_bibNos(str(v))
+            elif k == "oclc_number":
+                hit = self.search_controlNos(str(v))
+            elif k == "isbn":
+                hit = self.search_standardNos(str(v))
+            elif k == "upc":
+                hit = self.search_standardNos(str(v))
             else:
                 raise ValueError(
                     "Invalid matchpoint. Available matchpoints are: bib_id, "

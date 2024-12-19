@@ -13,9 +13,10 @@ def apply_template(bib: OrderBib, template: OrderTemplate) -> OrderBib:
     return bib
 
 
-def attach(order: Order, bib_id: str) -> OrderBib:
+def attach(order: Order, bib_id: Optional[str]) -> OrderBib:
     bib = OrderBib(order=order)
-    bib.bib_id = bib_id
+    if bib_id:
+        bib.bib_id = bib_id
     return bib
 
 
@@ -81,6 +82,21 @@ class OrderTemplate:
     vendor_notes: Optional[str]
     vendor_title_no: Optional[str]
     blanket_po: Optional[str]
+    primary_matchpoint: Optional[str] = None
+    secondary_matchpoint: Optional[str] = None
+    tertiary_matchpoint: Optional[str] = None
+
+    @property
+    def matchpoints(self) -> List[str]:
+        return [
+            i
+            for i in [
+                self.primary_matchpoint,
+                self.secondary_matchpoint,
+                self.tertiary_matchpoint,
+            ]
+            if i
+        ]
 
 
 @dataclass

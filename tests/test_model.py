@@ -71,6 +71,10 @@ def test_OrderTemplate():
     assert template.vendor_notes is None
     assert template.vendor_title_no is None
     assert template.blanket_po is None
+    assert template.primary_matchpoint is None
+    assert template.secondary_matchpoint is None
+    assert template.tertiary_matchpoint is None
+    assert template.matchpoints == []
 
 
 def test_FixedOrderData():
@@ -124,19 +128,6 @@ def test_OrderBib_bib_id(library, stub_order_fixed_field, stub_order_variable_fi
 
 
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
-def test_model_attach(library, stub_order_fixed_field, stub_order_variable_field):
-    order = Order(
-        fixed_field=stub_order_fixed_field,
-        variable_field=stub_order_variable_field,
-        library=library,
-    )
-    bib = OrderBib(order=order)
-    assert bib.bib_id is None
-    new_bib = attach(order, "b111111111")
-    assert new_bib.bib_id == "b111111111"
-
-
-@pytest.mark.parametrize("library", ["nypl", "bpl"])
 def test_model_apply_template(
     library, stub_template, stub_order_fixed_field, stub_order_variable_field
 ):
@@ -149,3 +140,16 @@ def test_model_apply_template(
     assert bib.fund == "25240adbk"
     updated_bib = apply_template(bib, stub_template)
     assert updated_bib.fund == "10001adbk"
+
+
+@pytest.mark.parametrize("library", ["nypl", "bpl"])
+def test_model_attach(library, stub_order_fixed_field, stub_order_variable_field):
+    order = Order(
+        fixed_field=stub_order_fixed_field,
+        variable_field=stub_order_variable_field,
+        library=library,
+    )
+    bib = OrderBib(order=order)
+    assert bib.bib_id is None
+    new_bib = attach(order, "b111111111")
+    assert new_bib.bib_id == "b111111111"
