@@ -23,6 +23,17 @@ def live_creds() -> None:
 
 
 @pytest.fixture
+def mock_creds(monkeypatch) -> None:
+    monkeypatch.setenv("NYPL_PLATFORM_CLIENT", "app_client_id")
+    monkeypatch.setenv("NYPL_PLATFORM_SECRET", "app_secret")
+    monkeypatch.setenv("NYPL_PLATFORM_OAUTH", "outh_server")
+    monkeypatch.setenv("NYPL_PLATFORM_AGENT", "dev")
+    monkeypatch.setenv("NYPL_PLATFORM_TARGET", "dev")
+    monkeypatch.setenv("BPL_SOLR_CLIENT_KEY", "solr_key")
+    monkeypatch.setenv("BPL_SOLR_ENDPOINT", "solr_endpoint")
+
+
+@pytest.fixture
 def live_token(live_creds) -> PlatformToken:
     return PlatformToken(
         os.environ["NYPL_PLATFORM_CLIENT"],
@@ -53,7 +64,7 @@ def mock_platform_token(monkeypatch):
 
 
 @pytest.fixture
-def mock_sierra_session_response(monkeypatch, request):
+def mock_sierra_session_response(monkeypatch, request, mock_creds):
     marker = request.node.get_closest_marker("sierra_session").args[0]
     if marker == "nypl_ok":
         code, ok = 200, True
