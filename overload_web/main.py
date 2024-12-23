@@ -1,8 +1,9 @@
+from typing import List
 from fastapi import FastAPI
 
-from overload_web import services
+from overload_web import services, config
 from overload_web.domain import model
-from overload_web.entry_points import config
+
 
 app = FastAPI()
 
@@ -18,8 +19,8 @@ def about(application: str = "Overload Web"):
 
 
 @app.post("/attach")
-def attach_endpoint(bib_id: str, order: model.Order):
-    bib = services.attach(order_data=order, matched_bib_id=bib_id)
+def attach_endpoint(order: model.Order, bib_ids: List[str]):
+    bib = services.attach(order_data=order, bib_ids=bib_ids)
     return {"bib": bib}
 
 
@@ -27,8 +28,9 @@ def attach_endpoint(bib_id: str, order: model.Order):
 def process_vendor_file(
     library: str, order: model.Order, template: model.OrderTemplate
 ):
-    session_adapter = config.get_session_adapter(library=library)
     processed_bib = services.process_file(
-        sierra_service=session_adapter, order_data=order, template=template
+        sierra_service=config.get_sierra_service(library=library),
+        order_data=order,
+        template=template,
     )
     return {"bib": processed_bib}
