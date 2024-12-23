@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 import logging
-from typing import Dict, List, Optional
+import os
+from typing import List
 
 from bookops_nypl_platform import PlatformSession, PlatformToken
 from bookops_bpl_solr import SolrSession
 
+from overload_web.domain import model
 from . import __title__, __version__
 
 logger = logging.getLogger(__name__)
@@ -14,92 +16,107 @@ logger = logging.getLogger(__name__)
 AGENT = f"{__title__}/{__version__}"
 
 
+class SierraService:
+    def __init__(self, session: AbstractSierraSession):
+        self.session = session
+
+    def get_all_bib_ids(self, order: model.Order, match_keys: List[str]) -> List[str]:
+        bibs = []
+        for key in match_keys:
+            bibs = self.session.get_bibs_by_id(key, getattr(order, f"{key}"))
+            if not bibs:
+                continue
+        return bibs
+
+
 class AbstractSierraSession(ABC):
-    def __init__(self):
+    @abstractmethod
+    def _get_credentials(self) -> str | PlatformToken:
         pass
 
     @abstractmethod
-    def _match_order(self, matchpoints: Dict[str, str]) -> Optional[List[str]]:
+    def _get_target(self) -> str:
         pass
 
-    def match_bib(self, matchpoints: Dict[str, str]) -> Optional[str]:
-        bibs = self._match_order(matchpoints)
-        if bibs:
-            return bibs[0]
-        else:
-            return None
+    @abstractmethod
+    def _get_bibs_by_id(self, key: str, value: str | int) -> List[str]:
+        pass
 
-    def order_matches(self, matchpoints: Dict[str, str]) -> Optional[List[str]]:
-        return self._match_order(matchpoints)
+    def get_bibs_by_id(self, key: str, value: str | int) -> List[str]:
+        return self._get_bibs_by_id(key=key, value=value)
 
 
 class BPLSolrSession(SolrSession, AbstractSierraSession):
-    def __init__(
-        self,
-        authorization: str,
-        endpoint: str = "solr_endpoint",
-    ):
-        super().__init__(authorization, endpoint=endpoint, agent=AGENT)
+    def __init__(self):
+        super().__init__(
+            authorization=self._get_credentials(),
+            endpoint=self._get_target(),
+            agent=AGENT,
+        )
 
-    def _match_order(self, matchpoints: Dict[str, str]) -> Optional[List[str]]:
-        hit = None
-        json_response = None
-        for k, v in matchpoints.items():
-            if k == "bib_id":
-                hit = self.search_bibNo(str(v))
-            elif k == "oclc_number":
-                hit = self.search_controlNo(str(v))
-            elif k == "isbn":
-                hit = self.search_isbns([str(v)])
-            elif k == "upc":
-                hit = self.search_upcs([str(v)])
-            else:
-                raise ValueError(
-                    "Invalid matchpoint. Available matchpoints are: bib_id, "
-                    "oclc_number, isbn, and upc"
-                )
-            if hit and hit.ok:
-                json_response = hit.json()["response"]
-                break
-            else:
-                continue
-        if isinstance(json_response, dict):
-            return [i["id"] for i in json_response["docs"]]
+    def _get_credentials(self) -> str:
+        return os.environ["BPL_SOLR_CLIENT_KEY"]
+
+    def _get_target(self) -> str:
+        return os.environ["BPL_SOLR_ENDPOINT"]
+
+    def _get_bibs_by_id(self, key: str, value: str | int) -> List[str]:
+        sierra_response = []
+        if key == "bib_id":
+            response = self.search_bibNo(str(value))
+        elif key == "oclc_number":
+            response = self.search_controlNo(str(value))
+        elif key == "isbn":
+            response = self.search_isbns([str(value)])
+        elif key == "upc":
+            response = self.search_upcs([str(value)])
         else:
-            return json_response
+            raise ValueError(
+                "Invalid matchpoint. Available matchpoints are: bib_id, "
+                "oclc_number, isbn, and upc"
+            )
+
+        if response and response.ok:
+            json_response = response.json()
+            sierra_response.extend([i["id"] for i in json_response["response"]["docs"]])
+        return sierra_response
 
 
 class NYPLPlatformSession(PlatformSession, AbstractSierraSession):
-    def __init__(
-        self,
-        authorization: PlatformToken,
-        target: str = "prod",
-    ):
-        super().__init__(authorization, target=target, agent=AGENT)
+    def __init__(self):
+        super().__init__(
+            authorization=self._get_credentials(),
+            target=self._get_target(),
+            agent=AGENT,
+        )
 
-    def _match_order(self, matchpoints: Dict[str, str]) -> Optional[List[str]]:
-        hit = None
-        json_response = None
-        for k, v in matchpoints.items():
-            if k == "bib_id":
-                hit = self.search_bibNos(str(v))
-            elif k == "oclc_number":
-                hit = self.search_controlNos(str(v))
-            elif k == "isbn":
-                hit = self.search_standardNos(str(v))
-            elif k == "upc":
-                hit = self.search_standardNos(str(v))
-            else:
-                raise ValueError(
-                    "Invalid matchpoint. Available matchpoints are: bib_id, "
-                    "oclc_number, isbn, and upc"
-                )
-            if hit and hit.ok:
-                json_response = hit.json()["data"]
-                break
-            else:
-                continue
-        if isinstance(json_response, list):
-            return [i["id"] for i in json_response]
+    def _get_credentials(self) -> PlatformToken:
+        return PlatformToken(
+            os.environ["NYPL_PLATFORM_CLIENT"],
+            os.environ["NYPL_PLATFORM_SECRET"],
+            os.environ["NYPL_PLATFORM_OAUTH"],
+            os.environ["NYPL_PLATFORM_AGENT"],
+        )
+
+    def _get_target(self) -> str:
+        return os.environ["NYPL_PLATFORM_TARGET"]
+
+    def _get_bibs_by_id(self, key: str, value: str | int) -> List[str]:
+        sierra_response = []
+        if key == "bib_id":
+            response = self.search_bibNos(str(value))
+        elif key == "oclc_number":
+            response = self.search_controlNos(str(value))
+        elif key == "isbn":
+            response = self.search_standardNos(str(value))
+        elif key == "upc":
+            response = self.search_standardNos(str(value))
         else:
-            return json_response
+            raise ValueError(
+                "Invalid matchpoint. Available matchpoints are: bib_id, "
+                "oclc_number, isbn, and upc"
+            )
+        if response and response.ok:
+            json_response = response.json()
+            sierra_response.extend([i["id"] for i in json_response["data"]])
+        return sierra_response

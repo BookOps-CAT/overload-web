@@ -9,7 +9,11 @@ from overload_web.domain.model import (
     VariableOrderData,
     OrderTemplate,
 )
-from overload_web.sierra_adapters import PlatformToken
+from overload_web.sierra_adapters import (
+    PlatformToken,
+    SierraService,
+    AbstractSierraSession,
+)
 
 
 @pytest.fixture
@@ -48,12 +52,19 @@ def mock_platform_token(monkeypatch):
         token_json = {"access_token": "foo", "expires_in": 10}
         return MockHTTPResponse(status_code=200, ok=True, stub_json=token_json)
 
+    monkeypatch.setenv("NYPL_PLATFORM_CLIENT", "app_client_id")
+    monkeypatch.setenv("NYPL_PLATFORM_SECRET", "app_secret")
+    monkeypatch.setenv("NYPL_PLATFORM_OAUTH", "outh_server")
+    monkeypatch.setenv("NYPL_PLATFORM_AGENT", "dev")
+    monkeypatch.setenv("NYPL_PLATFORM_TARGET", "dev")
+    monkeypatch.setenv("BPL_SOLR_CLIENT_KEY", "solr_key")
+    monkeypatch.setenv("BPL_SOLR_ENDPOINT", "solr_endpoint")
     monkeypatch.setattr("requests.post", mock_api_response)
     return PlatformToken("client-id", "client-secret", "oauth-server", "agent")
 
 
 @pytest.fixture
-def mock_sierra_session_response(monkeypatch, request):
+def mock_sierra_session_response(monkeypatch, request, mock_platform_token):
     marker = request.node.get_closest_marker("sierra_session").args[0]
     if marker == "nypl_ok":
         code, ok = 200, True
@@ -69,6 +80,26 @@ def mock_sierra_session_response(monkeypatch, request):
         return MockHTTPResponse(status_code=code, ok=ok, stub_json=json)
 
     monkeypatch.setattr("requests.Session.get", mock_api_response)
+
+
+class MockSierraAdapter(AbstractSierraSession):
+    def _get_credentials(self):
+        pass
+
+    def _get_target(self):
+        pass
+
+    def _get_bibs_by_id(self, key, value):
+        if key and value:
+            return ["123456789"]
+        else:
+            return []
+
+
+@pytest.fixture
+def stub_sierra_service(mock_sierra_session_response):
+    service = SierraService(MockSierraAdapter())
+    return service
 
 
 @pytest.fixture
@@ -91,6 +122,15 @@ def stub_nypl_order(stub_order_fixed_field, stub_order_variable_field):
         isbn="9780316230032",
         oclc_number="(OCoLC)00012345",
         upc="123456",
+        fixed_field=stub_order_fixed_field,
+        library="nypl",
+        variable_field=stub_order_variable_field,
+    )
+
+
+@pytest.fixture
+def stub_order(stub_order_fixed_field, stub_order_variable_field):
+    return Order(
         fixed_field=stub_order_fixed_field,
         library="nypl",
         variable_field=stub_order_variable_field,
