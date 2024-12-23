@@ -13,13 +13,6 @@ def apply_template(bib: OrderBib, template: OrderTemplate) -> OrderBib:
     return bib
 
 
-def attach(order: Order, bib_id: Optional[str]) -> OrderBib:
-    bib = OrderBib(order=order)
-    if bib_id:
-        bib.bib_id = bib_id
-    return bib
-
-
 class OrderBib:
     def __init__(self, order: Order) -> None:
         self.upc = order.upc
@@ -48,6 +41,13 @@ class OrderBib:
         self.vendor_title_no = order.variable_field.vendor_title_no
         self.blanket_po = order.variable_field.blanket_po
 
+    def attach(self, bib_ids: List[str]) -> None:
+        if bib_ids:
+            self.bib_id = bib_ids[0]
+            self.all_bib_ids = bib_ids
+        else:
+            self.all_bib_ids = []
+
 
 @dataclass
 class Order:
@@ -62,26 +62,26 @@ class Order:
 
 @dataclass
 class OrderTemplate:
-    create_date: Optional[Union[datetime.datetime, str]]
-    locations: Optional[List[str]]
-    shelves: Optional[List[str]]
-    price: Optional[Union[str, int]]
-    fund: Optional[str]
-    copies: Optional[Union[str, int]]
-    lang: Optional[str]
-    country: Optional[str]
-    vendor_code: Optional[str]
-    format: Optional[str]
-    selector: Optional[str]
-    audience: Optional[List[str]]
-    source: Optional[str]
-    order_type: Optional[str]
-    status: Optional[str]
-    internal_note: Optional[List[str]]
-    isbn: Optional[List[str]]
-    vendor_notes: Optional[str]
-    vendor_title_no: Optional[str]
-    blanket_po: Optional[str]
+    create_date: Optional[Union[datetime.datetime, str]] = None
+    locations: Optional[List[str]] = None
+    shelves: Optional[List[str]] = None
+    price: Optional[Union[str, int]] = None
+    fund: Optional[str] = None
+    copies: Optional[Union[str, int]] = None
+    lang: Optional[str] = None
+    country: Optional[str] = None
+    vendor_code: Optional[str] = None
+    format: Optional[str] = None
+    selector: Optional[str] = None
+    audience: Optional[List[str]] = None
+    source: Optional[str] = None
+    order_type: Optional[str] = None
+    status: Optional[str] = None
+    internal_note: Optional[List[str]] = None
+    isbn: Optional[List[str]] = None
+    vendor_notes: Optional[str] = None
+    vendor_title_no: Optional[str] = None
+    blanket_po: Optional[str] = None
     primary_matchpoint: Optional[str] = None
     secondary_matchpoint: Optional[str] = None
     tertiary_matchpoint: Optional[str] = None
