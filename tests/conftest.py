@@ -1,4 +1,3 @@
-from datetime import datetime
 import os
 import yaml
 import pytest
@@ -98,7 +97,7 @@ def stub_sierra_service(mock_sierra_session_response):
 def stub_order(request):
     return Order(
         library=request.param,
-        create_date=datetime(2024, 1, 1),
+        create_date="2024-01-01",
         locations=["(4)fwa0f", "(2)bca0f", "gka0f"],
         shelves=["0f", "0f", "0f"],
         price="$5.00",
@@ -124,12 +123,12 @@ def stub_order(request):
 @pytest.fixture
 def stub_template():
     return OrderTemplate(
-        datetime(2024, 1, 1),
+        "2024-01-01",
         ["(2)tbca0f", "cna0f", "cia0f", "csa0f"],
         ["0f", "0f", "0f", "0f"],
         "$20.00",
         "10001adbk",
-        "7",
+        "5",
         "spa",
         "xxu",
         "0049",
@@ -139,7 +138,7 @@ def stub_template():
         "d",
         "p",
         "o",
-        "foo",
+        ["foo"],
         None,
         "bar",
         None,
