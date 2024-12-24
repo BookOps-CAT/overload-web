@@ -20,26 +20,26 @@ class OrderBib:
         self.library = order.library
         self.oclc_number = order.oclc_number
         self.bib_id = order.bib_id
-        self.create_date = order.fixed_field.create_date
-        self.locations = order.fixed_field.locations
-        self.shelves = order.fixed_field.shelves
-        self.price = order.fixed_field.price
-        self.fund = order.fixed_field.fund
-        self.copies = order.fixed_field.copies
-        self.lang = order.fixed_field.lang
-        self.country = order.fixed_field.country
-        self.vendor_code = order.fixed_field.vendor_code
-        self.format = order.fixed_field.format
-        self.selector = order.fixed_field.selector
-        self.audience = order.fixed_field.audience
-        self.source = order.fixed_field.source
-        self.order_type = order.fixed_field.order_type
-        self.status = order.fixed_field.status
-        self.internal_note = order.variable_field.internal_note
-        self.var_field_isbn = order.variable_field.isbn
-        self.vendor_notes = order.variable_field.vendor_notes
-        self.vendor_title_no = order.variable_field.vendor_title_no
-        self.blanket_po = order.variable_field.blanket_po
+        self.create_date = order.create_date
+        self.locations = order.locations
+        self.shelves = order.shelves
+        self.price = order.price
+        self.fund = order.fund
+        self.copies = order.copies
+        self.lang = order.lang
+        self.country = order.country
+        self.vendor_code = order.vendor_code
+        self.format = order.format
+        self.selector = order.selector
+        self.audience = order.audience
+        self.source = order.source
+        self.order_type = order.order_type
+        self.status = order.status
+        self.internal_note = order.internal_note
+        self.var_field_isbn = order.isbn
+        self.vendor_notes = order.vendor_notes
+        self.vendor_title_no = order.vendor_title_no
+        self.blanket_po = order.blanket_po
 
     def attach(self, bib_ids: List[str]) -> None:
         if bib_ids:
@@ -51,9 +51,27 @@ class OrderBib:
 
 @dataclass
 class Order:
-    fixed_field: FixedOrderData
     library: str
-    variable_field: VariableOrderData
+    create_date: Union[datetime.datetime, str]
+    locations: List[str]
+    shelves: List[str]
+    price: Union[str, int]
+    fund: str
+    copies: Union[str, int]
+    lang: str
+    country: str
+    vendor_code: str
+    format: str
+    selector: str
+    audience: List[str]
+    source: str
+    order_type: str
+    status: str
+    internal_note: Optional[List[str]]
+    var_field_isbn: Optional[List[str]]
+    vendor_notes: Optional[str]
+    vendor_title_no: Optional[str]
+    blanket_po: Optional[str]
     bib_id: Optional[Union[str, int]] = None
     upc: Optional[Union[str, int]] = None
     isbn: Optional[Union[str, int]] = None
@@ -97,31 +115,3 @@ class OrderTemplate:
             ]
             if i
         ]
-
-
-@dataclass
-class FixedOrderData:
-    create_date: Union[datetime.datetime, str]
-    locations: List[str]
-    shelves: List[str]
-    price: Union[str, int]
-    fund: str
-    copies: Union[str, int]
-    lang: str
-    country: str
-    vendor_code: str
-    format: str
-    selector: str
-    audience: List[str]
-    source: str
-    order_type: str
-    status: str
-
-
-@dataclass
-class VariableOrderData:
-    internal_note: Optional[List[str]]
-    isbn: Optional[List[str]]
-    vendor_notes: Optional[str]
-    vendor_title_no: Optional[str]
-    blanket_po: Optional[str]
