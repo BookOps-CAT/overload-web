@@ -25,7 +25,7 @@ def test_process_file(stub_template, stub_order, stub_sierra_service):
     processed_bib = services.process_file(
         stub_sierra_service, stub_order, stub_template
     )
-    assert stub_order.fixed_field.fund == "25240adbk"
+    assert stub_order.fund == "25240adbk"
     assert stub_order.bib_id is None
     assert processed_bib.fund == stub_template.fund == "10001adbk"
     assert processed_bib.bib_id == "123456789"
@@ -39,7 +39,7 @@ def test_process_file_no_matchpoints(stub_template, stub_order, stub_sierra_serv
     )
     assert stub_order.bib_id is None
     assert processed_bib.fund == stub_template.fund == "10001adbk"
-    assert processed_bib.fund != stub_order.fixed_field.fund
+    assert processed_bib.fund != stub_order.fund
     assert processed_bib.bib_id is None
 
 
@@ -51,5 +51,5 @@ def test_process_file_no_match(stub_template, stub_order, stub_sierra_service):
     )
     assert stub_order.bib_id is None
     assert processed_bib.fund == stub_template.fund == "10001adbk"
-    assert processed_bib.fund != stub_order.fixed_field.fund
+    assert processed_bib.fund != stub_order.fund
     assert processed_bib.bib_id is None
