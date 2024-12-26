@@ -1,14 +1,8 @@
-from datetime import datetime
 import os
 import yaml
 import pytest
 
-from overload_web.domain.model import (
-    Order,
-    FixedOrderData,
-    VariableOrderData,
-    OrderTemplate,
-)
+from overload_web.domain.model import Order, OrderTemplate
 from overload_web.sierra_adapters import (
     PlatformToken,
     SierraService,
@@ -67,14 +61,11 @@ def mock_platform_token(monkeypatch):
 def mock_sierra_session_response(monkeypatch, request, mock_platform_token):
     marker = request.node.get_closest_marker("sierra_session").args[0]
     if marker == "nypl_ok":
-        code, ok = 200, True
-        json = {"data": [{"id": "123456789"}]}
+        code, ok, json = 200, True, {"data": [{"id": "123456789"}]}
     elif marker == "bpl_ok":
-        code, ok = 200, True
-        json = {"response": {"docs": [{"id": "123456789"}]}}
+        code, ok, json = 200, True, {"response": {"docs": [{"id": "123456789"}]}}
     else:
-        code, ok = 404, False
-        json = {}
+        code, ok, json = 404, False, {}
 
     def mock_api_response(*args, code=code, ok=ok, json=json, **kwargs):
         return MockHTTPResponse(status_code=code, ok=ok, stub_json=json)
@@ -102,76 +93,42 @@ def stub_sierra_service(mock_sierra_session_response):
     return service
 
 
-@pytest.fixture
-def stub_bpl_order(stub_order_fixed_field, stub_order_variable_field):
+@pytest.fixture(params=["nypl", "bpl"])
+def stub_order(request):
     return Order(
-        bib_id="123456789",
-        isbn="9780316230032",
-        oclc_number="(OCoLC)00012345",
-        upc="123456",
-        fixed_field=stub_order_fixed_field,
-        library="bpl",
-        variable_field=stub_order_variable_field,
+        library=request.param,
+        create_date="2024-01-01",
+        locations=["(4)fwa0f", "(2)bca0f", "gka0f"],
+        shelves=["0f", "0f", "0f"],
+        price="$5.00",
+        fund="25240adbk",
+        copies="7",
+        lang="eng",
+        country="xxu",
+        vendor_code="0049",
+        format="a",
+        selector="b",
+        audience=["a", "a", "a"],
+        source="d",
+        order_type="p",
+        status="o",
+        internal_note=None,
+        var_field_isbn=None,
+        vendor_notes=None,
+        vendor_title_no=None,
+        blanket_po=None,
     )
-
-
-@pytest.fixture
-def stub_nypl_order(stub_order_fixed_field, stub_order_variable_field):
-    return Order(
-        bib_id="123456789",
-        isbn="9780316230032",
-        oclc_number="(OCoLC)00012345",
-        upc="123456",
-        fixed_field=stub_order_fixed_field,
-        library="nypl",
-        variable_field=stub_order_variable_field,
-    )
-
-
-@pytest.fixture
-def stub_order(stub_order_fixed_field, stub_order_variable_field):
-    return Order(
-        fixed_field=stub_order_fixed_field,
-        library="nypl",
-        variable_field=stub_order_variable_field,
-    )
-
-
-@pytest.fixture
-def stub_order_fixed_field():
-    return FixedOrderData(
-        datetime(2024, 1, 1),
-        ["(4)fwa0f", "(2)bca0f", "gka0f"],
-        ["0f", "0f", "0f"],
-        "$5.00",
-        "25240adbk",
-        "7",
-        "eng",
-        "xxu",
-        "0049",
-        "a",
-        "b",
-        ["a", "a", "a"],
-        "d",
-        "p",
-        "o",
-    )
-
-
-@pytest.fixture
-def stub_order_variable_field():
-    return VariableOrderData(None, None, None, None, None)
 
 
 @pytest.fixture
 def stub_template():
     return OrderTemplate(
-        datetime(2024, 1, 1),
+        "2024-01-01",
         ["(2)tbca0f", "cna0f", "cia0f", "csa0f"],
         ["0f", "0f", "0f", "0f"],
         "$20.00",
         "10001adbk",
-        "7",
+        "5",
         "spa",
         "xxu",
         "0049",
@@ -181,7 +138,7 @@ def stub_template():
         "d",
         "p",
         "o",
-        "foo",
+        ["foo"],
         None,
         "bar",
         None,
