@@ -13,7 +13,7 @@ from overload_web.sierra_adapters import (
 @pytest.fixture
 def live_creds() -> None:
     with open(
-        os.path.join(os.environ["USERPROFILE"], ".cred/.overload/test_creds.yaml")
+        os.path.join(os.environ["USERPROFILE"], ".cred/.overload/live_creds.yaml")
     ) as cred_file:
         data = yaml.safe_load(cred_file)
         for k, v in data.items():
@@ -30,6 +30,21 @@ def live_token(live_creds) -> PlatformToken:
     )
 
 
+@pytest.fixture
+def mock_creds() -> None:
+    keys = [
+        "NYPL_PLATFORM_CLIENT",
+        "NYPL_PLATFORM_SECRET",
+        "NYPL_PLATFORM_OAUTH",
+        "NYPL_PLATFORM_AGENT",
+        "BPL_SOLR_CLIENT_KEY",
+        "BPL_SOLR_ENDPOINT",
+    ]
+    for key in keys:
+        os.environ[key] = "test"
+    os.environ["NYPL_PLATFORM_TARGET"] = "dev"
+
+
 class MockHTTPResponse:
     def __init__(self, status_code: int, ok: bool, stub_json: dict):
         self.status_code = status_code
@@ -41,23 +56,12 @@ class MockHTTPResponse:
 
 
 @pytest.fixture
-def mock_creds() -> None:
-    os.environ["NYPL_PLATFORM_CLIENT"] = "app_client_id"
-    os.environ["NYPL_PLATFORM_SECRET"] = "app_secret"
-    os.environ["NYPL_PLATFORM_OAUTH"] = "outh_server"
-    os.environ["NYPL_PLATFORM_AGENT"] = "dev"
-    os.environ["NYPL_PLATFORM_TARGET"] = "dev"
-    os.environ["BPL_SOLR_CLIENT_KEY"] = "solr_key"
-    os.environ["BPL_SOLR_ENDPOINT"] = "solr_endpoint"
-
-
-@pytest.fixture
 def mock_platform_token(monkeypatch, mock_creds):
     def mock_api_response(*args, **kwargs):
         token_json = {"access_token": "foo", "expires_in": 10}
         return MockHTTPResponse(status_code=200, ok=True, stub_json=token_json)
 
-    monkeypatch.setattr("requests.post", mock_api_response)
+    monkeypatch.setattr("overload_web.sierra_adapters.requests.post", mock_api_response)
     return PlatformToken("client-id", "client-secret", "oauth-server", "agent")
 
 
@@ -84,12 +88,31 @@ def stub_sierra_service(monkeypatch, request, mock_platform_token):
     else:
         code, ok, json = 404, False, {}
 
-    def mock_api_response(*args, code=code, ok=ok, json=json, **kwargs):
+    def mock_response(*args, code=code, ok=ok, json=json, **kwargs):
         return MockHTTPResponse(status_code=code, ok=ok, stub_json=json)
 
-    monkeypatch.setattr("requests.Session.get", mock_api_response)
+    monkeypatch.setattr(
+        "overload_web.sierra_adapters.requests.Session.get", mock_response
+    )
     service = SierraService(MockSierraAdapter())
     return service
+
+
+@pytest.fixture
+def mock_post_response(monkeypatch):
+    def mock_response(*args, **kwargs):
+        stub_json = {
+            "order": {"library": "nypl"},
+            "template": {
+                "fund": "foo",
+                "primary_matchpoint": "foo",
+                "secondary_matchpoint": "bar",
+                "tertiary_matchpoint": "baz",
+            },
+        }
+        return MockHTTPResponse(status_code=200, ok=True, stub_json=stub_json)
+
+    monkeypatch.setattr("requests.post", mock_response)
 
 
 @pytest.fixture(params=["nypl", "bpl"])
@@ -145,4 +168,11 @@ def stub_template():
         "isbn",
         None,
         None,
+    )
+
+
+@pytest.fixture
+def streamlit_path():
+    return os.path.join(
+        os.environ["USERPROFILE"], "github/overload-web/overload_web/front_end"
     )
