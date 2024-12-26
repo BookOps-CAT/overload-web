@@ -41,36 +41,24 @@ class MockHTTPResponse:
 
 
 @pytest.fixture
-def mock_platform_token(monkeypatch):
+def mock_creds() -> None:
+    os.environ["NYPL_PLATFORM_CLIENT"] = "app_client_id"
+    os.environ["NYPL_PLATFORM_SECRET"] = "app_secret"
+    os.environ["NYPL_PLATFORM_OAUTH"] = "outh_server"
+    os.environ["NYPL_PLATFORM_AGENT"] = "dev"
+    os.environ["NYPL_PLATFORM_TARGET"] = "dev"
+    os.environ["BPL_SOLR_CLIENT_KEY"] = "solr_key"
+    os.environ["BPL_SOLR_ENDPOINT"] = "solr_endpoint"
+
+
+@pytest.fixture
+def mock_platform_token(monkeypatch, mock_creds):
     def mock_api_response(*args, **kwargs):
         token_json = {"access_token": "foo", "expires_in": 10}
         return MockHTTPResponse(status_code=200, ok=True, stub_json=token_json)
 
-    monkeypatch.setenv("NYPL_PLATFORM_CLIENT", "app_client_id")
-    monkeypatch.setenv("NYPL_PLATFORM_SECRET", "app_secret")
-    monkeypatch.setenv("NYPL_PLATFORM_OAUTH", "outh_server")
-    monkeypatch.setenv("NYPL_PLATFORM_AGENT", "dev")
-    monkeypatch.setenv("NYPL_PLATFORM_TARGET", "dev")
-    monkeypatch.setenv("BPL_SOLR_CLIENT_KEY", "solr_key")
-    monkeypatch.setenv("BPL_SOLR_ENDPOINT", "solr_endpoint")
     monkeypatch.setattr("requests.post", mock_api_response)
     return PlatformToken("client-id", "client-secret", "oauth-server", "agent")
-
-
-@pytest.fixture
-def mock_sierra_session_response(monkeypatch, request, mock_platform_token):
-    marker = request.node.get_closest_marker("sierra_session").args[0]
-    if marker == "nypl_ok":
-        code, ok, json = 200, True, {"data": [{"id": "123456789"}]}
-    elif marker == "bpl_ok":
-        code, ok, json = 200, True, {"response": {"docs": [{"id": "123456789"}]}}
-    else:
-        code, ok, json = 404, False, {}
-
-    def mock_api_response(*args, code=code, ok=ok, json=json, **kwargs):
-        return MockHTTPResponse(status_code=code, ok=ok, stub_json=json)
-
-    monkeypatch.setattr("requests.Session.get", mock_api_response)
 
 
 class MockSierraAdapter(AbstractSierraSession):
@@ -87,8 +75,19 @@ class MockSierraAdapter(AbstractSierraSession):
             return []
 
 
-@pytest.fixture
-def stub_sierra_service(mock_sierra_session_response):
+@pytest.fixture(params=["nypl", "bpl"])
+def stub_sierra_service(monkeypatch, request, mock_platform_token):
+    if "nypl" in request.param:
+        code, ok, json = 200, True, {"data": [{"id": "123456789"}]}
+    elif "bpl" in request.param:
+        code, ok, json = 200, True, {"response": {"docs": [{"id": "123456789"}]}}
+    else:
+        code, ok, json = 404, False, {}
+
+    def mock_api_response(*args, code=code, ok=ok, json=json, **kwargs):
+        return MockHTTPResponse(status_code=code, ok=ok, stub_json=json)
+
+    monkeypatch.setattr("requests.Session.get", mock_api_response)
     service = SierraService(MockSierraAdapter())
     return service
 
