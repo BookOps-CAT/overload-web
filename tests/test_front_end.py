@@ -22,6 +22,7 @@ def test_pvf():
         )
     ).run()
     assert not at.exception
+    assert getattr(at.get("file_uploader")[0], "label") == "Choose a file"
     assert len(at.columns) == 2
     assert at.markdown[0].value == "Process Vendor File"
     assert at.markdown[1].value == "Order Fixed Fields"
@@ -67,9 +68,9 @@ def test_pvf_submit_form():
     at.selectbox[7].select("001")
     at.button[0].click().run()
     assert not at.exception
-    assert at.get("file_uploader")[0].key == "Choose a file"
+    assert getattr(at.get("file_uploader")[0], "label") == "Choose a file"
     assert json.loads(at.json[0].value) == {
-        "order": "{}",
+        "order": {},
         "template": {
             "primary_matchpoint": "020",
             "secondary_matchpoint": "024",
