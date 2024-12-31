@@ -99,7 +99,7 @@ def stub_sierra_service(monkeypatch, request, mock_platform_token):
 
 
 @pytest.fixture
-def mock_post_response(monkeypatch):
+def mock_st_post_response(monkeypatch):
     def mock_response(*args, **kwargs):
         stub_json = {
             "order": {"library": "nypl"},
@@ -113,6 +113,7 @@ def mock_post_response(monkeypatch):
         return MockHTTPResponse(status_code=200, ok=True, stub_json=stub_json)
 
     monkeypatch.setattr("requests.post", mock_response)
+    monkeypatch.setenv("API_URL_BASE", "foo")
 
 
 @pytest.fixture(params=["nypl", "bpl"])
@@ -168,11 +169,4 @@ def stub_template():
         "isbn",
         None,
         None,
-    )
-
-
-@pytest.fixture
-def streamlit_path():
-    return os.path.join(
-        os.environ["USERPROFILE"], "github/overload-web/overload_web/front_end"
     )

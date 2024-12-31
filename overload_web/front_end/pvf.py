@@ -1,3 +1,6 @@
+import datetime
+import io
+import json
 import os
 from typing import Any, Dict
 import streamlit as st
@@ -32,11 +35,20 @@ TEMPLATE_VAR_FIELDS: Dict[str, Any] = {
 
 def process(data: dict) -> dict:
     url = os.environ.get("API_URL_BASE", "http://localhost:8501/pvf")
-    response = requests.post(url=url, json=data)
-    return response.json()
+    if "localhost" not in url:
+        response = requests.post(url=url, json=data)
+        return response.json()
+    else:
+        return data
 
 
 out_data: Dict[str, Any] = {"order": {}, "template": {}}
+
+order_file = st.file_uploader("Choose a file")
+
+if order_file is not None:
+    data = io.BytesIO(order_file.getvalue())
+    out_data["order"] = json.load(data)
 
 with st.form("process_vendor_file"):
     st.write("Process Vendor File")
@@ -49,7 +61,9 @@ with st.form("process_vendor_file"):
         elif v["type"] == "text_input":
             out_data["template"][k] = col1.text_input(v["display"])
         elif v["type"] == "date_input":
-            out_data["template"][k] = col1.date_input(v["display"])
+            date = col1.date_input(v["display"])
+            if isinstance(date, datetime.date) or isinstance(date, datetime.datetime):
+                out_data["template"][k] = datetime.datetime.strftime(date, "%Y-%m-%d")
     for k, v in TEMPLATE_VAR_FIELDS.items():
         if v["type"] == "text_input":
             out_data["template"][k] = col2.text_input(v["display"])
