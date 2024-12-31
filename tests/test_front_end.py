@@ -13,19 +13,19 @@ def test_pvf(streamlit_path, mock_post_response):
     assert not at.exception
     assert len(at.columns) == 2
     assert at.markdown[0].value == "Process Vendor File"
-    assert at.text_area[0].label == "Order Data"
-    assert at.text_area[1].label == "Template data in JSON"
-    assert at.columns[0].children[0].type == "text_area"
-    assert getattr(at.columns[0].children[0], "label") == "Order Data"
-    assert at.columns[1].children[0].type == "text_area"
-    assert getattr(at.columns[1].children[0], "label") == "Template data in JSON"
-    assert at.markdown[1].value == "Sierra Matchpoints"
-    assert at.selectbox[0].label == "Primary"
-    assert at.selectbox[0].options == ["Sierra ID", "001", "020", "024"]
-    assert at.selectbox[1].label == "Secondary"
-    assert at.selectbox[1].options == ["Sierra ID", "001", "020", "024"]
-    assert at.selectbox[2].label == "Tertiary"
-    assert at.selectbox[2].options == ["Sierra ID", "001", "020", "024"]
+    assert at.markdown[1].value == "Order Fixed Fields"
+    assert at.markdown[2].value == "Order Variable Fields"
+    assert at.columns[0].children[1].type == "selectbox"
+    assert getattr(at.columns[0].children[1], "label") == "Language"
+    assert at.columns[1].children[1].type == "text_input"
+    assert getattr(at.columns[1].children[1], "label") == "Internal Note"
+    assert at.markdown[3].value == "Sierra Matchpoints"
+    assert at.selectbox[5].label == "Primary"
+    assert at.selectbox[5].options == ["Sierra ID", "001", "020", "024"]
+    assert at.selectbox[6].label == "Secondary"
+    assert at.selectbox[6].options == ["Sierra ID", "001", "020", "024"]
+    assert at.selectbox[7].label == "Tertiary"
+    assert at.selectbox[7].options == ["Sierra ID", "001", "020", "024"]
     assert at.button[0].label == "Process"
 
 
