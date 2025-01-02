@@ -10,7 +10,7 @@ from bookops_bpl_solr import SolrSession
 import requests
 
 from overload_web.domain import model
-from . import __title__, __version__
+from .. import __title__, __version__
 
 logger = logging.getLogger(__name__)
 
@@ -56,10 +56,10 @@ class BPLSolrSession(SolrSession, AbstractSierraSession):
         )
 
     def _get_credentials(self) -> str:
-        return os.environ["BPL_SOLR_CLIENT_KEY"]
+        return os.environ["BPL_SOLR_CLIENT"]
 
     def _get_target(self) -> str:
-        return os.environ["BPL_SOLR_ENDPOINT"]
+        return os.environ["BPL_SOLR_TARGET"]
 
     def _get_bibs_by_id(self, key: str, value: str | int) -> List[str]:
         response: requests.Response

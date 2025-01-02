@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import List
 
 from overload_web.domain import model
-from overload_web.sierra_adapters import SierraService
+from overload_web.adapters.sierra_adapters import SierraService
 
 
 def apply_template(
