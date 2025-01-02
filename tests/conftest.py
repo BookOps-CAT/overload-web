@@ -79,11 +79,11 @@ class MockSierraAdapter(AbstractSierraSession):
             return []
 
 
-@pytest.fixture(params=["nypl", "bpl"])
-def stub_sierra_service(monkeypatch, request, mock_platform_token):
-    if "nypl" in request.param:
+@pytest.fixture
+def stub_sierra_service(library, monkeypatch, mock_platform_token):
+    if "nypl" in library:
         code, ok, json = 200, True, {"data": [{"id": "123456789"}]}
-    elif "bpl" in request.param:
+    elif "bpl" in library:
         code, ok, json = 200, True, {"response": {"docs": [{"id": "123456789"}]}}
     else:
         code, ok, json = 404, False, {}
@@ -116,10 +116,10 @@ def mock_st_post_response(monkeypatch):
     monkeypatch.setenv("API_URL_BASE", "foo")
 
 
-@pytest.fixture(params=["nypl", "bpl"])
-def stub_order(request):
+@pytest.fixture
+def stub_order(library):
     return Order(
-        library=request.param,
+        library=library,
         create_date="2024-01-01",
         locations=["(4)fwa0f", "(2)bca0f", "gka0f"],
         shelves=["0f", "0f", "0f"],

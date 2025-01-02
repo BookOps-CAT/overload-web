@@ -89,12 +89,14 @@ def test_OrderTemplate():
     assert template.matchpoints == []
 
 
+@pytest.mark.parametrize("library", ["bpl", "nypl"])
 def test_OrderBib(stub_order):
     bib = OrderBib(order=stub_order)
     assert stub_order.bib_id is None
     assert bib.bib_id is None
 
 
+@pytest.mark.parametrize("library", ["bpl", "nypl"])
 def test_OrderBib_bib_id(stub_order):
     order = stub_order
     order.bib_id = "b123456789"
@@ -102,6 +104,7 @@ def test_OrderBib_bib_id(stub_order):
     assert bib.bib_id == "b123456789"
 
 
+@pytest.mark.parametrize("library", ["bpl", "nypl"])
 def test_model_apply_template(stub_template, stub_order):
     bib = OrderBib(order=stub_order)
     assert bib.fund == "25240adbk"
