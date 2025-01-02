@@ -37,3 +37,13 @@ def test_process_vendor_file_endpoint(stub_order, stub_template, stub_sierra_ser
     assert response.url == f"{client.base_url}/vendor_file"
     assert response.json()["bib"]["fund"] == "10001adbk" == template_schema["fund"]
     assert response.json()["bib"]["fund"] != order_schema["fund"]
+
+
+@pytest.mark.parametrize("library", ["foo"])
+def test_process_vendor_file_endpoint_invalid_config(stub_order, stub_template):
+    template_schema = schemas.OrderTemplateModel(**asdict(stub_template)).model_dump()
+    order_schema = schemas.OrderModel(**asdict(stub_order)).model_dump()
+    data = {"order": order_schema, "template": template_schema}
+    with pytest.raises(ValueError) as exc:
+        client.post("/vendor_file", json=data)
+    assert "Invalid library. Must be 'bpl' or 'nypl'" in str(exc.value)

@@ -8,7 +8,7 @@ def test_streamlit_app():
     at = v1.AppTest.from_file(
         os.path.join(
             os.environ["USERPROFILE"],
-            "github/overload-web/overload_web/front_end/pvf.py",
+            "github/overload-web/overload_web/adapters/pvf.py",
         )
     ).run()
     assert not at.exception
@@ -18,7 +18,7 @@ def test_pvf():
     at = v1.AppTest.from_file(
         os.path.join(
             os.environ["USERPROFILE"],
-            "github/overload-web/overload_web/front_end/pvf.py",
+            "github/overload-web/overload_web/adapters/pvf.py",
         )
     ).run()
     assert not at.exception
@@ -45,7 +45,7 @@ def test_pvf_submit_form():
     at = v1.AppTest.from_file(
         os.path.join(
             os.environ["USERPROFILE"],
-            "github/overload-web/overload_web/front_end/pvf.py",
+            "github/overload-web/overload_web/adapters/pvf.py",
         )
     ).run()
     at.selectbox[0].select("a")
@@ -103,7 +103,7 @@ def test_pvf_submit_form_mock_post(mock_st_post_response):
     at = v1.AppTest.from_file(
         os.path.join(
             os.environ["USERPROFILE"],
-            "github/overload-web/overload_web/front_end/pvf.py",
+            "github/overload-web/overload_web/adapters/pvf.py",
         )
     ).run()
     at.button[0].click().run()
