@@ -30,27 +30,24 @@ class TestLiveSierraSession:
             assert matched_bib == ["21730445"]
 
 
+@pytest.mark.usefixtures("stub_sierra_service")
 class TestMockSierraSession:
     @pytest.mark.parametrize("library", ["bpl"])
     @pytest.mark.parametrize("matchpoint", ["isbn", "upc", "oclc_number", "bib_id"])
-    def test_BPLSolrSession_get_bibs_by_id(self, matchpoint, stub_sierra_service):
+    def test_BPLSolrSession_get_bibs_by_id(self, matchpoint):
         with BPLSolrSession() as session:
             matched_bib = session.get_bibs_by_id(f"{matchpoint}", "123456789")
             assert matched_bib == ["123456789"]
 
     @pytest.mark.parametrize("library", ["404"])
     @pytest.mark.parametrize("matchpoint", ["isbn", "upc", "oclc_number", "bib_id"])
-    def test_BPLSolrSession_get_bibs_by_id_no_match(
-        self, matchpoint, stub_sierra_service
-    ):
+    def test_BPLSolrSession_get_bibs_by_id_no_match(self, matchpoint):
         with BPLSolrSession() as session:
             matched_bib = session.get_bibs_by_id(f"{matchpoint}", "123456789")
             assert matched_bib == []
 
     @pytest.mark.parametrize("library", ["404"])
-    def test_BPLSolrSession_get_bibs_by_id_invalid_matchpoint(
-        self, stub_sierra_service
-    ):
+    def test_BPLSolrSession_get_bibs_by_id_invalid_matchpoint(self):
         with pytest.raises(ValueError) as exc:
             with BPLSolrSession() as session:
                 session.get_bibs_by_id("foo", "bar")
@@ -61,15 +58,13 @@ class TestMockSierraSession:
 
     @pytest.mark.parametrize("library", ["nypl"])
     @pytest.mark.parametrize("matchpoint", ["isbn", "upc", "oclc_number", "bib_id"])
-    def test_NYPLPlatformSession_get_bibs_by_id(self, matchpoint, stub_sierra_service):
+    def test_NYPLPlatformSession_get_bibs_by_id(self, matchpoint):
         with NYPLPlatformSession() as session:
             matched_bib = session.get_bibs_by_id(f"{matchpoint}", "123456789")
             assert matched_bib == ["123456789"]
 
     @pytest.mark.parametrize("library", ["404"])
-    def test_NYPLPlatformSession_get_bibs_by_id_invalid_matchpoint(
-        self, stub_sierra_service
-    ):
+    def test_NYPLPlatformSession_get_bibs_by_id_invalid_matchpoint(self):
         with pytest.raises(ValueError) as exc:
             with NYPLPlatformSession() as session:
                 session.get_bibs_by_id("foo", "bar")
@@ -80,9 +75,7 @@ class TestMockSierraSession:
 
     @pytest.mark.parametrize("library", ["404"])
     @pytest.mark.parametrize("matchpoint", ["isbn", "upc", "oclc_number", "bib_id"])
-    def test_NYPLPlatformSession_get_bibs_by_id_no_match(
-        self, matchpoint, stub_sierra_service
-    ):
+    def test_NYPLPlatformSession_get_bibs_by_id_no_match(self, matchpoint):
         with NYPLPlatformSession() as session:
             matched_bib = session.get_bibs_by_id(f"{matchpoint}", "123456789")
             assert matched_bib == []
