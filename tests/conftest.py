@@ -1,76 +1,10 @@
-import os
-import yaml
 import pytest
 
 from overload_web.domain.model import Order, OrderTemplate
-from overload_web.sierra_adapters import (
-    PlatformToken,
+from overload_web.adapters.sierra_adapters import (
     SierraService,
     AbstractSierraSession,
 )
-
-
-@pytest.fixture
-def live_creds() -> None:
-    with open(
-        os.path.join(os.environ["USERPROFILE"], ".cred/.overload/test_creds.yaml")
-    ) as cred_file:
-        data = yaml.safe_load(cred_file)
-        for k, v in data.items():
-            os.environ[k] = v
-
-
-@pytest.fixture
-def live_token(live_creds) -> PlatformToken:
-    return PlatformToken(
-        os.environ["NYPL_PLATFORM_CLIENT"],
-        os.environ["NYPL_PLATFORM_SECRET"],
-        os.environ["NYPL_PLATFORM_OAUTH"],
-        os.environ["NYPL_PLATFORM_AGENT"],
-    )
-
-
-class MockHTTPResponse:
-    def __init__(self, status_code: int, ok: bool, stub_json: dict):
-        self.status_code = status_code
-        self.ok = ok
-        self.stub_json = stub_json
-
-    def json(self):
-        return self.stub_json
-
-
-@pytest.fixture
-def mock_platform_token(monkeypatch):
-    def mock_api_response(*args, **kwargs):
-        token_json = {"access_token": "foo", "expires_in": 10}
-        return MockHTTPResponse(status_code=200, ok=True, stub_json=token_json)
-
-    monkeypatch.setenv("NYPL_PLATFORM_CLIENT", "app_client_id")
-    monkeypatch.setenv("NYPL_PLATFORM_SECRET", "app_secret")
-    monkeypatch.setenv("NYPL_PLATFORM_OAUTH", "outh_server")
-    monkeypatch.setenv("NYPL_PLATFORM_AGENT", "dev")
-    monkeypatch.setenv("NYPL_PLATFORM_TARGET", "dev")
-    monkeypatch.setenv("BPL_SOLR_CLIENT_KEY", "solr_key")
-    monkeypatch.setenv("BPL_SOLR_ENDPOINT", "solr_endpoint")
-    monkeypatch.setattr("requests.post", mock_api_response)
-    return PlatformToken("client-id", "client-secret", "oauth-server", "agent")
-
-
-@pytest.fixture
-def mock_sierra_session_response(monkeypatch, request, mock_platform_token):
-    marker = request.node.get_closest_marker("sierra_session").args[0]
-    if marker == "nypl_ok":
-        code, ok, json = 200, True, {"data": [{"id": "123456789"}]}
-    elif marker == "bpl_ok":
-        code, ok, json = 200, True, {"response": {"docs": [{"id": "123456789"}]}}
-    else:
-        code, ok, json = 404, False, {}
-
-    def mock_api_response(*args, code=code, ok=ok, json=json, **kwargs):
-        return MockHTTPResponse(status_code=code, ok=ok, stub_json=json)
-
-    monkeypatch.setattr("requests.Session.get", mock_api_response)
 
 
 class MockSierraAdapter(AbstractSierraSession):
@@ -88,15 +22,50 @@ class MockSierraAdapter(AbstractSierraSession):
 
 
 @pytest.fixture
-def stub_sierra_service(mock_sierra_session_response):
+def stub_sierra_service(library, monkeypatch):
+    def mock_adapter(*args, **kwargs):
+        return MockSierraAdapter()
+
+    monkeypatch.setattr(
+        "overload_web.adapters.sierra_adapters.BPLSolrSession", mock_adapter
+    )
+    monkeypatch.setattr(
+        "overload_web.adapters.sierra_adapters.NYPLPlatformSession", mock_adapter
+    )
     service = SierraService(MockSierraAdapter())
     return service
 
 
-@pytest.fixture(params=["nypl", "bpl"])
-def stub_order(request):
+class MockHTTPResponse:
+    def __init__(self, stub_json: dict):
+        self.stub_json = stub_json
+
+    def json(self):
+        return self.stub_json
+
+
+@pytest.fixture
+def mock_st_post_response(monkeypatch):
+    def mock_response(*args, **kwargs):
+        stub_json = {
+            "order": {"library": "nypl"},
+            "template": {
+                "fund": "foo",
+                "primary_matchpoint": "foo",
+                "secondary_matchpoint": "bar",
+                "tertiary_matchpoint": "baz",
+            },
+        }
+        return MockHTTPResponse(stub_json=stub_json)
+
+    monkeypatch.setattr("requests.post", mock_response)
+    monkeypatch.setenv("API_URL_BASE", "foo")
+
+
+@pytest.fixture
+def stub_order(library):
     return Order(
-        library=request.param,
+        library=library,
         create_date="2024-01-01",
         locations=["(4)fwa0f", "(2)bca0f", "gka0f"],
         shelves=["0f", "0f", "0f"],

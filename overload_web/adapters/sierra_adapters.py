@@ -7,9 +7,10 @@ from typing import List
 
 from bookops_nypl_platform import PlatformSession, PlatformToken
 from bookops_bpl_solr import SolrSession
+import requests
 
 from overload_web.domain import model
-from . import __title__, __version__
+from .. import __title__, __version__
 
 logger = logging.getLogger(__name__)
 
@@ -55,13 +56,13 @@ class BPLSolrSession(SolrSession, AbstractSierraSession):
         )
 
     def _get_credentials(self) -> str:
-        return os.environ["BPL_SOLR_CLIENT_KEY"]
+        return os.environ["BPL_SOLR_CLIENT"]
 
     def _get_target(self) -> str:
-        return os.environ["BPL_SOLR_ENDPOINT"]
+        return os.environ["BPL_SOLR_TARGET"]
 
     def _get_bibs_by_id(self, key: str, value: str | int) -> List[str]:
-        sierra_response = []
+        response: requests.Response
         if key == "bib_id":
             response = self.search_bibNo(str(value))
         elif key == "oclc_number":
@@ -75,11 +76,11 @@ class BPLSolrSession(SolrSession, AbstractSierraSession):
                 "Invalid matchpoint. Available matchpoints are: bib_id, "
                 "oclc_number, isbn, and upc"
             )
-
+        bib_ids = []
         if response and response.ok:
             json_response = response.json()
-            sierra_response.extend([i["id"] for i in json_response["response"]["docs"]])
-        return sierra_response
+            bib_ids.extend([i["id"] for i in json_response["response"]["docs"]])
+        return bib_ids
 
 
 class NYPLPlatformSession(PlatformSession, AbstractSierraSession):
@@ -102,7 +103,7 @@ class NYPLPlatformSession(PlatformSession, AbstractSierraSession):
         return os.environ["NYPL_PLATFORM_TARGET"]
 
     def _get_bibs_by_id(self, key: str, value: str | int) -> List[str]:
-        sierra_response = []
+        response: requests.Response
         if key == "bib_id":
             response = self.search_bibNos(str(value))
         elif key == "oclc_number":
@@ -116,7 +117,8 @@ class NYPLPlatformSession(PlatformSession, AbstractSierraSession):
                 "Invalid matchpoint. Available matchpoints are: bib_id, "
                 "oclc_number, isbn, and upc"
             )
+        bib_ids = []
         if response and response.ok:
             json_response = response.json()
-            sierra_response.extend([i["id"] for i in json_response["data"]])
-        return sierra_response
+            bib_ids.extend([i["id"] for i in json_response["data"]])
+        return bib_ids
