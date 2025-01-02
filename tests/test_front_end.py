@@ -1,38 +1,22 @@
 import datetime
 import json
-import os
 from streamlit.testing import v1
 
 
 def test_streamlit_app():
-    at = v1.AppTest.from_file(
-        os.path.join(
-            os.environ["USERPROFILE"],
-            "github/overload-web/overload_web/adapters/streamlit_app.py",
-        )
-    ).run()
+    at = v1.AppTest.from_file("overload_web/adapters/streamlit_app.py").run()
     assert not at.exception
 
 
 def test_home():
-    at = v1.AppTest.from_file(
-        os.path.join(
-            os.environ["USERPROFILE"],
-            "github/overload-web/overload_web/adapters/home.py",
-        )
-    ).run()
+    at = v1.AppTest.from_file("overload_web/adapters/home.py").run()
     assert not at.exception
     assert at.markdown[0].value == "# Overload Web"
     assert at.markdown[1].value == "### A BookOps Cataloging toolbox"
 
 
 def test_pvf():
-    at = v1.AppTest.from_file(
-        os.path.join(
-            os.environ["USERPROFILE"],
-            "github/overload-web/overload_web/adapters/pvf.py",
-        )
-    ).run()
+    at = v1.AppTest.from_file("overload_web/adapters/pvf.py").run()
     assert not at.exception
     assert getattr(at.get("file_uploader")[0], "label") == "Choose a file"
     assert len(at.columns) == 2
@@ -54,12 +38,7 @@ def test_pvf():
 
 
 def test_pvf_submit_form():
-    at = v1.AppTest.from_file(
-        os.path.join(
-            os.environ["USERPROFILE"],
-            "github/overload-web/overload_web/adapters/pvf.py",
-        )
-    ).run()
+    at = v1.AppTest.from_file("overload_web/adapters/pvf.py").run()
     at.selectbox[0].select("a")
     at.text_input[0].input("foo")
     at.text_input[1].input("bar")
@@ -112,12 +91,7 @@ def test_pvf_submit_form():
 
 
 def test_pvf_submit_form_mock_post(mock_st_post_response):
-    at = v1.AppTest.from_file(
-        os.path.join(
-            os.environ["USERPROFILE"],
-            "github/overload-web/overload_web/adapters/pvf.py",
-        )
-    ).run()
+    at = v1.AppTest.from_file("overload_web/adapters/pvf.py").run()
     at.button[0].click().run()
     assert not at.exception
     assert json.loads(at.json[0].value) == {
