@@ -8,10 +8,22 @@ def test_streamlit_app():
     at = v1.AppTest.from_file(
         os.path.join(
             os.environ["USERPROFILE"],
-            "github/overload-web/overload_web/adapters/pvf.py",
+            "github/overload-web/overload_web/adapters/streamlit_app.py",
         )
     ).run()
     assert not at.exception
+
+
+def test_home():
+    at = v1.AppTest.from_file(
+        os.path.join(
+            os.environ["USERPROFILE"],
+            "github/overload-web/overload_web/adapters/home.py",
+        )
+    ).run()
+    assert not at.exception
+    assert at.markdown[0].value == "# Overload Web"
+    assert at.markdown[1].value == "### A BookOps Cataloging toolbox"
 
 
 def test_pvf():
