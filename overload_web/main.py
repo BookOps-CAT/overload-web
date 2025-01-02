@@ -1,16 +1,28 @@
 from typing import List
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 from overload_web import services, config, schemas
 from overload_web.domain import model
 
 
 app = FastAPI()
+templates = Jinja2Templates(directory="overload_web/templates")
 
 
-@app.get("/")
-def root(application: str = "Overload Web", include_in_schema=False):
-    return {"application": application}
+@app.get("/", response_class=HTMLResponse)
+def root(
+    request: Request,
+    application: str = "Overload",
+    page_title: str = "Overload Web",
+    include_in_schema=False,
+):
+    return templates.TemplateResponse(
+        request=request,
+        name="home.html",
+        context={"application": application, "page_title": page_title},
+    )
 
 
 @app.post("/attach")
@@ -19,8 +31,22 @@ def attach_endpoint(order: schemas.OrderModel, bib_ids: List[str]):
     return {"bib": bib}
 
 
+@app.get("/vendor_file")
+def vendor_file_page(
+    request: Request,
+    application: str = "Overload",
+    page_title: str = "Process Vendor File",
+    include_in_schema=False,
+):
+    return templates.TemplateResponse(
+        request=request,
+        name="pvf.html",
+        context={"application": application, "page_title": page_title},
+    )
+
+
 @app.post("/vendor_file")
-def process_vendor_file(
+def vendor_file_process(
     order: schemas.OrderModel, template: schemas.OrderTemplateModel
 ):
     processed_bib = services.process_file(

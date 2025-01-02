@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block head %}
+    {{ super() }}
+{% endblock %}
+{% block title %}
+    {{ super() }}
+{% endblock %}
+{% block nav %}
+    {{ super() }}
+{% endblock %}
+{% block header %}{{ page_title }}{% endblock %}  
+{% block content %}
+<form action="/vendor_file" method="post">
+    <div class="mb-3">
+        <label for="formFileMultiple" class="form-label">Order Files</label>
+        <input class="form-control" type="file" id="formFileMultiple" multiple>
+    </div>
+
+        </select>        
+    <div class="row">
+        <div class="col">
+            <input type="text" class="form-control" placeholder="Language" aria-label="language">
+        </div>
+        <div class="col">
+            <select class="form-select" placeholder="Country" aria-label="Country">
+                <option selected>Country</option>
+                <option value="a">a</option>
+                <option value="b">b</option>
+                <option value="c">c</option>
+            </select>   
+            <select class="form-select" placeholder="Format" aria-label="Format">
+                <option selected>Format</option>
+                <option value="a">a</option>
+                <option value="b">b</option>
+                <option value="c">c</option>
+            </select>               
+        </div>
+    </div>    
+    
+    </form>
+
+    <br>
+    <h2>Output</h2>
+
+
+
+{% endblock %}  
