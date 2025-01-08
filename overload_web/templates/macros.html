@@ -15,8 +15,8 @@
 
 {% macro create_input(field) -%}
 {% set id=field['id']%}
+<label for="{{ id }}" class="form-label">{{field["name"]}}</label>
 {% if "values" in field %}
-    <label for="{{ id }}" class="form-label">{{field["name"]}}</label>
     <select class="form-select" aria-label="{{id}}" name="{{id}}", id="{{id}}">
         <option selected value=""></option>       
             {% for k, v in field["values"].items() %}
@@ -24,7 +24,6 @@
             {%endfor%}
     </select>
 {%else%}
-    <label for="{{ id }}" class="form-label">{{field['name']}}</label> 
     <input type="text" class="form-control" value="{{ value|e }}" name="{{ id }}" aria-label="{{ id }}" id="{{id}}">
 {%endif%}
 {%- endmacro %}
