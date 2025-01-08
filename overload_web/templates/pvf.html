@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% import "macros.html" as form %} 
+{% block head %}
+    {{ super() }}
+{% endblock %}
+{% block title %}
+    {{ super() }}
+{% endblock %}
+{% block nav %}
+    {{ super() }}
+{% endblock %}
+{% block header %}{{ page_title }}{% endblock %}  
+{% block content %}
+<form action="/vendor_file" method="post" enctype="multipart/form-data">
+    <div class="container text-left">
+        <div class="row row-cols-2 gy-1 my-2">   
+            <div class="col">
+                <h5>Order File</h5>
+                <input class="form-control" type="file" id="order_file" name="order_file"> 
+            </div>  
+        </div> 
+        <h5>Record Template</h5>
+        <div class="accordion accordion" id="template_accordion">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="template-headingOne">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#template-collapseOne" aria-expanded="false" aria-controls="template-collapseOne" style="background-color: white; color: black;">Enter Template Data</button></h2>
+                <div id="template-collapseOne" class="accordion-collapse collapse" aria-labelledby="template-headingOne" data-bs-parent="#template_accordion">
+                    <div class="accordion-body">
+                        <h5>Order Fixed Fields</h5>
+                        {{ form.template_form(fixed_fields) }}
+                        <h5>Order Variable Fields</h5>
+                        {{ form.template_form(variable_fields) }}
+                        <h5>Sierra Matchpoints</h5>
+                        {{ form.template_form(matchpoints) }}                        
+                    </div>
+                </div>
+            </div>
+        </div>        
+        <button type="submit" class="btn my-3" style="border-color: #d52828; border: border-3">Submit</button>
+    </div>
+</form>
+
+{% if bib is defined %}
+    {{ form.bib_output(bib, order, template) }}
+{%endif%}
+{% endblock %}  
