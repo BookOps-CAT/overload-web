@@ -13,7 +13,6 @@ bookops-worldcat = "^1.1.0"
 bookops-nypl-platform = {git = "https://github.com/BookOps-CAT/bookops-nypl-platform.git"}
 bookops-bpl-solr = {git = "https://github.com/BookOps-CAT/bookops-bpl-solr.git"}
 fastapi = {extras = ["standard"], version = "^0.115.6"}
-streamlit = "^1.41.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
