@@ -16,12 +16,12 @@ class OrderModel(BaseModel):
     vendor_code: str
     format: str
     selector: str
-    audience: List[str]
+    audience: str
     source: str
     order_type: str
     status: str
-    internal_note: Optional[List[str]]
-    var_field_isbn: Optional[List[str]]
+    internal_note: Optional[str]
+    var_field_isbn: Optional[str]
     vendor_notes: Optional[str]
     vendor_title_no: Optional[str]
     blanket_po: Optional[str]
@@ -33,8 +33,8 @@ class OrderModel(BaseModel):
 
 class OrderTemplateModel(BaseModel):
     create_date: Optional[Union[datetime.datetime, str]] = None
-    locations: Optional[List[str]] = None
-    shelves: Optional[List[str]] = None
+    locations: Optional[str] = None
+    shelves: Optional[str] = None
     price: Optional[Union[str, int]] = None
     fund: Optional[str] = None
     copies: Optional[Union[str, int]] = None
@@ -47,8 +47,8 @@ class OrderTemplateModel(BaseModel):
     source: Optional[str] = None
     order_type: Optional[str] = None
     status: Optional[str] = None
-    internal_note: Optional[List[str]] = None
-    isbn: Optional[List[str]] = None
+    internal_note: Optional[str] = None
+    var_field_isbn: Optional[str] = None
     vendor_notes: Optional[str] = None
     vendor_title_no: Optional[str] = None
     blanket_po: Optional[str] = None
