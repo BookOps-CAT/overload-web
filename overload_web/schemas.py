@@ -33,8 +33,6 @@ class OrderModel(BaseModel):
 
 class OrderTemplateModel(BaseModel):
     create_date: Optional[Union[datetime.datetime, str]] = None
-    locations: Optional[str] = None
-    shelves: Optional[str] = None
     price: Optional[Union[str, int]] = None
     fund: Optional[str] = None
     copies: Optional[Union[str, int]] = None
@@ -43,7 +41,7 @@ class OrderTemplateModel(BaseModel):
     vendor_code: Optional[str] = None
     format: Optional[str] = None
     selector: Optional[str] = None
-    audience: Optional[List[str]] = None
+    audience: Optional[str] = None
     source: Optional[str] = None
     order_type: Optional[str] = None
     status: Optional[str] = None
