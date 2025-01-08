@@ -43,8 +43,6 @@ def test_Order(library):
 def test_OrderTemplate():
     template = OrderTemplate(
         datetime(2024, 1, 1),
-        ["(4)fwa0f", "(2)bca0f", "gka0f"],
-        ["0f", "0f"],
         "$5.00",
         "25240adbk",
         "7",
@@ -53,7 +51,7 @@ def test_OrderTemplate():
         "0049",
         "a",
         "b",
-        ["a", "a", "a"],
+        "a",
         "d",
         "p",
         "o",
@@ -64,8 +62,6 @@ def test_OrderTemplate():
         None,
     )
     assert template.create_date == datetime(2024, 1, 1)
-    assert template.locations == ["(4)fwa0f", "(2)bca0f", "gka0f"]
-    assert template.shelves == ["0f", "0f"]
     assert template.price == "$5.00"
     assert template.fund == "25240adbk"
     assert template.copies == "7"
@@ -74,12 +70,12 @@ def test_OrderTemplate():
     assert template.vendor_code == "0049"
     assert template.format == "a"
     assert template.selector == "b"
-    assert template.audience == ["a", "a", "a"]
+    assert template.audience == "a"
     assert template.source == "d"
     assert template.order_type == "p"
     assert template.status == "o"
     assert template.internal_note is None
-    assert template.isbn is None
+    assert template.var_field_isbn is None
     assert template.vendor_notes is None
     assert template.vendor_title_no is None
     assert template.blanket_po is None
