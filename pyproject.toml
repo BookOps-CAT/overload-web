@@ -25,7 +25,6 @@ types-pyyaml = "^6.0.12.20240917"
 testpaths = ["tests"]
 markers = [
 	"livetest: mark a test hitting live web services",
-	"sierra_session: mark a mocked test with a status_code"
 ]
 
 [tool.coverage.run]
