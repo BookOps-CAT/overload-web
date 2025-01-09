@@ -18,6 +18,7 @@
 			"dependsOn": [
 				"docker-build"
 			],
+			"dockerRun": {"envFiles": ["${workspaceFolder}/debug.env"]},
 			"python": {
 				"args": [
 					"overload_web.main:app",
