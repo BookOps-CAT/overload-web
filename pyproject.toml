@@ -26,6 +26,7 @@ testpaths = ["tests"]
 markers = [
 	"livetest: mark a test hitting live web services",
 ]
+addopts = "--cov=overload_web/"
 
 [tool.coverage.run]
 relative_files = true
