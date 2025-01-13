@@ -1,0 +1,53 @@
+{% macro input(name, value='', display='') -%} 
+<label for="{{ name }}" class="form-label">{{display}}</label> 
+<input type="{{ type }}" class="form-control" value="{{ value|e }}" name="{{ name }}" aria-label="{{ name }}" id="{{name}}">
+{%- endmacro %}
+
+{% macro selectbox(name, display='', values={}) -%}  
+<label for="{{ name }}" class="form-label">{{display}}</label> 
+<select class="form-select" aria-label="{{name}}" name="{{name}}", id="{{name}}">
+    <option selected value=""></option>       
+        {% for k, v in values.items() %}
+        <option value="{{k}}">{{k}} ({{v.title()}})</option>
+        {%endfor%}
+    </select>
+{%- endmacro %}
+
+{% macro create_input(field) -%}
+{% set id=field['id']%}
+<label for="{{ id }}" class="form-label">{{field["name"]}}</label>
+{% if "values" in field %}
+    <select class="form-select" aria-label="{{id}}" name="{{id}}", id="{{id}}">
+        <option selected value=""></option>       
+            {% for k, v in field["values"].items() %}
+            <option value="{{k}}">{{k}} ({{v.title()}})</option>
+            {%endfor%}
+    </select>
+{%else%}
+    <input type="text" class="form-control" value="{{ value|e }}" name="{{ id }}" aria-label="{{ id }}" id="{{id}}">
+{%endif%}
+{%- endmacro %}
+
+{% macro template_form(fields) -%}
+<div class="row row-cols-3 gy-1 my-2">
+    {% for field in fields %}
+    <div class="col">
+        {{create_input(field)}}
+    </div>
+    {%endfor%}
+</div>    
+{%- endmacro %}
+
+
+
+{% macro bib_output(bib, order='', template='') -%}
+<h2>Output</h2>
+<h4>Bib ID: </h4>
+{{ bib.bib_id }}
+<h4>Order: </h4>
+{{order}}
+<h4>Template: </h4>
+{{template}}
+<h4>Processed Bib: </h4>
+{{bib.__dict__}}
+{%- endmacro %}

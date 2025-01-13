@@ -1,49 +1,50 @@
-from dataclasses import asdict
+import io
+import json
 from fastapi.testclient import TestClient
 import pytest
 from overload_web.main import app
-from overload_web import schemas
 
 
 client = TestClient(app)
 
 
-def test_root():
+def test_root_get():
     response = client.get("/")
     assert response.status_code == 200
-    assert response.json() == {"application": "Overload Web"}
+    assert "BookOps Cataloging Department browser-based toolbox." in response.text
 
 
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
-def test_attach_endpoint(stub_order):
-    order_schema = schemas.OrderModel(**asdict(stub_order)).model_dump()
-    data = {
-        "order": order_schema,
-        "bib_ids": ["123456789", "987654321"],
-    }
-    response = client.post("/attach", json=data)
+def test_process_vendor_file_get(stub_sierra_service):
+    response = client.get("/vendor_file")
     assert response.status_code == 200
-    assert response.url == f"{client.base_url}/attach"
-    assert response.json()["bib"]["all_bib_ids"] == ["123456789", "987654321"]
+    assert "Process Vendor File" in response.text
+    assert response.url == f"{client.base_url}/vendor_file"
+    assert response.context["page_title"] == "Process Vendor File"
+    assert {"name": "Fund", "id": "fund"} in response.context["fixed_fields"]
 
 
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
-def test_process_vendor_file_endpoint(stub_order, stub_template, stub_sierra_service):
-    template_schema = schemas.OrderTemplateModel(**asdict(stub_template)).model_dump()
-    order_schema = schemas.OrderModel(**asdict(stub_order)).model_dump()
-    data = {"order": order_schema, "template": template_schema}
-    response = client.post("/vendor_file", json=data)
+def test_process_vendor_file_post(stub_template, stub_order, stub_sierra_service):
+    stub_order_file = io.BytesIO(json.dumps(stub_order.__dict__).encode())
+    response = client.post(
+        "/vendor_file",
+        files={"order_file": stub_order_file},
+        data=stub_template.__dict__,
+    )
     assert response.status_code == 200
     assert response.url == f"{client.base_url}/vendor_file"
-    assert response.json()["bib"]["fund"] == "10001adbk" == template_schema["fund"]
-    assert response.json()["bib"]["fund"] != order_schema["fund"]
+    assert "Order File" in response.text
+    assert "Enter Template Data" in response.text
 
 
 @pytest.mark.parametrize("library", ["foo"])
-def test_process_vendor_file_endpoint_invalid_config(stub_order, stub_template):
-    template_schema = schemas.OrderTemplateModel(**asdict(stub_template)).model_dump()
-    order_schema = schemas.OrderModel(**asdict(stub_order)).model_dump()
-    data = {"order": order_schema, "template": template_schema}
+def test_process_vendor_file_post_invalid_config(stub_order, stub_template):
+    stub_order_file = io.BytesIO(json.dumps(stub_order.__dict__).encode())
     with pytest.raises(ValueError) as exc:
-        client.post("/vendor_file", json=data)
+        client.post(
+            "/vendor_file",
+            files={"order_file": stub_order_file},
+            data=stub_template.__dict__,
+        )
     assert "Invalid library. Must be 'bpl' or 'nypl'" in str(exc.value)
