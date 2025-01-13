@@ -1,4 +1,4 @@
-from typing import Annotated, Any, Dict, List
+from typing import Annotated, Any, Dict
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -29,12 +29,6 @@ def root(
         name="home.html",
         context=CONTEXT,
     )
-
-
-@app.post("/attach")
-def attach_endpoint(order: schemas.OrderModel, bib_ids: List[str]):
-    bib = services.attach(order_data=model.Order(**order.model_dump()), bib_ids=bib_ids)
-    return {"bib": bib}
 
 
 @app.get("/vendor_file")

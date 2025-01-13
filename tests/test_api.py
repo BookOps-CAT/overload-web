@@ -1,10 +1,8 @@
-from dataclasses import asdict
 import io
 import json
 from fastapi.testclient import TestClient
 import pytest
 from overload_web.main import app
-from overload_web import schemas
 
 
 client = TestClient(app)
@@ -14,19 +12,6 @@ def test_root_get():
     response = client.get("/")
     assert response.status_code == 200
     assert "BookOps Cataloging Department browser-based toolbox." in response.text
-
-
-@pytest.mark.parametrize("library", ["nypl", "bpl"])
-def test_attach_post(stub_order):
-    order_schema = schemas.OrderModel(**asdict(stub_order)).model_dump()
-    data = {
-        "order": order_schema,
-        "bib_ids": ["123456789", "987654321"],
-    }
-    response = client.post("/attach", json=data)
-    assert response.status_code == 200
-    assert response.url == f"{client.base_url}/attach"
-    assert response.json()["bib"]["all_bib_ids"] == ["123456789", "987654321"]
 
 
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
