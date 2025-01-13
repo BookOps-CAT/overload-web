@@ -1,7 +1,7 @@
 from __future__ import annotations
 import datetime
 import json
-from typing import Annotated, List, Literal, Optional, Union
+from typing import Annotated, List, Optional, Union
 from fastapi import Form, UploadFile
 from pydantic import BaseModel
 
@@ -107,9 +107,6 @@ class OrderTemplateModel(BaseModel):
     vendor_notes: Optional[str] = None
     vendor_title_no: Optional[str] = None
     blanket_po: Optional[str] = None
-    # primary_matchpoint: Optional[str] = None
-    # secondary_matchpoint: Optional[str] = None
-    # tertiary_matchpoint: Optional[str] = None
     primary_matchpoint: Optional[str] = None
     secondary_matchpoint: Optional[str] = None
     tertiary_matchpoint: Optional[str] = None
