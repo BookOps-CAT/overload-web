@@ -54,6 +54,24 @@ reference = "HEAD"
 resolved_reference = "0dfd0bb91294df768ebfab4631188b799b7c1151"
 
 [[package]]
+name = "bookops-marc"
+version = "0.12.0"
+description = "A sweetened `pymarc.Record` module for extraction of data from local Sierra records."
+optional = false
+python-versions = "^3.8"
+files = []
+develop = false
+
+[package.dependencies]
+pymarc = "^5.2.3"
+
+[package.source]
+type = "git"
+url = "https://github.com/BookOps-CAT/bookops-marc.git"
+reference = "releases/v0.12.0"
+resolved_reference = "4bd5da6ac6368ae25f3a422e1560bd2bb02de4ac"
+
+[[package]]
 name = "bookops-nypl-platform"
 version = "0.5.0"
 description = "BookOps Python wrapper around NYPL Platform API"
@@ -545,14 +563,14 @@ files = [
 
 [[package]]
 name = "jinja2"
-version = "3.1.4"
+version = "3.1.5"
 description = "A very fast and expressive template engine."
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "jinja2-3.1.4-py3-none-any.whl", hash = "sha256:bc5dd2abb727a5319567b7a813e6a2e7318c39f4f487cfe6c89c6f9c7d25197d"},
-    {file = "jinja2-3.1.4.tar.gz", hash = "sha256:4a3aee7acbbe7303aede8e9648d13b8bf88a429282aa6122a993f0ac800cb369"},
+    {file = "jinja2-3.1.5-py3-none-any.whl", hash = "sha256:aba0f4dc9ed8013c424088f68a5c226f7d6097ed89b246d7749c2ec4175c6adb"},
+    {file = "jinja2-3.1.5.tar.gz", hash = "sha256:8fefff8dc3034e27bb80d67c671eb8a9bc424c0ef4c0826edbff304cceff43bb"},
 ]
 
 [package.dependencies]
@@ -848,14 +866,13 @@ windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
 name = "pymarc"
-version = "5.2.2"
+version = "5.2.3"
 description = "Read, write and modify MARC bibliographic data"
 optional = false
-python-versions = ">=3.7"
-groups = ["main"]
+python-versions = ">=3.8"
 files = [
-    {file = "pymarc-5.2.2-py3-none-any.whl", hash = "sha256:d654ee1faae5d80845b7a44b27deb6ea9b5377994d16aeba5d3e19e7856d7d43"},
-    {file = "pymarc-5.2.2.tar.gz", hash = "sha256:0913b4167a4337190598914c3642c5ae4f0f64a26bc4316f380cc54f65d8a741"},
+    {file = "pymarc-5.2.3-py3-none-any.whl", hash = "sha256:9e0b2fff0f97764889fe2af08a93d137e0a46630c006c6330bebf0bdcd52201a"},
+    {file = "pymarc-5.2.3.tar.gz", hash = "sha256:02a151d89c3b36f92bbc92c2e972bcfe91b91fc93529d8862e5f7c292a15c9f0"},
 ]
 
 [[package]]
@@ -1426,4 +1443,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "553afadf2bdb3b37a84cd6cc846f36eac5c2c7d0efde2dc5129206dad99aac0e"
+content-hash = "1267f3193e35589bc85ac7cbbc9dbcc1010aaa9219ab84f1804418ac881eec8a"
