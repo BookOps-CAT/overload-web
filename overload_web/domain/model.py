@@ -15,31 +15,30 @@ def apply_template(bib: OrderBib, template: OrderTemplate) -> OrderBib:
 
 class OrderBib:
     def __init__(self, order: Order) -> None:
-        self.upc = order.upc
-        self.isbn = order.isbn
-        self.library = order.library
-        self.oclc_number = order.oclc_number
-        self.bib_id = order.bib_id
-        self.create_date = order.create_date
-        self.locations = order.locations
-        self.shelves = order.shelves
-        self.price = order.price
-        self.fund = order.fund
-        self.copies = order.copies
-        self.lang = order.lang
-        self.country = order.country
-        self.vendor_code = order.vendor_code
-        self.format = order.format
-        self.selector = order.selector
         self.audience = order.audience
-        self.source = order.source
-        self.order_type = order.order_type
-        self.status = order.status
+        self.bib_id = order.bib_id
+        self.blanket_po = order.blanket_po
+        self.copies = order.copies
+        self.country = order.country
+        self.create_date = order.create_date
+        self.format = order.format
+        self.fund = order.fund
         self.internal_note = order.internal_note
+        self.isbn = order.isbn
+        self.lang = order.lang
+        self.library = order.library
+        self.locations = order.locations
+        self.oclc_number = order.oclc_number
+        self.order_type = order.order_type
+        self.price = order.price
+        self.selector = order.selector
+        self.source = order.source
+        self.status = order.status
+        self.upc = order.upc
         self.var_field_isbn = order.isbn
+        self.vendor_code = order.vendor_code
         self.vendor_notes = order.vendor_notes
         self.vendor_title_no = order.vendor_title_no
-        self.blanket_po = order.blanket_po
 
     def attach(self, bib_ids: List[str]) -> None:
         if bib_ids:
@@ -51,53 +50,54 @@ class OrderBib:
 
 @dataclass
 class Order:
-    library: str
-    create_date: Union[datetime.datetime, str]
-    locations: List[str]
-    shelves: List[str]
-    price: Union[str, int]
-    fund: str
-    copies: Union[str, int]
-    lang: str
-    country: str
-    vendor_code: str
-    format: str
-    selector: str
-    audience: List[str]
-    source: str
-    order_type: str
-    status: str
+    audience: Optional[str]
+    blanket_po: Optional[str]
+    copies: Optional[Union[str, int]]
+    country: Optional[str]
+    create_date: Optional[datetime.date]
+    format: Optional[str]
+    fund: Optional[str]
     internal_note: Optional[str]
+    lang: Optional[str]
+    library: str
+    locations: List[str]
+    order_type: Optional[str]
+    price: Optional[Union[str, int]]
+    selector: Optional[str]
+    source: Optional[str]
+    status: Optional[str]
     var_field_isbn: Optional[str]
+    vendor_code: Optional[str]
     vendor_notes: Optional[str]
     vendor_title_no: Optional[str]
-    blanket_po: Optional[str]
+
     bib_id: Optional[Union[str, int]] = None
-    upc: Optional[Union[str, int]] = None
-    isbn: Optional[Union[str, int]] = None
-    oclc_number: Optional[Union[str, int]] = None
+    isbn: Optional[Union[str, int, List[str]]] = None
+    oclc_number: Optional[Union[str, int, List[str]]] = None
+    upc: Optional[Union[str, int, List[str]]] = None
 
 
 @dataclass
 class OrderTemplate:
-    create_date: Optional[Union[datetime.datetime, str]] = None
-    price: Optional[Union[str, int]] = None
-    fund: Optional[str] = None
+    audience: Optional[str] = None
+    blanket_po: Optional[str] = None
     copies: Optional[Union[str, int]] = None
-    lang: Optional[str] = None
     country: Optional[str] = None
-    vendor_code: Optional[str] = None
+    create_date: Optional[Union[datetime.datetime, str]] = None
     format: Optional[str] = None
-    selector: Optional[str] = None
-    audience: Optional[List[str]] = None
-    source: Optional[str] = None
-    order_type: Optional[str] = None
-    status: Optional[str] = None
+    fund: Optional[str] = None
     internal_note: Optional[str] = None
+    lang: Optional[str] = None
+    order_type: Optional[str] = None
+    price: Optional[Union[str, int]] = None
+    selector: Optional[str] = None
+    source: Optional[str] = None
+    status: Optional[str] = None
     var_field_isbn: Optional[str] = None
+    vendor_code: Optional[str] = None
     vendor_notes: Optional[str] = None
     vendor_title_no: Optional[str] = None
-    blanket_po: Optional[str] = None
+
     primary_matchpoint: Optional[str] = None
     secondary_matchpoint: Optional[str] = None
     tertiary_matchpoint: Optional[str] = None
