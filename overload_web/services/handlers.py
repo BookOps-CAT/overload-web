@@ -1,6 +1,4 @@
 from __future__ import annotations
-
-
 from typing import List
 
 from overload_web.domain import model
@@ -25,8 +23,6 @@ def process_file(
     order_data: model.Order,
     template: model.OrderTemplate,
 ) -> model.OrderBib:
-    order_bib = model.OrderBib(
-        order=order_data,
-    )
+    order_bib = model.OrderBib(order=order_data)
     order_bib.attach(sierra_service.get_all_bib_ids(order_data, template.matchpoints))
     return model.apply_template(bib=order_bib, template=template)
