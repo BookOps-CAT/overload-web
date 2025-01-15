@@ -3,8 +3,9 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from overload_web import services, config, schemas, constants
+from overload_web import config, schemas, constants
 from overload_web.domain import model
+from overload_web.services import handlers
 
 
 app = FastAPI()
@@ -47,7 +48,7 @@ def vendor_file_process(
     template: Annotated[schemas.OrderTemplateModel, Depends(schemas.get_template)],
     page_title: str = "Process Vendor File Output",
 ):
-    processed_bib = services.process_file(
+    processed_bib = handlers.process_file(
         sierra_service=config.get_sierra_service(library=order.library),
         order_data=model.Order(**order.model_dump()),
         template=model.OrderTemplate(**template.model_dump()),
