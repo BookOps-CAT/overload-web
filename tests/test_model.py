@@ -8,11 +8,8 @@ from overload_web.domain.model import (
 )
 
 
-@pytest.mark.parametrize("library", ["nypl", "bpl"])
-def test_Order(library):
+def test_Order():
     order = Order(
-        isbn="9781234567890",
-        library=library,
         create_date=datetime(2024, 1, 1),
         locations=["(4)fwa0f", "(2)bca0f", "gka0f"],
         price="$5.00",
@@ -23,6 +20,7 @@ def test_Order(library):
         vendor_code="0049",
         format="a",
         selector="b",
+        selector_note=None,
         audience="a",
         source="d",
         order_type="p",
@@ -33,10 +31,9 @@ def test_Order(library):
         vendor_title_no=None,
         blanket_po=None,
     )
-    assert order.isbn == "9781234567890"
-    assert order.oclc_number is None
-    assert order.upc is None
-    assert order.bib_id is None
+    assert order.price == "$5.00"
+    assert order.format == "a"
+    assert order.blanket_po is None
 
 
 def test_OrderTemplate():
@@ -53,6 +50,7 @@ def test_OrderTemplate():
         order_type="p",
         price="$5.00",
         selector="b",
+        selector_note=None,
         source="d",
         status="o",
         var_field_isbn=None,
@@ -72,6 +70,7 @@ def test_OrderTemplate():
     assert template.vendor_code == "0049"
     assert template.format == "a"
     assert template.selector == "b"
+    assert template.selector_note is None
     assert template.audience == "a"
     assert template.source == "d"
     assert template.order_type == "p"
@@ -88,23 +87,21 @@ def test_OrderTemplate():
 
 
 @pytest.mark.parametrize("library", ["bpl", "nypl"])
-def test_OrderBib(stub_order):
-    bib = OrderBib(order=stub_order)
-    assert stub_order.bib_id is None
+def test_OrderBib(library, stub_order):
+    bib = OrderBib(library=library, orders=[stub_order])
     assert bib.bib_id is None
 
 
 @pytest.mark.parametrize("library", ["bpl", "nypl"])
-def test_OrderBib_bib_id(stub_order):
+def test_OrderBib_bib_id(library, stub_order):
     order = stub_order
-    order.bib_id = "b123456789"
-    bib = OrderBib(order=order)
+    bib = OrderBib(library=library, orders=[order], bib_id="b123456789")
     assert bib.bib_id == "b123456789"
 
 
 @pytest.mark.parametrize("library", ["bpl", "nypl"])
-def test_model_apply_template(stub_template, stub_order):
-    bib = OrderBib(order=stub_order)
-    assert bib.fund == "25240adbk"
+def test_model_apply_template(library, stub_template, stub_order):
+    bib = OrderBib(library=library, orders=[stub_order])
+    assert bib.orders[0].fund == "25240adbk"
     updated_bib = apply_template(bib, stub_template)
-    assert updated_bib.fund == "10001adbk"
+    assert updated_bib.orders[0].fund == "10001adbk"
