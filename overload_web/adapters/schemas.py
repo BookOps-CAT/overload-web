@@ -1,7 +1,7 @@
 from __future__ import annotations
 import datetime
 from typing import Annotated, List, Optional, Union
-from fastapi import Form, UploadFile
+from fastapi import Depends, Form, UploadFile
 from bookops_marc import Bib, SierraBibReader
 from bookops_marc.models import Order as BookopsMarcOrder, Field
 from pydantic import BaseModel, ConfigDict
@@ -86,6 +86,13 @@ class OverloadOrder(BookopsMarcOrder):
     @property
     def vendor_title_no(self) -> Optional[str]:
         return self._get_subfield_from_following_field("i")
+
+
+def get_library(context: dict):
+    try:
+        return context["library"]
+    except IndexError:
+        return None
 
 
 def get_template(
