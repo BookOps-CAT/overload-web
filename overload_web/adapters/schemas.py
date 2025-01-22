@@ -1,9 +1,12 @@
 from __future__ import annotations
+
 import datetime
 import json
 from typing import Annotated, Optional, Union
+
 from fastapi import Form, UploadFile
 from pydantic import BaseModel, ConfigDict
+
 from overload_web.domain import model
 
 

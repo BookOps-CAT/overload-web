@@ -21,10 +21,12 @@ class SierraService:
     def __init__(self, session: AbstractSierraSession):
         self.session = session
 
-    def get_all_bib_ids(self, order: model.Order, match_keys: List[str]) -> List[str]:
+    def get_all_bib_ids(
+        self, order_bib: model.OrderBib, match_keys: List[str]
+    ) -> List[str]:
         bibs = []
         for key in match_keys:
-            bibs = self.session.get_bibs_by_id(key, getattr(order, f"{key}"))
+            bibs = self.session.get_bibs_by_id(key, getattr(order_bib, f"{key}"))
             if not bibs:
                 continue
         return bibs
