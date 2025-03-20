@@ -1,6 +1,6 @@
 from typing import Annotated, Any, Dict, List
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
@@ -14,9 +14,6 @@ templates = Jinja2Templates(directory="overload_web/templates")
 
 CONTEXT: Dict[str, Any] = {
     "application": constants.APPLICATION,
-    "field_constants": constants.FIELD_CONSTANTS,
-    "library": None,
-    "destination": None,
     "field_constants": constants.FIELD_CONSTANTS,
     "library": None,
     "destination": None,
