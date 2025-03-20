@@ -17,12 +17,32 @@ CONTEXT: Dict[str, Any] = {
     "field_constants": constants.FIELD_CONSTANTS,
     "library": None,
     "destination": None,
+    "field_constants": constants.FIELD_CONSTANTS,
+    "library": None,
+    "destination": None,
 }
 
 
 @app.get("/", response_class=HTMLResponse)
 def root(request: Request, page_title: str = "Overload Web"):
     CONTEXT.update({"page_title": page_title})
+    return templates.TemplateResponse(
+        request=request,
+        name="home.html",
+        context=CONTEXT,
+    )
+
+
+@app.post("/", response_class=HTMLResponse)
+def update_library_context(
+    request: Request,
+    library: Annotated[str, Form()],
+    destination: Annotated[str, Form()],
+    page_title: str = "Overload Web",
+):
+    CONTEXT.update(
+        {"page_title": page_title, "library": library, "destination": destination}
+    )
     return templates.TemplateResponse(
         request=request,
         name="home.html",
