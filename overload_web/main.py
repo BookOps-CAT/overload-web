@@ -1,11 +1,13 @@
 from typing import Annotated, Any, Dict
+
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from overload_web import services, config, schemas, constants
+from overload_web import config, constants
+from overload_web.adapters import schemas
 from overload_web.domain import model
-
+from overload_web.services import handlers
 
 app = FastAPI()
 templates = Jinja2Templates(directory="overload_web/templates")
@@ -19,10 +21,7 @@ CONTEXT: Dict[str, Any] = {
 
 
 @app.get("/", response_class=HTMLResponse)
-def root(
-    request: Request,
-    page_title: str = "Overload Web",
-):
+def root(request: Request, page_title: str = "Overload Web"):
     CONTEXT.update({"page_title": page_title})
     return templates.TemplateResponse(
         request=request,
@@ -32,10 +31,7 @@ def root(
 
 
 @app.get("/vendor_file")
-def vendor_file_page(
-    request: Request,
-    page_title: str = "Process Vendor File",
-):
+def vendor_file_page(request: Request, page_title: str = "Process Vendor File"):
     CONTEXT.update({"page_title": page_title})
     return templates.TemplateResponse(request=request, name="pvf.html", context=CONTEXT)
 
@@ -47,7 +43,7 @@ def vendor_file_process(
     template: Annotated[schemas.OrderTemplateModel, Depends(schemas.get_template)],
     page_title: str = "Process Vendor File Output",
 ):
-    processed_bib = services.process_file(
+    processed_bib = handlers.process_file(
         sierra_service=config.get_sierra_service(library=order.library),
         order_data=model.Order(**order.model_dump()),
         template=model.OrderTemplate(**template.model_dump()),
