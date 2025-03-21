@@ -87,3 +87,9 @@ class OverloadOrder(BookopsMarcOrder):
     @property
     def vendor_title_no(self) -> Optional[str]:
         return self._get_subfield_from_following_field("i")
+
+
+class ProcessVendorFileForm(BaseModel):
+    library: str
+    destination: Optional[str] = None
+    template_data: OrderTemplateModel

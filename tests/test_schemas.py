@@ -20,8 +20,7 @@ def test_OrderBibModel(stub_order, library):
     }
 
 
-@pytest.mark.parametrize("library", ["nypl", "bpl"])
-def test_OrderTemplateModel(stub_template, library):
+def test_OrderTemplateModel(stub_template):
     template = schemas.OrderTemplateModel(**stub_template.__dict__)
     assert template.model_dump() == stub_template.__dict__
 
@@ -71,3 +70,17 @@ def test_OverloadOrder_no_var_fields(stub_960):
     assert order.vendor_code == "btlea"
     assert order.venNotes is None
     assert order.vendor_title_no is None
+
+
+@pytest.mark.parametrize(
+    "library, destination", [("nypl", "branches"), ("nypl", "research"), ("bpl", None)]
+)
+def test_ProcessVendorFileForm(stub_template, library, destination):
+    form_data = schemas.ProcessVendorFileForm(
+        library=library, destination=destination, template_data=stub_template.__dict__
+    )
+    assert form_data.model_dump() == {
+        "library": library,
+        "destination": destination,
+        "template_data": stub_template.__dict__,
+    }
