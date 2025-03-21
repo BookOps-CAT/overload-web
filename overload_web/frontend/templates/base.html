@@ -28,23 +28,6 @@
               </ul>
             </li>
           </ul>
-        <ul class="navbar-nav d-flex ms-auto">
-          {% if library=="bpl" or library=="nypl" %}
-          <li class="nav-item">
-            <a class="nav-link active" style="color: white;" aria-current="page">{{library.upper()}}</a>
-          </li>
-            {% if library=="nypl" and destination=="branches" or destination=="research"%}
-          <li class="nav-item">
-            <a class="nav-link active" style="color: white;" aria-current="page">{{destination.title()}}</a>
-            {%else%}
-          </li>
-            {%endif%}
-          {%else%}
-          <li class="nav-item">
-            <a class="nav-link active" style="color: white;" aria-current="page">Library System Not Selected</a>
-          </li> 
-          {%endif%}
-        </ul>
       </div>
     {% endblock %}
     </nav>

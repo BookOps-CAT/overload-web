@@ -11,9 +11,8 @@
 {% endblock %}
 {% block header %}{{ page_title }}{% endblock %}  
 {% block content %}
-<h6>BookOps Cataloging Department browser-based toolbox.</h6>
-<form action="/" method="post" enctype="multipart/form-data">
-    <div class="container text-left"> 
+<form action="/vendor_file" method="post" enctype="multipart/form-data">
+    <div class="container text-left">         
         <h5>Library System</h5>
         <div class="row row-cols-2 gy-1 my-2">
             <div class="col">
@@ -22,8 +21,9 @@
             <div class="col">
                 {{ form.dropdown("destination", "Destination", {"branches": "Branches", "research": "Research"})}}
             </div>
-        </div>
-        <button type="submit" class="btn my-3" style="border-color: #d52828; border: border-3">Submit</button>
+        </div>        
+        <button type="submit" class="btn my-3" style="border-color: #d52828; border: border-3">Submit</button>  
     </div>
 </form>
-{% endblock %}
+
+{% endblock %}  

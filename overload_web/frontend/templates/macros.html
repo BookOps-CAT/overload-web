@@ -41,6 +41,31 @@
 {%endfor%}
 {%- endmacro %}
 
+{% macro pvf_form(library_system, field_constants) -%}
+<form action="/vendor_file/{{library_system}}" method="post" enctype="multipart/form-data">
+    <div class="container text-left">               
+        <h5>Order File</h5>            
+        <div class="row row-cols-2 gy-1 my-2">
+            <div class="col">
+                <input class="form-control" type="file" id="marc_file" name="marc_file">
+            </div>
+        </div>   
+        <h5>Apply Template</h5>                   
+        <div class="row row-cols-1 gy-1 my-2">   
+        <div class="accordion" id="template_accordion">
+            <div class="accordion-item">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#accordion-collapseOne" aria-expanded="false" aria-controls="accordion-collapseOne" style="background-color: white; color: black;">Enter Template Data</button>
+                <div id="accordion-collapseOne" class="accordion-collapse collapse" data-bs-parent="#template_accordion">
+                    <div class="accordion-body">
+                    {{ template_fields(field_constants) }}
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="btn my-3" style="border-color: #d52828; border: border-3">Submit</button>
+        </div>    
+    </div>
+</form>
+{%- endmacro %}
 
 {% macro bib_output(bib, order='', template='') -%}
 <h2>Output</h2>
