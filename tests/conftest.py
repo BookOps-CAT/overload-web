@@ -1,11 +1,13 @@
-from bookops_marc import Bib
 import pytest
+from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
-from overload_web.domain.model import Order, OrderBib, OrderTemplate
+
+from overload_web.adapters import schemas
 from overload_web.adapters.sierra_adapters import (
-    SierraService,
     AbstractSierraSession,
+    SierraService,
 )
+from overload_web.domain.model import Order, OrderBib, OrderTemplate
 
 
 class MockSierraAdapter(AbstractSierraSession):
@@ -179,4 +181,11 @@ def stub_template():
         primary_matchpoint="isbn",
         secondary_matchpoint=None,
         tertiary_matchpoint=None,
+    )
+
+
+@pytest.fixture
+def stub_pvf_form_data(stub_template, library, destination):
+    return schemas.ProcessVendorFileForm(
+        template_data=stub_template, library=library, destination=destination
     )

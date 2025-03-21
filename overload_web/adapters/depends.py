@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import datetime
-from typing import Annotated, List, Optional, Union
+from typing import Annotated, Any, List, Optional, Union
 
 from bookops_marc import Bib, SierraBibReader
-from fastapi import Form, Request, UploadFile
+from fastapi import Form, UploadFile
 
 from overload_web.adapters import schemas
 from overload_web.domain import model
@@ -108,11 +108,19 @@ def order_mapper(record: Bib) -> List[model.Order]:
     ]
 
 
-def read_marc_file(
-    marc_file: UploadFile, request: Request
-) -> List[schemas.OrderBibModel]:
+def process_input(
+    file: Annotated[Any, UploadFile],
+    form_data: Annotated[Any, Form()],
+) -> tuple:
+    form_data = schemas.ProcessVendorFileForm.model_validate(
+        form_data, from_attributes=True
+    )
+    all_records = read_marc_file(file, form_data.library)
+    return form_data, all_records
+
+
+def read_marc_file(marc_file: UploadFile, library: str) -> List[schemas.OrderBibModel]:
     record_list = []
-    library = request.url.path.split("/")[-1].split("_")[0]
     reader = SierraBibReader(marc_file.file, library=library, hide_utf8_warnings=True)
     for record in reader:
         record_list.append(

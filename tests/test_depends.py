@@ -40,3 +40,17 @@ def test_read_marc_file(stub_bib, library):
     bib_file = UploadFile(file=io.BytesIO(stub_bib.as_marc()), filename="test.mrc")
     bib_list = depends.read_marc_file(bib_file, library)
     assert len(bib_list) == 1
+
+
+@pytest.mark.parametrize(
+    "library, destination", [("nypl", "branches"), ("nypl", "research"), ("bpl", None)]
+)
+def test_process_input(stub_pvf_form_data, stub_bib, library, destination):
+    bib_file = UploadFile(file=io.BytesIO(stub_bib.as_marc()), filename="test.mrc")
+    data, records = depends.process_input(file=bib_file, form_data=stub_pvf_form_data)
+    assert hasattr(data, "library")
+    assert hasattr(data, "destination")
+    assert hasattr(data, "template_data")
+    assert len(records) == 1
+    assert hasattr(records[0], "library")
+    assert records[0].library == library
