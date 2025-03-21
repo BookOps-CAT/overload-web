@@ -74,20 +74,6 @@ def test_OverloadOrder_no_var_fields(stub_960):
     assert order.vendor_title_no is None
 
 
-@pytest.mark.parametrize(
-    "library, destination", [("nypl", "branches"), ("nypl", "research"), ("bpl", None)]
-)
-def test_ProcessVendorFileForm(stub_template, library, destination):
-    form_dict = stub_template.__dict__
-    form_dict["library"] = library
-    form_dict["destination"] = destination
-    form_data = schemas.ProcessVendorFileForm(**form_dict)
-    model_data = form_data.model_dump()
-    assert model_data["library"] == library
-    assert model_data["destination"] == destination
-    assert model_data.keys() == form_dict.keys()
-
-
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
 def test_order_mapper(stub_bib):
     orders = schemas.order_mapper(stub_bib)

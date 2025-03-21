@@ -93,13 +93,6 @@ class OverloadOrder(BookopsMarcOrder):
         return self._get_subfield_from_following_field("i")
 
 
-class ProcessVendorFileForm(BaseModel, model.OrderTemplate):
-    model_config = ConfigDict(from_attributes=True)
-
-    library: str
-    destination: Optional[str] = None
-
-
 def get_form_data(
     library: Annotated[str, Form()],
     create_date: Annotated[Optional[Union[datetime.datetime, str]], Form()] = None,
