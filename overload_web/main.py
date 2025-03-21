@@ -1,6 +1,6 @@
 from typing import Annotated, Any, Dict, List
 
-from fastapi import Depends, FastAPI, Form, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
@@ -30,28 +30,8 @@ def root(request: Request, page_title: str = "Overload Web"):
     )
 
 
-@app.post("/", response_class=HTMLResponse)
-def update_library_context(
-    request: Request,
-    library: Annotated[str, Form()],
-    destination: Annotated[str, Form()],
-    page_title: str = "Overload Web",
-):
-    CONTEXT.update(
-        {"page_title": page_title, "library": library, "destination": destination}
-    )
-    return templates.TemplateResponse(
-        request=request,
-        name="home.html",
-        context=CONTEXT,
-    )
-
-
 @app.get("/vendor_file")
-def vendor_file_page(
-    request: Request,
-    page_title: str = "Process Vendor File",
-):
+def vendor_file_page(request: Request, page_title: str = "Process Vendor File"):
     CONTEXT.update({"page_title": page_title})
     return templates.TemplateResponse(request=request, name="pvf.html", context=CONTEXT)
 
