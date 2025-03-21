@@ -1,7 +1,9 @@
 from __future__ import annotations
+
 from typing import List
-from overload_web.domain import model
+
 from overload_web.adapters import sierra_adapters
+from overload_web.domain import model
 
 
 def apply_template(
