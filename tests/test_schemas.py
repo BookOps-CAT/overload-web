@@ -1,6 +1,8 @@
 import datetime
+import io
 
 import pytest
+from fastapi import UploadFile
 
 from overload_web.adapters import schemas
 from overload_web.domain import model
@@ -76,11 +78,46 @@ def test_OverloadOrder_no_var_fields(stub_960):
     "library, destination", [("nypl", "branches"), ("nypl", "research"), ("bpl", None)]
 )
 def test_ProcessVendorFileForm(stub_template, library, destination):
-    form_data = schemas.ProcessVendorFileForm(
-        library=library, destination=destination, template_data=stub_template.__dict__
-    )
-    assert form_data.model_dump() == {
-        "library": library,
-        "destination": destination,
-        "template_data": stub_template.__dict__,
-    }
+    form_dict = stub_template.__dict__
+    form_dict["library"] = library
+    form_dict["destination"] = destination
+    form_data = schemas.ProcessVendorFileForm(**form_dict)
+    model_data = form_data.model_dump()
+    assert model_data["library"] == library
+    assert model_data["destination"] == destination
+    assert model_data.keys() == form_dict.keys()
+
+
+@pytest.mark.parametrize("library", ["nypl", "bpl"])
+def test_order_mapper(stub_bib):
+    orders = schemas.order_mapper(stub_bib)
+    assert len(orders) == 1
+    assert orders[0].audience == "a"
+    assert stub_bib.orders[0].created == orders[0].create_date
+    assert orders[0].create_date == datetime.date(2025, 1, 1)
+    assert orders[0].internal_note == "foo"
+
+
+@pytest.mark.parametrize("library", ["nypl", "bpl"])
+def test_order_mapper_end_of_record(stub_bib):
+    stub_bib.remove_fields("961")
+    orders = schemas.order_mapper(stub_bib)
+    assert len(orders) == 1
+    assert orders[0].audience == "a"
+    assert stub_bib.orders[0].created == orders[0].create_date
+    assert orders[0].create_date == datetime.date(2025, 1, 1)
+    assert orders[0].internal_note is None
+
+
+@pytest.mark.parametrize("library", ["nypl", "bpl"])
+def test_order_mapper_no_960(stub_bib):
+    stub_bib.remove_fields("960", "961")
+    orders = schemas.order_mapper(stub_bib)
+    assert orders == []
+
+
+@pytest.mark.parametrize("library", ["nypl", "bpl"])
+def test_read_marc_file(stub_bib, library):
+    bib_file = UploadFile(file=io.BytesIO(stub_bib.as_marc()), filename="test.mrc")
+    bib_list = schemas.read_marc_file(bib_file, library)
+    assert len(bib_list) == 1
