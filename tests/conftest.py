@@ -2,7 +2,6 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.adapters import schemas
 from overload_web.adapters.sierra_adapters import (
     AbstractSierraSession,
     SierraService,
@@ -185,7 +184,8 @@ def stub_template():
 
 
 @pytest.fixture
-def stub_pvf_form_data(stub_template, library, destination):
-    return schemas.ProcessVendorFileForm(
-        template_data=stub_template, library=library, destination=destination
-    )
+def stub_pvf_form_data(stub_template, library, destination) -> dict:
+    form_dict = stub_template.__dict__
+    form_dict["library"] = library
+    form_dict["destination"] = destination
+    return form_dict
