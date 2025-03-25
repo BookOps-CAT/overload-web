@@ -1,10 +1,12 @@
 import os
+
 import pytest
 import yaml
+
 from overload_web.adapters.sierra_adapters import (
+    AbstractSierraSession,
     BPLSolrSession,
     NYPLPlatformSession,
-    AbstractSierraSession,
 )
 
 
@@ -76,7 +78,7 @@ class TestLiveSierraSession:
     def test_NYPLPlatformSession_get_bibs_by_id(self):
         with NYPLPlatformSession() as session:
             matched_bib = session.get_bibs_by_id("isbn", "9780316230032")
-            assert matched_bib == ["21730445"]
+            assert matched_bib == ["21730445", "21790265"]
 
 
 @pytest.mark.usefixtures("mock_sierra_session")
