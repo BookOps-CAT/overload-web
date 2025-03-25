@@ -164,3 +164,9 @@ MATCHPOINTS: list[Dict[str, Any]] = [
     }
     for i in ["primary", "secondary", "tertiary"]
 ]
+
+FIELD_CONSTANTS: Dict[str, Any] = {
+    "fixed_fields": TEMPLATE_FIXED_FIELDS,
+    "var_fields": TEMPLATE_VAR_FIELDS,
+    "matchpoints": MATCHPOINTS,
+}
