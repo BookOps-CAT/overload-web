@@ -10,7 +10,7 @@ from overload_web.domain import model
 from overload_web.services import handlers
 
 app = FastAPI()
-templates = Jinja2Templates(directory="overload_web/templates")
+templates = Jinja2Templates(directory="overload_web/frontend/templates")
 
 CONTEXT: Dict[str, Any] = {
     "application": constants.APPLICATION,
