@@ -1,10 +1,10 @@
 import pytest
 
-from overload_web.domain.model import Order, OrderTemplate
 from overload_web.adapters.sierra_adapters import (
-    SierraService,
     AbstractSierraSession,
+    SierraService,
 )
+from overload_web.domain.model import Order, OrderTemplate
 
 
 class MockSierraAdapter(AbstractSierraSession):
@@ -92,25 +92,25 @@ def stub_order(library):
 @pytest.fixture
 def stub_template():
     return OrderTemplate(
-        "2024-01-01",
-        "$20.00",
-        "10001adbk",
-        "5",
-        "spa",
-        "xxu",
-        "0049",
-        "a",
-        "b",
-        "a",
-        "d",
-        "p",
-        "o",
-        "foo",
-        None,
-        "bar",
-        None,
-        None,
-        "isbn",
-        None,
-        None,
+        create_date="2024-01-01",
+        price="$20.00",
+        fund="10001adbk",
+        copies="5",
+        lang="spa",
+        country="xxu",
+        vendor_code="0049",
+        format="a",
+        selector="b",
+        audience="a",
+        source="d",
+        order_type="p",
+        status="o",
+        internal_note="foo",
+        var_field_isbn=None,
+        vendor_notes="bar",
+        vendor_title_no=None,
+        blanket_po=None,
+        primary_matchpoint="isbn",
+        secondary_matchpoint=None,
+        tertiary_matchpoint=None,
     )
