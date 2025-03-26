@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 import logging
 import os
+from abc import ABC, abstractmethod
 from typing import List
 
-from bookops_nypl_platform import PlatformSession, PlatformToken
-from bookops_bpl_solr import SolrSession
 import requests
+from bookops_bpl_solr import SolrSession
+from bookops_nypl_platform import PlatformSession, PlatformToken
 
-from overload_web.domain import model
+from overload_web.domain import refactored_model
+
 from .. import __title__, __version__
 
 logger = logging.getLogger(__name__)
@@ -21,10 +22,12 @@ class SierraService:
     def __init__(self, session: AbstractSierraSession):
         self.session = session
 
-    def get_all_bib_ids(self, order: model.Order, match_keys: List[str]) -> List[str]:
+    def get_all_bib_ids(
+        self, order_bib: refactored_model.OrderBib, match_keys: List[str]
+    ) -> List[str]:
         bibs = []
         for key in match_keys:
-            bibs = self.session.get_bibs_by_id(key, getattr(order, f"{key}"))
+            bibs = self.session.get_bibs_by_id(key, getattr(order_bib, f"{key}"))
             if not bibs:
                 continue
         return bibs
