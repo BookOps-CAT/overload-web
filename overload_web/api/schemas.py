@@ -1,9 +1,13 @@
 from __future__ import annotations
+
 import datetime
 import json
-from typing import Annotated, List, Optional, Union
+from typing import Annotated, Optional, Union
+
 from fastapi import Form, UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+
+from overload_web.domain import model
 
 
 def get_template(
@@ -27,8 +31,8 @@ def get_template(
     primary_matchpoint: Annotated[Optional[str], Form()],
     secondary_matchpoint: Annotated[Optional[str], Form()],
     tertiary_matchpoint: Annotated[Optional[str], Form()],
-) -> OrderTemplateModel:
-    return OrderTemplateModel(
+) -> TemplateModel:
+    return TemplateModel(
         create_date=create_date,
         fund=fund,
         vendor_code=vendor_code,
@@ -60,53 +64,41 @@ def get_order_file(
     return OrderModel(**order)
 
 
-class OrderModel(BaseModel):
-    library: str
-    create_date: Union[datetime.datetime, str]
-    locations: List[str]
-    shelves: List[str]
-    price: Union[str, int]
-    fund: str
-    copies: Union[str, int]
-    lang: str
-    country: str
-    vendor_code: str
-    format: str
-    selector: str
-    audience: str
-    source: str
-    order_type: str
-    status: str
-    internal_note: Optional[str]
-    var_field_isbn: Optional[str]
-    vendor_notes: Optional[str]
-    vendor_title_no: Optional[str]
-    blanket_po: Optional[str]
-    bib_id: Optional[Union[str, int]]
-    upc: Optional[Union[str, int]]
-    isbn: Optional[Union[str, int]]
-    oclc_number: Optional[Union[str, int]]
+class OrderModel(BaseModel, model.Order):
+    model_config = ConfigDict(from_attributes=True)
 
 
-class OrderTemplateModel(BaseModel):
-    create_date: Optional[Union[datetime.datetime, str]] = None
-    price: Optional[Union[str, int]] = None
-    fund: Optional[str] = None
-    copies: Optional[Union[str, int]] = None
-    lang: Optional[str] = None
-    country: Optional[str] = None
-    vendor_code: Optional[str] = None
-    format: Optional[str] = None
-    selector: Optional[str] = None
-    audience: Optional[str] = None
-    source: Optional[str] = None
-    order_type: Optional[str] = None
-    status: Optional[str] = None
-    internal_note: Optional[str] = None
-    var_field_isbn: Optional[str] = None
-    vendor_notes: Optional[str] = None
-    vendor_title_no: Optional[str] = None
-    blanket_po: Optional[str] = None
-    primary_matchpoint: Optional[str] = None
-    secondary_matchpoint: Optional[str] = None
-    tertiary_matchpoint: Optional[str] = None
+class OrderBibModel(BaseModel, model.OrderBib):
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TemplateModel(BaseModel, model.Template):
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FormDataModel:
+    model_config = ConfigDict(from_attributes=True)
+
+    library: Annotated[str, Form()]
+    create_date: Annotated[Optional[Union[datetime.datetime, str]], Form()] = None
+    price: Annotated[Optional[Union[str, int]], Form()] = None
+    fund: Annotated[Optional[str], Form()] = None
+    copies: Annotated[Optional[Union[str, int]], Form()] = None
+    lang: Annotated[Optional[str], Form()] = None
+    country: Annotated[Optional[str], Form()] = None
+    vendor_code: Annotated[Optional[str], Form()] = None
+    format: Annotated[Optional[str], Form()] = None
+    selector: Annotated[Optional[str], Form()] = None
+    selector_note: Annotated[Optional[str], Form()] = None
+    source: Annotated[Optional[str], Form()] = None
+    order_type: Annotated[Optional[str], Form()] = None
+    status: Annotated[Optional[str], Form()] = None
+    internal_note: Annotated[Optional[str], Form()] = None
+    var_field_isbn: Annotated[Optional[str], Form()] = None
+    vendor_notes: Annotated[Optional[str], Form()] = None
+    vendor_title_no: Annotated[Optional[str], Form()] = None
+    blanket_po: Annotated[Optional[str], Form()] = None
+    primary_matchpoint: Annotated[Optional[str], Form()] = None
+    secondary_matchpoint: Annotated[Optional[str], Form()] = None
+    tertiary_matchpoint: Annotated[Optional[str], Form()] = None
+    destination: Annotated[Optional[str], Form()] = None
