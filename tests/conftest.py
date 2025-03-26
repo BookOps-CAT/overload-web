@@ -5,7 +5,7 @@ from overload_web.adapters.sierra_adapters import (
     AbstractSierraSession,
     SierraService,
 )
-from overload_web.domain.model import Order, OrderTemplate
+from overload_web.domain.model import Order, OrderBib, Template
 
 
 class MockSierraAdapter(AbstractSierraSession):
@@ -64,12 +64,10 @@ def mock_st_post_response(monkeypatch):
 
 
 @pytest.fixture
-def stub_order(library):
+def stub_order():
     return Order(
-        library=library,
         create_date="2024-01-01",
         locations=["(4)fwa0f", "(2)bca0f", "gka0f"],
-        shelves=["0f", "0f", "0f"],
         price="$5.00",
         fund="25240adbk",
         copies="7",
@@ -78,6 +76,7 @@ def stub_order(library):
         vendor_code="0049",
         format="a",
         selector="b",
+        selector_note=None,
         audience="a",
         source="d",
         order_type="p",
@@ -92,7 +91,7 @@ def stub_order(library):
 
 @pytest.fixture
 def stub_template():
-    return OrderTemplate(
+    return Template(
         create_date="2024-01-01",
         price="$20.00",
         fund="10001adbk",
@@ -115,6 +114,11 @@ def stub_template():
         secondary_matchpoint=None,
         tertiary_matchpoint=None,
     )
+
+
+@pytest.fixture
+def stub_orderbib(stub_order, library):
+    return OrderBib(library=library, orders=[stub_order])
 
 
 @pytest.fixture

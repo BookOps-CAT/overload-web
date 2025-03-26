@@ -9,7 +9,7 @@ import requests
 from bookops_bpl_solr import SolrSession
 from bookops_nypl_platform import PlatformSession, PlatformToken
 
-from overload_web.domain import refactored_model
+from overload_web.domain import model
 
 from .. import __title__, __version__
 
@@ -23,7 +23,7 @@ class SierraService:
         self.session = session
 
     def get_all_bib_ids(
-        self, order_bib: refactored_model.OrderBib, match_keys: List[str]
+        self, order_bib: model.OrderBib, match_keys: List[str]
     ) -> List[str]:
         bibs = []
         for key in match_keys:

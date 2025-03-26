@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from overload_web import config, constants
-from overload_web.adapters import schemas
+from overload_web.api import schemas
 from overload_web.domain import model
 from overload_web.services import handlers
 
