@@ -118,22 +118,22 @@ TEMPLATE_FIXED_FIELDS: list = [
     {
         "name": "Audience",
         "id": "audience",
-        "values": AUDIENCE,
+        "values": {k: f"{k} ({v.title()})" for k, v in AUDIENCE.items()},
     },
     {
         "name": "Order Type",
         "id": "order_type",
-        "values": ORDER_TYPE,
+        "values": {k: f"{k} ({v.title()})" for k, v in ORDER_TYPE.items()},
     },
     {
         "name": "Format",
         "id": "format",
-        "values": FORMAT,
+        "values": {k: f"{k} ({v.title()})" for k, v in FORMAT.items()},
     },
     {
         "name": "Selector",
         "id": "selector",
-        "values": SELECTOR,
+        "values": {k: f"{k} ({v.title()})" for k, v in SELECTOR.items()},
     },
     {
         "name": "Country",
@@ -143,7 +143,7 @@ TEMPLATE_FIXED_FIELDS: list = [
     {
         "name": "Language",
         "id": "lang",
-        "values": LANG,
+        "values": {k: f"{k} ({v.title()})" for k, v in LANG.items()},
     },
 ]
 

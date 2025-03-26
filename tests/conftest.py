@@ -1,4 +1,5 @@
 import pytest
+from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
 from overload_web.adapters.sierra_adapters import (
@@ -169,3 +170,21 @@ def stub_961():
             Subfield(code="m", value="baz"),
         ],
     )
+
+
+@pytest.fixture
+def stub_bib(library, stub_960, stub_961):
+    bib = Bib()
+    bib.leader = "02866pam  2200517 i 4500"
+    bib.library = library
+    bib.add_field(stub_960)
+    bib.add_field(stub_961)
+    return bib
+
+
+@pytest.fixture
+def stub_pvf_form_data(stub_template, library, destination) -> dict:
+    form_dict = stub_template.__dict__
+    form_dict["library"] = library
+    form_dict["destination"] = destination
+    return form_dict

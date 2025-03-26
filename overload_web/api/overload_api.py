@@ -1,59 +1,46 @@
-from typing import Annotated, Any, Dict
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi.responses import JSONResponse
 
-from overload_web import config, constants
+from overload_web import config
 from overload_web.api import schemas
 from overload_web.domain import model
 from overload_web.services import handlers
 
 api_router = APIRouter()
-templates = Jinja2Templates(directory="overload_web/frontend/templates")
-
-CONTEXT: Dict[str, Any] = {
-    "application": constants.APPLICATION,
-    "fixed_fields": constants.TEMPLATE_FIXED_FIELDS,
-    "variable_fields": constants.TEMPLATE_VAR_FIELDS,
-    "matchpoints": constants.MATCHPOINTS,
-}
 
 
-@api_router.get("/", response_class=HTMLResponse)
-def root(request: Request, page_title: str = "Overload Web"):
-    CONTEXT.update({"page_title": page_title})
-    return templates.TemplateResponse(
-        request=request,
-        name="home.html",
-        context=CONTEXT,
-    )
-
-
-@api_router.get("/vendor_file")
-def vendor_file_page(request: Request, page_title: str = "Process Vendor File"):
-    CONTEXT.update({"page_title": page_title})
-    return templates.TemplateResponse(request=request, name="pvf.html", context=CONTEXT)
+@api_router.get("/")
+def root() -> JSONResponse:
+    return JSONResponse(content={"app": "Overload Web"})
 
 
 @api_router.post("/vendor_file")
 def vendor_file_process(
-    request: Request,
-    order: Annotated[schemas.OrderModel, Depends(schemas.get_order_file)],
-    template: Annotated[schemas.OrderTemplateModel, Depends(schemas.get_template)],
-    page_title: str = "Process Vendor File Output",
-):
-    processed_bib = handlers.process_file(
-        sierra_service=config.get_sierra_service(library=order.library),
-        order_data=model.Order(**order.model_dump()),
-        template=model.OrderTemplate(**template.model_dump()),
-    )
-    CONTEXT.update(
-        {
-            "page_title": page_title,
-            "template": template,
-            "order": order,
-            "bib": processed_bib,
+    file: Annotated[UploadFile, File(...)],
+    form_data: Annotated[Any, Depends(schemas.get_form_data)],
+) -> JSONResponse:
+    library, destination, template = form_data
+    processed_bibs = []
+    order_bibs = schemas.read_marc_file(marc_file=file, library=library)
+    for bib in order_bibs:
+        processed_bibs.append(
+            handlers.process_file(
+                sierra_service=config.get_sierra_service(library=library),
+                order_bib=model.OrderBib(
+                    bib_id=bib.bib_id, orders=bib.orders, library=library
+                ),
+                template=model.Template(**template.model_dump()),
+            )
+        )
+    processed_bib_models = [
+        schemas.OrderBibModel.from_domain_model(i) for i in processed_bibs
+    ]
+    template_model = schemas.TemplateModel.from_domain_model(template=template)
+    return JSONResponse(
+        content={
+            "processed_bibs": [i.model_dump() for i in processed_bib_models],
+            "template": template_model.model_dump(),
         }
     )
-    return templates.TemplateResponse(request=request, name="pvf.html", context=CONTEXT)
