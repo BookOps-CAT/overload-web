@@ -1,67 +1,14 @@
 from __future__ import annotations
 
 import datetime
-import json
-from typing import Annotated, Optional, Union
+from typing import Annotated, List, Optional, Union
 
+from bookops_marc import Bib, SierraBibReader
 from fastapi import Form, UploadFile
 from pydantic import BaseModel, ConfigDict
 
+from overload_web.adapters import marc_adapters
 from overload_web.domain import model
-
-
-def get_template(
-    create_date: Annotated[Optional[Union[datetime.datetime, str]], Form()],
-    price: Annotated[Optional[Union[str, int]], Form()],
-    fund: Annotated[Optional[str], Form()],
-    copies: Annotated[Optional[Union[str, int]], Form()],
-    lang: Annotated[Optional[str], Form()],
-    country: Annotated[Optional[str], Form()],
-    vendor_code: Annotated[Optional[str], Form()],
-    format: Annotated[Optional[str], Form()],
-    selector: Annotated[Optional[str], Form()],
-    source: Annotated[Optional[str], Form()],
-    order_type: Annotated[Optional[str], Form()],
-    status: Annotated[Optional[str], Form()],
-    internal_note: Annotated[Optional[str], Form()],
-    var_field_isbn: Annotated[Optional[str], Form()],
-    vendor_notes: Annotated[Optional[str], Form()],
-    vendor_title_no: Annotated[Optional[str], Form()],
-    blanket_po: Annotated[Optional[str], Form()],
-    primary_matchpoint: Annotated[Optional[str], Form()],
-    secondary_matchpoint: Annotated[Optional[str], Form()],
-    tertiary_matchpoint: Annotated[Optional[str], Form()],
-) -> TemplateModel:
-    return TemplateModel(
-        create_date=create_date,
-        fund=fund,
-        vendor_code=vendor_code,
-        vendor_title_no=vendor_title_no,
-        selector=selector,
-        source=source,
-        order_type=order_type,
-        price=price,
-        status=status,
-        internal_note=internal_note,
-        var_field_isbn=var_field_isbn,
-        vendor_notes=vendor_notes,
-        copies=copies,
-        format=format,
-        lang=lang,
-        country=country,
-        blanket_po=blanket_po,
-        primary_matchpoint=primary_matchpoint,
-        secondary_matchpoint=secondary_matchpoint,
-        tertiary_matchpoint=tertiary_matchpoint,
-    )
-
-
-def get_order_file(
-    order_file: UploadFile,
-) -> OrderModel:
-    order_data = order_file.file
-    order = json.load(order_data)
-    return OrderModel(**order)
 
 
 class OrderModel(BaseModel, model.Order):
@@ -102,3 +49,49 @@ class FormDataModel:
     secondary_matchpoint: Annotated[Optional[str], Form()] = None
     tertiary_matchpoint: Annotated[Optional[str], Form()] = None
     destination: Annotated[Optional[str], Form()] = None
+
+
+def order_mapper(record: Bib) -> List[model.Order]:
+    return [
+        OrderModel(
+            audience=order.audience,
+            blanket_po=order.blanket_po,
+            copies=order.copies,
+            country=order.country,
+            create_date=order.created,
+            format=order.form,
+            fund=order.fund,
+            internal_note=order.internal_note,
+            lang=order.lang,
+            locations=order.locs,
+            order_type=order.order_type,
+            price=order.price,
+            selector=order.selector,
+            selector_note=order.selector_note,
+            source=order.source,
+            status=order.status,
+            var_field_isbn=order.var_field_isbn,
+            vendor_code=order.vendor_code,
+            vendor_notes=order.venNotes,
+            vendor_title_no=order.vendor_title_no,
+        )
+        for order in marc_adapters.OverloadOrder.orders_from_bib(record)
+    ]
+
+
+def read_marc_file(marc_file: UploadFile, library: str) -> List[OrderBibModel]:
+    record_list = []
+    reader = SierraBibReader(marc_file.file, library=library, hide_utf8_warnings=True)
+    for record in reader:
+        overload_orders = marc_adapters.OverloadOrder.orders_from_bib(record)
+        record_list.append(
+            OrderBibModel(
+                orders=order_mapper(record),
+                bib_id=record.sierra_bib_id,
+                isbn=record.isbn,
+                oclc_number=list(record.oclc_nos.values()),
+                upc=record.upc_number,
+                library=library,
+            )
+        )
+    return record_list
