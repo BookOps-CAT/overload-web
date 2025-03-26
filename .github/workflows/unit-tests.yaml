@@ -23,7 +23,7 @@ jobs:
       - name: Install Poetry with pipx
         run: pipx install poetry
       - name: Install dependencies with poetry
-        run: poetry install --no-root --without docs
+        run: poetry install --no-root
       - name: Run tests
         run: poetry run pytest -m "not livetest" --cov=overload_web/
       - name: Send report to Coveralls
