@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, File, UploadFile
 from fastapi.responses import JSONResponse
 
 from overload_web import config
+from overload_web.adapters import depends
 from overload_web.api import schemas
 from overload_web.domain import model
 from overload_web.services import handlers
@@ -19,7 +20,7 @@ def root() -> JSONResponse:
 @api_router.post("/vendor_file")
 def vendor_file_process(
     file: Annotated[UploadFile, File(...)],
-    form_data: Annotated[Any, Depends(schemas.get_form_data)],
+    form_data: Annotated[Any, Depends(depends.get_form_data)],
 ) -> JSONResponse:
     library, destination, template = form_data
     processed_bibs = []
