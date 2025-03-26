@@ -1,4 +1,5 @@
 import pytest
+from pymarc import Field, Indicators, Subfield
 
 from overload_web.adapters.sierra_adapters import (
     AbstractSierraSession,
@@ -113,4 +114,54 @@ def stub_template():
         primary_matchpoint="isbn",
         secondary_matchpoint=None,
         tertiary_matchpoint=None,
+    )
+
+
+@pytest.fixture
+def stub_960():
+    return Field(
+        tag="960",
+        indicators=Indicators(" ", " "),
+        subfields=[
+            Subfield(code="a", value="l"),
+            Subfield(code="b", value="-"),
+            Subfield(code="c", value="j"),
+            Subfield(code="d", value="c"),
+            Subfield(code="e", value="d"),
+            Subfield(code="f", value="a"),
+            Subfield(code="g", value="b"),
+            Subfield(code="h", value="-"),
+            Subfield(code="i", value="l"),
+            Subfield(code="j", value="-"),
+            Subfield(code="m", value="o"),
+            Subfield(code="n", value="-"),
+            Subfield(code="o", value="13"),
+            Subfield(code="p", value="  -  -  "),
+            Subfield(code="q", value="01-01-25"),
+            Subfield(code="r", value="  -  -  "),
+            Subfield(code="s", value="{{dollar}}13.20"),
+            Subfield(code="t", value="agj0y"),
+            Subfield(code="u", value="lease"),
+            Subfield(code="v", value="btlea"),
+            Subfield(code="w", value="eng"),
+            Subfield(code="x", value="xxu"),
+            Subfield(code="y", value="1"),
+            Subfield(code="z", value=".o10000010"),
+        ],
+    )
+
+
+@pytest.fixture
+def stub_961():
+    return Field(
+        tag="961",
+        indicators=Indicators(" ", " "),
+        subfields=[
+            Subfield(code="d", value="foo"),
+            Subfield(code="f", value="bar"),
+            Subfield(code="h", value="baz"),
+            Subfield(code="i", value="foo"),
+            Subfield(code="l", value="bar"),
+            Subfield(code="m", value="baz"),
+        ],
     )
