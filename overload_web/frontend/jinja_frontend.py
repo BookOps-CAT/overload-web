@@ -19,3 +19,9 @@ CONTEXT: Dict[str, Any] = {
 def root(request: Request, page_title: str = "Overload Web"):
     CONTEXT.update({"page_title": page_title, "request": request})
     return templates.TemplateResponse("home.html", CONTEXT)
+
+
+@frontend_router.get("/vendor_file")
+def vendor_file_page(request: Request, page_title: str = "Process Vendor File"):
+    CONTEXT.update({"page_title": page_title, "request": request})
+    return templates.TemplateResponse("pvf.html", CONTEXT)
