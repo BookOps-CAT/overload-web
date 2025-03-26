@@ -1,6 +1,7 @@
-from typing import Annotated, Any, Dict, List
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi.responses import JSONResponse
 
 from overload_web import config
 from overload_web.api import schemas
@@ -11,15 +12,15 @@ api_router = APIRouter()
 
 
 @api_router.get("/")
-def root() -> Dict[str, str]:
-    return {"app": "Overload Web"}
+def root() -> JSONResponse:
+    return JSONResponse(content={"app": "Overload Web"})
 
 
 @api_router.post("/vendor_file")
 def vendor_file_process(
     file: Annotated[UploadFile, File(...)],
     form_data: Annotated[Any, Depends(schemas.get_form_data)],
-) -> List[model.OrderBib]:
+) -> JSONResponse:
     library, destination, template = form_data
     processed_bibs = []
     order_bibs = schemas.read_marc_file(marc_file=file, library=library)
@@ -33,4 +34,13 @@ def vendor_file_process(
                 template=model.Template(**template.model_dump()),
             )
         )
-    return processed_bibs
+    processed_bib_models = [
+        schemas.OrderBibModel.from_domain_model(i) for i in processed_bibs
+    ]
+    template_model = schemas.TemplateModel.from_domain_model(template=template)
+    return JSONResponse(
+        content={
+            "processed_bibs": [i.model_dump() for i in processed_bib_models],
+            "template": template_model.model_dump(),
+        }
+    )

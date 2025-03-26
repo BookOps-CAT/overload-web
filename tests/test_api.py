@@ -44,8 +44,8 @@ class TestAPIRouter:
         json_response = response.json()
         assert response.status_code == 200
         assert response.url == f"{self.client.base_url}/vendor_file"
-        assert isinstance(json_response, list)
-        assert sorted(list(json_response[0].keys())) == sorted(
+        assert isinstance(json_response, dict)
+        assert sorted(list(json_response["processed_bibs"][0].keys())) == sorted(
             ["bib_id", "isbn", "upc", "oclc_number", "orders", "library"]
         )
 

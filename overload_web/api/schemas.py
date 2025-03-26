@@ -14,13 +14,76 @@ from overload_web.domain import model
 class OrderModel(BaseModel, model.Order):
     model_config = ConfigDict(from_attributes=True)
 
+    @classmethod
+    def from_domain_model(cls, order: model.Order) -> OrderModel:
+        return OrderModel(
+            audience=order.audience,
+            blanket_po=order.blanket_po,
+            copies=order.copies,
+            country=order.country,
+            create_date=order.create_date,
+            format=order.format,
+            fund=order.fund,
+            internal_note=order.internal_note,
+            lang=order.lang,
+            locations=order.locations,
+            order_type=order.order_type,
+            price=order.price,
+            selector=order.selector,
+            selector_note=order.selector_note,
+            source=order.source,
+            status=order.status,
+            var_field_isbn=order.var_field_isbn,
+            vendor_code=order.vendor_code,
+            vendor_notes=order.vendor_notes,
+            vendor_title_no=order.vendor_title_no,
+        )
+
 
 class OrderBibModel(BaseModel, model.OrderBib):
     model_config = ConfigDict(from_attributes=True)
 
+    @classmethod
+    def from_domain_model(cls, order_bib: model.OrderBib) -> OrderBibModel:
+        return OrderBibModel(
+            library=order_bib.library,
+            orders=order_bib.orders,
+            bib_id=order_bib.bib_id,
+            isbn=order_bib.isbn,
+            oclc_number=order_bib.oclc_number,
+            upc=order_bib.upc,
+        )
+
 
 class TemplateModel(BaseModel, model.Template):
     model_config = ConfigDict(from_attributes=True)
+
+    @classmethod
+    def from_domain_model(cls, template: model.Template) -> TemplateModel:
+        return TemplateModel(
+            audience=template.audience,
+            blanket_po=template.blanket_po,
+            copies=template.copies,
+            country=template.country,
+            create_date=template.create_date,
+            format=template.format,
+            fund=template.fund,
+            internal_note=template.internal_note,
+            lang=template.lang,
+            order_type=template.order_type,
+            price=template.price,
+            selector=template.selector,
+            selector_note=template.selector_note,
+            source=template.source,
+            status=template.status,
+            var_field_isbn=template.var_field_isbn,
+            vendor_code=template.vendor_code,
+            vendor_notes=template.vendor_notes,
+            vendor_title_no=template.vendor_title_no,
+            primary_matchpoint=template.primary_matchpoint,
+            secondary_matchpoint=template.secondary_matchpoint,
+            tertiary_matchpoint=template.tertiary_matchpoint,
+        )
 
 
 class FormDataModel:
