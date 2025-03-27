@@ -12,7 +12,7 @@ class OverloadBib(Bib):
     @property
     def orders(self) -> Sequence[OverloadOrder]:
         orders = []
-        for field in self.fields:
+        for field in self:
             if field.tag == "960":
                 try:
                     following_field = self.fields[self.pos]
