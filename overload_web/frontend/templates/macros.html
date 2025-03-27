@@ -1,41 +1,44 @@
-{% macro input(name, value='', display='') -%} 
-<label for="{{ name }}" class="form-label">{{display}}</label> 
-<input type="{{ type }}" class="form-control" value="{{ value|e }}" name="{{ name }}" aria-label="{{ name }}" id="{{name}}">
+{% macro text_input(id, name) -%}
+<div class="form-floating">
+<input type="text" class="form-control" value="{{ value|e }}" name="{{ id }}" aria-label="{{ id }}" id="{{id}}">
+<label for="{{id}}">{{name}}</label>
+</div>
 {%- endmacro %}
 
-{% macro selectbox(name, display='', values={}) -%}  
-<label for="{{ name }}" class="form-label">{{display}}</label> 
-<select class="form-select" aria-label="{{name}}" name="{{name}}", id="{{name}}">
+{% macro dropdown(id, name, values) -%}
+<div class="form-floating">
+<select class="form-select" aria-label="{{id}}" name="{{id}}", id="{{id}}">
     <option selected value=""></option>       
         {% for k, v in values.items() %}
-        <option value="{{k}}">{{k}} ({{v.title()}})</option>
+        <option value="{{k}}">{{v}}</option>
         {%endfor%}
-    </select>
+</select>
+<label for="{{id}}">{{name}}</label>
+</div>
 {%- endmacro %}
 
-{% macro create_input(field) -%}
-{% set id=field['id']%}
-<label for="{{ id }}" class="form-label">{{field["name"]}}</label>
-{% if "values" in field %}
-    <select class="form-select" aria-label="{{id}}" name="{{id}}", id="{{id}}">
-        <option selected value=""></option>       
-            {% for k, v in field["values"].items() %}
-            <option value="{{k}}">{{k}} ({{v.title()}})</option>
-            {%endfor%}
-    </select>
-{%else%}
-    <input type="text" class="form-control" value="{{ value|e }}" name="{{ id }}" aria-label="{{ id }}" id="{{id}}">
-{%endif%}
-{%- endmacro %}
 
-{% macro template_form(fields) -%}
-<div class="row row-cols-3 gy-1 my-2">
-    {% for field in fields %}
-    <div class="col">
-        {{create_input(field)}}
+{% macro template_fields(fields) -%}
+{% for type,fields in fields.items()%}
+    {% if type=="fixed_fields"%}
+        <h5>Order Fixed Fields</h5>
+    {% elif type=="var_fields"%}
+        <h5>Order Variable Fields</h5>
+    {% elif type=="matchpoints"%}
+        <h5>Sierra Matchpoints</h5> 
+    {%endif%}
+    <div class="row row-cols-3 gy-1 my-2">
+        {% for field in fields %}
+        <div class="col">
+            {% if "values" in field %}
+                {{dropdown(field['id'], field['name'], field['values'])}}
+            {%else%}
+                {{text_input(field['id'], field['name'])}}    
+            {%endif%}          
+        </div> 
+        {%endfor%} 
     </div>
-    {%endfor%}
-</div>    
+{%endfor%}
 {%- endmacro %}
 
 
