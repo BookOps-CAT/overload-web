@@ -27,14 +27,15 @@ def vendor_file_process(
     template: schemas.TemplateModel = Depends(schemas.TemplateModel.from_form_data),
 ) -> Sequence[schemas.OrderBibModel]:
     processed_bibs = []
+
     order_bibs = bib_factory.binary_to_domain_list(bib_data=file.file, library=library)
+    model_template = template_factory.to_domain(template=template)
+    service = config.get_sierra_service(library=library)
 
     for bib in order_bibs:
         processed_bibs.append(
             handlers.process_file(
-                sierra_service=config.get_sierra_service(library=library),
-                order_bib=bib,
-                template=template_factory.to_domain(template),
+                sierra_service=service, order_bib=bib, template=model_template
             )
         )
     return [bib_factory.to_pydantic(i) for i in processed_bibs]
