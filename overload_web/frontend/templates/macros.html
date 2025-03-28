@@ -40,17 +40,3 @@
     </div>
 {%endfor%}
 {%- endmacro %}
-
-
-
-{% macro bib_output(bib, order='', template='') -%}
-<h2>Output</h2>
-<h4>Bib ID: </h4>
-{{ bib.bib_id }}
-<h4>Order: </h4>
-{{order}}
-<h4>Template: </h4>
-{{template}}
-<h4>Processed Bib: </h4>
-{{bib.__dict__}}
-{%- endmacro %}
