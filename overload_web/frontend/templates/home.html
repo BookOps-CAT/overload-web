@@ -1,12 +1,17 @@
 {% extends 'base.html' %}
-{% block head %}
-    {{ super() }}
-{% endblock %}
-{% block title %}
-    {{ super() }}
-{% endblock %}
-{% block nav %}
-    {{ super() }}
+{% block nav_links %}
+<li class="nav-item">
+    <a class="nav-link active" href="{{ url_for('root') }}">Home</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" href="#">Get Bib</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" href="{{ url_for('vendor_file_page') }}">Process Vendor File</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" href="#">Worldcat2Sierra</a>
+</li>
 {% endblock %}
 {% block header %}{{ page_title }}{% endblock %}  
 {% block content %}

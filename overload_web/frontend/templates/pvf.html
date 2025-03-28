@@ -1,46 +1,92 @@
-{% extends 'base.html' %}
-{% import "macros.html" as form %} 
+{% extends 'home.html' %}
+{% import "macros.html" as macro %} 
 {% block head %}
     {{ super() }}
+<script>
+    async function submitForm(event) {
+        event.preventDefault(); 
+        
+        const formData = new FormData(document.querySelector('form'));
+
+        const response = await fetch('/vendor_file', {
+            method: 'POST',
+            body: formData,
+        });
+
+        const results = await response.json(); 
+        const outputDiv = document.getElementById('output');
+        if (response.ok) {
+              let htmlContent = '<ul>';
+              results.forEach(result => {
+                  htmlContent += `
+                      <li>
+                          <strong>Library: </strong>${result.library}<br>
+                          <strong>Bib ID: </strong>${result.bib_id}<br>
+                          <strong>ISBN: </strong>${result.isbn}<br>
+                          <strong>OCLC Number: </strong>${result.oclc_number}<br>
+                          <strong>UPC: </strong>${result.upc}<br>
+                          <em>Order languages: ${result.orders.map(order => order.lang).join(', ')}</em>
+                          <em>Order locations: ${result.orders.map(order => order.locations).join(', ')}</em>
+                      </li>
+                  `;
+              });
+              htmlContent += '</ul>';
+              outputDiv.innerHTML = htmlContent;
+          } else {
+              outputDiv.innerHTML = `<p style="color: red;">Failed to load items</p>`;
+          }          
+    }
+</script>   
 {% endblock %}
-{% block title %}
-    {{ super() }}
-{% endblock %}
-{% block nav %}
-    {{ super() }}
+{% block nav_links %}
+<li class="nav-item">
+    <a class="nav-link" href="{{ url_for('root') }}">Home</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" href="#">Get Bib</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link active" href="{{ url_for('vendor_file_page') }}">Process Vendor File</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" href="#">Worldcat2Sierra</a>
+</li>
 {% endblock %}
 {% block header %}{{ page_title }}{% endblock %}  
 {% block content %}
-<form action="/vendor_file" method="post" enctype="multipart/form-data">
-    <div class="container text-left">
-        <div class="row row-cols-2 gy-1 my-2">   
+<form onsubmit="submitForm(event)">    
+    <div class="container text-left"> 
+        <h5>Library System</h5>
+        <div class="row row-cols-2 gy-1 my-2">
             <div class="col">
-                <h5>Order File</h5>
-                <input class="form-control" type="file" id="order_file" name="order_file"> 
-            </div>  
-        </div> 
-        <h5>Record Template</h5>
-        <div class="accordion accordion" id="template_accordion">
+                {{ macro.dropdown("library", "Library", {"bpl": "BPL", "nypl": "NYPL"})}}
+            </div>
+            <div class="col">
+                {{ macro.dropdown("destination", "Destination", {"branches": "Branches", "research": "Research"})}}
+            </div>
+        </div>                       
+        <h5>Order File</h5>            
+        <div class="row row-cols-2 gy-1 my-2">
+            <div class="col">
+                <input class="form-control" type="file" id="file" name="file">
+            </div>
+        </div>   
+        <h5>Apply Template</h5>                   
+        <div class="row row-cols-1 gy-1 my-2">   
+        <div class="accordion" id="template_accordion">
             <div class="accordion-item">
-                <h2 class="accordion-header" id="template-headingOne">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#template-collapseOne" aria-expanded="false" aria-controls="template-collapseOne" style="background-color: white; color: black;">Enter Template Data</button></h2>
-                <div id="template-collapseOne" class="accordion-collapse collapse" aria-labelledby="template-headingOne" data-bs-parent="#template_accordion">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#accordion-collapseOne" aria-expanded="false" aria-controls="accordion-collapseOne" style="background-color: white; color: black;">Enter Template Data</button>
+                <div id="accordion-collapseOne" class="accordion-collapse collapse" data-bs-parent="#template_accordion">
                     <div class="accordion-body">
-                        <h5>Order Fixed Fields</h5>
-                        {{ form.template_form(fixed_fields) }}
-                        <h5>Order Variable Fields</h5>
-                        {{ form.template_form(variable_fields) }}
-                        <h5>Sierra Matchpoints</h5>
-                        {{ form.template_form(matchpoints) }}                        
+                    {{ macro.template_fields(field_constants) }}
                     </div>
                 </div>
             </div>
-        </div>        
-        <button type="submit" class="btn my-3" style="border-color: #d52828; border: border-3">Submit</button>
+            <button type="submit" class="btn my-3" style="border-color: #d52828; border: border-3">Submit</button>
+        </div>    
     </div>
 </form>
 
-{% if bib is defined %}
-    {{ form.bib_output(bib, order, template) }}
-{%endif%}
+<div id="output"></div> 
+
 {% endblock %}  
