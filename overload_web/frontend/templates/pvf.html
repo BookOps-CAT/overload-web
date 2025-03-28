@@ -1,5 +1,5 @@
-{% extends 'base.html' %}
-{% import "macros.html" as form %} 
+{% extends 'home.html' %}
+{% import "macros.html" as macro %} 
 {% block head %}
     {{ super() }}
 <script>
@@ -38,6 +38,20 @@
     }
 </script>   
 {% endblock %}
+{% block nav_links %}
+<li class="nav-item">
+    <a class="nav-link" href="{{ url_for('root') }}">Home</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" href="#">Get Bib</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link active" href="{{ url_for('vendor_file_page') }}">Process Vendor File</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" href="#">Worldcat2Sierra</a>
+</li>
+{% endblock %}
 {% block header %}{{ page_title }}{% endblock %}  
 {% block content %}
 <form onsubmit="submitForm(event)">    
@@ -45,10 +59,10 @@
         <h5>Library System</h5>
         <div class="row row-cols-2 gy-1 my-2">
             <div class="col">
-                {{ form.dropdown("library", "Library", {"bpl": "BPL", "nypl": "NYPL"})}}
+                {{ macro.dropdown("library", "Library", {"bpl": "BPL", "nypl": "NYPL"})}}
             </div>
             <div class="col">
-                {{ form.dropdown("destination", "Destination", {"branches": "Branches", "research": "Research"})}}
+                {{ macro.dropdown("destination", "Destination", {"branches": "Branches", "research": "Research"})}}
             </div>
         </div>                       
         <h5>Order File</h5>            
@@ -64,7 +78,7 @@
                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#accordion-collapseOne" aria-expanded="false" aria-controls="accordion-collapseOne" style="background-color: white; color: black;">Enter Template Data</button>
                 <div id="accordion-collapseOne" class="accordion-collapse collapse" data-bs-parent="#template_accordion">
                     <div class="accordion-body">
-                    {{ form.template_fields(field_constants) }}
+                    {{ macro.template_fields(field_constants) }}
                     </div>
                 </div>
             </div>
