@@ -14,6 +14,7 @@ bookops-nypl-platform = {git = "https://github.com/BookOps-CAT/bookops-nypl-plat
 bookops-bpl-solr = {git = "https://github.com/BookOps-CAT/bookops-bpl-solr.git"}
 fastapi = {extras = ["standard"], version = "^0.115.6"}
 bookops-marc = {git = "http://github.com/BookOps-CAT/bookops-marc.git", rev = "releases/v0.12.0"}
+sqlalchemy = "^2.0.40"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
