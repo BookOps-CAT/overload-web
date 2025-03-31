@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import BinaryIO, Generic, Sequence, TypeVar, Union
+from typing import BinaryIO, Generic, Optional, Sequence, TypeVar, Union
 
 from overload_web.adapters import marc_adapters
 from overload_web.api import schemas
@@ -195,6 +195,110 @@ class TemplateFactory(
         template: Union[model.Template, schemas.TemplateModel],
     ) -> schemas.TemplateModel:
         return schemas.TemplateModel(
+            audience=template.audience,
+            blanket_po=template.blanket_po,
+            copies=template.copies,
+            country=template.country,
+            create_date=template.create_date,
+            format=template.format,
+            fund=template.fund,
+            internal_note=template.internal_note,
+            lang=template.lang,
+            order_type=template.order_type,
+            price=template.price,
+            selector=template.selector,
+            selector_note=template.selector_note,
+            source=template.source,
+            status=template.status,
+            var_field_isbn=template.var_field_isbn,
+            vendor_code=template.vendor_code,
+            vendor_notes=template.vendor_notes,
+            vendor_title_no=template.vendor_title_no,
+            primary_matchpoint=template.primary_matchpoint,
+            secondary_matchpoint=template.secondary_matchpoint,
+            tertiary_matchpoint=template.tertiary_matchpoint,
+        )
+
+
+class PersistentTemplateFactory(
+    GenericFactory[
+        Union[
+            model.Template,
+            schemas.TemplateModel,
+            model.PersistentTemplate,
+            schemas.PersistentTemplateModel,
+        ],
+        model.PersistentTemplate,
+        schemas.PersistentTemplateModel,
+    ]
+):
+
+    def to_domain(
+        self,
+        template: Union[
+            model.PersistentTemplate,
+            model.Template,
+            schemas.PersistentTemplateModel,
+            schemas.TemplateModel,
+        ],
+        id: Optional[Union[int, str]] = None,
+        name: Optional[str] = None,
+        agent: Optional[str] = None,
+    ) -> model.PersistentTemplate:
+        id = template.id if hasattr(template, "id") else id
+        name = template.name if hasattr(template, "name") else name
+        agent = template.agent if hasattr(template, "agent") else agent
+        if not id or not name or not agent:
+            raise TypeError
+        return model.PersistentTemplate(
+            id=id,
+            name=name,
+            agent=agent,
+            audience=template.audience,
+            blanket_po=template.blanket_po,
+            copies=template.copies,
+            country=template.country,
+            create_date=template.create_date,
+            format=template.format,
+            fund=template.fund,
+            internal_note=template.internal_note,
+            lang=template.lang,
+            order_type=template.order_type,
+            price=template.price,
+            selector=template.selector,
+            selector_note=template.selector_note,
+            source=template.source,
+            status=template.status,
+            var_field_isbn=template.var_field_isbn,
+            vendor_code=template.vendor_code,
+            vendor_notes=template.vendor_notes,
+            vendor_title_no=template.vendor_title_no,
+            primary_matchpoint=template.primary_matchpoint,
+            secondary_matchpoint=template.secondary_matchpoint,
+            tertiary_matchpoint=template.tertiary_matchpoint,
+        )
+
+    def to_pydantic(
+        self,
+        template: Union[
+            model.PersistentTemplate,
+            model.Template,
+            schemas.PersistentTemplateModel,
+            schemas.TemplateModel,
+        ],
+        id: Optional[Union[int, str]] = None,
+        name: Optional[str] = None,
+        agent: Optional[str] = None,
+    ) -> schemas.PersistentTemplateModel:
+        id = template.id if hasattr(template, "id") else id
+        name = template.name if hasattr(template, "name") else name
+        agent = template.agent if hasattr(template, "agent") else agent
+        if not id or not name or not agent:
+            raise TypeError
+        return schemas.PersistentTemplateModel(
+            id=id,
+            name=name,
+            agent=agent,
             audience=template.audience,
             blanket_po=template.blanket_po,
             copies=template.copies,

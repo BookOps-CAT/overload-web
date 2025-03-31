@@ -91,6 +91,21 @@ def stub_template(obj_type, template_data):
         return template_data
 
 
+@pytest.fixture
+def stub_saved_template(obj_type, template_data, id, name, agent):
+    if obj_type == "domain":
+        return model.Template(**template_data)
+    elif obj_type == "pydantic":
+        return schemas.TemplateModel(**template_data)
+    template_data.update({"id": id, "name": name, "agent": agent})
+    if obj_type == "domain_persistent":
+        return model.PersistentTemplate(**template_data)
+    elif obj_type == "pydantic_persistent":
+        return schemas.PersistentTemplateModel(**template_data)
+    else:
+        return template_data
+
+
 class TestGenericFactory:
     GENERIC_FACTORY: object_factories.GenericFactory = object_factories.GenericFactory()
 
@@ -105,47 +120,31 @@ class TestGenericFactory:
         assert str(exc.value) == "Subclasses should implement this method."
 
 
+@pytest.mark.parametrize(
+    "obj_type, data_type",
+    [
+        ("domain", model.Order),
+        ("pydantic", schemas.OrderModel),
+        ("marc", marc_adapters.OverloadOrder),
+    ],
+)
 class TestOrderFactory:
     ORDER_FACTORY: object_factories.GenericFactory = object_factories.OrderFactory()
 
-    @pytest.mark.parametrize(
-        "obj_type, data_type",
-        [
-            ("domain", model.Order),
-            ("pydantic", schemas.OrderModel),
-            ("marc", marc_adapters.OverloadOrder),
-        ],
-    )
-    def test_common_transforms(self, stub_order, data_type, order_data):
+    def test_common_transforms(self, stub_order, obj_type, data_type, order_data):
         order = self.ORDER_FACTORY._common_transforms(stub_order)
         assert isinstance(stub_order, data_type)
         assert isinstance(order, dict)
         assert order == order_data
 
-    @pytest.mark.parametrize(
-        "obj_type, data_type",
-        [
-            ("domain", model.Order),
-            ("pydantic", schemas.OrderModel),
-            ("marc", marc_adapters.OverloadOrder),
-        ],
-    )
-    def test_to_domain(self, stub_order, data_type, order_data):
+    def test_to_domain(self, stub_order, obj_type, data_type, order_data):
         domain_order = model.Order(**order_data)
         order_to_domain = self.ORDER_FACTORY.to_domain(stub_order)
         assert isinstance(stub_order, data_type)
         assert isinstance(order_to_domain, model.Order)
         assert order_to_domain == domain_order
 
-    @pytest.mark.parametrize(
-        "obj_type, data_type",
-        [
-            ("domain", model.Order),
-            ("pydantic", schemas.OrderModel),
-            ("marc", marc_adapters.OverloadOrder),
-        ],
-    )
-    def test_to_pydantic(self, stub_order, data_type, order_data):
+    def test_to_pydantic(self, stub_order, obj_type, data_type, order_data):
         pydantic_order = schemas.OrderModel(**order_data)
         order_to_pydantic = self.ORDER_FACTORY.to_pydantic(stub_order)
         assert isinstance(stub_order, data_type)
@@ -153,20 +152,20 @@ class TestOrderFactory:
         assert order_to_pydantic == pydantic_order
 
 
+@pytest.mark.parametrize(
+    "obj_type, data_type",
+    [
+        ("domain", model.OrderBib),
+        ("pydantic", schemas.OrderBibModel),
+        ("marc", marc_adapters.OverloadBib),
+    ],
+)
+@pytest.mark.parametrize("library", ["bpl", "nypl"])
 class TestOrderBibFactory:
     ORDER_BIB_FACTORY: object_factories.GenericFactory = (
         object_factories.OrderBibFactory()
     )
 
-    @pytest.mark.parametrize(
-        "obj_type, data_type",
-        [
-            ("domain", model.OrderBib),
-            ("pydantic", schemas.OrderBibModel),
-            ("marc", marc_adapters.OverloadBib),
-        ],
-    )
-    @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_common_transforms(self, library, stub_order_bib, data_type, order_data):
         domain_order = model.Order(**order_data)
         order_bib = self.ORDER_BIB_FACTORY._common_transforms(stub_order_bib)
@@ -175,15 +174,6 @@ class TestOrderBibFactory:
         assert order_bib["library"] == library
         assert order_bib["orders"] == [domain_order]
 
-    @pytest.mark.parametrize(
-        "obj_type, data_type",
-        [
-            ("domain", model.OrderBib),
-            ("pydantic", schemas.OrderBibModel),
-            ("marc", marc_adapters.OverloadBib),
-        ],
-    )
-    @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_to_domain(self, library, stub_order_bib, data_type, order_bib_data):
         domain_order_bib = model.OrderBib(**order_bib_data)
         order_bib_to_domain = self.ORDER_BIB_FACTORY.to_domain(stub_order_bib)
@@ -191,15 +181,6 @@ class TestOrderBibFactory:
         assert isinstance(order_bib_to_domain, model.OrderBib)
         assert order_bib_to_domain == domain_order_bib
 
-    @pytest.mark.parametrize(
-        "obj_type, data_type",
-        [
-            ("domain", model.OrderBib),
-            ("pydantic", schemas.OrderBibModel),
-            ("marc", marc_adapters.OverloadBib),
-        ],
-    )
-    @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_to_pydantic(self, library, stub_order_bib, data_type, order_bib_data):
         pydantic_order = schemas.OrderBibModel(**order_bib_data)
         order_bib_to_pydantic = self.ORDER_BIB_FACTORY.to_pydantic(stub_order_bib)
@@ -207,8 +188,9 @@ class TestOrderBibFactory:
         assert isinstance(order_bib_to_pydantic, model.OrderBib)
         assert order_bib_to_pydantic == pydantic_order
 
-    @pytest.mark.parametrize("library", ["bpl", "nypl"])
-    def test_binary_to_domain_list(self, library, stub_bib, order_bib_data):
+    def test_binary_to_domain_list(
+        self, library, stub_bib, data_type, obj_type, order_bib_data
+    ):
         domain_order_bib = model.OrderBib(**order_bib_data)
         binary_bib = io.BytesIO(stub_bib.as_marc())
         domain_list = self.ORDER_BIB_FACTORY.binary_to_domain_list(binary_bib, library)
@@ -216,8 +198,9 @@ class TestOrderBibFactory:
         assert isinstance(domain_list[0], model.OrderBib)
         assert domain_list == [domain_order_bib]
 
-    @pytest.mark.parametrize("library", ["bpl", "nypl"])
-    def test_binary_to_pydantic_list(self, library, stub_bib, order_bib_data):
+    def test_binary_to_pydantic_list(
+        self, library, stub_bib, data_type, obj_type, order_bib_data
+    ):
         pydantic_order_bib = schemas.OrderBibModel(**order_bib_data)
         binary_bib = io.BytesIO(stub_bib.as_marc())
         pydantic_list = self.ORDER_BIB_FACTORY.binary_to_pydantic_list(
@@ -228,35 +211,121 @@ class TestOrderBibFactory:
         assert pydantic_list == [pydantic_order_bib]
 
 
+@pytest.mark.parametrize(
+    "obj_type, data_type",
+    [("domain", model.Template), ("pydantic", schemas.TemplateModel)],
+)
 class TestTemplateFactory:
     TEMPLATE_FACTORY: object_factories.GenericFactory = (
         object_factories.TemplateFactory()
     )
 
-    @pytest.mark.parametrize(
-        "obj_type, data_type",
-        [
-            ("domain", model.Template),
-            ("pydantic", schemas.TemplateModel),
-        ],
-    )
     def test_to_domain(self, obj_type, data_type, stub_template, template_data):
         domain_template = model.Template(**template_data)
-        order_bib_to_domain = self.TEMPLATE_FACTORY.to_domain(stub_template)
+        template_to_domain = self.TEMPLATE_FACTORY.to_domain(stub_template)
         assert isinstance(stub_template, data_type)
-        assert isinstance(order_bib_to_domain, model.Template)
-        assert order_bib_to_domain == domain_template
+        assert isinstance(template_to_domain, model.Template)
+        assert template_to_domain == domain_template
+
+    def test_to_pydantic(self, obj_type, data_type, stub_template, template_data):
+        pydantic_template = schemas.TemplateModel(**template_data)
+        template_to_pydantic = self.TEMPLATE_FACTORY.to_pydantic(stub_template)
+        assert isinstance(stub_template, data_type)
+        assert isinstance(template_to_pydantic, schemas.TemplateModel)
+        assert template_to_pydantic == pydantic_template
+
+
+@pytest.mark.parametrize(
+    "obj_type, data_type",
+    [
+        ("domain", model.Template),
+        ("pydantic", schemas.TemplateModel),
+        ("domain_persistent", model.PersistentTemplate),
+        ("pydantic_persistent", schemas.PersistentTemplateModel),
+    ],
+)
+@pytest.mark.parametrize("id, name, agent", [(1, "Foo Template", "user1")])
+class TestPersistentTemplateFactory:
+    TEMPLATE_FACTORY: object_factories.GenericFactory = (
+        object_factories.PersistentTemplateFactory()
+    )
+
+    def test_to_domain(
+        self, id, name, agent, obj_type, data_type, stub_saved_template, template_data
+    ):
+        template_data.update({"id": id, "name": name, "agent": agent})
+        domain_template = model.PersistentTemplate(**template_data)
+        template_to_domain = self.TEMPLATE_FACTORY.to_domain(
+            stub_saved_template, id, name, agent
+        )
+        assert isinstance(stub_saved_template, data_type)
+        assert isinstance(template_to_domain, model.PersistentTemplate)
+        assert template_to_domain == domain_template
+
+    def test_to_pydantic(
+        self, id, name, agent, obj_type, data_type, stub_saved_template, template_data
+    ):
+        template_data.update({"id": id, "name": name, "agent": agent})
+        pydantic_template = schemas.PersistentTemplateModel(**template_data)
+        template_to_pydantic = self.TEMPLATE_FACTORY.to_pydantic(
+            stub_saved_template, id, name, agent
+        )
+        assert isinstance(stub_saved_template, data_type)
+        assert isinstance(template_to_pydantic, schemas.PersistentTemplateModel)
+        assert template_to_pydantic == pydantic_template
+
+
+class TestPersistentTemplateFactoryErrors:
+    TEMPLATE_FACTORY: object_factories.GenericFactory = (
+        object_factories.PersistentTemplateFactory()
+    )
 
     @pytest.mark.parametrize(
         "obj_type, data_type",
         [
             ("domain", model.Template),
             ("pydantic", schemas.TemplateModel),
+            ("domain_persistent", model.PersistentTemplate),
         ],
     )
-    def test_to_pydantic(self, data_type, stub_template, template_data):
-        pydantic_template = schemas.TemplateModel(**template_data)
-        order_bib_to_pydantic = self.TEMPLATE_FACTORY.to_pydantic(stub_template)
-        assert isinstance(stub_template, data_type)
-        assert isinstance(order_bib_to_pydantic, schemas.TemplateModel)
-        assert order_bib_to_pydantic == pydantic_template
+    @pytest.mark.parametrize("id, name, agent", [(None, None, None)])
+    def test_to_domain_missing_args(
+        self, id, name, agent, obj_type, data_type, stub_saved_template
+    ):
+        with pytest.raises(TypeError) as exc:
+            self.TEMPLATE_FACTORY.to_domain(stub_saved_template, id, name, agent)
+        assert str(exc.value) == ""
+
+    @pytest.mark.parametrize("id, name, agent", [(None, None, None)])
+    def test_to_domain_missing_args_model(self, id, name, agent, template_data):
+        template_data.update({"id": id, "name": name, "agent": agent})
+        with pytest.raises(ValueError) as exc:
+            self.TEMPLATE_FACTORY.to_domain(
+                schemas.PersistentTemplateModel(**template_data), id, name, agent
+            )
+        assert "4 validation errors for PersistentTemplateModel" in str(exc.value)
+
+    @pytest.mark.parametrize(
+        "obj_type, data_type",
+        [
+            ("domain", model.Template),
+            ("pydantic", schemas.TemplateModel),
+            ("domain_persistent", model.PersistentTemplate),
+        ],
+    )
+    @pytest.mark.parametrize("id, name, agent", [(None, None, None)])
+    def test_to_pydantic_missing_args(
+        self, id, name, agent, obj_type, data_type, stub_saved_template
+    ):
+        with pytest.raises(TypeError) as exc:
+            self.TEMPLATE_FACTORY.to_pydantic(stub_saved_template, id, name, agent)
+        assert str(exc.value) == ""
+
+    @pytest.mark.parametrize("id, name, agent", [(None, None, None)])
+    def test_to_pydantic_missing_args_model(self, id, name, agent, template_data):
+        template_data.update({"id": id, "name": name, "agent": agent})
+        with pytest.raises(ValueError) as exc:
+            self.TEMPLATE_FACTORY.to_pydantic(
+                schemas.PersistentTemplateModel(**template_data), id, name, agent
+            )
+        assert "4 validation errors for PersistentTemplateModel" in str(exc.value)

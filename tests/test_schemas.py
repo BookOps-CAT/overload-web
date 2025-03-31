@@ -1,3 +1,5 @@
+import datetime
+
 import pytest
 
 from overload_web.api import schemas
@@ -47,3 +49,17 @@ def test_OrderBibModel(stub_order, library):
 def test_TemplateModel(stub_template):
     template = schemas.TemplateModel(**stub_template.__dict__)
     assert template.model_dump() == stub_template.__dict__
+
+
+def test_PersistentTemplateModel(stub_template):
+    template_data = stub_template.__dict__
+    template_data.update(
+        {
+            "id": 1,
+            "name": "Foo Template",
+            "agent": "user1",
+            "create_date": datetime.date(2024, 1, 1),
+        }
+    )
+    template = schemas.PersistentTemplateModel(**template_data)
+    assert template.model_dump() == template_data

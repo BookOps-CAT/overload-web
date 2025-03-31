@@ -68,3 +68,7 @@ class TemplateModel(BaseModel, model.Template):
             secondary_matchpoint=secondary_matchpoint,
             tertiary_matchpoint=tertiary_matchpoint,
         )
+
+
+class PersistentTemplateModel(BaseModel, model.PersistentTemplate):
+    model_config = ConfigDict(from_attributes=True)
