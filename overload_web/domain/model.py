@@ -5,15 +5,6 @@ from dataclasses import asdict, dataclass
 from typing import List, Optional, Union
 
 
-def apply_template(bib: OrderBib, template: Template) -> OrderBib:
-    for order in bib.orders:
-        template_dict = asdict(template)
-        for k, v in template_dict.items():
-            if v and "matchpoint" not in k:
-                setattr(order, k, v)
-    return bib
-
-
 @dataclass
 class OrderBib:
     library: str
@@ -29,6 +20,13 @@ class OrderBib:
             self.all_bib_ids = bib_ids
         else:
             self.all_bib_ids = []
+
+    def apply_template(self, template: Template) -> None:
+        for order in self.orders:
+            template_dict = asdict(template)
+            for k, v in template_dict.items():
+                if v and "matchpoint" not in k:
+                    setattr(order, k, v)
 
 
 @dataclass

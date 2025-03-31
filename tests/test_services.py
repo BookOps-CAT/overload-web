@@ -6,7 +6,7 @@ from overload_web.services import handlers
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
 def test_apply_template(stub_orderbib, stub_template):
     original_fund = stub_orderbib.orders[0].fund
-    new_bib = handlers.apply_template(bib=stub_orderbib, template=stub_template)
+    new_bib = handlers.apply_template(order_bib=stub_orderbib, template=stub_template)
     assert new_bib.orders[0].fund == "10001adbk"
     assert original_fund == "25240adbk"
 

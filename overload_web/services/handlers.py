@@ -4,9 +4,11 @@ from overload_web.adapters import sierra_adapters
 from overload_web.domain import model
 
 
-def apply_template(bib: model.OrderBib, template: model.Template) -> model.OrderBib:
-    model.apply_template(bib=bib, template=template)
-    return bib
+def apply_template(
+    order_bib: model.OrderBib, template: model.Template
+) -> model.OrderBib:
+    order_bib.apply_template(template=template)
+    return order_bib
 
 
 def process_file(
@@ -19,4 +21,5 @@ def process_file(
             order_bib=order_bib, match_keys=template.matchpoints
         )
     )
-    return model.apply_template(bib=order_bib, template=template)
+    order_bib.apply_template(template=template)
+    return order_bib
