@@ -55,7 +55,7 @@ class Order:
     vendor_title_no: Optional[str]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Template:
     audience: Optional[str] = None
     blanket_po: Optional[str] = None
@@ -92,3 +92,10 @@ class Template:
             ]
             if i
         ]
+
+
+@dataclass(kw_only=True)
+class PersistentTemplate(Template):
+    id: Union[int, str]
+    name: str
+    agent: str
