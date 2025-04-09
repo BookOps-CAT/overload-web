@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import BinaryIO, Generic, Sequence, TypeVar, Union
+from typing import BinaryIO, Generic, Optional, Sequence, TypeVar, Union
 
 from overload_web.adapters import marc_adapters
 from overload_web.api import schemas
@@ -26,7 +26,6 @@ class OrderFactory(
         schemas.OrderModel,
     ]
 ):
-
     def _common_transforms(
         self,
         order: Union[model.Order, schemas.OrderModel, marc_adapters.OverloadOrder],
@@ -91,20 +90,18 @@ class OrderFactory(
         return schemas.OrderModel(**self._common_transforms(order=order))
 
 
-class OrderBibFactory(
+class BibFactory(
     GenericFactory[
-        Union[model.OrderBib, schemas.OrderBibModel, marc_adapters.OverloadBib],
-        model.OrderBib,
-        schemas.OrderBibModel,
+        Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
+        model.DomainBib,
+        schemas.BibModel,
     ]
 ):
     order_factory = OrderFactory()
 
     def _common_transforms(
         self,
-        order_bib: Union[
-            model.OrderBib, schemas.OrderBibModel, marc_adapters.OverloadBib
-        ],
+        order_bib: Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
     ) -> dict:
         if isinstance(order_bib, marc_adapters.OverloadBib):
             order_factory = OrderFactory()
@@ -127,31 +124,27 @@ class OrderBibFactory(
 
     def to_domain(
         self,
-        order_bib: Union[
-            model.OrderBib, schemas.OrderBibModel, marc_adapters.OverloadBib
-        ],
-    ) -> model.OrderBib:
-        return model.OrderBib(**self._common_transforms(order_bib=order_bib))
+        order_bib: Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
+    ) -> model.DomainBib:
+        return model.DomainBib(**self._common_transforms(order_bib=order_bib))
 
     def to_pydantic(
         self,
-        order_bib: Union[
-            model.OrderBib, schemas.OrderBibModel, marc_adapters.OverloadBib
-        ],
-    ) -> schemas.OrderBibModel:
-        return schemas.OrderBibModel(**self._common_transforms(order_bib=order_bib))
+        order_bib: Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
+    ) -> schemas.BibModel:
+        return schemas.BibModel(**self._common_transforms(order_bib=order_bib))
 
     def binary_to_domain_list(
         self, bib_data: BinaryIO, library: str
-    ) -> Sequence[model.OrderBib]:
+    ) -> Sequence[model.DomainBib]:
         marc_list = [i for i in marc_adapters.read_marc_file(bib_data, library=library)]
-        return [model.OrderBib(**self._common_transforms(i)) for i in marc_list]
+        return [model.DomainBib(**self._common_transforms(i)) for i in marc_list]
 
     def binary_to_pydantic_list(
         self, bib_data: BinaryIO, library: str
-    ) -> Sequence[schemas.OrderBibModel]:
+    ) -> Sequence[schemas.BibModel]:
         marc_list = [i for i in marc_adapters.read_marc_file(bib_data, library=library)]
-        return [schemas.OrderBibModel(**self._common_transforms(i)) for i in marc_list]
+        return [schemas.BibModel(**self._common_transforms(i)) for i in marc_list]
 
 
 class TemplateFactory(
@@ -195,6 +188,109 @@ class TemplateFactory(
         template: Union[model.Template, schemas.TemplateModel],
     ) -> schemas.TemplateModel:
         return schemas.TemplateModel(
+            audience=template.audience,
+            blanket_po=template.blanket_po,
+            copies=template.copies,
+            country=template.country,
+            create_date=template.create_date,
+            format=template.format,
+            fund=template.fund,
+            internal_note=template.internal_note,
+            lang=template.lang,
+            order_type=template.order_type,
+            price=template.price,
+            selector=template.selector,
+            selector_note=template.selector_note,
+            source=template.source,
+            status=template.status,
+            var_field_isbn=template.var_field_isbn,
+            vendor_code=template.vendor_code,
+            vendor_notes=template.vendor_notes,
+            vendor_title_no=template.vendor_title_no,
+            primary_matchpoint=template.primary_matchpoint,
+            secondary_matchpoint=template.secondary_matchpoint,
+            tertiary_matchpoint=template.tertiary_matchpoint,
+        )
+
+
+class PersistentTemplateFactory(
+    GenericFactory[
+        Union[
+            model.Template,
+            schemas.TemplateModel,
+            model.PersistentTemplate,
+            schemas.PersistentTemplateModel,
+        ],
+        model.PersistentTemplate,
+        schemas.PersistentTemplateModel,
+    ]
+):
+    def to_domain(
+        self,
+        template: Union[
+            model.PersistentTemplate,
+            model.Template,
+            schemas.PersistentTemplateModel,
+            schemas.TemplateModel,
+        ],
+        id: Optional[Union[int, str]] = None,
+        name: Optional[str] = None,
+        agent: Optional[str] = None,
+    ) -> model.PersistentTemplate:
+        id = template.id if hasattr(template, "id") else id
+        name = template.name if hasattr(template, "name") else name
+        agent = template.agent if hasattr(template, "agent") else agent
+        if not id or not name or not agent:
+            raise TypeError
+        return model.PersistentTemplate(
+            id=id,
+            name=name,
+            agent=agent,
+            audience=template.audience,
+            blanket_po=template.blanket_po,
+            copies=template.copies,
+            country=template.country,
+            create_date=template.create_date,
+            format=template.format,
+            fund=template.fund,
+            internal_note=template.internal_note,
+            lang=template.lang,
+            order_type=template.order_type,
+            price=template.price,
+            selector=template.selector,
+            selector_note=template.selector_note,
+            source=template.source,
+            status=template.status,
+            var_field_isbn=template.var_field_isbn,
+            vendor_code=template.vendor_code,
+            vendor_notes=template.vendor_notes,
+            vendor_title_no=template.vendor_title_no,
+            primary_matchpoint=template.primary_matchpoint,
+            secondary_matchpoint=template.secondary_matchpoint,
+            tertiary_matchpoint=template.tertiary_matchpoint,
+        )
+
+    def to_pydantic(
+        self,
+        template: Union[
+            model.PersistentTemplate,
+            model.Template,
+            schemas.PersistentTemplateModel,
+            schemas.TemplateModel,
+        ],
+        id: Optional[Union[int, str]] = None,
+        name: Optional[str] = None,
+        agent: Optional[str] = None,
+    ) -> schemas.PersistentTemplateModel:
+        id = template.id if hasattr(template, "id") else id
+        name = template.name if hasattr(template, "name") else name
+        agent = template.agent if hasattr(template, "agent") else agent
+        if not id or not name or not agent:
+            raise TypeError
+        return schemas.PersistentTemplateModel(
+            id=id,
+            name=name,
+            agent=agent,
             audience=template.audience,
             blanket_po=template.blanket_po,
             copies=template.copies,

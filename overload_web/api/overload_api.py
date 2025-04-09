@@ -10,7 +10,7 @@ from overload_web.services import handlers
 
 api_router = APIRouter()
 
-bib_factory = object_factories.OrderBibFactory()
+bib_factory = object_factories.BibFactory()
 template_factory = object_factories.TemplateFactory()
 
 
@@ -25,17 +25,17 @@ def vendor_file_process(
     library: Annotated[str, Form()],
     destination: Annotated[Optional[str], Form()] = None,
     template: schemas.TemplateModel = Depends(schemas.TemplateModel.from_form_data),
-) -> Sequence[schemas.OrderBibModel]:
+) -> Sequence[schemas.BibModel]:
     processed_bibs = []
 
-    order_bibs = bib_factory.binary_to_domain_list(bib_data=file.file, library=library)
+    bibs = bib_factory.binary_to_domain_list(bib_data=file.file, library=library)
     model_template = template_factory.to_domain(template=template)
     service = config.get_sierra_service(library=library)
 
-    for bib in order_bibs:
+    for bib in bibs:
         processed_bibs.append(
             handlers.process_file(
-                sierra_service=service, order_bib=bib, template=model_template
+                sierra_service=service, bib=bib, template=model_template
             )
         )
     return [bib_factory.to_pydantic(i) for i in processed_bibs]

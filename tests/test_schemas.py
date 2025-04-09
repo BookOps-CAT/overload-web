@@ -1,3 +1,5 @@
+import datetime
+
 import pytest
 
 from overload_web.api import schemas
@@ -31,10 +33,10 @@ def test_OrderModel(stub_order):
 
 
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
-def test_OrderBibModel(stub_order, library):
-    stub_orderbib = model.OrderBib(library=library, orders=[stub_order])
-    order_bib = schemas.OrderBibModel(**stub_orderbib.__dict__)
-    assert order_bib.model_dump() == {
+def test_BibModel(stub_order, library):
+    stub_domain_bib = model.DomainBib(library=library, orders=[stub_order])
+    bib = schemas.BibModel(**stub_domain_bib.__dict__)
+    assert bib.model_dump() == {
         "bib_id": None,
         "isbn": None,
         "upc": None,
@@ -47,3 +49,17 @@ def test_OrderBibModel(stub_order, library):
 def test_TemplateModel(stub_template):
     template = schemas.TemplateModel(**stub_template.__dict__)
     assert template.model_dump() == stub_template.__dict__
+
+
+def test_PersistentTemplateModel(stub_template):
+    template_data = stub_template.__dict__
+    template_data.update(
+        {
+            "id": 1,
+            "name": "Foo Template",
+            "agent": "user1",
+            "create_date": datetime.date(2024, 1, 1),
+        }
+    )
+    template = schemas.PersistentTemplateModel(**template_data)
+    assert template.model_dump() == template_data

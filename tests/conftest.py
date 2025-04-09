@@ -6,7 +6,7 @@ from overload_web.adapters.sierra_adapters import (
     AbstractSierraSession,
     SierraService,
 )
-from overload_web.domain.model import Order, OrderBib, Template
+from overload_web.domain.model import DomainBib, Order, Template
 
 
 class MockSierraAdapter(AbstractSierraSession):
@@ -65,65 +65,76 @@ def mock_st_post_response(monkeypatch):
 
 
 @pytest.fixture
-def stub_order():
-    return Order(
-        create_date="2024-01-01",
-        locations=["(4)fwa0f", "(2)bca0f", "gka0f"],
-        price="$5.00",
-        fund="25240adbk",
-        copies="7",
-        lang="eng",
-        country="xxu",
-        vendor_code="0049",
-        format="a",
-        selector="b",
-        selector_note=None,
-        audience="a",
-        source="d",
-        order_type="p",
-        status="o",
-        internal_note=None,
-        var_field_isbn=None,
-        vendor_notes=None,
-        vendor_title_no=None,
-        blanket_po=None,
-    )
+def order_data() -> dict:
+    return {
+        "audience": "a",
+        "blanket_po": None,
+        "copies": "7",
+        "country": "xxu",
+        "create_date": "2024-01-01",
+        "format": "a",
+        "fund": "25240adbk",
+        "internal_note": None,
+        "lang": "eng",
+        "locations": ["(4)fwa0f", "(2)bca0f", "gka0f"],
+        "order_type": "p",
+        "price": "$5.00",
+        "selector": "b",
+        "selector_note": None,
+        "source": "d",
+        "status": "o",
+        "var_field_isbn": None,
+        "vendor_code": "0049",
+        "vendor_notes": None,
+        "vendor_title_no": None,
+    }
 
 
 @pytest.fixture
-def stub_template():
-    return Template(
-        create_date="2024-01-01",
-        price="$20.00",
-        fund="10001adbk",
-        copies="5",
-        lang="spa",
-        country="xxu",
-        vendor_code="0049",
-        format="a",
-        selector="b",
-        audience="a",
-        source="d",
-        order_type="p",
-        status="o",
-        internal_note="foo",
-        var_field_isbn=None,
-        vendor_notes="bar",
-        vendor_title_no=None,
-        blanket_po=None,
-        primary_matchpoint="isbn",
-        secondary_matchpoint=None,
-        tertiary_matchpoint=None,
-    )
+def stub_order(order_data) -> Order:
+    return Order(**order_data)
 
 
 @pytest.fixture
-def stub_orderbib(stub_order, library):
-    return OrderBib(library=library, orders=[stub_order])
+def template_data() -> dict:
+    return {
+        "audience": "a",
+        "blanket_po": None,
+        "copies": "5",
+        "country": "xxu",
+        "create_date": "2024-01-01",
+        "format": "a",
+        "fund": "10001adbk",
+        "internal_note": "foo",
+        "lang": "spa",
+        "order_type": "p",
+        "price": "$20.00",
+        "selector": "b",
+        "selector_note": None,
+        "source": "d",
+        "status": "o",
+        "var_field_isbn": None,
+        "vendor_code": "0049",
+        "vendor_notes": "bar",
+        "vendor_title_no": None,
+        "primary_matchpoint": "isbn",
+        "secondary_matchpoint": None,
+        "tertiary_matchpoint": None,
+    }
 
 
 @pytest.fixture
-def stub_960():
+def stub_template(template_data) -> Template:
+    return Template(**template_data)
+
+
+@pytest.fixture
+def stub_domain_bib(order_data, library) -> DomainBib:
+    return DomainBib(library=library, orders=[Order(**order_data)])
+
+
+@pytest.fixture
+def stub_960() -> Field:
     return Field(
         tag="960",
         indicators=Indicators(" ", " "),
@@ -157,7 +168,7 @@ def stub_960():
 
 
 @pytest.fixture
-def stub_961():
+def stub_961() -> Field:
     return Field(
         tag="961",
         indicators=Indicators(" ", " "),
@@ -173,7 +184,7 @@ def stub_961():
 
 
 @pytest.fixture
-def stub_bib(library, stub_960, stub_961):
+def stub_bib(library, stub_960, stub_961) -> Bib:
     bib = Bib()
     bib.leader = "02866pam  2200517 i 4500"
     bib.library = library
@@ -183,8 +194,7 @@ def stub_bib(library, stub_960, stub_961):
 
 
 @pytest.fixture
-def stub_pvf_form_data(stub_template, library, destination) -> dict:
-    form_dict = stub_template.__dict__
-    form_dict["library"] = library
-    form_dict["destination"] = destination
-    return form_dict
+def stub_pvf_form_data(template_data, library, destination) -> dict:
+    template_data["library"] = library
+    template_data["destination"] = destination
+    return template_data

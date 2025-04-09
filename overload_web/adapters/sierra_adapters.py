@@ -23,7 +23,7 @@ class SierraService:
         self.session = session
 
     def get_all_bib_ids(
-        self, order_bib: model.OrderBib, match_keys: List[str]
+        self, order_bib: model.DomainBib, match_keys: List[str]
     ) -> List[str]:
         bibs = []
         for key in match_keys:

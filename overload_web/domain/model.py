@@ -5,17 +5,8 @@ from dataclasses import asdict, dataclass
 from typing import List, Optional, Union
 
 
-def apply_template(bib: OrderBib, template: Template) -> OrderBib:
-    for order in bib.orders:
-        template_dict = asdict(template)
-        for k, v in template_dict.items():
-            if v and "matchpoint" not in k:
-                setattr(order, k, v)
-    return bib
-
-
 @dataclass
-class OrderBib:
+class DomainBib:
     library: str
     orders: List[Order]
     bib_id: Optional[str] = None
@@ -29,6 +20,13 @@ class OrderBib:
             self.all_bib_ids = bib_ids
         else:
             self.all_bib_ids = []
+
+    def apply_template(self, template: Template) -> None:
+        for order in self.orders:
+            template_dict = asdict(template)
+            for k, v in template_dict.items():
+                if v and "matchpoint" not in k:
+                    setattr(order, k, v)
 
 
 @dataclass
@@ -55,7 +53,7 @@ class Order:
     vendor_title_no: Optional[str]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Template:
     audience: Optional[str] = None
     blanket_po: Optional[str] = None
@@ -92,3 +90,10 @@ class Template:
             ]
             if i
         ]
+
+
+@dataclass(kw_only=True)
+class PersistentTemplate(Template):
+    id: Union[int, str]
+    name: str
+    agent: str
