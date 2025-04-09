@@ -13,19 +13,19 @@ class TestOrderTypes:
         assert order.blanket_po is None
 
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
-    def test_OrderBib(self, library, stub_order):
-        bib = model.OrderBib(library=library, orders=[stub_order])
+    def test_DomainBib(self, library, stub_order):
+        bib = model.DomainBib(library=library, orders=[stub_order])
         assert bib.bib_id is None
 
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
-    def test_OrderBib_bib_id(self, library, stub_order):
+    def test_DomainBib_bib_id(self, library, stub_order):
         order = stub_order
-        bib = model.OrderBib(library=library, orders=[order], bib_id="b123456789")
+        bib = model.DomainBib(library=library, orders=[order], bib_id="b123456789")
         assert bib.bib_id == "b123456789"
 
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_model_apply_template(self, library, stub_template, stub_order):
-        bib = model.OrderBib(library=library, orders=[stub_order])
+        bib = model.DomainBib(library=library, orders=[stub_order])
         assert bib.orders[0].fund == "25240adbk"
         bib.apply_template(stub_template)
         assert bib.orders[0].fund == "10001adbk"

@@ -26,7 +26,6 @@ class OrderFactory(
         schemas.OrderModel,
     ]
 ):
-
     def _common_transforms(
         self,
         order: Union[model.Order, schemas.OrderModel, marc_adapters.OverloadOrder],
@@ -91,20 +90,18 @@ class OrderFactory(
         return schemas.OrderModel(**self._common_transforms(order=order))
 
 
-class OrderBibFactory(
+class BibFactory(
     GenericFactory[
-        Union[model.OrderBib, schemas.OrderBibModel, marc_adapters.OverloadBib],
-        model.OrderBib,
-        schemas.OrderBibModel,
+        Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
+        model.DomainBib,
+        schemas.BibModel,
     ]
 ):
     order_factory = OrderFactory()
 
     def _common_transforms(
         self,
-        order_bib: Union[
-            model.OrderBib, schemas.OrderBibModel, marc_adapters.OverloadBib
-        ],
+        order_bib: Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
     ) -> dict:
         if isinstance(order_bib, marc_adapters.OverloadBib):
             order_factory = OrderFactory()
@@ -127,31 +124,27 @@ class OrderBibFactory(
 
     def to_domain(
         self,
-        order_bib: Union[
-            model.OrderBib, schemas.OrderBibModel, marc_adapters.OverloadBib
-        ],
-    ) -> model.OrderBib:
-        return model.OrderBib(**self._common_transforms(order_bib=order_bib))
+        order_bib: Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
+    ) -> model.DomainBib:
+        return model.DomainBib(**self._common_transforms(order_bib=order_bib))
 
     def to_pydantic(
         self,
-        order_bib: Union[
-            model.OrderBib, schemas.OrderBibModel, marc_adapters.OverloadBib
-        ],
-    ) -> schemas.OrderBibModel:
-        return schemas.OrderBibModel(**self._common_transforms(order_bib=order_bib))
+        order_bib: Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
+    ) -> schemas.BibModel:
+        return schemas.BibModel(**self._common_transforms(order_bib=order_bib))
 
     def binary_to_domain_list(
         self, bib_data: BinaryIO, library: str
-    ) -> Sequence[model.OrderBib]:
+    ) -> Sequence[model.DomainBib]:
         marc_list = [i for i in marc_adapters.read_marc_file(bib_data, library=library)]
-        return [model.OrderBib(**self._common_transforms(i)) for i in marc_list]
+        return [model.DomainBib(**self._common_transforms(i)) for i in marc_list]
 
     def binary_to_pydantic_list(
         self, bib_data: BinaryIO, library: str
-    ) -> Sequence[schemas.OrderBibModel]:
+    ) -> Sequence[schemas.BibModel]:
         marc_list = [i for i in marc_adapters.read_marc_file(bib_data, library=library)]
-        return [schemas.OrderBibModel(**self._common_transforms(i)) for i in marc_list]
+        return [schemas.BibModel(**self._common_transforms(i)) for i in marc_list]
 
 
 class TemplateFactory(
@@ -232,7 +225,6 @@ class PersistentTemplateFactory(
         schemas.PersistentTemplateModel,
     ]
 ):
-
     def to_domain(
         self,
         template: Union[

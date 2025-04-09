@@ -33,10 +33,10 @@ def test_OrderModel(stub_order):
 
 
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
-def test_OrderBibModel(stub_order, library):
-    stub_orderbib = model.OrderBib(library=library, orders=[stub_order])
-    order_bib = schemas.OrderBibModel(**stub_orderbib.__dict__)
-    assert order_bib.model_dump() == {
+def test_BibModel(stub_order, library):
+    stub_domain_bib = model.DomainBib(library=library, orders=[stub_order])
+    bib = schemas.BibModel(**stub_domain_bib.__dict__)
+    assert bib.model_dump() == {
         "bib_id": None,
         "isbn": None,
         "upc": None,

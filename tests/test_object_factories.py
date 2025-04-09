@@ -72,9 +72,9 @@ def stub_order(obj_type, stub_960, stub_961, order_data):
 @pytest.fixture
 def stub_order_bib(obj_type, library, stub_bib, order_bib_data):
     if obj_type == "domain":
-        return model.OrderBib(**order_bib_data)
+        return model.DomainBib(**order_bib_data)
     elif obj_type == "pydantic":
-        return schemas.OrderBibModel(**order_bib_data)
+        return schemas.BibModel(**order_bib_data)
     elif obj_type == "marc":
         return marc_adapters.OverloadBib.from_bookops_bib(stub_bib)
     else:
@@ -155,16 +155,14 @@ class TestOrderFactory:
 @pytest.mark.parametrize(
     "obj_type, data_type",
     [
-        ("domain", model.OrderBib),
-        ("pydantic", schemas.OrderBibModel),
+        ("domain", model.DomainBib),
+        ("pydantic", schemas.BibModel),
         ("marc", marc_adapters.OverloadBib),
     ],
 )
 @pytest.mark.parametrize("library", ["bpl", "nypl"])
-class TestOrderBibFactory:
-    ORDER_BIB_FACTORY: object_factories.GenericFactory = (
-        object_factories.OrderBibFactory()
-    )
+class TestBibFactory:
+    ORDER_BIB_FACTORY: object_factories.GenericFactory = object_factories.BibFactory()
 
     def test_common_transforms(self, library, stub_order_bib, data_type, order_data):
         domain_order = model.Order(**order_data)
@@ -175,39 +173,39 @@ class TestOrderBibFactory:
         assert order_bib["orders"] == [domain_order]
 
     def test_to_domain(self, library, stub_order_bib, data_type, order_bib_data):
-        domain_order_bib = model.OrderBib(**order_bib_data)
+        domain_order_bib = model.DomainBib(**order_bib_data)
         order_bib_to_domain = self.ORDER_BIB_FACTORY.to_domain(stub_order_bib)
         assert isinstance(stub_order_bib, data_type)
-        assert isinstance(order_bib_to_domain, model.OrderBib)
+        assert isinstance(order_bib_to_domain, model.DomainBib)
         assert order_bib_to_domain == domain_order_bib
 
     def test_to_pydantic(self, library, stub_order_bib, data_type, order_bib_data):
-        pydantic_order = schemas.OrderBibModel(**order_bib_data)
+        pydantic_order = schemas.BibModel(**order_bib_data)
         order_bib_to_pydantic = self.ORDER_BIB_FACTORY.to_pydantic(stub_order_bib)
         assert isinstance(stub_order_bib, data_type)
-        assert isinstance(order_bib_to_pydantic, model.OrderBib)
+        assert isinstance(order_bib_to_pydantic, model.DomainBib)
         assert order_bib_to_pydantic == pydantic_order
 
     def test_binary_to_domain_list(
         self, library, stub_bib, data_type, obj_type, order_bib_data
     ):
-        domain_order_bib = model.OrderBib(**order_bib_data)
+        domain_order_bib = model.DomainBib(**order_bib_data)
         binary_bib = io.BytesIO(stub_bib.as_marc())
         domain_list = self.ORDER_BIB_FACTORY.binary_to_domain_list(binary_bib, library)
         assert isinstance(domain_list, list)
-        assert isinstance(domain_list[0], model.OrderBib)
+        assert isinstance(domain_list[0], model.DomainBib)
         assert domain_list == [domain_order_bib]
 
     def test_binary_to_pydantic_list(
         self, library, stub_bib, data_type, obj_type, order_bib_data
     ):
-        pydantic_order_bib = schemas.OrderBibModel(**order_bib_data)
+        pydantic_order_bib = schemas.BibModel(**order_bib_data)
         binary_bib = io.BytesIO(stub_bib.as_marc())
         pydantic_list = self.ORDER_BIB_FACTORY.binary_to_pydantic_list(
             binary_bib, library
         )
         assert isinstance(pydantic_list, list)
-        assert isinstance(pydantic_list[0], schemas.OrderBibModel)
+        assert isinstance(pydantic_list[0], schemas.BibModel)
         assert pydantic_list == [pydantic_order_bib]
 
 

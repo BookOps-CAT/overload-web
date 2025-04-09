@@ -6,7 +6,7 @@ from typing import List, Optional, Union
 
 
 @dataclass
-class OrderBib:
+class DomainBib:
     library: str
     orders: List[Order]
     bib_id: Optional[str] = None

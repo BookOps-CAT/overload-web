@@ -13,7 +13,7 @@ class OrderModel(BaseModel, model.Order):
     model_config = ConfigDict(from_attributes=True)
 
 
-class OrderBibModel(BaseModel, model.OrderBib):
+class BibModel(BaseModel, model.DomainBib):
     model_config = ConfigDict(from_attributes=True)
 
 

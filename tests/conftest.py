@@ -6,7 +6,7 @@ from overload_web.adapters.sierra_adapters import (
     AbstractSierraSession,
     SierraService,
 )
-from overload_web.domain.model import Order, OrderBib, Template
+from overload_web.domain.model import DomainBib, Order, Template
 
 
 class MockSierraAdapter(AbstractSierraSession):
@@ -129,8 +129,8 @@ def stub_template(template_data) -> Template:
 
 
 @pytest.fixture
-def stub_orderbib(order_data, library) -> OrderBib:
-    return OrderBib(library=library, orders=[Order(**order_data)])
+def stub_domain_bib(order_data, library) -> DomainBib:
+    return DomainBib(library=library, orders=[Order(**order_data)])
 
 
 @pytest.fixture
