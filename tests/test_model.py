@@ -17,14 +17,6 @@ class TestBibTypes:
         bib = model.DomainBib(library=library, orders=[order], bib_id="b123456789")
         assert bib.bib_id == "b123456789"
 
-    @pytest.mark.parametrize("library", ["bpl", "nypl"])
-    def test_DomainBib_attach(self, library, stub_template, stub_order):
-        bib = model.DomainBib(library=library, orders=[stub_order])
-        assert bib.bib_id is None
-        bib.attach(bib_ids=["123456789", "987654321"])
-        assert bib.bib_id == "123456789"
-        assert bib.all_bib_ids == ["123456789", "987654321"]
-
 
 class TestOrderTypes:
     def test_Order(self, order_data):

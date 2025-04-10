@@ -14,13 +14,6 @@ class DomainBib:
     oclc_number: Optional[Union[str, List[str]]] = None
     upc: Optional[str] = None
 
-    def attach(self, bib_ids: List[str]) -> None:
-        if bib_ids:
-            self.bib_id = bib_ids[0]
-            self.all_bib_ids = bib_ids
-        else:
-            self.all_bib_ids = []
-
     def match(
         self, bibs: List[DomainBib], matchpoints: List[str], replace: bool = True
     ) -> None:
