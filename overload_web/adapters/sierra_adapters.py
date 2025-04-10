@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import os
 from abc import ABC, abstractmethod
-from typing import List
+from typing import Any, Dict, List
 
 import requests
 from bookops_bpl_solr import SolrSession
@@ -22,12 +22,20 @@ class SierraService:
     def __init__(self, session: AbstractSierraSession):
         self.session = session
 
-    def get_all_bib_ids(
-        self, order_bib: model.DomainBib, match_keys: List[str]
-    ) -> List[str]:
-        bibs = []
+    def get_all_bib_ids(self, bib: model.DomainBib, match_keys: List[str]) -> List[str]:
+        bib_ids: List[str] = []
         for key in match_keys:
-            bibs = self.session.get_bibs_by_id(key, getattr(order_bib, f"{key}"))
+            bib_ids = self.session.get_all_bib_ids(key, getattr(bib, f"{key}"))
+            if not bib_ids:
+                continue
+        return bib_ids
+
+    def get_bibs_by_id(
+        self, bib: model.DomainBib, match_keys: List[str]
+    ) -> List[Dict[str, Any]]:
+        bibs: List[Dict[str, Any]] = []
+        for key in match_keys:
+            bibs = self.session.get_bibs_by_id(key, getattr(bib, f"{key}"))
             if not bibs:
                 continue
         return bibs
@@ -36,17 +44,24 @@ class SierraService:
 class AbstractSierraSession(ABC):
     @abstractmethod
     def _get_credentials(self) -> str | PlatformToken:
-        pass
+        raise NotImplementedError("Subclasses should implement this method.")
 
     @abstractmethod
     def _get_target(self) -> str:
-        pass
+        raise NotImplementedError("Subclasses should implement this method.")
 
     @abstractmethod
-    def _get_bibs_by_id(self, key: str, value: str | int) -> List[str]:
-        pass
+    def _get_bibs_by_id(self, key: str, value: str | int) -> List[Dict[str, Any]]:
+        raise NotImplementedError("Subclasses should implement this method.")
 
-    def get_bibs_by_id(self, key: str, value: str | int) -> List[str]:
+    def get_all_bib_ids(self, key: str, value: str | int) -> List[str]:
+        bibs_ids = []
+        bibs = self._get_bibs_by_id(key=key, value=value)
+        if bibs and all(isinstance(i, dict) for i in bibs):
+            bibs_ids.extend([i["id"] for i in bibs])
+        return bibs_ids
+
+    def get_bibs_by_id(self, key: str, value: str | int) -> List[Dict[str, Any]]:
         return self._get_bibs_by_id(key=key, value=value)
 
 
@@ -64,7 +79,7 @@ class BPLSolrSession(SolrSession, AbstractSierraSession):
     def _get_target(self) -> str:
         return os.environ["BPL_SOLR_TARGET"]
 
-    def _get_bibs_by_id(self, key: str, value: str | int) -> List[str]:
+    def _get_bibs_by_id(self, key: str, value: str | int) -> List[Dict[str, Any]]:
         response: requests.Response
         if key == "bib_id":
             response = self.search_bibNo(str(value))
@@ -79,11 +94,11 @@ class BPLSolrSession(SolrSession, AbstractSierraSession):
                 "Invalid matchpoint. Available matchpoints are: bib_id, "
                 "oclc_number, isbn, and upc"
             )
-        bib_ids = []
+        bibs = []
         if response and response.ok:
             json_response = response.json()
-            bib_ids.extend([i["id"] for i in json_response["response"]["docs"]])
-        return bib_ids
+            bibs.extend(json_response["response"]["docs"])
+        return bibs
 
 
 class NYPLPlatformSession(PlatformSession, AbstractSierraSession):
@@ -105,7 +120,7 @@ class NYPLPlatformSession(PlatformSession, AbstractSierraSession):
     def _get_target(self) -> str:
         return os.environ["NYPL_PLATFORM_TARGET"]
 
-    def _get_bibs_by_id(self, key: str, value: str | int) -> List[str]:
+    def _get_bibs_by_id(self, key: str, value: str | int) -> List[Dict[str, Any]]:
         response: requests.Response
         if key == "bib_id":
             response = self.search_bibNos(str(value))
@@ -120,8 +135,8 @@ class NYPLPlatformSession(PlatformSession, AbstractSierraSession):
                 "Invalid matchpoint. Available matchpoints are: bib_id, "
                 "oclc_number, isbn, and upc"
             )
-        bib_ids = []
+        bibs = []
         if response and response.ok:
             json_response = response.json()
-            bib_ids.extend([i["id"] for i in json_response["data"]])
-        return bib_ids
+            bibs.extend(json_response["data"])
+        return bibs

@@ -18,7 +18,7 @@ class MockSierraAdapter(AbstractSierraSession):
 
     def _get_bibs_by_id(self, key, value):
         if key and value:
-            return ["123456789"]
+            return [{"id": "123456789", "title": "Foo: Bar"}]
         else:
             return []
 
