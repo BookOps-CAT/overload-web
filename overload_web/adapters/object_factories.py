@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import BinaryIO, Generic, Optional, Sequence, TypeVar, Union
+from typing import Any, BinaryIO, Dict, Generic, Optional, Sequence, TypeVar, Union
 
 from overload_web.adapters import marc_adapters
 from overload_web.api import schemas
@@ -92,7 +92,9 @@ class OrderFactory(
 
 class BibFactory(
     GenericFactory[
-        Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
+        Union[
+            model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib, Dict[str, Any]
+        ],
         model.DomainBib,
         schemas.BibModel,
     ]
@@ -101,38 +103,56 @@ class BibFactory(
 
     def _common_transforms(
         self,
-        order_bib: Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
+        bib: Union[
+            model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib, Dict[str, Any]
+        ],
+        library: Optional[str] = "",
     ) -> dict:
-        if isinstance(order_bib, marc_adapters.OverloadBib):
+        if isinstance(bib, marc_adapters.OverloadBib):
             order_factory = OrderFactory()
             return {
-                "library": order_bib.library,
-                "orders": [order_factory.to_domain(i) for i in order_bib.orders],
-                "bib_id": order_bib.sierra_bib_id,
-                "isbn": order_bib.isbn,
-                "oclc_number": list(order_bib.oclc_nos.values()),
-                "upc": order_bib.upc_number,
+                "library": bib.library,
+                "orders": [order_factory.to_domain(i) for i in bib.orders],
+                "bib_id": bib.sierra_bib_id,
+                "isbn": bib.isbn,
+                "oclc_number": list(bib.oclc_nos.values()),
+                "upc": bib.upc_number,
+            }
+        elif isinstance(bib, dict):
+            return {
+                "library": library,
+                "orders": [],
+                "bib_id": bib["id"],
+                "isbn": bib.get("isbn"),
+                "oclc_number": bib.get("oclc_number"),
+                "upc": bib.get("upc"),
             }
         return {
-            "library": order_bib.library,
-            "orders": order_bib.orders,
-            "bib_id": order_bib.bib_id,
-            "isbn": order_bib.isbn,
-            "oclc_number": order_bib.oclc_number,
-            "upc": order_bib.upc,
+            "library": bib.library,
+            "orders": bib.orders,
+            "bib_id": bib.bib_id,
+            "isbn": bib.isbn,
+            "oclc_number": bib.oclc_number,
+            "upc": bib.upc,
         }
 
     def to_domain(
         self,
-        order_bib: Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
+        bib: Union[
+            model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib, Dict[str, Any]
+        ],
+        library: Optional[str] = "",
     ) -> model.DomainBib:
-        return model.DomainBib(**self._common_transforms(order_bib=order_bib))
+        return model.DomainBib(**self._common_transforms(bib=bib, library=library))
 
     def to_pydantic(
         self,
-        order_bib: Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
+        bib: Union[
+            model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib, Dict[str, Any]
+        ],
+        library: Optional[str] = "",
     ) -> schemas.BibModel:
-        return schemas.BibModel(**self._common_transforms(order_bib=order_bib))
+        return schemas.BibModel(**self._common_transforms(bib=bib, library=library))
 
     def binary_to_domain_list(
         self, bib_data: BinaryIO, library: str
