@@ -75,13 +75,6 @@ class TestAbstractSierraSession:
             session._get_bibs_by_id("isbn", "9781234567890")
         assert str(exc.value) == "Subclasses should implement this method."
 
-    def test_AbstractSierraSession_get_all_bib_ids(self):
-        sierra_adapters.AbstractSierraSession.__abstractmethods__ = set()
-        session = sierra_adapters.AbstractSierraSession()
-        with pytest.raises(NotImplementedError) as exc:
-            session.get_all_bib_ids("isbn", "9781234567890")
-        assert str(exc.value) == "Subclasses should implement this method."
-
     def test_AbstractSierraSession_get_bibs_by_id(self):
         sierra_adapters.AbstractSierraSession.__abstractmethods__ = set()
         session = sierra_adapters.AbstractSierraSession()
@@ -93,11 +86,6 @@ class TestAbstractSierraSession:
 @pytest.mark.livetest
 @pytest.mark.usefixtures("live_creds")
 class TestLiveSierraSession:
-    def test_BPLSolrSession_get_all_bib_ids(self):
-        with sierra_adapters.BPLSolrSession() as session:
-            matched_bib_ids = session.get_all_bib_ids("isbn", "9780316230032")
-            assert matched_bib_ids == ["12187266"]
-
     def test_BPLSolrSession_get_bibs_by_id(self):
         with sierra_adapters.BPLSolrSession() as session:
             matched_bibs = session.get_bibs_by_id("isbn", "9780316230032")
@@ -116,11 +104,6 @@ class TestLiveSierraSession:
                 "title",
             ]
             assert matched_bibs[0]["id"] == "12187266"
-
-    def test_NYPLPlatformSession_get_all_bib_ids(self):
-        with sierra_adapters.NYPLPlatformSession() as session:
-            matched_bib_ids = session.get_all_bib_ids("isbn", "9780316230032")
-            assert sorted(matched_bib_ids) == sorted(["21730445", "21790265"])
 
     def test_NYPLPlatformSession_get_bibs_by_id(self):
         with sierra_adapters.NYPLPlatformSession() as session:
@@ -161,13 +144,6 @@ class TestLiveSierraSession:
 class TestMockSierraSession:
     @pytest.mark.parametrize("library", ["bpl"])
     @pytest.mark.parametrize("matchpoint", ["isbn", "upc", "oclc_number", "bib_id"])
-    def test_BPLSolrSession_get_all_bib_ids(self, matchpoint):
-        with sierra_adapters.BPLSolrSession() as session:
-            matched_bib = session.get_all_bib_ids(f"{matchpoint}", "123456789")
-            assert matched_bib == ["123456789"]
-
-    @pytest.mark.parametrize("library", ["bpl"])
-    @pytest.mark.parametrize("matchpoint", ["isbn", "upc", "oclc_number", "bib_id"])
     def test_BPLSolrSession_get_bibs_by_id(self, matchpoint):
         with sierra_adapters.BPLSolrSession() as session:
             matched_bib = session.get_bibs_by_id(f"{matchpoint}", "123456789")
@@ -175,27 +151,10 @@ class TestMockSierraSession:
 
     @pytest.mark.parametrize("library", [None])
     @pytest.mark.parametrize("matchpoint", ["isbn", "upc", "oclc_number", "bib_id"])
-    def test_BPLSolrSession_get_all_bib_ids_no_match(self, matchpoint):
-        with sierra_adapters.BPLSolrSession() as session:
-            matched_bib = session.get_all_bib_ids(f"{matchpoint}", "123456789")
-            assert matched_bib == []
-
-    @pytest.mark.parametrize("library", [None])
-    @pytest.mark.parametrize("matchpoint", ["isbn", "upc", "oclc_number", "bib_id"])
     def test_BPLSolrSession_get_bibs_by_id_no_match(self, matchpoint):
         with sierra_adapters.BPLSolrSession() as session:
             matched_bib = session.get_bibs_by_id(f"{matchpoint}", "123456789")
             assert matched_bib == []
-
-    @pytest.mark.parametrize("library", [None])
-    def test_BPLSolrSession_get_all_bib_ids_invalid_matchpoint(self):
-        with pytest.raises(ValueError) as exc:
-            with sierra_adapters.BPLSolrSession() as session:
-                session.get_all_bib_ids("foo", "bar")
-        assert (
-            str(exc.value)
-            == "Invalid matchpoint. Available matchpoints are: bib_id, oclc_number, isbn, and upc"
-        )
 
     @pytest.mark.parametrize("library", [None])
     def test_BPLSolrSession_get_bibs_by_id_invalid_matchpoint(self):
@@ -209,27 +168,10 @@ class TestMockSierraSession:
 
     @pytest.mark.parametrize("library", ["nypl"])
     @pytest.mark.parametrize("matchpoint", ["isbn", "upc", "oclc_number", "bib_id"])
-    def test_NYPLPlatformSession_get_all_bib_ids(self, matchpoint):
-        with sierra_adapters.NYPLPlatformSession() as session:
-            matched_bib = session.get_all_bib_ids(f"{matchpoint}", "123456789")
-            assert matched_bib == ["123456789"]
-
-    @pytest.mark.parametrize("library", ["nypl"])
-    @pytest.mark.parametrize("matchpoint", ["isbn", "upc", "oclc_number", "bib_id"])
     def test_NYPLPlatformSession_get_bibs_by_id(self, matchpoint):
         with sierra_adapters.NYPLPlatformSession() as session:
             matched_bib = session.get_bibs_by_id(f"{matchpoint}", "123456789")
             assert matched_bib == [{"id": "123456789"}]
-
-    @pytest.mark.parametrize("library", [None])
-    def test_NYPLPlatformSession_get_all_bib_ids_invalid_matchpoint(self):
-        with pytest.raises(ValueError) as exc:
-            with sierra_adapters.NYPLPlatformSession() as session:
-                session.get_all_bib_ids("foo", "bar")
-        assert (
-            str(exc.value)
-            == "Invalid matchpoint. Available matchpoints are: bib_id, oclc_number, isbn, and upc"
-        )
 
     @pytest.mark.parametrize("library", [None])
     def test_NYPLPlatformSession_get_bibs_by_id_invalid_matchpoint(self):
@@ -240,13 +182,6 @@ class TestMockSierraSession:
             str(exc.value)
             == "Invalid matchpoint. Available matchpoints are: bib_id, oclc_number, isbn, and upc"
         )
-
-    @pytest.mark.parametrize("library", [None])
-    @pytest.mark.parametrize("matchpoint", ["isbn", "upc", "oclc_number", "bib_id"])
-    def test_NYPLPlatformSession_get_all_bib_ids_no_match(self, matchpoint):
-        with sierra_adapters.NYPLPlatformSession() as session:
-            matched_bib = session.get_all_bib_ids(f"{matchpoint}", "123456789")
-            assert matched_bib == []
 
     @pytest.mark.parametrize("library", [None])
     @pytest.mark.parametrize("matchpoint", ["isbn", "upc", "oclc_number", "bib_id"])

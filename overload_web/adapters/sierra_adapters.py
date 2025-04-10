@@ -22,23 +22,8 @@ class SierraService:
     def __init__(self, session: AbstractSierraSession):
         self.session = session
 
-    def get_all_bib_ids(self, bib: model.DomainBib, match_keys: List[str]) -> List[str]:
-        bib_ids: List[str] = []
-        for key in match_keys:
-            bib_ids = self.session.get_all_bib_ids(key, getattr(bib, f"{key}"))
-            if not bib_ids:
-                continue
-        return bib_ids
-
-    def get_bibs_by_id(
-        self, bib: model.DomainBib, match_keys: List[str]
-    ) -> List[Dict[str, Any]]:
-        bibs: List[Dict[str, Any]] = []
-        for key in match_keys:
-            bibs = self.session.get_bibs_by_id(key, getattr(bib, f"{key}"))
-            if not bibs:
-                continue
-        return bibs
+    def get_bibs_by_id(self, bib: model.DomainBib, key: str) -> List[Dict[str, Any]]:
+        return self.session.get_bibs_by_id(key, getattr(bib, f"{key}"))
 
 
 class AbstractSierraSession(ABC):
@@ -53,13 +38,6 @@ class AbstractSierraSession(ABC):
     @abstractmethod
     def _get_bibs_by_id(self, key: str, value: str | int) -> List[Dict[str, Any]]:
         raise NotImplementedError("Subclasses should implement this method.")
-
-    def get_all_bib_ids(self, key: str, value: str | int) -> List[str]:
-        bibs_ids = []
-        bibs = self._get_bibs_by_id(key=key, value=value)
-        if bibs and all(isinstance(i, dict) for i in bibs):
-            bibs_ids.extend([i["id"] for i in bibs])
-        return bibs_ids
 
     def get_bibs_by_id(self, key: str, value: str | int) -> List[Dict[str, Any]]:
         return self._get_bibs_by_id(key=key, value=value)
