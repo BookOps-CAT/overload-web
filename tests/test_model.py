@@ -5,13 +5,7 @@ import pytest
 from overload_web.domain import model
 
 
-class TestOrderTypes:
-    def test_Order(self, order_data):
-        order = model.Order(**order_data)
-        assert order.price == "$5.00"
-        assert order.format == "a"
-        assert order.blanket_po is None
-
+class TestBibTypes:
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_DomainBib(self, library, stub_order):
         bib = model.DomainBib(library=library, orders=[stub_order])
@@ -24,11 +18,26 @@ class TestOrderTypes:
         assert bib.bib_id == "b123456789"
 
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
-    def test_model_apply_template(self, library, stub_template, stub_order):
+    def test_DomainBib_attach(self, library, stub_template, stub_order):
         bib = model.DomainBib(library=library, orders=[stub_order])
-        assert bib.orders[0].fund == "25240adbk"
-        bib.apply_template(stub_template)
-        assert bib.orders[0].fund == "10001adbk"
+        assert bib.bib_id is None
+        bib.attach(bib_ids=["123456789", "987654321"])
+        assert bib.bib_id == "123456789"
+        assert bib.all_bib_ids == ["123456789", "987654321"]
+
+
+class TestOrderTypes:
+    def test_Order(self, order_data):
+        order = model.Order(**order_data)
+        assert order.price == "$5.00"
+        assert order.format == "a"
+        assert order.blanket_po is None
+
+    def test_Order_apply_template(self, stub_template, order_data):
+        order = model.Order(**order_data)
+        assert order.fund == "25240adbk"
+        order.apply_template(stub_template)
+        assert order.fund == "10001adbk"
 
 
 class TestTemplateTypes:

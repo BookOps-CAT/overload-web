@@ -21,12 +21,22 @@ class DomainBib:
         else:
             self.all_bib_ids = []
 
-    def apply_template(self, template: Template) -> None:
-        for order in self.orders:
-            template_dict = asdict(template)
-            for k, v in template_dict.items():
-                if v and "matchpoint" not in k:
-                    setattr(order, k, v)
+    def match(
+        self, bibs: List[DomainBib], matchpoints: List[str], replace: bool = True
+    ) -> None:
+        max_matched_points = -1
+        best_match_bib_id = None
+        for bib in bibs:
+            matched_points = 0
+            for attr in matchpoints:
+                if getattr(self, attr) == getattr(bib, attr):
+                    matched_points += 1
+
+            if matched_points > max_matched_points:
+                max_matched_points = matched_points
+                best_match_bib_id = bib.bib_id
+        if replace:
+            self.bib_id = best_match_bib_id
 
 
 @dataclass
@@ -51,6 +61,12 @@ class Order:
     vendor_code: Optional[str]
     vendor_notes: Optional[str]
     vendor_title_no: Optional[str]
+
+    def apply_template(self, template: Template) -> None:
+        template_dict = asdict(template)
+        for k, v in template_dict.items():
+            if k in asdict(self).keys():
+                setattr(self, k, v)
 
 
 @dataclass(kw_only=True)
