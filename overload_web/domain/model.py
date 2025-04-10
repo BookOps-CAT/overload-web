@@ -14,9 +14,7 @@ class DomainBib:
     oclc_number: Optional[Union[str, List[str]]] = None
     upc: Optional[str] = None
 
-    def match(
-        self, bibs: List[DomainBib], matchpoints: List[str], replace: bool = True
-    ) -> None:
+    def match(self, bibs: List[DomainBib], matchpoints: List[str]) -> None:
         max_matched_points = -1
         best_match_bib_id = None
         for bib in bibs:
@@ -28,8 +26,7 @@ class DomainBib:
             if matched_points > max_matched_points:
                 max_matched_points = matched_points
                 best_match_bib_id = bib.bib_id
-        if replace:
-            self.bib_id = best_match_bib_id
+        self.bib_id = best_match_bib_id
 
 
 @dataclass
@@ -64,6 +61,7 @@ class Order:
 
 @dataclass(kw_only=True)
 class Template:
+    agent: Optional[str] = None
     audience: Optional[str] = None
     blanket_po: Optional[str] = None
     copies: Optional[Union[str, int]] = None
@@ -71,9 +69,11 @@ class Template:
     create_date: Optional[Union[datetime.datetime, datetime.date, str]] = None
     format: Optional[str] = None
     fund: Optional[str] = None
+    id: Optional[str] = None
     internal_note: Optional[str] = None
     lang: Optional[str] = None
     order_type: Optional[str] = None
+    name: Optional[str] = None
     price: Optional[Union[str, int]] = None
     selector: Optional[str] = None
     selector_note: Optional[str] = None
@@ -99,10 +99,3 @@ class Template:
             ]
             if i
         ]
-
-
-@dataclass(kw_only=True)
-class PersistentTemplate(Template):
-    id: Union[int, str]
-    name: str
-    agent: str

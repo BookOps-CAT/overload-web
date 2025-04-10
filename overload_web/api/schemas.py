@@ -23,6 +23,9 @@ class TemplateModel(BaseModel, model.Template):
     @classmethod
     def from_form_data(
         cls,
+        agent: Annotated[Optional[Union[str]], Form()] = None,
+        name: Annotated[Optional[Union[str]], Form()] = None,
+        id: Annotated[Optional[Union[str]], Form()] = None,
         create_date: Annotated[Optional[Union[datetime.datetime, str]], Form()] = None,
         price: Annotated[Optional[Union[str, int]], Form()] = None,
         fund: Annotated[Optional[str], Form()] = None,
@@ -64,11 +67,10 @@ class TemplateModel(BaseModel, model.Template):
             lang=lang,
             country=country,
             blanket_po=blanket_po,
+            name=name,
+            id=id,
+            agent=agent,
             primary_matchpoint=primary_matchpoint,
             secondary_matchpoint=secondary_matchpoint,
             tertiary_matchpoint=tertiary_matchpoint,
         )
-
-
-class PersistentTemplateModel(BaseModel, model.PersistentTemplate):
-    model_config = ConfigDict(from_attributes=True)

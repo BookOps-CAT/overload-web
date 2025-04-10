@@ -98,6 +98,7 @@ def stub_order(order_data) -> Order:
 @pytest.fixture
 def template_data() -> dict:
     return {
+        "agent": None,
         "audience": "a",
         "blanket_po": None,
         "copies": "5",
@@ -105,8 +106,10 @@ def template_data() -> dict:
         "create_date": "2024-01-01",
         "format": "a",
         "fund": "10001adbk",
+        "id": None,
         "internal_note": "foo",
         "lang": "spa",
+        "name": None,
         "order_type": "p",
         "price": "$20.00",
         "selector": "b",
