@@ -55,7 +55,7 @@ class Order:
     def apply_template(self, template: Template) -> None:
         template_dict = asdict(template)
         for k, v in template_dict.items():
-            if k in asdict(self).keys():
+            if v and k in asdict(self).keys():
                 setattr(self, k, v)
 
 
