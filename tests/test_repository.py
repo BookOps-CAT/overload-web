@@ -35,6 +35,13 @@ def test_AbstractRepository_get():
     assert str(exc.value) == ""
 
 
+def test_AbstractRepository_list():
+    repo = repository.AbstractRepository()
+    with pytest.raises(NotImplementedError) as exc:
+        repo.list()
+    assert str(exc.value) == ""
+
+
 def test_AbstractRepository_save(template_data):
     repo = repository.AbstractRepository()
     template_data["id"], template_data["name"], template_data["agent"] = 1, "Foo", "Bar"
@@ -91,6 +98,31 @@ def test_SqlAlchemyRepository_get_save(id, name, agent, session, template_data):
         primary_matchpoint="isbn",
         secondary_matchpoint=None,
         tertiary_matchpoint=None,
+    )
+
+
+@pytest.mark.parametrize(
+    "id, name, agent",
+    [
+        (1, "Foo Template", "user1"),
+        (2, "Bar Template", "user1"),
+        (3, "Baz Template", "user2"),
+        (4, "Qux Template", "user3"),
+    ],
+)
+def test_SqlAlchemyRepository_save_list(id, name, agent, session, template_data):
+    repo = repository.SqlAlchemyRepository(session=session)
+    template_data.update({"create_date": datetime.date(2024, 1, 1)})
+    template_data.update({"id": 1, "name": "Foo Template", "agent": "user1"})
+    repo.save(model.Template(**template_data))
+    template_data.update({"id": 2, "name": "Bar Template", "agent": "user1"})
+    repo.save(model.Template(**template_data))
+    template_data.update({"id": 3, "name": "Baz Template", "agent": "user2"})
+    repo.save(model.Template(**template_data))
+    template_list = repo.list()
+    template_names = [i.name for i in template_list]
+    assert sorted(template_names) == sorted(
+        ["Foo Template", "Baz Template", "Bar Template"]
     )
 
 

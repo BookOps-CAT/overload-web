@@ -10,6 +10,10 @@ class AbstractRepository(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def list(self):
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def save(self, template: model.Template):
         raise NotImplementedError
 
@@ -19,7 +23,10 @@ class SqlAlchemyRepository(AbstractRepository):
         self.session = session
 
     def get(self, id: Union[str, int]):
-        return self.session.query(model.Template).filter_by(id=id).first()
+        return self.session.query(model.Template).filter_by(id=id).one()
+
+    def list(self):
+        return self.session.query(model.Template).all()
 
     def save(self, template: model.Template) -> None:
         self.session.add(template)
