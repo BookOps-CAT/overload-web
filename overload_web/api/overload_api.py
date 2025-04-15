@@ -3,15 +3,10 @@ from typing import Annotated, Optional, Sequence
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 
-from overload_web import config
-from overload_web.adapters import object_factories
 from overload_web.api import schemas
-from overload_web.services import handlers
+from overload_web.services import handlers, unit_of_work
 
 api_router = APIRouter()
-
-bib_factory = object_factories.BibFactory()
-template_factory = object_factories.TemplateFactory()
 
 
 @api_router.get("/")
@@ -27,15 +22,14 @@ def vendor_file_process(
     template: schemas.TemplateModel = Depends(schemas.TemplateModel.from_form_data),
 ) -> Sequence[schemas.BibModel]:
     processed_bibs = []
-
-    bibs = bib_factory.binary_to_domain_list(bib_data=file.file, library=library)
-    model_template = template_factory.to_domain(template=template)
-    service = config.get_sierra_service(library=library)
-
+    uow = unit_of_work.OverloadUnitOfWork(library=library)
+    bibs = handlers.process_marc_file(bib_data=file.file, library=library, uow=uow)
+    model_template = uow.template_factory.to_domain(template=template)
     for bib in bibs:
+        for order in bib.orders:
+            order.apply_template(template=model_template)
+        matchpoints = model_template.matchpoints
         processed_bibs.append(
-            handlers.process_file(
-                sierra_service=service, bib=bib, template=model_template
-            )
+            handlers.match_bib(bib=bib.__dict__, matchpoints=matchpoints, uow=uow)
         )
-    return [bib_factory.to_pydantic(i) for i in processed_bibs]
+    return [schemas.BibModel(**i) for i in processed_bibs]
