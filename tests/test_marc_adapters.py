@@ -1,5 +1,4 @@
 import datetime
-import io
 
 import pytest
 
@@ -130,7 +129,6 @@ class TestOverloadOrder:
 
 
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
-def test_read_marc_file(stub_bib, library):
-    bib_file = io.BytesIO(stub_bib.as_marc())
-    bib_list = [i for i in marc_adapters.read_marc_file(bib_file, library)]
+def test_read_marc_file(stub_binary_marc, library):
+    bib_list = [i for i in marc_adapters.read_marc_file(stub_binary_marc, library)]
     assert len(bib_list) == 1

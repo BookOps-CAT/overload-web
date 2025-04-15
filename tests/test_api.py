@@ -1,4 +1,4 @@
-import io
+import os
 
 import pytest
 from fastapi.testclient import TestClient
@@ -19,6 +19,7 @@ class TestAPIClient:
         assert "vendor_file_page" in route_names
 
 
+@pytest.mark.usefixtures("mock_sierra_response")
 class TestAPIRouter:
     client = TestClient(api_router)
 
@@ -32,13 +33,12 @@ class TestAPIRouter:
         [("nypl", "branches"), ("nypl", "research"), ("bpl", None)],
     )
     def test_process_vendor_file_post(
-        self, stub_pvf_form_data, stub_bib, stub_sierra_service, library, destination
+        self, stub_pvf_form_data, stub_binary_marc, library, destination
     ):
+        os.environ["library"] = library
         response = self.client.post(
             "/vendor_file",
-            files={
-                "file": ("marc_file.mrc", io.BytesIO(stub_bib.as_marc()), "text/plain")
-            },
+            files={"file": ("marc_file.mrc", stub_binary_marc, "text/plain")},
             data=stub_pvf_form_data,
         )
         json_response = response.json()
@@ -53,15 +53,16 @@ class TestAPIRouter:
         "library, destination", [("foo", "branches"), ("bar", "research")]
     )
     def test_process_vendor_file_post_invalid_config(
-        self, stub_bib, stub_pvf_form_data, library, destination
+        self, stub_binary_marc, stub_pvf_form_data, library, destination
     ):
+        os.environ["library"] = library
         with pytest.raises(ValueError) as exc:
             self.client.post(
                 "/vendor_file",
                 files={
                     "file": (
                         "marc_file.mrc",
-                        io.BytesIO(stub_bib.as_marc()),
+                        stub_binary_marc,
                         "text/plain",
                     )
                 },

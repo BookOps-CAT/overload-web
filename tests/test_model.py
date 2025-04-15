@@ -7,15 +7,44 @@ from overload_web.domain import model
 
 class TestBibTypes:
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
-    def test_DomainBib(self, library, stub_order):
-        bib = model.DomainBib(library=library, orders=[stub_order])
+    def test_DomainBib(self, library, order_data):
+        bib = model.DomainBib(library=library, orders=[model.Order(**order_data)])
         assert bib.bib_id is None
 
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
-    def test_DomainBib_bib_id(self, library, stub_order):
-        order = stub_order
-        bib = model.DomainBib(library=library, orders=[order], bib_id="b123456789")
+    def test_DomainBib_bib_id(self, library, order_data):
+        bib = model.DomainBib(
+            library=library, orders=[model.Order(**order_data)], bib_id="b123456789"
+        )
         assert bib.bib_id == "b123456789"
+
+    @pytest.mark.parametrize("library", ["bpl", "nypl"])
+    @pytest.mark.parametrize(
+        "matchpoints, result",
+        [(["isbn"], "123"), (["oclc_number"], "234"), (["isbn", "oclc_number"], "345")],
+    )
+    def test_DomainBib_match(
+        self, library, order_data, make_domain_bib, matchpoints, result
+    ):
+        bib = model.DomainBib(
+            library=library,
+            orders=[model.Order(**order_data)],
+            isbn="9781234567890",
+            oclc_number="123456789",
+            upc=None,
+        )
+        assert bib.bib_id is None
+
+        bib_1 = make_domain_bib({"bib_id": "123", "isbn": "9781234567890"})
+        bib_2 = make_domain_bib(
+            {"bib_id": "234", "isbn": "1234567890", "oclc_number": "123456789"}
+        )
+        bib_3 = make_domain_bib(
+            {"bib_id": "345", "isbn": "9781234567890", "oclc_number": "123456789"}
+        )
+        bib_4 = make_domain_bib({"bib_id": "456", "upc": "333"})
+        bib.match(bibs=[bib_1, bib_2, bib_3, bib_4], matchpoints=matchpoints)
+        assert bib.bib_id == result
 
 
 class TestOrderTypes:
@@ -25,10 +54,11 @@ class TestOrderTypes:
         assert order.format == "a"
         assert order.blanket_po is None
 
-    def test_Order_apply_template(self, stub_template, order_data):
+    def test_Order_apply_template(self, template_data, order_data):
         order = model.Order(**order_data)
+        template = model.Template(**template_data)
         assert order.fund == "25240adbk"
-        order.apply_template(stub_template)
+        order.apply_template(template)
         assert order.fund == "10001adbk"
 
 

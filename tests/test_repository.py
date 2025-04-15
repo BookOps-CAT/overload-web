@@ -35,12 +35,11 @@ def test_AbstractRepository_get():
     assert str(exc.value) == ""
 
 
-def test_AbstractRepository_save(stub_template):
+def test_AbstractRepository_save(template_data):
     repo = repository.AbstractRepository()
-    template = stub_template.__dict__
-    template["id"], template["name"], template["agent"] = 1, "Foo", "Bar"
+    template_data["id"], template_data["name"], template_data["agent"] = 1, "Foo", "Bar"
     with pytest.raises(NotImplementedError) as exc:
-        repo.save(template=template)
+        repo.save(template=template_data)
     assert str(exc.value) == ""
 
 

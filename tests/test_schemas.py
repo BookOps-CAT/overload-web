@@ -4,8 +4,8 @@ from overload_web.api import schemas
 from overload_web.domain import model
 
 
-def test_OrderModel(stub_order):
-    order = schemas.OrderModel(**stub_order.__dict__)
+def test_OrderModel(order_data):
+    order = schemas.OrderModel(**order_data)
     assert order.model_dump() == {
         "create_date": "2024-01-01",
         "locations": ["(4)fwa0f", "(2)bca0f", "gka0f"],
@@ -31,19 +31,21 @@ def test_OrderModel(stub_order):
 
 
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
-def test_BibModel(stub_order, library):
-    stub_domain_bib = model.DomainBib(library=library, orders=[stub_order])
+def test_BibModel(order_data, library):
+    stub_domain_bib = model.DomainBib(
+        library=library, orders=[model.Order(**order_data)]
+    )
     bib = schemas.BibModel(**stub_domain_bib.__dict__)
     assert bib.model_dump() == {
         "bib_id": None,
         "isbn": None,
         "upc": None,
         "oclc_number": None,
-        "orders": [stub_order.__dict__],
+        "orders": [order_data],
         "library": library,
     }
 
 
-def test_TemplateModel(stub_template):
-    template = schemas.TemplateModel(**stub_template.__dict__)
-    assert template.model_dump() == stub_template.__dict__
+def test_TemplateModel(template_data):
+    template = schemas.TemplateModel(**template_data)
+    assert template.model_dump() == template_data
