@@ -4,16 +4,6 @@ from overload_web.adapters import sierra_adapters
 from overload_web.services import handlers, unit_of_work
 
 
-class FakeSierraService(sierra_adapters.AbstractService):
-    def _get_bibs_by_id(self, value, key):
-        return [{"id": "123456789"}]
-
-
-@pytest.fixture
-def stub_sierra_service(mock_sierra_response):
-    return FakeSierraService()
-
-
 def fake_sierra_service():
     class FakeSierraService(sierra_adapters.AbstractService):
         def _get_bibs_by_id(self, value, key):
