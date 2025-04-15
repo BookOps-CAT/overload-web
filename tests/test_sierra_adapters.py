@@ -6,14 +6,13 @@ import yaml
 from overload_web.adapters import sierra_adapters
 
 
-class MockHTTPResponse:
-    def __init__(self, status_code: int, ok: bool, stub_json: dict):
-        self.status_code = status_code
-        self.ok = ok
-        self.stub_json = stub_json
-
-    def json(self):
-        return self.stub_json
+@pytest.fixture
+def mock_session(library, mock_sierra_response):
+    if library == "bpl":
+        session = sierra_adapters.BPLSolrSession()
+    else:
+        session = sierra_adapters.NYPLPlatformSession()
+    return session
 
 
 @pytest.fixture
@@ -26,34 +25,7 @@ def live_creds() -> None:
             os.environ[k] = v
 
 
-@pytest.fixture
-def mock_sierra_session(library, monkeypatch):
-    if library == "nypl":
-        code, ok, json = 200, True, {"data": [{"id": "123456789"}]}
-    elif library == "bpl":
-        code, ok, json = 200, True, {"response": {"docs": [{"id": "123456789"}]}}
-    else:
-        code, ok, json = 404, False, {}
-
-    def mock_api_response(*args, code=code, ok=ok, json=json, **kwargs):
-        return MockHTTPResponse(status_code=code, ok=ok, stub_json=json)
-
-    def mock_token_response(*args, **kwargs):
-        token_json = {"access_token": "foo", "expires_in": 10}
-        return MockHTTPResponse(status_code=200, ok=True, stub_json=token_json)
-
-    monkeypatch.setattr("requests.post", mock_token_response)
-    monkeypatch.setattr("requests.Session.get", mock_api_response)
-    monkeypatch.setenv("NYPL_PLATFORM_CLIENT", "test")
-    monkeypatch.setenv("NYPL_PLATFORM_SECRET", "test")
-    monkeypatch.setenv("NYPL_PLATFORM_OAUTH", "test")
-    monkeypatch.setenv("NYPL_PLATFORM_AGENT", "test")
-    monkeypatch.setenv("NYPL_PLATFORM_TARGET", "dev")
-    monkeypatch.setenv("BPL_SOLR_CLIENT", "test")
-    monkeypatch.setenv("BPL_SOLR_TARGET", "dev")
-
-
-class TestAbstractSierraSession:
+class TestAbstractObjects:
     def test_AbstractSierraSession__get_credentials(self):
         sierra_adapters.AbstractSierraSession.__abstractmethods__ = set()
         session = sierra_adapters.AbstractSierraSession()
@@ -68,27 +40,70 @@ class TestAbstractSierraSession:
             session._get_target()
         assert str(exc.value) == "Subclasses should implement this method."
 
-    def test_AbstractSierraSession__get_bibs_by_id(self):
+    def test_AbstractSierraSession__get_bibs_by_bib_id(self):
         sierra_adapters.AbstractSierraSession.__abstractmethods__ = set()
         session = sierra_adapters.AbstractSierraSession()
         with pytest.raises(NotImplementedError) as exc:
-            session._get_bibs_by_id("isbn", "9781234567890")
+            session._get_bibs_by_bib_id("12345")
         assert str(exc.value) == "Subclasses should implement this method."
 
-    def test_AbstractSierraSession_get_bibs_by_id(self):
+    def test_AbstractSierraSession__get_bibs_by_isbn(self):
         sierra_adapters.AbstractSierraSession.__abstractmethods__ = set()
         session = sierra_adapters.AbstractSierraSession()
         with pytest.raises(NotImplementedError) as exc:
-            session.get_bibs_by_id("isbn", "9781234567890")
+            session._get_bibs_by_isbn("12345")
+        assert str(exc.value) == "Subclasses should implement this method."
+
+    def test_AbstractSierraSession__get_bibs_by_issn(self):
+        sierra_adapters.AbstractSierraSession.__abstractmethods__ = set()
+        session = sierra_adapters.AbstractSierraSession()
+        with pytest.raises(NotImplementedError) as exc:
+            session._get_bibs_by_issn("12345")
+        assert str(exc.value) == "Subclasses should implement this method."
+
+    def test_AbstractSierraSession__get_bibs_by_oclc_number(self):
+        sierra_adapters.AbstractSierraSession.__abstractmethods__ = set()
+        session = sierra_adapters.AbstractSierraSession()
+        with pytest.raises(NotImplementedError) as exc:
+            session._get_bibs_by_oclc_number("12345")
+        assert str(exc.value) == "Subclasses should implement this method."
+
+    def test_AbstractSierraSession__get_bibs_by_upc(self):
+        sierra_adapters.AbstractSierraSession.__abstractmethods__ = set()
+        session = sierra_adapters.AbstractSierraSession()
+        with pytest.raises(NotImplementedError) as exc:
+            session._get_bibs_by_upc("12345")
+        assert str(exc.value) == "Subclasses should implement this method."
+
+    def test_AbstractSierraSession__parse_response(self):
+        sierra_adapters.AbstractSierraSession.__abstractmethods__ = set()
+        session = sierra_adapters.AbstractSierraSession()
+        with pytest.raises(NotImplementedError) as exc:
+            session._parse_response("foo")
+        assert str(exc.value) == "Subclasses should implement this method."
+
+    def test_AbstractService__get_bibs_by_id(self):
+        sierra_adapters.AbstractService.__abstractmethods__ = set()
+        session = sierra_adapters.AbstractService()
+        with pytest.raises(NotImplementedError) as exc:
+            session._get_bibs_by_id("foo", "isbn")
+        assert str(exc.value) == "Subclasses should implement this method."
+
+    def test_AbstractService_get_bibs_by_id(self):
+        sierra_adapters.AbstractService.__abstractmethods__ = set()
+        session = sierra_adapters.AbstractService()
+        with pytest.raises(NotImplementedError) as exc:
+            session._get_bibs_by_id("foo", "isbn")
         assert str(exc.value) == "Subclasses should implement this method."
 
 
 @pytest.mark.livetest
 @pytest.mark.usefixtures("live_creds")
 class TestLiveSierraSession:
-    def test_BPLSolrSession_get_bibs_by_id(self):
+    def test_BPLSolrSession_live(self):
         with sierra_adapters.BPLSolrSession() as session:
-            matched_bibs = session.get_bibs_by_id("isbn", "9780316230032")
+            response = session._get_bibs_by_isbn("9780316230032")
+            matched_bibs = session._parse_response(response=response)
             assert isinstance(matched_bibs, list)
             assert len(matched_bibs) == 1
             assert isinstance(matched_bibs[0], dict)
@@ -105,9 +120,10 @@ class TestLiveSierraSession:
             ]
             assert matched_bibs[0]["id"] == "12187266"
 
-    def test_NYPLPlatformSession_get_bibs_by_id(self):
+    def test_NYPLPlatformSession_live(self):
         with sierra_adapters.NYPLPlatformSession() as session:
-            matched_bibs = session.get_bibs_by_id("isbn", "9780316230032")
+            response = session._get_bibs_by_isbn("9780316230032")
+            matched_bibs = session._parse_response(response=response)
             assert isinstance(matched_bibs, list)
             assert len(matched_bibs) == 2
             assert isinstance(matched_bibs[0], dict)
@@ -140,52 +156,86 @@ class TestLiveSierraSession:
             assert matched_bibs[1]["id"] == "21790265"
 
 
-@pytest.mark.usefixtures("mock_sierra_session")
+@pytest.mark.usefixtures("mock_sierra_response")
 class TestMockSierraSession:
-    @pytest.mark.parametrize("library", ["bpl"])
-    @pytest.mark.parametrize("matchpoint", ["isbn", "upc", "oclc_number", "bib_id"])
-    def test_BPLSolrSession_get_bibs_by_id(self, matchpoint):
+    def test_BPLSolrSession__get_bibs_by_bib_id(self):
         with sierra_adapters.BPLSolrSession() as session:
-            matched_bib = session.get_bibs_by_id(f"{matchpoint}", "123456789")
-            assert matched_bib == [{"id": "123456789"}]
+            matched_bib = session._get_bibs_by_bib_id("123456789")
+            assert matched_bib.json() == {"response": {"docs": [{"id": "123456789"}]}}
 
-    @pytest.mark.parametrize("library", [None])
-    @pytest.mark.parametrize("matchpoint", ["isbn", "upc", "oclc_number", "bib_id"])
-    def test_BPLSolrSession_get_bibs_by_id_no_match(self, matchpoint):
+    def test_BPLSolrSession__get_bibs_by_isbn(self):
         with sierra_adapters.BPLSolrSession() as session:
-            matched_bib = session.get_bibs_by_id(f"{matchpoint}", "123456789")
-            assert matched_bib == []
+            matched_bib = session._get_bibs_by_isbn("123456789")
+            assert matched_bib.json() == {"response": {"docs": [{"id": "123456789"}]}}
 
-    @pytest.mark.parametrize("library", [None])
-    def test_BPLSolrSession_get_bibs_by_id_invalid_matchpoint(self):
+    def test_BPLSolrSession__get_bibs_by_issn(self):
+        with sierra_adapters.BPLSolrSession() as session:
+            with pytest.raises(NotImplementedError) as exc:
+                session._get_bibs_by_issn("foo")
+            assert str(exc.value) == "Search by ISSN not implemented in BPL Solr"
+
+    def test_BPLSolrSession__get_bibs_by_oclc_number(self):
+        with sierra_adapters.BPLSolrSession() as session:
+            matched_bib = session._get_bibs_by_oclc_number("123456789")
+            assert matched_bib.json() == {"response": {"docs": [{"id": "123456789"}]}}
+
+    def test_BPLSolrSession__get_bibs_by_upc(self):
+        with sierra_adapters.BPLSolrSession() as session:
+            matched_bib = session._get_bibs_by_upc("123456789")
+            assert matched_bib.json() == {"response": {"docs": [{"id": "123456789"}]}}
+
+    def test_NYPLPlatformSession__get_bibs_by_bib_id(self):
+        with sierra_adapters.NYPLPlatformSession() as session:
+            matched_bib = session._get_bibs_by_bib_id("123456789")
+            assert matched_bib.json() == {"data": [{"id": "123456789"}]}
+
+    def test_NYPLPlatformSession__get_bibs_by_isbn(self):
+        with sierra_adapters.NYPLPlatformSession() as session:
+            matched_bib = session._get_bibs_by_isbn("123456789")
+            assert matched_bib.json() == {"data": [{"id": "123456789"}]}
+
+    def test_NYPLPlatformSession__get_bibs_by_issn(self):
+        with sierra_adapters.NYPLPlatformSession() as session:
+            with pytest.raises(NotImplementedError) as exc:
+                session._get_bibs_by_issn("foo")
+            assert str(exc.value) == "Search by ISSN not implemented in NYPL Platform"
+
+    def test_NYPLPlatformSession__get_bibs_by_oclc_number(self):
+        with sierra_adapters.NYPLPlatformSession() as session:
+            matched_bib = session._get_bibs_by_oclc_number("123456789")
+            assert matched_bib.json() == {"data": [{"id": "123456789"}]}
+
+    def test_NYPLPlatformSession__get_bibs_by_upc(self):
+        with sierra_adapters.NYPLPlatformSession() as session:
+            matched_bib = session._get_bibs_by_upc("123456789")
+            assert matched_bib.json() == {"data": [{"id": "123456789"}]}
+
+
+@pytest.mark.parametrize("library", ["bpl", "nypl"])
+class TestSierraService:
+    @pytest.mark.parametrize("matchpoint", ["bib_id", "upc", "isbn", "oclc_number"])
+    def test_get_bibs_by_id(self, library, matchpoint, mock_session):
+        session = sierra_adapters.SierraService(session=mock_session)
+        bibs = session.get_bibs_by_id(value="123456789", key=matchpoint)
+        assert bibs == [{"id": "123456789"}]
+
+    def test_get_bibs_by_issn(self, library, mock_session):
+        session = sierra_adapters.SierraService(session=mock_session)
+        with pytest.raises(NotImplementedError) as exc:
+            session.get_bibs_by_id(value="123456789", key="issn")
+        assert "Search by ISSN not implemented" in str(exc.value)
+
+    @pytest.mark.parametrize("matchpoint", ["bib_id", "upc", "isbn", "oclc_number"])
+    def test_get_bibs_no_value(self, library, matchpoint, mock_session):
+        session = sierra_adapters.SierraService(session=mock_session)
+        bibs = session.get_bibs_by_id(value=None, key=matchpoint)
+        assert bibs == []
+
+    def test_get_bibs_by_id_invalid_matchpoint(self, library, mock_session):
+        session = sierra_adapters.SierraService(session=mock_session)
         with pytest.raises(ValueError) as exc:
-            with sierra_adapters.BPLSolrSession() as session:
-                session.get_bibs_by_id("foo", "bar")
+            session.get_bibs_by_id(value="123456789", key="bar")
         assert (
             str(exc.value)
-            == "Invalid matchpoint. Available matchpoints are: bib_id, oclc_number, isbn, and upc"
+            == "Invalid matchpoint. Available matchpoints are: bib_id, oclc_number, isbn, issn, and upc"
         )
-
-    @pytest.mark.parametrize("library", ["nypl"])
-    @pytest.mark.parametrize("matchpoint", ["isbn", "upc", "oclc_number", "bib_id"])
-    def test_NYPLPlatformSession_get_bibs_by_id(self, matchpoint):
-        with sierra_adapters.NYPLPlatformSession() as session:
-            matched_bib = session.get_bibs_by_id(f"{matchpoint}", "123456789")
-            assert matched_bib == [{"id": "123456789"}]
-
-    @pytest.mark.parametrize("library", [None])
-    def test_NYPLPlatformSession_get_bibs_by_id_invalid_matchpoint(self):
-        with pytest.raises(ValueError) as exc:
-            with sierra_adapters.NYPLPlatformSession() as session:
-                session.get_bibs_by_id("foo", "bar")
-        assert (
-            str(exc.value)
-            == "Invalid matchpoint. Available matchpoints are: bib_id, oclc_number, isbn, and upc"
-        )
-
-    @pytest.mark.parametrize("library", [None])
-    @pytest.mark.parametrize("matchpoint", ["isbn", "upc", "oclc_number", "bib_id"])
-    def test_NYPLPlatformSession_get_bibs_by_id_no_match(self, matchpoint):
-        with sierra_adapters.NYPLPlatformSession() as session:
-            matched_bib = session.get_bibs_by_id(f"{matchpoint}", "123456789")
-            assert matched_bib == []
