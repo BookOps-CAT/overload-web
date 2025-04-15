@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime
-import io
 
 import pytest
 
@@ -91,21 +90,6 @@ def stub_template(obj_type, template_data):
         return template_data
 
 
-@pytest.fixture
-def stub_saved_template(obj_type, template_data, id, name, agent):
-    if obj_type == "domain":
-        return model.Template(**template_data)
-    elif obj_type == "pydantic":
-        return schemas.TemplateModel(**template_data)
-    template_data.update({"id": id, "name": name, "agent": agent})
-    if obj_type == "domain_persistent":
-        return model.PersistentTemplate(**template_data)
-    elif obj_type == "pydantic_persistent":
-        return schemas.PersistentTemplateModel(**template_data)
-    else:
-        return template_data
-
-
 class TestGenericFactory:
     GENERIC_FACTORY: object_factories.GenericFactory = object_factories.GenericFactory()
 
@@ -130,12 +114,6 @@ class TestGenericFactory:
 )
 class TestOrderFactory:
     ORDER_FACTORY: object_factories.GenericFactory = object_factories.OrderFactory()
-
-    def test_common_transforms(self, stub_order, obj_type, data_type, order_data):
-        order = self.ORDER_FACTORY._common_transforms(stub_order)
-        assert isinstance(stub_order, data_type)
-        assert isinstance(order, dict)
-        assert order == order_data
 
     def test_to_domain(self, stub_order, obj_type, data_type, order_data):
         domain_order = model.Order(**order_data)
@@ -186,28 +164,6 @@ class TestBibFactory:
         assert isinstance(order_bib_to_pydantic, model.DomainBib)
         assert order_bib_to_pydantic == pydantic_order
 
-    def test_binary_to_domain_list(
-        self, library, stub_bib, data_type, obj_type, order_bib_data
-    ):
-        domain_order_bib = model.DomainBib(**order_bib_data)
-        binary_bib = io.BytesIO(stub_bib.as_marc())
-        domain_list = self.ORDER_BIB_FACTORY.binary_to_domain_list(binary_bib, library)
-        assert isinstance(domain_list, list)
-        assert isinstance(domain_list[0], model.DomainBib)
-        assert domain_list == [domain_order_bib]
-
-    def test_binary_to_pydantic_list(
-        self, library, stub_bib, data_type, obj_type, order_bib_data
-    ):
-        pydantic_order_bib = schemas.BibModel(**order_bib_data)
-        binary_bib = io.BytesIO(stub_bib.as_marc())
-        pydantic_list = self.ORDER_BIB_FACTORY.binary_to_pydantic_list(
-            binary_bib, library
-        )
-        assert isinstance(pydantic_list, list)
-        assert isinstance(pydantic_list[0], schemas.BibModel)
-        assert pydantic_list == [pydantic_order_bib]
-
 
 @pytest.mark.parametrize(
     "obj_type, data_type",
@@ -231,99 +187,3 @@ class TestTemplateFactory:
         assert isinstance(stub_template, data_type)
         assert isinstance(template_to_pydantic, schemas.TemplateModel)
         assert template_to_pydantic == pydantic_template
-
-
-@pytest.mark.parametrize(
-    "obj_type, data_type",
-    [
-        ("domain", model.Template),
-        ("pydantic", schemas.TemplateModel),
-        ("domain_persistent", model.PersistentTemplate),
-        ("pydantic_persistent", schemas.PersistentTemplateModel),
-    ],
-)
-@pytest.mark.parametrize("id, name, agent", [(1, "Foo Template", "user1")])
-class TestPersistentTemplateFactory:
-    TEMPLATE_FACTORY: object_factories.GenericFactory = (
-        object_factories.PersistentTemplateFactory()
-    )
-
-    def test_to_domain(
-        self, id, name, agent, obj_type, data_type, stub_saved_template, template_data
-    ):
-        template_data.update({"id": id, "name": name, "agent": agent})
-        domain_template = model.PersistentTemplate(**template_data)
-        template_to_domain = self.TEMPLATE_FACTORY.to_domain(
-            stub_saved_template, id, name, agent
-        )
-        assert isinstance(stub_saved_template, data_type)
-        assert isinstance(template_to_domain, model.PersistentTemplate)
-        assert template_to_domain == domain_template
-
-    def test_to_pydantic(
-        self, id, name, agent, obj_type, data_type, stub_saved_template, template_data
-    ):
-        template_data.update({"id": id, "name": name, "agent": agent})
-        pydantic_template = schemas.PersistentTemplateModel(**template_data)
-        template_to_pydantic = self.TEMPLATE_FACTORY.to_pydantic(
-            stub_saved_template, id, name, agent
-        )
-        assert isinstance(stub_saved_template, data_type)
-        assert isinstance(template_to_pydantic, schemas.PersistentTemplateModel)
-        assert template_to_pydantic == pydantic_template
-
-
-class TestPersistentTemplateFactoryErrors:
-    TEMPLATE_FACTORY: object_factories.GenericFactory = (
-        object_factories.PersistentTemplateFactory()
-    )
-
-    @pytest.mark.parametrize(
-        "obj_type, data_type",
-        [
-            ("domain", model.Template),
-            ("pydantic", schemas.TemplateModel),
-            ("domain_persistent", model.PersistentTemplate),
-        ],
-    )
-    @pytest.mark.parametrize("id, name, agent", [(None, None, None)])
-    def test_to_domain_missing_args(
-        self, id, name, agent, obj_type, data_type, stub_saved_template
-    ):
-        with pytest.raises(TypeError) as exc:
-            self.TEMPLATE_FACTORY.to_domain(stub_saved_template, id, name, agent)
-        assert str(exc.value) == ""
-
-    @pytest.mark.parametrize("id, name, agent", [(None, None, None)])
-    def test_to_domain_missing_args_model(self, id, name, agent, template_data):
-        template_data.update({"id": id, "name": name, "agent": agent})
-        with pytest.raises(ValueError) as exc:
-            self.TEMPLATE_FACTORY.to_domain(
-                schemas.PersistentTemplateModel(**template_data), id, name, agent
-            )
-        assert "4 validation errors for PersistentTemplateModel" in str(exc.value)
-
-    @pytest.mark.parametrize(
-        "obj_type, data_type",
-        [
-            ("domain", model.Template),
-            ("pydantic", schemas.TemplateModel),
-            ("domain_persistent", model.PersistentTemplate),
-        ],
-    )
-    @pytest.mark.parametrize("id, name, agent", [(None, None, None)])
-    def test_to_pydantic_missing_args(
-        self, id, name, agent, obj_type, data_type, stub_saved_template
-    ):
-        with pytest.raises(TypeError) as exc:
-            self.TEMPLATE_FACTORY.to_pydantic(stub_saved_template, id, name, agent)
-        assert str(exc.value) == ""
-
-    @pytest.mark.parametrize("id, name, agent", [(None, None, None)])
-    def test_to_pydantic_missing_args_model(self, id, name, agent, template_data):
-        template_data.update({"id": id, "name": name, "agent": agent})
-        with pytest.raises(ValueError) as exc:
-            self.TEMPLATE_FACTORY.to_pydantic(
-                schemas.PersistentTemplateModel(**template_data), id, name, agent
-            )
-        assert "4 validation errors for PersistentTemplateModel" in str(exc.value)

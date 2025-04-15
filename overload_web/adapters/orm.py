@@ -38,4 +38,4 @@ templates = Table(
 
 
 def start_mappers() -> None:
-    mapper_registry.map_imperatively(model.PersistentTemplate, templates)
+    mapper_registry.map_imperatively(model.Template, templates)

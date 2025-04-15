@@ -1,67 +1,55 @@
+import io
+
 import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.adapters.sierra_adapters import (
-    AbstractSierraSession,
-    SierraService,
-)
-from overload_web.domain.model import DomainBib, Order, Template
-
-
-class MockSierraAdapter(AbstractSierraSession):
-    def _get_credentials(self):
-        pass
-
-    def _get_target(self):
-        pass
-
-    def _get_bibs_by_id(self, key, value):
-        if key and value:
-            return ["123456789"]
-        else:
-            return []
-
-
-@pytest.fixture
-def stub_sierra_service(library, monkeypatch):
-    def mock_adapter(*args, **kwargs):
-        return MockSierraAdapter()
-
-    monkeypatch.setattr(
-        "overload_web.adapters.sierra_adapters.BPLSolrSession", mock_adapter
-    )
-    monkeypatch.setattr(
-        "overload_web.adapters.sierra_adapters.NYPLPlatformSession", mock_adapter
-    )
-    service = SierraService(MockSierraAdapter())
-    return service
+from overload_web.domain.model import DomainBib, Order
 
 
 class MockHTTPResponse:
-    def __init__(self, stub_json: dict):
+    def __init__(self, status_code: int, ok: bool, stub_json: dict):
+        self.status_code = status_code
+        self.ok = ok
         self.stub_json = stub_json
 
     def json(self):
         return self.stub_json
 
 
-@pytest.fixture
-def mock_st_post_response(monkeypatch):
-    def mock_response(*args, **kwargs):
-        stub_json = {
-            "order": {"library": "nypl"},
-            "template": {
-                "fund": "foo",
-                "primary_matchpoint": "foo",
-                "secondary_matchpoint": "bar",
-                "tertiary_matchpoint": "baz",
-            },
-        }
-        return MockHTTPResponse(stub_json=stub_json)
+@pytest.fixture(autouse=True)
+def fake_creds(monkeypatch):
+    monkeypatch.setenv("BPL_SOLR_CLIENT", "test")
+    monkeypatch.setenv("BPL_SOLR_TARGET", "dev")
+    monkeypatch.setenv("NYPL_PLATFORM_CLIENT", "test")
+    monkeypatch.setenv("NYPL_PLATFORM_SECRET", "test")
+    monkeypatch.setenv("NYPL_PLATFORM_OAUTH", "test")
+    monkeypatch.setenv("NYPL_PLATFORM_AGENT", "test")
+    monkeypatch.setenv("NYPL_PLATFORM_TARGET", "dev")
 
-    monkeypatch.setattr("requests.post", mock_response)
-    monkeypatch.setenv("API_URL_BASE", "foo")
+
+@pytest.fixture
+def mock_sierra_response(monkeypatch):
+    def mock_bpl_response(*args, **kwargs):
+        json = {"response": {"docs": [{"id": "123456789"}]}}
+        return MockHTTPResponse(status_code=200, ok=True, stub_json=json)
+
+    def mock_nypl_response(*args, **kwargs):
+        json = {"data": [{"id": "123456789"}]}
+        return MockHTTPResponse(status_code=200, ok=True, stub_json=json)
+
+    def mock_token_response(*args, **kwargs):
+        token_json = {"access_token": "foo", "expires_in": 10}
+        return MockHTTPResponse(status_code=200, ok=True, stub_json=token_json)
+
+    monkeypatch.setattr(
+        "overload_web.adapters.sierra_adapters.SolrSession.get", mock_bpl_response
+    )
+    monkeypatch.setattr("requests.post", mock_token_response)
+    monkeypatch.setattr(
+        "overload_web.adapters.sierra_adapters.PlatformSession.get",
+        mock_nypl_response,
+    )
 
 
 @pytest.fixture
@@ -91,13 +79,9 @@ def order_data() -> dict:
 
 
 @pytest.fixture
-def stub_order(order_data) -> Order:
-    return Order(**order_data)
-
-
-@pytest.fixture
 def template_data() -> dict:
     return {
+        "agent": None,
         "audience": "a",
         "blanket_po": None,
         "copies": "5",
@@ -105,8 +89,10 @@ def template_data() -> dict:
         "create_date": "2024-01-01",
         "format": "a",
         "fund": "10001adbk",
+        "id": None,
         "internal_note": "foo",
         "lang": "spa",
+        "name": None,
         "order_type": "p",
         "price": "$20.00",
         "selector": "b",
@@ -124,13 +110,19 @@ def template_data() -> dict:
 
 
 @pytest.fixture
-def stub_template(template_data) -> Template:
-    return Template(**template_data)
+def bib_data(order_data, library) -> dict:
+    return {"library": library, "orders": [order_data]}
 
 
 @pytest.fixture
-def stub_domain_bib(order_data, library) -> DomainBib:
-    return DomainBib(library=library, orders=[Order(**order_data)])
+def make_domain_bib(library, order_data):
+    def _make_domain_bib(data):
+        bib = DomainBib(library=library, orders=[Order(**order_data)])
+        for k, v in data.items():
+            setattr(bib, k, v)
+        return bib
+
+    return _make_domain_bib
 
 
 @pytest.fixture
@@ -191,6 +183,11 @@ def stub_bib(library, stub_960, stub_961) -> Bib:
     bib.add_field(stub_960)
     bib.add_field(stub_961)
     return bib
+
+
+@pytest.fixture
+def stub_binary_marc(stub_bib) -> io.BytesIO:
+    return io.BytesIO(stub_bib.as_marc())
 
 
 @pytest.fixture

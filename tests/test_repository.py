@@ -35,12 +35,11 @@ def test_AbstractRepository_get():
     assert str(exc.value) == ""
 
 
-def test_AbstractRepository_save(stub_template):
+def test_AbstractRepository_save(template_data):
     repo = repository.AbstractRepository()
-    template = stub_template.__dict__
-    template["id"], template["name"], template["agent"] = 1, "Foo", "Bar"
+    template_data["id"], template_data["name"], template_data["agent"] = 1, "Foo", "Bar"
     with pytest.raises(NotImplementedError) as exc:
-        repo.save(template=template)
+        repo.save(template=template_data)
     assert str(exc.value) == ""
 
 
@@ -58,16 +57,15 @@ def test_SqlAlchemyRepository(session):
         (4, "Qux Template", "user3"),
     ],
 )
-def test_SqlAlchemyRepository_get_save(id, name, agent, session, stub_template):
+def test_SqlAlchemyRepository_get_save(id, name, agent, session, template_data):
     repo = repository.SqlAlchemyRepository(session=session)
-    template_data = stub_template.__dict__
     template_data["id"], template_data["name"], template_data["agent"] = id, name, agent
     template_data["create_date"] = datetime.date(2024, 1, 1)
-    template = model.PersistentTemplate(**template_data)
-    assert isinstance(template, model.PersistentTemplate)
+    template = model.Template(**template_data)
+    assert isinstance(template, model.Template)
     repo.save(template)
     saved_template = repo.get(id=id)
-    assert saved_template == model.PersistentTemplate(
+    assert saved_template == model.Template(
         id=id,
         name=name,
         agent=agent,
@@ -107,21 +105,21 @@ def test_mappers(session):
         )
     )
     expected = [
-        model.PersistentTemplate(
+        model.Template(
             id=1,
             name="Foo Template",
             agent="user1",
             vendor_code="FOO",
             primary_matchpoint="isbn",
         ),
-        model.PersistentTemplate(
+        model.Template(
             id=2,
             name="Bar Template",
             agent="user2",
             vendor_code="BAR",
             primary_matchpoint="upc",
         ),
-        model.PersistentTemplate(
+        model.Template(
             id=3,
             name="Baz Template",
             agent="user1",
@@ -129,4 +127,4 @@ def test_mappers(session):
             primary_matchpoint="isbn",
         ),
     ]
-    assert session.query(model.PersistentTemplate).all() == expected
+    assert session.query(model.Template).all() == expected
