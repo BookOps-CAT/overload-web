@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, BinaryIO, Dict, Generic, Optional, Sequence, TypeVar, Union
+from typing import Any, Dict, Generic, TypeVar, Union
 
 from overload_web.adapters import marc_adapters
 from overload_web.api import schemas
@@ -29,42 +29,15 @@ class OrderFactory(
     def _common_transforms(
         self,
         order: Union[model.Order, schemas.OrderModel, marc_adapters.OverloadOrder],
-    ) -> dict:
-        if isinstance(order, marc_adapters.OverloadOrder):
-            return {
-                "audience": order.audience,
-                "blanket_po": order.blanket_po,
-                "copies": order.copies,
-                "country": order.country,
-                "create_date": order.created,
-                "format": order.form,
-                "fund": order.fund,
-                "internal_note": order.internal_note,
-                "lang": order.lang,
-                "locations": order.locs,
-                "order_type": order.order_type,
-                "price": order.price,
-                "selector": order.selector,
-                "selector_note": order.selector_note,
-                "source": order.source,
-                "status": order.status,
-                "var_field_isbn": order.var_field_isbn,
-                "vendor_code": order.vendor_code,
-                "vendor_notes": order.venNotes,
-                "vendor_title_no": order.vendor_title_no,
-            }
-
-        return {
+    ) -> Dict[str, Any]:
+        data: Dict[str, Any] = {
             "audience": order.audience,
             "blanket_po": order.blanket_po,
             "copies": order.copies,
             "country": order.country,
-            "create_date": order.create_date,
-            "format": order.format,
             "fund": order.fund,
             "internal_note": order.internal_note,
             "lang": order.lang,
-            "locations": order.locations,
             "order_type": order.order_type,
             "price": order.price,
             "selector": order.selector,
@@ -73,9 +46,19 @@ class OrderFactory(
             "status": order.status,
             "var_field_isbn": order.var_field_isbn,
             "vendor_code": order.vendor_code,
-            "vendor_notes": order.vendor_notes,
             "vendor_title_no": order.vendor_title_no,
         }
+        if isinstance(order, marc_adapters.OverloadOrder):
+            data["create_date"] = order.created
+            data["format"] = order.form
+            data["locations"] = order.locs
+            data["vendor_notes"] = order.venNotes
+        else:
+            data["create_date"] = order.create_date
+            data["format"] = order.format
+            data["locations"] = order.locations
+            data["vendor_notes"] = order.vendor_notes
+        return data
 
     def to_domain(
         self,
@@ -92,9 +75,7 @@ class OrderFactory(
 
 class BibFactory(
     GenericFactory[
-        Union[
-            model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib, Dict[str, Any]
-        ],
+        Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
         model.DomainBib,
         schemas.BibModel,
     ]
@@ -103,33 +84,21 @@ class BibFactory(
 
     def _common_transforms(
         self,
-        bib: Union[
-            model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib, Dict[str, Any]
-        ],
-        library: Optional[str] = "",
+        bib: Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
     ) -> dict:
+        orders = [self.order_factory.to_domain(i) for i in bib.orders]
         if isinstance(bib, marc_adapters.OverloadBib):
-            order_factory = OrderFactory()
             return {
                 "library": bib.library,
-                "orders": [order_factory.to_domain(i) for i in bib.orders],
+                "orders": orders,
                 "bib_id": bib.sierra_bib_id,
                 "isbn": bib.isbn,
                 "oclc_number": list(bib.oclc_nos.values()),
                 "upc": bib.upc_number,
             }
-        elif isinstance(bib, dict):
-            return {
-                "library": library,
-                "orders": [],
-                "bib_id": bib["id"],
-                "isbn": bib.get("isbn"),
-                "oclc_number": bib.get("oclc_number"),
-                "upc": bib.get("upc"),
-            }
         return {
             "library": bib.library,
-            "orders": bib.orders,
+            "orders": orders,
             "bib_id": bib.bib_id,
             "isbn": bib.isbn,
             "oclc_number": bib.oclc_number,
@@ -138,33 +107,15 @@ class BibFactory(
 
     def to_domain(
         self,
-        bib: Union[
-            model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib, Dict[str, Any]
-        ],
-        library: Optional[str] = "",
+        bib: Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
     ) -> model.DomainBib:
-        return model.DomainBib(**self._common_transforms(bib=bib, library=library))
+        return model.DomainBib(**self._common_transforms(bib=bib))
 
     def to_pydantic(
         self,
-        bib: Union[
-            model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib, Dict[str, Any]
-        ],
-        library: Optional[str] = "",
+        bib: Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
     ) -> schemas.BibModel:
-        return schemas.BibModel(**self._common_transforms(bib=bib, library=library))
-
-    def binary_to_domain_list(
-        self, bib_data: BinaryIO, library: str
-    ) -> Sequence[model.DomainBib]:
-        marc_list = [i for i in marc_adapters.read_marc_file(bib_data, library=library)]
-        return [model.DomainBib(**self._common_transforms(i)) for i in marc_list]
-
-    def binary_to_pydantic_list(
-        self, bib_data: BinaryIO, library: str
-    ) -> Sequence[schemas.BibModel]:
-        marc_list = [i for i in marc_adapters.read_marc_file(bib_data, library=library)]
-        return [schemas.BibModel(**self._common_transforms(i)) for i in marc_list]
+        return schemas.BibModel(**self._common_transforms(bib=bib))
 
 
 class TemplateFactory(
@@ -178,62 +129,10 @@ class TemplateFactory(
         self,
         template: Union[model.Template, schemas.TemplateModel],
     ) -> model.Template:
-        return model.Template(
-            agent=template.agent,
-            audience=template.audience,
-            blanket_po=template.blanket_po,
-            copies=template.copies,
-            country=template.country,
-            create_date=template.create_date,
-            format=template.format,
-            fund=template.fund,
-            id=template.id,
-            internal_note=template.internal_note,
-            lang=template.lang,
-            order_type=template.order_type,
-            name=template.name,
-            price=template.price,
-            selector=template.selector,
-            selector_note=template.selector_note,
-            source=template.source,
-            status=template.status,
-            var_field_isbn=template.var_field_isbn,
-            vendor_code=template.vendor_code,
-            vendor_notes=template.vendor_notes,
-            vendor_title_no=template.vendor_title_no,
-            primary_matchpoint=template.primary_matchpoint,
-            secondary_matchpoint=template.secondary_matchpoint,
-            tertiary_matchpoint=template.tertiary_matchpoint,
-        )
+        return model.Template(**vars(template))
 
     def to_pydantic(
         self,
         template: Union[model.Template, schemas.TemplateModel],
     ) -> schemas.TemplateModel:
-        return schemas.TemplateModel(
-            agent=template.agent,
-            audience=template.audience,
-            blanket_po=template.blanket_po,
-            copies=template.copies,
-            country=template.country,
-            create_date=template.create_date,
-            format=template.format,
-            fund=template.fund,
-            id=template.id,
-            internal_note=template.internal_note,
-            lang=template.lang,
-            order_type=template.order_type,
-            name=template.name,
-            price=template.price,
-            selector=template.selector,
-            selector_note=template.selector_note,
-            source=template.source,
-            status=template.status,
-            var_field_isbn=template.var_field_isbn,
-            vendor_code=template.vendor_code,
-            vendor_notes=template.vendor_notes,
-            vendor_title_no=template.vendor_title_no,
-            primary_matchpoint=template.primary_matchpoint,
-            secondary_matchpoint=template.secondary_matchpoint,
-            tertiary_matchpoint=template.tertiary_matchpoint,
-        )
+        return schemas.TemplateModel(**vars(template))
