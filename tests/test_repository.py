@@ -4,8 +4,8 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import clear_mappers, sessionmaker
 
-from overload_web.adapters import orm, repository
 from overload_web.domain import model
+from overload_web.infrastructure import orm, repository
 
 
 @pytest.fixture

@@ -4,7 +4,7 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain.model import DomainBib, Order
+from overload_web.domain import model
 
 
 class MockHTTPResponse:
@@ -43,11 +43,11 @@ def mock_sierra_response(monkeypatch):
         return MockHTTPResponse(status_code=200, ok=True, stub_json=token_json)
 
     monkeypatch.setattr(
-        "overload_web.adapters.sierra_adapters.SolrSession.get", mock_bpl_response
+        "overload_web.infrastructure.sierra_adapters.SolrSession.get", mock_bpl_response
     )
     monkeypatch.setattr("requests.post", mock_token_response)
     monkeypatch.setattr(
-        "overload_web.adapters.sierra_adapters.PlatformSession.get",
+        "overload_web.infrastructure.sierra_adapters.PlatformSession.get",
         mock_nypl_response,
     )
 
@@ -117,7 +117,7 @@ def bib_data(order_data, library) -> dict:
 @pytest.fixture
 def make_domain_bib(library, order_data):
     def _make_domain_bib(data):
-        bib = DomainBib(library=library, orders=[Order(**order_data)])
+        bib = model.DomainBib(library=library, orders=[model.Order(**order_data)])
         for k, v in data.items():
             setattr(bib, k, v)
         return bib

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
-from overload_web.api import overload_api
-from overload_web.frontend import jinja_frontend
+from overload_web.presentation.api import overload_api
+from overload_web.presentation.frontend import jinja_frontend
 
 app = FastAPI()
 

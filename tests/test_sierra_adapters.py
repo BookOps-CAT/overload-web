@@ -3,7 +3,7 @@ import os
 import pytest
 import yaml
 
-from overload_web.adapters import sierra_adapters
+from overload_web.infrastructure import sierra_adapters
 
 
 @pytest.fixture

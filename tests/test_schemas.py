@@ -1,7 +1,7 @@
 import pytest
 
-from overload_web.api import schemas
 from overload_web.domain import model
+from overload_web.presentation.api import schemas
 
 
 def test_OrderModel(order_data):

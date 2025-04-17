@@ -7,7 +7,7 @@ from fastapi.templating import Jinja2Templates
 from overload_web import constants
 
 frontend_router = APIRouter()
-templates = Jinja2Templates(directory="overload_web/frontend/templates")
+templates = Jinja2Templates(directory="overload_web/presentation/frontend/templates")
 
 CONTEXT: Dict[str, Any] = {
     "application": constants.APPLICATION,
