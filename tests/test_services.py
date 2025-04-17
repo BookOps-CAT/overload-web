@@ -1,17 +1,7 @@
 import pytest
 
-from overload_web.adapters import sierra_adapters
-from overload_web.services import handlers, unit_of_work
-
-
-class FakeSierraService(sierra_adapters.AbstractService):
-    def _get_bibs_by_id(self, value, key):
-        return [{"id": "123456789"}]
-
-
-@pytest.fixture
-def stub_sierra_service(mock_sierra_response):
-    return FakeSierraService()
+from overload_web.application import services, unit_of_work
+from overload_web.infrastructure import sierra_adapters
 
 
 def fake_sierra_service():
@@ -38,10 +28,10 @@ class MockUnitOfWork(unit_of_work.AbstractUnitOfWork):
 
 @pytest.mark.usefixtures("mock_sierra_response")
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
-class TestServices:
+class TestApplicationServices:
     def test_match_bib(self, bib_data, library):
         bib_data["isbn"] = "9781234567890"
-        matched_bib = handlers.match_bib(
+        matched_bib = services.match_bib(
             uow=MockUnitOfWork(),
             bib=bib_data,
             matchpoints=["bib_id", "upc", "isbn", "oclc_number"],

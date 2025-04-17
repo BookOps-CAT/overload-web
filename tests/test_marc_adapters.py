@@ -2,7 +2,7 @@ import datetime
 
 import pytest
 
-from overload_web.adapters import marc_adapters
+from overload_web.application import marc_adapters
 
 
 class TestOverloadBib:

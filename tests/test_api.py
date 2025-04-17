@@ -3,9 +3,9 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 
-from overload_web.api.overload_api import api_router
-from overload_web.frontend.jinja_frontend import frontend_router
 from overload_web.main import app
+from overload_web.presentation.api.overload_api import api_router
+from overload_web.presentation.frontend.jinja_frontend import frontend_router
 
 
 class TestAPIClient:

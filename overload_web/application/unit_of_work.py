@@ -6,7 +6,8 @@ from typing import Callable
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from overload_web.adapters import object_factories, repository, sierra_adapters
+from overload_web.application import object_factories
+from overload_web.infrastructure import repository, sierra_adapters
 
 
 class AbstractUnitOfWork(abc.ABC):
@@ -14,7 +15,6 @@ class AbstractUnitOfWork(abc.ABC):
     bibs: sierra_adapters.AbstractService
     bib_factory = object_factories.BibFactory()
     order_factory = object_factories.OrderFactory()
-    template_factory = object_factories.TemplateFactory()
 
     def __enter__(self) -> AbstractUnitOfWork:
         return self

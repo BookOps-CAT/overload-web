@@ -2,33 +2,29 @@ from __future__ import annotations
 
 from typing import Any, Dict, Generic, TypeVar, Union
 
-from overload_web.adapters import marc_adapters
-from overload_web.api import schemas
+from overload_web.application import marc_adapters
 from overload_web.domain import model
 
 T = TypeVar("T")  # input object
 U = TypeVar("U")  # domain model object
-V = TypeVar("V")  # pydantic model object
+V = TypeVar("V")  # dictionary object
 
 
 class GenericFactory(Generic[T, U, V]):
-    def to_domain(self, input_object: T) -> U:
+    def to_dict(self, input_object: T) -> V:
         raise NotImplementedError("Subclasses should implement this method.")
 
-    def to_pydantic(self, input_object: T) -> V:
+    def to_domain(self, input_object: T) -> U:
         raise NotImplementedError("Subclasses should implement this method.")
 
 
 class OrderFactory(
     GenericFactory[
-        Union[model.Order, schemas.OrderModel, marc_adapters.OverloadOrder],
-        model.Order,
-        schemas.OrderModel,
+        Union[model.Order, marc_adapters.OverloadOrder], model.Order, Dict[str, Any]
     ]
 ):
-    def _common_transforms(
-        self,
-        order: Union[model.Order, schemas.OrderModel, marc_adapters.OverloadOrder],
+    def to_dict(
+        self, order: Union[model.Order, marc_adapters.OverloadOrder]
     ) -> Dict[str, Any]:
         data: Dict[str, Any] = {
             "audience": order.audience,
@@ -61,32 +57,24 @@ class OrderFactory(
         return data
 
     def to_domain(
-        self,
-        order: Union[model.Order, schemas.OrderModel, marc_adapters.OverloadOrder],
+        self, order: Union[model.Order, marc_adapters.OverloadOrder]
     ) -> model.Order:
-        return model.Order(**self._common_transforms(order=order))
-
-    def to_pydantic(
-        self,
-        order: Union[model.Order, schemas.OrderModel, marc_adapters.OverloadOrder],
-    ) -> schemas.OrderModel:
-        return schemas.OrderModel(**self._common_transforms(order=order))
+        return model.Order(**self.to_dict(order=order))
 
 
 class BibFactory(
     GenericFactory[
-        Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
+        Union[model.DomainBib, marc_adapters.OverloadBib],
         model.DomainBib,
-        schemas.BibModel,
+        Dict[str, Any],
     ]
 ):
     order_factory = OrderFactory()
 
-    def _common_transforms(
-        self,
-        bib: Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
-    ) -> dict:
-        orders = [self.order_factory.to_domain(i) for i in bib.orders]
+    def to_dict(
+        self, bib: Union[model.DomainBib, marc_adapters.OverloadBib]
+    ) -> Dict[str, Any]:
+        orders = [self.order_factory.to_dict(i) for i in bib.orders]
         if isinstance(bib, marc_adapters.OverloadBib):
             return {
                 "library": bib.library,
@@ -106,33 +94,9 @@ class BibFactory(
         }
 
     def to_domain(
-        self,
-        bib: Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
+        self, bib: Union[model.DomainBib, marc_adapters.OverloadBib]
     ) -> model.DomainBib:
-        return model.DomainBib(**self._common_transforms(bib=bib))
-
-    def to_pydantic(
-        self,
-        bib: Union[model.DomainBib, schemas.BibModel, marc_adapters.OverloadBib],
-    ) -> schemas.BibModel:
-        return schemas.BibModel(**self._common_transforms(bib=bib))
-
-
-class TemplateFactory(
-    GenericFactory[
-        Union[model.Template, schemas.TemplateModel],
-        model.Template,
-        schemas.TemplateModel,
-    ]
-):
-    def to_domain(
-        self,
-        template: Union[model.Template, schemas.TemplateModel],
-    ) -> model.Template:
-        return model.Template(**vars(template))
-
-    def to_pydantic(
-        self,
-        template: Union[model.Template, schemas.TemplateModel],
-    ) -> schemas.TemplateModel:
-        return schemas.TemplateModel(**vars(template))
+        bib_data = self.to_dict(bib=bib)
+        orders = [model.Order(**i) for i in bib_data["orders"]]
+        bib_data["orders"] = orders
+        return model.DomainBib(**bib_data)
