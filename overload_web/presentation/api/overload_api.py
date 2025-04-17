@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 
 from overload_web.application import services, unit_of_work
+from overload_web.domain import model
 from overload_web.presentation.api import schemas
 
 api_router = APIRouter()
@@ -24,7 +25,7 @@ def vendor_file_process(
     processed_bibs = []
     uow = unit_of_work.OverloadUnitOfWork(library=library)
     bibs = services.process_marc_file(bib_data=file.file, library=library, uow=uow)
-    model_template = uow.template_factory.to_domain(template=template)
+    model_template = model.Template(**vars(template))
     for bib in bibs:
         for order in bib.orders:
             order.apply_template(template=model_template)

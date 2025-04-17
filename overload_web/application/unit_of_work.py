@@ -15,7 +15,6 @@ class AbstractUnitOfWork(abc.ABC):
     bibs: sierra_adapters.AbstractService
     bib_factory = object_factories.BibFactory()
     order_factory = object_factories.OrderFactory()
-    template_factory = object_factories.TemplateFactory()
 
     def __enter__(self) -> AbstractUnitOfWork:
         return self
