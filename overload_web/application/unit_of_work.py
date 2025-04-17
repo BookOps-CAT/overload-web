@@ -6,7 +6,8 @@ from typing import Callable
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from overload_web.infrastructure import object_factories, repository, sierra_adapters
+from overload_web.application import object_factories
+from overload_web.infrastructure import repository, sierra_adapters
 
 
 class AbstractUnitOfWork(abc.ABC):

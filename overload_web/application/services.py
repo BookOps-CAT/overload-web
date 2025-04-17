@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from typing import Any, BinaryIO, Dict, List, Sequence
 
-from overload_web.application import unit_of_work
+from overload_web.application import marc_adapters, unit_of_work
 from overload_web.domain import model
-from overload_web.infrastructure import marc_adapters
 
 
 def get_bibs_by_key(

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Generic, TypeVar, Union
 
+from overload_web.application import marc_adapters
 from overload_web.domain import model
-from overload_web.infrastructure import marc_adapters
 from overload_web.presentation.api import schemas
 
 T = TypeVar("T")  # input object
