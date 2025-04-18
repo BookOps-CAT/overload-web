@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import datetime
-from dataclasses import asdict, dataclass
-from typing import List, Optional, Union
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Union
 
 
 @dataclass
@@ -13,6 +13,10 @@ class DomainBib:
     isbn: Optional[str] = None
     oclc_number: Optional[Union[str, List[str]]] = None
     upc: Optional[str] = None
+
+    def apply_template(self, template_data: Dict[str, Any]) -> None:
+        for order in self.orders:
+            order.apply_template(template_data=template_data)
 
     def match(self, bibs: List[DomainBib], matchpoints: List[str]) -> None:
         max_matched_points = -1
@@ -27,6 +31,42 @@ class DomainBib:
                 max_matched_points = matched_points
                 best_match_bib_id = bib.bib_id
         self.bib_id = best_match_bib_id
+
+
+@dataclass
+class Matchpoints:
+    primary: Optional[str] = None
+    secondary: Optional[str] = None
+    tertiary: Optional[str] = None
+
+    def __init__(self, *args, **kwargs):
+        if "tertiary" in kwargs and "secondary" not in kwargs and len(args) < 2:
+            raise ValueError("Cannot have tertiary matchpoint without secondary.")
+
+        values = list(args)
+        for key in ["primary", "secondary", "tertiary"]:
+            if key in kwargs:
+                if len(values) < ["primary", "secondary", "tertiary"].index(key) + 1:
+                    values.append(kwargs[key])
+
+        while len(values) < 3:
+            values.append(None)
+
+        self.primary, self.secondary, self.tertiary = values[:3]
+
+    def as_list(self) -> List[str]:
+        return [i for i in (self.primary, self.secondary, self.tertiary) if i]
+
+    def __composite_values__(self):
+        return self.primary, self.secondary, self.tertiary
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Matchpoints):
+            return NotImplemented
+        return self.__composite_values__() == other.__composite_values__()
+
+    def __ne__(self, other) -> bool:
+        return not self.__eq__(other)
 
 
 @dataclass
@@ -52,15 +92,15 @@ class Order:
     vendor_notes: Optional[str]
     vendor_title_no: Optional[str]
 
-    def apply_template(self, template: Template) -> None:
-        template_dict = asdict(template)
-        for k, v in template_dict.items():
-            if v and k in asdict(self).keys():
+    def apply_template(self, template_data: Dict[str, Any]) -> None:
+        for k, v in template_data.items():
+            if v and k in self.__dict__.keys():
                 setattr(self, k, v)
 
 
 @dataclass(kw_only=True)
 class Template:
+    matchpoints: Matchpoints = field(default_factory=Matchpoints)
     agent: Optional[str] = None
     audience: Optional[str] = None
     blanket_po: Optional[str] = None
@@ -83,19 +123,3 @@ class Template:
     vendor_code: Optional[str] = None
     vendor_notes: Optional[str] = None
     vendor_title_no: Optional[str] = None
-
-    primary_matchpoint: Optional[str] = None
-    secondary_matchpoint: Optional[str] = None
-    tertiary_matchpoint: Optional[str] = None
-
-    @property
-    def matchpoints(self) -> List[str]:
-        return [
-            i
-            for i in [
-                self.primary_matchpoint,
-                self.secondary_matchpoint,
-                self.tertiary_matchpoint,
-            ]
-            if i
-        ]

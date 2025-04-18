@@ -5,20 +5,24 @@ import pytest
 from overload_web.domain import model
 
 
+@pytest.mark.parametrize("library", ["bpl", "nypl"])
 class TestBibTypes:
-    @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_DomainBib(self, library, order_data):
         bib = model.DomainBib(library=library, orders=[model.Order(**order_data)])
         assert bib.bib_id is None
 
-    @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_DomainBib_bib_id(self, library, order_data):
         bib = model.DomainBib(
             library=library, orders=[model.Order(**order_data)], bib_id="b123456789"
         )
         assert bib.bib_id == "b123456789"
 
-    @pytest.mark.parametrize("library", ["bpl", "nypl"])
+    def test_DomainBib_apply_template(self, library, order_data, template_data):
+        bib = model.DomainBib(library=library, orders=[model.Order(**order_data)])
+        assert bib.orders[0].fund == "25240adbk"
+        bib.apply_template(template_data=template_data)
+        assert bib.orders[0].fund == "10001adbk"
+
     @pytest.mark.parametrize(
         "matchpoints, result",
         [(["isbn"], "123"), (["oclc_number"], "234"), (["isbn", "oclc_number"], "345")],
@@ -47,6 +51,46 @@ class TestBibTypes:
         assert bib.bib_id == result
 
 
+class TestMatchpointsTypes:
+    def test_Matchpoints(self):
+        matchpoints = model.Matchpoints(primary="isbn", secondary="oclc_number")
+        assert matchpoints.primary == "isbn"
+        assert matchpoints.secondary == "oclc_number"
+        assert matchpoints.tertiary is None
+
+    def test_Matchpoints_default(self):
+        matchpoints = model.Matchpoints()
+        assert matchpoints.primary is None
+        assert matchpoints.secondary is None
+        assert matchpoints.tertiary is None
+
+    def test_Matchpoints_positional(self):
+        matchpoints_1 = model.Matchpoints("isbn", "upc", "issn")
+        matchpoints_2 = model.Matchpoints("isbn", "issn")
+        assert matchpoints_1.primary == "isbn"
+        assert matchpoints_1.secondary == "upc"
+        assert matchpoints_1.tertiary == "issn"
+        assert matchpoints_2.primary == "isbn"
+        assert matchpoints_2.secondary == "issn"
+        assert matchpoints_2.tertiary is None
+
+    def test_Matchpoints_eq_not_implemented(self):
+        matchpoints = model.Matchpoints("isbn", "upc")
+        assert matchpoints == model.Matchpoints(primary="isbn", secondary="upc")
+        assert matchpoints != model.Matchpoints("isbn", "issn")
+        assert matchpoints.__eq__("foo") is NotImplemented
+
+    def test_Matchpoints_value_error_kw(self):
+        with pytest.raises(ValueError) as exc:
+            model.Matchpoints(primary="isbn", tertiary="upc")
+        assert str(exc.value) == "Cannot have tertiary matchpoint without secondary."
+
+    def test_Matchpoints_value_error_positional(self):
+        with pytest.raises(ValueError) as exc:
+            model.Matchpoints("isbn", tertiary="upc")
+        assert str(exc.value) == "Cannot have tertiary matchpoint without secondary."
+
+
 class TestOrderTypes:
     def test_Order(self, order_data):
         order = model.Order(**order_data)
@@ -56,9 +100,8 @@ class TestOrderTypes:
 
     def test_Order_apply_template(self, template_data, order_data):
         order = model.Order(**order_data)
-        template = model.Template(**template_data)
         assert order.fund == "25240adbk"
-        order.apply_template(template)
+        order.apply_template(template_data)
         assert order.fund == "10001adbk"
 
 
@@ -84,22 +127,12 @@ class TestTemplateTypes:
         assert template.vendor_notes == "bar"
         assert template.vendor_title_no is None
         assert template.blanket_po is None
-        assert template.primary_matchpoint == "isbn"
-        assert template.secondary_matchpoint is None
-        assert template.tertiary_matchpoint is None
-        assert template.agent is None
-        assert template.id is None
-        assert template.name is None
-        assert template.matchpoints == ["isbn"]
 
     def test_Template_no_input(self):
         template = model.Template()
-        attr_vals = [v for k, v in template.__dict__.items()]
+        attr_vals = [v for k, v in template.__dict__.items() if k != "matchpoints"]
         assert all(i is None for i in attr_vals) is True
-        assert template.primary_matchpoint is None
-        assert template.secondary_matchpoint is None
-        assert template.tertiary_matchpoint is None
-        assert template.matchpoints == []
+        assert list(template.matchpoints.__dict__.values()) == [None, None, None]
 
     def test_Template_positional_args(self):
         with pytest.raises(TypeError) as exc:
