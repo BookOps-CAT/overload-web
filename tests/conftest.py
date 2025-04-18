@@ -53,6 +53,11 @@ def mock_sierra_response(monkeypatch):
 
 
 @pytest.fixture
+def bib_data(order_data, library) -> dict:
+    return {"library": library, "orders": [order_data]}
+
+
+@pytest.fixture
 def order_data() -> dict:
     return {
         "audience": "a",
@@ -103,15 +108,12 @@ def template_data() -> dict:
         "vendor_code": "0049",
         "vendor_notes": "bar",
         "vendor_title_no": None,
-        "primary_matchpoint": "isbn",
-        "secondary_matchpoint": None,
-        "tertiary_matchpoint": None,
+        "matchpoints": {
+            "primary": "isbn",
+            "secondary": None,
+            "tertiary": None,
+        },
     }
-
-
-@pytest.fixture
-def bib_data(order_data, library) -> dict:
-    return {"library": library, "orders": [order_data]}
 
 
 @pytest.fixture
@@ -192,6 +194,10 @@ def stub_binary_marc(stub_bib) -> io.BytesIO:
 
 @pytest.fixture
 def stub_pvf_form_data(template_data, library, destination) -> dict:
-    template_data["library"] = library
-    template_data["destination"] = destination
-    return template_data
+    pvf_form_data = {k: v for k, v in template_data.items() if k != "matchpoints"}
+    pvf_form_data["primary_matchpoint"] = template_data["matchpoints"]["primary"]
+    pvf_form_data["secondary_matchpoint"] = template_data["matchpoints"]["secondary"]
+    pvf_form_data["tertiary_matchpoint"] = template_data["matchpoints"]["tertiary"]
+    pvf_form_data["library"] = library
+    pvf_form_data["destination"] = destination
+    return pvf_form_data

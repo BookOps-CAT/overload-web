@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Date, Integer, MetaData, String, Table
-from sqlalchemy.orm import registry
+from sqlalchemy.orm import composite, registry
 
 from overload_web.domain import model
 
@@ -31,11 +31,22 @@ templates = Table(
     Column("vendor_code", String),
     Column("vendor_notes", String),
     Column("vendor_title_no", String),
-    Column("primary_matchpoint", String, nullable=False),
+    Column("primary_matchpoint", String),
     Column("secondary_matchpoint", String),
     Column("tertiary_matchpoint", String),
 )
 
 
 def start_mappers() -> None:
-    mapper_registry.map_imperatively(model.Template, templates)
+    mapper_registry.map_imperatively(
+        model.Template,
+        templates,
+        properties={
+            "matchpoints": composite(
+                model.Matchpoints,
+                templates.c.primary_matchpoint,
+                templates.c.secondary_matchpoint,
+                templates.c.tertiary_matchpoint,
+            )
+        },
+    )
