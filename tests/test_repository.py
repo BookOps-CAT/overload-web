@@ -1,5 +1,3 @@
-import datetime
-
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import clear_mappers, sessionmaker
@@ -57,41 +55,19 @@ def test_SqlAlchemyRepository(session):
         (4, "Qux Template", "user3"),
     ],
 )
-def test_SqlAlchemyRepository_get_save(id, name, agent, session, template_data):
+def test_SqlAlchemyRepository_get_save(id, name, agent, session):
     repo = repository.SqlAlchemyRepository(session=session)
-    template_data["id"], template_data["name"], template_data["agent"] = id, name, agent
-    template_data["create_date"] = datetime.date(2024, 1, 1)
-    template = model.Template(**template_data)
-    assert isinstance(template, model.Template)
-    repo.save(template)
-    saved_template = repo.get(id=id)
-    assert saved_template == model.Template(
+    template = model.Template(
         id=id,
         name=name,
         agent=agent,
-        audience="a",
-        blanket_po=None,
-        copies="5",
         country="xxu",
-        create_date=datetime.date(2024, 1, 1),
-        format="a",
-        fund="10001adbk",
-        internal_note="foo",
-        lang="spa",
-        order_type="p",
-        price="$20.00",
-        selector="b",
-        selector_note=None,
-        source="d",
-        status="o",
-        var_field_isbn=None,
-        vendor_code="0049",
-        vendor_notes="bar",
-        vendor_title_no=None,
-        primary_matchpoint="isbn",
-        secondary_matchpoint=None,
-        tertiary_matchpoint=None,
+        matchpoints=model.Matchpoints("isbn"),
     )
+    assert isinstance(template, model.Template)
+    repo.save(template)
+    saved_template = repo.get(id=id)
+    assert saved_template == template
 
 
 def test_mappers(session):
@@ -110,21 +86,21 @@ def test_mappers(session):
             name="Foo Template",
             agent="user1",
             vendor_code="FOO",
-            primary_matchpoint="isbn",
+            matchpoints=model.Matchpoints(primary="isbn"),
         ),
         model.Template(
             id=2,
             name="Bar Template",
             agent="user2",
             vendor_code="BAR",
-            primary_matchpoint="upc",
+            matchpoints=model.Matchpoints(primary="upc"),
         ),
         model.Template(
             id=3,
             name="Baz Template",
             agent="user1",
             vendor_code="BAZ",
-            primary_matchpoint="isbn",
+            matchpoints=model.Matchpoints(primary="isbn"),
         ),
     ]
     assert session.query(model.Template).all() == expected

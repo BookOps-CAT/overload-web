@@ -17,15 +17,20 @@ class BibModel(BaseModel, model.DomainBib):
     model_config = ConfigDict(from_attributes=True)
 
 
+class MatchpointsModel(BaseModel, model.Matchpoints):
+    model_config = ConfigDict(from_attributes=True)
+
+
 class TemplateModel(BaseModel, model.Template):
     model_config = ConfigDict(from_attributes=True)
 
     @classmethod
     def from_form_data(
         cls,
-        agent: Annotated[Optional[Union[str]], Form()] = None,
-        name: Annotated[Optional[Union[str]], Form()] = None,
-        id: Annotated[Optional[Union[str]], Form()] = None,
+        agent: Annotated[Optional[str], Form()] = None,
+        name: Annotated[Optional[str], Form()] = None,
+        id: Annotated[Optional[str], Form()] = None,
+        audience: Annotated[Optional[str], Form()] = None,
         create_date: Annotated[Optional[Union[datetime.datetime, str]], Form()] = None,
         price: Annotated[Optional[Union[str, int]], Form()] = None,
         fund: Annotated[Optional[str], Form()] = None,
@@ -49,6 +54,7 @@ class TemplateModel(BaseModel, model.Template):
         tertiary_matchpoint: Annotated[Optional[str], Form()] = None,
     ) -> TemplateModel:
         return TemplateModel(
+            audience=audience,
             create_date=create_date,
             fund=fund,
             vendor_code=vendor_code,
@@ -70,7 +76,9 @@ class TemplateModel(BaseModel, model.Template):
             name=name,
             id=id,
             agent=agent,
-            primary_matchpoint=primary_matchpoint,
-            secondary_matchpoint=secondary_matchpoint,
-            tertiary_matchpoint=tertiary_matchpoint,
+            matchpoints=MatchpointsModel(
+                primary=primary_matchpoint,
+                secondary=secondary_matchpoint,
+                tertiary=tertiary_matchpoint,
+            ),
         )
