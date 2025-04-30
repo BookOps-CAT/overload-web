@@ -1,3 +1,9 @@
+"""Pydantic models for request validation and response serialization.
+
+These models wrap domain models to enable compatibility with pydantic while
+minimizing amount of repeated code. Includes logic for parsing template form data.
+"""
+
 from __future__ import annotations
 
 import datetime
@@ -10,18 +16,26 @@ from overload_web.domain import model
 
 
 class OrderModel(BaseModel, model.Order):
+    """Pydantic model for serializing/deserializing `Order` domain objects."""
+
     model_config = ConfigDict(from_attributes=True)
 
 
 class BibModel(BaseModel, model.DomainBib):
+    """Pydantic model for serializing/deserializing `DomainBib` objects."""
+
     model_config = ConfigDict(from_attributes=True)
 
 
 class MatchpointsModel(BaseModel, model.Matchpoints):
+    """Pydantic model for serializing/deserializing `Matchpoints` domain objects."""
+
     model_config = ConfigDict(from_attributes=True)
 
 
 class TemplateModel(BaseModel, model.Template):
+    """Pydantic model for serializing/deserializing `Template` domain objects."""
+
     model_config = ConfigDict(from_attributes=True)
 
     @classmethod
@@ -53,6 +67,16 @@ class TemplateModel(BaseModel, model.Template):
         secondary_matchpoint: Annotated[Optional[str], Form()] = None,
         tertiary_matchpoint: Annotated[Optional[str], Form()] = None,
     ) -> TemplateModel:
+        """
+        Create a `TemplateModel` instance from multipart/form-data submission.
+
+        This method is used with FastAPI's `Depends()` to extract form fields
+        and transform them into a structured model instance, including nested
+        matchpoints.
+
+        Returns:
+            the populated template as a `TemplateModel` object.
+        """
         return TemplateModel(
             audience=audience,
             create_date=create_date,
