@@ -7,16 +7,16 @@ model.
 Protocols:
 
 `SierraSessionProtocol`
-    Abstracts methods required for a Sierra-compatible session.
+    abstracts methods required for a Sierra-compatible session.
 
 Classes:
 
 `SierraBibFetcher`
-    Converts external Sierra-style API data into domain dictionaries.
+    converts external Sierra-style API data into domain dictionaries.
 `BPLSolrSession`
-    Concrete implementation of `SierraSessionProtocol` for `bookops_bpl_solr`
+    concrete implementation of `SierraSessionProtocol` for `bookops_bpl_solr`
 `NYPLPlatformSession`
-    Concrete implementation of `SierraSessionProtocol` for `bookops_nypl_platform`
+    concrete implementation of `SierraSessionProtocol` for `bookops_nypl_platform`
 """
 
 from __future__ import annotations
@@ -42,8 +42,8 @@ class SierraBibFetcher:
     dictionaries for `DomainBib` construction.
 
     Args:
-        session: A session instance implementing the Sierra protocol.
-        library: The library system whose Sierra instance should be queried.
+        session: a session instance implementing the Sierra protocol.
+        library: the library system whose Sierra instance should be queried.
     """
 
     def __init__(self, session: SierraSessionProtocol, library: str):
@@ -57,10 +57,10 @@ class SierraBibFetcher:
         Converts raw response into dictionaries formatted for the `DomainBib` model.
 
         Args:
-            records: List of raw bib responses from Sierra service
+            records: list of raw bib responses from Sierra service
 
         Returns:
-            List of cleaned domain-ready dictionaries.
+            list of cleaned domain-ready dictionaries.
         """
 
         return [
@@ -84,7 +84,7 @@ class SierraBibFetcher:
             key: name of identifier (e.g., 'isbn', 'bib_id').
 
         Returns:
-            List of domain-formatted bibliographic dictionaries.
+            list of domain-formatted bibliographic dictionaries.
         """
         match_methods = {
             "bib_id": self.session._get_bibs_by_bib_id,
@@ -110,8 +110,8 @@ class SierraBibFetcher:
 @runtime_checkable
 class SierraSessionProtocol(Protocol):
     """
-    Protocol for Sierra-compatible sessions, ensuring expected search and response methods
-    are implemented by all concrete sessions.
+    Protocol for Sierra-compatible sessions, ensuring expected search and response
+    methods are implemented by all concrete sessions.
     """
 
     def _get_credentials(self) -> str | PlatformToken: ...
@@ -128,6 +128,7 @@ class BPLSolrSession(SolrSession):
     Adapter for querying BPL's bibliographic data via `bookops_bpl_solr`.
 
     Provides methods for searching by various identifiers and parsing Solr responses.
+    Inherits from `bookops_bpl_solr.SolrSession`.
     """
 
     def __init__(self):
@@ -168,6 +169,7 @@ class NYPLPlatformSession(PlatformSession):
     Adapter for querying NYPL's bibliographic data via `bookops_nypl_platform`.
 
     Implements credential handling, identifier-based searches, and response parsing.
+    Inherits from `bookops_nypl_platform.PlatformSession`.
     """
 
     def __init__(self):
