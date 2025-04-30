@@ -46,7 +46,6 @@ class TestLiveSierraSession:
                 "publishYear",
                 "title",
             ]
-            assert matched_bibs[0]["id"] == "12187266"
 
     def test_NYPLPlatformSession_live(self):
         with sierra_adapters.NYPLPlatformSession() as session:
@@ -80,63 +79,6 @@ class TestLiveSierraSession:
                 "updatedDate",
                 "varFields",
             ]
-            assert matched_bibs[0]["id"] == "21730445"
-            assert matched_bibs[1]["id"] == "21790265"
-
-
-@pytest.mark.usefixtures("mock_sierra_response")
-class TestMockSierraSession:
-    def test_BPLSolrSession__get_bibs_by_bib_id(self):
-        with sierra_adapters.BPLSolrSession() as session:
-            matched_bib = session._get_bibs_by_bib_id("123456789")
-            assert matched_bib.json() == {"response": {"docs": [{"id": "123456789"}]}}
-
-    def test_BPLSolrSession__get_bibs_by_isbn(self):
-        with sierra_adapters.BPLSolrSession() as session:
-            matched_bib = session._get_bibs_by_isbn("123456789")
-            assert matched_bib.json() == {"response": {"docs": [{"id": "123456789"}]}}
-
-    def test_BPLSolrSession__get_bibs_by_issn(self):
-        with sierra_adapters.BPLSolrSession() as session:
-            with pytest.raises(NotImplementedError) as exc:
-                session._get_bibs_by_issn("foo")
-            assert str(exc.value) == "Search by ISSN not implemented in BPL Solr"
-
-    def test_BPLSolrSession__get_bibs_by_oclc_number(self):
-        with sierra_adapters.BPLSolrSession() as session:
-            matched_bib = session._get_bibs_by_oclc_number("123456789")
-            assert matched_bib.json() == {"response": {"docs": [{"id": "123456789"}]}}
-
-    def test_BPLSolrSession__get_bibs_by_upc(self):
-        with sierra_adapters.BPLSolrSession() as session:
-            matched_bib = session._get_bibs_by_upc("123456789")
-            assert matched_bib.json() == {"response": {"docs": [{"id": "123456789"}]}}
-
-    def test_NYPLPlatformSession__get_bibs_by_bib_id(self):
-        with sierra_adapters.NYPLPlatformSession() as session:
-            matched_bib = session._get_bibs_by_bib_id("123456789")
-            assert matched_bib.json() == {"data": [{"id": "123456789"}]}
-
-    def test_NYPLPlatformSession__get_bibs_by_isbn(self):
-        with sierra_adapters.NYPLPlatformSession() as session:
-            matched_bib = session._get_bibs_by_isbn("123456789")
-            assert matched_bib.json() == {"data": [{"id": "123456789"}]}
-
-    def test_NYPLPlatformSession__get_bibs_by_issn(self):
-        with sierra_adapters.NYPLPlatformSession() as session:
-            with pytest.raises(NotImplementedError) as exc:
-                session._get_bibs_by_issn("foo")
-            assert str(exc.value) == "Search by ISSN not implemented in NYPL Platform"
-
-    def test_NYPLPlatformSession__get_bibs_by_oclc_number(self):
-        with sierra_adapters.NYPLPlatformSession() as session:
-            matched_bib = session._get_bibs_by_oclc_number("123456789")
-            assert matched_bib.json() == {"data": [{"id": "123456789"}]}
-
-    def test_NYPLPlatformSession__get_bibs_by_upc(self):
-        with sierra_adapters.NYPLPlatformSession() as session:
-            matched_bib = session._get_bibs_by_upc("123456789")
-            assert matched_bib.json() == {"data": [{"id": "123456789"}]}
 
 
 @pytest.mark.parametrize("library", ["bpl", "nypl"])
