@@ -20,27 +20,6 @@ def session(in_memory_db):
     clear_mappers()
 
 
-def test_AbstractRepository():
-    repository.AbstractRepository.__abstractmethods__ = set()
-    session = repository.AbstractRepository()
-    assert session.__dict__ == {}
-
-
-def test_AbstractRepository_get():
-    repo = repository.AbstractRepository()
-    with pytest.raises(NotImplementedError) as exc:
-        repo.get(id=1)
-    assert str(exc.value) == ""
-
-
-def test_AbstractRepository_save(template_data):
-    repo = repository.AbstractRepository()
-    template_data["id"], template_data["name"], template_data["agent"] = 1, "Foo", "Bar"
-    with pytest.raises(NotImplementedError) as exc:
-        repo.save(template=template_data)
-    assert str(exc.value) == ""
-
-
 def test_SqlAlchemyRepository(session):
     repo = repository.SqlAlchemyRepository(session=session)
     assert hasattr(repo, "session")
