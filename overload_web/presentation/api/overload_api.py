@@ -19,16 +19,13 @@ def vendor_file_process(
     file: Annotated[UploadFile, File(...)],
     library: Annotated[str, Form()],
     destination: Annotated[Optional[str], Form()] = None,
-    template: schemas.TemplateModel = Depends(schemas.TemplateModel.from_form_data),
+    form_data: schemas.TemplateModel = Depends(schemas.TemplateModel.from_form_data),
 ) -> Sequence[schemas.BibModel]:
-    processed_bibs = []
-    bibs = services.process_marc_file(bib_data=file.file, library=library)
-    for bib in bibs:
-        for order in bib.orders:
-            order.apply_template(template_data=vars(template))
-        processed_bibs.append(
-            services.match_bib(
-                bib=bib.__dict__, matchpoints=template.matchpoints.as_list()
-            )
-        )
+    template_data = {k: v for k, v in form_data.__dict__.items() if k != "matchpoints"}
+    processed_bibs = services.match_and_attach(
+        file_data=file.file,
+        library=library,
+        matchpoints=form_data.matchpoints.as_list(),
+        template=template_data,
+    )
     return [schemas.BibModel(**i) for i in processed_bibs]

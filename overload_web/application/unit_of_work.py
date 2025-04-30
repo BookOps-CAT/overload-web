@@ -25,20 +25,23 @@ SQL_SESSION_FACTORY = sessionmaker(bind=create_engine("sqlite:///:memory:"))
 
 
 class OverloadUnitOfWork(UnitOfWorkProtocol):
-    def __init__(self, session_factory: Callable = SQL_SESSION_FACTORY):
-        self.session_factory = session_factory
+    def __init__(
+        self,
+        template_session_factory: Callable = SQL_SESSION_FACTORY,
+    ):
+        self.template_session_factory = template_session_factory
 
     def __enter__(self) -> UnitOfWorkProtocol:
-        self.session = self.session_factory()
-        self.templates = repository.SqlAlchemyRepository(self.session)
+        self.template_session = self.template_session_factory()
+        self.templates = repository.SqlAlchemyRepository(self.template_session)
         return self
 
     def __exit__(self, *args):
-        super().__exit__(*args)
-        self.session.close()
+        self.rollback()
+        self.template_session.close()
 
     def commit(self):
-        self.session.commit()
+        self.template_session.commit()
 
     def rollback(self):
-        self.session.rollback()
+        self.template_session.rollback()
