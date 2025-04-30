@@ -20,9 +20,7 @@ class FakeBibFetcher(match_service.BibFetcher):
 class MockUnitOfWork(unit_of_work.UnitOfWorkProtocol):
     def __init__(self):
         self.session = None
-        self.sierra_session = None
-        self.db_bibs = []
-        self.bibs = FakeBibFetcher()
+        self.templates = []
 
     def commit(self):
         self.committed = True
