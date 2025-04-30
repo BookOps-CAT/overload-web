@@ -2,6 +2,7 @@ import pytest
 
 from overload_web.application import services, unit_of_work
 from overload_web.domain import match_service
+from overload_web.infrastructure import repository
 
 
 class FakeBibFetcher(match_service.BibFetcher):
@@ -17,16 +18,33 @@ class FakeBibFetcher(match_service.BibFetcher):
         return [bib_1, bib_2, bib_3, bib_4]
 
 
+class MockRepository(repository.RepositoryProtocol):
+    def __init__(self, templates):
+        self.templates = templates
+
+    def get(self, id):
+        return next((i for i in self.templates if i.id == id), None)
+
+    def save(self, template):
+        pass
+
+
 class MockUnitOfWork(unit_of_work.UnitOfWorkProtocol):
     def __init__(self):
-        self.session = None
-        self.templates = []
+        self.templates = MockRepository(templates=[])
+        self.committed = False
 
     def commit(self):
         self.committed = True
 
     def rollback(self):
         pass
+
+
+def test_OverloadUnitOfWork():
+    with unit_of_work.OverloadUnitOfWork() as uow:
+        uow.commit()
+        uow.rollback()
 
 
 @pytest.mark.usefixtures("mock_sierra_response")
