@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import abc
 from typing import Callable, Protocol, runtime_checkable
 
 from sqlalchemy import create_engine
@@ -11,7 +10,7 @@ from overload_web.infrastructure import repository, sierra_adapters
 
 @runtime_checkable
 class UnitOfWorkProtocol(Protocol):
-    db_bibs: repository.AbstractRepository
+    db_bibs: repository.RepositoryProtocol
     bibs: sierra_adapters.SierraBibFetcher
 
     def __enter__(self) -> UnitOfWorkProtocol:
@@ -20,11 +19,9 @@ class UnitOfWorkProtocol(Protocol):
     def __exit__(self, *args):
         self.rollback()
 
-    @abc.abstractmethod
     def commit(self):
         raise NotImplementedError
 
-    @abc.abstractmethod
     def rollback(self):
         raise NotImplementedError
 
