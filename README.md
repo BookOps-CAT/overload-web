@@ -24,10 +24,17 @@ Overload Web is a FastAPI-based web application for processing vendor MARC files
 ## Project Structure
 
 overload_web/
+
 ├── application/         # Application services
+
 ├── domain/              # Domain models and business logic
+
 ├── infrastructure/      # Repositories, adapters, DB integration
+
 ├── presentation/
+
 │   ├── api/             # API routes and Pydantic schemas
+
 │   └── frontend/        # Jinja2 templates and page routes
+
 ├── main.py              # FastAPI application entrypoint
