@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, BinaryIO, Dict, List, Optional, Sequence
+from typing import Any, BinaryIO, Dict, List, Optional
 
 from overload_web.application import unit_of_work
 from overload_web.domain import match_service, model
@@ -52,8 +52,25 @@ def match_bib(
     return [i.__dict__ for i in processed_bibs]
 
 
-def process_marc_file(bib_data: BinaryIO, library: str) -> Sequence[model.DomainBib]:
-    return [i for i in marc_adapters.read_marc_file(bib_data, library=library)]
+def match_and_attach(
+    file_data: BinaryIO,
+    library: str,
+    template: Optional[Dict[str, Any]],
+    matchpoints: List[str],
+    fetcher: Optional[match_service.BibFetcher] = None,
+) -> List[Dict[str, Any]]:
+    if fetcher is None:
+        fetcher = get_fetcher_for_library(library=library)
+    matcher = match_service.BibMatchService(fetcher=fetcher, matchpoints=matchpoints)
+
+    processed_bibs = []
+    bibs = marc_adapters.read_marc_file(marc_file=file_data, library=library)
+    for bib in bibs:
+        bib.bib_id = matcher.find_best_match(bib)
+        if template:
+            bib.apply_template(template_data=template)
+        processed_bibs.append(bib)
+    return [i.__dict__ for i in processed_bibs]
 
 
 def save_template(
