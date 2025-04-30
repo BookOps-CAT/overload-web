@@ -34,7 +34,7 @@ def get_fetcher_for_library(library: str) -> match_service.BibFetcher:
     return sierra_adapters.SierraBibFetcher(session=session, library=library)
 
 
-def match_bib(
+def match_bibs(
     file_data: BinaryIO,
     library: str,
     matchpoints: List[str],

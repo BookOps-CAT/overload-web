@@ -1,7 +1,7 @@
 import pytest
 
 from overload_web.application import services, unit_of_work
-from overload_web.infrastructure import repository
+from overload_web.infrastructure import repository, sierra_adapters
 
 
 class MockRepository(repository.RepositoryProtocol):
@@ -33,7 +33,6 @@ def test_OverloadUnitOfWork():
         uow.rollback()
 
 
-@pytest.mark.usefixtures("mock_sierra_response")
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
 class TestApplicationServices:
     def test_apply_template_data(self, template_data, bib_data, library):
@@ -49,6 +48,10 @@ class TestApplicationServices:
         updated_bibs = services.apply_template_data(bib_data=[bib_data], template={})
         assert updated_bibs[0]["orders"] == bib_data["orders"]
 
+    def test_get_fetcher_for_library(self, library, mock_sierra_response):
+        fetcher = services.get_fetcher_for_library(library=library)
+        assert isinstance(fetcher, sierra_adapters.SierraBibFetcher)
+
     @pytest.mark.parametrize(
         "matchpoints, result",
         [
@@ -58,7 +61,7 @@ class TestApplicationServices:
             (["upc"], None),
         ],
     )
-    def test_match_bib(
+    def test_match_bibs(
         self,
         stub_binary_marc,
         library,
@@ -66,7 +69,7 @@ class TestApplicationServices:
         matchpoints,
         result,
     ):
-        bibs = services.match_bib(
+        bibs = services.match_bibs(
             file_data=stub_binary_marc,
             matchpoints=matchpoints,
             fetcher=test_fetcher,
@@ -77,11 +80,55 @@ class TestApplicationServices:
         assert bibs[0]["bib_id"] == result
         assert len(bibs[0]["orders"]) == 1
 
-    def test_match_bib_no_fetcher(
+    def test_match_bibs_no_fetcher(
         self, stub_binary_marc, library, mock_sierra_response
     ):
-        bibs = services.match_bib(
+        bibs = services.match_bibs(
             file_data=stub_binary_marc,
+            matchpoints=["isbn"],
+            library=library,
+        )
+        assert len(bibs) == 1
+        assert bibs[0]["library"] == library
+        assert bibs[0]["bib_id"] == "123456789"
+        assert len(bibs[0]["orders"]) == 1
+
+    @pytest.mark.parametrize(
+        "matchpoints, result",
+        [
+            (["isbn"], "123"),
+            (["oclc_number"], None),
+            (["isbn", "oclc_number"], "123"),
+            (["upc"], None),
+        ],
+    )
+    def test_match_and_attach(
+        self,
+        stub_binary_marc,
+        template_data,
+        library,
+        test_fetcher,
+        matchpoints,
+        result,
+    ):
+        bibs = services.match_and_attach(
+            file_data=stub_binary_marc,
+            template=template_data,
+            matchpoints=matchpoints,
+            fetcher=test_fetcher,
+            library=library,
+        )
+        assert len(bibs) == 1
+        assert bibs[0]["library"] == library
+        assert bibs[0]["bib_id"] == result
+        assert len(bibs[0]["orders"]) == 1
+
+    def test_match_and_attach_no_fetcher(
+        self, stub_binary_marc, template_data, library, mock_sierra_response
+    ):
+        bibs = services.match_and_attach(
+            file_data=stub_binary_marc,
+            template=template_data,
             matchpoints=["isbn"],
             library=library,
         )
