@@ -35,19 +35,6 @@ def get_fetcher_for_library(library: str) -> match_service.BibFetcher:
 
 
 def match_bib(
-    bib: Dict[str, Any],
-    matchpoints: List[str],
-    fetcher: Optional[match_service.BibFetcher] = None,
-) -> Dict[str, Any]:
-    domain_bib = model.DomainBib(**bib)
-    if fetcher is None:
-        fetcher = get_fetcher_for_library(library=domain_bib.library)
-    matcher = match_service.BibMatchService(fetcher=fetcher, matchpoints=matchpoints)
-    domain_bib.bib_id = matcher.find_best_match(domain_bib)
-    return domain_bib.__dict__
-
-
-def match_bibs(
     file_data: BinaryIO,
     library: str,
     matchpoints: List[str],

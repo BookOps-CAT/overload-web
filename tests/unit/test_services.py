@@ -49,15 +49,6 @@ class TestApplicationServices:
         updated_bibs = services.apply_template_data(bib_data=[bib_data], template={})
         assert updated_bibs[0]["orders"] == bib_data["orders"]
 
-    def test_match_bib(self, bib_data, library, test_fetcher):
-        bib_data["isbn"] = "9781234567890"
-        matched_bib = services.match_bib(
-            fetcher=test_fetcher,
-            bib=bib_data,
-            matchpoints=["bib_id", "upc", "isbn", "oclc_number"],
-        )
-        assert matched_bib["bib_id"] == "123"
-
     @pytest.mark.parametrize(
         "matchpoints, result",
         [
@@ -67,7 +58,7 @@ class TestApplicationServices:
             (["upc"], None),
         ],
     )
-    def test_match_bibs(
+    def test_match_bib(
         self,
         stub_binary_marc,
         library,
@@ -75,7 +66,7 @@ class TestApplicationServices:
         matchpoints,
         result,
     ):
-        bibs = services.match_bibs(
+        bibs = services.match_bib(
             file_data=stub_binary_marc,
             matchpoints=matchpoints,
             fetcher=test_fetcher,
@@ -86,10 +77,10 @@ class TestApplicationServices:
         assert bibs[0]["bib_id"] == result
         assert len(bibs[0]["orders"]) == 1
 
-    def test_match_bibs_no_fetcher(
+    def test_match_bib_no_fetcher(
         self, stub_binary_marc, library, mock_sierra_response
     ):
-        bibs = services.match_bibs(
+        bibs = services.match_bib(
             file_data=stub_binary_marc,
             matchpoints=["isbn"],
             library=library,
