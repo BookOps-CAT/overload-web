@@ -10,16 +10,6 @@ from overload_web.domain import match_service, model
 from overload_web.infrastructure import orm
 
 
-class MockHTTPResponse:
-    def __init__(self, status_code: int, ok: bool, stub_json: dict):
-        self.status_code = status_code
-        self.ok = ok
-        self.stub_json = stub_json
-
-    def json(self):
-        return self.stub_json
-
-
 @pytest.fixture(autouse=True)
 def fake_creds(monkeypatch):
     monkeypatch.setenv("BPL_SOLR_CLIENT", "test")
@@ -33,26 +23,28 @@ def fake_creds(monkeypatch):
 
 @pytest.fixture
 def mock_sierra_response(monkeypatch):
-    def mock_bpl_response(*args, **kwargs):
-        json = {"response": {"docs": [{"id": "123456789"}]}}
-        return MockHTTPResponse(status_code=200, ok=True, stub_json=json)
+    class MockHTTPResponse:
+        def __init__(self, status_code: int, ok: bool, stub_json: dict):
+            self.status_code = status_code
+            self.ok = ok
+            self.stub_json = stub_json
 
-    def mock_nypl_response(*args, **kwargs):
-        json = {"data": [{"id": "123456789"}]}
+        def json(self):
+            return self.stub_json
+
+    def mock_response(*args, **kwargs):
+        json = {
+            "response": {"docs": [{"id": "123456789"}]},
+            "data": [{"id": "123456789"}],
+        }
         return MockHTTPResponse(status_code=200, ok=True, stub_json=json)
 
     def mock_token_response(*args, **kwargs):
         token_json = {"access_token": "foo", "expires_in": 10}
         return MockHTTPResponse(status_code=200, ok=True, stub_json=token_json)
 
-    monkeypatch.setattr(
-        "overload_web.infrastructure.sierra_adapters.SolrSession.get", mock_bpl_response
-    )
+    monkeypatch.setattr("requests.Session.get", mock_response)
     monkeypatch.setattr("requests.post", mock_token_response)
-    monkeypatch.setattr(
-        "overload_web.infrastructure.sierra_adapters.PlatformSession.get",
-        mock_nypl_response,
-    )
 
 
 @pytest.fixture

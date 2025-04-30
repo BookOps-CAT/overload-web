@@ -6,7 +6,7 @@ from overload_web.domain import model
 
 
 @pytest.mark.parametrize("library", ["bpl", "nypl"])
-class TestBibTypes:
+class TestDomainBib:
     def test_DomainBib(self, library, order_data):
         bib = model.DomainBib(library=library, orders=[model.Order(**order_data)])
         assert bib.bib_id is None
@@ -43,7 +43,7 @@ class TestBibTypes:
         assert bib.orders[0].fund == "10001adbk"
 
 
-class TestMatchpointsTypes:
+class TestMatchpoints:
     def test_Matchpoints(self):
         matchpoints = model.Matchpoints(primary="isbn", secondary="oclc_number")
         assert matchpoints.primary == "isbn"
@@ -84,7 +84,7 @@ class TestMatchpointsTypes:
         assert str(exc.value) == "Cannot have tertiary matchpoint without secondary."
 
 
-class TestOrderTypes:
+class TestOrder:
     def test_Order(self, order_data):
         order = model.Order(**order_data)
         assert order.price == "$5.00"
@@ -98,7 +98,7 @@ class TestOrderTypes:
         assert order.fund == "10001adbk"
 
 
-class TestTemplateTypes:
+class TestTemplate:
     def test_Template(self, template_data):
         template = model.Template(**template_data)
         assert template.create_date == "2024-01-01"

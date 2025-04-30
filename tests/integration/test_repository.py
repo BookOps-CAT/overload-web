@@ -19,22 +19,33 @@ def test_SqlAlchemyRepository(test_sql_session):
         (4, "Qux Template", "user3"),
     ],
 )
-def test_SqlAlchemyRepository_get_save(id, name, agent, test_sql_session):
+def test_save_template(id, name, agent, test_sql_session, make_template):
     repo = repository.SqlAlchemyRepository(session=test_sql_session)
-    template = model.Template(
-        id=id,
-        name=name,
-        agent=agent,
-        country="xxu",
-        matchpoints=model.Matchpoints("isbn"),
+    template = make_template(
+        data={"id": id, "name": name, "agent": agent, "country": "xxu"},
+        matchpoints={"primary": "isbn"},
     )
-    assert isinstance(template, model.Template)
     repo.save(template)
     saved_template = repo.get(id=id)
     assert saved_template == template
 
 
-def test_mappers(test_sql_session):
+def test_save_and_update_template(test_sql_session, make_template):
+    repo = repository.SqlAlchemyRepository(session=test_sql_session)
+    template = make_template(
+        data={"id": 1, "name": "Foo Template", "agent": "user1", "country": "xxu"},
+        matchpoints={"primary": "isbn"},
+    )
+    repo.save(template)
+    saved_template = repo.get(id=1)
+    assert saved_template.lang is None
+    template.lang = "eng"
+    repo.save(template)
+    updated_template = repo.get(id=1)
+    assert updated_template.lang == "eng"
+
+
+def test_mappers(test_sql_session, make_template):
     test_sql_session.execute(
         text(
             "INSERT INTO templates (id, name, agent, vendor_code, primary_matchpoint)"
@@ -44,27 +55,17 @@ def test_mappers(test_sql_session):
             '("3", "Baz Template", "user1", "BAZ", "isbn");'
         )
     )
-    expected = [
-        model.Template(
-            id=1,
-            name="Foo Template",
-            agent="user1",
-            vendor_code="FOO",
-            matchpoints=model.Matchpoints(primary="isbn"),
-        ),
-        model.Template(
-            id=2,
-            name="Bar Template",
-            agent="user2",
-            vendor_code="BAR",
-            matchpoints=model.Matchpoints(primary="upc"),
-        ),
-        model.Template(
-            id=3,
-            name="Baz Template",
-            agent="user1",
-            vendor_code="BAZ",
-            matchpoints=model.Matchpoints(primary="isbn"),
-        ),
-    ]
+    template_1 = make_template(
+        data={"id": 1, "name": "Foo Template", "agent": "user1", "vendor_code": "FOO"},
+        matchpoints={"primary": "isbn"},
+    )
+    template_2 = make_template(
+        data={"id": 2, "name": "Bar Template", "agent": "user2", "vendor_code": "BAR"},
+        matchpoints={"primary": "upc"},
+    )
+    template_3 = make_template(
+        data={"id": 3, "name": "Baz Template", "agent": "user1", "vendor_code": "BAZ"},
+        matchpoints={"primary": "isbn"},
+    )
+    expected = [template_1, template_2, template_3]
     assert test_sql_session.query(model.Template).all() == expected
