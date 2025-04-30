@@ -1,27 +1,12 @@
 import pytest
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import clear_mappers, sessionmaker
+from sqlalchemy import text
 
 from overload_web.domain import model
-from overload_web.infrastructure import orm, repository
+from overload_web.infrastructure import repository
 
 
-@pytest.fixture
-def in_memory_db():
-    engine = create_engine("sqlite:///:memory:")
-    orm.metadata.create_all(engine)
-    return engine
-
-
-@pytest.fixture
-def session(in_memory_db):
-    orm.start_mappers()
-    yield sessionmaker(bind=in_memory_db)()
-    clear_mappers()
-
-
-def test_SqlAlchemyRepository(session):
-    repo = repository.SqlAlchemyRepository(session=session)
+def test_SqlAlchemyRepository(test_sql_session):
+    repo = repository.SqlAlchemyRepository(session=test_sql_session)
     assert hasattr(repo, "session")
 
 
@@ -34,8 +19,8 @@ def test_SqlAlchemyRepository(session):
         (4, "Qux Template", "user3"),
     ],
 )
-def test_SqlAlchemyRepository_get_save(id, name, agent, session):
-    repo = repository.SqlAlchemyRepository(session=session)
+def test_SqlAlchemyRepository_get_save(id, name, agent, test_sql_session):
+    repo = repository.SqlAlchemyRepository(session=test_sql_session)
     template = model.Template(
         id=id,
         name=name,
@@ -49,8 +34,8 @@ def test_SqlAlchemyRepository_get_save(id, name, agent, session):
     assert saved_template == template
 
 
-def test_mappers(session):
-    session.execute(
+def test_mappers(test_sql_session):
+    test_sql_session.execute(
         text(
             "INSERT INTO templates (id, name, agent, vendor_code, primary_matchpoint)"
             "VALUES"
@@ -82,4 +67,4 @@ def test_mappers(session):
             matchpoints=model.Matchpoints(primary="isbn"),
         ),
     ]
-    assert session.query(model.Template).all() == expected
+    assert test_sql_session.query(model.Template).all() == expected

@@ -5,50 +5,33 @@ from typing import Callable, Protocol, runtime_checkable
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from overload_web.infrastructure import repository, sierra_adapters
+from overload_web.infrastructure import repository
 
 
 @runtime_checkable
 class UnitOfWorkProtocol(Protocol):
-    db_bibs: repository.RepositoryProtocol
-    bibs: sierra_adapters.SierraBibFetcher
+    templates: repository.RepositoryProtocol
 
-    def __enter__(self) -> UnitOfWorkProtocol:
-        return self
+    def __enter__(self) -> UnitOfWorkProtocol: ...
 
-    def __exit__(self, *args):
-        self.rollback()
+    def __exit__(self, *args) -> None: ...
 
-    def commit(self):
-        raise NotImplementedError
+    def commit(self) -> None: ...
 
-    def rollback(self):
-        raise NotImplementedError
+    def rollback(self) -> None: ...
 
 
 SQL_SESSION_FACTORY = sessionmaker(bind=create_engine("sqlite:///:memory:"))
-SIERRA_SERVICE_FACTORY = sierra_adapters.SierraServiceFactory()
 
 
 class OverloadUnitOfWork(UnitOfWorkProtocol):
-    def __init__(
-        self,
-        library: str,
-        sql_factory: Callable = SQL_SESSION_FACTORY,
-        sierra_factory: sierra_adapters.SierraServiceFactory = SIERRA_SERVICE_FACTORY,
-    ):
-        self.sql_factory = sql_factory
-        self.sierra_factory = sierra_factory
-        self.library = library
+    def __init__(self, session_factory: Callable = SQL_SESSION_FACTORY):
+        self.session_factory = session_factory
 
     def __enter__(self) -> UnitOfWorkProtocol:
-        self.session = self.sql_factory()
-        self.sierra_session = self.sierra_factory.get_session(library=self.library)
-        self.db_bibs = repository.SqlAlchemyRepository(self.session)
-        self.bibs = sierra_adapters.SierraBibFetcher(
-            session=self.sierra_session(), library=self.library
-        )
-        return super().__enter__()
+        self.session = self.session_factory()
+        self.templates = repository.SqlAlchemyRepository(self.session)
+        return self
 
     def __exit__(self, *args):
         super().__exit__(*args)
