@@ -21,20 +21,6 @@ class DomainBib:
         for order in self.orders:
             order.apply_template(template_data=template_data)
 
-    def match(self, bibs: List[DomainBib], matchpoints: List[str]) -> None:
-        max_matched_points = -1
-        best_match_bib_id = None
-        for bib in bibs:
-            matched_points = 0
-            for attr in matchpoints:
-                if getattr(self, attr) == getattr(bib, attr):
-                    matched_points += 1
-
-            if matched_points > max_matched_points:
-                max_matched_points = matched_points
-                best_match_bib_id = bib.bib_id
-        self.bib_id = best_match_bib_id
-
     @classmethod
     def from_marc(cls, bib: bookops_marc.Bib) -> DomainBib:
         orders = []

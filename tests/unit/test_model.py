@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 
 import pytest
 
@@ -10,6 +10,25 @@ class TestBibTypes:
     def test_DomainBib(self, library, order_data):
         bib = model.DomainBib(library=library, orders=[model.Order(**order_data)])
         assert bib.bib_id is None
+
+    def test_DomainBib_from_marc(self, library, stub_bib):
+        bib = model.DomainBib.from_marc(bib=stub_bib)
+        assert bib.bib_id is None
+        assert bib.isbn == "9781234567890"
+        assert bib.oclc_number == []
+        assert len(bib.orders) == 1
+        assert bib.orders[0].create_date == datetime.date(2025, 1, 1)
+        assert bib.orders[0].blanket_po == "baz"
+
+    def test_DomainBib_from_marc_no_961(self, library, stub_bib):
+        stub_bib.remove_fields("961")
+        bib = model.DomainBib.from_marc(bib=stub_bib)
+        assert bib.bib_id is None
+        assert bib.isbn == "9781234567890"
+        assert bib.oclc_number == []
+        assert len(bib.orders) == 1
+        assert bib.orders[0].create_date == datetime.date(2025, 1, 1)
+        assert bib.orders[0].blanket_po is None
 
     def test_DomainBib_bib_id(self, library, order_data):
         bib = model.DomainBib(
@@ -23,33 +42,6 @@ class TestBibTypes:
         bib.apply_template(template_data=template_data)
         assert bib.orders[0].fund == "10001adbk"
 
-    @pytest.mark.parametrize(
-        "matchpoints, result",
-        [(["isbn"], "123"), (["oclc_number"], "234"), (["isbn", "oclc_number"], "345")],
-    )
-    def test_DomainBib_match(
-        self, library, order_data, make_domain_bib, matchpoints, result
-    ):
-        bib = model.DomainBib(
-            library=library,
-            orders=[model.Order(**order_data)],
-            isbn="9781234567890",
-            oclc_number="123456789",
-            upc=None,
-        )
-        assert bib.bib_id is None
-
-        bib_1 = make_domain_bib({"bib_id": "123", "isbn": "9781234567890"})
-        bib_2 = make_domain_bib(
-            {"bib_id": "234", "isbn": "1234567890", "oclc_number": "123456789"}
-        )
-        bib_3 = make_domain_bib(
-            {"bib_id": "345", "isbn": "9781234567890", "oclc_number": "123456789"}
-        )
-        bib_4 = make_domain_bib({"bib_id": "456", "upc": "333"})
-        bib.match(bibs=[bib_1, bib_2, bib_3, bib_4], matchpoints=matchpoints)
-        assert bib.bib_id == result
-
 
 class TestMatchpointsTypes:
     def test_Matchpoints(self):
@@ -57,6 +49,7 @@ class TestMatchpointsTypes:
         assert matchpoints.primary == "isbn"
         assert matchpoints.secondary == "oclc_number"
         assert matchpoints.tertiary is None
+        assert matchpoints.as_list() == ["isbn", "oclc_number"]
 
     def test_Matchpoints_default(self):
         matchpoints = model.Matchpoints()
@@ -136,7 +129,7 @@ class TestTemplateTypes:
 
     def test_Template_positional_args(self):
         with pytest.raises(TypeError) as exc:
-            model.Template("a", None, "7", "xxu", datetime(2024, 1, 1), "a")
+            model.Template("a", None, "7", "xxu", datetime.datetime(2024, 1, 1), "a")
         assert (
             str(exc.value)
             == "Template.__init__() takes 1 positional argument but 7 were given"
