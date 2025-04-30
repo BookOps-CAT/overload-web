@@ -47,6 +47,24 @@ def match_bib(
     return domain_bib.__dict__
 
 
+def match_bibs(
+    file_data: BinaryIO,
+    library: str,
+    matchpoints: List[str],
+    fetcher: Optional[match_service.BibFetcher] = None,
+) -> List[Dict[str, Any]]:
+    if fetcher is None:
+        fetcher = get_fetcher_for_library(library=library)
+    matcher = match_service.BibMatchService(fetcher=fetcher, matchpoints=matchpoints)
+
+    processed_bibs = []
+    bibs = marc_adapters.read_marc_file(marc_file=file_data, library=library)
+    for bib in bibs:
+        bib.bib_id = matcher.find_best_match(bib)
+        processed_bibs.append(bib)
+    return [i.__dict__ for i in processed_bibs]
+
+
 def process_marc_file(bib_data: BinaryIO, library: str) -> Sequence[model.DomainBib]:
     return [i for i in marc_adapters.read_marc_file(bib_data, library=library)]
 
