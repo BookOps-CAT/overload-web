@@ -50,6 +50,19 @@ def test_OverloadUnitOfWork():
 @pytest.mark.usefixtures("mock_sierra_response")
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
 class TestApplicationServices:
+    def test_apply_template_data(self, template_data, bib_data, library):
+        updated_bibs = services.apply_template_data(
+            bib_data=[bib_data], template=template_data
+        )
+        assert [i["orders"][0]["fund"] for i in updated_bibs][0] == template_data[
+            "fund"
+        ]
+        assert updated_bibs[0]["orders"] != bib_data["orders"]
+
+    def test_apply_template_data_empty_template(self, bib_data, library):
+        updated_bibs = services.apply_template_data(bib_data=[bib_data], template={})
+        assert updated_bibs[0]["orders"] == bib_data["orders"]
+
     def test_match_bib(self, bib_data, library):
         bib_data["isbn"] = "9781234567890"
         matched_bib = services.match_bib(
@@ -58,3 +71,21 @@ class TestApplicationServices:
             matchpoints=["bib_id", "upc", "isbn", "oclc_number"],
         )
         assert matched_bib["bib_id"] == "123"
+
+    def test_save_template(self, template_data, library):
+        template_data.update({"name": "Foo", "agent": "Bar"})
+        template_saver = services.save_template(
+            data=template_data, uow=MockUnitOfWork()
+        )
+        assert template_saver == template_data
+
+    def test_save_template_no_name(self, template_data, library):
+        with pytest.raises(ValueError) as exc:
+            services.save_template(data=template_data, uow=MockUnitOfWork())
+        assert str(exc.value) == "Templates must have a name before being saved."
+
+    def test_save_template_no_agent(self, template_data, library):
+        template_data.update({"name": "Foo"})
+        with pytest.raises(ValueError) as exc:
+            services.save_template(data=template_data, uow=MockUnitOfWork())
+        assert str(exc.value) == "Templates must have an agent before being saved."
