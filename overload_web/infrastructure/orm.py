@@ -1,3 +1,13 @@
+"""
+SQLAlchemy ORM setup for mapping domain models to relational database tables.
+
+Defines:
+- `templates`: Table schema for `Template` entities.
+- `start_mappers()`: Binds `Template` domain model to the `templates` table using SQLAlchemy's `composite` for matchpoints.
+"""
+
+from __future__ import annotations
+
 from sqlalchemy import Column, Date, Integer, MetaData, String, Table
 from sqlalchemy.orm import composite, registry
 
@@ -38,6 +48,12 @@ templates = Table(
 
 
 def start_mappers() -> None:
+    """
+    Configures ORM mappings between domain models and relational schema using
+    `SQLAlchemy`.
+
+    Maps the `Template` model to the `templates` table and configures composite fields.
+    """
     mapper_registry.map_imperatively(
         model.Template,
         templates,

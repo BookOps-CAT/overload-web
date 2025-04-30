@@ -1,3 +1,10 @@
+"""`FastAPI` application entry point.
+
+Initializes the `FastAPI` app and registers backend and frontend routers.
+"""
+
+from __future__ import annotations
+
 from fastapi import FastAPI
 
 from overload_web.presentation.api import overload_api

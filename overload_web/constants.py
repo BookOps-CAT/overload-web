@@ -1,3 +1,7 @@
+"""Constant values used in the presentation layer of overload_web"""
+
+from __future__ import annotations
+
 from typing import Any, Dict
 
 APPLICATION: str = "Overload"

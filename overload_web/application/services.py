@@ -1,3 +1,9 @@
+"""Application service functions for matching bib records and applying templates.
+
+Functions coordinate interactions between domain models, infrastructure adapters,
+and presentation layer.
+"""
+
 from __future__ import annotations
 
 from typing import Any, BinaryIO, Dict, List, Optional
@@ -10,6 +16,16 @@ from overload_web.infrastructure import marc_adapters, sierra_adapters
 def apply_template_data(
     bib_data: List[Dict[str, Any]], template: Dict[str, Any]
 ) -> List[Dict[str, Any]]:
+    """
+    Applies template data to a list of bib records.
+
+    Args:
+        bib_data: list of bibliographic records as dicts.
+        template: dictionary of template data to apply.
+
+    Returns:
+        list of processed records with the template data applied
+    """
     processed_bibs = []
     domain_bibs = [model.DomainBib(**i) for i in bib_data]
     for bib in domain_bibs:
@@ -24,6 +40,18 @@ def apply_template_data(
 
 
 def get_fetcher_for_library(library: str) -> bib_matcher.BibFetcher:
+    """
+    Creates a `SierraBibFetcher` object for the specified library.
+
+    Args:
+        library: library whose Sierra instance should be queried ("bpl" or "nypl")
+
+    Returns:
+        a `BibFetcher` object for the given library.
+
+    Raises:
+        ValueError: if the library is not "bpl" or "nypl".
+    """
     session: sierra_adapters.SierraSessionProtocol
     if library == "bpl":
         session = sierra_adapters.BPLSolrSession()
@@ -40,6 +68,18 @@ def match_bibs(
     matchpoints: List[str],
     fetcher: Optional[bib_matcher.BibFetcher] = None,
 ) -> List[Dict[str, Any]]:
+    """
+    Matches bib records from an incoming MARC file against Sierra.
+
+    Args:
+        file_data: list of MARC records as a `BinaryIO` object
+        library: library to whom the records belong.
+        matchpoints: fields to use for matching.
+        fetcher: optional custom fetcher; created automatically if not provided.
+
+    Returns:
+        list of records as dicts with newly matched bib IDs.
+    """
     if fetcher is None:
         fetcher = get_fetcher_for_library(library=library)
     matcher = bib_matcher.BibMatchService(fetcher=fetcher, matchpoints=matchpoints)
@@ -59,6 +99,20 @@ def match_and_attach(
     matchpoints: List[str],
     fetcher: Optional[bib_matcher.BibFetcher] = None,
 ) -> List[Dict[str, Any]]:
+    """
+    Matches bib records from an incoming MARC file against Sierra and optionally
+    applies data from a template.
+
+    Args:
+        file_data: list of MARC records as a `BinaryIO` object
+        library: library to whom the records belong.
+        template: optional template data to apply.
+        matchpoints: fields to use for matching.
+        fetcher: optional custom fetcher; created automatically if not provided.
+
+    Returns:
+        list of processed bibs as dicts.
+    """
     if fetcher is None:
         fetcher = get_fetcher_for_library(library=library)
     matcher = bib_matcher.BibMatchService(fetcher=fetcher, matchpoints=matchpoints)
@@ -76,6 +130,19 @@ def match_and_attach(
 def save_template(
     data: Dict[str, Any], uow: unit_of_work.UnitOfWorkProtocol
 ) -> Dict[str, Any]:
+    """
+    Validates and persists a new template using a unit of work.
+
+    Args:
+        data: dictionary of template fields.
+        uow: unit of work to use to manage the transaction.
+
+    Returns:
+        the saved template as a dict.
+
+    Raises:
+        ValueError: If the template lacks `name` or `agent`.
+    """
     template = model.Template(**data)
     if not template.name or not template.name.strip():
         raise ValueError("Templates must have a name before being saved.")
