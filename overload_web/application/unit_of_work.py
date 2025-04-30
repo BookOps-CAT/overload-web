@@ -1,22 +1,20 @@
 from __future__ import annotations
 
 import abc
-from typing import Callable
+from typing import Callable, Protocol, runtime_checkable
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from overload_web.application import object_factories
 from overload_web.infrastructure import repository, sierra_adapters
 
 
-class AbstractUnitOfWork(abc.ABC):
+@runtime_checkable
+class UnitOfWorkProtocol(Protocol):
     db_bibs: repository.AbstractRepository
-    bibs: sierra_adapters.AbstractService
-    bib_factory = object_factories.BibFactory()
-    order_factory = object_factories.OrderFactory()
+    bibs: sierra_adapters.SierraBibFetcher
 
-    def __enter__(self) -> AbstractUnitOfWork:
+    def __enter__(self) -> UnitOfWorkProtocol:
         return self
 
     def __exit__(self, *args):
@@ -35,7 +33,7 @@ SQL_SESSION_FACTORY = sessionmaker(bind=create_engine("sqlite:///:memory:"))
 SIERRA_SERVICE_FACTORY = sierra_adapters.SierraServiceFactory()
 
 
-class OverloadUnitOfWork(AbstractUnitOfWork):
+class OverloadUnitOfWork(UnitOfWorkProtocol):
     def __init__(
         self,
         library: str,
@@ -46,11 +44,13 @@ class OverloadUnitOfWork(AbstractUnitOfWork):
         self.sierra_factory = sierra_factory
         self.library = library
 
-    def __enter__(self) -> AbstractUnitOfWork:
+    def __enter__(self) -> UnitOfWorkProtocol:
         self.session = self.sql_factory()
         self.sierra_session = self.sierra_factory.get_session(library=self.library)
         self.db_bibs = repository.SqlAlchemyRepository(self.session)
-        self.bibs = sierra_adapters.SierraService(self.sierra_session())
+        self.bibs = sierra_adapters.SierraBibFetcher(
+            session=self.sierra_session(), library=self.library
+        )
         return super().__enter__()
 
     def __exit__(self, *args):

@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
-from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Dict, List, Protocol, Union, runtime_checkable
 
 import requests
 from bookops_bpl_solr import SolrSession
@@ -17,8 +16,8 @@ AGENT = f"{__title__}/{__version__}"
 
 
 class SierraServiceFactory:
-    def get_session(self, library: str) -> Callable[[], AbstractSierraSession]:
-        session: Callable[[], AbstractSierraSession]
+    def get_session(self, library: str) -> Callable:
+        session: Callable
         if library == "bpl":
             session = BPLSolrSession
         elif library == "nypl":
@@ -28,79 +27,60 @@ class SierraServiceFactory:
         return session
 
 
-class AbstractService:
-    @abstractmethod
-    def _get_bibs_by_id(self, value: Union[str, int], key: str) -> List[Dict[str, Any]]:
-        raise NotImplementedError("Subclasses should implement this method.")
+class SierraBibFetcher:
+    def __init__(self, session: SierraSessionProtocol, library: str):
+        self.session = session
+        self.library = library
 
-    def get_bibs_by_id(
-        self, value: Union[str, int, None], key: str
+    def _response_to_domain_dict(
+        self, records: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
+        return [
+            {
+                "library": self.library,
+                "orders": [],
+                "bib_id": i["id"],
+                "isbn": i.get("isbn"),
+                "oclc_number": i.get("oclc_number"),
+                "upc": i.get("upc"),
+            }
+            for i in records
+        ]
+
+    def get_bibs_by_id(self, value: Union[str, int], key: str) -> List[Dict[str, Any]]:
+        match_methods = {
+            "bib_id": self.session._get_bibs_by_bib_id,
+            "oclc_number": self.session._get_bibs_by_oclc_number,
+            "isbn": self.session._get_bibs_by_isbn,
+            "issn": self.session._get_bibs_by_issn,
+            "upc": self.session._get_bibs_by_upc,
+        }
+
+        if key not in match_methods:
+            raise ValueError(
+                f"Invalid matchpoint: '{key}'. Available matchpoints are: "
+                f"{sorted([i for i in match_methods.keys()])}"
+            )
         bibs = []
         if value is not None:
-            bibs.extend(self._get_bibs_by_id(value=value, key=key))
+            response = match_methods[key](value)
+            json_records = self.session._parse_response(response)
+            bibs.extend(self._response_to_domain_dict(json_records))
         return bibs
 
 
-class SierraService(AbstractService):
-    def __init__(self, session: AbstractSierraSession):
-        self.session = session
-
-    def _get_bibs_by_id(self, value: Union[str, int], key: str) -> List[Dict[str, Any]]:
-        if key == "bib_id":
-            response = self.session._get_bibs_by_bib_id(value=value)
-        elif key == "oclc_number":
-            response = self.session._get_bibs_by_oclc_number(value=value)
-        elif key == "isbn":
-            response = self.session._get_bibs_by_isbn(value=value)
-        elif key == "issn":
-            response = self.session._get_bibs_by_issn(value=value)
-        elif key == "upc":
-            response = self.session._get_bibs_by_upc(value=value)
-        else:
-            raise ValueError(
-                "Invalid matchpoint. Available matchpoints are: bib_id, "
-                "oclc_number, isbn, issn, and upc"
-            )
-        bibs = self.session._parse_response(response=response)
-        return bibs
+@runtime_checkable
+class SierraSessionProtocol(Protocol):
+    def _get_credentials(self) -> str | PlatformToken: ...
+    def _get_bibs_by_bib_id(self, value: Union[str, int]) -> requests.Response: ...
+    def _get_bibs_by_isbn(self, value: Union[str, int]) -> requests.Response: ...
+    def _get_bibs_by_issn(self, value: Union[str, int]) -> requests.Response: ...
+    def _get_bibs_by_oclc_number(self, value: Union[str, int]) -> requests.Response: ...
+    def _get_bibs_by_upc(self, value: Union[str, int]) -> requests.Response: ...
+    def _parse_response(self, response: requests.Response) -> List[Dict[str, Any]]: ...
 
 
-class AbstractSierraSession(ABC):
-    @abstractmethod
-    def _get_credentials(self) -> str | PlatformToken:
-        raise NotImplementedError("Subclasses should implement this method.")
-
-    @abstractmethod
-    def _get_target(self) -> str:
-        raise NotImplementedError("Subclasses should implement this method.")
-
-    @abstractmethod
-    def _get_bibs_by_bib_id(self, value: str | int) -> requests.Response:
-        raise NotImplementedError("Subclasses should implement this method.")
-
-    @abstractmethod
-    def _get_bibs_by_isbn(self, value: str | int) -> requests.Response:
-        raise NotImplementedError("Subclasses should implement this method.")
-
-    @abstractmethod
-    def _get_bibs_by_issn(self, value: str | int) -> requests.Response:
-        raise NotImplementedError("Subclasses should implement this method.")
-
-    @abstractmethod
-    def _get_bibs_by_oclc_number(self, value: str | int) -> requests.Response:
-        raise NotImplementedError("Subclasses should implement this method.")
-
-    @abstractmethod
-    def _get_bibs_by_upc(self, value: str | int) -> requests.Response:
-        raise NotImplementedError("Subclasses should implement this method.")
-
-    @abstractmethod
-    def _parse_response(self, response: requests.Response) -> List[Dict[str, Any]]:
-        raise NotImplementedError("Subclasses should implement this method.")
-
-
-class BPLSolrSession(SolrSession, AbstractSierraSession):
+class BPLSolrSession(SolrSession):
     def __init__(self):
         super().__init__(
             authorization=self._get_credentials(),
@@ -141,7 +121,7 @@ class BPLSolrSession(SolrSession, AbstractSierraSession):
         return response
 
 
-class NYPLPlatformSession(PlatformSession, AbstractSierraSession):
+class NYPLPlatformSession(PlatformSession):
     def __init__(self):
         super().__init__(
             authorization=self._get_credentials(),
