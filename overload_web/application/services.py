@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, BinaryIO, Dict, List, Optional
 
 from overload_web.application import unit_of_work
-from overload_web.domain import match_service, model
+from overload_web.domain import bib_matcher, model
 from overload_web.infrastructure import marc_adapters, sierra_adapters
 
 
@@ -23,7 +23,7 @@ def apply_template_data(
     return processed_bibs
 
 
-def get_fetcher_for_library(library: str) -> match_service.BibFetcher:
+def get_fetcher_for_library(library: str) -> bib_matcher.BibFetcher:
     session: sierra_adapters.SierraSessionProtocol
     if library == "bpl":
         session = sierra_adapters.BPLSolrSession()
@@ -38,11 +38,11 @@ def match_bibs(
     file_data: BinaryIO,
     library: str,
     matchpoints: List[str],
-    fetcher: Optional[match_service.BibFetcher] = None,
+    fetcher: Optional[bib_matcher.BibFetcher] = None,
 ) -> List[Dict[str, Any]]:
     if fetcher is None:
         fetcher = get_fetcher_for_library(library=library)
-    matcher = match_service.BibMatchService(fetcher=fetcher, matchpoints=matchpoints)
+    matcher = bib_matcher.BibMatchService(fetcher=fetcher, matchpoints=matchpoints)
 
     processed_bibs = []
     bibs = marc_adapters.read_marc_file(marc_file=file_data, library=library)
@@ -57,11 +57,11 @@ def match_and_attach(
     library: str,
     template: Optional[Dict[str, Any]],
     matchpoints: List[str],
-    fetcher: Optional[match_service.BibFetcher] = None,
+    fetcher: Optional[bib_matcher.BibFetcher] = None,
 ) -> List[Dict[str, Any]]:
     if fetcher is None:
         fetcher = get_fetcher_for_library(library=library)
-    matcher = match_service.BibMatchService(fetcher=fetcher, matchpoints=matchpoints)
+    matcher = bib_matcher.BibMatchService(fetcher=fetcher, matchpoints=matchpoints)
 
     processed_bibs = []
     bibs = marc_adapters.read_marc_file(marc_file=file_data, library=library)

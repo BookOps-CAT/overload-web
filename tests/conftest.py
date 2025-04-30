@@ -6,7 +6,7 @@ from pymarc import Field, Indicators, Subfield
 from sqlalchemy import create_engine
 from sqlalchemy.orm import clear_mappers, sessionmaker
 
-from overload_web.domain import match_service, model
+from overload_web.domain import bib_matcher, model
 from overload_web.infrastructure import orm
 
 
@@ -49,7 +49,7 @@ def mock_sierra_response(monkeypatch):
 
 @pytest.fixture
 def test_fetcher():
-    class FakeBibFetcher(match_service.BibFetcher):
+    class FakeBibFetcher(bib_matcher.BibFetcher):
         def get_bibs_by_id(self, value, key):
             bib_1 = {"bib_id": "123", "isbn": "9781234567890"}
             bib_2 = {"bib_id": "234", "isbn": "1234567890", "oclc_number": "123456789"}
