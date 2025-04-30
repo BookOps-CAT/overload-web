@@ -1,23 +1,8 @@
 import pytest
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import clear_mappers, sessionmaker
+from sqlalchemy import text
 
 from overload_web.domain import model
-from overload_web.infrastructure import orm, repository
-
-
-@pytest.fixture
-def in_memory_db():
-    engine = create_engine("sqlite:///:memory:")
-    orm.metadata.create_all(engine)
-    return engine
-
-
-@pytest.fixture
-def session(in_memory_db):
-    orm.start_mappers()
-    yield sessionmaker(bind=in_memory_db)()
-    clear_mappers()
+from overload_web.infrastructure import repository
 
 
 def test_SqlAlchemyRepository(session):

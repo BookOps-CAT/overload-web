@@ -3,8 +3,11 @@ import io
 import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
+from sqlalchemy import create_engine
+from sqlalchemy.orm import clear_mappers, sessionmaker
 
 from overload_web.domain import model
+from overload_web.infrastructure import orm
 
 
 class MockHTTPResponse:
@@ -50,6 +53,31 @@ def mock_sierra_response(monkeypatch):
         "overload_web.infrastructure.sierra_adapters.PlatformSession.get",
         mock_nypl_response,
     )
+
+
+@pytest.fixture
+def in_memory_db():
+    engine = create_engine("sqlite:///:memory:")
+    orm.metadata.create_all(engine)
+    return engine
+
+
+@pytest.fixture
+def session(in_memory_db):
+    orm.start_mappers()
+    yield sessionmaker(bind=in_memory_db)()
+    clear_mappers()
+
+
+@pytest.fixture
+def make_template():
+    def _make_template(data, matchpoints):
+        template = model.Template(**data)
+        matchpoints = model.Matchpoints(**matchpoints)
+        template.matchpoints = matchpoints
+        return template
+
+    return _make_template
 
 
 @pytest.fixture
@@ -114,17 +142,6 @@ def template_data() -> dict:
             "tertiary": None,
         },
     }
-
-
-@pytest.fixture
-def make_domain_bib(library, order_data):
-    def _make_domain_bib(data):
-        bib = model.DomainBib(library=library, orders=[model.Order(**order_data)])
-        for k, v in data.items():
-            setattr(bib, k, v)
-        return bib
-
-    return _make_domain_bib
 
 
 @pytest.fixture
