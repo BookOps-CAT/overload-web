@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Callable, Dict, List, Protocol, Union, runtime_checkable
+from typing import Any, Dict, List, Protocol, Union, runtime_checkable
 
 import requests
 from bookops_bpl_solr import SolrSession
@@ -13,18 +13,6 @@ from .. import __title__, __version__
 logger = logging.getLogger(__name__)
 
 AGENT = f"{__title__}/{__version__}"
-
-
-class SierraServiceFactory:
-    def get_session(self, library: str) -> Callable:
-        session: Callable
-        if library == "bpl":
-            session = BPLSolrSession
-        elif library == "nypl":
-            session = NYPLPlatformSession
-        else:
-            raise ValueError("Invalid library. Must be 'bpl' or 'nypl'")
-        return session
 
 
 class SierraBibFetcher:
@@ -84,15 +72,12 @@ class BPLSolrSession(SolrSession):
     def __init__(self):
         super().__init__(
             authorization=self._get_credentials(),
-            endpoint=self._get_target(),
+            endpoint=os.environ["BPL_SOLR_TARGET"],
             agent=AGENT,
         )
 
     def _get_credentials(self) -> str:
         return os.environ["BPL_SOLR_CLIENT"]
-
-    def _get_target(self) -> str:
-        return os.environ["BPL_SOLR_TARGET"]
 
     def _parse_response(self, response: requests.Response) -> List[Dict[str, Any]]:
         bibs = []
@@ -102,30 +87,26 @@ class BPLSolrSession(SolrSession):
         return bibs
 
     def _get_bibs_by_bib_id(self, value: str | int) -> requests.Response:
-        response = self.search_bibNo(str(value))
-        return response
+        return self.search_bibNo(str(value))
 
     def _get_bibs_by_isbn(self, value: str | int) -> requests.Response:
-        response = self.search_isbns([str(value)])
-        return response
+        return self.search_isbns([str(value)])
 
     def _get_bibs_by_issn(self, value: str | int) -> requests.Response:
         raise NotImplementedError("Search by ISSN not implemented in BPL Solr")
 
     def _get_bibs_by_oclc_number(self, value: str | int) -> requests.Response:
-        response = self.search_controlNo(str(value))
-        return response
+        return self.search_controlNo(str(value))
 
     def _get_bibs_by_upc(self, value: str | int) -> requests.Response:
-        response = self.search_upcs([str(value)])
-        return response
+        return self.search_upcs([str(value)])
 
 
 class NYPLPlatformSession(PlatformSession):
     def __init__(self):
         super().__init__(
             authorization=self._get_credentials(),
-            target=self._get_target(),
+            target=os.environ["NYPL_PLATFORM_TARGET"],
             agent=AGENT,
         )
 
@@ -137,9 +118,6 @@ class NYPLPlatformSession(PlatformSession):
             os.environ["NYPL_PLATFORM_AGENT"],
         )
 
-    def _get_target(self) -> str:
-        return os.environ["NYPL_PLATFORM_TARGET"]
-
     def _parse_response(self, response: requests.Response) -> List[Dict[str, Any]]:
         bibs = []
         if response and response.ok:
@@ -148,20 +126,16 @@ class NYPLPlatformSession(PlatformSession):
         return bibs
 
     def _get_bibs_by_bib_id(self, value: str | int) -> requests.Response:
-        response = self.search_bibNos(str(value))
-        return response
+        return self.search_bibNos(str(value))
 
     def _get_bibs_by_isbn(self, value: str | int) -> requests.Response:
-        response = self.search_standardNos(str(value))
-        return response
+        return self.search_standardNos(str(value))
 
     def _get_bibs_by_issn(self, value: str | int) -> requests.Response:
         raise NotImplementedError("Search by ISSN not implemented in NYPL Platform")
 
     def _get_bibs_by_oclc_number(self, value: str | int) -> requests.Response:
-        response = self.search_controlNos(str(value))
-        return response
+        return self.search_controlNos(str(value))
 
     def _get_bibs_by_upc(self, value: str | int) -> requests.Response:
-        response = self.search_standardNos(str(value))
-        return response
+        return self.search_standardNos(str(value))
