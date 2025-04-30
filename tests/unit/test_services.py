@@ -34,35 +34,10 @@ class MockUnitOfWork(unit_of_work.UnitOfWorkProtocol):
 @pytest.mark.usefixtures("mock_sierra_response")
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
 class TestApplicationServices:
-    def test_get_bibs_by_key(self, bib_data, library):
-        bib_data["isbn"] = "9781234567890"
-        bibs = services.get_bibs_by_key(
-            uow=MockUnitOfWork(), bib=bib_data, matchpoints=["isbn"]
-        )
-        assert len(bibs) == 4
-        assert bibs == [
-            {"bib_id": "123", "isbn": "9781234567890"},
-            {"bib_id": "234", "isbn": "1234567890", "oclc_number": "123456789"},
-            {
-                "bib_id": "345",
-                "isbn": "9781234567890",
-                "oclc_number": "123456789",
-            },
-            {"bib_id": "456", "upc": "333"},
-        ]
-
-    def test_get_bibs_by_key_None(self, bib_data, library):
-        bibs = services.get_bibs_by_key(
-            uow=MockUnitOfWork(),
-            bib=bib_data,
-            matchpoints=["isbn"],
-        )
-        assert bibs == []
-
     def test_match_bib(self, bib_data, library):
         bib_data["isbn"] = "9781234567890"
         matched_bib = services.match_bib(
-            uow=MockUnitOfWork(),
+            fetcher=FakeBibFetcher(),
             bib=bib_data,
             matchpoints=["bib_id", "upc", "isbn", "oclc_number"],
         )

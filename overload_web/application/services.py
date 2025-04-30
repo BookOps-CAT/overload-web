@@ -1,46 +1,33 @@
 from __future__ import annotations
 
-from typing import Any, BinaryIO, Dict, List, Sequence
+from typing import Any, BinaryIO, Dict, List, Optional, Sequence
 
-from overload_web.application import unit_of_work
-from overload_web.domain import model
-from overload_web.infrastructure import marc_adapters
+from overload_web.domain import match_service, model
+from overload_web.infrastructure import marc_adapters, sierra_adapters
 
 
-def get_bibs_by_key(
-    bib: Dict[str, Any],
-    matchpoints: List[str],
-    uow: unit_of_work.OverloadUnitOfWork,
-) -> List[Dict[str, Any]]:
-    with uow:
-        bibs = []
-        for key in matchpoints:
-            value = bib.get(key)
-            if not value:
-                continue
-            bibs.extend([i for i in uow.bibs.get_bibs_by_id(value=value, key=key)])
-        return bibs
+def get_fetcher_for_library(library: str) -> match_service.BibFetcher:
+    session: sierra_adapters.SierraSessionProtocol
+    if library == "bpl":
+        session = sierra_adapters.BPLSolrSession()
+    elif library == "nypl":
+        session = sierra_adapters.NYPLPlatformSession()
+    else:
+        raise ValueError("Invalid library. Must be 'bpl' or 'nypl'")
+    return sierra_adapters.SierraBibFetcher(session=session, library=library)
 
 
 def match_bib(
     bib: Dict[str, Any],
     matchpoints: List[str],
-    uow: unit_of_work.OverloadUnitOfWork,
+    fetcher: Optional[match_service.BibFetcher] = None,
 ) -> Dict[str, Any]:
     domain_bib = model.DomainBib(**bib)
-    with uow:
-        bibs = []
-        for key in matchpoints:
-            value = bib.get(key)
-            if not value:
-                continue
-            sierra_bibs = uow.bibs.get_bibs_by_id(value=value, key=key)
-            for bib in sierra_bibs:
-                bib.update({"library": domain_bib.library, "orders": []})
-            bibs.extend(sierra_bibs)
-        domain_bibs = [model.DomainBib(**i) for i in bibs]
-        domain_bib.match(bibs=domain_bibs, matchpoints=matchpoints)
-        return domain_bib.__dict__
+    if fetcher is None:
+        fetcher = get_fetcher_for_library(library=domain_bib.library)
+    matcher = match_service.BibMatchService(fetcher=fetcher, matchpoints=matchpoints)
+    domain_bib.bib_id = matcher.find_best_match(domain_bib)
+    return domain_bib.__dict__
 
 
 def process_marc_file(bib_data: BinaryIO, library: str) -> Sequence[model.DomainBib]:
