@@ -1,20 +1,16 @@
-import abc
-from typing import Union
+from typing import Protocol, Union, runtime_checkable
 
 from overload_web.domain import model
 
 
-class AbstractRepository(abc.ABC):
-    @abc.abstractmethod
-    def get(self, id: Union[str, int]) -> model.Template:
-        raise NotImplementedError
+@runtime_checkable
+class RepositoryProtocol(Protocol):
+    def get(self, id: Union[str, int]) -> model.Template: ...
 
-    @abc.abstractmethod
-    def save(self, template: model.Template):
-        raise NotImplementedError
+    def save(self, template: model.Template) -> None: ...
 
 
-class SqlAlchemyRepository(AbstractRepository):
+class SqlAlchemyRepository:
     def __init__(self, session):
         self.session = session
 

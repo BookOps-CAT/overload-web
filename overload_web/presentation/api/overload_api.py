@@ -23,7 +23,7 @@ def vendor_file_process(
 ) -> Sequence[schemas.BibModel]:
     processed_bibs = []
     uow = unit_of_work.OverloadUnitOfWork(library=library)
-    bibs = services.process_marc_file(bib_data=file.file, library=library, uow=uow)
+    bibs = services.process_marc_file(bib_data=file.file, library=library)
     for bib in bibs:
         for order in bib.orders:
             order.apply_template(template_data=vars(template))

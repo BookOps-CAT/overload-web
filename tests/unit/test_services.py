@@ -1,43 +1,34 @@
 import pytest
 
 from overload_web.application import services, unit_of_work
-from overload_web.infrastructure import sierra_adapters
+from overload_web.domain import match_service
 
 
-def fake_sierra_service():
-    class FakeSierraService(sierra_adapters.AbstractService):
-        def _get_bibs_by_id(self, value, key):
-            return [{"id": "123456789", key: value}]
+class FakeBibFetcher(match_service.BibFetcher):
+    def get_bibs_by_id(self, value, key):
+        bib_1 = {"bib_id": "123", "isbn": "9781234567890"}
+        bib_2 = {"bib_id": "234", "isbn": "1234567890", "oclc_number": "123456789"}
+        bib_3 = {
+            "bib_id": "345",
+            "isbn": "9781234567890",
+            "oclc_number": "123456789",
+        }
+        bib_4 = {"bib_id": "456", "upc": "333"}
+        return [bib_1, bib_2, bib_3, bib_4]
 
-    return FakeSierraService()
 
-
-class MockUnitOfWork(unit_of_work.AbstractUnitOfWork):
+class MockUnitOfWork(unit_of_work.UnitOfWorkProtocol):
     def __init__(self):
         self.session = None
         self.sierra_session = None
         self.db_bibs = []
-        self.bibs = fake_sierra_service()
+        self.bibs = FakeBibFetcher()
 
     def commit(self):
         self.committed = True
 
     def rollback(self):
         pass
-
-
-class TestAbstractUnitOfWork:
-    def test_commit(self):
-        unit_of_work.AbstractUnitOfWork.__abstractmethods__ = set()
-        uow = unit_of_work.AbstractUnitOfWork()
-        with pytest.raises(NotImplementedError):
-            uow.commit()
-
-    def test_rollback(self):
-        unit_of_work.AbstractUnitOfWork.__abstractmethods__ = set()
-        uow = unit_of_work.AbstractUnitOfWork()
-        with pytest.raises(NotImplementedError):
-            uow.rollback()
 
 
 @pytest.mark.usefixtures("mock_sierra_response")
@@ -48,15 +39,16 @@ class TestApplicationServices:
         bibs = services.get_bibs_by_key(
             uow=MockUnitOfWork(), bib=bib_data, matchpoints=["isbn"]
         )
+        assert len(bibs) == 4
         assert bibs == [
+            {"bib_id": "123", "isbn": "9781234567890"},
+            {"bib_id": "234", "isbn": "1234567890", "oclc_number": "123456789"},
             {
-                "library": library,
-                "orders": [],
-                "bib_id": "123456789",
+                "bib_id": "345",
                 "isbn": "9781234567890",
-                "oclc_number": None,
-                "upc": None,
-            }
+                "oclc_number": "123456789",
+            },
+            {"bib_id": "456", "upc": "333"},
         ]
 
     def test_get_bibs_by_key_None(self, bib_data, library):
@@ -74,4 +66,4 @@ class TestApplicationServices:
             bib=bib_data,
             matchpoints=["bib_id", "upc", "isbn", "oclc_number"],
         )
-        assert matched_bib["bib_id"] == "123456789"
+        assert matched_bib["bib_id"] == "123"
