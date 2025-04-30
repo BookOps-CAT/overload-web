@@ -1,5 +1,3 @@
-import os
-
 import pytest
 from fastapi.testclient import TestClient
 
@@ -35,7 +33,6 @@ class TestAPIRouter:
     def test_process_vendor_file_post(
         self, stub_pvf_form_data, stub_binary_marc, library, destination
     ):
-        os.environ["library"] = library
         response = self.client.post(
             "/vendor_file",
             files={"file": ("marc_file.mrc", stub_binary_marc, "text/plain")},
@@ -55,7 +52,6 @@ class TestAPIRouter:
     def test_process_vendor_file_post_invalid_config(
         self, stub_binary_marc, stub_pvf_form_data, library, destination
     ):
-        os.environ["library"] = library
         with pytest.raises(ValueError) as exc:
             self.client.post(
                 "/vendor_file",
