@@ -1,3 +1,5 @@
+"""Domain models that define bib records, order records, and associated objects."""
+
 from __future__ import annotations
 
 import datetime
@@ -10,6 +12,18 @@ import bookops_marc.models
 
 @dataclass
 class DomainBib:
+    """
+    A domain model representing a bib record and its associated order data.
+
+    Attributes:
+        library: the library to whom the record belongs.
+        orders: list of orders associated with the record.
+        bib_id: sierra bib ID.
+        isbn: ISBN for the title, if present.
+        oclc_number: OCLC number(s) identifying the record, if present.
+        upc: UPC number, if present.
+    """
+
     library: str
     orders: List[Order]
     bib_id: Optional[str] = None
@@ -18,11 +32,26 @@ class DomainBib:
     upc: Optional[str] = None
 
     def apply_template(self, template_data: Dict[str, Any]) -> None:
+        """
+        Apply template data to all orders in this bib record.
+
+        Args:
+            template_data: dictionary of order fields and values to overwrite
+        """
         for order in self.orders:
             order.apply_template(template_data=template_data)
 
     @classmethod
     def from_marc(cls, bib: bookops_marc.Bib) -> DomainBib:
+        """
+        Factory method used to build a `DomainBib` from a `bookops_marc.Bib` object.
+
+        Args:
+            bib: `Bib` record represented as a `bookops_marc.Bib` object.
+
+        Returns:
+            DomainBib: domain object populated with structured order and identifier data.
+        """
         orders = []
         for order in bib.orders:
             orders.append(Order.from_marc(order=order))
@@ -38,11 +67,27 @@ class DomainBib:
 
 @dataclass
 class Matchpoints:
+    """
+    Represents a set of matchpoint values used for identifying duplicate records
+    in Sierra.
+
+    Attributes:
+        primary: primary field to match on.
+        secondary: secondary field to match on.
+        tertiary: tertiary field to match on.
+    """
+
     primary: Optional[str] = None
     secondary: Optional[str] = None
     tertiary: Optional[str] = None
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize `Matchpoints` from positional or keyword arguments.
+
+        Raises:
+            ValueError: If tertiary matchpoint is provided without a secondary.
+        """
         if "tertiary" in kwargs and "secondary" not in kwargs and len(args) < 2:
             raise ValueError("Cannot have tertiary matchpoint without secondary.")
 
@@ -58,6 +103,7 @@ class Matchpoints:
         self.primary, self.secondary, self.tertiary = values[:3]
 
     def as_list(self) -> List[str]:
+        """Return the matchpoints as a list"""
         return [i for i in (self.primary, self.secondary, self.tertiary) if i]
 
     def __composite_values__(self):
@@ -74,6 +120,8 @@ class Matchpoints:
 
 @dataclass
 class Order:
+    """A domain model representing a Sierra order."""
+
     audience: Optional[str]
     blanket_po: Optional[str]
     copies: Optional[Union[str, int]]
@@ -96,12 +144,29 @@ class Order:
     vendor_title_no: Optional[str]
 
     def apply_template(self, template_data: Dict[str, Any]) -> None:
+        """
+        Apply template data to the order, updating any matching non-empty fields.
+
+        Args:
+            template_data: Field-value pairs to apply.
+        """
         for k, v in template_data.items():
             if v and k in self.__dict__.keys():
                 setattr(self, k, v)
 
     @classmethod
     def from_marc(cls, order: bookops_marc.models.Order) -> Order:
+        """
+        Factory method used to construct an `Order` object from a `bookops_marc.Order`
+        object.
+
+        Args:
+            order: an order from a `bookops_marc.Bib` or `bookops_marc.Order` object
+
+        Returns:
+            Order: an instance of the domain order populated from MARC data.
+        """
+
         def from_following_field(code: str):
             if order._following_field:
                 return order._following_field.get(code, None)
@@ -133,6 +198,15 @@ class Order:
 
 @dataclass(kw_only=True)
 class Template:
+    """
+    A reusable template for applying consistent values to orders.
+
+    Attributes:
+        matchpoints: a `Matchpoints` object used to identify matched bibs in Sierra.
+
+        All other fields correspond to those available in the `Order` domain model.
+    """
+
     matchpoints: Matchpoints = field(default_factory=Matchpoints)
     agent: Optional[str] = None
     audience: Optional[str] = None
