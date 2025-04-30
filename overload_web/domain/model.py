@@ -4,6 +4,9 @@ import datetime
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
 
+import bookops_marc
+import bookops_marc.models
+
 
 @dataclass
 class DomainBib:
@@ -31,6 +34,20 @@ class DomainBib:
                 max_matched_points = matched_points
                 best_match_bib_id = bib.bib_id
         self.bib_id = best_match_bib_id
+
+    @classmethod
+    def from_marc(cls, bib: bookops_marc.Bib) -> DomainBib:
+        orders = []
+        for order in bib.orders:
+            orders.append(Order.from_marc(order=order))
+        return DomainBib(
+            library=bib.library,
+            orders=orders,
+            bib_id=bib.sierra_bib_id,
+            upc=bib.upc_number,
+            isbn=bib.isbn,
+            oclc_number=list(bib.oclc_nos.values()),
+        )
 
 
 @dataclass
@@ -96,6 +113,36 @@ class Order:
         for k, v in template_data.items():
             if v and k in self.__dict__.keys():
                 setattr(self, k, v)
+
+    @classmethod
+    def from_marc(cls, order: bookops_marc.models.Order) -> Order:
+        def from_following_field(code: str):
+            if order._following_field:
+                return order._following_field.get(code, None)
+            return None
+
+        return Order(
+            audience=order._field.get("f", None),
+            blanket_po=from_following_field("m"),
+            copies=order.copies,
+            country=order._field.get("x", None),
+            create_date=order.created,
+            format=order.form,
+            fund=order._field.get("u", None),
+            internal_note=from_following_field("d"),
+            lang=order.lang,
+            locations=order.locs,
+            order_type=order._field.get("i", None),
+            price=order._field.get("s", None),
+            selector=order._field.get("c", None),
+            selector_note=from_following_field("f"),
+            source=order._field.get("e", None),
+            status=order._field.get("m", None),
+            var_field_isbn=from_following_field("l"),
+            vendor_code=order._field.get("v", None),
+            vendor_notes=order.venNotes,
+            vendor_title_no=from_following_field("i"),
+        )
 
 
 @dataclass(kw_only=True)
