@@ -5,6 +5,7 @@ Serves HTML pages for Overload Web's user interface.
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict
 
 from fastapi import APIRouter, Request
@@ -13,6 +14,7 @@ from fastapi.templating import Jinja2Templates
 
 from overload_web import constants
 
+logger = logging.getLogger(__name__)
 frontend_router = APIRouter()
 templates = Jinja2Templates(directory="overload_web/presentation/frontend/templates")
 

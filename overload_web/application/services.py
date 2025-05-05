@@ -6,11 +6,14 @@ and presentation layer.
 
 from __future__ import annotations
 
+import logging
 from typing import Any, BinaryIO, Dict, List, Optional
 
 from overload_web.application import unit_of_work
 from overload_web.domain import bib_matcher, model
 from overload_web.infrastructure import marc_adapters, sierra_adapters
+
+logger = logging.getLogger(__name__)
 
 
 def apply_template_data(

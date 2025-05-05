@@ -5,6 +5,7 @@ Includes endpoints for root and processing vendor MARC files.
 
 from __future__ import annotations
 
+import logging
 from typing import Annotated, Optional, Sequence
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
@@ -13,6 +14,7 @@ from fastapi.responses import JSONResponse
 from overload_web.application import services
 from overload_web.presentation.api import schemas
 
+logger = logging.getLogger(__name__)
 api_router = APIRouter()
 
 

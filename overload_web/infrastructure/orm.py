@@ -8,11 +8,14 @@ Defines:
 
 from __future__ import annotations
 
+import logging
+
 from sqlalchemy import Column, Date, Integer, MetaData, String, Table
 from sqlalchemy.orm import composite, registry
 
 from overload_web.domain import model
 
+logger = logging.getLogger(__name__)
 metadata = MetaData()
 mapper_registry = registry(metadata=metadata)
 
