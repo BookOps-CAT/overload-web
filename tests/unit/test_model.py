@@ -109,10 +109,11 @@ class TestTemplate:
         assert template.country == "xxu"
         assert template.vendor_code == "0049"
         assert template.format == "a"
-        assert template.selector == "b"
+        assert template.order_code_1 == "b"
+        assert template.order_code_2 is None
+        assert template.order_code_3 == "d"
+        assert template.order_code_4 == "a"
         assert template.selector_note is None
-        assert template.audience == "a"
-        assert template.source == "d"
         assert template.order_type == "p"
         assert template.status == "o"
         assert template.internal_note == "foo"

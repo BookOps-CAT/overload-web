@@ -122,8 +122,9 @@ class Matchpoints:
 class Order:
     """A domain model representing a Sierra order."""
 
-    audience: Optional[str]
+    audience: List[str]
     blanket_po: Optional[str]
+    branches: List[str]
     copies: Optional[Union[str, int]]
     country: Optional[str]
     create_date: Optional[Union[datetime.datetime, datetime.date, str]]
@@ -132,11 +133,15 @@ class Order:
     internal_note: Optional[str]
     lang: Optional[str]
     locations: List[str]
+    order_code_1: Optional[str]
+    order_code_2: Optional[str]
+    order_code_3: Optional[str]
+    order_code_4: Optional[str]
+    order_id: Optional[int]
     order_type: Optional[str]
     price: Optional[Union[str, int]]
-    selector: Optional[str]
     selector_note: Optional[str]
-    source: Optional[str]
+    shelves: List[str]
     status: Optional[str]
     var_field_isbn: Optional[str]
     vendor_code: Optional[str]
@@ -173,8 +178,9 @@ class Order:
             return None
 
         return Order(
-            audience=order._field.get("f", None),
+            audience=order.audn,
             blanket_po=from_following_field("m"),
+            branches=order.branches,
             copies=order.copies,
             country=order._field.get("x", None),
             create_date=order.created,
@@ -183,12 +189,16 @@ class Order:
             internal_note=from_following_field("d"),
             lang=order.lang,
             locations=order.locs,
+            order_code_1=order._field.get("c", None),
+            order_code_2=order._field.get("d", None),
+            order_code_3=order._field.get("e", None),
+            order_code_4=order._field.get("f", None),
             order_type=order._field.get("i", None),
+            order_id=order.oid,
             price=order._field.get("s", None),
-            selector=order._field.get("c", None),
             selector_note=from_following_field("f"),
-            source=order._field.get("e", None),
-            status=order._field.get("m", None),
+            shelves=order.shelves,
+            status=order.status,
             var_field_isbn=from_following_field("l"),
             vendor_code=order._field.get("v", None),
             vendor_notes=order.venNotes,
@@ -209,22 +219,24 @@ class Template:
 
     matchpoints: Matchpoints = field(default_factory=Matchpoints)
     agent: Optional[str] = None
-    audience: Optional[str] = None
+    id: Optional[str] = None
+    name: Optional[str] = None
+
     blanket_po: Optional[str] = None
     copies: Optional[Union[str, int]] = None
     country: Optional[str] = None
     create_date: Optional[Union[datetime.datetime, datetime.date, str]] = None
     format: Optional[str] = None
     fund: Optional[str] = None
-    id: Optional[str] = None
     internal_note: Optional[str] = None
     lang: Optional[str] = None
+    order_code_1: Optional[str] = None
+    order_code_2: Optional[str] = None
+    order_code_3: Optional[str] = None
+    order_code_4: Optional[str] = None
     order_type: Optional[str] = None
-    name: Optional[str] = None
     price: Optional[Union[str, int]] = None
-    selector: Optional[str] = None
     selector_note: Optional[str] = None
-    source: Optional[str] = None
     status: Optional[str] = None
     var_field_isbn: Optional[str] = None
     vendor_code: Optional[str] = None
