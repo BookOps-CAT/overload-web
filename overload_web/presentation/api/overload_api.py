@@ -49,10 +49,9 @@ def vendor_file_process(
         A list of processed bib records.
     """
     template_data = {k: v for k, v in form_data.__dict__.items() if k != "matchpoints"}
-    processed_bibs = services.match_and_attach(
-        file_data=file.file,
-        library=library,
-        matchpoints=form_data.matchpoints.as_list(),
-        template=template_data,
+    bibs = services.read_marc_binary(file_data=file.file, library=library)
+    matched_bibs = services.match_bibs(
+        bibs=bibs, library=library, matchpoints=form_data.matchpoints.as_list()
     )
-    return [schemas.BibModel(**i) for i in processed_bibs]
+    processed_bibs = services.attach_template(bibs=matched_bibs, template=template_data)
+    return [schemas.BibModel(**i.domain_bib.__dict__) for i in processed_bibs]

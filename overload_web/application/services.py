@@ -6,39 +6,35 @@ and presentation layer.
 
 from __future__ import annotations
 
+import io
 import logging
 from typing import Any, BinaryIO, Dict, List, Optional
 
-from overload_web.application import unit_of_work
+from overload_web.application import dto, unit_of_work
 from overload_web.domain import bib_matcher, model
 from overload_web.infrastructure import marc_adapters, sierra_adapters
 
 logger = logging.getLogger(__name__)
 
 
-def apply_template_data(
-    bib_data: List[Dict[str, Any]], template: Dict[str, Any]
-) -> List[Dict[str, Any]]:
+def attach_template(
+    bibs: List[dto.BibDTO], template: Dict[str, Any]
+) -> List[dto.BibDTO]:
     """
     Applies template data to a list of bib records.
 
     Args:
-        bib_data: list of bibliographic records as dicts.
+        bibs: list of data transfer objects containing marc data.
         template: dictionary of template data to apply.
 
     Returns:
-        list of processed records with the template data applied
+        list of data transfer objects with the template data applied
     """
     processed_bibs = []
-    domain_bibs = [model.DomainBib(**i) for i in bib_data]
-    for bib in domain_bibs:
-        bib.orders = [
-            (model.Order(**i) if isinstance(i, dict) else i) for i in bib.orders
-        ]
-        bib.apply_template(template_data=template)
-        processed_bib = {k: v for k, v in bib.__dict__.items() if k != "orders"}
-        processed_bib["orders"] = [i.__dict__ for i in bib.orders]
-        processed_bibs.append(processed_bib)
+    for bib in bibs:
+        bib.domain_bib.apply_template(template_data=template)
+        bib.update_marc()
+        processed_bibs.append(bib)
     return processed_bibs
 
 
@@ -66,68 +62,50 @@ def get_fetcher_for_library(library: str) -> bib_matcher.BibFetcher:
 
 
 def match_bibs(
-    file_data: BinaryIO,
+    bibs: List[dto.BibDTO],
     library: str,
     matchpoints: List[str],
     fetcher: Optional[bib_matcher.BibFetcher] = None,
-) -> List[Dict[str, Any]]:
+) -> List[dto.BibDTO]:
     """
     Matches bib records from an incoming MARC file against Sierra.
 
     Args:
-        file_data: list of MARC records as a `BinaryIO` object
+        bibs: list of data transfer objects containing marc data.
         library: library to whom the records belong.
         matchpoints: fields to use for matching.
         fetcher: optional custom fetcher; created automatically if not provided.
 
     Returns:
-        list of records as dicts with newly matched bib IDs.
+        list of `BibDTO` objects.
     """
     if fetcher is None:
         fetcher = get_fetcher_for_library(library=library)
     matcher = bib_matcher.BibMatchService(fetcher=fetcher, matchpoints=matchpoints)
 
     processed_bibs = []
-    bibs = marc_adapters.read_marc_file(marc_file=file_data, library=library)
     for bib in bibs:
-        bib.bib_id = matcher.find_best_match(bib)
+        bib.domain_bib.bib_id = matcher.find_best_match(bib.domain_bib)
+        bib.update_marc()
+        print(str(bib))
         processed_bibs.append(bib)
-    return [i.__dict__ for i in processed_bibs]
+    return processed_bibs
 
 
-def match_and_attach(
-    file_data: BinaryIO,
-    library: str,
-    template: Optional[Dict[str, Any]],
-    matchpoints: List[str],
-    fetcher: Optional[bib_matcher.BibFetcher] = None,
-) -> List[Dict[str, Any]]:
+def read_marc_binary(file_data: BinaryIO, library: str) -> List[dto.BibDTO]:
     """
-    Matches bib records from an incoming MARC file against Sierra and optionally
-    applies data from a template.
+    Reads a MARC binary file and returns a list of `BibDTO` objects.
 
     Args:
-        file_data: list of MARC records as a `BinaryIO` object
-        library: library to whom the records belong.
-        template: optional template data to apply.
-        matchpoints: fields to use for matching.
-        fetcher: optional custom fetcher; created automatically if not provided.
+
+        file_data: binary stream containing MARC data.
+        library: the library to whom the records belong.
 
     Returns:
-        list of processed bibs as dicts.
+        list of `BibDTO` objects.
     """
-    if fetcher is None:
-        fetcher = get_fetcher_for_library(library=library)
-    matcher = bib_matcher.BibMatchService(fetcher=fetcher, matchpoints=matchpoints)
-
-    processed_bibs = []
     bibs = marc_adapters.read_marc_file(marc_file=file_data, library=library)
-    for bib in bibs:
-        bib.bib_id = matcher.find_best_match(bib)
-        if template:
-            bib.apply_template(template_data=template)
-        processed_bibs.append(bib)
-    return [i.__dict__ for i in processed_bibs]
+    return bibs
 
 
 def save_template(
@@ -155,3 +133,19 @@ def save_template(
         uow.templates.save(template=template)
         uow.commit()
     return template.__dict__
+
+
+def write_marc_binary(bibs: List[dto.BibDTO]) -> bytes:
+    """
+    Writes a list of data transfer objects to a file in MARC format.
+
+    Args:
+        file: the name of the file to write to.
+
+    Returns:
+        list of bibs as bytes.
+    """
+    io_data = io.BytesIO()
+    for bib in bibs:
+        io_data.write(bib.bib.as_marc())
+    return io_data.getvalue()

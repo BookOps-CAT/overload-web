@@ -1,3 +1,4 @@
+import copy
 import io
 
 import pytest
@@ -6,6 +7,7 @@ from pymarc import Field, Indicators, Subfield
 from sqlalchemy import create_engine
 from sqlalchemy.orm import clear_mappers, sessionmaker
 
+from overload_web.application import dto
 from overload_web.domain import bib_matcher, model
 from overload_web.infrastructure import orm
 
@@ -163,7 +165,7 @@ def template_data() -> dict:
 @pytest.fixture
 def stub_bib(library) -> Bib:
     bib = Bib()
-    bib.leader = "02866pam  2200517 i 4500"
+    bib.leader = "00000cam  2200517 i 4500"
     bib.library = library
     bib.add_field(
         Field(
@@ -231,9 +233,6 @@ def stub_bib(library) -> Bib:
             subfields=[
                 Subfield(code="d", value="foo"),
                 Subfield(code="f", value="bar"),
-                Subfield(code="h", value="baz"),
-                Subfield(code="i", value="foo"),
-                Subfield(code="l", value="bar"),
                 Subfield(code="m", value="baz"),
             ],
         )
@@ -244,6 +243,12 @@ def stub_bib(library) -> Bib:
 @pytest.fixture
 def stub_binary_marc(stub_bib) -> io.BytesIO:
     return io.BytesIO(stub_bib.as_marc())
+
+
+@pytest.fixture
+def stub_bib_dto(stub_bib) -> dto.BibDTO:
+    bib = copy.deepcopy(stub_bib)
+    return dto.BibDTO(bib=bib, domain_bib=model.DomainBib.from_marc(bib))
 
 
 @pytest.fixture
