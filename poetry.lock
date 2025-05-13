@@ -49,7 +49,7 @@ requests = "^2.24.0"
 
 [package.source]
 type = "git"
-url = "http://github.com/BookOps-CAT/bookops-bpl-solr.git"
+url = "https://github.com/BookOps-CAT/bookops-bpl-solr.git"
 reference = "HEAD"
 resolved_reference = "5029881d83f83ea22c6d6bdbbb4b34e8f73b0d25"
 
@@ -68,9 +68,9 @@ pymarc = "^5.2.3"
 
 [package.source]
 type = "git"
-url = "http://github.com/BookOps-CAT/bookops-marc.git"
-reference = "releases/v0.12.0"
-resolved_reference = "53c8806da0123d62a6f4e25b03e8a47d31289b20"
+url = "https://github.com/BookOps-CAT/bookops-marc.git"
+reference = "item_records"
+resolved_reference = "701f102169fa75626ffab98e1df484585b4ae9a7"
 
 [[package]]
 name = "bookops-nypl-platform"
@@ -87,7 +87,7 @@ requests = "^2.32.3"
 
 [package.source]
 type = "git"
-url = "http://github.com/BookOps-CAT/bookops-nypl-platform.git"
+url = "https://github.com/BookOps-CAT/bookops-nypl-platform.git"
 reference = "HEAD"
 resolved_reference = "372a8c8930eebd782c421021e8d637ce72b45692"
 
@@ -1662,4 +1662,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12, <4.0"
-content-hash = "179a5730c04b95c8834cfe7ef38ce8b9b0d67b51ce349fd84eacbb7b55eaecf8"
+content-hash = "5125f64681f810fb77c5345c56b24e7d7b30910951ac64fd479643b98b59b291"
