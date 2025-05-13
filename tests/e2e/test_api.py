@@ -43,7 +43,16 @@ class TestAPIRouter:
         assert response.url == f"{self.client.base_url}/vendor_file"
         assert isinstance(json_response, list)
         assert sorted(list(response.json()[0].keys())) == sorted(
-            ["bib_id", "isbn", "upc", "oclc_number", "orders", "library"]
+            [
+                "bib_id",
+                "isbn",
+                "upc",
+                "oclc_number",
+                "orders",
+                "library",
+                "barcodes",
+                "call_number",
+            ]
         )
 
     @pytest.mark.parametrize(

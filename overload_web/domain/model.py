@@ -22,6 +22,8 @@ class DomainBib:
         isbn: ISBN for the title, if present.
         oclc_number: OCLC number(s) identifying the record, if present.
         upc: UPC number, if present.
+        call_number: call number for the record, if present.
+        barcodes: list of barcodes associated with the record.
     """
 
     library: str
@@ -30,6 +32,8 @@ class DomainBib:
     isbn: Optional[str] = None
     oclc_number: Optional[Union[str, List[str]]] = None
     upc: Optional[str] = None
+    call_number: Optional[Union[str, List[str]]] = None
+    barcodes: List[str] = field(default_factory=list)
 
     def apply_template(self, template_data: Dict[str, Any]) -> None:
         """
@@ -52,16 +56,17 @@ class DomainBib:
         Returns:
             DomainBib: domain object populated with structured order and identifier data.
         """
-        orders = []
-        for order in bib.orders:
-            orders.append(Order.from_marc(order=order))
         return DomainBib(
             library=bib.library,
-            orders=orders,
+            orders=[Order.from_marc(order=i) for i in bib.orders],
             bib_id=bib.sierra_bib_id,
             upc=bib.upc_number,
             isbn=bib.isbn,
             oclc_number=list(bib.oclc_nos.values()),
+            barcodes=bib.barcodes,
+            call_number=bib.research_call_no
+            if bib.collection == "RL"
+            else bib.branch_call_no,
         )
 
 
@@ -147,6 +152,40 @@ class Order:
     vendor_code: Optional[str]
     vendor_notes: Optional[str]
     vendor_title_no: Optional[str]
+
+    def _marc_mapping(self) -> Dict[str, Any]:
+        """
+        Returns a mapping of MARC field codes to the corresponding attributes
+        in the `Order` dataclass.
+        """
+        return {
+            "960": {
+                "c": self.order_code_1,
+                "d": self.order_code_2,
+                "e": self.order_code_3,
+                "f": self.order_code_4,
+                "g": self.format,
+                "i": self.order_type,
+                "m": self.status,
+                "o": self.copies,
+                "q": self.create_date,
+                "s": self.price,
+                "t": self.locations,
+                "u": self.fund,
+                "v": self.vendor_code,
+                "w": self.lang,
+                "x": self.country,
+                "z": self.order_id,
+            },
+            "961": {
+                "d": self.internal_note,
+                "f": self.selector_note,
+                "h": self.vendor_notes,
+                "i": self.vendor_title_no,
+                "l": self.var_field_isbn,
+                "m": self.blanket_po,
+            },
+        }
 
     def apply_template(self, template_data: Dict[str, Any]) -> None:
         """
