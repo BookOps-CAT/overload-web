@@ -27,11 +27,11 @@ class TestAPIRouter:
         assert response.json() == {"app": "Overload Web"}
 
     @pytest.mark.parametrize(
-        "library, destination",
+        "library, collection",
         [("nypl", "branches"), ("nypl", "research"), ("bpl", None)],
     )
     def test_process_vendor_file_post(
-        self, stub_pvf_form_data, stub_binary_marc, library, destination
+        self, stub_pvf_form_data, stub_binary_marc, library, collection
     ):
         response = self.client.post(
             "/vendor_file",
@@ -56,10 +56,10 @@ class TestAPIRouter:
         )
 
     @pytest.mark.parametrize(
-        "library, destination", [("foo", "branches"), ("bar", "research")]
+        "library, collection", [("foo", "branches"), ("bar", "research")]
     )
     def test_process_vendor_file_post_invalid_config(
-        self, stub_binary_marc, stub_pvf_form_data, library, destination
+        self, stub_binary_marc, stub_pvf_form_data, library, collection
     ):
         with pytest.raises(ValueError) as exc:
             self.client.post(

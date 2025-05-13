@@ -172,6 +172,26 @@ def stub_bib(library) -> Bib:
             subfields=[Subfield(code="a", value="9781234567890")],
         )
     )
+    if library == "bpl":
+        bib.add_field(
+            Field(
+                tag="037",
+                indicators=Indicators(" ", " "),
+                subfields=[
+                    Subfield(code="a", value="123"),
+                    Subfield(code="b", value="OverDrive, Inc."),
+                ],
+            )
+        )
+    bib.add_field(
+        Field(
+            tag="949",
+            indicators=Indicators(" ", "1"),
+            subfields=[
+                Subfield(code="i", value="333331234567890"),
+            ],
+        )
+    )
     bib.add_field(
         Field(
             tag="960",
@@ -227,11 +247,11 @@ def stub_binary_marc(stub_bib) -> io.BytesIO:
 
 
 @pytest.fixture
-def stub_pvf_form_data(template_data, library, destination) -> dict:
+def stub_pvf_form_data(template_data, library, collection) -> dict:
     pvf_form_data = {k: v for k, v in template_data.items() if k != "matchpoints"}
     pvf_form_data["primary_matchpoint"] = template_data["matchpoints"]["primary"]
     pvf_form_data["secondary_matchpoint"] = template_data["matchpoints"]["secondary"]
     pvf_form_data["tertiary_matchpoint"] = template_data["matchpoints"]["tertiary"]
     pvf_form_data["library"] = library
-    pvf_form_data["destination"] = destination
+    pvf_form_data["collection"] = collection
     return pvf_form_data

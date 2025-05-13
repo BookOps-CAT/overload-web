@@ -33,7 +33,7 @@ def root() -> JSONResponse:
 def vendor_file_process(
     file: Annotated[UploadFile, File(...)],
     library: Annotated[str, Form()],
-    destination: Annotated[Optional[str], Form()] = None,
+    collection: Annotated[Optional[str], Form()] = None,
     form_data: schemas.TemplateModel = Depends(schemas.TemplateModel.from_form_data),
 ) -> Sequence[schemas.BibModel]:
     """
@@ -42,7 +42,7 @@ def vendor_file_process(
     Args:
         file: the uploaded MARC file to process.
         library: the library to whom the records belong ("bpl" or "nypl").
-        destination: optional library collection.
+        collection: optional library collection.
         form_data: a `TemplateModel` containing template fields and matchpoints.
 
     Returns:
