@@ -9,8 +9,19 @@ Defines:
 from __future__ import annotations
 
 import logging
+import uuid
 
-from sqlalchemy import Column, Date, Integer, MetaData, String, Table
+from sqlalchemy import (
+    Column,
+    Date,
+    DateTime,
+    Integer,
+    LargeBinary,
+    MetaData,
+    String,
+    Table,
+)
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import composite, registry
 
 from overload_web.domain import model
@@ -18,6 +29,16 @@ from overload_web.domain import model
 logger = logging.getLogger(__name__)
 metadata = MetaData()
 mapper_registry = registry(metadata=metadata)
+
+files = Table(
+    "vendor_files",
+    metadata,
+    Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
+    Column("library", String, nullable=False),
+    Column("file_name", String, nullable=False),
+    Column("content", LargeBinary, nullable=False),
+    Column("create_date", DateTime),
+)
 
 templates = Table(
     "templates",
