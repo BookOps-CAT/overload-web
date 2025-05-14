@@ -6,6 +6,7 @@ and presentation layer.
 
 from __future__ import annotations
 
+import datetime
 import io
 import logging
 from typing import Any, BinaryIO, Dict, List, Optional
@@ -91,6 +92,14 @@ def match_bibs(
     return processed_bibs
 
 
+def load_file_from_db(file_id: str, uow: unit_of_work.OverloadUnitOfWork) -> bytes:
+    with uow:
+        file = uow.session.query(model.VendorFile).get(file_id)
+    if not file:
+        raise FileNotFoundError(f"File {file_id} not found")
+    return file.content
+
+
 def read_marc_binary(file_data: BinaryIO, library: str) -> List[dto.BibDTO]:
     """
     Reads a MARC binary file and returns a list of `BibDTO` objects.
@@ -105,6 +114,31 @@ def read_marc_binary(file_data: BinaryIO, library: str) -> List[dto.BibDTO]:
     """
     bibs = marc_adapters.read_marc_file(marc_file=file_data, library=library)
     return bibs
+
+
+def save_file_to_db(
+    file: BinaryIO, library: str, uow: unit_of_work.OverloadUnitOfWork
+) -> str:
+    """
+    Saves a temporary file to the database.
+
+    Args:
+        file: binary stream containing MARC data.
+        library: the library to whom the records belong.
+
+    Returns:
+        the ID of the saved file.
+    """
+    content = file.read()
+    vendor_file = model.VendorFile(
+        library=library,
+        file_name=file.filename,
+        content=content,
+        create_date=datetime.datetime.now(tz=datetime.timezone.utc),
+    )
+    with uow:
+        uow.session.add(vendor_file)
+        uow.commit()
 
 
 def save_template(
