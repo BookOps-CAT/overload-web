@@ -51,7 +51,7 @@ class DomainBib:
         Factory method used to build a `DomainBib` from a `bookops_marc.Bib` object.
 
         Args:
-            bib: `Bib` record represented as a `bookops_marc.Bib` object.
+            bib: MARC record represented as a `bookops_marc.Bib` object.
 
         Returns:
             DomainBib: domain object populated with structured order and identifier data.
@@ -64,9 +64,9 @@ class DomainBib:
             isbn=bib.isbn,
             oclc_number=list(bib.oclc_nos.values()),
             barcodes=bib.barcodes,
-            call_number=bib.research_call_no
-            if bib.collection == "RL"
-            else bib.branch_call_no,
+            call_number=(
+                bib.research_call_no if bib.collection == "RL" else bib.branch_call_no
+            ),
         )
 
 
