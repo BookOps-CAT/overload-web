@@ -5,8 +5,8 @@ from overload_web.domain import model
 from overload_web.infrastructure import repository
 
 
-def test_SqlAlchemyRepository(test_sql_session):
-    repo = repository.SqlAlchemyRepository(session=test_sql_session)
+def test_SqlAlchemyTemplateRepository(test_sql_session):
+    repo = repository.SqlAlchemyTemplateRepository(session=test_sql_session)
     assert hasattr(repo, "session")
 
 
@@ -20,7 +20,7 @@ def test_SqlAlchemyRepository(test_sql_session):
     ],
 )
 def test_save_template(id, name, agent, test_sql_session, make_template):
-    repo = repository.SqlAlchemyRepository(session=test_sql_session)
+    repo = repository.SqlAlchemyTemplateRepository(session=test_sql_session)
     template = make_template(
         data={"id": id, "name": name, "agent": agent, "country": "xxu"},
         matchpoints={"primary": "isbn"},
@@ -31,7 +31,7 @@ def test_save_template(id, name, agent, test_sql_session, make_template):
 
 
 def test_save_and_update_template(test_sql_session, make_template):
-    repo = repository.SqlAlchemyRepository(session=test_sql_session)
+    repo = repository.SqlAlchemyTemplateRepository(session=test_sql_session)
     template = make_template(
         data={"id": 1, "name": "Foo Template", "agent": "user1", "country": "xxu"},
         matchpoints={"primary": "isbn"},

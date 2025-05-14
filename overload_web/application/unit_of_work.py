@@ -62,7 +62,7 @@ class OverloadUnitOfWork(UnitOfWorkProtocol):
 
     def __enter__(self) -> UnitOfWorkProtocol:
         self.template_session = self.template_session_factory()
-        self.templates = repository.SqlAlchemyRepository(self.template_session)
+        self.templates = repository.SqlAlchemyTemplateRepository(self.template_session)
         return self
 
     def __exit__(self, *args):
