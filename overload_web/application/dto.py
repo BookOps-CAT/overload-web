@@ -2,6 +2,7 @@
 
 import copy
 import datetime
+from typing import Any, Dict, List
 
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
@@ -28,7 +29,6 @@ class BibDTO:
 
     def _update_order_fields(self, record: Bib) -> None:
         record.remove_fields("960", "961")
-
         for order in self.domain_bib.orders:
             order_data = order._marc_mapping()
             for tag in ["960", "961"]:
@@ -64,9 +64,21 @@ class BibDTO:
             )
             self.bib = record
 
-    def update_bib_fields(self) -> None:
+    def update_bib_fields(self, fields: List[Dict[str, Any]] = []) -> None:
         record = copy.deepcopy(self.bib)
         self._update_bib_id(record)
+        for field in fields:
+            if field and not field.get(field["tag"]):
+                record.add_ordered_field(
+                    Field(
+                        tag=field["tag"],
+                        indicators=Indicators(field["ind1"], field["ind2"]),
+                        subfields=[
+                            Subfield(code=field["subfield_code"], value=field["value"])
+                        ],
+                    )
+                )
+        self.bib = record
 
     def update_order_fields(self) -> None:
         record = copy.deepcopy(self.bib)
