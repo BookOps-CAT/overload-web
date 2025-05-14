@@ -33,7 +33,7 @@ def attach_template(
     processed_bibs = []
     for bib in bibs:
         bib.domain_bib.apply_template(template_data=template)
-        bib.update_marc()
+        bib.update_order_fields()
         processed_bibs.append(bib)
     return processed_bibs
 
@@ -86,8 +86,7 @@ def match_bibs(
     processed_bibs = []
     for bib in bibs:
         bib.domain_bib.bib_id = matcher.find_best_match(bib.domain_bib)
-        bib.update_marc()
-        print(str(bib))
+        bib.update_bib_fields()
         processed_bibs.append(bib)
     return processed_bibs
 

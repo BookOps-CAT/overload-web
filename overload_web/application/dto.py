@@ -64,9 +64,10 @@ class BibDTO:
             )
             self.bib = record
 
-    def update_marc(self) -> Bib:
+    def update_bib_fields(self) -> None:
         record = copy.deepcopy(self.bib)
-
-        self._update_order_fields(record)
         self._update_bib_id(record)
-        return record
+
+    def update_order_fields(self) -> None:
+        record = copy.deepcopy(self.bib)
+        self._update_order_fields(record)
