@@ -281,3 +281,21 @@ class Template:
     vendor_code: Optional[str] = None
     vendor_notes: Optional[str] = None
     vendor_title_no: Optional[str] = None
+
+
+@dataclass(kw_only=True)
+class VendorFile:
+    """
+    Represents a vendor file.
+
+    Attributes:
+        library: the library to whom the file belongs.
+        file_name: name of the file.
+        content: binary content of the file.
+        create_date: date when the file was created.
+    """
+
+    library: str
+    file_name: str
+    content: bytes
+    create_date: datetime.datetime
