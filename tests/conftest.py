@@ -1,3 +1,4 @@
+import copy
 import io
 
 import pytest
@@ -6,6 +7,7 @@ from pymarc import Field, Indicators, Subfield
 from sqlalchemy import create_engine
 from sqlalchemy.orm import clear_mappers, sessionmaker
 
+from overload_web.application import dto
 from overload_web.domain import bib_matcher, model
 from overload_web.infrastructure import orm
 
@@ -98,8 +100,9 @@ def bib_data(order_data, library) -> dict:
 @pytest.fixture
 def order_data() -> dict:
     return {
-        "audience": "a",
+        "audience": ["a", "a", "a"],
         "blanket_po": None,
+        "branches": ["fw", "bc", "gk"],
         "copies": "7",
         "country": "xxu",
         "create_date": "2024-01-01",
@@ -108,11 +111,15 @@ def order_data() -> dict:
         "internal_note": None,
         "lang": "eng",
         "locations": ["(4)fwa0f", "(2)bca0f", "gka0f"],
+        "order_code_1": "b",
+        "order_code_2": None,
+        "order_code_3": "d",
+        "order_code_4": "a",
+        "order_id": 1234567,
         "order_type": "p",
         "price": "$5.00",
-        "selector": "b",
         "selector_note": None,
-        "source": "d",
+        "shelves": ["0f", "0f", "0f"],
         "status": "o",
         "var_field_isbn": None,
         "vendor_code": "0049",
@@ -125,7 +132,6 @@ def order_data() -> dict:
 def template_data() -> dict:
     return {
         "agent": None,
-        "audience": "a",
         "blanket_po": None,
         "copies": "5",
         "country": "xxu",
@@ -136,11 +142,13 @@ def template_data() -> dict:
         "internal_note": "foo",
         "lang": "spa",
         "name": None,
+        "order_code_1": "b",
+        "order_code_2": None,
+        "order_code_3": "d",
+        "order_code_4": "a",
         "order_type": "p",
         "price": "$20.00",
-        "selector": "b",
         "selector_note": None,
-        "source": "d",
         "status": "o",
         "var_field_isbn": None,
         "vendor_code": "0049",
@@ -157,13 +165,33 @@ def template_data() -> dict:
 @pytest.fixture
 def stub_bib(library) -> Bib:
     bib = Bib()
-    bib.leader = "02866pam  2200517 i 4500"
+    bib.leader = "00000cam  2200517 i 4500"
     bib.library = library
     bib.add_field(
         Field(
             tag="020",
             indicators=Indicators(" ", " "),
             subfields=[Subfield(code="a", value="9781234567890")],
+        )
+    )
+    if library == "bpl":
+        bib.add_field(
+            Field(
+                tag="037",
+                indicators=Indicators(" ", " "),
+                subfields=[
+                    Subfield(code="a", value="123"),
+                    Subfield(code="b", value="OverDrive, Inc."),
+                ],
+            )
+        )
+    bib.add_field(
+        Field(
+            tag="949",
+            indicators=Indicators(" ", "1"),
+            subfields=[
+                Subfield(code="i", value="333331234567890"),
+            ],
         )
     )
     bib.add_field(
@@ -205,9 +233,6 @@ def stub_bib(library) -> Bib:
             subfields=[
                 Subfield(code="d", value="foo"),
                 Subfield(code="f", value="bar"),
-                Subfield(code="h", value="baz"),
-                Subfield(code="i", value="foo"),
-                Subfield(code="l", value="bar"),
                 Subfield(code="m", value="baz"),
             ],
         )
@@ -221,11 +246,17 @@ def stub_binary_marc(stub_bib) -> io.BytesIO:
 
 
 @pytest.fixture
-def stub_pvf_form_data(template_data, library, destination) -> dict:
+def stub_bib_dto(stub_bib) -> dto.BibDTO:
+    bib = copy.deepcopy(stub_bib)
+    return dto.BibDTO(bib=bib, domain_bib=model.DomainBib.from_marc(bib))
+
+
+@pytest.fixture
+def stub_pvf_form_data(template_data, library, collection) -> dict:
     pvf_form_data = {k: v for k, v in template_data.items() if k != "matchpoints"}
     pvf_form_data["primary_matchpoint"] = template_data["matchpoints"]["primary"]
     pvf_form_data["secondary_matchpoint"] = template_data["matchpoints"]["secondary"]
     pvf_form_data["tertiary_matchpoint"] = template_data["matchpoints"]["tertiary"]
     pvf_form_data["library"] = library
-    pvf_form_data["destination"] = destination
+    pvf_form_data["collection"] = collection
     return pvf_form_data

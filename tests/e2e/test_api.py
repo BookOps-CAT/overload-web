@@ -27,30 +27,29 @@ class TestAPIRouter:
         assert response.json() == {"app": "Overload Web"}
 
     @pytest.mark.parametrize(
-        "library, destination",
+        "library, collection",
         [("nypl", "branches"), ("nypl", "research"), ("bpl", None)],
     )
     def test_process_vendor_file_post(
-        self, stub_pvf_form_data, stub_binary_marc, library, destination
+        self, stub_pvf_form_data, stub_binary_marc, library, collection
     ):
         response = self.client.post(
             "/vendor_file",
             files={"file": ("marc_file.mrc", stub_binary_marc, "text/plain")},
             data=stub_pvf_form_data,
         )
-        json_response = response.json()
         assert response.status_code == 200
         assert response.url == f"{self.client.base_url}/vendor_file"
-        assert isinstance(json_response, list)
-        assert sorted(list(response.json()[0].keys())) == sorted(
-            ["bib_id", "isbn", "upc", "oclc_number", "orders", "library"]
-        )
+        assert isinstance(response.content, bytes)
+        assert "b123456789" in response.text
+        assert "333331234567890" in response.text
+        assert "9781234567890" in response.text
 
     @pytest.mark.parametrize(
-        "library, destination", [("foo", "branches"), ("bar", "research")]
+        "library, collection", [("foo", "branches"), ("bar", "research")]
     )
     def test_process_vendor_file_post_invalid_config(
-        self, stub_binary_marc, stub_pvf_form_data, library, destination
+        self, stub_binary_marc, stub_pvf_form_data, library, collection
     ):
         with pytest.raises(ValueError) as exc:
             self.client.post(

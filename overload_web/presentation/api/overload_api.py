@@ -6,10 +6,10 @@ Includes endpoints for root and processing vendor MARC files.
 from __future__ import annotations
 
 import logging
-from typing import Annotated, Optional, Sequence
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from overload_web.application import services
 from overload_web.presentation.api import schemas
@@ -33,26 +33,32 @@ def root() -> JSONResponse:
 def vendor_file_process(
     file: Annotated[UploadFile, File(...)],
     library: Annotated[str, Form()],
-    destination: Annotated[Optional[str], Form()] = None,
+    collection: Annotated[Optional[str], Form()] = None,
     form_data: schemas.TemplateModel = Depends(schemas.TemplateModel.from_form_data),
-) -> Sequence[schemas.BibModel]:
+) -> StreamingResponse:
     """
     Processes an uploaded vendor MARC file, optionally applying a template.
 
     Args:
         file: the uploaded MARC file to process.
         library: the library to whom the records belong ("bpl" or "nypl").
-        destination: optional library collection.
+        collection: optional library collection.
         form_data: a `TemplateModel` containing template fields and matchpoints.
 
     Returns:
         A list of processed bib records.
     """
     template_data = {k: v for k, v in form_data.__dict__.items() if k != "matchpoints"}
-    processed_bibs = services.match_and_attach(
-        file_data=file.file,
-        library=library,
-        matchpoints=form_data.matchpoints.as_list(),
-        template=template_data,
+    bibs = services.read_marc_binary(file_data=file.file, library=library)
+    matched_bibs = services.match_bibs(
+        bibs=bibs, library=library, matchpoints=form_data.matchpoints.as_list()
     )
-    return [schemas.BibModel(**i) for i in processed_bibs]
+    processed_bibs = services.attach_template(bibs=matched_bibs, template=template_data)
+    marc_binary = services.write_marc_binary(bibs=processed_bibs)
+    return StreamingResponse(
+        marc_binary,
+        media_type="application/marc",
+        headers={
+            "Content-Disposition": f"attachment; filename={file.filename}_out.mrc"
+        },
+    )
