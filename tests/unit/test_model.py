@@ -19,6 +19,8 @@ class TestDomainBib:
         assert len(bib.orders) == 1
         assert bib.orders[0].create_date == datetime.date(2025, 1, 1)
         assert bib.orders[0].blanket_po == "baz"
+        assert bib.call_number is None
+        assert bib.barcodes == ["333331234567890"]
 
     def test_DomainBib_from_marc_no_961(self, library, stub_bib):
         stub_bib.remove_fields("961")
@@ -90,6 +92,10 @@ class TestOrder:
         assert order.price == "$5.00"
         assert order.format == "a"
         assert order.blanket_po is None
+        assert order.locations == ["(4)fwa0f", "(2)bca0f", "gka0f"]
+        assert order.shelves == ["0f", "0f", "0f"]
+        assert order.audience == ["a", "a", "a"]
+        assert order.branches == ["fw", "bc", "gk"]
 
     def test_Order_apply_template(self, template_data, order_data):
         order = model.Order(**order_data)
