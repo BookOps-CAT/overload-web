@@ -38,22 +38,12 @@ class TestAPIRouter:
             files={"file": ("marc_file.mrc", stub_binary_marc, "text/plain")},
             data=stub_pvf_form_data,
         )
-        json_response = response.json()
         assert response.status_code == 200
         assert response.url == f"{self.client.base_url}/vendor_file"
-        assert isinstance(json_response, list)
-        assert sorted(list(response.json()[0].keys())) == sorted(
-            [
-                "bib_id",
-                "isbn",
-                "upc",
-                "oclc_number",
-                "orders",
-                "library",
-                "barcodes",
-                "call_number",
-            ]
-        )
+        assert isinstance(response.content, bytes)
+        assert "b123456789" in response.text
+        assert "333331234567890" in response.text
+        assert "9781234567890" in response.text
 
     @pytest.mark.parametrize(
         "library, collection", [("foo", "branches"), ("bar", "research")]

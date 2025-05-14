@@ -6,10 +6,10 @@ Includes endpoints for root and processing vendor MARC files.
 from __future__ import annotations
 
 import logging
-from typing import Annotated, Optional, Sequence
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from overload_web.application import services
 from overload_web.presentation.api import schemas
@@ -35,7 +35,7 @@ def vendor_file_process(
     library: Annotated[str, Form()],
     collection: Annotated[Optional[str], Form()] = None,
     form_data: schemas.TemplateModel = Depends(schemas.TemplateModel.from_form_data),
-) -> Sequence[schemas.BibModel]:
+) -> StreamingResponse:
     """
     Processes an uploaded vendor MARC file, optionally applying a template.
 
@@ -54,4 +54,11 @@ def vendor_file_process(
         bibs=bibs, library=library, matchpoints=form_data.matchpoints.as_list()
     )
     processed_bibs = services.attach_template(bibs=matched_bibs, template=template_data)
-    return [schemas.BibModel(**i.domain_bib.__dict__) for i in processed_bibs]
+    marc_binary = services.write_marc_binary(bibs=processed_bibs)
+    return StreamingResponse(
+        marc_binary,
+        media_type="application/marc",
+        headers={
+            "Content-Disposition": f"attachment; filename={file.filename}_out.mrc"
+        },
+    )
