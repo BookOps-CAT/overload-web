@@ -100,7 +100,7 @@ def bib_data(order_data, library) -> dict:
 @pytest.fixture
 def order_data() -> dict:
     return {
-        "audience": "a",
+        "audience": ["a", "a", "a"],
         "blanket_po": None,
         "branches": ["fw", "bc", "gk"],
         "copies": "7",
