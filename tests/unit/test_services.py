@@ -137,4 +137,4 @@ class TestServices:
     @pytest.mark.parametrize("library", ["nypl", "bpl"])
     def test_write_marc_binary(self, stub_bib_dto, library):
         marc_binary = services.write_marc_binary(bibs=[stub_bib_dto])
-        assert marc_binary[0:2] == b"00"
+        assert marc_binary.read()[0:2] == b"00"

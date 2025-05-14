@@ -135,7 +135,7 @@ def save_template(
     return template.__dict__
 
 
-def write_marc_binary(bibs: List[dto.BibDTO]) -> bytes:
+def write_marc_binary(bibs: List[dto.BibDTO]) -> io.BytesIO:
     """
     Writes a list of data transfer objects to a file in MARC format.
 
@@ -143,9 +143,10 @@ def write_marc_binary(bibs: List[dto.BibDTO]) -> bytes:
         file: the name of the file to write to.
 
     Returns:
-        list of bibs as bytes.
+        list of bibs as BytesIO object.
     """
     io_data = io.BytesIO()
     for bib in bibs:
         io_data.write(bib.bib.as_marc())
-    return io_data.getvalue()
+    io_data.seek(0)
+    return io_data
