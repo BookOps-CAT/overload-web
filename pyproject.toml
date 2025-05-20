@@ -24,6 +24,16 @@ pytest-mock = "^3.14.0"
 types-requests = "^2.32.0.20241016"
 types-pyyaml = "^6.0.12.20240917"
 
+[project.optional.dependencies]
+dev = [
+    "pytest>=8.3.3,<9.0.0",
+    "pytest-cov>=6.0.0,<7.0.0",
+    "pytest-mock>=3.14.0,<4.0.0",
+    "types-requests>=2.32.0.20241016,<3.0.0",
+    "types-pyyaml>=6.0.12.20240917,<7.0.0"
+]
+
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
