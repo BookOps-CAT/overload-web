@@ -34,6 +34,10 @@ class RepositoryProtocol(Protocol[T, K]):
     Includes methods for fetching and saving objects.
     """
 
+    def delete(self, obj: T) -> None: ...
+
+    """Delete and object from the database."""
+
     def get(self, id: K) -> Optional[T]: ...
 
     """Retrieve an object by its ID."""
@@ -47,7 +51,7 @@ class RepositoryProtocol(Protocol[T, K]):
     """Save a new or updated object to the database."""
 
 
-class SqlAlchemyTemplateRepository(RepositoryProtocol[model.Template, Union[str, int]]):
+class SqlAlchemyTemplateRepository:
     """
     `SQLAlchemy` repository for `Template` objects.
     Args:
@@ -57,14 +61,14 @@ class SqlAlchemyTemplateRepository(RepositoryProtocol[model.Template, Union[str,
     def __init__(self, session):
         self.session = session
 
-    def delete(self, template: model.Template) -> None:
+    def delete(self, obj: model.Template) -> None:
         """
         Deletes a `Template` object from the database.
 
         Args:
             template: the `Template` object to delete.
         """
-        self.session.delete(template)
+        self.session.delete(obj)
 
     def get(self, id: Union[str, int]) -> Optional[model.Template]:
         """
@@ -87,19 +91,17 @@ class SqlAlchemyTemplateRepository(RepositoryProtocol[model.Template, Union[str,
         """
         return self.session.query(model.Template).all()
 
-    def save(self, template: model.Template) -> None:
+    def save(self, obj: model.Template) -> None:
         """
         Adds a new or updated `Template` to the database.
 
         Args:
             template: the `Template` object to save.
         """
-        self.session.add(template)
+        self.session.add(obj)
 
 
-class SqlAlchemyVendorFileRepository(
-    RepositoryProtocol[model.VendorFile, Union[str, int]]
-):
+class SqlAlchemyVendorFileRepository:
     """
     `SQLAlchemy` repository for `VendorFile` objects.
 
@@ -110,14 +112,14 @@ class SqlAlchemyVendorFileRepository(
     def __init__(self, session):
         self.session = session
 
-    def delete(self, file: model.VendorFile) -> None:
+    def delete(self, obj: model.VendorFile) -> None:
         """
         Deletes a `VendorFile` object from the database.
 
         Args:
             file: the `VendorFile` object to delete.
         """
-        self.session.delete(file)
+        self.session.delete(obj)
 
     def get(self, id: Union[str, int]) -> Optional[model.VendorFile]:
         """
