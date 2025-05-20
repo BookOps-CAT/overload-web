@@ -11,6 +11,7 @@ from typing import Callable, Protocol, runtime_checkable
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.session import Session
 
 from overload_web.infrastructure import repository
 
@@ -32,6 +33,7 @@ class UnitOfWorkProtocol(Protocol):
         rollback: Rolls back the transaction.
     """
 
+    session: Session
     templates: repository.RepositoryProtocol
     vendor_files: repository.RepositoryProtocol
 

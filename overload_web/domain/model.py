@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, BinaryIO, Dict, List, Optional, Union
 
 import bookops_marc
 import bookops_marc.models
@@ -297,5 +297,5 @@ class VendorFile:
 
     library: str
     file_name: str
-    content: bytes
+    content: BinaryIO
     id: Optional[str] = None
