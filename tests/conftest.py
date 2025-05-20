@@ -93,6 +93,15 @@ def make_template():
 
 
 @pytest.fixture
+def make_vendor_file():
+    def _make_file(data):
+        file = model.VendorFile(**data)
+        return file
+
+    return _make_file
+
+
+@pytest.fixture
 def bib_data(order_data, library) -> dict:
     return {"library": library, "orders": [order_data]}
 
