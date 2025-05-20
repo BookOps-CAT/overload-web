@@ -9,7 +9,6 @@ Defines:
 from __future__ import annotations
 
 import logging
-import uuid
 
 from sqlalchemy import (
     Column,
@@ -21,7 +20,6 @@ from sqlalchemy import (
     String,
     Table,
 )
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import composite, registry
 
 from overload_web.domain import model
@@ -30,10 +28,10 @@ logger = logging.getLogger(__name__)
 metadata = MetaData()
 mapper_registry = registry(metadata=metadata)
 
-files = Table(
+vendor_files = Table(
     "vendor_files",
     metadata,
-    Column("id", UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
+    Column("id", Integer, primary_key=True, autoincrement=True),
     Column("library", String, nullable=False),
     Column("file_name", String, nullable=False),
     Column("content", LargeBinary, nullable=False),
@@ -90,3 +88,4 @@ def start_mappers() -> None:
             )
         },
     )
+    mapper_registry.map_imperatively(model.VendorFile, vendor_files)

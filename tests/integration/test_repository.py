@@ -45,7 +45,23 @@ def test_save_and_update_template(test_sql_session, make_template):
     assert updated_template.lang == "eng"
 
 
-def test_mappers(test_sql_session, make_template):
+def test_SqlAlchemyVendorFileRepository(test_sql_session):
+    repo = repository.SqlAlchemyVendorFileRepository(session=test_sql_session)
+    assert hasattr(repo, "session")
+
+
+@pytest.mark.parametrize("library", ["nypl", "bpl"])
+def test_save_vendor_file(test_sql_session, make_vendor_file, library):
+    repo = repository.SqlAlchemyVendorFileRepository(session=test_sql_session)
+    file = make_vendor_file(
+        data={"id": 1, "file_name": "foo.mrc", "library": library, "content": b""}
+    )
+    repo.save(file)
+    saved_file = repo.get(id=1)
+    assert saved_file == file
+
+
+def test_template_mappers(test_sql_session, make_template):
     test_sql_session.execute(
         text(
             "INSERT INTO templates (id, name, agent, vendor_code, primary_matchpoint)"
@@ -69,3 +85,23 @@ def test_mappers(test_sql_session, make_template):
     )
     expected = [template_1, template_2, template_3]
     assert test_sql_session.query(model.Template).all() == expected
+
+
+@pytest.mark.parametrize("library", ["nypl"])
+def test_vendor_file_mappers(test_sql_session, make_vendor_file, library):
+    test_sql_session.execute(
+        text(
+            "INSERT INTO vendor_files (id, library, file_name, content)"
+            "VALUES"
+            '("1", "nypl", "foo.mrc", ""),'
+            '("2", "nypl", "bar.mrc", "");'
+        )
+    )
+    file_1 = make_vendor_file(
+        data={"id": 1, "file_name": "foo.mrc", "library": library, "content": ""}
+    )
+    file_2 = make_vendor_file(
+        data={"id": 2, "file_name": "bar.mrc", "library": library, "content": ""}
+    )
+    expected = [file_1, file_2]
+    assert test_sql_session.query(model.VendorFile).all() == expected

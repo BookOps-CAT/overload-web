@@ -1,5 +1,5 @@
 """
-Unit of work pattern for coordinating template-related database operations.
+Unit of work pattern for coordinating database operations.
 
 Defines a protocol and concrete implementation that manages the lifecycle of a
 `SQLAlchemy` session and encapsulates transaction boundaries.
@@ -23,6 +23,7 @@ class UnitOfWorkProtocol(Protocol):
 
     Attributes:
         templates: `RepositoryProtocol` interface for template persistence.
+        vendor_files: `RepositoryProtocol` interface for file persistence.
 
     Methods:
         __enter__: Begins a new transactional context.
@@ -32,6 +33,7 @@ class UnitOfWorkProtocol(Protocol):
     """
 
     templates: repository.RepositoryProtocol
+    vendor_files: repository.RepositoryProtocol
 
     def __enter__(self) -> UnitOfWorkProtocol: ...
 
@@ -56,23 +58,24 @@ class OverloadUnitOfWork(UnitOfWorkProtocol):
 
     def __init__(
         self,
-        template_session_factory: Callable = SQL_SESSION_FACTORY,
+        session_factory: Callable = SQL_SESSION_FACTORY,
     ):
-        self.template_session_factory = template_session_factory
+        self.session_factory = session_factory
 
     def __enter__(self) -> UnitOfWorkProtocol:
-        self.template_session = self.template_session_factory()
-        self.templates = repository.SqlAlchemyTemplateRepository(self.template_session)
+        self.session = self.session_factory()
+        self.templates = repository.SqlAlchemyTemplateRepository(self.session)
+        self.vendor_files = repository.SqlAlchemyVendorFileRepository(self.session)
         return self
 
     def __exit__(self, *args):
         self.rollback()
-        self.template_session.close()
+        self.session.close()
 
     def commit(self):
         """Commits the current transation to DB"""
-        self.template_session.commit()
+        self.session.commit()
 
     def rollback(self):
         """Rolls back current transaction"""
-        self.template_session.rollback()
+        self.session.rollback()
