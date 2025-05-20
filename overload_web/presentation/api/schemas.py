@@ -9,7 +9,7 @@ from __future__ import annotations
 import datetime
 from typing import Annotated, Optional, Union
 
-from fastapi import Form
+from fastapi import File, Form, UploadFile
 from pydantic import BaseModel, ConfigDict
 
 from overload_web.domain import model
@@ -44,25 +44,26 @@ class TemplateModel(BaseModel, model.Template):
         agent: Annotated[Optional[str], Form()] = None,
         name: Annotated[Optional[str], Form()] = None,
         id: Annotated[Optional[str], Form()] = None,
-        audience: Annotated[Optional[str], Form()] = None,
-        create_date: Annotated[Optional[Union[datetime.datetime, str]], Form()] = None,
-        price: Annotated[Optional[Union[str, int]], Form()] = None,
-        fund: Annotated[Optional[str], Form()] = None,
+        blanket_po: Annotated[Optional[str], Form()] = None,
         copies: Annotated[Optional[Union[str, int]], Form()] = None,
-        lang: Annotated[Optional[str], Form()] = None,
         country: Annotated[Optional[str], Form()] = None,
-        vendor_code: Annotated[Optional[str], Form()] = None,
+        create_date: Annotated[Optional[Union[datetime.datetime, str]], Form()] = None,
         format: Annotated[Optional[str], Form()] = None,
-        selector: Annotated[Optional[str], Form()] = None,
-        selector_note: Annotated[Optional[str], Form()] = None,
-        source: Annotated[Optional[str], Form()] = None,
-        order_type: Annotated[Optional[str], Form()] = None,
-        status: Annotated[Optional[str], Form()] = None,
+        fund: Annotated[Optional[str], Form()] = None,
         internal_note: Annotated[Optional[str], Form()] = None,
+        lang: Annotated[Optional[str], Form()] = None,
+        order_code_1: Annotated[Optional[str], Form()] = None,
+        order_code_2: Annotated[Optional[str], Form()] = None,
+        order_code_3: Annotated[Optional[str], Form()] = None,
+        order_code_4: Annotated[Optional[str], Form()] = None,
+        order_type: Annotated[Optional[str], Form()] = None,
+        price: Annotated[Optional[Union[str, int]], Form()] = None,
+        selector_note: Annotated[Optional[str], Form()] = None,
+        status: Annotated[Optional[str], Form()] = None,
+        vendor_code: Annotated[Optional[str], Form()] = None,
         var_field_isbn: Annotated[Optional[str], Form()] = None,
         vendor_notes: Annotated[Optional[str], Form()] = None,
         vendor_title_no: Annotated[Optional[str], Form()] = None,
-        blanket_po: Annotated[Optional[str], Form()] = None,
         primary_matchpoint: Annotated[Optional[str], Form()] = None,
         secondary_matchpoint: Annotated[Optional[str], Form()] = None,
         tertiary_matchpoint: Annotated[Optional[str], Form()] = None,
@@ -78,14 +79,11 @@ class TemplateModel(BaseModel, model.Template):
             the populated template as a `TemplateModel` object.
         """
         return TemplateModel(
-            audience=audience,
             create_date=create_date,
             fund=fund,
             vendor_code=vendor_code,
             vendor_title_no=vendor_title_no,
-            selector=selector,
             selector_note=selector_note,
-            source=source,
             order_type=order_type,
             price=price,
             status=status,
@@ -100,9 +98,42 @@ class TemplateModel(BaseModel, model.Template):
             name=name,
             id=id,
             agent=agent,
+            order_code_1=order_code_1,
+            order_code_2=order_code_2,
+            order_code_3=order_code_3,
+            order_code_4=order_code_4,
             matchpoints=MatchpointsModel(
                 primary=primary_matchpoint,
                 secondary=secondary_matchpoint,
                 tertiary=tertiary_matchpoint,
             ),
+        )
+
+
+class VendorFileModel(BaseModel, model.VendorFile):
+    """Pydantic model for serializing/deserializing `VendorFile` domain objects."""
+
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
+
+    @classmethod
+    def from_upload_file(
+        cls, upload_file: Annotated[UploadFile, File()], library: Annotated[str, Form()]
+    ) -> VendorFileModel:
+        """
+        Create a `VendorFileModel` instance from a FastAPI UploadFile.
+
+        This method is used with FastAPI's `Depends()` to extract form fields
+        and transform them into a structured model instance.
+
+        Returns:
+            the file as a VendorFileModel object
+        """
+        if upload_file.filename is None:
+            filename = f"{datetime.datetime.strftime(datetime.datetime.now(tz=datetime.timezone.utc), '%y-%m-%d')}.mrc"
+        else:
+            filename = upload_file.filename
+        return VendorFileModel(
+            file_name=filename,
+            content=upload_file.file,
+            library=library,
         )
