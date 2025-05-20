@@ -5,19 +5,21 @@ from overload_web.infrastructure import repository, sierra_adapters
 
 
 class MockRepository(repository.RepositoryProtocol):
-    def __init__(self, templates):
-        self.templates = templates
+    def __init__(self):
+        self.templates = []
+        self.vendor_files = []
 
     def get(self, id):
         return next((i for i in self.templates if i.id == id), None)
 
-    def save(self, template):
+    def save(self, obj):
         pass
 
 
 class MockUnitOfWork(unit_of_work.UnitOfWorkProtocol):
     def __init__(self):
-        self.templates = MockRepository(templates=[])
+        self.templates = MockRepository()
+        self.vendor_files = MockRepository()
         self.committed = False
 
     def commit(self):
