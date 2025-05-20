@@ -26,8 +26,8 @@ def test_save_template(id, name, agent, test_sql_session, make_template):
         matchpoints={"primary": "isbn"},
     )
     repo.save(template)
-    saved_template = repo.get(id=id)
-    assert saved_template == template
+    saved_templates = repo.list()
+    assert saved_templates == [template]
 
 
 def test_save_and_update_template(test_sql_session, make_template):
@@ -45,13 +45,27 @@ def test_save_and_update_template(test_sql_session, make_template):
     assert updated_template.lang == "eng"
 
 
+def test_list_delete_template(test_sql_session, make_template):
+    repo = repository.SqlAlchemyTemplateRepository(session=test_sql_session)
+    template = make_template(
+        data={"id": 1, "name": "Foo Template", "agent": "user1", "country": "xxu"},
+        matchpoints={"primary": "isbn"},
+    )
+    repo.save(template)
+    templates_after_save = repo.list()
+    repo.delete(obj=template)
+    templates_after_delete = repo.list()
+    assert templates_after_save == [template]
+    assert templates_after_delete == []
+
+
 def test_SqlAlchemyVendorFileRepository(test_sql_session):
     repo = repository.SqlAlchemyVendorFileRepository(session=test_sql_session)
     assert hasattr(repo, "session")
 
 
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
-def test_save_vendor_file(test_sql_session, make_vendor_file, library):
+def test_save_get_vendor_file(test_sql_session, make_vendor_file, library):
     repo = repository.SqlAlchemyVendorFileRepository(session=test_sql_session)
     file = make_vendor_file(
         data={"id": 1, "file_name": "foo.mrc", "library": library, "content": b""}
@@ -59,6 +73,20 @@ def test_save_vendor_file(test_sql_session, make_vendor_file, library):
     repo.save(file)
     saved_file = repo.get(id=1)
     assert saved_file == file
+
+
+@pytest.mark.parametrize("library", ["nypl", "bpl"])
+def test_delete_list_vendor_file(test_sql_session, make_vendor_file, library):
+    repo = repository.SqlAlchemyVendorFileRepository(session=test_sql_session)
+    file = make_vendor_file(
+        data={"id": 1, "file_name": "bar.mrc", "library": library, "content": b""}
+    )
+    repo.save(file)
+    files_after_save = repo.list()
+    repo.delete(obj=file)
+    file_after_delete = repo.list()
+    assert files_after_save[0] == file
+    assert file_after_delete == []
 
 
 def test_template_mappers(test_sql_session, make_template):
