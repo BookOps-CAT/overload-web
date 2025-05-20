@@ -292,10 +292,10 @@ class VendorFile:
         library: the library to whom the file belongs.
         file_name: name of the file.
         content: binary content of the file.
-        create_date: date when the file was created.
+        id: the unique identifier for the file
     """
 
     library: str
     file_name: str
     content: bytes
-    create_date: datetime.datetime
+    id: Optional[str] = None

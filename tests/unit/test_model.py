@@ -141,3 +141,20 @@ class TestTemplate:
             str(exc.value)
             == "Template.__init__() takes 1 positional argument but 7 were given"
         )
+
+
+@pytest.mark.parametrize("library", ["bpl", "nypl"])
+class TestVendorFile:
+    def test_VendorFile(self, library):
+        file = model.VendorFile(file_name="foo.mrc", library=library, content=b"")
+        assert file.file_name == "foo.mrc"
+        assert file.id is None
+        assert file.library == library
+
+    def test_VendorFile_positional_args(self, library):
+        with pytest.raises(TypeError) as exc:
+            model.VendorFile(library, "foo.mrc", b"", "7", "1")
+        assert (
+            str(exc.value)
+            == "VendorFile.__init__() takes 1 positional argument but 6 were given"
+        )
