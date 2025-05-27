@@ -15,6 +15,7 @@ dependencies = [
     "bookops-marc @ git+https://github.com/BookOps-CAT/bookops-marc.git@item_records",
     "sqlalchemy (>=2.0.40, <2.1.0)",
     "loggly-python-handler (>=1.0.1,<2.0.0)",
+    "file-retriever @ git+https://github.com/BookOps-CAT/file-retriever.git",
 ]
 
 [tool.poetry.group.dev.dependencies]
