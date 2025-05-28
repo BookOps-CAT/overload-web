@@ -12,7 +12,7 @@ from typing import Callable, Protocol, runtime_checkable
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from overload_web.infrastructure import repository
+from overload_web.infrastructure.repositories import repository
 
 
 @runtime_checkable
