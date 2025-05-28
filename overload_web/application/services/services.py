@@ -10,16 +10,18 @@ import io
 import logging
 from typing import Any, BinaryIO, Dict, List, Optional
 
-from overload_web.application import dto, unit_of_work
-from overload_web.domain import bib_matcher, model
-from overload_web.infrastructure import marc_adapters, sierra_adapters
+from overload_web.application.dto import bib_dto
+from overload_web.application.services import unit_of_work
+from overload_web.domain.models import model
+from overload_web.domain.services import bib_matcher
+from overload_web.infrastructure.bib_fetchers import marc_adapters, sierra
 
 logger = logging.getLogger(__name__)
 
 
 def attach_template(
-    bibs: List[dto.BibDTO], template: Dict[str, Any]
-) -> List[dto.BibDTO]:
+    bibs: List[bib_dto.BibDTO], template: Dict[str, Any]
+) -> List[bib_dto.BibDTO]:
     """
     Applies template data to a list of bib records.
 
@@ -51,22 +53,22 @@ def get_fetcher_for_library(library: str) -> bib_matcher.BibFetcher:
     Raises:
         ValueError: if the library is not "bpl" or "nypl".
     """
-    session: sierra_adapters.SierraSessionProtocol
+    session: sierra.SierraSessionProtocol
     if library == "bpl":
-        session = sierra_adapters.BPLSolrSession()
+        session = sierra.BPLSolrSession()
     elif library == "nypl":
-        session = sierra_adapters.NYPLPlatformSession()
+        session = sierra.NYPLPlatformSession()
     else:
         raise ValueError("Invalid library. Must be 'bpl' or 'nypl'")
-    return sierra_adapters.SierraBibFetcher(session=session, library=library)
+    return sierra.SierraBibFetcher(session=session, library=library)
 
 
 def match_bibs(
-    bibs: List[dto.BibDTO],
+    bibs: List[bib_dto.BibDTO],
     library: str,
     matchpoints: List[str],
     fetcher: Optional[bib_matcher.BibFetcher] = None,
-) -> List[dto.BibDTO]:
+) -> List[bib_dto.BibDTO]:
     """
     Matches bib records from an incoming MARC file against Sierra.
 
@@ -91,7 +93,7 @@ def match_bibs(
     return processed_bibs
 
 
-def read_marc_binary(file_data: BinaryIO, library: str) -> List[dto.BibDTO]:
+def read_marc_binary(file_data: BinaryIO, library: str) -> List[bib_dto.BibDTO]:
     """
     Reads a MARC binary file and returns a list of `BibDTO` objects.
 
@@ -134,7 +136,7 @@ def save_template(
     return template.__dict__
 
 
-def write_marc_binary(bibs: List[dto.BibDTO]) -> io.BytesIO:
+def write_marc_binary(bibs: List[bib_dto.BibDTO]) -> io.BytesIO:
     """
     Writes a list of data transfer objects to a file in MARC format.
 
