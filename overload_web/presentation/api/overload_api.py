@@ -49,7 +49,7 @@ def vendor_file_process(
         A list of processed bib records.
     """
     template_data = {k: v for k, v in form_data.__dict__.items() if k != "matchpoints"}
-    bibs = services.read_marc_binary(file_data=file.file, library=library)
+    bibs = services.read_marc_binary(file_data=file.file.read(), library=library)
     matched_bibs = services.match_bibs(
         bibs=bibs, library=library, matchpoints=form_data.matchpoints.as_list()
     )

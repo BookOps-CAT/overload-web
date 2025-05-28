@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass, field
-from typing import Any, BinaryIO, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 import bookops_marc
 import bookops_marc.models
@@ -27,15 +27,15 @@ class DomainBib:
     """
 
     library: str
-    orders: List[Order]
+    orders: list[Order]
     bib_id: Optional[str] = None
     isbn: Optional[str] = None
-    oclc_number: Optional[Union[str, List[str]]] = None
+    oclc_number: Optional[Union[str, list[str]]] = None
     upc: Optional[str] = None
-    call_number: Optional[Union[str, List[str]]] = None
-    barcodes: List[str] = field(default_factory=list)
+    call_number: Optional[Union[str, list[str]]] = None
+    barcodes: list[str] = field(default_factory=list)
 
-    def apply_template(self, template_data: Dict[str, Any]) -> None:
+    def apply_template(self, template_data: dict[str, Any]) -> None:
         """
         Apply template data to all orders in this bib record.
 
@@ -107,7 +107,7 @@ class Matchpoints:
 
         self.primary, self.secondary, self.tertiary = values[:3]
 
-    def as_list(self) -> List[str]:
+    def as_list(self) -> list[str]:
         """Return the matchpoints as a list"""
         return [i for i in (self.primary, self.secondary, self.tertiary) if i]
 
@@ -127,9 +127,9 @@ class Matchpoints:
 class Order:
     """A domain model representing a Sierra order."""
 
-    audience: List[str]
+    audience: list[str]
     blanket_po: Optional[str]
-    branches: List[str]
+    branches: list[str]
     copies: Optional[Union[str, int]]
     country: Optional[str]
     create_date: Optional[Union[datetime.datetime, datetime.date, str]]
@@ -137,7 +137,7 @@ class Order:
     fund: Optional[str]
     internal_note: Optional[str]
     lang: Optional[str]
-    locations: List[str]
+    locations: list[str]
     order_code_1: Optional[str]
     order_code_2: Optional[str]
     order_code_3: Optional[str]
@@ -146,14 +146,14 @@ class Order:
     order_type: Optional[str]
     price: Optional[Union[str, int]]
     selector_note: Optional[str]
-    shelves: List[str]
+    shelves: list[str]
     status: Optional[str]
     var_field_isbn: Optional[str]
     vendor_code: Optional[str]
     vendor_notes: Optional[str]
     vendor_title_no: Optional[str]
 
-    def _marc_mapping(self) -> Dict[str, Any]:
+    def _marc_mapping(self) -> dict[str, Any]:
         """
         Returns a mapping of MARC field codes to the corresponding attributes
         in the `Order` dataclass.
@@ -187,7 +187,7 @@ class Order:
             },
         }
 
-    def apply_template(self, template_data: Dict[str, Any]) -> None:
+    def apply_template(self, template_data: dict[str, Any]) -> None:
         """
         Apply template data to the order, updating any matching non-empty fields.
 
@@ -297,5 +297,5 @@ class VendorFile:
 
     library: str
     file_name: str
-    content: BinaryIO
+    content: bytes
     id: Optional[str] = None

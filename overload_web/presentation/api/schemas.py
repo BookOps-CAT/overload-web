@@ -134,6 +134,6 @@ class VendorFileModel(BaseModel, model.VendorFile):
             filename = upload_file.filename
         return VendorFileModel(
             file_name=filename,
-            content=upload_file.file,
+            content=upload_file.file.read(),
             library=library,
         )

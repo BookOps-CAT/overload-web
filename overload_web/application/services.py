@@ -6,21 +6,20 @@ and presentation layer.
 
 from __future__ import annotations
 
-import datetime
 import io
 import logging
-from typing import Any, BinaryIO, Dict, List, Optional
+from typing import Any, Optional
 
-from overload_web.application import dto, unit_of_work
+from overload_web.application import dto, file_service, unit_of_work
 from overload_web.domain import bib_matcher, model
-from overload_web.infrastructure import marc_adapters, sierra_adapters
+from overload_web.infrastructure import file_loaders, marc_adapters, sierra_adapters
 
 logger = logging.getLogger(__name__)
 
 
 def attach_template(
-    bibs: List[dto.BibDTO], template: Dict[str, Any]
-) -> List[dto.BibDTO]:
+    bibs: list[dto.BibDTO], template: dict[str, Any]
+) -> list[dto.BibDTO]:
     """
     Applies template data to a list of bib records.
 
@@ -62,12 +61,19 @@ def get_fetcher_for_library(library: str) -> bib_matcher.BibFetcher:
     return sierra_adapters.SierraBibFetcher(session=session, library=library)
 
 
+def get_loader_for_files(remote: bool) -> file_loaders.FileLoaderProtocol:
+    if remote is True:
+        return file_loaders.RemoteFileLoader()
+    else:
+        return file_loaders.LocalFileLoader()
+
+
 def match_bibs(
-    bibs: List[dto.BibDTO],
+    bibs: list[dto.BibDTO],
     library: str,
-    matchpoints: List[str],
+    matchpoints: list[str],
     fetcher: Optional[bib_matcher.BibFetcher] = None,
-) -> List[dto.BibDTO]:
+) -> list[dto.BibDTO]:
     """
     Matches bib records from an incoming MARC file against Sierra.
 
@@ -92,15 +98,13 @@ def match_bibs(
     return processed_bibs
 
 
-def load_file_from_db(file_id: str, uow: unit_of_work.OverloadUnitOfWork) -> bytes:
-    with uow:
-        file = uow.session.query(model.VendorFile).get(file_id)
-    if not file:
-        raise FileNotFoundError(f"File {file_id} not found")
-    return file.content
+def load_file(file_name: str, dir: str, remote: bool) -> bytes:
+    loader = get_loader_for_files(remote=remote)
+    service = file_service.FileService(loader=loader)
+    return service.load_file(file_name=file_name, dir=dir)
 
 
-def read_marc_binary(file_data: BinaryIO, library: str) -> List[dto.BibDTO]:
+def read_marc_binary(file_data: bytes, library: str) -> list[dto.BibDTO]:
     """
     Reads a MARC binary file and returns a list of `BibDTO` objects.
 
@@ -116,34 +120,9 @@ def read_marc_binary(file_data: BinaryIO, library: str) -> List[dto.BibDTO]:
     return bibs
 
 
-def save_file_to_db(
-    file: BinaryIO, library: str, uow: unit_of_work.OverloadUnitOfWork
-) -> str:
-    """
-    Saves a temporary file to the database.
-
-    Args:
-        file: binary stream containing MARC data.
-        library: the library to whom the records belong.
-
-    Returns:
-        the ID of the saved file.
-    """
-    content = file.read()
-    vendor_file = model.VendorFile(
-        library=library,
-        file_name=file.filename,
-        content=content,
-        create_date=datetime.datetime.now(tz=datetime.timezone.utc),
-    )
-    with uow:
-        uow.session.add(vendor_file)
-        uow.commit()
-
-
 def save_template(
-    data: Dict[str, Any], uow: unit_of_work.UnitOfWorkProtocol
-) -> Dict[str, Any]:
+    data: dict[str, Any], uow: unit_of_work.UnitOfWorkProtocol
+) -> dict[str, Any]:
     """
     Validates and persists a new template using a unit of work.
 
@@ -163,17 +142,17 @@ def save_template(
     if not template.agent or not template.agent.strip():
         raise ValueError("Templates must have an agent before being saved.")
     with uow:
-        uow.templates.save(template=template)
+        uow.templates.save(obj=template)
         uow.commit()
     return template.__dict__
 
 
-def write_marc_binary(bibs: List[dto.BibDTO]) -> io.BytesIO:
+def write_marc_binary(bibs: list[dto.BibDTO]) -> io.BytesIO:
     """
     Writes a list of data transfer objects to a file in MARC format.
 
     Args:
-        file: the name of the file to write to.
+        bibs: the list of bib records to write to binary.
 
     Returns:
         list of bibs as BytesIO object.
