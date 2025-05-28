@@ -2,7 +2,7 @@ import datetime
 
 import pytest
 
-from overload_web.domain import model
+from overload_web.domain.models import model
 
 
 @pytest.mark.parametrize("library", ["bpl", "nypl"])
