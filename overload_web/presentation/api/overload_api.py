@@ -11,7 +11,7 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from overload_web.application import services
+from overload_web.application.services import services
 from overload_web.presentation.api import schemas
 
 logger = logging.getLogger(__name__)
