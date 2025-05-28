@@ -6,11 +6,11 @@ from typing import BinaryIO, List
 
 from bookops_marc import SierraBibReader
 
-from overload_web.application import dto
-from overload_web.domain import model
+from overload_web.application.dto import bib_dto
+from overload_web.domain.models import model
 
 
-def read_marc_file(marc_file: BinaryIO, library: str) -> List[dto.BibDTO]:
+def read_marc_file(marc_file: BinaryIO, library: str) -> List[bib_dto.BibDTO]:
     """
     Parses a MARC file using `bookops_marc` returns a list of data transfer
     objects containing the MARC record and its associated domain bib.
@@ -25,6 +25,6 @@ def read_marc_file(marc_file: BinaryIO, library: str) -> List[dto.BibDTO]:
     bibs = []
     reader = SierraBibReader(marc_file, library=library, hide_utf8_warnings=True)
     for record in reader:
-        obj = dto.BibDTO(bib=record, domain_bib=model.DomainBib.from_marc(record))
+        obj = bib_dto.BibDTO(bib=record, domain_bib=model.DomainBib.from_marc(record))
         bibs.append(obj)
     return bibs
