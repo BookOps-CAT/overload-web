@@ -17,7 +17,7 @@ from __future__ import annotations
 import logging
 from typing import Protocol, Union, runtime_checkable
 
-from overload_web.domain import model
+from overload_web.domain.models import model
 
 logger = logging.getLogger(__name__)
 
