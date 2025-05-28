@@ -7,9 +7,10 @@ from pymarc import Field, Indicators, Subfield
 from sqlalchemy import create_engine
 from sqlalchemy.orm import clear_mappers, sessionmaker
 
-from overload_web.application import dto
-from overload_web.domain import bib_matcher, model
-from overload_web.infrastructure import orm
+from overload_web.application.dto import bib_dto
+from overload_web.domain.models import model
+from overload_web.domain.services import bib_matcher
+from overload_web.infrastructure.repositories import orm
 
 
 @pytest.fixture(autouse=True)
@@ -246,9 +247,9 @@ def stub_binary_marc(stub_bib) -> io.BytesIO:
 
 
 @pytest.fixture
-def stub_bib_dto(stub_bib) -> dto.BibDTO:
+def stub_bib_dto(stub_bib) -> bib_dto.BibDTO:
     bib = copy.deepcopy(stub_bib)
-    return dto.BibDTO(bib=bib, domain_bib=model.DomainBib.from_marc(bib))
+    return bib_dto.BibDTO(bib=bib, domain_bib=model.DomainBib.from_marc(bib))
 
 
 @pytest.fixture

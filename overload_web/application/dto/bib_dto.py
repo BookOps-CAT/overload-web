@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain import model
+from overload_web.domain.models import model
 
 
 class BibDTO:

@@ -1,8 +1,8 @@
 import pytest
 from sqlalchemy import text
 
-from overload_web.domain import model
-from overload_web.infrastructure import repository
+from overload_web.domain.models import model
+from overload_web.infrastructure.repositories import repository
 
 
 def test_SqlAlchemyRepository(test_sql_session):

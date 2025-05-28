@@ -12,7 +12,7 @@ from typing import Annotated, Optional, Union
 from fastapi import Form
 from pydantic import BaseModel, ConfigDict
 
-from overload_web.domain import model
+from overload_web.domain.models import model
 
 
 class OrderModel(BaseModel, model.Order):

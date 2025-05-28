@@ -3,15 +3,15 @@ import os
 import pytest
 import yaml
 
-from overload_web.infrastructure import sierra_adapters
+from overload_web.infrastructure.bib_fetchers import sierra
 
 
 @pytest.fixture
 def mock_session(library, mock_sierra_response):
     if library == "bpl":
-        session = sierra_adapters.BPLSolrSession()
+        session = sierra.BPLSolrSession()
     else:
-        session = sierra_adapters.NYPLPlatformSession()
+        session = sierra.NYPLPlatformSession()
     return session
 
 
@@ -29,7 +29,7 @@ def live_creds() -> None:
 @pytest.mark.usefixtures("live_creds")
 class TestLiveSierraSession:
     def test_BPLSolrSession_live(self):
-        with sierra_adapters.BPLSolrSession() as session:
+        with sierra.BPLSolrSession() as session:
             response = session._get_bibs_by_isbn("9780316230032")
             matched_bibs = session._parse_response(response=response)
             assert isinstance(matched_bibs, list)
@@ -48,7 +48,7 @@ class TestLiveSierraSession:
             ]
 
     def test_NYPLPlatformSession_live(self):
-        with sierra_adapters.NYPLPlatformSession() as session:
+        with sierra.NYPLPlatformSession() as session:
             response = session._get_bibs_by_isbn("9780316230032")
             matched_bibs = session._parse_response(response=response)
             assert isinstance(matched_bibs, list)
@@ -85,32 +85,24 @@ class TestLiveSierraSession:
 class TestSierraBibFetcher:
     @pytest.mark.parametrize("matchpoint", ["bib_id", "upc", "isbn", "oclc_number"])
     def test_get_bibs_by_id(self, library, matchpoint, mock_session):
-        session = sierra_adapters.SierraBibFetcher(
-            session=mock_session, library=library
-        )
+        session = sierra.SierraBibFetcher(session=mock_session, library=library)
         bibs = session.get_bibs_by_id(value="123456789", key=matchpoint)
         assert bibs[0]["bib_id"] == "123456789"
 
     def test_get_bibs_by_issn(self, library, mock_session):
-        session = sierra_adapters.SierraBibFetcher(
-            session=mock_session, library=library
-        )
+        session = sierra.SierraBibFetcher(session=mock_session, library=library)
         with pytest.raises(NotImplementedError) as exc:
             session.get_bibs_by_id(value="123456789", key="issn")
         assert "Search by ISSN not implemented" in str(exc.value)
 
     @pytest.mark.parametrize("matchpoint", ["bib_id", "upc", "isbn", "oclc_number"])
     def test_get_bibs_no_value(self, library, matchpoint, mock_session):
-        session = sierra_adapters.SierraBibFetcher(
-            session=mock_session, library=library
-        )
+        session = sierra.SierraBibFetcher(session=mock_session, library=library)
         bibs = session.get_bibs_by_id(value=None, key=matchpoint)
         assert bibs == []
 
     def test_get_bibs_by_id_invalid_matchpoint(self, library, mock_session):
-        session = sierra_adapters.SierraBibFetcher(
-            session=mock_session, library=library
-        )
+        session = sierra.SierraBibFetcher(session=mock_session, library=library)
         with pytest.raises(ValueError) as exc:
             session.get_bibs_by_id(value="123456789", key="bar")
         assert (

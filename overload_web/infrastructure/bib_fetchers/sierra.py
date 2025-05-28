@@ -29,7 +29,7 @@ import requests
 from bookops_bpl_solr import SolrSession
 from bookops_nypl_platform import PlatformSession, PlatformToken
 
-from .. import __title__, __version__
+from ... import __title__, __version__
 
 logger = logging.getLogger(__name__)
 

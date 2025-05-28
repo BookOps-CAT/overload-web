@@ -1,7 +1,8 @@
 import pytest
 
-from overload_web.application import services, unit_of_work
-from overload_web.infrastructure import repository, sierra_adapters
+from overload_web.application.services import services, unit_of_work
+from overload_web.infrastructure.bib_fetchers import sierra
+from overload_web.infrastructure.repositories import repository
 
 
 class MockRepository(repository.RepositoryProtocol):
@@ -56,7 +57,7 @@ class TestServices:
     @pytest.mark.parametrize("library", ["nypl", "bpl"])
     def test_get_fetcher_for_library(self, library, mock_sierra_response):
         fetcher = services.get_fetcher_for_library(library=library)
-        assert isinstance(fetcher, sierra_adapters.SierraBibFetcher)
+        assert isinstance(fetcher, sierra.SierraBibFetcher)
 
     @pytest.mark.parametrize(
         "library, matchpoints, result",
