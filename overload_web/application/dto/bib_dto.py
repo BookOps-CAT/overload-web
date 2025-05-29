@@ -2,12 +2,12 @@
 
 import copy
 import datetime
-from typing import Any, Dict, List
+from typing import Any
 
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain.models import model
+from overload_web.domain.models import bibs
 
 
 class BibDTO:
@@ -23,7 +23,7 @@ class BibDTO:
 
     """
 
-    def __init__(self, bib: Bib, domain_bib: model.DomainBib):
+    def __init__(self, bib: Bib, domain_bib: bibs.DomainBib):
         self.bib = bib
         self.domain_bib = domain_bib
 
@@ -57,14 +57,15 @@ class BibDTO:
                     indicators=Indicators(" ", " "),
                     subfields=[
                         Subfield(
-                            code="a", value=f".b{self.domain_bib.bib_id.strip('.b')}"
+                            code="a",
+                            value=f".b{str(self.domain_bib.bib_id).strip('.b')}",
                         )
                     ],
                 )
             )
             self.bib = record
 
-    def update_bib_fields(self, fields: List[Dict[str, Any]] = []) -> None:
+    def update_bib_fields(self, fields: list[dict[str, Any]] = []) -> None:
         record = copy.deepcopy(self.bib)
         self._update_bib_id(record)
         for field in fields:
