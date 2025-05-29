@@ -8,8 +8,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import clear_mappers, sessionmaker
 
 from overload_web.application.dto import bib_dto
-from overload_web.domain.models import model
-from overload_web.domain.services import bib_matcher
+from overload_web.domain.models import bibs, templates
+from overload_web.domain.protocols import fetchers
 from overload_web.infrastructure.repositories import orm
 
 
@@ -53,7 +53,7 @@ def mock_sierra_response(monkeypatch):
 
 @pytest.fixture
 def test_fetcher():
-    class FakeBibFetcher(bib_matcher.BibFetcher):
+    class FakeBibFetcher(fetchers.BibFetcher):
         def get_bibs_by_id(self, value, key):
             bib_1 = {"bib_id": "123", "isbn": "9781234567890"}
             bib_2 = {"bib_id": "234", "isbn": "1234567890", "oclc_number": "123456789"}
@@ -85,8 +85,8 @@ def test_sql_session(in_memory_db):
 @pytest.fixture
 def make_template():
     def _make_template(data, matchpoints):
-        template = model.Template(**data)
-        matchpoints = model.Matchpoints(**matchpoints)
+        template = templates.Template(**data)
+        matchpoints = templates.Matchpoints(**matchpoints)
         template.matchpoints = matchpoints
         return template
 
@@ -249,7 +249,7 @@ def stub_binary_marc(stub_bib) -> io.BytesIO:
 @pytest.fixture
 def stub_bib_dto(stub_bib) -> bib_dto.BibDTO:
     bib = copy.deepcopy(stub_bib)
-    return bib_dto.BibDTO(bib=bib, domain_bib=model.DomainBib.from_marc(bib))
+    return bib_dto.BibDTO(bib=bib, domain_bib=bibs.DomainBib.from_marc(bib))
 
 
 @pytest.fixture
