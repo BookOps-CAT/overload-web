@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass, field
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 
 @dataclass
@@ -44,7 +44,7 @@ class Matchpoints:
 
         self.primary, self.secondary, self.tertiary = values[:3]
 
-    def as_list(self) -> List[str]:
+    def as_list(self) -> list[str]:
         """Return the matchpoints as a list"""
         return [i for i in (self.primary, self.secondary, self.tertiary) if i]
 
