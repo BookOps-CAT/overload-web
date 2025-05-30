@@ -2,31 +2,18 @@ import pytest
 
 from overload_web.application.services import services, unit_of_work
 from overload_web.domain.models import bibs, context
-from overload_web.domain.protocols import repositories
-from overload_web.infrastructure.bib_fetchers import sierra
+from overload_web.domain.protocols import fetchers, repositories
 
 
-class MockRepository(repositories.RepositoryProtocol):
+class MockRepository(repositories.SqlRepositoryProtocol):
     def __init__(self, templates):
         self.templates = templates
-
-    def get(self, id):
-        return next((i for i in self.templates if i.id == id), None)
-
-    def save(self, template):
-        pass
 
 
 class MockUnitOfWork(unit_of_work.UnitOfWorkProtocol):
     def __init__(self):
         self.templates = MockRepository(templates=[])
         self.committed = False
-
-    def commit(self):
-        self.committed = True
-
-    def rollback(self):
-        pass
 
 
 def test_OverloadUnitOfWork(test_session_factory):
@@ -61,12 +48,16 @@ class TestServices:
     @pytest.mark.parametrize("library", ["nypl", "bpl"])
     def test_get_fetcher_for_library(self, library, mock_sierra_response):
         fetcher = services.get_fetcher_for_library(library=library)
-        assert isinstance(fetcher, sierra.SierraBibFetcher)
+        assert isinstance(fetcher, fetchers.BibFetcher)
 
     def test_get_fetcher_for_library_invalid(self):
         with pytest.raises(ValueError) as exc:
             services.get_fetcher_for_library(library="foo")
         assert str(exc.value) == "Invalid library. Must be 'bpl' or 'nypl'"
+
+    def test_get_template_none(self):
+        template = services.get_template(id="foo", uow=MockUnitOfWork())
+        assert template is None
 
     @pytest.mark.parametrize(
         "library, matchpoints, result",

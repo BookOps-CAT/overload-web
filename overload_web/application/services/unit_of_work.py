@@ -23,7 +23,7 @@ class UnitOfWorkProtocol(Protocol):
     templates.
 
     Attributes:
-        templates: `RepositoryProtocol` interface for template persistence.
+        templates: `SqlRepositoryProtocol` interface for template persistence.
 
     Methods:
         __enter__: Begins a new transactional context.
@@ -32,7 +32,7 @@ class UnitOfWorkProtocol(Protocol):
         rollback: Rolls back the transaction.
     """
 
-    templates: repositories.RepositoryProtocol
+    templates: repositories.SqlRepositoryProtocol
 
     def __enter__(self) -> UnitOfWorkProtocol: ...
 
@@ -40,13 +40,11 @@ class UnitOfWorkProtocol(Protocol):
 
     def commit(self) -> None: ...
 
-    def rollback(self) -> None: ...
-
 
 SQL_SESSION_FACTORY = sessionmaker(bind=create_engine("sqlite:///:memory:"))
 
 
-class OverloadUnitOfWork(UnitOfWorkProtocol):
+class OverloadUnitOfWork:
     """
     Concrete implementation of `UnitOfWorkProtocol` using `SQLAlchemy` for managing
     template persistence.
@@ -59,6 +57,7 @@ class OverloadUnitOfWork(UnitOfWorkProtocol):
         self,
         template_session_factory: Callable = SQL_SESSION_FACTORY,
     ):
+        self.templates: repositories.SqlRepositoryProtocol
         self.template_session_factory = template_session_factory
 
     def __enter__(self) -> UnitOfWorkProtocol:

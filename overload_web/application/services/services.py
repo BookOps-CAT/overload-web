@@ -8,20 +8,21 @@ from __future__ import annotations
 
 import io
 import logging
-from typing import Any, BinaryIO, Dict, List, Optional
+from typing import Any, BinaryIO, Optional
 
 from overload_web.application.dto import bib_dto
 from overload_web.application.services import unit_of_work
-from overload_web.domain.models import model
-from overload_web.domain.services import bib_matcher
+from overload_web.domain.logic import bib_matcher
+from overload_web.domain.models import templates
+from overload_web.domain.protocols import fetchers
 from overload_web.infrastructure.bib_fetchers import marc_adapters, sierra
 
 logger = logging.getLogger(__name__)
 
 
 def attach_template(
-    bibs: List[bib_dto.BibDTO], template: Dict[str, Any]
-) -> List[bib_dto.BibDTO]:
+    bibs: list[bib_dto.BibDTO], template: dict[str, Any]
+) -> list[bib_dto.BibDTO]:
     """
     Applies template data to a list of bib records.
 
@@ -40,7 +41,7 @@ def attach_template(
     return processed_bibs
 
 
-def get_fetcher_for_library(library: str) -> bib_matcher.BibFetcher:
+def get_fetcher_for_library(library: str) -> fetchers.BibFetcher:
     """
     Creates a `SierraBibFetcher` object for the specified library.
 
@@ -63,12 +64,21 @@ def get_fetcher_for_library(library: str) -> bib_matcher.BibFetcher:
     return sierra.SierraBibFetcher(session=session, library=library)
 
 
+def get_template(
+    id: str, uow: unit_of_work.UnitOfWorkProtocol
+) -> Optional[templates.Template]:
+    template = None
+    with uow:
+        template = uow.templates.get(id=id)
+    return template
+
+
 def match_bibs(
-    bibs: List[bib_dto.BibDTO],
+    bibs: list[bib_dto.BibDTO],
     library: str,
-    matchpoints: List[str],
-    fetcher: Optional[bib_matcher.BibFetcher] = None,
-) -> List[bib_dto.BibDTO]:
+    matchpoints: list[str],
+    fetcher: Optional[fetchers.BibFetcher] = None,
+) -> list[bib_dto.BibDTO]:
     """
     Matches bib records from an incoming MARC file against Sierra.
 
@@ -93,7 +103,7 @@ def match_bibs(
     return processed_bibs
 
 
-def read_marc_binary(file_data: BinaryIO, library: str) -> List[bib_dto.BibDTO]:
+def read_marc_binary(file_data: BinaryIO, library: str) -> list[bib_dto.BibDTO]:
     """
     Reads a MARC binary file and returns a list of `BibDTO` objects.
 
@@ -110,8 +120,8 @@ def read_marc_binary(file_data: BinaryIO, library: str) -> List[bib_dto.BibDTO]:
 
 
 def save_template(
-    data: Dict[str, Any], uow: unit_of_work.UnitOfWorkProtocol
-) -> Dict[str, Any]:
+    data: dict[str, Any], uow: unit_of_work.UnitOfWorkProtocol
+) -> dict[str, Any]:
     """
     Validates and persists a new template using a unit of work.
 
@@ -125,18 +135,18 @@ def save_template(
     Raises:
         ValueError: If the template lacks `name` or `agent`.
     """
-    template = model.Template(**data)
+    template = templates.Template(**data)
     if not template.name or not template.name.strip():
         raise ValueError("Templates must have a name before being saved.")
     if not template.agent or not template.agent.strip():
         raise ValueError("Templates must have an agent before being saved.")
     with uow:
-        uow.templates.save(template=template)
+        uow.templates.save(obj=template)
         uow.commit()
     return template.__dict__
 
 
-def write_marc_binary(bibs: List[bib_dto.BibDTO]) -> io.BytesIO:
+def write_marc_binary(bibs: list[bib_dto.BibDTO]) -> io.BytesIO:
     """
     Writes a list of data transfer objects to a file in MARC format.
 

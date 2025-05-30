@@ -3,7 +3,7 @@
 Classes:
 
 `SqlAlchemyRepository`
-    `SQLAlchemy` implementation of `RepositoryProtocol` for managing
+    `SQLAlchemy` implementation of `SqlRepositoryProtocol` for managing
     `Template` objects in a SQL database.
 """
 
@@ -40,11 +40,11 @@ class SqlAlchemyRepository:
         """
         return self.session.query(templates.Template).filter_by(id=id).first()
 
-    def save(self, template: templates.Template) -> None:
+    def save(self, obj: templates.Template) -> None:
         """
         Adds a new or updated `Template` to the database.
 
         Args:
             template: the `Template` object to save.
         """
-        self.session.add(template)
+        self.session.add(obj)
