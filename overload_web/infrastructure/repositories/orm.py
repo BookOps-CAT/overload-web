@@ -13,13 +13,13 @@ import logging
 from sqlalchemy import Column, Date, Integer, MetaData, String, Table
 from sqlalchemy.orm import composite, registry
 
-from overload_web.domain.models import model
+from overload_web.domain.models import templates
 
 logger = logging.getLogger(__name__)
 metadata = MetaData()
 mapper_registry = registry(metadata=metadata)
 
-templates = Table(
+template_table = Table(
     "templates",
     metadata,
     Column("id", Integer, primary_key=True, autoincrement=True),
@@ -58,14 +58,14 @@ def start_mappers() -> None:
     Maps the `Template` model to the `templates` table and configures composite fields.
     """
     mapper_registry.map_imperatively(
-        model.Template,
-        templates,
+        templates.Template,
+        template_table,
         properties={
             "matchpoints": composite(
-                model.Matchpoints,
-                templates.c.primary_matchpoint,
-                templates.c.secondary_matchpoint,
-                templates.c.tertiary_matchpoint,
+                templates.Matchpoints,
+                template_table.c.primary_matchpoint,
+                template_table.c.secondary_matchpoint,
+                template_table.c.tertiary_matchpoint,
             )
         },
     )
