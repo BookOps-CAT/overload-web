@@ -37,7 +37,8 @@ relative_files = true
 source = ["."]
 omit = [
     "tests/*",
-    "*/tests/*"
+    "*/tests/*",
+    "**/*.html"
 ]
 
 [build-system]
