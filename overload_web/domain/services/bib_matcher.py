@@ -29,7 +29,7 @@ class BibMatchService:
 
     This service compares a `DomainBib` instance against external candidates using
     specified matchpoints (e.g., ISBN, OCLC number, UPC). The services selects a
-    record as the best match if if has the most attribute matches of all candidate
+    record as the best match if it has the most attribute matches of all candidate
     records.
     """
 
