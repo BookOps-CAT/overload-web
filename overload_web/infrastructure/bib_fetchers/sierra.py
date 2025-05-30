@@ -39,7 +39,8 @@ AGENT = f"{__title__}/{__version__}"
 class SierraBibFetcher:
     """
     Fetches bibliographic records from Sierra and converts them into domain-level
-    dictionaries for `DomainBib` construction.
+    dictionaries for `DomainBib` construction. This class is a concrete
+    implementation of the `BibFetcher` protocol
 
     Args:
         session: a session instance implementing the Sierra protocol.
