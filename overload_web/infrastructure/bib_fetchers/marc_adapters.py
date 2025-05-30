@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import BinaryIO, List
+from typing import BinaryIO
 
 from bookops_marc import SierraBibReader
 
@@ -10,7 +10,7 @@ from overload_web.application.dto import bib_dto
 from overload_web.domain.models import bibs
 
 
-def read_marc_file(marc_file: BinaryIO, library: str) -> List[bib_dto.BibDTO]:
+def read_marc_file(marc_file: BinaryIO, library: str) -> list[bib_dto.BibDTO]:
     """
     Parses a MARC file using `bookops_marc` returns a list of data transfer
     objects containing the MARC record and its associated domain bib.
