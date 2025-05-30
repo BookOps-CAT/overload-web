@@ -12,6 +12,7 @@ from typing import Callable, Protocol, runtime_checkable
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from overload_web.domain.protocols import repositories
 from overload_web.infrastructure.repositories import repository
 
 
@@ -31,7 +32,7 @@ class UnitOfWorkProtocol(Protocol):
         rollback: Rolls back the transaction.
     """
 
-    templates: repository.RepositoryProtocol
+    templates: repositories.RepositoryProtocol
 
     def __enter__(self) -> UnitOfWorkProtocol: ...
 

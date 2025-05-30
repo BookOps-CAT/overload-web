@@ -29,10 +29,13 @@ class MockUnitOfWork(unit_of_work.UnitOfWorkProtocol):
         pass
 
 
-def test_OverloadUnitOfWork():
-    with unit_of_work.OverloadUnitOfWork() as uow:
+def test_OverloadUnitOfWork(test_session_factory):
+    with unit_of_work.OverloadUnitOfWork(
+        template_session_factory=test_session_factory
+    ) as uow:
         uow.commit()
         uow.rollback()
+    assert isinstance(uow, unit_of_work.UnitOfWorkProtocol)
 
 
 class TestServices:

@@ -76,10 +76,15 @@ def in_memory_db():
 
 
 @pytest.fixture
-def test_sql_session(in_memory_db):
+def test_session_factory(in_memory_db):
     orm.start_mappers()
-    yield sessionmaker(bind=in_memory_db)()
+    yield sessionmaker(bind=in_memory_db)
     clear_mappers()
+
+
+@pytest.fixture
+def test_sql_session(test_session_factory):
+    return test_session_factory()
 
 
 @pytest.fixture
