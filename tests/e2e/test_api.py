@@ -63,7 +63,7 @@ class TestAPIRouter:
                 },
                 data=stub_pvf_form_data,
             )
-        assert "Invalid library. Must be 'bpl' or 'nypl'" in str(exc.value)
+        assert str(exc.value) == f"'{library}' is not a valid LibrarySystem"
 
 
 class TestFrontendRouter:
