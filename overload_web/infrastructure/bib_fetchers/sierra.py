@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Dict, List, Protocol, Union, runtime_checkable
+from typing import Any, Protocol, Union, runtime_checkable
 
 import requests
 from bookops_bpl_solr import SolrSession
@@ -52,8 +52,8 @@ class SierraBibFetcher:
         self.library = library
 
     def _response_to_domain_dict(
-        self, records: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, records: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """
         Converts raw response into dictionaries formatted for the `DomainBib` model.
 
@@ -76,7 +76,7 @@ class SierraBibFetcher:
             for i in records
         ]
 
-    def get_bibs_by_id(self, value: Union[str, int], key: str) -> List[Dict[str, Any]]:
+    def get_bibs_by_id(self, value: Union[str, int], key: str) -> list[dict[str, Any]]:
         """
         Retrieves bib records by a specific matchpoint (e.g., ISBN, OCLC)
 
@@ -121,7 +121,7 @@ class SierraSessionProtocol(Protocol):
     def _get_bibs_by_issn(self, value: Union[str, int]) -> requests.Response: ...
     def _get_bibs_by_oclc_number(self, value: Union[str, int]) -> requests.Response: ...
     def _get_bibs_by_upc(self, value: Union[str, int]) -> requests.Response: ...
-    def _parse_response(self, response: requests.Response) -> List[Dict[str, Any]]: ...
+    def _parse_response(self, response: requests.Response) -> list[dict[str, Any]]: ...
 
 
 class BPLSolrSession(SolrSession):
@@ -142,7 +142,7 @@ class BPLSolrSession(SolrSession):
     def _get_credentials(self) -> str:
         return os.environ["BPL_SOLR_CLIENT"]
 
-    def _parse_response(self, response: requests.Response) -> List[Dict[str, Any]]:
+    def _parse_response(self, response: requests.Response) -> list[dict[str, Any]]:
         bibs = []
         if response and response.ok:
             json_response = response.json()
@@ -188,7 +188,7 @@ class NYPLPlatformSession(PlatformSession):
             os.environ["NYPL_PLATFORM_AGENT"],
         )
 
-    def _parse_response(self, response: requests.Response) -> List[Dict[str, Any]]:
+    def _parse_response(self, response: requests.Response) -> list[dict[str, Any]]:
         bibs = []
         if response and response.ok:
             json_response = response.json()
