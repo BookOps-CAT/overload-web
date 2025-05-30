@@ -1,11 +1,12 @@
 import pytest
 
 from overload_web.application.services import services, unit_of_work
+from overload_web.domain.models import context
+from overload_web.domain.protocols import repositories
 from overload_web.infrastructure.bib_fetchers import sierra
-from overload_web.infrastructure.repositories import repository
 
 
-class MockRepository(repository.RepositoryProtocol):
+class MockRepository(repositories.RepositoryProtocol):
     def __init__(self, templates):
         self.templates = templates
 
@@ -90,7 +91,7 @@ class TestServices:
         )
         assert len(bibs) == 1
         assert bibs[0].bib.library == library
-        assert bibs[0].domain_bib.library == library
+        assert bibs[0].domain_bib.library == context.LibrarySystem(library)
         assert bibs[0].domain_bib.bib_id == result
 
     @pytest.mark.parametrize("library", ["nypl", "bpl"])
@@ -102,7 +103,7 @@ class TestServices:
         )
         assert len(bibs) == 1
         assert bibs[0].bib.library == library
-        assert bibs[0].domain_bib.library == library
+        assert bibs[0].domain_bib.library == context.LibrarySystem(library)
         assert bibs[0].domain_bib.bib_id == "123456789"
         assert bibs[0].bib.sierra_bib_id == "b123456789"
 
