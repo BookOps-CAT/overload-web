@@ -1,38 +1,20 @@
-"""
-Classes representing a relational database for `Template` objects.
-
-Protocols:
-
-`RepositoryProtocol`
-    Defines expected methods for a template repository.
+"""A class representing a relational database for `Template` objects.
 
 Classes:
 
 `SqlAlchemyRepository`
-    `SQLAlchemy` implementation for managing `Template` objects in a database.
+    `SQLAlchemy` implementation of `RepositoryProtocol` for managing
+    `Template` objects in a SQL database.
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Protocol, Union, runtime_checkable
+from typing import Union
 
-from overload_web.domain.models import model
+from overload_web.domain.models import templates
 
 logger = logging.getLogger(__name__)
-
-
-@runtime_checkable
-class RepositoryProtocol(Protocol):
-    """
-    Interface for repository operations on `Template` objects.
-
-    Includes methods for fetching and saving templates.
-    """
-
-    def get(self, id: Union[str, int]) -> model.Template: ...
-
-    def save(self, template: model.Template) -> None: ...
 
 
 class SqlAlchemyRepository:
@@ -56,9 +38,9 @@ class SqlAlchemyRepository:
         Returns:
             a `Template` instance or `None` if not found.
         """
-        return self.session.query(model.Template).filter_by(id=id).first()
+        return self.session.query(templates.Template).filter_by(id=id).first()
 
-    def save(self, template: model.Template) -> None:
+    def save(self, template: templates.Template) -> None:
         """
         Adds a new or updated `Template` to the database.
 
