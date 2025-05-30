@@ -1,7 +1,7 @@
 import pytest
 
 from overload_web.application.services import services, unit_of_work
-from overload_web.domain.models import context
+from overload_web.domain.models import bibs, context
 from overload_web.domain.protocols import repositories
 from overload_web.infrastructure.bib_fetchers import sierra
 
@@ -60,15 +60,20 @@ class TestServices:
         fetcher = services.get_fetcher_for_library(library=library)
         assert isinstance(fetcher, sierra.SierraBibFetcher)
 
+    def test_get_fetcher_for_library_invalid(self):
+        with pytest.raises(ValueError) as exc:
+            services.get_fetcher_for_library(library="foo")
+        assert str(exc.value) == "Invalid library. Must be 'bpl' or 'nypl'"
+
     @pytest.mark.parametrize(
         "library, matchpoints, result",
         [
-            ("bpl", ["isbn"], "123"),
-            ("nypl", ["isbn"], "123"),
+            ("bpl", ["isbn"], bibs.BibId("123")),
+            ("nypl", ["isbn"], bibs.BibId("123")),
             ("bpl", ["oclc_number"], None),
             ("nypl", ["oclc_number"], None),
-            ("bpl", ["isbn", "oclc_number"], "123"),
-            ("nypl", ["isbn", "oclc_number"], "123"),
+            ("bpl", ["isbn", "oclc_number"], bibs.BibId("123")),
+            ("nypl", ["isbn", "oclc_number"], bibs.BibId("123")),
             ("bpl", ["upc"], None),
             ("nypl", ["upc"], None),
         ],
@@ -104,7 +109,7 @@ class TestServices:
         assert len(bibs) == 1
         assert bibs[0].bib.library == library
         assert bibs[0].domain_bib.library == context.LibrarySystem(library)
-        assert bibs[0].domain_bib.bib_id == "123456789"
+        assert str(bibs[0].domain_bib.bib_id) == "123456789"
         assert bibs[0].bib.sierra_bib_id == "b123456789"
 
     @pytest.mark.parametrize("library", ["nypl", "bpl"])
