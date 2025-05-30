@@ -54,7 +54,7 @@ class BibMatchService:
 
     def _select_best_match(
         self, bib_to_match: bibs.DomainBib, candidates: list[dict[str, Any]]
-    ) -> Optional[str]:
+    ) -> Optional[bibs.BibId]:
         """
         Compare a `DomainBib` to a list of candidate bibs and select the best match.
 
@@ -75,11 +75,11 @@ class BibMatchService:
 
             if matched_points > max_matched_points:
                 max_matched_points = matched_points
-                best_match_bib_id = bib.get("bib_id")
-
+                best_match = bib.get("bib_id")
+                best_match_bib_id = bibs.BibId(best_match) if best_match else None
         return best_match_bib_id
 
-    def find_best_match(self, bib: bibs.DomainBib) -> Optional[str]:
+    def find_best_match(self, bib: bibs.DomainBib) -> Optional[bibs.BibId]:
         """
         Attempt to find the best-match in Sierra for a given `DomainBib`.
 
