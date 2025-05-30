@@ -6,6 +6,34 @@ import datetime
 from dataclasses import dataclass, field
 from typing import Optional, Union
 
+# class Matchpoints:
+#     def __init__(
+#         self,
+#         primary: Optional[str] = None,
+#         secondary: Optional[str] = None,
+#         tertiary: Optional[str] = None,
+#     ):
+#         if tertiary is not None and secondary is None:
+#             raise ValueError("Cannot have tertiary matchpoint without secondary.")
+#         self.primary = primary
+#         self.secondary = secondary
+#         self.tertiary = tertiary
+
+#     def as_list(self) -> list[str]:
+#         """Return the matchpoints as a list"""
+#         return [i for i in (self.primary, self.secondary, self.tertiary) if i]
+
+#     def __composite_values__(self):
+#         return self.primary, self.secondary, self.tertiary
+
+#     def __eq__(self, other) -> bool:
+#         if not isinstance(other, Matchpoints):
+#             return NotImplemented
+#         return self.__composite_values__() == other.__composite_values__()
+
+#     def __ne__(self, other) -> bool:
+#         return not self.__eq__(other)
+
 
 @dataclass
 class Matchpoints:
@@ -32,12 +60,15 @@ class Matchpoints:
         """
         if "tertiary" in kwargs and "secondary" not in kwargs and len(args) < 2:
             raise ValueError("Cannot have tertiary matchpoint without secondary.")
+        elif len(args) + len(kwargs) > 3:
+            raise ValueError("Matchpoints should be passed no more than three values.")
 
+        keys = ["primary", "secondary", "tertiary"]
         values = list(args)
-        for key in ["primary", "secondary", "tertiary"]:
-            if key in kwargs:
-                if len(values) < ["primary", "secondary", "tertiary"].index(key) + 1:
-                    values.append(kwargs[key])
+
+        for key in keys:
+            if key in kwargs and len(values) < keys.index(key) + 1:
+                values.append(kwargs[key])
 
         while len(values) < 3:
             values.append(None)

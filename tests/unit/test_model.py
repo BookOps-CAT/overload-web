@@ -142,6 +142,13 @@ class TestMatchpoints:
             templates.Matchpoints("isbn", tertiary="upc")
         assert str(exc.value) == "Cannot have tertiary matchpoint without secondary."
 
+    def test_Matchpoints_value_error_too_many(self):
+        with pytest.raises(ValueError) as exc:
+            templates.Matchpoints("isbn", "upc", "issn", "oclc_number")
+        assert (
+            str(exc.value) == "Matchpoints should be passed no more than three values."
+        )
+
 
 class TestOrder:
     def test_Order(self, order_data):
