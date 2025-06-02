@@ -2,7 +2,7 @@ import datetime
 
 import pytest
 
-from overload_web.domain.models import bibs, context, templates
+from overload_web.domain.models import bibs, context, templates, vendor_file
 
 
 class TestBibId:
@@ -233,3 +233,26 @@ class TestTemplateId:
         with pytest.raises(ValueError) as exc:
             templates.TemplateId(value=123)
         assert str(exc.value) == "TemplateId must be a non-empty string."
+
+
+class TestVendorFile:
+    def test_VendorFile(self):
+        file = vendor_file.VendorFile(id="foo", content=b"", file_name="bar.mrc")
+        assert file.id == "foo"
+        assert hasattr(file.content, "hex")
+        assert file.file_name == "bar.mrc"
+
+    def test_VendorFile_create(self):
+        file = vendor_file.VendorFile.create(content=b"", file_name="bar.mrc")
+        assert isinstance(file.id, vendor_file.VendorFileId)
+        assert repr(file.id) == f"VendorFileId(value='{str(file.id)}')"
+
+    def test_VendorFileId_new(self):
+        id = vendor_file.VendorFileId.new()
+        assert isinstance(id, vendor_file.VendorFileId)
+        assert repr(id) == f"VendorFileId(value='{str(id)}')"
+
+    def test_VendorFileId_invalid(self):
+        with pytest.raises(ValueError) as exc:
+            vendor_file.VendorFileId(value=123)
+        assert str(exc.value) == "VendorFileId must be a non-empty string."
