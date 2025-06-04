@@ -28,7 +28,7 @@ class SqlAlchemyRepository:
     def __init__(self, session):
         self.session = session
 
-    def get(self, id: Union[str, int]):
+    def get(self, id: Union[str, int]) -> templates.Template:
         """
         Retrieve a `Template` object by its ID.
 
