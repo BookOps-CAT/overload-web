@@ -134,8 +134,8 @@ pymarc = "^5.2.3"
 [package.source]
 type = "git"
 url = "https://github.com/BookOps-CAT/bookops-marc.git"
-reference = "item_records"
-resolved_reference = "701f102169fa75626ffab98e1df484585b4ae9a7"
+reference = "HEAD"
+resolved_reference = "ba3c52d262eaca26b3c9513fb82ae9c7ba08251c"
 
 [[package]]
 name = "bookops-nypl-platform"
@@ -1968,4 +1968,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12, <4.0"
-content-hash = "a94d10fcbce5f229547fd4da823d9c7868fb2febd32ae3ed68436a262923c1d4"
+content-hash = "4a965f83d8f3ba5c79c0cfa18b13f2ef876cee83dfd4c6923fb0e1ea9a05a2da"
