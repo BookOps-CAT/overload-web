@@ -11,7 +11,8 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from overload_web.application.services import services
+from overload_web.application.services import records
+from overload_web.infrastructure import factories
 from overload_web.presentation.api import schemas
 
 logger = logging.getLogger(__name__)
@@ -49,12 +50,19 @@ def vendor_file_process(
         A list of processed bib records.
     """
     template_data = {k: v for k, v in form_data.__dict__.items() if k != "matchpoints"}
-    bibs = services.read_marc_binary(file_data=file.file, library=library)
-    matched_bibs = services.match_bibs(
-        bibs=bibs, library=library, matchpoints=form_data.matchpoints.as_list()
+    service = records.ProcessRecordService(
+        parser=factories.get_parser_for_library(library),
+        matcher=factories.get_matcher_for_library(
+            library=library, matchpoints=form_data.matchpoints.as_list()
+        ),
+        template=template_data,
     )
-    processed_bibs = services.attach_template(bibs=matched_bibs, template=template_data)
-    marc_binary = services.write_marc_binary(bibs=processed_bibs)
+    bibs = service.load(data=file.file)
+    matched_bibs = service.match_records(bibs)
+    processed_bibs = service.update_bib_fields(
+        records=matched_bibs, template=template_data
+    )
+    marc_binary = service.write_marc_binary(records=processed_bibs)
     return StreamingResponse(
         marc_binary,
         media_type="application/marc",
