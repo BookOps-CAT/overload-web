@@ -2,7 +2,7 @@ import datetime
 
 import pytest
 
-from overload_web.domain.models import bibs, context, templates, vendor_file
+from overload_web.domain.models import bibs, templates, vendor_file
 
 
 class TestBibId:
@@ -21,44 +21,44 @@ class TestBibId:
 class TestContext:
     @pytest.mark.parametrize("value", ["BL", "RL"])
     def test_Collection(self, value):
-        collection = context.Collection(value)
+        collection = bibs.Collection(value)
         assert str(collection) == value
-        assert context.Collection.BRANCH.value == "BL"
-        assert context.Collection.BRANCH.name == "BRANCH"
-        assert context.Collection.RESEARCH.value == "RL"
-        assert context.Collection.RESEARCH.name == "RESEARCH"
+        assert bibs.Collection.BRANCH.value == "BL"
+        assert bibs.Collection.BRANCH.name == "BRANCH"
+        assert bibs.Collection.RESEARCH.value == "RL"
+        assert bibs.Collection.RESEARCH.name == "RESEARCH"
 
     def test_Collection_invalid(self):
         with pytest.raises(ValueError) as exc:
-            context.Collection("foo")
+            bibs.Collection("foo")
         assert str(exc.value) == "'foo' is not a valid Collection"
 
     @pytest.mark.parametrize("value", ["bpl", "nypl"])
     def test_LibrarySystem(self, value):
-        library = context.LibrarySystem(value)
+        library = bibs.LibrarySystem(value)
         assert str(library) == value
-        assert context.LibrarySystem.BPL.value == "bpl"
-        assert context.LibrarySystem.BPL.name == "BPL"
-        assert context.LibrarySystem.NYPL.value == "nypl"
-        assert context.LibrarySystem.NYPL.name == "NYPL"
+        assert bibs.LibrarySystem.BPL.value == "bpl"
+        assert bibs.LibrarySystem.BPL.name == "BPL"
+        assert bibs.LibrarySystem.NYPL.value == "nypl"
+        assert bibs.LibrarySystem.NYPL.name == "NYPL"
 
     def test_LibrarySystem_invalid(self):
         with pytest.raises(ValueError) as exc:
-            context.LibrarySystem("foo")
+            bibs.LibrarySystem("foo")
         assert str(exc.value) == "'foo' is not a valid LibrarySystem"
 
     @pytest.mark.parametrize("value", ["full", "order_level"])
     def test_RecordType(self, value):
-        record_type = context.RecordType(value)
+        record_type = bibs.RecordType(value)
         assert str(record_type) == value
-        assert context.RecordType.FULL.value == "full"
-        assert context.RecordType.FULL.name == "FULL"
-        assert context.RecordType.ORDER_LEVEL.value == "order_level"
-        assert context.RecordType.ORDER_LEVEL.name == "ORDER_LEVEL"
+        assert bibs.RecordType.FULL.value == "full"
+        assert bibs.RecordType.FULL.name == "FULL"
+        assert bibs.RecordType.ORDER_LEVEL.value == "order_level"
+        assert bibs.RecordType.ORDER_LEVEL.name == "ORDER_LEVEL"
 
     def test_RecordType_invalid(self):
         with pytest.raises(ValueError) as exc:
-            context.RecordType("foo")
+            bibs.RecordType("foo")
         assert str(exc.value) == "'foo' is not a valid RecordType"
 
 

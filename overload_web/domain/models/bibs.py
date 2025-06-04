@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, Optional, Union
 
 import bookops_marc
 import bookops_marc.models
-
-from overload_web.domain.models import context
 
 
 @dataclass(frozen=True)
@@ -30,6 +29,16 @@ class BibId:
         return f"BibId(value={self.value!r})"
 
 
+class Collection(Enum):
+    """Includes valid values for NYPL collection"""
+
+    BRANCH = "BL"
+    RESEARCH = "RL"
+
+    def __str__(self):
+        return self.value
+
+
 @dataclass
 class DomainBib:
     """
@@ -46,7 +55,7 @@ class DomainBib:
         barcodes: list of barcodes associated with the record.
     """
 
-    library: context.LibrarySystem
+    library: LibrarySystem
     orders: list[Order]
     bib_id: Optional[BibId] = None
     isbn: Optional[str] = None
@@ -77,7 +86,7 @@ class DomainBib:
             DomainBib: domain object populated with structured order and identifier data.
         """
         return DomainBib(
-            library=context.LibrarySystem(bib.library),
+            library=LibrarySystem(bib.library),
             orders=[Order.from_marc(order=i) for i in bib.orders],
             bib_id=(BibId(value=bib.sierra_bib_id) if bib.sierra_bib_id else None),
             upc=bib.upc_number,
@@ -88,6 +97,16 @@ class DomainBib:
                 bib.research_call_no if bib.collection == "RL" else bib.branch_call_no
             ),
         )
+
+
+class LibrarySystem(Enum):
+    """Includes valid values for library system"""
+
+    BPL = "bpl"
+    NYPL = "nypl"
+
+    def __str__(self):
+        return self.value
 
 
 @dataclass
@@ -228,3 +247,13 @@ class OrderId:
 
     def __repr__(self):
         return f"OrderId(value={self.value!r})"
+
+
+class RecordType(Enum):
+    """Includes valid values for record type"""
+
+    FULL = "full"
+    ORDER_LEVEL = "order_level"
+
+    def __str__(self):
+        return self.value

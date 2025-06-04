@@ -1,7 +1,7 @@
 import pytest
 
-from overload_web.application.services import services, unit_of_work
-from overload_web.domain.models import bibs, context
+from overload_web.application.services import services, template
+from overload_web.domain.models import bibs
 from overload_web.domain.protocols import fetchers, repositories
 
 
@@ -10,19 +10,19 @@ class MockRepository(repositories.SqlRepositoryProtocol):
         self.templates = templates
 
 
-class MockUnitOfWork(unit_of_work.UnitOfWorkProtocol):
+class MockUnitOfWork(template.UnitOfWorkProtocol):
     def __init__(self):
         self.templates = MockRepository(templates=[])
         self.committed = False
 
 
 def test_OverloadUnitOfWork(test_session_factory):
-    with unit_of_work.OverloadUnitOfWork(
+    with template.OverloadUnitOfWork(
         template_session_factory=test_session_factory
     ) as uow:
         uow.commit()
         uow.rollback()
-    assert isinstance(uow, unit_of_work.UnitOfWorkProtocol)
+    assert isinstance(uow, template.UnitOfWorkProtocol)
 
 
 class TestServices:
@@ -90,7 +90,7 @@ class TestServices:
         )
         assert len(bibs) == 1
         assert bibs[0].bib.library == library
-        assert bibs[0].domain_bib.library == context.LibrarySystem(library)
+        assert bibs[0].domain_bib.library == bibs.LibrarySystem(library)
         assert bibs[0].domain_bib.bib_id == result
 
     @pytest.mark.parametrize("library", ["nypl", "bpl"])
@@ -102,7 +102,7 @@ class TestServices:
         )
         assert len(bibs) == 1
         assert bibs[0].bib.library == library
-        assert bibs[0].domain_bib.library == context.LibrarySystem(library)
+        assert bibs[0].domain_bib.library == bibs.LibrarySystem(library)
         assert str(bibs[0].domain_bib.bib_id) == "123456789"
         assert bibs[0].bib.sierra_bib_id == "b123456789"
 
