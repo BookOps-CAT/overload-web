@@ -200,7 +200,7 @@ class Order:
             order_code_3=order._field.get("e", None),
             order_code_4=order._field.get("f", None),
             order_type=order._field.get("i", None),
-            order_id=(OrderId(value=str(order.oid)) if order.oid else None),
+            order_id=(OrderId(value=str(order.order_id)) if order.order_id else None),
             price=order._field.get("s", None),
             selector_note=from_following_field("f"),
             shelves=order.shelves,
