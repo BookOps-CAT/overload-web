@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 from typing import BinaryIO
 
 from bookops_marc import SierraBibReader
@@ -10,21 +11,25 @@ from overload_web.application.dto import bib_dto
 from overload_web.domain.models import bibs
 
 
-def read_marc_file(marc_file: BinaryIO, library: str) -> list[bib_dto.BibDTO]:
-    """
-    Parses a MARC file using `bookops_marc` returns a list of data transfer
-    objects containing the MARC record and its associated domain bib.
+class BookopsMarcTransformer:
+    def __init__(self, library: bibs.LibrarySystem) -> None:
+        self.library = library
 
-    Args:
-        marc_file: binary stream containing MARC data.
-        library: the library to whom the records belong
+    def parse(self, data: BinaryIO) -> list[bib_dto.BibDTO]:
+        records = []
+        reader = SierraBibReader(
+            data, library=str(self.library), hide_utf8_warnings=True
+        )
+        for record in reader:
+            obj = bib_dto.BibDTO(
+                bib=record, domain_bib=bibs.DomainBib.from_marc(record)
+            )
+            records.append(obj)
+        return records
 
-    Returns:
-        list of `BibDTO` objects.
-    """
-    records = []
-    reader = SierraBibReader(marc_file, library=library, hide_utf8_warnings=True)
-    for record in reader:
-        obj = bib_dto.BibDTO(bib=record, domain_bib=bibs.DomainBib.from_marc(record))
-        records.append(obj)
-    return records
+    def serialize(self, records: list[bib_dto.BibDTO]) -> BinaryIO:
+        io_data = io.BytesIO()
+        for bib in records:
+            io_data.write(bib.bib.as_marc())
+        io_data.seek(0)
+        return io_data
