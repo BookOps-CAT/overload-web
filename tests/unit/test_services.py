@@ -1,8 +1,8 @@
 import pytest
 
-from overload_web.application.services import services, template
+from overload_web.application.services import template
 from overload_web.domain.models import bibs
-from overload_web.domain.protocols import fetchers, repositories
+from overload_web.domain.protocols import repositories
 
 
 class MockRepository(repositories.SqlRepositoryProtocol):
@@ -10,10 +10,19 @@ class MockRepository(repositories.SqlRepositoryProtocol):
         self.templates = templates
 
 
-class MockUnitOfWork(template.UnitOfWorkProtocol):
+class MockUnitOfWork(repositories.UnitOfWorkProtocol):
     def __init__(self):
         self.templates = MockRepository(templates=[])
         self.committed = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        pass
+
+    def commit(self):
+        self.committed = True
 
 
 def test_OverloadUnitOfWork(test_session_factory):
@@ -22,120 +31,98 @@ def test_OverloadUnitOfWork(test_session_factory):
     ) as uow:
         uow.commit()
         uow.rollback()
-    assert isinstance(uow, template.UnitOfWorkProtocol)
+    assert isinstance(uow, repositories.UnitOfWorkProtocol)
 
 
-class TestServices:
-    @pytest.mark.parametrize("library", ["nypl", "bpl"])
-    def test_attach_template(self, template_data, stub_bib_dto):
+@pytest.mark.parametrize("library", ["nypl", "bpl"])
+class TestProcessRecordService:
+    def test_ProcessRecordService(self, record_service_factory, library):
+        service = record_service_factory(["bib_id", "isbn"], library)
+        assert hasattr(service, "load")
+        assert hasattr(service, "match_records")
+        assert hasattr(service, "update_bib_fields")
+        assert hasattr(service, "write_marc_binary")
+
+    def test_load(self, record_service_factory, library, stub_binary_marc):
+        service = record_service_factory(["bib_id", "isbn"], library)
+        records = service.load(stub_binary_marc)
+        assert len(records) == 1
+        assert str(records[0].bib.library) == library
+        assert records[0].bib.isbn == "9781234567890"
+        assert str(records[0].domain_bib.library) == library
+        assert records[0].domain_bib.barcodes == ["333331234567890"]
+
+    @pytest.mark.parametrize(
+        "matchpoints, result",
+        [
+            (["isbn"], bibs.BibId("123")),
+            (["oclc_number"], None),
+            (["isbn", "oclc_number"], bibs.BibId("123")),
+            (["upc"], None),
+        ],
+    )
+    def test_match_records(
+        self, record_service_factory, matchpoints, library, result, stub_bib_dto
+    ):
+        assert stub_bib_dto.domain_bib.bib_id is None
+        assert stub_bib_dto.bib.sierra_bib_id is None
+        service = record_service_factory(matchpoints, library)
+        matched_bibs = service.match_records([stub_bib_dto])
+        assert len(matched_bibs) == 1
+        assert matched_bibs[0].bib.library == library
+        assert str(matched_bibs[0].domain_bib.library) == library
+        assert matched_bibs[0].domain_bib.bib_id == result
+
+    def test_update_bib_fields(
+        self, record_service_factory, library, template_data, stub_bib_dto
+    ):
+        service = record_service_factory(["isbn"], library)
         original_domain_bib_fund = stub_bib_dto.domain_bib.orders[0].fund
         original_bib_fund = stub_bib_dto.bib.orders[0]._field.get("u", None)
-        updated_bibs = services.attach_template(
-            bibs=[stub_bib_dto], template=template_data
+        updated_bibs = service.update_bib_fields(
+            records=[stub_bib_dto], template=template_data
         )
         assert updated_bibs[0].domain_bib.orders[0] != original_domain_bib_fund
         assert updated_bibs[0].bib.orders[0]._field.get("u", None) != original_bib_fund
 
-    @pytest.mark.parametrize("library", ["nypl", "bpl"])
-    def test_attach_template_empty_template(self, stub_bib_dto):
-        updated_bibs = services.attach_template(bibs=[stub_bib_dto], template={})
+    def test_update_bib_fields_empty_template(
+        self, record_service_factory, library, stub_bib_dto
+    ):
+        service = record_service_factory(["isbn"], library)
+        updated_bibs = service.update_bib_fields(records=[stub_bib_dto], template={})
         assert updated_bibs[0].domain_bib.orders == stub_bib_dto.domain_bib.orders
         assert (
             updated_bibs[0].bib.orders[0].__dict__
             == stub_bib_dto.bib.orders[0].__dict__
         )
 
-    @pytest.mark.parametrize("library", ["nypl", "bpl"])
-    def test_get_fetcher_for_library(self, library, mock_sierra_response):
-        fetcher = services.get_fetcher_for_library(library=library)
-        assert isinstance(fetcher, fetchers.BibFetcher)
+    def test_write_marc_binary(self, record_service_factory, stub_bib_dto, library):
+        service = record_service_factory(["isbn"], library)
+        marc_binary = service.write_marc_binary(records=[stub_bib_dto])
+        assert marc_binary.read()[0:2] == b"00"
 
-    def test_get_fetcher_for_library_invalid(self):
-        with pytest.raises(ValueError) as exc:
-            services.get_fetcher_for_library(library="foo")
-        assert str(exc.value) == "Invalid library. Must be 'bpl' or 'nypl'"
 
-    def test_get_template_none(self):
-        template = services.get_template(id="foo", uow=MockUnitOfWork())
-        assert template is None
+class TestTemplateService:
+    @pytest.fixture
+    def service(self):
+        return template.TemplateService(uow=MockUnitOfWork())
 
-    @pytest.mark.parametrize(
-        "library, matchpoints, result",
-        [
-            ("bpl", ["isbn"], bibs.BibId("123")),
-            ("nypl", ["isbn"], bibs.BibId("123")),
-            ("bpl", ["oclc_number"], None),
-            ("nypl", ["oclc_number"], None),
-            ("bpl", ["isbn", "oclc_number"], bibs.BibId("123")),
-            ("nypl", ["isbn", "oclc_number"], bibs.BibId("123")),
-            ("bpl", ["upc"], None),
-            ("nypl", ["upc"], None),
-        ],
-    )
-    def test_match_bibs(
-        self,
-        stub_bib_dto,
-        test_fetcher,
-        library,
-        matchpoints,
-        result,
-    ):
-        assert stub_bib_dto.domain_bib.bib_id is None
-        assert stub_bib_dto.bib.sierra_bib_id is None
-        bibs = services.match_bibs(
-            bibs=[stub_bib_dto],
-            matchpoints=matchpoints,
-            fetcher=test_fetcher,
-            library=library,
-        )
-        assert len(bibs) == 1
-        assert bibs[0].bib.library == library
-        assert bibs[0].domain_bib.library == bibs.LibrarySystem(library)
-        assert bibs[0].domain_bib.bib_id == result
+    def test_get_template(self, service):
+        template_obj = service.get_template(template_id="foo")
+        assert template_obj is None
 
-    @pytest.mark.parametrize("library", ["nypl", "bpl"])
-    def test_match_bibs_no_fetcher(self, stub_bib_dto, library, mock_sierra_response):
-        assert stub_bib_dto.domain_bib.bib_id is None
-        assert stub_bib_dto.bib.sierra_bib_id is None
-        bibs = services.match_bibs(
-            bibs=[stub_bib_dto], matchpoints=["isbn"], library=library
-        )
-        assert len(bibs) == 1
-        assert bibs[0].bib.library == library
-        assert bibs[0].domain_bib.library == bibs.LibrarySystem(library)
-        assert str(bibs[0].domain_bib.bib_id) == "123456789"
-        assert bibs[0].bib.sierra_bib_id == "b123456789"
-
-    @pytest.mark.parametrize("library", ["nypl", "bpl"])
-    def read_marc_binary(self, stub_binary_marc, library):
-        dtos = []
-        with open(stub_binary_marc, "rb") as f:
-            dtos.append(services.read_marc_binary(f))
-        assert len(dtos) == 1
-        assert dtos[0].bib.library == library
-        assert dtos[0].bib.isbn == "9781234567890"
-        assert dtos[0].domain_bib.library == library
-        assert dtos[0].domain_bib.barcodes == ["333331234567890"]
-
-    def test_save_template(self, template_data):
+    def test_save_template(self, service, template_data):
         template_data.update({"name": "Foo", "agent": "Bar"})
-        template_saver = services.save_template(
-            data=template_data, uow=MockUnitOfWork()
-        )
+        template_saver = service.save_template(data=template_data)
         assert template_saver == template_data
 
-    def test_save_template_no_name(self, template_data):
+    def test_save_template_no_name(self, service, template_data):
         with pytest.raises(ValueError) as exc:
-            services.save_template(data=template_data, uow=MockUnitOfWork())
+            service.save_template(data=template_data)
         assert str(exc.value) == "Templates must have a name before being saved."
 
-    def test_save_template_no_agent(self, template_data):
+    def test_save_template_no_agent(self, service, template_data):
         template_data.update({"name": "Foo"})
         with pytest.raises(ValueError) as exc:
-            services.save_template(data=template_data, uow=MockUnitOfWork())
+            service.save_template(data=template_data)
         assert str(exc.value) == "Templates must have an agent before being saved."
-
-    @pytest.mark.parametrize("library", ["nypl", "bpl"])
-    def test_write_marc_binary(self, stub_bib_dto, library):
-        marc_binary = services.write_marc_binary(bibs=[stub_bib_dto])
-        assert marc_binary.read()[0:2] == b"00"

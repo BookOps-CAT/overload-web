@@ -8,8 +8,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import clear_mappers, sessionmaker
 
 from overload_web.application.dto import bib_dto
+from overload_web.application.services import records
+from overload_web.domain.logic import bib_matcher
 from overload_web.domain.models import bibs, templates
 from overload_web.domain.protocols import fetchers
+from overload_web.infrastructure.bibs import marc_adapters
 from overload_web.infrastructure.repositories import orm
 
 
@@ -66,6 +69,18 @@ def test_fetcher():
             return [bib_1, bib_2, bib_3, bib_4]
 
     return FakeBibFetcher()
+
+
+@pytest.fixture
+def record_service_factory(test_fetcher):
+    def _make_service(matchpoints, library):
+        matcher = bib_matcher.BibMatchService(
+            fetcher=test_fetcher, matchpoints=matchpoints
+        )
+        parser = marc_adapters.BookopsMarcTransformer(library=library)
+        return records.ProcessRecordService(parser=parser, matcher=matcher, template={})
+
+    return _make_service
 
 
 @pytest.fixture
