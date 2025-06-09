@@ -5,11 +5,12 @@ and allow for the `FileProcessorService` to remain decoupled from any
 specific data source.
 """
 
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from overload_web.application import dto
 
 
+@runtime_checkable
 class FileLoader(Protocol):
     """
     A protocol for a service which loads .mrc files for use within Overload.
@@ -44,6 +45,7 @@ class FileLoader(Protocol):
     """
 
 
+@runtime_checkable
 class FileWriter(Protocol):
     """
     A protocol for a service which writes .mrc files for use within Overload.
