@@ -26,7 +26,7 @@ class ProcessRecordService:
     def __init__(
         self,
         parser: parsers.MarcTransformer,
-        matcher: bib_matcher.BibMatchService,
+        matcher: bib_matcher.BibMatcher,
         template: templates.Template | dict[str, Any],
     ):
         self.parser = parser

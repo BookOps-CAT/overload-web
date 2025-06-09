@@ -74,9 +74,7 @@ def test_fetcher():
 @pytest.fixture
 def record_service_factory(test_fetcher):
     def _make_service(matchpoints, library):
-        matcher = bib_matcher.BibMatchService(
-            fetcher=test_fetcher, matchpoints=matchpoints
-        )
+        matcher = bib_matcher.BibMatcher(fetcher=test_fetcher, matchpoints=matchpoints)
         parser = marc_adapters.BookopsMarcTransformer(library=library)
         return records.ProcessRecordService(parser=parser, matcher=matcher, template={})
 

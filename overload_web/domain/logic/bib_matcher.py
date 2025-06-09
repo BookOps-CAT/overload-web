@@ -1,12 +1,12 @@
 """Domain service for matching bib records using specific identifiers.
 
-This module defines the `BibMatchService`, a domain service responsible for
+This module defines the `BibMatcher`, a domain service responsible for
 finding the duplicate records in Sierra for a `DomainBib`. Matching is based on
 specific identifiers such as OCLC number, ISBN, or Sierra Bib ID.
 
 Classes:
 
-`BibMatchService`
+`BibMatcher`
     a domain service that encapsulates the logic for comparing a `DomainBib`
     against records retrieved from Sierra. This service is agnostic to infrastructure
     details, delegating data access to the injected `BibFetcher` interface.
@@ -23,7 +23,7 @@ from overload_web.domain.protocols import fetchers
 logger = logging.getLogger(__name__)
 
 
-class BibMatchService:
+class BibMatcher:
     """
     Domain service for finding the best-match for a bib record.
 
