@@ -38,20 +38,20 @@ class RecordProcessingService:
 
     def match_records(self, records: list[bib_dto.BibDTO]) -> list[bib_dto.BibDTO]:
         updated_bibs = []
-        for bib in records:
-            bib.domain_bib.bib_id = self.matcher.find_best_match(bib.domain_bib)
-            bib.update_bib_fields()
-            updated_bibs.append(bib)
+        for record in records:
+            record.domain_bib.bib_id = self.matcher.find_best_match(record.domain_bib)
+            record.update_bib_fields()
+            updated_bibs.append(record)
         return updated_bibs
 
     def update_bib_fields(
         self, records: list[bib_dto.BibDTO], template: dict[str, Any]
     ) -> list[bib_dto.BibDTO]:
         processed_bibs = []
-        for bib in records:
-            bib.domain_bib.apply_template(template_data=template)
-            bib.update_order_fields()
-            processed_bibs.append(bib)
+        for record in records:
+            record.domain_bib.apply_template(template_data=template)
+            record.update_order_fields()
+            processed_bibs.append(record)
         return processed_bibs
 
     def write_marc_binary(self, records: list[bib_dto.BibDTO]) -> BinaryIO:
