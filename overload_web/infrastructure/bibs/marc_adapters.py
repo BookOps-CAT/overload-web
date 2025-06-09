@@ -29,7 +29,7 @@ class BookopsMarcTransformer:
 
     def serialize(self, records: list[bib_dto.BibDTO]) -> BinaryIO:
         io_data = io.BytesIO()
-        for bib in records:
-            io_data.write(bib.bib.as_marc())
+        for record in records:
+            io_data.write(record.bib.as_marc())
         io_data.seek(0)
         return io_data

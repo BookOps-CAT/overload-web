@@ -268,8 +268,8 @@ def stub_binary_marc(stub_bib) -> io.BytesIO:
 
 @pytest.fixture
 def stub_bib_dto(stub_bib) -> bib_dto.BibDTO:
-    bib = copy.deepcopy(stub_bib)
-    return bib_dto.BibDTO(bib=bib, domain_bib=bibs.DomainBib.from_marc(bib))
+    record = copy.deepcopy(stub_bib)
+    return bib_dto.BibDTO(bib=record, domain_bib=bibs.DomainBib.from_marc(record))
 
 
 @pytest.fixture
