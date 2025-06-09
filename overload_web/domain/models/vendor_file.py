@@ -26,7 +26,7 @@ class VendorFile:
         return cls(id=VendorFileId.new(), content=content, file_name=file_name)
 
 
-@dataclass
+@dataclass(frozen=True)
 class VendorFileId:
     """A dataclass to define a `VendorFileId` as an entity"""
 
