@@ -8,51 +8,11 @@ Defines a protocol and concrete implementation that manages the lifecycle of a
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Optional
-
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from typing import Any, Optional
 
 from overload_web.domain import models, protocols
-from overload_web.infrastructure.repositories import repository
 
 logger = logging.getLogger(__name__)
-
-SQL_SESSION_FACTORY = sessionmaker(bind=create_engine("sqlite:///:memory:"))
-
-
-class OverloadUnitOfWork:
-    """
-    Concrete implementation of `UnitOfWorkProtocol` using `SQLAlchemy` for managing
-    template persistence.
-
-    Args:
-        template_session_factory: `Callable` that returns a new `SQLAlchemy` session.
-    """
-
-    def __init__(
-        self,
-        template_session_factory: Callable = SQL_SESSION_FACTORY,
-    ):
-        self.templates: protocols.repositories.SqlRepositoryProtocol
-        self.template_session_factory = template_session_factory
-
-    def __enter__(self) -> protocols.repositories.UnitOfWorkProtocol:
-        self.template_session = self.template_session_factory()
-        self.templates = repository.SqlAlchemyRepository(self.template_session)
-        return self
-
-    def __exit__(self, *args):
-        self.rollback()
-        self.template_session.close()
-
-    def commit(self):
-        """Commits the current transation to DB"""
-        self.template_session.commit()
-
-    def rollback(self):
-        """Rolls back current transaction"""
-        self.template_session.rollback()
 
 
 class TemplateService:
