@@ -5,6 +5,17 @@ from overload_web.domain import models
 from overload_web.infrastructure.repositories import repository
 
 
+@pytest.fixture
+def make_template():
+    def _make_template(data, matchpoints):
+        template = models.templates.Template(**data)
+        matchpoints = models.templates.Matchpoints(**matchpoints)
+        template.matchpoints = matchpoints
+        return template
+
+    return _make_template
+
+
 def test_SqlAlchemyRepository(test_sql_session):
     repo = repository.SqlAlchemyRepository(session=test_sql_session)
     assert hasattr(repo, "session")
