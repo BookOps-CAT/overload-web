@@ -8,9 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import clear_mappers, sessionmaker
 
 from overload_web.application import dto
-from overload_web.application.services import records
-from overload_web.domain import logic, models, protocols
-from overload_web.infrastructure.bibs import marc_adapters
+from overload_web.domain import models
 from overload_web.infrastructure.repositories import orm
 
 
@@ -24,6 +22,15 @@ def fake_creds(monkeypatch):
     monkeypatch.setenv("NYPL_PLATFORM_AGENT", "test")
     monkeypatch.setenv("NYPL_PLATFORM_TARGET", "dev")
     monkeypatch.setenv("LOGGLY_TOKEN", "foo")
+
+
+@pytest.fixture
+def test_sql_session():
+    test_engine = create_engine("sqlite:///:memory:")
+    orm.metadata.create_all(test_engine)
+    orm.start_mappers()
+    yield sessionmaker(bind=test_engine)()
+    clear_mappers()
 
 
 @pytest.fixture
@@ -50,70 +57,6 @@ def mock_sierra_response(monkeypatch):
 
     monkeypatch.setattr("requests.Session.get", mock_response)
     monkeypatch.setattr("requests.post", mock_token_response)
-
-
-@pytest.fixture
-def test_fetcher():
-    class FakeBibFetcher(protocols.bibs.BibFetcher):
-        def get_bibs_by_id(self, value, key):
-            bib_1 = {"bib_id": "123", "isbn": "9781234567890"}
-            bib_2 = {"bib_id": "234", "isbn": "1234567890", "oclc_number": "123456789"}
-            bib_3 = {
-                "bib_id": "345",
-                "isbn": "9781234567890",
-                "oclc_number": "123456789",
-            }
-            bib_4 = {"bib_id": "456", "upc": "333"}
-            return [bib_1, bib_2, bib_3, bib_4]
-
-    return FakeBibFetcher()
-
-
-@pytest.fixture
-def record_service_factory(test_fetcher):
-    def _make_service(matchpoints, library):
-        matcher = logic.bibs.BibMatcher(fetcher=test_fetcher, matchpoints=matchpoints)
-        parser = marc_adapters.BookopsMarcTransformer(library=library)
-        return records.RecordProcessingService(
-            parser=parser, matcher=matcher, template={}
-        )
-
-    return _make_service
-
-
-@pytest.fixture
-def in_memory_db():
-    engine = create_engine("sqlite:///:memory:")
-    orm.metadata.create_all(engine)
-    return engine
-
-
-@pytest.fixture
-def test_session_factory(in_memory_db):
-    orm.start_mappers()
-    yield sessionmaker(bind=in_memory_db)
-    clear_mappers()
-
-
-@pytest.fixture
-def test_sql_session(test_session_factory):
-    return test_session_factory()
-
-
-@pytest.fixture
-def make_template():
-    def _make_template(data, matchpoints):
-        template = models.templates.Template(**data)
-        matchpoints = models.templates.Matchpoints(**matchpoints)
-        template.matchpoints = matchpoints
-        return template
-
-    return _make_template
-
-
-@pytest.fixture
-def bib_data(order_data, library) -> dict:
-    return {"library": library, "orders": [order_data]}
 
 
 @pytest.fixture
@@ -274,10 +217,12 @@ def stub_bib_dto(stub_bib) -> dto.bib.BibDTO:
 
 @pytest.fixture
 def stub_pvf_form_data(template_data, library, collection) -> dict:
-    pvf_form_data = {k: v for k, v in template_data.items() if k != "matchpoints"}
-    pvf_form_data["primary_matchpoint"] = template_data["matchpoints"]["primary"]
-    pvf_form_data["secondary_matchpoint"] = template_data["matchpoints"]["secondary"]
-    pvf_form_data["tertiary_matchpoint"] = template_data["matchpoints"]["tertiary"]
-    pvf_form_data["library"] = library
-    pvf_form_data["collection"] = collection
-    return pvf_form_data
+    data = {"library": library, "collection": collection}
+    data.update({k: v for k, v in template_data.items() if k != "matchpoints"})
+    data.update(
+        {
+            f"{k}_matchpoint": template_data["matchpoints"][k]
+            for k in list(template_data["matchpoints"].keys())
+        }
+    )
+    return data
