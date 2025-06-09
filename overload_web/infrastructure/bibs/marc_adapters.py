@@ -7,27 +7,27 @@ from typing import BinaryIO
 
 from bookops_marc import SierraBibReader
 
-from overload_web.application.dto import bib_dto
-from overload_web.domain.models import bibs
+from overload_web.application import dto
+from overload_web.domain import models
 
 
 class BookopsMarcTransformer:
-    def __init__(self, library: bibs.LibrarySystem) -> None:
+    def __init__(self, library: models.bibs.LibrarySystem) -> None:
         self.library = library
 
-    def parse(self, data: BinaryIO) -> list[bib_dto.BibDTO]:
+    def parse(self, data: BinaryIO) -> list[dto.bib.BibDTO]:
         records = []
         reader = SierraBibReader(
             data, library=str(self.library), hide_utf8_warnings=True
         )
         for record in reader:
-            obj = bib_dto.BibDTO(
-                bib=record, domain_bib=bibs.DomainBib.from_marc(record)
+            obj = dto.bib.BibDTO(
+                bib=record, domain_bib=models.bibs.DomainBib.from_marc(record)
             )
             records.append(obj)
         return records
 
-    def serialize(self, records: list[bib_dto.BibDTO]) -> BinaryIO:
+    def serialize(self, records: list[dto.bib.BibDTO]) -> BinaryIO:
         io_data = io.BytesIO()
         for record in records:
             io_data.write(record.bib.as_marc())

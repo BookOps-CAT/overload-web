@@ -16,27 +16,25 @@ functions from application/services that should be moved here:
 
 from typing import Any, BinaryIO
 
-from overload_web.application.dto import bib_dto
-from overload_web.domain.logic import bib_matcher
-from overload_web.domain.models import templates
-from overload_web.domain.protocols import parsers
+from overload_web.application import dto
+from overload_web.domain import logic, models, protocols
 
 
 class RecordProcessingService:
     def __init__(
         self,
-        parser: parsers.MarcTransformer,
-        matcher: bib_matcher.BibMatcher,
-        template: templates.Template | dict[str, Any],
+        parser: protocols.bibs.MarcTransformer,
+        matcher: logic.bibs.BibMatcher,
+        template: models.templates.Template | dict[str, Any],
     ):
         self.parser = parser
         self.matcher = matcher
         self.template = template
 
-    def load(self, data: BinaryIO) -> list[bib_dto.BibDTO]:
+    def load(self, data: BinaryIO) -> list[dto.bib.BibDTO]:
         return self.parser.parse(data=data)
 
-    def match_records(self, records: list[bib_dto.BibDTO]) -> list[bib_dto.BibDTO]:
+    def match_records(self, records: list[dto.bib.BibDTO]) -> list[dto.bib.BibDTO]:
         updated_bibs = []
         for record in records:
             record.domain_bib.bib_id = self.matcher.find_best_match(record.domain_bib)
@@ -45,8 +43,8 @@ class RecordProcessingService:
         return updated_bibs
 
     def update_bib_fields(
-        self, records: list[bib_dto.BibDTO], template: dict[str, Any]
-    ) -> list[bib_dto.BibDTO]:
+        self, records: list[dto.bib.BibDTO], template: dict[str, Any]
+    ) -> list[dto.bib.BibDTO]:
         processed_bibs = []
         for record in records:
             record.domain_bib.apply_template(template_data=template)
@@ -54,5 +52,5 @@ class RecordProcessingService:
             processed_bibs.append(record)
         return processed_bibs
 
-    def write_marc_binary(self, records: list[bib_dto.BibDTO]) -> BinaryIO:
+    def write_marc_binary(self, records: list[dto.bib.BibDTO]) -> BinaryIO:
         return self.parser.serialize(records=records)

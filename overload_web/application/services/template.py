@@ -13,8 +13,7 @@ from typing import Any, Callable, Optional
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from overload_web.domain.models import templates
-from overload_web.domain.protocols import repositories
+from overload_web.domain import models, protocols
 from overload_web.infrastructure.repositories import repository
 
 logger = logging.getLogger(__name__)
@@ -35,10 +34,10 @@ class OverloadUnitOfWork:
         self,
         template_session_factory: Callable = SQL_SESSION_FACTORY,
     ):
-        self.templates: repositories.SqlRepositoryProtocol
+        self.templates: protocols.repositories.SqlRepositoryProtocol
         self.template_session_factory = template_session_factory
 
-    def __enter__(self) -> repositories.UnitOfWorkProtocol:
+    def __enter__(self) -> protocols.repositories.UnitOfWorkProtocol:
         self.template_session = self.template_session_factory()
         self.templates = repository.SqlAlchemyRepository(self.template_session)
         return self
@@ -57,15 +56,15 @@ class OverloadUnitOfWork:
 
 
 class TemplateService:
-    def __init__(self, uow: repositories.UnitOfWorkProtocol) -> None:
+    def __init__(self, uow: protocols.repositories.UnitOfWorkProtocol) -> None:
         self.uow = uow
 
-    def get_template(self, template_id: str) -> Optional[templates.Template]:
+    def get_template(self, template_id: str) -> Optional[models.templates.Template]:
         with self.uow:
             return self.uow.templates.get(id=template_id)
 
     def save_template(self, data: dict[str, Any]) -> dict[str, Any]:
-        template = templates.Template(**data)
+        template = models.templates.Template(**data)
 
         if not template.name or not template.name.strip():
             raise ValueError("Templates must have a name before being saved.")

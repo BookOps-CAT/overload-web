@@ -7,11 +7,9 @@ from pymarc import Field, Indicators, Subfield
 from sqlalchemy import create_engine
 from sqlalchemy.orm import clear_mappers, sessionmaker
 
-from overload_web.application.dto import bib_dto
+from overload_web.application import dto
 from overload_web.application.services import records
-from overload_web.domain.logic import bib_matcher
-from overload_web.domain.models import bibs, templates
-from overload_web.domain.protocols import fetchers
+from overload_web.domain import logic, models, protocols
 from overload_web.infrastructure.bibs import marc_adapters
 from overload_web.infrastructure.repositories import orm
 
@@ -56,7 +54,7 @@ def mock_sierra_response(monkeypatch):
 
 @pytest.fixture
 def test_fetcher():
-    class FakeBibFetcher(fetchers.BibFetcher):
+    class FakeBibFetcher(protocols.bibs.BibFetcher):
         def get_bibs_by_id(self, value, key):
             bib_1 = {"bib_id": "123", "isbn": "9781234567890"}
             bib_2 = {"bib_id": "234", "isbn": "1234567890", "oclc_number": "123456789"}
@@ -74,7 +72,7 @@ def test_fetcher():
 @pytest.fixture
 def record_service_factory(test_fetcher):
     def _make_service(matchpoints, library):
-        matcher = bib_matcher.BibMatcher(fetcher=test_fetcher, matchpoints=matchpoints)
+        matcher = logic.bibs.BibMatcher(fetcher=test_fetcher, matchpoints=matchpoints)
         parser = marc_adapters.BookopsMarcTransformer(library=library)
         return records.RecordProcessingService(
             parser=parser, matcher=matcher, template={}
@@ -105,8 +103,8 @@ def test_sql_session(test_session_factory):
 @pytest.fixture
 def make_template():
     def _make_template(data, matchpoints):
-        template = templates.Template(**data)
-        matchpoints = templates.Matchpoints(**matchpoints)
+        template = models.templates.Template(**data)
+        matchpoints = models.templates.Matchpoints(**matchpoints)
         template.matchpoints = matchpoints
         return template
 
@@ -267,9 +265,11 @@ def stub_binary_marc(stub_bib) -> io.BytesIO:
 
 
 @pytest.fixture
-def stub_bib_dto(stub_bib) -> bib_dto.BibDTO:
+def stub_bib_dto(stub_bib) -> dto.bib.BibDTO:
     record = copy.deepcopy(stub_bib)
-    return bib_dto.BibDTO(bib=record, domain_bib=bibs.DomainBib.from_marc(record))
+    return dto.bib.BibDTO(
+        bib=record, domain_bib=models.bibs.DomainBib.from_marc(record)
+    )
 
 
 @pytest.fixture

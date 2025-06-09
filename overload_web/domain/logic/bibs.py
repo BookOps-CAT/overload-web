@@ -17,8 +17,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Optional
 
-from overload_web.domain.models import bibs
-from overload_web.domain.protocols import fetchers
+from overload_web.domain import models, protocols
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +33,9 @@ class BibMatcher:
     """
 
     def __init__(
-        self, fetcher: fetchers.BibFetcher, matchpoints: Optional[list[str]] = None
+        self,
+        fetcher: protocols.bibs.BibFetcher,
+        matchpoints: Optional[list[str]] = None,
     ):
         """
         Initialize the match service with a fetcher and optional matchpoints.
@@ -53,8 +54,8 @@ class BibMatcher:
         ]
 
     def _select_best_match(
-        self, bib_to_match: bibs.DomainBib, candidates: list[dict[str, Any]]
-    ) -> Optional[bibs.BibId]:
+        self, bib_to_match: models.bibs.DomainBib, candidates: list[dict[str, Any]]
+    ) -> Optional[models.bibs.BibId]:
         """
         Compare a `DomainBib` to a list of candidate bibs and select the best match.
 
@@ -76,10 +77,14 @@ class BibMatcher:
             if matched_points > max_matched_points:
                 max_matched_points = matched_points
                 best_match = bib.get("bib_id")
-                best_match_bib_id = bibs.BibId(best_match) if best_match else None
+                best_match_bib_id = (
+                    models.bibs.BibId(best_match) if best_match else None
+                )
         return best_match_bib_id
 
-    def find_best_match(self, bib: bibs.DomainBib) -> Optional[bibs.BibId]:
+    def find_best_match(
+        self, bib: models.bibs.DomainBib
+    ) -> Optional[models.bibs.BibId]:
         """
         Attempt to find the best-match in Sierra for a given `DomainBib`.
 

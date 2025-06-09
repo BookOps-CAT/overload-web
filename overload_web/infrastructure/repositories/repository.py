@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from typing import Union
 
-from overload_web.domain.models import templates
+from overload_web.domain import models
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class SqlAlchemyRepository:
     def __init__(self, session):
         self.session = session
 
-    def get(self, id: Union[str, int]) -> templates.Template:
+    def get(self, id: Union[str, int]) -> models.templates.Template:
         """
         Retrieve a `Template` object by its ID.
 
@@ -38,9 +38,9 @@ class SqlAlchemyRepository:
         Returns:
             a `Template` instance or `None` if not found.
         """
-        return self.session.query(templates.Template).filter_by(id=id).first()
+        return self.session.query(models.templates.Template).filter_by(id=id).first()
 
-    def save(self, obj: templates.Template) -> None:
+    def save(self, obj: models.templates.Template) -> None:
         """
         Adds a new or updated `Template` to the database.
 

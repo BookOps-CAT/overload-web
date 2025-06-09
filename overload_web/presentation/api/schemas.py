@@ -12,28 +12,28 @@ from typing import Annotated, Optional, Union
 from fastapi import File, Form, UploadFile
 from pydantic import BaseModel, ConfigDict
 
-from overload_web.domain.models import bibs, templates, vendor_file
+from overload_web.domain import models
 
 
-class OrderModel(BaseModel, bibs.Order):
+class OrderModel(BaseModel, models.bibs.Order):
     """Pydantic model for serializing/deserializing `Order` domain objects."""
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class BibModel(BaseModel, bibs.DomainBib):
+class BibModel(BaseModel, models.bibs.DomainBib):
     """Pydantic model for serializing/deserializing `DomainBib` objects."""
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class MatchpointsModel(BaseModel, templates.Matchpoints):
+class MatchpointsModel(BaseModel, models.templates.Matchpoints):
     """Pydantic model for serializing/deserializing `Matchpoints` domain objects."""
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class TemplateModel(BaseModel, templates.Template):
+class TemplateModel(BaseModel, models.templates.Template):
     """Pydantic model for serializing/deserializing `Template` domain objects."""
 
     model_config = ConfigDict(from_attributes=True)
@@ -96,7 +96,7 @@ class TemplateModel(BaseModel, templates.Template):
             country=country,
             blanket_po=blanket_po,
             name=name,
-            id=(templates.TemplateId(value=id) if id else None),
+            id=(models.templates.TemplateId(value=id) if id else None),
             agent=agent,
             order_code_1=order_code_1,
             order_code_2=order_code_2,
@@ -110,7 +110,7 @@ class TemplateModel(BaseModel, templates.Template):
         )
 
 
-class VendorFileModel(BaseModel, vendor_file.VendorFile):
+class VendorFileModel(BaseModel, models.files.VendorFile):
     """Pydantic model for serializing/deserializing `VendorFile` domain objects."""
 
     model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
@@ -125,7 +125,7 @@ class VendorFileModel(BaseModel, vendor_file.VendorFile):
         Returns:
             the file as a VendorFileModel object
         """
-        id = vendor_file.VendorFileId.new()
+        id = models.files.VendorFileId.new()
         if upload_file.filename is None:
             filename = f"{str(id)}_{datetime.datetime.strftime(datetime.datetime.now(tz=datetime.timezone.utc), '%y-%m-%d')}.mrc"
         else:
