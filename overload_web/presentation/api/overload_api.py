@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from overload_web.application.services import records
-from overload_web.infrastructure import factories
+from overload_web.infrastructure.bibs import factories
 from overload_web.presentation.api import schemas
 
 logger = logging.getLogger(__name__)
