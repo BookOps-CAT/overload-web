@@ -22,7 +22,7 @@ from overload_web.domain.models import templates
 from overload_web.domain.protocols import parsers
 
 
-class ProcessRecordService:
+class RecordProcessingService:
     def __init__(
         self,
         parser: parsers.MarcTransformer,

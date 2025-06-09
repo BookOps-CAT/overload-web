@@ -35,8 +35,8 @@ def test_OverloadUnitOfWork(test_session_factory):
 
 
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
-class TestProcessRecordService:
-    def test_ProcessRecordService(self, record_service_factory, library):
+class TestRecordProcessingService:
+    def test_RecordProcessingService(self, record_service_factory, library):
         service = record_service_factory(["bib_id", "isbn"], library)
         assert hasattr(service, "load")
         assert hasattr(service, "match_records")

@@ -76,7 +76,9 @@ def record_service_factory(test_fetcher):
     def _make_service(matchpoints, library):
         matcher = bib_matcher.BibMatcher(fetcher=test_fetcher, matchpoints=matchpoints)
         parser = marc_adapters.BookopsMarcTransformer(library=library)
-        return records.ProcessRecordService(parser=parser, matcher=matcher, template={})
+        return records.RecordProcessingService(
+            parser=parser, matcher=matcher, template={}
+        )
 
     return _make_service
 

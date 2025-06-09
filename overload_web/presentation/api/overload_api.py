@@ -50,7 +50,7 @@ def vendor_file_process(
         A list of processed bib records.
     """
     template_data = {k: v for k, v in form_data.__dict__.items() if k != "matchpoints"}
-    service = records.ProcessRecordService(
+    service = records.RecordProcessingService(
         parser=factories.get_parser_for_library(library),
         matcher=factories.get_matcher_for_library(
             library=library, matchpoints=form_data.matchpoints.as_list()
