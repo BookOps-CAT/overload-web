@@ -1,8 +1,8 @@
 import pytest
 
-from overload_web.application.services import records, template
+from overload_web.application import services
 from overload_web.domain import logic, protocols
-from overload_web.infrastructure.bibs import marc_adapters
+from overload_web.infrastructure.bibs import marc
 
 
 class MockRepository(protocols.repositories.SqlRepositoryProtocol):
@@ -46,8 +46,8 @@ class TestRecordProcessingService:
             matcher = logic.bibs.BibMatcher(
                 fetcher=FakeBibFetcher(), matchpoints=matchpoints
             )
-            parser = marc_adapters.BookopsMarcTransformer(library=library)
-            return records.RecordProcessingService(
+            parser = marc.BookopsMarcTransformer(library=library)
+            return services.records.RecordProcessingService(
                 parser=parser, matcher=matcher, template={}
             )
 
@@ -126,7 +126,7 @@ class TestRecordProcessingService:
 class TestTemplateService:
     @pytest.fixture
     def service(self):
-        return template.TemplateService(uow=MockUnitOfWork())
+        return services.template.TemplateService(uow=MockUnitOfWork())
 
     def test_get_template(self, service):
         template_obj = service.get_template(template_id="foo")
