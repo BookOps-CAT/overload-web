@@ -1,16 +1,16 @@
 import pytest
 
-from overload_web.application.services import template
-from overload_web.domain.models import bibs
-from overload_web.domain.protocols import repositories
+from overload_web.application.services import records, template
+from overload_web.domain import logic, protocols
+from overload_web.infrastructure.bibs import marc_adapters
 
 
-class MockRepository(repositories.SqlRepositoryProtocol):
+class MockRepository(protocols.repositories.SqlRepositoryProtocol):
     def __init__(self, templates):
         self.templates = templates
 
 
-class MockUnitOfWork(repositories.UnitOfWorkProtocol):
+class MockUnitOfWork(protocols.repositories.UnitOfWorkProtocol):
     def __init__(self):
         self.templates = MockRepository(templates=[])
         self.committed = False
@@ -25,17 +25,34 @@ class MockUnitOfWork(repositories.UnitOfWorkProtocol):
         self.committed = True
 
 
-def test_OverloadUnitOfWork(test_session_factory):
-    with template.OverloadUnitOfWork(
-        template_session_factory=test_session_factory
-    ) as uow:
-        uow.commit()
-        uow.rollback()
-    assert isinstance(uow, repositories.UnitOfWorkProtocol)
+class FakeBibFetcher(protocols.bibs.BibFetcher):
+    def get_bibs_by_id(self, value, key):
+        bib_1 = {"bib_id": "123", "isbn": "9781234567890"}
+        bib_2 = {"bib_id": "234", "isbn": "1234567890", "oclc_number": "123456789"}
+        bib_3 = {
+            "bib_id": "345",
+            "isbn": "9781234567890",
+            "oclc_number": "123456789",
+        }
+        bib_4 = {"bib_id": "456", "upc": "333"}
+        return [bib_1, bib_2, bib_3, bib_4]
 
 
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
 class TestRecordProcessingService:
+    @pytest.fixture
+    def record_service_factory(self):
+        def _make_service(matchpoints, library):
+            matcher = logic.bibs.BibMatcher(
+                fetcher=FakeBibFetcher(), matchpoints=matchpoints
+            )
+            parser = marc_adapters.BookopsMarcTransformer(library=library)
+            return records.RecordProcessingService(
+                parser=parser, matcher=matcher, template={}
+            )
+
+        return _make_service
+
     def test_RecordProcessingService(self, record_service_factory, library):
         service = record_service_factory(["bib_id", "isbn"], library)
         assert hasattr(service, "load")
@@ -55,9 +72,9 @@ class TestRecordProcessingService:
     @pytest.mark.parametrize(
         "matchpoints, result",
         [
-            (["isbn"], bibs.BibId("123")),
+            (["isbn"], "123"),
             (["oclc_number"], None),
-            (["isbn", "oclc_number"], bibs.BibId("123")),
+            (["isbn", "oclc_number"], "123"),
             (["upc"], None),
         ],
     )
@@ -71,7 +88,11 @@ class TestRecordProcessingService:
         assert len(matched_bibs) == 1
         assert matched_bibs[0].bib.library == library
         assert str(matched_bibs[0].domain_bib.library) == library
-        assert matched_bibs[0].domain_bib.bib_id == result
+        assert (
+            matched_bibs[0].domain_bib.bib_id == result
+            if not matched_bibs[0].domain_bib.bib_id
+            else str(matched_bibs[0].domain_bib.bib_id) == result
+        )
 
     def test_update_bib_fields(
         self, record_service_factory, library, template_data, stub_bib_dto
