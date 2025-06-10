@@ -55,7 +55,7 @@ class TestRecordProcessingService:
         service = self.stub_record_service(["bib_id", "isbn"], library)
         assert hasattr(service, "load")
         assert hasattr(service, "match_records")
-        assert hasattr(service, "update_bib_fields")
+        assert hasattr(service, "update_bib")
         assert hasattr(service, "write_marc_binary")
 
     def test_load(self, library, stub_binary_marc):
@@ -90,19 +90,19 @@ class TestRecordProcessingService:
             else str(matched_bibs[0].domain_bib.bib_id) == result
         )
 
-    def test_update_bib_fields(self, library, template_data, stub_bib_dto):
+    def test_update_bib(self, library, template_data, stub_bib_dto):
         service = self.stub_record_service(["isbn"], library)
         original_domain_bib_fund = stub_bib_dto.domain_bib.orders[0].fund
         original_bib_fund = stub_bib_dto.bib.orders[0]._field.get("u", None)
-        updated_bibs = service.update_bib_fields(
+        updated_bibs = service.update_bib(
             records=[stub_bib_dto], template=template_data
         )
         assert updated_bibs[0].domain_bib.orders[0] != original_domain_bib_fund
         assert updated_bibs[0].bib.orders[0]._field.get("u", None) != original_bib_fund
 
-    def test_update_bib_fields_empty_template(self, library, stub_bib_dto):
+    def test_update_bib_empty_template(self, library, stub_bib_dto):
         service = self.stub_record_service(["isbn"], library)
-        updated_bibs = service.update_bib_fields(records=[stub_bib_dto], template={})
+        updated_bibs = service.update_bib(records=[stub_bib_dto], template={})
         assert updated_bibs[0].domain_bib.orders == stub_bib_dto.domain_bib.orders
         assert (
             updated_bibs[0].bib.orders[0].__dict__
@@ -123,9 +123,7 @@ class TestRecordProcessingService:
             },
         ]
         service = self.stub_record_service(["isbn"], library)
-        updated = service.update_bib_fields(
-            records=[stub_bib_dto], template=template_data
-        )
+        updated = service.update_bib(records=[stub_bib_dto], template=template_data)
         assert len(original_bib.get_fields("949")) == 1
         assert len(updated) == 1
         assert len(updated[0].bib.get_fields("949")) == 2

@@ -42,13 +42,14 @@ class RecordProcessingService:
             updated_bibs.append(record)
         return updated_bibs
 
-    def update_bib_fields(
+    def update_bib(
         self, records: list[dto.bib.BibDTO], template: dict[str, Any]
     ) -> list[dto.bib.BibDTO]:
         processed_bibs = []
         for record in records:
             record.domain_bib.apply_template(template_data=template)
             record.update_order_fields()
+            record.update_bib_fields(template.get("update_fields", []))
             processed_bibs.append(record)
         return processed_bibs
 
