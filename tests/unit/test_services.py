@@ -1,3 +1,5 @@
+import copy
+
 import pytest
 
 from overload_web.application import services
@@ -40,28 +42,24 @@ class FakeBibFetcher(protocols.bibs.BibFetcher):
 
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
 class TestRecordProcessingService:
-    @pytest.fixture
-    def record_service_factory(self):
-        def _make_service(matchpoints, library):
-            matcher = logic.bibs.BibMatcher(
-                fetcher=FakeBibFetcher(), matchpoints=matchpoints
-            )
-            parser = marc.BookopsMarcTransformer(library=library)
-            return services.records.RecordProcessingService(
-                parser=parser, matcher=matcher, template={}
-            )
+    def stub_record_service(self, matchpoints, library):
+        matcher = logic.bibs.BibMatcher(
+            fetcher=FakeBibFetcher(), matchpoints=matchpoints
+        )
+        parser = marc.BookopsMarcTransformer(library=library)
+        return services.records.RecordProcessingService(
+            parser=parser, matcher=matcher, template={}
+        )
 
-        return _make_service
-
-    def test_RecordProcessingService(self, record_service_factory, library):
-        service = record_service_factory(["bib_id", "isbn"], library)
+    def test_RecordProcessingService(self, library):
+        service = self.stub_record_service(["bib_id", "isbn"], library)
         assert hasattr(service, "load")
         assert hasattr(service, "match_records")
         assert hasattr(service, "update_bib_fields")
         assert hasattr(service, "write_marc_binary")
 
-    def test_load(self, record_service_factory, library, stub_binary_marc):
-        service = record_service_factory(["bib_id", "isbn"], library)
+    def test_load(self, library, stub_binary_marc):
+        service = self.stub_record_service(["bib_id", "isbn"], library)
         records = service.load(stub_binary_marc)
         assert len(records) == 1
         assert str(records[0].bib.library) == library
@@ -78,12 +76,10 @@ class TestRecordProcessingService:
             (["upc"], None),
         ],
     )
-    def test_match_records(
-        self, record_service_factory, matchpoints, library, result, stub_bib_dto
-    ):
+    def test_match_records(self, matchpoints, library, result, stub_bib_dto):
         assert stub_bib_dto.domain_bib.bib_id is None
         assert stub_bib_dto.bib.sierra_bib_id is None
-        service = record_service_factory(matchpoints, library)
+        service = self.stub_record_service(matchpoints, library)
         matched_bibs = service.match_records([stub_bib_dto])
         assert len(matched_bibs) == 1
         assert matched_bibs[0].bib.library == library
@@ -94,10 +90,8 @@ class TestRecordProcessingService:
             else str(matched_bibs[0].domain_bib.bib_id) == result
         )
 
-    def test_update_bib_fields(
-        self, record_service_factory, library, template_data, stub_bib_dto
-    ):
-        service = record_service_factory(["isbn"], library)
+    def test_update_bib_fields(self, library, template_data, stub_bib_dto):
+        service = self.stub_record_service(["isbn"], library)
         original_domain_bib_fund = stub_bib_dto.domain_bib.orders[0].fund
         original_bib_fund = stub_bib_dto.bib.orders[0]._field.get("u", None)
         updated_bibs = service.update_bib_fields(
@@ -106,10 +100,8 @@ class TestRecordProcessingService:
         assert updated_bibs[0].domain_bib.orders[0] != original_domain_bib_fund
         assert updated_bibs[0].bib.orders[0]._field.get("u", None) != original_bib_fund
 
-    def test_update_bib_fields_empty_template(
-        self, record_service_factory, library, stub_bib_dto
-    ):
-        service = record_service_factory(["isbn"], library)
+    def test_update_bib_fields_empty_template(self, library, stub_bib_dto):
+        service = self.stub_record_service(["isbn"], library)
         updated_bibs = service.update_bib_fields(records=[stub_bib_dto], template={})
         assert updated_bibs[0].domain_bib.orders == stub_bib_dto.domain_bib.orders
         assert (
@@ -117,8 +109,29 @@ class TestRecordProcessingService:
             == stub_bib_dto.bib.orders[0].__dict__
         )
 
-    def test_write_marc_binary(self, record_service_factory, stub_bib_dto, library):
-        service = record_service_factory(["isbn"], library)
+    def test_update_bib_field_template_with_fields(
+        self, library, template_data, stub_bib_dto
+    ):
+        original_bib = copy.deepcopy(stub_bib_dto.bib)
+        template_data["update_fields"] = [
+            {
+                "tag": "949",
+                "ind1": "",
+                "ind2": "",
+                "subfield_code": "a",
+                "value": "*b2=a;",
+            },
+        ]
+        service = self.stub_record_service(["isbn"], library)
+        updated = service.update_bib_fields(
+            records=[stub_bib_dto], template=template_data
+        )
+        assert len(original_bib.get_fields("949")) == 1
+        assert len(updated) == 1
+        assert len(updated[0].bib.get_fields("949")) == 2
+
+    def test_write_marc_binary(self, stub_bib_dto, library):
+        service = self.stub_record_service(["isbn"], library)
         marc_binary = service.write_marc_binary(records=[stub_bib_dto])
         assert marc_binary.read()[0:2] == b"00"
 
