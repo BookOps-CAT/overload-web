@@ -69,16 +69,15 @@ class BibDTO:
         record = copy.deepcopy(self.bib)
         self._update_bib_id(record)
         for field in fields:
-            if field and not field.get(field["tag"]):
-                record.add_ordered_field(
-                    Field(
-                        tag=field["tag"],
-                        indicators=Indicators(field["ind1"], field["ind2"]),
-                        subfields=[
-                            Subfield(code=field["subfield_code"], value=field["value"])
-                        ],
-                    )
+            record.add_ordered_field(
+                Field(
+                    tag=field["tag"],
+                    indicators=Indicators(field["ind1"], field["ind2"]),
+                    subfields=[
+                        Subfield(code=field["subfield_code"], value=field["value"])
+                    ],
                 )
+            )
         self.bib = record
 
     def update_order_fields(self) -> None:
