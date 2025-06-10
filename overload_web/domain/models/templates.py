@@ -6,34 +6,6 @@ import datetime
 from dataclasses import dataclass, field
 from typing import Optional, Union
 
-# class Matchpoints:
-#     def __init__(
-#         self,
-#         primary: Optional[str] = None,
-#         secondary: Optional[str] = None,
-#         tertiary: Optional[str] = None,
-#     ):
-#         if tertiary is not None and secondary is None:
-#             raise ValueError("Cannot have tertiary matchpoint without secondary.")
-#         self.primary = primary
-#         self.secondary = secondary
-#         self.tertiary = tertiary
-
-#     def as_list(self) -> list[str]:
-#         """Return the matchpoints as a list"""
-#         return [i for i in (self.primary, self.secondary, self.tertiary) if i]
-
-#     def __composite_values__(self):
-#         return self.primary, self.secondary, self.tertiary
-
-#     def __eq__(self, other) -> bool:
-#         if not isinstance(other, Matchpoints):
-#             return NotImplemented
-#         return self.__composite_values__() == other.__composite_values__()
-
-#     def __ne__(self, other) -> bool:
-#         return not self.__eq__(other)
-
 
 @dataclass
 class Matchpoints:
