@@ -6,7 +6,7 @@ from overload_web.presentation.api.overload_api import api_router
 from overload_web.presentation.frontend.jinja_frontend import frontend_router
 
 
-class TestAPIClient:
+class TestFrontEndAPIRouter:
     client = TestClient(app)
 
     def test_root_get(self):
@@ -18,8 +18,24 @@ class TestAPIClient:
 
 
 @pytest.mark.usefixtures("mock_sierra_response")
-class TestAPIRouter:
+class TestBackEndAPIRouter:
     client = TestClient(api_router)
+
+    @pytest.fixture
+    def form_input(self, template_data, library, collection) -> dict:
+        data = {"library": library, "collection": collection}
+        data.update({k: v for k, v in template_data.items() if k != "matchpoints"})
+        data.update(
+            {
+                f"{k}_matchpoint": template_data["matchpoints"][k]
+                for k in list(template_data["matchpoints"].keys())
+            }
+        )
+        return data
+
+    @pytest.fixture
+    def marc_file_input(self, stub_binary_marc) -> dict:
+        return {"file": ("marc_file.mrc", stub_binary_marc, "text/plain")}
 
     def test_root_get(self):
         response = self.client.get("/")
@@ -31,12 +47,10 @@ class TestAPIRouter:
         [("nypl", "branches"), ("nypl", "research"), ("bpl", None)],
     )
     def test_process_vendor_file_post(
-        self, stub_pvf_form_data, stub_binary_marc, library, collection
+        self, form_input, marc_file_input, library, collection
     ):
         response = self.client.post(
-            "/vendor_file",
-            files={"file": ("marc_file.mrc", stub_binary_marc, "text/plain")},
-            data=stub_pvf_form_data,
+            "/vendor_file", files=marc_file_input, data=form_input
         )
         assert response.status_code == 200
         assert response.url == f"{self.client.base_url}/vendor_file"
@@ -49,20 +63,10 @@ class TestAPIRouter:
         "library, collection", [("foo", "branches"), ("bar", "research")]
     )
     def test_process_vendor_file_post_invalid_config(
-        self, stub_binary_marc, stub_pvf_form_data, library, collection
+        self, marc_file_input, form_input, library, collection
     ):
         with pytest.raises(ValueError) as exc:
-            self.client.post(
-                "/vendor_file",
-                files={
-                    "file": (
-                        "marc_file.mrc",
-                        stub_binary_marc,
-                        "text/plain",
-                    )
-                },
-                data=stub_pvf_form_data,
-            )
+            self.client.post("/vendor_file", files=marc_file_input, data=form_input)
         assert str(exc.value) == "Invalid library. Must be 'bpl' or 'nypl'"
 
 
