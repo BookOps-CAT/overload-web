@@ -213,16 +213,3 @@ def stub_bib_dto(stub_bib) -> dto.bib.BibDTO:
     return dto.bib.BibDTO(
         bib=record, domain_bib=models.bibs.DomainBib.from_marc(record)
     )
-
-
-@pytest.fixture
-def stub_pvf_form_data(template_data, library, collection) -> dict:
-    data = {"library": library, "collection": collection}
-    data.update({k: v for k, v in template_data.items() if k != "matchpoints"})
-    data.update(
-        {
-            f"{k}_matchpoint": template_data["matchpoints"][k]
-            for k in list(template_data["matchpoints"].keys())
-        }
-    )
-    return data
