@@ -33,7 +33,3 @@ class BookopsMarcTransformer:
             io_data.write(record.bib.as_marc())
         io_data.seek(0)
         return io_data
-
-    # @classmethod
-    # def for_library(cls, library: str) -> BookopsMarcTransformer:
-    #     return cls()
