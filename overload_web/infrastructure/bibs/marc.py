@@ -21,9 +21,8 @@ class BookopsMarcTransformer:
             data, library=str(self.library), hide_utf8_warnings=True
         )
         for record in reader:
-            obj = dto.bib.BibDTO(
-                bib=record, domain_bib=models.bibs.DomainBib.from_marc(record)
-            )
+            domain_bib = models.bibs.DomainBib.from_marc(record)
+            obj = dto.bib.BibDTO(bib=record, domain_bib=domain_bib)
             records.append(obj)
         return records
 
