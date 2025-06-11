@@ -15,34 +15,30 @@ class MockRepository(protocols.repositories.SqlRepositoryProtocol):
 class MockUnitOfWork(protocols.repositories.UnitOfWorkProtocol):
     def __init__(self):
         self.templates = MockRepository(templates=[])
-        self.committed = False
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args):
-        pass
-
-    def commit(self):
-        self.committed = True
 
 
 class FakeBibFetcher(protocols.bibs.BibFetcher):
     def get_bibs_by_id(self, value, key):
         bib_1 = {"bib_id": "123", "isbn": "9781234567890"}
         bib_2 = {"bib_id": "234", "isbn": "1234567890", "oclc_number": "123456789"}
-        bib_3 = {
-            "bib_id": "345",
-            "isbn": "9781234567890",
-            "oclc_number": "123456789",
-        }
+        bib_3 = {"bib_id": "345", "isbn": "9781234567890", "oclc_number": "123456789"}
         bib_4 = {"bib_id": "456", "upc": "333"}
         return [bib_1, bib_2, bib_3, bib_4]
 
 
+@pytest.fixture
+def fetcher_no_results(monkeypatch) -> None:
+    def no_results(*args, **kwargs):
+        return []
+
+    monkeypatch.setattr(FakeBibFetcher, "get_bibs_by_id", no_results)
+
+
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
 class TestRecordProcessingService:
-    def stub_record_service(self, matchpoints, library):
+    def stub_record_service(
+        self, matchpoints, library
+    ) -> services.records.RecordProcessingService:
         matcher = logic.bibs.BibMatcher(
             fetcher=FakeBibFetcher(), matchpoints=matchpoints
         )
@@ -89,6 +85,12 @@ class TestRecordProcessingService:
             if not matched_bibs[0].domain_bib.bib_id
             else str(matched_bibs[0].domain_bib.bib_id) == result
         )
+
+    def test_match_records_no_results(self, library, stub_bib_dto, fetcher_no_results):
+        service = self.stub_record_service(["isbn"], library)
+        matched_bibs = service.match_records([stub_bib_dto])
+        assert len(matched_bibs) == 1
+        assert [i.domain_bib.bib_id for i in matched_bibs].count(None) == 1
 
     def test_update_bib(self, library, template_data, stub_bib_dto):
         service = self.stub_record_service(["isbn"], library)
