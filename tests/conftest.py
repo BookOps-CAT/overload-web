@@ -60,6 +60,14 @@ def mock_sierra_response(monkeypatch):
 
 
 @pytest.fixture
+def mock_sierra_no_response(mock_sierra_response, monkeypatch):
+    def response_none(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr("requests.Session.get", response_none)
+
+
+@pytest.fixture
 def order_data() -> dict:
     return {
         "audience": ["a", "a", "a"],
