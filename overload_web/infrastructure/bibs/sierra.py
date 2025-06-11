@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Protocol, Union, runtime_checkable
+from typing import Any, Optional, Protocol, Union, runtime_checkable
 
 import requests
 from bookops_bpl_solr import SolrSession
@@ -47,9 +47,17 @@ class SierraBibFetcher:
         library: the library system whose Sierra instance should be queried.
     """
 
-    def __init__(self, session: SierraSessionProtocol, library: str):
-        self.session = session
+    def __init__(self, library: str, session: Optional[SierraSessionProtocol] = None):
         self.library = library
+        self.session = self._get_session_for_library() if session is None else session
+
+    def _get_session_for_library(self) -> SierraSessionProtocol:
+        if self.library not in ["bpl", "nypl"]:
+            raise ValueError("Invalid library. Must be 'bpl' or 'nypl'")
+        elif self.library == "bpl":
+            return BPLSolrSession()
+        else:
+            return NYPLPlatformSession()
 
     def _response_to_domain_dict(
         self, records: list[dict[str, Any]]
