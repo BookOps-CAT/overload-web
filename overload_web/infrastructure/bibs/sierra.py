@@ -71,18 +71,19 @@ class SierraBibFetcher:
         Returns:
             list of cleaned domain-ready dictionaries.
         """
-
-        return [
-            {
-                "library": self.library,
-                "orders": [],
-                "bib_id": i["id"],
-                "isbn": i.get("isbn"),
-                "oclc_number": i.get("oclc_number"),
-                "upc": i.get("upc"),
-            }
-            for i in records
-        ]
+        if records:
+            return [
+                {
+                    "library": self.library,
+                    "orders": [],
+                    "bib_id": i["id"],
+                    "isbn": i.get("isbn"),
+                    "oclc_number": i.get("oclc_number"),
+                    "upc": i.get("upc"),
+                }
+                for i in records
+            ]
+        return []
 
     def get_bibs_by_id(self, value: Union[str, int], key: str) -> list[dict[str, Any]]:
         """
