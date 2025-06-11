@@ -3,48 +3,6 @@ import pytest
 from overload_web.infrastructure.bibs import sierra
 
 
-class FakeSierraSession(sierra.SierraSessionProtocol):
-    def __init__(self) -> None:
-        self.credentials = self._get_credentials()
-
-
-@pytest.fixture
-def mock_session(monkeypatch):
-    def mock_response(*args, **kwargs):
-        return [{"id": "123456789"}]
-
-    monkeypatch.setattr(sierra.SierraSessionProtocol, "_parse_response", mock_response)
-    return FakeSierraSession()
-
-
-class TestSierraSessions:
-    @pytest.mark.parametrize(
-        "library,session_type",
-        [("bpl", sierra.BPLSolrSession), ("nypl", sierra.NYPLPlatformSession)],
-    )
-    @pytest.mark.parametrize("matchpoint", ["bib_id", "upc", "isbn", "oclc_number"])
-    def test_get_bibs_by_id(
-        self, library, session_type, matchpoint, mock_sierra_response
-    ):
-        fetcher = sierra.SierraBibFetcher(library=library)
-        bibs = fetcher.get_bibs_by_id(value="123456789", key=matchpoint)
-        assert bibs[0]["bib_id"] == "123456789"
-        assert isinstance(fetcher.session, session_type)
-
-    @pytest.mark.parametrize("library", ["bpl", "nypl"])
-    def test_get_bibs_by_id_issn(self, library, mock_sierra_response):
-        fetcher = sierra.SierraBibFetcher(library=library)
-        with pytest.raises(NotImplementedError) as exc:
-            fetcher.get_bibs_by_id(value="123456789", key="issn")
-        assert "Search by ISSN not implemented" in str(exc.value)
-
-    @pytest.mark.parametrize("library", ["bpl", "nypl"])
-    def test_get_bibs_by_id_no_response(self, library, mock_sierra_no_response):
-        fetcher = sierra.SierraBibFetcher(library=library)
-        bibs = fetcher.get_bibs_by_id(value="123456789", key="isbn")
-        assert bibs == []
-
-
 class TestSierraBibFetcher:
     def test_fetcher_with_session(self, mock_session):
         fetcher = sierra.SierraBibFetcher(library="library", session=mock_session)
@@ -82,9 +40,9 @@ class TestSierraBibFetcher:
         )
 
     @pytest.mark.parametrize("match", ["bib_id", "upc", "isbn", "oclc_number", "issn"])
-    def test_get_bibs_by_id_no_response(self, match):
+    def test_get_bibs_by_id_no_response(self, match, mock_session_no_response):
         fetcher = sierra.SierraBibFetcher(
-            library="library", session=FakeSierraSession()
+            library="library", session=mock_session_no_response
         )
         bibs = fetcher.get_bibs_by_id(value="123456789", key=match)
         assert bibs == []
