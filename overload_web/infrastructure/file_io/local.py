@@ -22,7 +22,6 @@ class LocalFileLoader:
 
     def __init__(self, base_dir: str):
         self.base_dir = base_dir
-        os.makedirs(self.base_dir, exist_ok=True)
 
     def list(self) -> list[dto.file.FileMetadataDTO]:
         return [
@@ -48,7 +47,6 @@ class LocalFileWriter:
 
     def __init__(self, base_dir: str):
         self.base_dir = base_dir
-        os.makedirs(self.base_dir, exist_ok=True)
 
     def write(self, file: dto.file.FileContentDTO) -> str:
         path = os.path.join(self.base_dir, file.file_id)
