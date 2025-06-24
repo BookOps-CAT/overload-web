@@ -53,8 +53,62 @@ class TestLocalFiles:
 
 
 class TestSFTPFiles:
-    def test_sftp_objs(self):
-        loader = file_io.sftp.SFTPFileLoader()
-        writer = file_io.sftp.SFTPFileWriter()
+    def test_sftp_loader(self, mock_sftp_client):
+        loader = file_io.sftp.SFTPFileLoader(client=mock_sftp_client)
         assert isinstance(loader, protocols.file_io.FileLoader)
+        assert hasattr(loader, "list")
+        assert hasattr(loader, "load")
+        assert loader.client.name == "FOO"
+        assert loader.base_dir == "nsdrop/vendor_files/foo"
+        assert isinstance(loader, protocols.file_io.FileLoader)
+
+    def test_sftp_loader_with_base_dir(self, mock_sftp_client):
+        loader = file_io.sftp.SFTPFileLoader(
+            client=mock_sftp_client, base_dir="nsdrop/vendor_files/test"
+        )
+        assert isinstance(loader, protocols.file_io.FileLoader)
+        assert hasattr(loader, "list")
+        assert hasattr(loader, "load")
+        assert loader.client.name == "FOO"
+        assert loader.base_dir == "nsdrop/vendor_files/test"
+        assert os.environ["FOO_DST"] == "nsdrop/vendor_files/foo"
+        assert isinstance(loader, protocols.file_io.FileLoader)
+
+    def test_sftp_writer(self, mock_sftp_client):
+        writer = file_io.sftp.SFTPFileWriter(client=mock_sftp_client)
         assert isinstance(writer, protocols.file_io.FileWriter)
+        assert hasattr(writer, "write")
+        assert writer.client.name == "FOO"
+        assert writer.base_dir == "nsdrop/vendor_files/foo"
+        assert isinstance(writer, protocols.file_io.FileWriter)
+
+    def test_sftp_writer_with_base_dir(self, mock_sftp_client):
+        writer = file_io.sftp.SFTPFileWriter(
+            client=mock_sftp_client, base_dir="nsdrop/vendor_files/test"
+        )
+        assert isinstance(writer, protocols.file_io.FileWriter)
+        assert hasattr(writer, "write")
+        assert writer.client.name == "FOO"
+        assert writer.base_dir == "nsdrop/vendor_files/test"
+        assert os.environ["FOO_DST"] == "nsdrop/vendor_files/foo"
+        assert isinstance(writer, protocols.file_io.FileWriter)
+
+    def test_list(self, mock_sftp_client):
+        loader = file_io.sftp.SFTPFileLoader(client=mock_sftp_client)
+        file_list = loader.list()
+        assert len(file_list) == 1
+        assert file_list[0].file_id == "foo.mrc"
+        assert file_list[0].name == "foo.mrc"
+
+    def test_load(self, mock_sftp_client):
+        loader = file_io.sftp.SFTPFileLoader(client=mock_sftp_client)
+        file = loader.load(name="foo.mrc")
+        assert file.content == b""
+        assert file.file_id == "foo.mrc"
+
+    def test_write(self, mock_sftp_client):
+        writer = file_io.sftp.SFTPFileWriter(client=mock_sftp_client)
+        out_file = writer.write(
+            file=dto.file.FileContentDTO(file_id="foo.mrc", content=b"foo")
+        )
+        assert out_file == "foo.mrc"
