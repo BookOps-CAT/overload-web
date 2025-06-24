@@ -7,7 +7,7 @@ specific data source.
 
 from typing import Protocol, runtime_checkable
 
-from overload_web.application import dto
+from overload_web.domain import models
 
 
 @runtime_checkable
@@ -18,7 +18,7 @@ class FileLoader(Protocol):
     Implementations may interact with an FTP/SFTP server or a local file directory.
     """
 
-    def list(self) -> list[dto.file.FileMetadataDTO]: ...
+    def list(self) -> list[str]: ...
 
     """
     List available files:
@@ -31,7 +31,7 @@ class FileLoader(Protocol):
         `FileMetadataDTO` objects
     """
 
-    def load(self, name: str) -> dto.file.FileContentDTO: ...
+    def load(self, name: str) -> models.files.VendorFile: ...
 
     """
     Load the content of a specific file.
@@ -53,7 +53,7 @@ class FileWriter(Protocol):
     Implementations may interact with an FTP/SFTP server or a local file directory.
     """
 
-    def write(self, file: dto.file.FileContentDTO) -> str: ...
+    def write(self, file: models.files.VendorFile) -> str: ...
 
     """
     Write a content to a specific file.
