@@ -208,3 +208,64 @@ class TestTemplateService:
         with pytest.raises(ValueError) as exc:
             service.save_template(data=template_data)
         assert str(exc.value) == "Templates must have an agent before being saved."
+
+
+class StubFileLoader(protocols.file_io.FileLoader):
+    def __init__(self, dir: str) -> None:
+        self.dir = dir
+
+
+class StubFileWriter(protocols.file_io.FileWriter):
+    def __init__(self, dir: str) -> None:
+        self.dir = dir
+
+
+class FakeFileLoader(StubFileLoader):
+    def __init__(self, dir: str) -> None:
+        self.dir = dir
+
+    def list(self) -> list[str]:
+        return ["foo.mrc"]
+
+    def load(self, name: str) -> models.files.VendorFile:
+        return models.files.VendorFile.create(file_name=name, content=b"")
+
+
+class FakeFileWriter(StubFileWriter):
+    def __init__(self, dir: str) -> None:
+        self.dir = dir
+
+    def write(self, file: models.files.VendorFile) -> str:
+        return file.file_name
+
+
+class TestFileServices:
+    service = services.file.FileService(
+        loader=FakeFileLoader(dir="foo"), writer=FakeFileWriter(dir="bar")
+    )
+
+    def test_service_protocols(self):
+        service = services.file.FileService(
+            loader=StubFileLoader(dir="foo"), writer=StubFileWriter(dir="bar")
+        )
+        vendor_file = models.files.VendorFile.create(file_name="foo.mrc", content=b"")
+        assert service.load_file(name="foo.mrc") is None
+        assert service.list_files() is None
+        assert service.write_marc_file(vendor_file) is None
+
+    def test_list_files(self):
+        file_list = self.service.list_files()
+        assert len(file_list) == 1
+        assert file_list[0] == "foo.mrc"
+
+    def test_load_file(self):
+        file = self.service.load_file(name="foo.mrc")
+        assert file.id is not None
+        assert file.file_name == "foo.mrc"
+        assert file.content == b""
+
+    def test_write_marc_file(self):
+        out_file = self.service.write_marc_file(
+            models.files.VendorFile.create(file_name="foo.mrc", content=b"")
+        )
+        assert out_file == "foo.mrc"
