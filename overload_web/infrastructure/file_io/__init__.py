@@ -1,3 +1,3 @@
-from . import local, sftp
+from . import factories, local, sftp
 
-__all__ = ["local", "sftp"]
+__all__ = ["local", "sftp", "factories"]
