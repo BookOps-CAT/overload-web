@@ -7,13 +7,13 @@ server accessible via FTP/SFTP. The classes within this module use the
 BookOps/file-retriever library.
 """
 
+import io
 import os
 from typing import Union
 
-from file_retriever import Client
+from file_retriever import Client, File
 
-from overload_web.application import dto
-from overload_web.infrastructure.file_io import factories
+from overload_web.domain import models
 
 
 class SFTPFileLoader:
@@ -31,14 +31,16 @@ class SFTPFileLoader:
         else:
             self.base_dir = base_dir
 
-    def list(self) -> list[dto.file.FileMetadataDTO]:
-        file_list = self.client.list_file_info(remote_dir=self.base_dir)
-        return [factories.file_to_metadata_dto(i) for i in file_list]
+    def list(self) -> list[str]:
+        return self.client.list_files(remote_dir=self.base_dir)
 
-    def load(self, name: str) -> dto.file.FileContentDTO:
+    def load(self, name: str) -> models.files.VendorFile:
         file_info = self.client.get_file_info(file_name=name, remote_dir=self.base_dir)
         file = self.client.get_file(file=file_info, remote_dir=self.base_dir)
-        return factories.file_to_content_dto(file=file)
+        file.file_stream.seek(0)
+        return models.files.VendorFile.create(
+            content=file.file_stream.read(), file_name=file.file_name
+        )
 
 
 class SFTPFileWriter:
@@ -56,9 +58,15 @@ class SFTPFileWriter:
         else:
             self.base_dir = base_dir
 
-    def write(self, file: dto.file.FileContentDTO) -> str:
-        converted_file = factories.content_dto_to_file(content_dto=file)
+    def write(self, file: models.files.VendorFile) -> str:
+        converted_file = File(
+            file_name=file.file_name,
+            file_stream=io.BytesIO(file.content),
+            file_mtime=0,
+            file_mode=None,
+            file_size=0,
+        )
         out_file = self.client.put_file(
             file=converted_file, check=False, remote=True, dir=self.base_dir
         )
-        return getattr(out_file, "file_name", file.file_id)
+        return getattr(out_file, "file_name", file.file_name)

@@ -112,9 +112,8 @@ def mock_sftp_client(monkeypatch):
         file_data["file_name"] = kwargs["file_name"]
         return FileInfo(**file_data)
 
-    def _list_file_info(*args, **kwargs):
-        file_data["file_name"] = "foo.mrc"
-        return [FileInfo(**file_data)]
+    def _list_files(*args, **kwargs):
+        return ["foo.mrc"]
 
     def _put_file(*args, **kwargs):
         file_data["file_name"] = kwargs["file"].file_name
@@ -122,7 +121,7 @@ def mock_sftp_client(monkeypatch):
 
     monkeypatch.setattr(Client, "get_file", _get_file)
     monkeypatch.setattr(Client, "get_file_info", _get_file_info)
-    monkeypatch.setattr(Client, "list_file_info", _list_file_info)
+    monkeypatch.setattr(Client, "list_files", _list_files)
     monkeypatch.setattr(Client, "put_file", _put_file)
     monkeypatch.setattr(
         Client, "_Client__connect_to_server", lambda *args, **kwargs: None

@@ -2,14 +2,8 @@ import os
 
 import pytest
 
-from overload_web.application import dto
 from overload_web.domain import models, protocols
 from overload_web.infrastructure import file_io
-
-
-@pytest.fixture
-def stub_file(content, file_name):
-    return models.files.VendorFile.create(content=content, file_name=file_name)
 
 
 @pytest.fixture
@@ -19,6 +13,9 @@ def tmp_file(tmp_path, stub_binary_marc, library):
 
 
 class TestLocalFiles:
+    def stub_file(self, content, file_name):
+        return models.files.VendorFile.create(content=content, file_name=file_name)
+
     def test_local_objs(self, tmp_path):
         loader = file_io.local.LocalFileLoader(base_dir=tmp_path)
         writer = file_io.local.LocalFileWriter(base_dir=tmp_path)
@@ -37,22 +34,22 @@ class TestLocalFiles:
         loader = file_io.local.LocalFileLoader(base_dir=tmp_path)
         file_list = loader.list()
         assert len(file_list) == 1
-        assert file_list[0].name == "foo.mrc"
-        assert file_list[0].file_id == os.path.join(tmp_path, "foo.mrc")
+        assert file_list[0] == "foo.mrc"
 
     @pytest.mark.parametrize("library", ["nypl", "bpl"])
     def test_write(self, tmp_path, stub_binary_marc):
-        file_dto = dto.file.FileContentDTO(
-            file_id="foo.mrc", content=stub_binary_marc.read()
-        )
+        out_file = self.stub_file(content=stub_binary_marc.read(), file_name="foo.mrc")
         writer = file_io.local.LocalFileWriter(base_dir=tmp_path)
-        new_file = writer.write(file=file_dto)
+        new_file = writer.write(file=out_file)
         assert new_file == os.path.join(tmp_path, "foo.mrc")
         assert "foo.mrc" in os.listdir(tmp_path)
         assert "333331234567890".encode() in open(new_file, "rb").read()
 
 
 class TestSFTPFiles:
+    def stub_file(self, content, file_name):
+        return models.files.VendorFile.create(content=content, file_name=file_name)
+
     def test_sftp_loader(self, mock_sftp_client):
         loader = file_io.sftp.SFTPFileLoader(client=mock_sftp_client)
         assert isinstance(loader, protocols.file_io.FileLoader)
@@ -97,18 +94,17 @@ class TestSFTPFiles:
         loader = file_io.sftp.SFTPFileLoader(client=mock_sftp_client)
         file_list = loader.list()
         assert len(file_list) == 1
-        assert file_list[0].file_id == "foo.mrc"
-        assert file_list[0].name == "foo.mrc"
+        assert file_list[0] == "foo.mrc"
 
     def test_load(self, mock_sftp_client):
         loader = file_io.sftp.SFTPFileLoader(client=mock_sftp_client)
         file = loader.load(name="foo.mrc")
         assert file.content == b""
-        assert file.file_id == "foo.mrc"
+        assert file.id is not None
 
     def test_write(self, mock_sftp_client):
         writer = file_io.sftp.SFTPFileWriter(client=mock_sftp_client)
         out_file = writer.write(
-            file=dto.file.FileContentDTO(file_id="foo.mrc", content=b"foo")
+            file=self.stub_file(content=b"foo", file_name="foo.mrc")
         )
         assert out_file == "foo.mrc"
