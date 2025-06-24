@@ -31,7 +31,7 @@ class FileLoader(Protocol):
         `FileMetadataDTO` objects
     """
 
-    def load(self, file_id: str) -> dto.file.FileContentDTO: ...
+    def load(self, name: str) -> dto.file.FileContentDTO: ...
 
     """
     Load the content of a specific file.
@@ -53,7 +53,7 @@ class FileWriter(Protocol):
     Implementations may interact with an FTP/SFTP server or a local file directory.
     """
 
-    def write(self, file_id: str, content: bytes) -> str: ...
+    def write(self, file: dto.file.FileContentDTO) -> str: ...
 
     """
     Write a content to a specific file.
