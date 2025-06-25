@@ -82,9 +82,7 @@ class BibMatcher:
                 )
         return best_match_bib_id
 
-    def find_best_match(
-        self, bib: models.bibs.DomainBib
-    ) -> Optional[models.bibs.BibId]:
+    def match_bib(self, bib: models.bibs.DomainBib) -> models.bibs.DomainBib:
         """
         Attempt to find the best-match in Sierra for a given `DomainBib`.
 
@@ -95,7 +93,8 @@ class BibMatcher:
             bib: The bibliographic record to match against Sierra.
 
         Returns:
-            the bib_id of the best match, or `None` if no candidates found.
+            the `DomainBib` object with an updated bib_id (either the best match or
+            `None` if no candidates found)
         """
         for key in self.matchpoints:
             value = getattr(bib, key, None)
@@ -103,5 +102,8 @@ class BibMatcher:
                 continue
             candidates = self.fetcher.get_bibs_by_id(value=value, key=key)
             if candidates:
-                return self._select_best_match(bib_to_match=bib, candidates=candidates)
-        return None
+                bib.bib_id = self._select_best_match(
+                    bib_to_match=bib, candidates=candidates
+                )
+                return bib
+        return bib

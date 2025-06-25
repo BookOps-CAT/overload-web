@@ -14,6 +14,7 @@ functions from application/services that should be moved here:
 
 """
 
+from dataclasses import asdict
 from typing import Any, BinaryIO
 
 from overload_web.application import dto
@@ -29,7 +30,7 @@ class RecordProcessingService:
     ):
         self.parser = parser
         self.matcher = matcher
-        self.template = template
+        self.template = template if isinstance(template, dict) else asdict(template)
 
     def load(self, data: BinaryIO) -> list[dto.bib.BibDTO]:
         return self.parser.parse(data=data)
@@ -37,19 +38,17 @@ class RecordProcessingService:
     def match_records(self, records: list[dto.bib.BibDTO]) -> list[dto.bib.BibDTO]:
         updated_bibs = []
         for record in records:
-            record.domain_bib.bib_id = self.matcher.find_best_match(record.domain_bib)
+            record.domain_bib = self.matcher.match_bib(record.domain_bib)
             record.update_bib_fields()
             updated_bibs.append(record)
         return updated_bibs
 
-    def update_bib(
-        self, records: list[dto.bib.BibDTO], template: dict[str, Any]
-    ) -> list[dto.bib.BibDTO]:
+    def update_bib(self, records: list[dto.bib.BibDTO]) -> list[dto.bib.BibDTO]:
         processed_bibs = []
         for record in records:
-            record.domain_bib.apply_template(template_data=template)
+            record.domain_bib.apply_template(template_data=self.template)
             record.update_order_fields()
-            record.update_bib_fields(template.get("update_fields", []))
+            record.update_bib_fields(self.template.get("update_fields", []))
             processed_bibs.append(record)
         return processed_bibs
 

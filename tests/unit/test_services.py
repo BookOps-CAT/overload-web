@@ -121,13 +121,11 @@ class TestRecordProcessingService:
         service = services.records.RecordProcessingService(
             parser=marc.BookopsMarcTransformer(library=library),
             matcher=logic.bibs.BibMatcher(fetcher=StubFetcher(), matchpoints=["isbn"]),
-            template={},
+            template=template_data,
         )
         original_domain_bib_fund = stub_bib_dto.domain_bib.orders[0].fund
         original_bib_fund = stub_bib_dto.bib.orders[0]._field.get("u", None)
-        updated_bibs = service.update_bib(
-            records=[stub_bib_dto], template=template_data
-        )
+        updated_bibs = service.update_bib(records=[stub_bib_dto])
         assert updated_bibs[0].domain_bib.orders[0] != original_domain_bib_fund
         assert updated_bibs[0].bib.orders[0]._field.get("u", None) != original_bib_fund
 
@@ -137,7 +135,7 @@ class TestRecordProcessingService:
             matcher=logic.bibs.BibMatcher(fetcher=StubFetcher(), matchpoints=["isbn"]),
             template={},
         )
-        updated_bibs = service.update_bib(records=[stub_bib_dto], template={})
+        updated_bibs = service.update_bib(records=[stub_bib_dto])
         assert updated_bibs[0].domain_bib.orders == stub_bib_dto.domain_bib.orders
         assert (
             updated_bibs[0].bib.orders[0].__dict__
@@ -158,9 +156,9 @@ class TestRecordProcessingService:
         service = services.records.RecordProcessingService(
             parser=marc.BookopsMarcTransformer(library=library),
             matcher=logic.bibs.BibMatcher(fetcher=StubFetcher(), matchpoints=["isbn"]),
-            template={},
+            template=template_data,
         )
-        updated = service.update_bib(records=[stub_bib_dto], template=template_data)
+        updated = service.update_bib(records=[stub_bib_dto])
         assert len(original_bib.get_fields("949")) == 1
         assert len(updated) == 1
         assert len(updated[0].bib.get_fields("949")) == 2
@@ -240,12 +238,12 @@ class FakeFileWriter(StubFileWriter):
 
 
 class TestFileTransferServices:
-    service = logic.file.FileTransferService(
+    service = services.file.FileTransferService(
         loader=FakeFileLoader(), writer=FakeFileWriter()
     )
 
     def test_service_protocols(self):
-        service = logic.file.FileTransferService(
+        service = services.file.FileTransferService(
             loader=StubFileLoader(), writer=StubFileWriter()
         )
         vendor_file = models.files.VendorFile.create(file_name="foo.mrc", content=b"")
