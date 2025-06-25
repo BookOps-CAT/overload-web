@@ -42,6 +42,50 @@ class TestBackEndAPIRouter:
         assert response.status_code == 200
         assert response.json() == {"app": "Overload Web"}
 
+    def test_list_files_get_remote(self, mock_file_service_response):
+        response = self.client.get("/list_files?dir=foo&remote=True&vendor=foo")
+        assert response.status_code == 200
+        assert (
+            response.url
+            == f"{self.client.base_url}/list_files?dir=foo&remote=True&vendor=foo"
+        )
+
+    def test_list_files_get_local(self, mock_file_service_response):
+        response = self.client.get("/list_files?dir=foo&remote=False&vendor=foo")
+        assert response.status_code == 200
+        assert (
+            response.url
+            == f"{self.client.base_url}/list_files?dir=foo&remote=False&vendor=foo"
+        )
+
+    def test_list_files_get_missing_vendor(self, mock_file_service_response):
+        with pytest.raises(ValueError) as exc:
+            self.client.get("/list_files?dir=foo&remote=True")
+        assert str(exc.value) == "`vendor` arg required for remote files."
+
+    def test_load_files_get_remote(self, mock_file_service_response):
+        response = self.client.get(
+            "/load_files?file=bar.mrc&file=baz.mrc&dir=foo&remote=True&vendor=foo"
+        )
+        assert response.status_code == 200
+        assert (
+            response.url
+            == f"{self.client.base_url}/load_files?file=bar.mrc&file=baz.mrc&dir=foo&remote=True&vendor=foo"
+        )
+        assert sorted(list(response.json()[0].keys())) == sorted(
+            ["id", "content", "file_name"]
+        )
+
+    def test_load_files_get_local(self, mock_file_service_response):
+        response = self.client.get(
+            "/load_files?file=baz.mrc&dir=foo&remote=False&vendor=foo"
+        )
+        assert response.status_code == 200
+        assert (
+            response.url
+            == f"{self.client.base_url}/load_files?file=baz.mrc&dir=foo&remote=False&vendor=foo"
+        )
+
     @pytest.mark.parametrize(
         "library, collection",
         [("nypl", "branches"), ("nypl", "research"), ("bpl", None)],
@@ -68,6 +112,36 @@ class TestBackEndAPIRouter:
         with pytest.raises(ValueError) as exc:
             self.client.post("/vendor_file", files=marc_file_input, data=form_input)
         assert str(exc.value) == "Invalid library. Must be 'bpl' or 'nypl'"
+
+    def test_write_file_post_remote(self, mock_file_service_response):
+        response = self.client.post(
+            "/write_file?dir=foo&remote=True&vendor=foo",
+            json={
+                "id": {"value": "1"},
+                "file_name": "foo.mrc",
+                "content": b"".decode("utf-8"),
+            },
+        )
+        assert response.status_code == 200
+        assert (
+            response.url
+            == f"{self.client.base_url}/write_file?dir=foo&remote=True&vendor=foo"
+        )
+
+    def test_write_file_post_local(self, mock_file_service_response):
+        response = self.client.post(
+            "/write_file?dir=foo&remote=False&vendor=foo",
+            json={
+                "id": {"value": "1"},
+                "file_name": "foo.mrc",
+                "content": b"".decode("utf-8"),
+            },
+        )
+        assert response.status_code == 200
+        assert (
+            response.url
+            == f"{self.client.base_url}/write_file?dir=foo&remote=False&vendor=foo"
+        )
 
 
 class TestFrontendRouter:

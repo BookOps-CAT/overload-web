@@ -136,6 +136,17 @@ def mock_sftp_client(monkeypatch):
 
 
 @pytest.fixture
+def mock_file_service_response(monkeypatch, mocker, mock_sftp_client):
+    mock_file = mocker.mock_open(read_data=b"")
+    mocker.patch("builtins.open", mock_file)
+
+    def mock_list_resp(*args, **kwargs):
+        return ["foo.mrc"]
+
+    monkeypatch.setattr("os.listdir", mock_list_resp)
+
+
+@pytest.fixture
 def order_data() -> dict:
     return {
         "audience": ["a", "a", "a"],
