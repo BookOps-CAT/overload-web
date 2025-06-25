@@ -1,3 +1,4 @@
+import os
 from typing import Any, Optional
 
 from file_retriever import Client
@@ -24,19 +25,19 @@ def get_record_processor(
 
 
 def create_file_service(
-    remote: bool, dir: str, vendor_info: Optional[dict[str, str]]
+    remote: bool, dir: str, vendor: Optional[str]
 ) -> services.file.FileService:
     loader: protocols.file_io.FileLoader
     writer: protocols.file_io.FileWriter
-    if remote and not vendor_info:
-        raise ValueError("`vendor_info` dictionary required for remote files.")
-    elif remote and vendor_info:
+    if remote and not vendor:
+        raise ValueError("`vendor` arg required for remote files.")
+    elif remote and vendor:
         client = Client(
-            name=vendor_info["name"],
-            username=vendor_info["username"],
-            password=vendor_info["password"],
-            host=vendor_info["host"],
-            port=vendor_info["port"],
+            name=vendor.upper(),
+            username=os.environ[f"{vendor.upper()}_USER"],
+            password=os.environ[f"{vendor.upper()}_PASSWORD"],
+            host=os.environ[f"{vendor.upper()}_HOST"],
+            port=os.environ[f"{vendor.upper()}_PORT"],
         )
         loader = sftp.SFTPFileLoader(client=client, base_dir=dir)
         writer = sftp.SFTPFileWriter(client=client, base_dir=dir)
