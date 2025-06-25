@@ -9,7 +9,7 @@ from __future__ import annotations
 import datetime
 from typing import Annotated, Optional, Union
 
-from fastapi import File, Form, UploadFile
+from fastapi import Form
 from pydantic import BaseModel, ConfigDict
 
 from overload_web.domain import models
@@ -114,22 +114,3 @@ class VendorFileModel(BaseModel, models.files.VendorFile):
     """Pydantic model for serializing/deserializing `VendorFile` domain objects."""
 
     model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
-
-    @classmethod
-    def from_upload_file(
-        cls, upload_file: Annotated[UploadFile, File()]
-    ) -> VendorFileModel:
-        """
-        Create a `VendorFileModel` instance from a FastAPI UploadFile.
-
-        Returns:
-            the file as a VendorFileModel object
-        """
-        id = models.files.VendorFileId.new()
-        if upload_file.filename is None:
-            filename = f"{str(id)}_{datetime.datetime.strftime(datetime.datetime.now(tz=datetime.timezone.utc), '%y-%m-%d')}.mrc"
-        else:
-            filename = upload_file.filename
-        return VendorFileModel(
-            id=id, file_name=filename, content=upload_file.file.read()
-        )
