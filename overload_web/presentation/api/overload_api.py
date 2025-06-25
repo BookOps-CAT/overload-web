@@ -8,10 +8,10 @@ from __future__ import annotations
 import logging
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from overload_web.infrastructure.bibs import factories
+from overload_web.infrastructure import factories
 from overload_web.presentation.api import schemas
 
 logger = logging.getLogger(__name__)
@@ -27,6 +27,29 @@ def root() -> JSONResponse:
         JSON response indicating the application is active.
     """
     return JSONResponse(content={"app": "Overload Web"})
+
+
+@api_router.get("/list_files")
+def list_files(dir: str, remote: bool, vendor: Optional[str] = None) -> JSONResponse:
+    """List all files available in a specific directory"""
+    service = factories.create_file_service(dir=dir, remote=remote, vendor=vendor)
+    files = service.loader.list()
+    return JSONResponse(
+        content={"app": "Overload Web", "files": files, "directory": dir}
+    )
+
+
+@api_router.get("/load_files")
+def load_files(
+    file: Annotated[list[str], Query(...)],
+    dir: str,
+    remote: bool,
+    vendor: Optional[str] = None,
+) -> list[schemas.VendorFileModel]:
+    """Load one or more files"""
+    service = factories.create_file_service(dir=dir, remote=remote, vendor=vendor)
+    files = [service.loader.load(name=f) for f in file]
+    return [schemas.VendorFileModel(**i.__dict__) for i in files]
 
 
 @api_router.post("/vendor_file")
@@ -64,4 +87,18 @@ def vendor_file_process(
         headers={
             "Content-Disposition": f"attachment; filename={file.filename}_out.mrc"
         },
+    )
+
+
+@api_router.post("/write_file")
+def write_file(
+    vendor_file: schemas.VendorFileModel,
+    dir: str,
+    remote: bool,
+    vendor: Optional[str],
+) -> JSONResponse:
+    service = factories.create_file_service(dir=dir, remote=remote, vendor=vendor)
+    out_files = service.writer.write(vendor_file)
+    return JSONResponse(
+        content={"app": "Overload Web", "files": out_files, "directory": dir}
     )
