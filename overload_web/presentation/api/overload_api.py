@@ -79,7 +79,7 @@ def vendor_file_process(
     )
     bibs = service.load(data=file.file)
     matched_bibs = service.match_records(bibs)
-    processed_bibs = service.update_bib(records=matched_bibs, template=template_data)
+    processed_bibs = service.update_bib(records=matched_bibs)
     marc_binary = service.write_marc_binary(records=processed_bibs)
     return StreamingResponse(
         marc_binary,
