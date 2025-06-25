@@ -20,14 +20,14 @@ class LocalFileLoader:
     contents from a specific directory on a local computer.
     """
 
-    def __init__(self, base_dir: str):
-        self.base_dir = base_dir
+    def __init__(self):
+        pass
 
-    def list(self) -> list[str]:
-        return os.listdir(self.base_dir)
+    def list(self, dir: str) -> list[str]:
+        return os.listdir(dir)
 
-    def load(self, name: str) -> models.files.VendorFile:
-        with open(os.path.join(self.base_dir, name), "rb") as fh:
+    def load(self, name: str, dir: str) -> models.files.VendorFile:
+        with open(os.path.join(dir, name), "rb") as fh:
             file_dto = models.files.VendorFile.create(content=fh.read(), file_name=name)
         return file_dto
 
@@ -40,11 +40,11 @@ class LocalFileWriter:
     to files within a specific directory on a local computer.
     """
 
-    def __init__(self, base_dir: str):
-        self.base_dir = base_dir
+    def __init__(self):
+        pass
 
-    def write(self, file: models.files.VendorFile) -> str:
-        path = os.path.join(self.base_dir, file.file_name)
+    def write(self, file: models.files.VendorFile, dir: str) -> str:
+        path = os.path.join(dir, file.file_name)
         with open(path, "wb") as f:
             f.write(file.content)
         return path

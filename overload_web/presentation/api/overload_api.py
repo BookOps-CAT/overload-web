@@ -32,8 +32,8 @@ def root() -> JSONResponse:
 @api_router.get("/list_files")
 def list_files(dir: str, remote: bool, vendor: Optional[str] = None) -> JSONResponse:
     """List all files available in a specific directory"""
-    service = factories.create_file_service(dir=dir, remote=remote, vendor=vendor)
-    files = service.loader.list()
+    service = factories.create_file_service(remote=remote, vendor=vendor)
+    files = service.loader.list(dir)
     return JSONResponse(
         content={"app": "Overload Web", "files": files, "directory": dir}
     )
@@ -47,8 +47,8 @@ def load_files(
     vendor: Optional[str] = None,
 ) -> list[schemas.VendorFileModel]:
     """Load one or more files"""
-    service = factories.create_file_service(dir=dir, remote=remote, vendor=vendor)
-    files = [service.loader.load(name=f) for f in file]
+    service = factories.create_file_service(remote=remote, vendor=vendor)
+    files = [service.loader.load(name=f, dir=dir) for f in file]
     return [schemas.VendorFileModel(**i.__dict__) for i in files]
 
 
@@ -97,8 +97,8 @@ def write_file(
     remote: bool,
     vendor: Optional[str],
 ) -> JSONResponse:
-    service = factories.create_file_service(dir=dir, remote=remote, vendor=vendor)
-    out_files = service.writer.write(vendor_file)
+    service = factories.create_file_service(remote=remote, vendor=vendor)
+    out_files = service.writer.write(file=vendor_file, dir=dir)
     return JSONResponse(
         content={"app": "Overload Web", "files": out_files, "directory": dir}
     )

@@ -25,8 +25,8 @@ def get_record_processor(
 
 
 def create_file_service(
-    remote: bool, dir: str, vendor: Optional[str]
-) -> services.file.FileService:
+    remote: bool, vendor: Optional[str]
+) -> services.file.FileTransferService:
     loader: protocols.file_io.FileLoader
     writer: protocols.file_io.FileWriter
     if remote and not vendor:
@@ -39,9 +39,9 @@ def create_file_service(
             host=os.environ[f"{vendor.upper()}_HOST"],
             port=os.environ[f"{vendor.upper()}_PORT"],
         )
-        loader = sftp.SFTPFileLoader(client=client, base_dir=dir)
-        writer = sftp.SFTPFileWriter(client=client, base_dir=dir)
+        loader = sftp.SFTPFileLoader(client=client)
+        writer = sftp.SFTPFileWriter(client=client)
     else:
-        loader = local.LocalFileLoader(base_dir=dir)
-        writer = local.LocalFileWriter(base_dir=dir)
-    return services.file.FileService(loader=loader, writer=writer)
+        loader = local.LocalFileLoader()
+        writer = local.LocalFileWriter()
+    return services.file.FileTransferService(loader=loader, writer=writer)

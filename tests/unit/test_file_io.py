@@ -26,22 +26,22 @@ class TestLiveLocalFiles:
             os.rmdir(self.test_dir)
 
     def test_load(self, setup_dirs):
-        loader = file_io.local.LocalFileLoader(base_dir=self.test_dir)
-        loaded_file = loader.load("test_bib.mrc")
+        loader = file_io.local.LocalFileLoader()
+        loaded_file = loader.load("test_bib.mrc", dir=self.test_dir)
         assert loaded_file.content[0:8] == b"02741pam"
 
     def test_list(self, setup_dirs):
-        loader = file_io.local.LocalFileLoader(base_dir=self.test_dir)
-        files = loader.list()
+        loader = file_io.local.LocalFileLoader()
+        files = loader.list(dir=self.test_dir)
         assert len(files) == 1
         assert files[0] == "test_bib.mrc"
 
     def test_write(self, setup_dirs):
-        writer = file_io.local.LocalFileWriter(base_dir=self.test_dir)
+        writer = file_io.local.LocalFileWriter()
         file_dto = dto.file.VendorFileDTO(
             file_id="foo.mrc", file_name="foo.mrc", content=b"Test content"
         )
-        new_file = writer.write(file=file_dto)
+        new_file = writer.write(file=file_dto, dir=self.test_dir)
         assert new_file == os.path.join(self.test_dir, "foo.mrc")
         assert "foo.mrc" in os.listdir(self.test_dir)
         assert "Test content".encode() in open(new_file, "rb").read()
@@ -79,31 +79,26 @@ class TestSFTPFiles:
         )
 
     def test_write(self, live_test_client):
-        writer = file_io.sftp.SFTPFileWriter(
-            client=live_test_client, base_dir=self.test_dir
-        )
+        writer = file_io.sftp.SFTPFileWriter(client=live_test_client)
         outfile = writer.write(
             file=dto.file.VendorFileDTO(
                 file_id="test_bib.mrc",
                 file_name="test_bib.mrc",
                 content=b"02741pam  a2200445 a 4500",
-            )
+            ),
+            dir=self.test_dir,
         )
         live_test_client.session.connection.chdir(None)
         assert outfile == "test_bib.mrc"
 
     def test_list(self, live_test_client):
-        loader = file_io.sftp.SFTPFileLoader(
-            client=live_test_client, base_dir=self.test_dir
-        )
-        file_list = loader.list()
+        loader = file_io.sftp.SFTPFileLoader(client=live_test_client)
+        file_list = loader.list(dir=self.test_dir)
         assert len(file_list) == 1
         assert file_list[0] == "test_bib.mrc"
 
     def test_load(self, live_test_client):
-        loader = file_io.sftp.SFTPFileLoader(
-            client=live_test_client, base_dir=self.test_dir
-        )
-        file = loader.load(name="test_bib.mrc")
+        loader = file_io.sftp.SFTPFileLoader(client=live_test_client)
+        file = loader.load(name="test_bib.mrc", dir=self.test_dir)
         assert file.file_id == "test_bib.mrc"
         assert file.content[0:8] == b"02741pam"

@@ -8,8 +8,6 @@ BookOps/file-retriever library.
 """
 
 import io
-import os
-from typing import Union
 
 from file_retriever import Client, File
 
@@ -24,19 +22,15 @@ class SFTPFileLoader:
     to connect to an FTP/SFTP server.
     """
 
-    def __init__(self, client: Client, base_dir: Union[str, None] = None) -> None:
+    def __init__(self, client: Client) -> None:
         self.client = client
-        if base_dir is None:
-            self.base_dir: str = os.environ[f"{client.name.upper()}_DST"]
-        else:
-            self.base_dir = base_dir
 
-    def list(self) -> list[str]:
-        return self.client.list_files(remote_dir=self.base_dir)
+    def list(self, dir: str) -> list[str]:
+        return self.client.list_files(remote_dir=dir)
 
-    def load(self, name: str) -> models.files.VendorFile:
-        file_info = self.client.get_file_info(file_name=name, remote_dir=self.base_dir)
-        file = self.client.get_file(file=file_info, remote_dir=self.base_dir)
+    def load(self, name: str, dir: str) -> models.files.VendorFile:
+        file_info = self.client.get_file_info(file_name=name, remote_dir=dir)
+        file = self.client.get_file(file=file_info, remote_dir=dir)
         file.file_stream.seek(0)
         return models.files.VendorFile.create(
             content=file.file_stream.read(), file_name=file.file_name
@@ -51,14 +45,10 @@ class SFTPFileWriter:
     to connect to an FTP/SFTP server.
     """
 
-    def __init__(self, client: Client, base_dir: Union[str, None] = None) -> None:
+    def __init__(self, client: Client) -> None:
         self.client = client
-        if base_dir is None:
-            self.base_dir: str = os.environ[f"{client.name.upper()}_DST"]
-        else:
-            self.base_dir = base_dir
 
-    def write(self, file: models.files.VendorFile) -> str:
+    def write(self, file: models.files.VendorFile, dir: str) -> str:
         converted_file = File(
             file_name=file.file_name,
             file_stream=io.BytesIO(file.content),
@@ -67,6 +57,6 @@ class SFTPFileWriter:
             file_size=0,
         )
         out_file = self.client.put_file(
-            file=converted_file, check=False, remote=True, dir=self.base_dir
+            file=converted_file, check=False, remote=True, dir=dir
         )
         return getattr(out_file, "file_name", file.file_name)

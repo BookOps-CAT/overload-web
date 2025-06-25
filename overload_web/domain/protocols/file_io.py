@@ -1,7 +1,7 @@
 """Protocols for file I/O services within Overload.
 
 The protocols within this module support reading and writing files
-and allow for the `FileProcessorService` to remain decoupled from any
+and allow for the `FileTransferService` to remain decoupled from any
 specific data source.
 """
 
@@ -18,30 +18,29 @@ class FileLoader(Protocol):
     Implementations may interact with an FTP/SFTP server or a local file directory.
     """
 
-    def list(self) -> list[str]: ...
+    def list(self, dir: str) -> list[str]: ...
 
     """
     List available files:
 
     Args:
-        None
+        dir: the directory whose files to list
     
     Returns:
-        a list of files represented by their file metadata as 
-        `FileMetadataDTO` objects
+        a list of file names as strings
     """
 
-    def load(self, name: str) -> models.files.VendorFile: ...
+    def load(self, name: str, dir: str) -> models.files.VendorFile: ...
 
     """
     Load the content of a specific file.
 
     Args:
-        file_id: the id of a specific file
+        name: the name of the file to load
+        dir: the directory where the file is located
 
     Returns:
-        the content of the specified file represented as a 
-        `FileContentDTO` object
+        the specified file as a `VendorFile` object
     """
 
 
@@ -53,15 +52,15 @@ class FileWriter(Protocol):
     Implementations may interact with an FTP/SFTP server or a local file directory.
     """
 
-    def write(self, file: models.files.VendorFile) -> str: ...
+    def write(self, file: models.files.VendorFile, dir: str) -> str: ...
 
     """
     Write a content to a specific file.
 
     Args:
-        file_id: the id of the file to be written.
-        content: the content of the file as bytes.
-
+        file: the file to write as a `VendorFile` object
+        dir: the directory where the file should be written
+        
     Returns:
-        the ID of the file that has just been written
+        the name of the file that has just been written
     """
