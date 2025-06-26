@@ -12,8 +12,7 @@ from typing import Any, BinaryIO, Dict, List, Optional
 
 from overload_web.application.dto import bib_dto
 from overload_web.application.services import unit_of_work
-from overload_web.domain import models
-from overload_web.domain.services import bib_matcher
+from overload_web.domain import logic, models, protocols
 from overload_web.infrastructure.bib_fetchers import marc_adapters, sierra
 
 logger = logging.getLogger(__name__)
@@ -40,7 +39,7 @@ def attach_template(
     return processed_bibs
 
 
-def get_fetcher_for_library(library: str) -> bib_matcher.BibFetcher:
+def get_fetcher_for_library(library: str) -> protocols.bibs.BibFetcher:
     """
     Creates a `SierraBibFetcher` object for the specified library.
 
@@ -67,7 +66,7 @@ def match_bibs(
     bibs: List[bib_dto.BibDTO],
     library: str,
     matchpoints: List[str],
-    fetcher: Optional[bib_matcher.BibFetcher] = None,
+    fetcher: Optional[protocols.bibs.BibFetcher] = None,
 ) -> List[bib_dto.BibDTO]:
     """
     Matches bib records from an incoming MARC file against Sierra.
@@ -83,11 +82,11 @@ def match_bibs(
     """
     if fetcher is None:
         fetcher = get_fetcher_for_library(library=library)
-    matcher = bib_matcher.BibMatchService(fetcher=fetcher, matchpoints=matchpoints)
+    matcher = logic.bibs.BibMatcher(fetcher=fetcher, matchpoints=matchpoints)
 
     processed_bibs = []
     for bib in bibs:
-        bib.domain_bib.bib_id = matcher.find_best_match(bib.domain_bib)
+        bib.domain_bib = matcher.match_bib(bib.domain_bib)
         bib.update_bib_fields()
         processed_bibs.append(bib)
     return processed_bibs

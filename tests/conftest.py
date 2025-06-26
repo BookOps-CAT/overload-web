@@ -8,8 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import clear_mappers, sessionmaker
 
 from overload_web.application.dto import bib_dto
-from overload_web.domain import models
-from overload_web.domain.services import bib_matcher
+from overload_web.domain import models, protocols
 from overload_web.infrastructure.repositories import orm
 
 
@@ -53,7 +52,7 @@ def mock_sierra_response(monkeypatch):
 
 @pytest.fixture
 def test_fetcher():
-    class FakeBibFetcher(bib_matcher.BibFetcher):
+    class FakeBibFetcher(protocols.bibs.BibFetcher):
         def get_bibs_by_id(self, value, key):
             bib_1 = {"bib_id": "123", "isbn": "9781234567890"}
             bib_2 = {"bib_id": "234", "isbn": "1234567890", "oclc_number": "123456789"}
