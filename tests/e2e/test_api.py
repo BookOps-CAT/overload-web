@@ -91,12 +91,10 @@ class TestBackEndAPIRouter:
         [("nypl", "branches"), ("nypl", "research"), ("bpl", None)],
     )
     def test_process_vendor_file_post(
-        self, stub_pvf_form_data, stub_binary_marc, library, collection
+        self, form_input, marc_file_input, library, collection
     ):
         response = self.client.post(
-            "/vendor_file",
-            files={"file": ("marc_file.mrc", stub_binary_marc, "text/plain")},
-            data=stub_pvf_form_data,
+            "/vendor_file", files=marc_file_input, data=form_input
         )
         assert response.status_code == 200
         assert response.url == f"{self.client.base_url}/vendor_file"
@@ -109,20 +107,10 @@ class TestBackEndAPIRouter:
         "library, collection", [("foo", "branches"), ("bar", "research")]
     )
     def test_process_vendor_file_post_invalid_config(
-        self, stub_binary_marc, stub_pvf_form_data, library, collection
+        self, marc_file_input, form_input, library, collection
     ):
         with pytest.raises(ValueError) as exc:
-            self.client.post(
-                "/vendor_file",
-                files={
-                    "file": (
-                        "marc_file.mrc",
-                        stub_binary_marc,
-                        "text/plain",
-                    )
-                },
-                data=stub_pvf_form_data,
-            )
+            self.client.post("/vendor_file", files=marc_file_input, data=form_input)
         assert "not a valid LibrarySystem" in str(exc.value)
 
     def test_write_file_post_remote(self, mock_file_service_response):
