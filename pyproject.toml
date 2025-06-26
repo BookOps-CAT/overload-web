@@ -2,7 +2,7 @@
 name = "overload-web"
 version = "0.1.0"
 description = "BookOps Cataloging Department browser-based toolbox"
-authors = [{name = "Charlotte Kostelic", email = "charlottekostelic@gmail.com"}]
+authors = [{name = "Charlotte Kostelic", email = "charlottekostelic@bookops.org"}]
 license = "MIT"
 readme = "README.md"
 requires-python = ">=3.12, <4.0"
@@ -12,9 +12,10 @@ dependencies = [
     "bookops-nypl-platform @ git+https://github.com/BookOps-CAT/bookops-nypl-platform.git",	
     "bookops-bpl-solr @ git+https://github.com/BookOps-CAT/bookops-bpl-solr.git",	
     "fastapi[standard] (>=0.115.6, <0.116.0)",
-    "bookops-marc @ git+https://github.com/BookOps-CAT/bookops-marc.git@item_records",
+    "bookops-marc @ git+https://github.com/BookOps-CAT/bookops-marc.git",
     "sqlalchemy (>=2.0.40, <2.1.0)",
     "loggly-python-handler (>=1.0.1,<2.0.0)",
+    "file-retriever @ git+https://github.com/BookOps-CAT/file-retriever.git",
 ]
 
 [tool.poetry.group.dev.dependencies]
@@ -29,11 +30,16 @@ testpaths = ["tests"]
 markers = [
 	"livetest: mark a test hitting live web services",
 ]
-addopts = "--cov=overload_web/"
+addopts = '-m "not livetest" --cov=overload_web/'
 
 [tool.coverage.run]
 relative_files = true
 source = ["."]
+omit = [
+    "tests/*",
+    "*/tests/*",
+    "**/*.html"
+]
 
 [build-system]
 requires = ["poetry-core"]

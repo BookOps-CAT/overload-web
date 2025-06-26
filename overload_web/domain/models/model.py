@@ -127,9 +127,9 @@ class Matchpoints:
 class Order:
     """A domain model representing a Sierra order."""
 
-    audience: List[str]
+    audience: list[str]
     blanket_po: Optional[str]
-    branches: List[str]
+    branches: list[str]
     copies: Optional[Union[str, int]]
     country: Optional[str]
     create_date: Optional[Union[datetime.datetime, datetime.date, str]]
@@ -137,7 +137,7 @@ class Order:
     fund: Optional[str]
     internal_note: Optional[str]
     lang: Optional[str]
-    locations: List[str]
+    locations: list[str]
     order_code_1: Optional[str]
     order_code_2: Optional[str]
     order_code_3: Optional[str]
@@ -146,7 +146,7 @@ class Order:
     order_type: Optional[str]
     price: Optional[Union[str, int]]
     selector_note: Optional[str]
-    shelves: List[str]
+    shelves: list[str]
     status: Optional[str]
     var_field_isbn: Optional[str]
     vendor_code: Optional[str]
@@ -233,7 +233,7 @@ class Order:
             order_code_3=order._field.get("e", None),
             order_code_4=order._field.get("f", None),
             order_type=order._field.get("i", None),
-            order_id=order.oid,
+            order_id=order.order_id_normalized,
             price=order._field.get("s", None),
             selector_note=from_following_field("f"),
             shelves=order.shelves,
