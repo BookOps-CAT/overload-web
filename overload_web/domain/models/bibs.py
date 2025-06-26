@@ -139,40 +139,6 @@ class Order:
     vendor_notes: Optional[str]
     vendor_title_no: Optional[str]
 
-    def _marc_mapping(self) -> dict[str, Any]:
-        """
-        Returns a mapping of MARC field codes to the corresponding attributes
-        in the `Order` dataclass.
-        """
-        return {
-            "960": {
-                "c": self.order_code_1,
-                "d": self.order_code_2,
-                "e": self.order_code_3,
-                "f": self.order_code_4,
-                "g": self.format,
-                "i": self.order_type,
-                "m": self.status,
-                "o": self.copies,
-                "q": self.create_date,
-                "s": self.price,
-                "t": self.locations,
-                "u": self.fund,
-                "v": self.vendor_code,
-                "w": self.lang,
-                "x": self.country,
-                "z": self.order_id,
-            },
-            "961": {
-                "d": self.internal_note,
-                "f": self.selector_note,
-                "h": self.vendor_notes,
-                "i": self.vendor_title_no,
-                "l": self.var_field_isbn,
-                "m": self.blanket_po,
-            },
-        }
-
     def apply_template(self, template_data: dict[str, Any]) -> None:
         """
         Apply template data to the order, updating any matching non-empty fields.

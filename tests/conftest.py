@@ -10,7 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import clear_mappers, sessionmaker
 
 from overload_web.application import dto
-from overload_web.domain import models, protocols
+from overload_web.domain import models
 from overload_web.infrastructure.bibs import sierra
 from overload_web.infrastructure.repositories import orm
 
@@ -40,6 +40,15 @@ def fake_creds(monkeypatch):
 
 
 @pytest.fixture
+def test_sql_session():
+    test_engine = create_engine("sqlite:///:memory:")
+    orm.metadata.create_all(test_engine)
+    orm.start_mappers()
+    yield sessionmaker(bind=test_engine)()
+    clear_mappers()
+
+
+@pytest.fixture
 def mock_sierra_response(monkeypatch):
     class MockHTTPResponse:
         def __init__(self, status_code: int, ok: bool, stub_json: dict):
@@ -63,23 +72,6 @@ def mock_sierra_response(monkeypatch):
 
     monkeypatch.setattr("requests.Session.get", mock_response)
     monkeypatch.setattr("requests.post", mock_token_response)
-
-
-@pytest.fixture
-def test_fetcher():
-    class FakeBibFetcher(protocols.bibs.BibFetcher):
-        def get_bibs_by_id(self, value, key):
-            bib_1 = {"bib_id": "123", "isbn": "9781234567890"}
-            bib_2 = {"bib_id": "234", "isbn": "1234567890", "oclc_number": "123456789"}
-            bib_3 = {
-                "bib_id": "345",
-                "isbn": "9781234567890",
-                "oclc_number": "123456789",
-            }
-            bib_4 = {"bib_id": "456", "upc": "333"}
-            return [bib_1, bib_2, bib_3, bib_4]
-
-    return FakeBibFetcher()
 
 
 @pytest.fixture
@@ -152,25 +144,6 @@ def mock_file_service_response(monkeypatch, mocker, mock_sftp_client):
         return ["foo.mrc"]
 
     monkeypatch.setattr("os.listdir", mock_list_resp)
-
-
-@pytest.fixture
-def in_memory_db():
-    engine = create_engine("sqlite:///:memory:")
-    orm.metadata.create_all(engine)
-    return engine
-
-
-@pytest.fixture
-def test_sql_session(in_memory_db):
-    orm.start_mappers()
-    yield sessionmaker(bind=in_memory_db)()
-    clear_mappers()
-
-
-@pytest.fixture
-def bib_data(order_data, library) -> dict:
-    return {"library": library, "orders": [order_data]}
 
 
 @pytest.fixture
@@ -323,16 +296,7 @@ def stub_binary_marc(stub_bib) -> io.BytesIO:
 
 @pytest.fixture
 def stub_bib_dto(stub_bib) -> dto.bib.BibDTO:
-    bib = copy.deepcopy(stub_bib)
-    return dto.bib.BibDTO(bib=bib, domain_bib=models.bibs.DomainBib.from_marc(bib))
-
-
-@pytest.fixture
-def stub_pvf_form_data(template_data, library, collection) -> dict:
-    pvf_form_data = {k: v for k, v in template_data.items() if k != "matchpoints"}
-    pvf_form_data["primary_matchpoint"] = template_data["matchpoints"]["primary"]
-    pvf_form_data["secondary_matchpoint"] = template_data["matchpoints"]["secondary"]
-    pvf_form_data["tertiary_matchpoint"] = template_data["matchpoints"]["tertiary"]
-    pvf_form_data["library"] = library
-    pvf_form_data["collection"] = collection
-    return pvf_form_data
+    record = copy.deepcopy(stub_bib)
+    return dto.bib.BibDTO(
+        bib=record, domain_bib=models.bibs.DomainBib.from_marc(record)
+    )
