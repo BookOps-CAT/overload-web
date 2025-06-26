@@ -1,8 +1,10 @@
 import copy
 import io
+import os
 
 import pytest
 from bookops_marc import Bib
+from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 from sqlalchemy import create_engine
 from sqlalchemy.orm import clear_mappers, sessionmaker
@@ -23,6 +25,18 @@ def fake_creds(monkeypatch):
     monkeypatch.setenv("NYPL_PLATFORM_AGENT", "test")
     monkeypatch.setenv("NYPL_PLATFORM_TARGET", "dev")
     monkeypatch.setenv("LOGGLY_TOKEN", "foo")
+    monkeypatch.setenv("FOO_USER", "foo")
+    monkeypatch.setenv("FOO_PASSWORD", "bar")
+    monkeypatch.setenv("FOO_HOST", "sftp.baz.com")
+    monkeypatch.setenv("FOO_PORT", "22")
+    monkeypatch.setenv("FOO_SRC", "/")
+    monkeypatch.setenv("FOO_DST", "nsdrop/vendor_files/foo")
+    monkeypatch.setenv("NSDROP_USER", "foo")
+    monkeypatch.setenv("NSDROP_PASSWORD", "bar")
+    monkeypatch.setenv("NSDROP_HOST", "sftp.baz.com")
+    monkeypatch.setenv("NSDROP_PORT", "22")
+    monkeypatch.setenv("NSDROP_SRC", "/")
+    monkeypatch.setenv("NSDROP_DST", "nsdrop/vendor_files/bar")
 
 
 @pytest.fixture
@@ -93,6 +107,51 @@ def mock_session(monkeypatch):
 @pytest.fixture
 def mock_session_no_response():
     return FakeSierraSession()
+
+
+@pytest.fixture
+def mock_sftp_client(monkeypatch):
+    file_data = {"file_size": 140401, "file_mtime": 1704070800, "file_mode": 33188}
+
+    def _get_file(*args, **kwargs):
+        return File.from_fileinfo(file=kwargs["file"], file_stream=io.BytesIO(b""))
+
+    def _get_file_info(*args, **kwargs):
+        file_data["file_name"] = kwargs["file_name"]
+        return FileInfo(**file_data)
+
+    def _list_files(*args, **kwargs):
+        return ["foo.mrc"]
+
+    def _put_file(*args, **kwargs):
+        file_data["file_name"] = kwargs["file"].file_name
+        return FileInfo(**file_data)
+
+    monkeypatch.setattr(Client, "get_file", _get_file)
+    monkeypatch.setattr(Client, "get_file_info", _get_file_info)
+    monkeypatch.setattr(Client, "list_files", _list_files)
+    monkeypatch.setattr(Client, "put_file", _put_file)
+    monkeypatch.setattr(
+        Client, "_Client__connect_to_server", lambda *args, **kwargs: None
+    )
+    return Client(
+        name="FOO",
+        username=os.environ["FOO_USER"],
+        password=os.environ["FOO_PASSWORD"],
+        host=os.environ["FOO_HOST"],
+        port=os.environ["FOO_PORT"],
+    )
+
+
+@pytest.fixture
+def mock_file_service_response(monkeypatch, mocker, mock_sftp_client):
+    mock_file = mocker.mock_open(read_data=b"")
+    mocker.patch("builtins.open", mock_file)
+
+    def mock_list_resp(*args, **kwargs):
+        return ["foo.mrc"]
+
+    monkeypatch.setattr("os.listdir", mock_list_resp)
 
 
 @pytest.fixture
