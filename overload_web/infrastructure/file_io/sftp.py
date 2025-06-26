@@ -7,7 +7,10 @@ server accessible via FTP/SFTP. The classes within this module use the
 BookOps/file-retriever library.
 """
 
+from __future__ import annotations
+
 import io
+import os
 
 from file_retriever import Client, File
 
@@ -36,6 +39,17 @@ class SFTPFileLoader:
             content=file.file_stream.read(), file_name=file.file_name
         )
 
+    @classmethod
+    def create_loader_for_vendor(cls, vendor: str) -> SFTPFileLoader:
+        client = Client(
+            name=vendor.upper(),
+            username=os.environ[f"{vendor.upper()}_USER"],
+            password=os.environ[f"{vendor.upper()}_PASSWORD"],
+            host=os.environ[f"{vendor.upper()}_HOST"],
+            port=os.environ[f"{vendor.upper()}_PORT"],
+        )
+        return SFTPFileLoader(client=client)
+
 
 class SFTPFileWriter:
     """
@@ -60,3 +74,14 @@ class SFTPFileWriter:
             file=converted_file, check=False, remote=True, dir=dir
         )
         return getattr(out_file, "file_name", file.file_name)
+
+    @classmethod
+    def create_writer_for_vendor(cls, vendor: str) -> SFTPFileWriter:
+        client = Client(
+            name=vendor.upper(),
+            username=os.environ[f"{vendor.upper()}_USER"],
+            password=os.environ[f"{vendor.upper()}_PASSWORD"],
+            host=os.environ[f"{vendor.upper()}_HOST"],
+            port=os.environ[f"{vendor.upper()}_PORT"],
+        )
+        return SFTPFileWriter(client=client)

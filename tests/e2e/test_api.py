@@ -107,9 +107,9 @@ class TestBackEndAPIRouter:
             self.client.post("/vendor_file", files=marc_file_input, data=form_input)
         assert "not a valid LibrarySystem" in str(exc.value)
 
-    def test_write_file_post_remote(self, mock_file_service_response):
+    def test_write_local_file_post(self, mock_file_service_response):
         response = self.client.post(
-            "/write_file?dir=foo&remote=True&vendor=foo",
+            "/write-local?dir=foo",
             json={
                 "id": {"value": "1"},
                 "file_name": "foo.mrc",
@@ -117,14 +117,11 @@ class TestBackEndAPIRouter:
             },
         )
         assert response.status_code == 200
-        assert (
-            response.url
-            == f"{self.client.base_url}/write_file?dir=foo&remote=True&vendor=foo"
-        )
+        assert response.url == f"{self.client.base_url}/write-local?dir=foo"
 
-    def test_write_file_post_local(self, mock_file_service_response):
+    def test_write_remote_file_post(self, mock_file_service_response):
         response = self.client.post(
-            "/write_file?dir=foo&remote=False&vendor=foo",
+            "/write-remote?dir=foo&vendor=foo",
             json={
                 "id": {"value": "1"},
                 "file_name": "foo.mrc",
@@ -132,10 +129,7 @@ class TestBackEndAPIRouter:
             },
         )
         assert response.status_code == 200
-        assert (
-            response.url
-            == f"{self.client.base_url}/write_file?dir=foo&remote=False&vendor=foo"
-        )
+        assert response.url == f"{self.client.base_url}/write-remote?dir=foo&vendor=foo"
 
 
 class TestFrontendRouter:

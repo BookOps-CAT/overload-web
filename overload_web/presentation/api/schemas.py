@@ -119,6 +119,5 @@ class VendorFileModel(BaseModel, models.files.VendorFile):
     def create(cls, content: bytes, file_name: str | None) -> VendorFileModel:
         """Factory method to enforce ID assignment and domain rules."""
         file_id = models.files.VendorFileId.new()
-        if not file_name:
-            file_name = str(file_id)
+        file_name = str(file_id) if not file_name else file_name
         return cls(id=file_id, content=content, file_name=file_name)

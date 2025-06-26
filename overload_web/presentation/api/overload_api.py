@@ -33,7 +33,7 @@ def root() -> JSONResponse:
 @api_router.get("/list-remote")
 def list_remote_files(dir: str, vendor: str) -> JSONResponse:
     """List all files on a vendor's SFTP server"""
-    service = factories.create_file_service(remote=True, vendor=vendor)
+    service = factories.create_remote_file_service(vendor=vendor)
     files = service.loader.list(dir=dir)
     return JSONResponse(content={"files": files, "directory": dir, "vendor": vendor})
 
@@ -43,7 +43,7 @@ def load_remote_files(
     file: Annotated[list[str], Query(...)], dir: str, vendor: str
 ) -> list[schemas.VendorFileModel]:
     """Load one or more files from a remote directory"""
-    service = factories.create_file_service(remote=True, vendor=vendor)
+    service = factories.create_remote_file_service(vendor=vendor)
     files = [service.loader.load(name=f, dir=dir) for f in file]
     return [schemas.VendorFileModel(**i.__dict__) for i in files]
 
@@ -96,14 +96,25 @@ def vendor_file_process(
     )
 
 
-@api_router.post("/write_file")
-def write_file(
+@api_router.post("/write-local")
+def write_local_file(
     vendor_file: schemas.VendorFileModel,
     dir: str,
-    remote: bool,
-    vendor: Optional[str],
 ) -> JSONResponse:
-    service = factories.create_file_service(remote=remote, vendor=vendor)
+    service = factories.create_local_file_service()
+    out_files = service.writer.write(file=vendor_file, dir=dir)
+    return JSONResponse(
+        content={"app": "Overload Web", "files": out_files, "directory": dir}
+    )
+
+
+@api_router.post("/write-remote")
+def write_remote_file(
+    vendor_file: schemas.VendorFileModel,
+    dir: str,
+    vendor: str,
+) -> JSONResponse:
+    service = factories.create_remote_file_service(vendor=vendor)
     out_files = service.writer.write(file=vendor_file, dir=dir)
     return JSONResponse(
         content={"app": "Overload Web", "files": out_files, "directory": dir}
