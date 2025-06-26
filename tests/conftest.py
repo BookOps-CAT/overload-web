@@ -9,6 +9,7 @@ from sqlalchemy.orm import clear_mappers, sessionmaker
 
 from overload_web.application import dto
 from overload_web.domain import models, protocols
+from overload_web.infrastructure.bibs import sierra
 from overload_web.infrastructure.repositories import orm
 
 
@@ -65,6 +66,33 @@ def test_fetcher():
             return [bib_1, bib_2, bib_3, bib_4]
 
     return FakeBibFetcher()
+
+
+@pytest.fixture
+def mock_sierra_no_response(mock_sierra_response, monkeypatch):
+    def response_none(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr("requests.Session.get", response_none)
+
+
+class FakeSierraSession(sierra.SierraSessionProtocol):
+    def __init__(self) -> None:
+        self.credentials = self._get_credentials()
+
+
+@pytest.fixture
+def mock_session(monkeypatch):
+    def mock_response(*args, **kwargs):
+        return [{"id": "123456789"}]
+
+    monkeypatch.setattr(sierra.SierraSessionProtocol, "_parse_response", mock_response)
+    return FakeSierraSession()
+
+
+@pytest.fixture
+def mock_session_no_response():
+    return FakeSierraSession()
 
 
 @pytest.fixture

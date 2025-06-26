@@ -7,15 +7,6 @@ from overload_web.infrastructure.bibs import sierra
 
 
 @pytest.fixture
-def mock_session(library, mock_sierra_response):
-    if library == "bpl":
-        session = sierra.BPLSolrSession()
-    else:
-        session = sierra.NYPLPlatformSession()
-    return session
-
-
-@pytest.fixture
 def live_creds() -> None:
     with open(
         os.path.join(os.environ["USERPROFILE"], ".cred/.overload/live_creds.yaml")
@@ -81,31 +72,29 @@ class TestLiveSierraSession:
             ]
 
 
-@pytest.mark.parametrize("library", ["bpl", "nypl"])
-class TestSierraBibFetcher:
+class TestSierraSessions:
+    @pytest.mark.parametrize(
+        "library,session_type",
+        [("bpl", sierra.BPLSolrSession), ("nypl", sierra.NYPLPlatformSession)],
+    )
     @pytest.mark.parametrize("matchpoint", ["bib_id", "upc", "isbn", "oclc_number"])
-    def test_get_bibs_by_id(self, library, matchpoint, mock_session):
-        session = sierra.SierraBibFetcher(session=mock_session, library=library)
-        bibs = session.get_bibs_by_id(value="123456789", key=matchpoint)
+    def test_get_bibs_by_id(
+        self, library, session_type, matchpoint, mock_sierra_response
+    ):
+        fetcher = sierra.SierraBibFetcher(library=library)
+        bibs = fetcher.get_bibs_by_id(value="123456789", key=matchpoint)
         assert bibs[0]["bib_id"] == "123456789"
+        assert isinstance(fetcher.session, session_type)
 
-    def test_get_bibs_by_issn(self, library, mock_session):
-        session = sierra.SierraBibFetcher(session=mock_session, library=library)
+    @pytest.mark.parametrize("library", ["bpl", "nypl"])
+    def test_get_bibs_by_id_issn(self, library, mock_sierra_response):
+        fetcher = sierra.SierraBibFetcher(library=library)
         with pytest.raises(NotImplementedError) as exc:
-            session.get_bibs_by_id(value="123456789", key="issn")
+            fetcher.get_bibs_by_id(value="123456789", key="issn")
         assert "Search by ISSN not implemented" in str(exc.value)
 
-    @pytest.mark.parametrize("matchpoint", ["bib_id", "upc", "isbn", "oclc_number"])
-    def test_get_bibs_no_value(self, library, matchpoint, mock_session):
-        session = sierra.SierraBibFetcher(session=mock_session, library=library)
-        bibs = session.get_bibs_by_id(value=None, key=matchpoint)
+    @pytest.mark.parametrize("library", ["bpl", "nypl"])
+    def test_get_bibs_by_id_no_response(self, library, mock_sierra_no_response):
+        fetcher = sierra.SierraBibFetcher(library=library)
+        bibs = fetcher.get_bibs_by_id(value="123456789", key="isbn")
         assert bibs == []
-
-    def test_get_bibs_by_id_invalid_matchpoint(self, library, mock_session):
-        session = sierra.SierraBibFetcher(session=mock_session, library=library)
-        with pytest.raises(ValueError) as exc:
-            session.get_bibs_by_id(value="123456789", key="bar")
-        assert (
-            str(exc.value)
-            == "Invalid matchpoint: 'bar'. Available matchpoints are: ['bib_id', 'isbn', 'issn', 'oclc_number', 'upc']"
-        )

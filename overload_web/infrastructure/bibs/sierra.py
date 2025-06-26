@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Dict, List, Protocol, Union, runtime_checkable
+from typing import Any, Optional, Protocol, Union, runtime_checkable
 
 import requests
 from bookops_bpl_solr import SolrSession
@@ -39,20 +39,29 @@ AGENT = f"{__title__}/{__version__}"
 class SierraBibFetcher:
     """
     Fetches bibliographic records from Sierra and converts them into domain-level
-    dictionaries for `DomainBib` construction.
+    dictionaries for `DomainBib` construction. This class is a concrete
+    implementation of the `BibFetcher` protocol
 
     Args:
         session: a session instance implementing the Sierra protocol.
         library: the library system whose Sierra instance should be queried.
     """
 
-    def __init__(self, session: SierraSessionProtocol, library: str):
-        self.session = session
+    def __init__(self, library: str, session: Optional[SierraSessionProtocol] = None):
         self.library = library
+        self.session = self._get_session_for_library() if session is None else session
+
+    def _get_session_for_library(self) -> SierraSessionProtocol:
+        if self.library not in ["bpl", "nypl"]:
+            raise ValueError("Invalid library. Must be 'bpl' or 'nypl'")
+        elif self.library == "bpl":
+            return BPLSolrSession()
+        else:
+            return NYPLPlatformSession()
 
     def _response_to_domain_dict(
-        self, records: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, records: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """
         Converts raw response into dictionaries formatted for the `DomainBib` model.
 
@@ -62,20 +71,21 @@ class SierraBibFetcher:
         Returns:
             list of cleaned domain-ready dictionaries.
         """
+        if records:
+            return [
+                {
+                    "library": self.library,
+                    "orders": [],
+                    "bib_id": i["id"],
+                    "isbn": i.get("isbn"),
+                    "oclc_number": i.get("oclc_number"),
+                    "upc": i.get("upc"),
+                }
+                for i in records
+            ]
+        return []
 
-        return [
-            {
-                "library": self.library,
-                "orders": [],
-                "bib_id": i["id"],
-                "isbn": i.get("isbn"),
-                "oclc_number": i.get("oclc_number"),
-                "upc": i.get("upc"),
-            }
-            for i in records
-        ]
-
-    def get_bibs_by_id(self, value: Union[str, int], key: str) -> List[Dict[str, Any]]:
+    def get_bibs_by_id(self, value: Union[str, int], key: str) -> list[dict[str, Any]]:
         """
         Retrieves bib records by a specific matchpoint (e.g., ISBN, OCLC)
 
@@ -120,7 +130,7 @@ class SierraSessionProtocol(Protocol):
     def _get_bibs_by_issn(self, value: Union[str, int]) -> requests.Response: ...
     def _get_bibs_by_oclc_number(self, value: Union[str, int]) -> requests.Response: ...
     def _get_bibs_by_upc(self, value: Union[str, int]) -> requests.Response: ...
-    def _parse_response(self, response: requests.Response) -> List[Dict[str, Any]]: ...
+    def _parse_response(self, response: requests.Response) -> list[dict[str, Any]]: ...
 
 
 class BPLSolrSession(SolrSession):
@@ -141,7 +151,7 @@ class BPLSolrSession(SolrSession):
     def _get_credentials(self) -> str:
         return os.environ["BPL_SOLR_CLIENT"]
 
-    def _parse_response(self, response: requests.Response) -> List[Dict[str, Any]]:
+    def _parse_response(self, response: requests.Response) -> list[dict[str, Any]]:
         bibs = []
         if response and response.ok:
             json_response = response.json()
@@ -187,7 +197,7 @@ class NYPLPlatformSession(PlatformSession):
             os.environ["NYPL_PLATFORM_AGENT"],
         )
 
-    def _parse_response(self, response: requests.Response) -> List[Dict[str, Any]]:
+    def _parse_response(self, response: requests.Response) -> list[dict[str, Any]]:
         bibs = []
         if response and response.ok:
             json_response = response.json()
