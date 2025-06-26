@@ -11,6 +11,7 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from overload_web.application import services
 from overload_web.infrastructure import factories
 from overload_web.presentation.api import schemas
 
@@ -72,14 +73,13 @@ def vendor_file_process(
         A list of processed bib records.
     """
     template_data = {k: v for k, v in form_data.__dict__.items() if k != "matchpoints"}
-    service = factories.get_record_processor(
+    service = services.records.RecordProcessingService(
         library=library,
         template=template_data,
         matchpoints=form_data.matchpoints.as_list(),
     )
     bibs = service.load(data=file.file)
-    matched_bibs = service.match_records(bibs)
-    processed_bibs = service.update_bib(records=matched_bibs)
+    processed_bibs = service.process_records(records=bibs)
     marc_binary = service.write_marc_binary(records=processed_bibs)
     return StreamingResponse(
         marc_binary,
