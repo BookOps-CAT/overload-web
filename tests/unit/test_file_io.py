@@ -4,7 +4,7 @@ import pytest
 import yaml
 from file_retriever import Client
 
-from overload_web.application import dto
+from overload_web.domain import models
 from overload_web.infrastructure import file_io
 
 
@@ -38,10 +38,10 @@ class TestLiveLocalFiles:
 
     def test_write(self, setup_dirs):
         writer = file_io.local.LocalFileWriter()
-        file_dto = dto.file.VendorFileDTO(
-            file_id="foo.mrc", file_name="foo.mrc", content=b"Test content"
+        file = models.files.VendorFile(
+            id="foo.mrc", file_name="foo.mrc", content=b"Test content"
         )
-        new_file = writer.write(file=file_dto, dir=self.test_dir)
+        new_file = writer.write(file=file, dir=self.test_dir)
         assert new_file == os.path.join(self.test_dir, "foo.mrc")
         assert "foo.mrc" in os.listdir(self.test_dir)
         assert "Test content".encode() in open(new_file, "rb").read()
@@ -81,8 +81,8 @@ class TestSFTPFiles:
     def test_write(self, live_test_client):
         writer = file_io.sftp.SFTPFileWriter(client=live_test_client)
         outfile = writer.write(
-            file=dto.file.VendorFileDTO(
-                file_id="test_bib.mrc",
+            file=models.files.VendorFile(
+                id="test_bib.mrc",
                 file_name="test_bib.mrc",
                 content=b"02741pam  a2200445 a 4500",
             ),
@@ -100,5 +100,5 @@ class TestSFTPFiles:
     def test_load(self, live_test_client):
         loader = file_io.sftp.SFTPFileLoader(client=live_test_client)
         file = loader.load(name="test_bib.mrc", dir=self.test_dir)
-        assert file.file_id == "test_bib.mrc"
+        assert file.file_name == "test_bib.mrc"
         assert file.content[0:8] == b"02741pam"
