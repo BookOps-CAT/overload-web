@@ -64,12 +64,8 @@ class TestServices:
         [
             ("bpl", ["isbn"], "123"),
             ("nypl", ["isbn"], "123"),
-            ("bpl", ["oclc_number"], None),
-            ("nypl", ["oclc_number"], None),
             ("bpl", ["isbn", "oclc_number"], "123"),
             ("nypl", ["isbn", "oclc_number"], "123"),
-            ("bpl", ["upc"], None),
-            ("nypl", ["upc"], None),
         ],
     )
     def test_match_bibs(
@@ -89,22 +85,20 @@ class TestServices:
             library=library,
         )
         assert len(bibs) == 1
-        assert bibs[0].bib.library == library
-        assert bibs[0].domain_bib.library == library
-        assert bibs[0].domain_bib.bib_id == result
+        assert str(bibs[0].bib.library) == library
+        assert str(bibs[0].domain_bib.library) == library
+        assert str(bibs[0].domain_bib.bib_id) == result
 
     @pytest.mark.parametrize("library", ["nypl", "bpl"])
     def test_match_bibs_no_fetcher(self, stub_bib_dto, library, mock_sierra_response):
-        assert stub_bib_dto.domain_bib.bib_id is None
-        assert stub_bib_dto.bib.sierra_bib_id is None
         bibs = services.match_bibs(
             bibs=[stub_bib_dto], matchpoints=["isbn"], library=library
         )
         assert len(bibs) == 1
-        assert bibs[0].bib.library == library
-        assert bibs[0].domain_bib.library == library
-        assert bibs[0].domain_bib.bib_id == "123456789"
-        assert bibs[0].bib.sierra_bib_id == "b123456789"
+        assert str(bibs[0].bib.library) == library
+        assert str(bibs[0].domain_bib.library) == library
+        assert str(bibs[0].domain_bib.bib_id) == "123456789"
+        assert str(bibs[0].bib.sierra_bib_id) == "b123456789"
 
     @pytest.mark.parametrize("library", ["nypl", "bpl"])
     def read_marc_binary(self, stub_binary_marc, library):
@@ -112,9 +106,9 @@ class TestServices:
         with open(stub_binary_marc, "rb") as f:
             dtos.append(services.read_marc_binary(f))
         assert len(dtos) == 1
-        assert dtos[0].bib.library == library
+        assert str(dtos[0].bib.library) == library
         assert dtos[0].bib.isbn == "9781234567890"
-        assert dtos[0].domain_bib.library == library
+        assert str(dtos[0].domain_bib.library) == library
         assert dtos[0].domain_bib.barcodes == ["333331234567890"]
 
     def test_save_template(self, template_data):

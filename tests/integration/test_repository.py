@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy import text
 
-from overload_web.domain.models import model
+from overload_web.domain import models
 from overload_web.infrastructure.repositories import repository
 
 
@@ -68,4 +68,4 @@ def test_mappers(test_sql_session, make_template):
         matchpoints={"primary": "isbn"},
     )
     expected = [template_1, template_2, template_3]
-    assert test_sql_session.query(model.Template).all() == expected
+    assert test_sql_session.query(models.templates.Template).all() == expected

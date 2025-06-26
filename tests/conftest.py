@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import clear_mappers, sessionmaker
 
 from overload_web.application.dto import bib_dto
-from overload_web.domain.models import model
+from overload_web.domain import models
 from overload_web.domain.services import bib_matcher
 from overload_web.infrastructure.repositories import orm
 
@@ -85,8 +85,8 @@ def test_sql_session(in_memory_db):
 @pytest.fixture
 def make_template():
     def _make_template(data, matchpoints):
-        template = model.Template(**data)
-        matchpoints = model.Matchpoints(**matchpoints)
+        template = models.templates.Template(**data)
+        matchpoints = models.templates.Matchpoints(**matchpoints)
         template.matchpoints = matchpoints
         return template
 
@@ -249,7 +249,7 @@ def stub_binary_marc(stub_bib) -> io.BytesIO:
 @pytest.fixture
 def stub_bib_dto(stub_bib) -> bib_dto.BibDTO:
     bib = copy.deepcopy(stub_bib)
-    return bib_dto.BibDTO(bib=bib, domain_bib=model.DomainBib.from_marc(bib))
+    return bib_dto.BibDTO(bib=bib, domain_bib=models.bibs.DomainBib.from_marc(bib))
 
 
 @pytest.fixture

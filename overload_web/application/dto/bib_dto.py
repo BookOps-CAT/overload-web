@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain.models import model
+from overload_web.domain import models
 
 
 class BibDTO:
@@ -23,7 +23,7 @@ class BibDTO:
 
     """
 
-    def __init__(self, bib: Bib, domain_bib: model.DomainBib):
+    def __init__(self, bib: Bib, domain_bib: models.bibs.DomainBib):
         self.bib = bib
         self.domain_bib = domain_bib
 
@@ -57,7 +57,8 @@ class BibDTO:
                     indicators=Indicators(" ", " "),
                     subfields=[
                         Subfield(
-                            code="a", value=f".b{self.domain_bib.bib_id.strip('.b')}"
+                            code="a",
+                            value=f".b{str(self.domain_bib.bib_id).strip('.b')}",
                         )
                     ],
                 )

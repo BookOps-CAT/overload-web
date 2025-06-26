@@ -17,7 +17,7 @@ from __future__ import annotations
 import logging
 from typing import Protocol, Union, runtime_checkable
 
-from overload_web.domain.models import model
+from overload_web.domain import models
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +30,9 @@ class RepositoryProtocol(Protocol):
     Includes methods for fetching and saving templates.
     """
 
-    def get(self, id: Union[str, int]) -> model.Template: ...
+    def get(self, id: Union[str, int]) -> models.templates.Template: ...
 
-    def save(self, template: model.Template) -> None: ...
+    def save(self, template: models.templates.Template) -> None: ...
 
 
 class SqlAlchemyRepository:
@@ -56,9 +56,9 @@ class SqlAlchemyRepository:
         Returns:
             a `Template` instance or `None` if not found.
         """
-        return self.session.query(model.Template).filter_by(id=id).first()
+        return self.session.query(models.templates.Template).filter_by(id=id).first()
 
-    def save(self, template: model.Template) -> None:
+    def save(self, template: models.templates.Template) -> None:
         """
         Adds a new or updated `Template` to the database.
 

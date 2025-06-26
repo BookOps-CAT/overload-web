@@ -24,7 +24,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 
-from overload_web.domain.models import model
+from overload_web.domain import models
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class BibMatchService:
     specified matchpoints (e.g., ISBN, OCLC number, UPC). The services selects a record as the best match if if has the most attribute matches of all candidate records.
     """
 
-    def __init__(self, fetcher: BibFetcher, matchpoints: Optional[List[str]] = None):
+    def __init__(self, fetcher: BibFetcher, matchpoints: Optional[list[str]] = None):
         """
         Initialize the match service with a fetcher and optional matchpoints.
 
@@ -79,8 +79,8 @@ class BibMatchService:
         ]
 
     def _select_best_match(
-        self, bib_to_match: model.DomainBib, candidates: List[Dict[str, Any]]
-    ) -> Optional[str]:
+        self, bib_to_match: models.bibs.DomainBib, candidates: list[dict[str, Any]]
+    ) -> Optional[models.bibs.BibId]:
         """
         Compare a `DomainBib` to a list of candidate bibs and select the best match.
 
@@ -101,11 +101,15 @@ class BibMatchService:
 
             if matched_points > max_matched_points:
                 max_matched_points = matched_points
-                best_match_bib_id = bib.get("bib_id")
-
+                best_match = bib.get("bib_id")
+                best_match_bib_id = (
+                    models.bibs.BibId(best_match) if best_match else None
+                )
         return best_match_bib_id
 
-    def find_best_match(self, bib: model.DomainBib) -> Optional[str]:
+    def find_best_match(
+        self, bib: models.bibs.DomainBib
+    ) -> Optional[models.bibs.BibId]:
         """
         Attempt to find the best-match in Sierra for a given `DomainBib`.
 

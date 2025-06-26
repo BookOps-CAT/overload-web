@@ -12,7 +12,7 @@ from typing import Any, BinaryIO, Dict, List, Optional
 
 from overload_web.application.dto import bib_dto
 from overload_web.application.services import unit_of_work
-from overload_web.domain.models import model
+from overload_web.domain import models
 from overload_web.domain.services import bib_matcher
 from overload_web.infrastructure.bib_fetchers import marc_adapters, sierra
 
@@ -125,7 +125,7 @@ def save_template(
     Raises:
         ValueError: If the template lacks `name` or `agent`.
     """
-    template = model.Template(**data)
+    template = models.templates.Template(**data)
     if not template.name or not template.name.strip():
         raise ValueError("Templates must have a name before being saved.")
     if not template.agent or not template.agent.strip():

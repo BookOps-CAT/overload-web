@@ -7,7 +7,7 @@ from typing import BinaryIO, List
 from bookops_marc import SierraBibReader
 
 from overload_web.application.dto import bib_dto
-from overload_web.domain.models import model
+from overload_web.domain import models
 
 
 def read_marc_file(marc_file: BinaryIO, library: str) -> List[bib_dto.BibDTO]:
@@ -25,6 +25,8 @@ def read_marc_file(marc_file: BinaryIO, library: str) -> List[bib_dto.BibDTO]:
     bibs = []
     reader = SierraBibReader(marc_file, library=library, hide_utf8_warnings=True)
     for record in reader:
-        obj = bib_dto.BibDTO(bib=record, domain_bib=model.DomainBib.from_marc(record))
+        obj = bib_dto.BibDTO(
+            bib=record, domain_bib=models.bibs.DomainBib.from_marc(record)
+        )
         bibs.append(obj)
     return bibs

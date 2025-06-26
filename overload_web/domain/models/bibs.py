@@ -1,13 +1,42 @@
-"""Domain models that define bib records, order records, and associated objects."""
+"""Domain models that define bib records and order records"""
 
 from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from enum import Enum
+from typing import Any, Optional, Union
 
 import bookops_marc
 import bookops_marc.models
+
+
+@dataclass(frozen=True)
+class BibId:
+    """A dataclass to define a BibId as an entity"""
+
+    value: str
+
+    def __post_init__(self):
+        """Validate that the Bib ID is a string"""
+        if not self.value or not isinstance(self.value, str):
+            raise ValueError("BibId must be a non-empty string.")
+
+    def __str__(self):
+        return self.value
+
+    def __repr__(self):
+        return f"BibId(value={self.value!r})"
+
+
+class Collection(Enum):
+    """Includes valid values for NYPL collection"""
+
+    BRANCH = "BL"
+    RESEARCH = "RL"
+
+    def __str__(self):
+        return self.value
 
 
 @dataclass
@@ -16,7 +45,7 @@ class DomainBib:
     A domain model representing a bib record and its associated order data.
 
     Attributes:
-        library: the library to whom the record belongs.
+        library: the library to whom the record belongs as an enum.
         orders: list of orders associated with the record.
         bib_id: sierra bib ID.
         isbn: ISBN for the title, if present.
@@ -26,16 +55,16 @@ class DomainBib:
         barcodes: list of barcodes associated with the record.
     """
 
-    library: str
-    orders: List[Order]
-    bib_id: Optional[str] = None
+    library: LibrarySystem
+    orders: list[Order]
+    bib_id: Optional[BibId] = None
     isbn: Optional[str] = None
-    oclc_number: Optional[Union[str, List[str]]] = None
+    oclc_number: Optional[Union[str, list[str]]] = None
     upc: Optional[str] = None
-    call_number: Optional[Union[str, List[str]]] = None
-    barcodes: List[str] = field(default_factory=list)
+    call_number: Optional[Union[str, list[str]]] = None
+    barcodes: list[str] = field(default_factory=list)
 
-    def apply_template(self, template_data: Dict[str, Any]) -> None:
+    def apply_template(self, template_data: dict[str, Any]) -> None:
         """
         Apply template data to all orders in this bib record.
 
@@ -57,9 +86,9 @@ class DomainBib:
             DomainBib: domain object populated with structured order and identifier data.
         """
         return DomainBib(
-            library=bib.library,
+            library=LibrarySystem(bib.library),
             orders=[Order.from_marc(order=i) for i in bib.orders],
-            bib_id=bib.sierra_bib_id,
+            bib_id=(BibId(value=bib.sierra_bib_id) if bib.sierra_bib_id else None),
             upc=bib.upc_number,
             isbn=bib.isbn,
             oclc_number=list(bib.oclc_nos.values()),
@@ -70,57 +99,14 @@ class DomainBib:
         )
 
 
-@dataclass
-class Matchpoints:
-    """
-    Represents a set of matchpoint values used for identifying duplicate records
-    in Sierra.
+class LibrarySystem(Enum):
+    """Includes valid values for library system"""
 
-    Attributes:
-        primary: primary field to match on.
-        secondary: secondary field to match on.
-        tertiary: tertiary field to match on.
-    """
+    BPL = "bpl"
+    NYPL = "nypl"
 
-    primary: Optional[str] = None
-    secondary: Optional[str] = None
-    tertiary: Optional[str] = None
-
-    def __init__(self, *args, **kwargs):
-        """
-        Initialize `Matchpoints` from positional or keyword arguments.
-
-        Raises:
-            ValueError: If tertiary matchpoint is provided without a secondary.
-        """
-        if "tertiary" in kwargs and "secondary" not in kwargs and len(args) < 2:
-            raise ValueError("Cannot have tertiary matchpoint without secondary.")
-
-        values = list(args)
-        for key in ["primary", "secondary", "tertiary"]:
-            if key in kwargs:
-                if len(values) < ["primary", "secondary", "tertiary"].index(key) + 1:
-                    values.append(kwargs[key])
-
-        while len(values) < 3:
-            values.append(None)
-
-        self.primary, self.secondary, self.tertiary = values[:3]
-
-    def as_list(self) -> List[str]:
-        """Return the matchpoints as a list"""
-        return [i for i in (self.primary, self.secondary, self.tertiary) if i]
-
-    def __composite_values__(self):
-        return self.primary, self.secondary, self.tertiary
-
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, Matchpoints):
-            return NotImplemented
-        return self.__composite_values__() == other.__composite_values__()
-
-    def __ne__(self, other) -> bool:
-        return not self.__eq__(other)
+    def __str__(self):
+        return self.value
 
 
 @dataclass
@@ -142,7 +128,7 @@ class Order:
     order_code_2: Optional[str]
     order_code_3: Optional[str]
     order_code_4: Optional[str]
-    order_id: Optional[int]
+    order_id: Optional[OrderId]
     order_type: Optional[str]
     price: Optional[Union[str, int]]
     selector_note: Optional[str]
@@ -153,7 +139,7 @@ class Order:
     vendor_notes: Optional[str]
     vendor_title_no: Optional[str]
 
-    def _marc_mapping(self) -> Dict[str, Any]:
+    def _marc_mapping(self) -> dict[str, Any]:
         """
         Returns a mapping of MARC field codes to the corresponding attributes
         in the `Order` dataclass.
@@ -187,7 +173,7 @@ class Order:
             },
         }
 
-    def apply_template(self, template_data: Dict[str, Any]) -> None:
+    def apply_template(self, template_data: dict[str, Any]) -> None:
         """
         Apply template data to the order, updating any matching non-empty fields.
 
@@ -233,7 +219,7 @@ class Order:
             order_code_3=order._field.get("e", None),
             order_code_4=order._field.get("f", None),
             order_type=order._field.get("i", None),
-            order_id=order.order_id_normalized,
+            order_id=(OrderId(value=str(order.order_id)) if order.order_id else None),
             price=order._field.get("s", None),
             selector_note=from_following_field("f"),
             shelves=order.shelves,
@@ -245,39 +231,29 @@ class Order:
         )
 
 
-@dataclass(kw_only=True)
-class Template:
-    """
-    A reusable template for applying consistent values to orders.
+@dataclass(frozen=True)
+class OrderId:
+    """A dataclass to define a OrderId as an entity"""
 
-    Attributes:
-        matchpoints: a `Matchpoints` object used to identify matched bibs in Sierra.
+    value: str
 
-        All other fields correspond to those available in the `Order` domain model.
-    """
+    def __post_init__(self):
+        """Validate that the order ID is a string"""
+        if not self.value or not isinstance(self.value, str):
+            raise ValueError("OrderId must be a non-empty string.")
 
-    matchpoints: Matchpoints = field(default_factory=Matchpoints)
-    agent: Optional[str] = None
-    id: Optional[str] = None
-    name: Optional[str] = None
+    def __str__(self):
+        return self.value
 
-    blanket_po: Optional[str] = None
-    copies: Optional[Union[str, int]] = None
-    country: Optional[str] = None
-    create_date: Optional[Union[datetime.datetime, datetime.date, str]] = None
-    format: Optional[str] = None
-    fund: Optional[str] = None
-    internal_note: Optional[str] = None
-    lang: Optional[str] = None
-    order_code_1: Optional[str] = None
-    order_code_2: Optional[str] = None
-    order_code_3: Optional[str] = None
-    order_code_4: Optional[str] = None
-    order_type: Optional[str] = None
-    price: Optional[Union[str, int]] = None
-    selector_note: Optional[str] = None
-    status: Optional[str] = None
-    var_field_isbn: Optional[str] = None
-    vendor_code: Optional[str] = None
-    vendor_notes: Optional[str] = None
-    vendor_title_no: Optional[str] = None
+    def __repr__(self):
+        return f"OrderId(value={self.value!r})"
+
+
+class RecordType(Enum):
+    """Includes valid values for record type"""
+
+    FULL = "full"
+    ORDER_LEVEL = "order_level"
+
+    def __str__(self):
+        return self.value
