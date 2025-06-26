@@ -82,17 +82,6 @@ def test_sql_session(in_memory_db):
 
 
 @pytest.fixture
-def make_template():
-    def _make_template(data, matchpoints):
-        template = models.templates.Template(**data)
-        matchpoints = models.templates.Matchpoints(**matchpoints)
-        template.matchpoints = matchpoints
-        return template
-
-    return _make_template
-
-
-@pytest.fixture
 def bib_data(order_data, library) -> dict:
     return {"library": library, "orders": [order_data]}
 
