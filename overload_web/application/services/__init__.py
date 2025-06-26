@@ -1,3 +1,3 @@
-from . import file, services
+from . import file, services, template
 
-__all__ = ["file", "services"]
+__all__ = ["file", "services", "template"]

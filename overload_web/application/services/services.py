@@ -8,11 +8,10 @@ from __future__ import annotations
 
 import io
 import logging
-from typing import Any, BinaryIO, Dict, List, Optional
+from typing import Any, BinaryIO, List, Optional
 
 from overload_web.application import dto
-from overload_web.application.services import unit_of_work
-from overload_web.domain import logic, models, protocols
+from overload_web.domain import logic, protocols
 from overload_web.infrastructure import bibs
 from overload_web.infrastructure.bibs import marc_adapters
 
@@ -20,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def attach_template(
-    bibs: List[dto.bib.BibDTO], template: Dict[str, Any]
+    bibs: List[dto.bib.BibDTO], template: dict[str, Any]
 ) -> List[dto.bib.BibDTO]:
     """
     Applies template data to a list of bib records.
@@ -107,33 +106,6 @@ def read_marc_binary(file_data: BinaryIO, library: str) -> List[dto.bib.BibDTO]:
     """
     bibs = marc_adapters.read_marc_file(marc_file=file_data, library=library)
     return bibs
-
-
-def save_template(
-    data: Dict[str, Any], uow: unit_of_work.UnitOfWorkProtocol
-) -> Dict[str, Any]:
-    """
-    Validates and persists a new template using a unit of work.
-
-    Args:
-        data: dictionary of template fields.
-        uow: unit of work to use to manage the transaction.
-
-    Returns:
-        the saved template as a dict.
-
-    Raises:
-        ValueError: If the template lacks `name` or `agent`.
-    """
-    template = models.templates.Template(**data)
-    if not template.name or not template.name.strip():
-        raise ValueError("Templates must have a name before being saved.")
-    if not template.agent or not template.agent.strip():
-        raise ValueError("Templates must have an agent before being saved.")
-    with uow:
-        uow.templates.save(template=template)
-        uow.commit()
-    return template.__dict__
 
 
 def write_marc_binary(bibs: List[dto.bib.BibDTO]) -> io.BytesIO:

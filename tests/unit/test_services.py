@@ -9,23 +9,10 @@ class MockRepository(protocols.repositories.SqlRepositoryProtocol):
     def __init__(self, templates):
         self.templates = templates
 
-    def get(self, id):
-        return next((i for i in self.templates if i.id == id), None)
-
-    def save(self, template):
-        pass
-
 
 class MockUnitOfWork(protocols.repositories.UnitOfWorkProtocol):
     def __init__(self):
         self.templates = MockRepository(templates=[])
-        self.committed = False
-
-    def commit(self):
-        self.committed = True
-
-    def rollback(self):
-        pass
 
 
 class TestServices:
@@ -107,28 +94,36 @@ class TestServices:
         assert str(dtos[0].domain_bib.library) == library
         assert dtos[0].domain_bib.barcodes == ["333331234567890"]
 
-    def test_save_template(self, template_data):
-        template_data.update({"name": "Foo", "agent": "Bar"})
-        template_saver = services.services.save_template(
-            data=template_data, uow=MockUnitOfWork()
-        )
-        assert template_saver == template_data
-
-    def test_save_template_no_name(self, template_data):
-        with pytest.raises(ValueError) as exc:
-            services.services.save_template(data=template_data, uow=MockUnitOfWork())
-        assert str(exc.value) == "Templates must have a name before being saved."
-
-    def test_save_template_no_agent(self, template_data):
-        template_data.update({"name": "Foo"})
-        with pytest.raises(ValueError) as exc:
-            services.services.save_template(data=template_data, uow=MockUnitOfWork())
-        assert str(exc.value) == "Templates must have an agent before being saved."
-
     @pytest.mark.parametrize("library", ["nypl", "bpl"])
     def test_write_marc_binary(self, stub_bib_dto, library):
         marc_binary = services.services.write_marc_binary(bibs=[stub_bib_dto])
         assert marc_binary.read()[0:2] == b"00"
+
+
+class TestTemplateService:
+    @pytest.fixture
+    def service(self):
+        return services.template.TemplateService(uow=MockUnitOfWork())
+
+    def test_get_template(self, service):
+        template_obj = service.get_template(template_id="foo")
+        assert template_obj is None
+
+    def test_save_template(self, service, template_data):
+        template_data.update({"name": "Foo", "agent": "Bar"})
+        template_saver = service.save_template(data=template_data)
+        assert template_saver == template_data
+
+    def test_save_template_no_name(self, service, template_data):
+        with pytest.raises(ValueError) as exc:
+            service.save_template(data=template_data)
+        assert str(exc.value) == "Templates must have a name before being saved."
+
+    def test_save_template_no_agent(self, service, template_data):
+        template_data.update({"name": "Foo"})
+        with pytest.raises(ValueError) as exc:
+            service.save_template(data=template_data)
+        assert str(exc.value) == "Templates must have an agent before being saved."
 
 
 class StubFileLoader(protocols.file_io.FileLoader):
