@@ -111,7 +111,7 @@ class TestBackEndAPIRouter:
     ):
         with pytest.raises(ValueError) as exc:
             self.client.post("/vendor_file", files=marc_file_input, data=form_input)
-        assert str(exc.value) == "Invalid library. Must be 'bpl' or 'nypl'"
+        assert "not a valid LibrarySystem" in str(exc.value)
 
     def test_write_file_post_remote(self, mock_file_service_response):
         response = self.client.post(
