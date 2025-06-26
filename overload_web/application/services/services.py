@@ -13,7 +13,8 @@ from typing import Any, BinaryIO, Dict, List, Optional
 from overload_web.application import dto
 from overload_web.application.services import unit_of_work
 from overload_web.domain import logic, models, protocols
-from overload_web.infrastructure.bib_fetchers import marc_adapters, sierra
+from overload_web.infrastructure import bibs
+from overload_web.infrastructure.bibs import marc_adapters
 
 logger = logging.getLogger(__name__)
 
@@ -52,14 +53,14 @@ def get_fetcher_for_library(library: str) -> protocols.bibs.BibFetcher:
     Raises:
         ValueError: if the library is not "bpl" or "nypl".
     """
-    session: sierra.SierraSessionProtocol
+    session: bibs.sierra.SierraSessionProtocol
     if library == "bpl":
-        session = sierra.BPLSolrSession()
+        session = bibs.sierra.BPLSolrSession()
     elif library == "nypl":
-        session = sierra.NYPLPlatformSession()
+        session = bibs.sierra.NYPLPlatformSession()
     else:
         raise ValueError("Invalid library. Must be 'bpl' or 'nypl'")
-    return sierra.SierraBibFetcher(session=session, library=library)
+    return bibs.sierra.SierraBibFetcher(session=session, library=library)
 
 
 def match_bibs(

@@ -3,7 +3,7 @@ import os
 import pytest
 import yaml
 
-from overload_web.infrastructure.bib_fetchers import sierra
+from overload_web.infrastructure.bibs import sierra
 
 
 @pytest.fixture
