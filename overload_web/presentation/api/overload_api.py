@@ -30,27 +30,33 @@ def root() -> JSONResponse:
     return JSONResponse(content={"app": "Overload Web"})
 
 
-@api_router.get("/list_files")
-def list_files(dir: str, remote: bool, vendor: Optional[str] = None) -> JSONResponse:
-    """List all files available in a specific directory"""
-    service = factories.create_file_service(remote=remote, vendor=vendor)
-    files = service.loader.list(dir)
-    return JSONResponse(
-        content={"app": "Overload Web", "files": files, "directory": dir}
-    )
+@api_router.get("/list-remote")
+def list_remote_files(dir: str, vendor: str) -> JSONResponse:
+    """List all files on a vendor's SFTP server"""
+    service = factories.create_file_service(remote=True, vendor=vendor)
+    files = service.loader.list(dir=dir)
+    return JSONResponse(content={"files": files, "directory": dir, "vendor": vendor})
 
 
-@api_router.get("/load_files")
-def load_files(
-    file: Annotated[list[str], Query(...)],
-    dir: str,
-    remote: bool,
-    vendor: Optional[str] = None,
+@api_router.get("/load-remote")
+def load_remote_files(
+    file: Annotated[list[str], Query(...)], dir: str, vendor: str
 ) -> list[schemas.VendorFileModel]:
-    """Load one or more files"""
-    service = factories.create_file_service(remote=remote, vendor=vendor)
+    """Load one or more files from a remote directory"""
+    service = factories.create_file_service(remote=True, vendor=vendor)
     files = [service.loader.load(name=f, dir=dir) for f in file]
     return [schemas.VendorFileModel(**i.__dict__) for i in files]
+
+
+@api_router.post("/load-local")
+def load_local_files(
+    file: Annotated[list[UploadFile], File(...)],
+) -> list[schemas.VendorFileModel]:
+    """Upload local files for processing"""
+    return [
+        schemas.VendorFileModel.create(file_name=i.filename, content=i.file.read())
+        for i in file
+    ]
 
 
 @api_router.post("/vendor_file")
@@ -78,7 +84,7 @@ def vendor_file_process(
         template=template_data,
         matchpoints=form_data.matchpoints.as_list(),
     )
-    bibs = service.load(data=file.file)
+    bibs = service.parse(data=file.file)
     processed_bibs = service.process_records(records=bibs)
     marc_binary = service.write_marc_binary(records=processed_bibs)
     return StreamingResponse(
