@@ -10,7 +10,8 @@ from typing import Any, BinaryIO
 from bookops_marc import SierraBibReader
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.application import constants, dto
+from overload_web import constants
+from overload_web.application import dto
 from overload_web.domain import models
 
 
