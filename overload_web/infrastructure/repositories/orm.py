@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 metadata = MetaData()
 mapper_registry = registry(metadata=metadata)
 
-templates = Table(
+template_table = Table(
     "templates",
     metadata,
     Column("id", Integer, primary_key=True, autoincrement=True),
@@ -59,13 +59,13 @@ def start_mappers() -> None:
     """
     mapper_registry.map_imperatively(
         models.templates.Template,
-        templates,
+        template_table,
         properties={
             "matchpoints": composite(
                 models.templates.Matchpoints,
-                templates.c.primary_matchpoint,
-                templates.c.secondary_matchpoint,
-                templates.c.tertiary_matchpoint,
+                template_table.c.primary_matchpoint,
+                template_table.c.secondary_matchpoint,
+                template_table.c.tertiary_matchpoint,
             )
         },
     )

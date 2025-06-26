@@ -1,11 +1,11 @@
 import pytest
 
 from overload_web.application.services import services, unit_of_work
+from overload_web.domain import protocols
 from overload_web.infrastructure.bib_fetchers import sierra
-from overload_web.infrastructure.repositories import repository
 
 
-class MockRepository(repository.RepositoryProtocol):
+class MockRepository(protocols.repositories.SqlRepositoryProtocol):
     def __init__(self, templates):
         self.templates = templates
 
