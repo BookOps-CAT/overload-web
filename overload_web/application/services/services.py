@@ -10,7 +10,7 @@ import io
 import logging
 from typing import Any, BinaryIO, Dict, List, Optional
 
-from overload_web.application.dto import bib_dto
+from overload_web.application import dto
 from overload_web.application.services import unit_of_work
 from overload_web.domain import logic, models, protocols
 from overload_web.infrastructure.bib_fetchers import marc_adapters, sierra
@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 
 
 def attach_template(
-    bibs: List[bib_dto.BibDTO], template: Dict[str, Any]
-) -> List[bib_dto.BibDTO]:
+    bibs: List[dto.bib.BibDTO], template: Dict[str, Any]
+) -> List[dto.bib.BibDTO]:
     """
     Applies template data to a list of bib records.
 
@@ -63,11 +63,11 @@ def get_fetcher_for_library(library: str) -> protocols.bibs.BibFetcher:
 
 
 def match_bibs(
-    bibs: List[bib_dto.BibDTO],
+    bibs: List[dto.bib.BibDTO],
     library: str,
     matchpoints: List[str],
     fetcher: Optional[protocols.bibs.BibFetcher] = None,
-) -> List[bib_dto.BibDTO]:
+) -> List[dto.bib.BibDTO]:
     """
     Matches bib records from an incoming MARC file against Sierra.
 
@@ -92,7 +92,7 @@ def match_bibs(
     return processed_bibs
 
 
-def read_marc_binary(file_data: BinaryIO, library: str) -> List[bib_dto.BibDTO]:
+def read_marc_binary(file_data: BinaryIO, library: str) -> List[dto.bib.BibDTO]:
     """
     Reads a MARC binary file and returns a list of `BibDTO` objects.
 
@@ -135,7 +135,7 @@ def save_template(
     return template.__dict__
 
 
-def write_marc_binary(bibs: List[bib_dto.BibDTO]) -> io.BytesIO:
+def write_marc_binary(bibs: List[dto.bib.BibDTO]) -> io.BytesIO:
     """
     Writes a list of data transfer objects to a file in MARC format.
 
