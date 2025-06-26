@@ -39,7 +39,7 @@ class RecordProcessingService:
         )
         self.template = template if isinstance(template, dict) else asdict(template)
 
-    def _get_parser(self, library: str) -> protocols.bibs.MarcTransformer:
+    def _get_parser(self, library: str) -> marc.BookopsMarcTransformer:
         return marc.BookopsMarcTransformer(library=models.bibs.LibrarySystem(library))
 
     def _get_matcher(
@@ -49,7 +49,7 @@ class RecordProcessingService:
             fetcher=sierra.SierraBibFetcher(library=library), matchpoints=matchpoints
         )
 
-    def load(self, data: BinaryIO) -> list[dto.bib.BibDTO]:
+    def parse(self, data: BinaryIO | bytes) -> list[dto.bib.BibDTO]:
         return self.parser.parse(data=data)
 
     def process_records(self, records: list[dto.bib.BibDTO]) -> list[dto.bib.BibDTO]:

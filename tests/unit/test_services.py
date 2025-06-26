@@ -33,7 +33,7 @@ class FakeBibFetcher(StubFetcher):
 
 @pytest.mark.parametrize("library", ["nypl", "bpl"])
 class TestRecordProcessingService:
-    def test_load(self, library, stub_binary_marc):
+    def test_parse(self, library, stub_binary_marc):
         service = services.records.RecordProcessingService(
             parser=marc.BookopsMarcTransformer(library=library),
             matcher=logic.bibs.BibMatcher(fetcher=StubFetcher(), matchpoints=[]),
@@ -41,7 +41,7 @@ class TestRecordProcessingService:
             library=library,
             matchpoints=[],
         )
-        records = service.load(stub_binary_marc)
+        records = service.parse(stub_binary_marc)
         assert len(records) == 1
         assert str(records[0].bib.library) == library
         assert records[0].bib.isbn == "9781234567890"
