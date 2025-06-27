@@ -12,7 +12,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from overload_web import constants
+from overload_web import constants, template_constants
 
 logger = logging.getLogger(__name__)
 frontend_router = APIRouter()
@@ -20,7 +20,7 @@ templates = Jinja2Templates(directory="overload_web/presentation/frontend/templa
 
 CONTEXT: Dict[str, Any] = {
     "application": constants.APPLICATION,
-    "field_constants": constants.FIELD_CONSTANTS,
+    "field_constants": template_constants.FIELD_CONSTANTS,
 }
 
 
