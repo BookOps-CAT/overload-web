@@ -34,6 +34,7 @@ class Collection(Enum):
 
     BRANCH = "BL"
     RESEARCH = "RL"
+    NONE = "NONE"
 
     def __str__(self):
         return self.value

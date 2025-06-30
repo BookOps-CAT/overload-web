@@ -8,10 +8,12 @@ from __future__ import annotations
 import logging
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
+from fastapi import APIRouter, File, Query, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from overload_web import constants, template_constants
 from overload_web.application import services
+from overload_web.domain import models
 from overload_web.infrastructure import factories
 from overload_web.presentation.api import schemas
 
@@ -28,6 +30,22 @@ def root() -> JSONResponse:
         JSON response indicating the application is active.
     """
     return JSONResponse(content={"app": "Overload Web"})
+
+
+@api_router.get("/options/context")
+def get_context_options() -> JSONResponse:
+    context_options = {
+        "library": [i.value for i in models.bibs.RecordType],
+        "collection": [i.value for i in models.bibs.Collection],
+        "record_type": [i.value for i in models.bibs.RecordType],
+        "vendor": [i for i in constants.VENDOR_RULES],
+    }
+    return JSONResponse(content={"context": context_options})
+
+
+@api_router.get("/options/template")
+def get_template_input_options() -> JSONResponse:
+    return JSONResponse(content={"field_constants": template_constants.FIELD_CONSTANTS})
 
 
 @api_router.get("/list-remote")
@@ -59,39 +77,37 @@ def load_local_files(
     ]
 
 
-@api_router.post("/vendor_file")
-def vendor_file_process(
-    file: Annotated[UploadFile, File(...)],
-    library: Annotated[str, Form()],
-    collection: Annotated[Optional[str], Form()] = None,
-    form_data: schemas.TemplateModel = Depends(schemas.TemplateModel.from_form_data),
+@api_router.post("/process/{record_type}")
+def process_vendor_file(
+    record_type: models.bibs.RecordType,
+    context: schemas.ContextModel,
+    records: list[schemas.VendorFileModel],
+    template_data: Optional[schemas.TemplateModel] = None,
 ) -> StreamingResponse:
-    """
-    Processes an uploaded vendor MARC file, optionally applying a template.
-
-    Args:
-        file: the uploaded MARC file to process.
-        library: the library to whom the records belong ("bpl" or "nypl").
-        collection: optional library collection.
-        form_data: a `TemplateModel` containing template fields and matchpoints.
-
-    Returns:
-        A list of processed bib records.
-    """
-    template_data = {k: v for k, v in form_data.__dict__.items() if k != "matchpoints"}
-    service = services.records.RecordProcessingService(
-        library=library,
-        template=template_data,
-        matchpoints=form_data.matchpoints.as_list(),
+    service: (
+        services.records.FullRecordProcessingService
+        | services.records.OrderRecordProcessingService
     )
-    bibs = service.parse(data=file.file)
+    session_context = models.context.SessionContext(
+        library=context.library, collection=context.collection, vendor=context.vendor
+    )
+    if str(record_type) == "full":
+        service = services.records.FullRecordProcessingService(context=session_context)
+    else:
+        template = template_data.__dict__
+        matchpoints = [i for i in list(template["matchpoints"].__dict__.values()) if i]
+        template["matchpoints"] = matchpoints
+        service = services.records.OrderRecordProcessingService(
+            context=session_context, template=template
+        )
+    bibs = service.parse(data=records[0].content)
     processed_bibs = service.process_records(records=bibs)
     marc_binary = service.write_marc_binary(records=processed_bibs)
     return StreamingResponse(
         marc_binary,
         media_type="application/marc",
         headers={
-            "Content-Disposition": f"attachment; filename={file.filename}_out.mrc"
+            "Content-Disposition": f"attachment; filename={records[0].file_name}_out.mrc"
         },
     )
 

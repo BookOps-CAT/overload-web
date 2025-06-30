@@ -18,6 +18,32 @@
 {%- endmacro %}
 
 
+
+{% macro context_fields(fields) -%}
+<div class="row row-cols-4 gy-1 my-2">
+    {% for field in fields %}
+    <div class="col">
+        {{dropdown(field['id'], field['name'], field['values'])}}     
+    </div> 
+    {%endfor%} 
+</div>
+{%- endmacro %}
+
+{% macro disabled_context_fields(fields, context) -%}
+<div class="row row-cols-4 gy-1 my-2">
+    {% for field in fields %}
+    <div class="col">
+        <div class="form-floating">
+            <select class="form-select" aria-label="{{ field['id'] }}" name="{{ field['id'] }}", id="{{ field['id'] }}">   
+            <option selected value="{{ context[field['id']] }}">{{ field['values'][context[field['id']]] }}</option>
+            </select>
+            <label for="{{ field['id'] }}">{{ field['name'] }}</label>
+        </div>            
+    </div> 
+    {%endfor%} 
+</div>
+{%- endmacro %}
+
 {% macro template_fields(fields) -%}
 {% for type,fields in fields.items()%}
     {% if type=="fixed_fields"%}
