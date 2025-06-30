@@ -14,7 +14,7 @@ Protocols:
     Concrete implementations of this protocol are defined in the infrastructure
     layer.
 
-`MarcTransformer`
+`MarcParser`
     a protocol that defines an adapter used to convert MARC objects to domain
     objects. Concrete implementations of this protocol are defined in the infrastructure
     layer.
@@ -58,7 +58,7 @@ class BibFetcher(Protocol):
 
 
 @runtime_checkable
-class MarcTransformer(Protocol[T]):
+class MarcParser(Protocol[T]):
     """
     Parse a binary object to MARC
 
