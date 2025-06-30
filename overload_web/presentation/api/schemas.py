@@ -27,6 +27,19 @@ class BibModel(BaseModel, models.bibs.DomainBib):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ContextModel(BaseModel):
+    """
+    Pydantic model for serializing/deserializing values in
+    `SessionContext` objects
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    library: models.bibs.LibrarySystem
+    collection: models.bibs.Collection
+    vendor: Optional[str] = None
+
+
 class MatchpointsModel(BaseModel, models.templates.Matchpoints):
     """Pydantic model for serializing/deserializing `Matchpoints` domain objects."""
 
