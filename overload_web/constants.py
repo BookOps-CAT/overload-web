@@ -7,12 +7,12 @@ from typing import Any, Dict
 APPLICATION: str = "Overload"
 
 VENDORS: Dict[str, Any] = {
-    "UNKNOWN": "unknown",
-    "BT": "bt",
-    "MIDWEST": "midwest",
-    "AMALIVRE": "amalivre",
-    "INGRAM": "ingram",
-    "Sulaiman": "sulaiman",
+    "unknown": "Unknown",
+    "BT": "BT",
+    "midwest": "Midwest",
+    "amalivre": "Amalivre",
+    "ingram": "Ingram",
+    "sulaiman": "Sulaiman",
 }
 CONTEXT_VALS: list[Dict[str, Any]] = [
     {
@@ -33,7 +33,7 @@ CONTEXT_VALS: list[Dict[str, Any]] = [
     {
         "id": "vendor",
         "name": "Vendor",
-        "values": {k: v.title() for k, v in VENDORS.items()},
+        "values": VENDORS,
     },
 ]
 

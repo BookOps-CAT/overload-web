@@ -1,19 +1,9 @@
-{% extends 'home.html' %}
+{% extends 'pvf.html' %}
 {% import "macros.html" as macro %} 
-{% block head %}
-    {{ super() }}  
-{% endblock %}
-{% block nav_links %}
-    {{ super() }}  
-{% endblock %}
-{% block header %}{{ page_title }}{% endblock %}
 {% block content %}
 {% block library_context %}
-<div class="container text-left"></div>
-    <form method="post" action="/process">           
-        {{ macro.context_fields(context_vals) }}  
-    <button type="submit" class="btn my-3" style="border-color: #d52828; border: border-3">Continue</button>
-    </form>
-</div>      
+    {{ super() }}
 {% endblock %}
+{% block disabled_library_context %}{% endblock %}
+{% block pvf_form %}{% endblock %}
 {% endblock %}
