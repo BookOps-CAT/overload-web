@@ -47,6 +47,16 @@ def root(request: Request, page_title: str = "Overload Web") -> HTMLResponse:
 def vendor_file_page(
     request: Request, page_title: str = "Process Vendor File"
 ) -> HTMLResponse:
+    """
+    Renders the 'Process Vendor File' page.
+
+    Args:
+        request: `FastAPI` request object.
+        page_title: optional title to override the default.
+
+    Returns:
+        HTML response for the home page.
+    """
     CONTEXT["page_title"] = page_title
     return templates.TemplateResponse(
         request=request, name="process.html", context=CONTEXT
@@ -60,6 +70,23 @@ def post_context_form(
     collection: str = Form(...),
     vendor: str = Form(...),
 ) -> RedirectResponse:
+    """
+    Takes input from form on `process.html` and redirects to appropriate
+    endpoint for file processing.
+
+    Args:
+        record_type:
+            the type of record to be processed as a str passed to a form
+        library:
+            the library whose records are to be processed as a str passed to a form
+        collection:
+            the collection whose records are to be processed as a str passed to a form
+        vendor:
+            the vendor whose records are to be processed as a str passed to a form
+
+    Returns:
+        `RedirectResponse` to appropriate endpoint for record type
+    """
     if record_type == "full":
         return RedirectResponse(
             url=f"/process/full?library={library}&collection={collection}&vendor={vendor}",
@@ -84,8 +111,16 @@ def process_full_records(
     Renders the vendor file processing page for full MARC records.
 
     Args:
-        request: `FastAPI` request object.
-        page_title: optional title for the page.
+        request:
+            `FastAPI` request object.
+        library:
+            the library whose records are to be processed passed from `/process` endpoint
+        collection:
+            the collection whose records are to be processed passed from `/process` endpoint
+        vendor:
+            the vendor whose records are to be processed passed from `/process` endpoint
+        page_title:
+            optional title for the page.
 
     Returns:
         HTML response for the vendor file page.
@@ -118,8 +153,16 @@ def process_order_records(
     Renders the vendor file processing page for order-level MARC records.
 
     Args:
-        request: `FastAPI` request object.
-        page_title: optional title for the page.
+        request:
+            `FastAPI` request object.
+        library:
+            the library whose records are to be processed passed from `/process` endpoint
+        collection:
+            the collection whose records are to be processed passed from `/process` endpoint
+        vendor:
+            the vendor whose records are to be processed passed from `/process` endpoint
+        page_title:
+            optional title for the page.
 
     Returns:
         HTML response for the vendor file page.

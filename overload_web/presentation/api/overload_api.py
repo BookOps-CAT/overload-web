@@ -34,6 +34,7 @@ def root() -> JSONResponse:
 
 @api_router.get("/options/context")
 def get_context_options() -> JSONResponse:
+    """Get options for session context from domain and application constants."""
     context_options = {
         "library": [i.value for i in models.bibs.RecordType],
         "collection": [i.value for i in models.bibs.Collection],
@@ -45,12 +46,23 @@ def get_context_options() -> JSONResponse:
 
 @api_router.get("/options/template")
 def get_template_input_options() -> JSONResponse:
+    """Get options for template inputs from application constants."""
     return JSONResponse(content={"field_constants": constants.FIELD_CONSTANTS})
 
 
 @api_router.get("/list-remote")
 def list_remote_files(dir: str, vendor: str) -> JSONResponse:
-    """List all files on a vendor's SFTP server"""
+    """
+    List all files on a vendor's SFTP server
+
+    Args:
+        dir: the directory whose files should be listed
+        vendor: the vendor whose server should be accessed
+
+    Returns:
+        the list of files wrapped in a `JSONResponse` object
+    """
+
     service = factories.create_remote_file_service(vendor=vendor)
     files = service.loader.list(dir=dir)
     return JSONResponse(content={"files": files, "directory": dir, "vendor": vendor})
@@ -60,7 +72,22 @@ def list_remote_files(dir: str, vendor: str) -> JSONResponse:
 def load_remote_files(
     file: Annotated[list[str], Query(...)], dir: str, vendor: str
 ) -> list[schemas.VendorFileModel]:
-    """Load one or more files from a remote directory"""
+    """
+    Load one or more files from a remote directory
+
+    Args:
+        file:
+            a list of strings representing the files that should be loaded
+            passed as query params.
+        dir:
+            the directory where the files are located
+        vendor:
+            the vendor whose server should be accessed
+
+    Returns:
+        the list of files wrapped in a `JSONResponse` object
+    """
+    """"""
     service = factories.create_remote_file_service(vendor=vendor)
     files = [service.loader.load(name=f, dir=dir) for f in file]
     return [schemas.VendorFileModel(**i.__dict__) for i in files]
@@ -84,6 +111,23 @@ def process_vendor_file(
     records: list[schemas.VendorFileModel],
     template_data: Optional[schemas.TemplateModel] = None,
 ) -> StreamingResponse:
+    """
+    Process a list of `VendorFileModel` objects.
+
+    Args:
+        record_type:
+            the type of records being processed as an enum (either 'full' or 'order-level')
+        context:
+            session-specific contextual data including library, collection, and vendor
+        records:
+            a list of files to be process as `VendorFileModel` objects
+        template_data:
+            optional data to be used to update order records
+
+    Returns:
+        The processed files as a `StreamingResponse`
+
+    """
     service: (
         services.records.FullRecordProcessingService
         | services.records.OrderRecordProcessingService
@@ -117,6 +161,7 @@ def write_local_file(
     vendor_file: schemas.VendorFileModel,
     dir: str,
 ) -> JSONResponse:
+    """Write a file to a local directory."""
     service = factories.create_local_file_service()
     out_files = service.writer.write(file=vendor_file, dir=dir)
     return JSONResponse(
@@ -130,6 +175,7 @@ def write_remote_file(
     dir: str,
     vendor: str,
 ) -> JSONResponse:
+    """Write a file to a remote directory."""
     service = factories.create_remote_file_service(vendor=vendor)
     out_files = service.writer.write(file=vendor_file, dir=dir)
     return JSONResponse(

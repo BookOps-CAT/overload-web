@@ -1,7 +1,7 @@
 """Pydantic models for request validation and response serialization.
 
-These models wrap domain models to enable compatibility with pydantic while
-minimizing amount of repeated code. Includes logic for parsing template form data.
+These models wrap domain models when possible in order to to enable
+compatibility with pydantic while minimizing amount of repeated code.
 """
 
 from __future__ import annotations
@@ -26,12 +26,7 @@ class BibModel(BaseModel, models.bibs.DomainBib):
 
 
 class ContextModel(BaseModel):
-    """
-    Pydantic model for serializing/deserializing values in
-    `SessionContext` objects
-    """
-
-    model_config = ConfigDict(from_attributes=True)
+    """Pydantic model representing data passed to `SessionContext` objects."""
 
     library: models.bibs.LibrarySystem
     collection: models.bibs.Collection
