@@ -175,6 +175,39 @@ FIELD_CONSTANTS: Dict[str, Any] = {
     "matchpoints": MATCHPOINTS,
 }
 
+
+VENDORS: Dict[str, Any] = {
+    "unknown": "Unknown",
+    "BT": "BT",
+    "midwest": "Midwest",
+    "amalivre": "Amalivre",
+    "ingram": "Ingram",
+    "sulaiman": "Sulaiman",
+}
+CONTEXT_VALS: list[Dict[str, Any]] = [
+    {
+        "id": "library",
+        "name": "Library System",
+        "values": {"bpl": "BPL", "nypl": "NYPL"},
+    },
+    {
+        "id": "collection",
+        "name": "Collection",
+        "values": {"branches": "Branches", "research": "Research", "None": "None"},
+    },
+    {
+        "id": "record_type",
+        "name": "Record Type",
+        "values": {"full": "Full", "order_level": "Order-Level"},
+    },
+    {
+        "id": "vendor",
+        "name": "Vendor",
+        "values": VENDORS,
+    },
+]
+
+
 VENDOR_RULES: Dict[str, Any] = {
     "nypl": {
         "UNKNOWN": {
