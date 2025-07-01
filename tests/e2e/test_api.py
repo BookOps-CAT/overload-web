@@ -14,7 +14,7 @@ class TestApp:
         routes = self.client.app.router.__dict__["routes"]
         route_names = [i.name for i in routes]
         assert "root" in route_names
-        assert "vendor_file_process" in route_names
+        assert "process_vendor_file" in route_names
         assert "vendor_file_page" in route_names
 
 

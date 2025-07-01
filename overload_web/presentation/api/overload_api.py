@@ -78,7 +78,7 @@ def load_local_files(
 
 
 @api_router.post("/process/{record_type}")
-def vendor_file_process(
+def process_vendor_file(
     record_type: models.bibs.RecordType,
     context: schemas.ContextModel,
     records: list[schemas.VendorFileModel],
