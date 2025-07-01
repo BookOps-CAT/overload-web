@@ -1,16 +1,19 @@
-"""Application service handling file operations using `FileLoader` and `FileWriter` domain protocols."""
+"""Application service handling file operations.
+
+Uses `FileLoader` and `FileWriter` domain protocols.
+"""
 
 from overload_web.domain import models, protocols
 
 
 class FileTransferService:
-    """Handles file transfer operations through injected file loader and writer."""
+    """Handles file transfer operations through file loader and writer."""
 
     def __init__(
         self, loader: protocols.file_io.FileLoader, writer: protocols.file_io.FileWriter
     ):
         """
-        Initialize FileTransferService obj.
+        Initialize `FileTransferService` obj.
 
         Args:
             loader: concrete implementation of `FileLoader` protocol
