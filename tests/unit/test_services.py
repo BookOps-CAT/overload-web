@@ -3,8 +3,7 @@ import copy
 import pytest
 
 from overload_web.application import services
-from overload_web.domain import logic, models, protocols
-from overload_web.infrastructure.bibs import marc
+from overload_web.domain import models, protocols
 
 
 class MockRepository(protocols.repositories.SqlRepositoryProtocol):
@@ -31,38 +30,93 @@ class FakeBibFetcher(StubFetcher):
         return [bib_1, bib_2, bib_3, bib_4]
 
 
-@pytest.mark.parametrize("library", ["nypl", "bpl"])
-class TestRecordProcessingService:
-    def test_load(self, library, stub_binary_marc):
-        service = services.records.RecordProcessingService(
-            parser=marc.BookopsMarcParser(library=library),
-            matcher=logic.bibs.BibMatcher(fetcher=StubFetcher(), matchpoints=[]),
-            template={},
-            library=library,
-            matchpoints=[],
+@pytest.mark.parametrize(
+    "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
+)
+class TestFullRecordProcessingService:
+    @pytest.fixture
+    def full_context(self, library, collection, monkeypatch):
+        def fake_fetcher(*args, **kwargs):
+            return FakeBibFetcher()
+
+        monkeypatch.setattr(
+            "overload_web.infrastructure.bibs.sierra.SierraBibFetcher", fake_fetcher
         )
-        records = service.load(stub_binary_marc)
+        return models.context.SessionContext(
+            library=models.bibs.LibrarySystem(library),
+            collection=models.bibs.Collection(collection),
+            vendor="BT ROMANCE",
+        )
+
+    def test_parse(self, full_context, stub_binary_marc):
+        service = services.records.FullRecordProcessingService(context=full_context)
+        records = service.parse(stub_binary_marc)
         assert len(records) == 1
-        assert str(records[0].bib.library) == library
+        assert str(records[0].bib.library) == str(full_context.library)
         assert records[0].bib.isbn == "9781234567890"
-        assert str(records[0].domain_bib.library) == library
+        assert str(records[0].domain_bib.library) == str(full_context.library)
+        assert records[0].domain_bib.barcodes == ["333331234567890"]
+
+    def test_process_records(self, full_context, stub_bib_dto):
+        assert stub_bib_dto.domain_bib.bib_id is None
+        assert stub_bib_dto.bib.sierra_bib_id is None
+        service = services.records.FullRecordProcessingService(context=full_context)
+        matched_bibs = service.process_records([stub_bib_dto])
+        assert len(matched_bibs) == 1
+        assert str(matched_bibs[0].domain_bib.bib_id) == "123"
+
+    def test_process_records_with_fields(self, full_context, stub_bib_dto):
+        original_bib = copy.deepcopy(stub_bib_dto.bib)
+        service = services.records.FullRecordProcessingService(context=full_context)
+        updated = service.process_records(records=[stub_bib_dto])
+        assert len(original_bib.get_fields("949")) == 1
+        assert len(updated) == 1
+        assert len(updated[0].bib.get_fields("949")) == 2
+
+    def test_write_marc_binary(self, stub_bib_dto, full_context):
+        service = services.records.FullRecordProcessingService(context=full_context)
+        marc_binary = service.write_marc_binary(records=[stub_bib_dto])
+        assert marc_binary.read()[0:2] == b"00"
+
+
+@pytest.mark.parametrize(
+    "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
+)
+class TestOrderRecordProcessingService:
+    @pytest.fixture
+    def full_context(self, library, collection, monkeypatch):
+        def fake_fetcher(*args, **kwargs):
+            return FakeBibFetcher()
+
+        monkeypatch.setattr(
+            "overload_web.infrastructure.bibs.sierra.SierraBibFetcher", fake_fetcher
+        )
+        return models.context.SessionContext(
+            library=models.bibs.LibrarySystem(library),
+            collection=models.bibs.Collection(collection),
+            vendor="BT ROMANCE",
+        )
+
+    def test_parse(self, full_context, stub_binary_marc):
+        service = services.records.OrderRecordProcessingService(
+            context=full_context, template={}
+        )
+        records = service.parse(stub_binary_marc)
+        assert len(records) == 1
+        assert str(records[0].bib.library) == str(full_context.library)
+        assert records[0].bib.isbn == "9781234567890"
+        assert str(records[0].domain_bib.library) == str(full_context.library)
         assert records[0].domain_bib.barcodes == ["333331234567890"]
 
     @pytest.mark.parametrize(
         "matchpoints",
         [["isbn"], ["isbn", "oclc_number"]],
     )
-    def test_process_records(self, matchpoints, library, stub_bib_dto):
+    def test_process_records(self, matchpoints, full_context, stub_bib_dto):
         assert stub_bib_dto.domain_bib.bib_id is None
         assert stub_bib_dto.bib.sierra_bib_id is None
-        service = services.records.RecordProcessingService(
-            parser=marc.BookopsMarcParser(library=library),
-            matcher=logic.bibs.BibMatcher(
-                fetcher=FakeBibFetcher(), matchpoints=matchpoints
-            ),
-            template={},
-            library=library,
-            matchpoints=matchpoints,
+        service = services.records.OrderRecordProcessingService(
+            context=full_context, template={"matchpoints": matchpoints}
         )
         matched_bibs = service.process_records([stub_bib_dto])
         assert len(matched_bibs) == 1
@@ -72,35 +126,29 @@ class TestRecordProcessingService:
         "matchpoints",
         [["oclc_number"], ["upc"]],
     )
-    def test_process_records_no_matched_bibs(self, matchpoints, library, stub_bib_dto):
+    def test_process_records_no_matched_bibs(
+        self, matchpoints, full_context, stub_bib_dto
+    ):
         assert stub_bib_dto.domain_bib.bib_id is None
         assert stub_bib_dto.bib.sierra_bib_id is None
-        service = services.records.RecordProcessingService(
-            parser=marc.BookopsMarcParser(library=library),
-            matcher=logic.bibs.BibMatcher(
-                fetcher=FakeBibFetcher(), matchpoints=matchpoints
-            ),
-            template={},
-            library=library,
-            matchpoints=matchpoints,
+        service = services.records.OrderRecordProcessingService(
+            context=full_context, template={"matchpoints": matchpoints}
         )
         matched_bibs = service.process_records([stub_bib_dto])
         assert len(matched_bibs) == 1
         assert matched_bibs[0].domain_bib.bib_id is None
 
-    def test_process_records_no_results(self, library, stub_bib_dto):
-        service = services.records.RecordProcessingService(
-            parser=marc.BookopsMarcParser(library=library),
-            matcher=logic.bibs.BibMatcher(fetcher=StubFetcher(), matchpoints=["isbn"]),
-            template={},
-            library=library,
-            matchpoints=[],
+    def test_process_records_no_results(self, full_context, stub_bib_dto):
+        service = services.records.OrderRecordProcessingService(
+            context=full_context, template={"matchpoints": ["upc"]}
         )
         matched_bibs = service.process_records([stub_bib_dto])
         assert len(matched_bibs) == 1
         assert matched_bibs[0].domain_bib.bib_id is None
 
-    def test_process_records_with_fields(self, library, template_data, stub_bib_dto):
+    def test_process_records_with_fields(
+        self, full_context, template_data, stub_bib_dto
+    ):
         original_bib = copy.deepcopy(stub_bib_dto.bib)
         template_data["update_fields"] = [
             {
@@ -111,25 +159,18 @@ class TestRecordProcessingService:
                 "value": "*b2=a;",
             },
         ]
-        service = services.records.RecordProcessingService(
-            parser=marc.BookopsMarcParser(library=library),
-            matcher=logic.bibs.BibMatcher(fetcher=StubFetcher(), matchpoints=["isbn"]),
-            template=template_data,
-            library=library,
-            matchpoints=[],
+        template_data["matchpoints"] = ["isbn"]
+        service = services.records.OrderRecordProcessingService(
+            context=full_context, template=template_data
         )
         updated = service.process_records(records=[stub_bib_dto])
         assert len(original_bib.get_fields("949")) == 1
         assert len(updated) == 1
         assert len(updated[0].bib.get_fields("949")) == 2
 
-    def test_write_marc_binary(self, stub_bib_dto, library):
-        service = services.records.RecordProcessingService(
-            parser=marc.BookopsMarcParser(library=library),
-            matcher=logic.bibs.BibMatcher(fetcher=StubFetcher(), matchpoints=["isbn"]),
-            template={},
-            library=library,
-            matchpoints=[],
+    def test_write_marc_binary(self, stub_bib_dto, full_context):
+        service = services.records.OrderRecordProcessingService(
+            context=full_context, template={"matchpoints": ["isbn"]}
         )
         marc_binary = service.write_marc_binary(records=[stub_bib_dto])
         assert marc_binary.read()[0:2] == b"00"

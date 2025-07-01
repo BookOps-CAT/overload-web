@@ -1,4 +1,5 @@
 import pytest
+from fastapi.exceptions import RequestValidationError
 from fastapi.testclient import TestClient
 
 from overload_web.main import app
@@ -6,7 +7,7 @@ from overload_web.presentation.api.overload_api import api_router
 from overload_web.presentation.frontend.jinja_frontend import frontend_router
 
 
-class TestFrontEndAPIRouter:
+class TestApp:
     client = TestClient(app)
 
     def test_root_get(self):
@@ -88,16 +89,26 @@ class TestBackEndAPIRouter:
 
     @pytest.mark.parametrize(
         "library, collection",
-        [("nypl", "branches"), ("nypl", "research"), ("bpl", None)],
+        [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
     )
-    def test_process_vendor_file_post(
-        self, form_input, marc_file_input, library, collection
-    ):
-        response = self.client.post(
-            "/vendor_file", files=marc_file_input, data=form_input
-        )
+    def test_process_vendor_file_post(self, stub_binary_marc, library, collection):
+        context = {
+            "context": {
+                "library": library,
+                "collection": collection,
+                "vendor": "BT ROMANCE",
+            },
+            "records": [
+                {
+                    "id": {"value": "1"},
+                    "file_name": "foo.mrc",
+                    "content": stub_binary_marc.read().decode("utf-8"),
+                }
+            ],
+        }
+        response = self.client.post("/process/full", json=context)
         assert response.status_code == 200
-        assert response.url == f"{self.client.base_url}/vendor_file"
+        assert response.url == f"{self.client.base_url}/process/full"
         assert isinstance(response.content, bytes)
         assert "b123456789" in response.text
         assert "333331234567890" in response.text
@@ -107,11 +118,84 @@ class TestBackEndAPIRouter:
         "library, collection", [("foo", "branches"), ("bar", "research")]
     )
     def test_process_vendor_file_post_invalid_config(
-        self, marc_file_input, form_input, library, collection
+        self, stub_binary_marc, library, collection
     ):
-        with pytest.raises(ValueError) as exc:
-            self.client.post("/vendor_file", files=marc_file_input, data=form_input)
-        assert "not a valid LibrarySystem" in str(exc.value)
+        context = {
+            "context": {
+                "library": library,
+                "collection": collection,
+                "vendor": "BT ROMANCE",
+            },
+            "records": [
+                {
+                    "id": {"value": "1"},
+                    "file_name": "foo.mrc",
+                    "content": stub_binary_marc.read().decode("utf-8"),
+                }
+            ],
+        }
+        with pytest.raises(RequestValidationError) as exc:
+            self.client.post("/process/full", json=context)
+        assert "Input should be 'bpl' or 'nypl'" in str(exc.value)
+
+    @pytest.mark.parametrize(
+        "library, collection",
+        [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
+    )
+    def test_process_vendor_file_order_level_post(
+        self, stub_binary_marc, template_data, library, collection
+    ):
+        context = {
+            "context": {
+                "library": library,
+                "collection": collection,
+                "vendor": "BT ROMANCE",
+            },
+            "records": [
+                {
+                    "id": {"value": "1"},
+                    "file_name": "foo.mrc",
+                    "content": stub_binary_marc.read().decode("utf-8"),
+                }
+            ],
+            "template_data": template_data,
+        }
+        response = self.client.post("/process/order_level", json=context)
+        assert response.status_code == 200
+        assert response.url == f"{self.client.base_url}/process/order_level"
+        assert isinstance(response.content, bytes)
+        assert "b123456789" in response.text
+        assert "333331234567890" in response.text
+        assert "9781234567890" in response.text
+
+    @pytest.mark.parametrize(
+        "library, collection",
+        [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
+    )
+    def test_process_vendor_file_order_level_other_vendor_post(
+        self, stub_binary_marc, template_data, library, collection
+    ):
+        context = {
+            "context": {
+                "library": library,
+                "collection": collection,
+            },
+            "records": [
+                {
+                    "id": {"value": "1"},
+                    "file_name": "foo.mrc",
+                    "content": stub_binary_marc.read().decode("utf-8"),
+                }
+            ],
+            "template_data": template_data,
+        }
+        response = self.client.post("/process/order_level", json=context)
+        assert response.status_code == 200
+        assert response.url == f"{self.client.base_url}/process/order_level"
+        assert isinstance(response.content, bytes)
+        assert "b123456789" in response.text
+        assert "333331234567890" in response.text
+        assert "9781234567890" in response.text
 
     def test_write_file_post_remote(self, mock_file_service_response):
         response = self.client.post(
