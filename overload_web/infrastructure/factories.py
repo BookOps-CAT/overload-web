@@ -1,7 +1,4 @@
-import os
 from typing import Optional
-
-from file_retriever import Client
 
 from overload_web.application import services
 from overload_web.domain import protocols
@@ -16,15 +13,8 @@ def create_file_service(
     if remote and not vendor:
         raise ValueError("`vendor` arg required for remote files.")
     elif remote and vendor:
-        client = Client(
-            name=vendor.upper(),
-            username=os.environ[f"{vendor.upper()}_USER"],
-            password=os.environ[f"{vendor.upper()}_PASSWORD"],
-            host=os.environ[f"{vendor.upper()}_HOST"],
-            port=os.environ[f"{vendor.upper()}_PORT"],
-        )
-        loader = sftp.SFTPFileLoader(client=client)
-        writer = sftp.SFTPFileWriter(client=client)
+        loader = sftp.SFTPFileLoader.create_loader_for_vendor(vendor=vendor)
+        writer = sftp.SFTPFileWriter.create_writer_for_vendor(vendor=vendor)
     else:
         loader = local.LocalFileLoader()
         writer = local.LocalFileWriter()
