@@ -5,11 +5,11 @@
 </div>
 {%- endmacro %}
 
-{% macro dropdown(id, name, values) -%}
+{% macro dropdown(id, name, options) -%}
 <div class="form-floating">
 <select class="form-select" aria-label="{{id}}" name="{{id}}", id="{{id}}">
     <option selected value=""></option>       
-        {% for k, v in values.items() %}
+        {% for k, v in options.items() %}
         <option value="{{k}}">{{v}}</option>
         {%endfor%}
 </select>
@@ -17,6 +17,32 @@
 </div>
 {%- endmacro %}
 
+
+
+{% macro context_fields(fields) -%}
+<div class="row row-cols-4 gy-1 my-2">
+    {% for field in fields %}
+    <div class="col">
+        {{dropdown(field['id'], field['name'], field['options'])}}     
+    </div> 
+    {%endfor%} 
+</div>
+{%- endmacro %}
+
+{% macro disabled_context_fields(fields, context) -%}
+<div class="row row-cols-4 gy-1 my-2">
+    {% for field in fields %}
+    <div class="col">
+        <div class="form-floating">
+            <select class="form-select" aria-label="{{ field['id'] }}" name="{{ field['id'] }}", id="{{ field['id'] }}">   
+            <option selected value="{{ context[field['id']] }}">{{ field['options'][context[field['id']]] }}</option>
+            </select>
+            <label for="{{ field['id'] }}">{{ field['name'] }}</label>
+        </div>            
+    </div> 
+    {%endfor%} 
+</div>
+{%- endmacro %}
 
 {% macro template_fields(fields) -%}
 {% for type,fields in fields.items()%}
@@ -30,8 +56,8 @@
     <div class="row row-cols-3 gy-1 my-2">
         {% for field in fields %}
         <div class="col">
-            {% if "values" in field %}
-                {{dropdown(field['id'], field['name'], field['values'])}}
+            {% if "options" in field %}
+                {{dropdown(field['id'], field['name'], field['options'])}}
             {%else%}
                 {{text_input(field['id'], field['name'])}}    
             {%endif%}          

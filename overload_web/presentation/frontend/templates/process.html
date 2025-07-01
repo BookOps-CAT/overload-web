@@ -1,0 +1,9 @@
+{% extends 'pvf.html' %}
+{% import "macros.html" as macro %} 
+{% block content %}
+{% block library_context %}
+    {{ super() }}
+{% endblock %}
+{% block disabled_library_context %}{% endblock %}
+{% block pvf_form %}{% endblock %}
+{% endblock %}

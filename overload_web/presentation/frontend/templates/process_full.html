@@ -1,0 +1,50 @@
+{% extends 'process.html' %}
+{% import "macros.html" as macro %} 
+{% block head %}
+    {{ super() }}  
+<script>
+    async function submitForm(event) {
+        event.preventDefault(); 
+        
+        const formData = new FormData(document.querySelector('form'));
+
+        const response = await fetch('/process/full', {
+            method: 'POST',
+            body: formData,
+        });
+
+        const results = await response.json(); 
+        const outputDiv = document.getElementById('output');
+        if (response.ok) {
+              let htmlContent = '<ul>';
+              results.forEach(result => {
+                  htmlContent += `
+                      <li>
+                          <strong>Library: </strong>${result.library}<br>
+                          <strong>Bib ID: </strong>${result.bib_id}<br>
+                          <strong>ISBN: </strong>${result.isbn}<br>
+                          <strong>OCLC Number: </strong>${result.oclc_number}<br>
+                          <strong>UPC: </strong>${result.upc}<br>
+                          <em>Order languages: ${result.orders.map(order => order.lang).join(', ')}</em>
+                          <em>Order locations: ${result.orders.map(order => order.locations).join(', ')}</em>
+                      </li>
+                  `;
+              });
+              htmlContent += '</ul>';
+              outputDiv.innerHTML = htmlContent;
+          } else {
+              outputDiv.innerHTML = `<p style="color: red;">Failed to load items</p>`;
+          }          
+    }
+</script>   
+{% endblock %}
+{% block page_name %}Full Records{%endblock %}
+{% block content %}
+{% block library_context %}{%endblock%}
+{% block disabled_library_context %}
+    {{ super.super() }}
+{% endblock %}
+{% block pvf_form %}
+    {{ super.super() }}
+{%endblock%}
+{%endblock%}

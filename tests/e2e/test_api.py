@@ -14,8 +14,9 @@ class TestApp:
         routes = self.client.app.router.__dict__["routes"]
         route_names = [i.name for i in routes]
         assert "root" in route_names
+        assert "process_full_records" in route_names
+        assert "process_order_records" in route_names
         assert "process_vendor_file" in route_names
-        assert "vendor_file_page" in route_names
 
 
 @pytest.mark.usefixtures("mock_sierra_response")
@@ -235,17 +236,102 @@ class TestBackEndAPIRouter:
 class TestFrontendRouter:
     client = TestClient(frontend_router)
 
-    def test_root_get(self):
+    def test_home_get(self):
         response = self.client.get("/")
         assert response.status_code == 200
         assert "BookOps Cataloging Department browser-based toolbox." in response.text
         assert "Overload Web" in response.text
 
-    def test_process_vendor_file_get(self):
-        response = self.client.get("/vendor_file")
+    def test_vendor_file_page_get(self):
+        response = self.client.get("/process")
         assert response.status_code == 200
         assert "Process Vendor File" in response.text
-        assert response.url == f"{self.client.base_url}/vendor_file"
+        assert response.url == f"{self.client.base_url}/process"
+        assert response.context["page_title"] == "Process Vendor File"
+        assert {"name": "Fund", "id": "fund"} in response.context["field_constants"][
+            "fixed_fields"
+        ]
+
+    @pytest.mark.parametrize(
+        "collection, record_type",
+        [
+            ("branches", "full"),
+            ("research", "full"),
+            ("branches", "order-level"),
+            ("research", "order-level"),
+        ],
+    )
+    def test_post_context_form_nypl(self, collection, record_type):
+        response = self.client.post(
+            "/process",
+            data={
+                "library": "nypl",
+                "collection": collection,
+                "vendor": "FOO",
+                "record_type": record_type,
+            },
+        )
+        assert response.status_code == 200
+        assert "Process Vendor File" in response.text
+        assert (
+            response.url
+            == f"{self.client.base_url}/process/{record_type}?library=nypl&collection={collection}&vendor=FOO"
+        )
+
+    @pytest.mark.parametrize(
+        "record_type",
+        ["full", "order-level"],
+    )
+    def test_post_context_form_bpl(self, record_type):
+        response = self.client.post(
+            "/process",
+            data={
+                "library": "bpl",
+                "collection": None,
+                "vendor": "FOO",
+                "record_type": record_type,
+            },
+        )
+        assert response.status_code == 200
+        assert "Process Vendor File" in response.text
+        assert (
+            response.url
+            == f"{self.client.base_url}/process/{record_type}?library=bpl&collection=&vendor=FOO"
+        )
+
+    @pytest.mark.parametrize(
+        "library, collection",
+        [("nypl", "branches"), ("nypl", "research"), ("bpl", None)],
+    )
+    def test_process_full_records_get(self, library, collection):
+        response = self.client.get(
+            f"/process/full?library={library}&collection={collection}&vendor=UNKNOWN"
+        )
+        assert response.status_code == 200
+        assert "Process Vendor File" in response.text
+        assert (
+            response.url
+            == f"{self.client.base_url}/process/full?library={library}&collection={collection}&vendor=UNKNOWN"
+        )
+        assert response.context["page_title"] == "Process Vendor File"
+        assert {"name": "Fund", "id": "fund"} in response.context["field_constants"][
+            "fixed_fields"
+        ]
+
+    @pytest.mark.parametrize(
+        "library, collection",
+        [("nypl", "branches"), ("nypl", "research"), ("bpl", None)],
+    )
+    def test_process_order_records_get(self, library, collection):
+        response = self.client.get(
+            f"/process/order-level?library={library}&collection={collection}&vendor=UNKNOWN"
+        )
+        assert response.status_code == 200
+        assert "Process Vendor File" in response.text
+        assert (
+            response.url
+            == f"{self.client.base_url}/process/order-level?library={library}&collection={collection}&vendor=UNKNOWN"
+        )
         assert response.context["page_title"] == "Process Vendor File"
         assert {"name": "Fund", "id": "fund"} in response.context["field_constants"][
             "fixed_fields"

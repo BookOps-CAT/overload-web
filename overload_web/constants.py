@@ -122,32 +122,32 @@ TEMPLATE_FIXED_FIELDS: list = [
     {
         "name": "Audience",
         "id": "audience",
-        "values": {k: f"{k} ({v.title()})" for k, v in AUDIENCE.items()},
+        "options": {k: f"{k} ({v.title()})" for k, v in AUDIENCE.items()},
     },
     {
         "name": "Order Type",
         "id": "order_type",
-        "values": {k: f"{k} ({v.title()})" for k, v in ORDER_TYPE.items()},
+        "options": {k: f"{k} ({v.title()})" for k, v in ORDER_TYPE.items()},
     },
     {
         "name": "Format",
         "id": "format",
-        "values": {k: f"{k} ({v.title()})" for k, v in FORMAT.items()},
+        "options": {k: f"{k} ({v.title()})" for k, v in FORMAT.items()},
     },
     {
         "name": "Selector",
         "id": "selector",
-        "values": {k: f"{k} ({v.title()})" for k, v in SELECTOR.items()},
+        "options": {k: f"{k} ({v.title()})" for k, v in SELECTOR.items()},
     },
     {
         "name": "Country",
         "id": "country",
-        "values": {"xxu": "United States"},
+        "options": {"xxu": "United States"},
     },
     {
         "name": "Language",
         "id": "lang",
-        "values": {k: f"{k} ({v.title()})" for k, v in LANG.items()},
+        "options": {k: f"{k} ({v.title()})" for k, v in LANG.items()},
     },
 ]
 
@@ -164,7 +164,7 @@ MATCHPOINTS: list[Dict[str, Any]] = [
     {
         "id": f"{i}_matchpoint",
         "name": i.title(),
-        "values": MATCHPOINT,
+        "options": MATCHPOINT,
     }
     for i in ["primary", "secondary", "tertiary"]
 ]
@@ -188,22 +188,22 @@ CONTEXT_VALS: list[Dict[str, Any]] = [
     {
         "id": "library",
         "name": "Library System",
-        "values": {"bpl": "BPL", "nypl": "NYPL"},
+        "options": {"bpl": "BPL", "nypl": "NYPL"},
     },
     {
         "id": "collection",
         "name": "Collection",
-        "values": {"branches": "Branches", "research": "Research", "None": "None"},
+        "options": {"branches": "Branches", "research": "Research", "None": "None"},
     },
     {
         "id": "record_type",
         "name": "Record Type",
-        "values": {"full": "Full", "order_level": "Order-Level"},
+        "options": {"full": "Full", "order_level": "Order-Level"},
     },
     {
         "id": "vendor",
         "name": "Vendor",
-        "values": VENDORS,
+        "options": VENDORS,
     },
 ]
 

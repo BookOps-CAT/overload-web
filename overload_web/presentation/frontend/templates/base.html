@@ -64,6 +64,18 @@
         <div class="container">    
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
             {% block nav_links %}
+            <li class="nav-item">
+                <a class="nav-link active" href="{{ url_for('root') }}">Home</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">Get Bib</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('vendor_file_page') }}">Process Vendor File</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">Worldcat2Sierra</a>
+            </li>
             {% endblock %}
           </ul>
         </div>
@@ -72,6 +84,7 @@
     </header>
     <div class="container my-5">      
       <h1>{% block header %}{% endblock %}</h1>
+      <h2>{% block page_name %}{%endblock %}</h2>
       {% block content %}
       <div class="col-lg-8 px-0"></div>
       {% endblock %}
