@@ -12,10 +12,10 @@ from pymarc import Field, Indicators, Subfield
 
 from overload_web import constants
 from overload_web.application import dto
-from overload_web.domain import models
+from overload_web.domain import models, protocols
 
 
-class BookopsMarcTransformer:
+class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
     def __init__(self, library: models.bibs.LibrarySystem) -> None:
         self.library = library
 

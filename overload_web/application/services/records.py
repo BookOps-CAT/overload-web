@@ -28,7 +28,7 @@ class RecordProcessingService:
         library: str,
         matchpoints: list[str],
         template: models.templates.Template | dict[str, Any],
-        parser: protocols.bibs.MarcTransformer | None = None,
+        parser: protocols.bibs.MarcParser | None = None,
         matcher: logic.bibs.BibMatcher | None = None,
     ):
         self.parser = parser if parser else self._get_parser(library=library)
@@ -39,8 +39,8 @@ class RecordProcessingService:
         )
         self.template = template if isinstance(template, dict) else asdict(template)
 
-    def _get_parser(self, library: str) -> protocols.bibs.MarcTransformer:
-        return marc.BookopsMarcTransformer(library=models.bibs.LibrarySystem(library))
+    def _get_parser(self, library: str) -> protocols.bibs.MarcParser:
+        return marc.BookopsMarcParser(library=models.bibs.LibrarySystem(library))
 
     def _get_matcher(
         self, library: str, matchpoints: list[str]

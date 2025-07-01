@@ -35,7 +35,7 @@ class FakeBibFetcher(StubFetcher):
 class TestRecordProcessingService:
     def test_load(self, library, stub_binary_marc):
         service = services.records.RecordProcessingService(
-            parser=marc.BookopsMarcTransformer(library=library),
+            parser=marc.BookopsMarcParser(library=library),
             matcher=logic.bibs.BibMatcher(fetcher=StubFetcher(), matchpoints=[]),
             template={},
             library=library,
@@ -56,7 +56,7 @@ class TestRecordProcessingService:
         assert stub_bib_dto.domain_bib.bib_id is None
         assert stub_bib_dto.bib.sierra_bib_id is None
         service = services.records.RecordProcessingService(
-            parser=marc.BookopsMarcTransformer(library=library),
+            parser=marc.BookopsMarcParser(library=library),
             matcher=logic.bibs.BibMatcher(
                 fetcher=FakeBibFetcher(), matchpoints=matchpoints
             ),
@@ -76,7 +76,7 @@ class TestRecordProcessingService:
         assert stub_bib_dto.domain_bib.bib_id is None
         assert stub_bib_dto.bib.sierra_bib_id is None
         service = services.records.RecordProcessingService(
-            parser=marc.BookopsMarcTransformer(library=library),
+            parser=marc.BookopsMarcParser(library=library),
             matcher=logic.bibs.BibMatcher(
                 fetcher=FakeBibFetcher(), matchpoints=matchpoints
             ),
@@ -90,7 +90,7 @@ class TestRecordProcessingService:
 
     def test_process_records_no_results(self, library, stub_bib_dto):
         service = services.records.RecordProcessingService(
-            parser=marc.BookopsMarcTransformer(library=library),
+            parser=marc.BookopsMarcParser(library=library),
             matcher=logic.bibs.BibMatcher(fetcher=StubFetcher(), matchpoints=["isbn"]),
             template={},
             library=library,
@@ -112,7 +112,7 @@ class TestRecordProcessingService:
             },
         ]
         service = services.records.RecordProcessingService(
-            parser=marc.BookopsMarcTransformer(library=library),
+            parser=marc.BookopsMarcParser(library=library),
             matcher=logic.bibs.BibMatcher(fetcher=StubFetcher(), matchpoints=["isbn"]),
             template=template_data,
             library=library,
@@ -125,7 +125,7 @@ class TestRecordProcessingService:
 
     def test_write_marc_binary(self, stub_bib_dto, library):
         service = services.records.RecordProcessingService(
-            parser=marc.BookopsMarcTransformer(library=library),
+            parser=marc.BookopsMarcParser(library=library),
             matcher=logic.bibs.BibMatcher(fetcher=StubFetcher(), matchpoints=["isbn"]),
             template={},
             library=library,
