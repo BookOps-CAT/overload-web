@@ -1,3 +1,3 @@
-from . import bibs, files, templates
+from . import bibs, context, files, templates
 
-__all__ = ["bibs", "templates", "files"]
+__all__ = ["bibs", "context", "templates", "files"]
