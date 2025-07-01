@@ -1,4 +1,4 @@
-"""Domain models that define bib records and order records"""
+"""Domain models that define bib records, order records, and their component parts."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ class BibId:
 
 
 class Collection(Enum):
-    """Includes valid values for NYPL collection"""
+    """Includes valid values for NYPL and BPL collection"""
 
     BRANCH = "BL"
     RESEARCH = "RL"
@@ -154,14 +154,14 @@ class Order:
     @classmethod
     def from_marc(cls, order: bookops_marc.models.Order) -> Order:
         """
-        Factory method used to construct an `Order` object from a `bookops_marc.Order`
-        object.
+        Factory method used to construct an `Order` object from a
+        `bookops_marc.Order` object.
 
         Args:
             order: an order from a `bookops_marc.Bib` or `bookops_marc.Order` object
 
         Returns:
-            Order: an instance of the domain order populated from MARC data.
+            an instance of the domain `Order` dataclass populated from MARC data.
         """
 
         def from_following_field(code: str):
