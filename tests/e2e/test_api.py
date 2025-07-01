@@ -43,6 +43,22 @@ class TestBackEndAPIRouter:
         assert response.status_code == 200
         assert response.json() == {"app": "Overload Web"}
 
+    def test_get_context_options(self):
+        response = self.client.get("/options/context")
+        assert response.status_code == 200
+        assert list(response.json().keys()) == ["context"]
+        assert sorted(list(response.json()["context"].keys())) == [
+            "collection",
+            "library",
+            "record_type",
+            "vendor",
+        ]
+
+    def test_get_template_input_options(self):
+        response = self.client.get("/options/template")
+        assert response.status_code == 200
+        assert list(response.json().keys()) == ["field_constants"]
+
     def test_list_files_get_remote(self, mock_file_service_response):
         response = self.client.get("/list_files?dir=foo&remote=True&vendor=foo")
         assert response.status_code == 200

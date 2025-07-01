@@ -11,6 +11,7 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from overload_web import constants
 from overload_web.application import services
 from overload_web.domain import models
 from overload_web.infrastructure import factories
@@ -29,6 +30,22 @@ def root() -> JSONResponse:
         JSON response indicating the application is active.
     """
     return JSONResponse(content={"app": "Overload Web"})
+
+
+@api_router.get("/options/context")
+def get_context_options() -> JSONResponse:
+    context_options = {
+        "library": [i.value for i in models.bibs.RecordType],
+        "collection": [i.value for i in models.bibs.Collection],
+        "record_type": [i.value for i in models.bibs.RecordType],
+        "vendor": [i for i in constants.VENDOR_RULES],
+    }
+    return JSONResponse(content={"context": context_options})
+
+
+@api_router.get("/options/template")
+def get_template_input_options() -> JSONResponse:
+    return JSONResponse(content={"field_constants": constants.FIELD_CONSTANTS})
 
 
 @api_router.get("/list_files")
