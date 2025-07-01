@@ -5,6 +5,9 @@ Protocols:
 
 `SqlRepositoryProtocol`
     Defines expected methods for a repository.
+
+`UnitOfWorkProtocol`
+    Defines a unit of work for handling operations within a repository.
 """
 
 from __future__ import annotations

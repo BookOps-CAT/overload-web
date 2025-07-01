@@ -11,7 +11,8 @@ from typing import Optional, Union
 class Matchpoints:
     """
     Represents a set of matchpoint values used for identifying duplicate records
-    in Sierra.
+    in Sierra. When matching records against Sierra, each matchpoint is used in
+    order until a match is found.
 
     Attributes:
         primary: primary field to match on.
@@ -70,6 +71,9 @@ class Template:
 
     Attributes:
         matchpoints: a `Matchpoints` object used to identify matched bibs in Sierra.
+        agent: the user who created the template.
+        id: a unique idenfier for the template
+        name: a human-readable name for the template
 
         All other fields correspond to those available in the `Order` domain model.
     """

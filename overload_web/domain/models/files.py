@@ -10,6 +10,7 @@ from dataclasses import dataclass
 class VendorFile:
     """
     Represents a vendor file.
+
     Attributes:
         id: the unique identifier for the file.
         content: binary content of the file.
