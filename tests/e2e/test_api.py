@@ -59,48 +59,42 @@ class TestBackEndAPIRouter:
         assert response.status_code == 200
         assert list(response.json().keys()) == ["field_constants"]
 
-    def test_list_files_get_remote(self, mock_file_service_response):
-        response = self.client.get("/list_files?dir=foo&remote=True&vendor=foo")
+    def test_list_remote_files_get(self, mock_file_service_response):
+        response = self.client.get("/list-remote?vendor=foo&dir=bar")
         assert response.status_code == 200
-        assert (
-            response.url
-            == f"{self.client.base_url}/list_files?dir=foo&remote=True&vendor=foo"
+        assert response.url == f"{self.client.base_url}/list-remote?vendor=foo&dir=bar"
+        assert sorted(list(response.json().keys())) == sorted(
+            ["files", "directory", "vendor"]
         )
+        assert response.json() == {
+            "files": ["foo.mrc"],
+            "directory": "bar",
+            "vendor": "foo",
+        }
 
-    def test_list_files_get_local(self, mock_file_service_response):
-        response = self.client.get("/list_files?dir=foo&remote=False&vendor=foo")
-        assert response.status_code == 200
-        assert (
-            response.url
-            == f"{self.client.base_url}/list_files?dir=foo&remote=False&vendor=foo"
-        )
-
-    def test_list_files_get_missing_vendor(self, mock_file_service_response):
-        with pytest.raises(ValueError) as exc:
-            self.client.get("/list_files?dir=foo&remote=True")
-        assert str(exc.value) == "`vendor` arg required for remote files."
-
-    def test_load_files_get_remote(self, mock_file_service_response):
+    def test_load_remote_files_get(self, mock_file_service_response):
         response = self.client.get(
-            "/load_files?file=bar.mrc&file=baz.mrc&dir=foo&remote=True&vendor=foo"
+            "/load-remote?vendor=foo&file=bar.mrc&file=baz.mrc&dir=spam"
         )
         assert response.status_code == 200
         assert (
             response.url
-            == f"{self.client.base_url}/load_files?file=bar.mrc&file=baz.mrc&dir=foo&remote=True&vendor=foo"
+            == f"{self.client.base_url}/load-remote?vendor=foo&file=bar.mrc&file=baz.mrc&dir=spam"
         )
         assert sorted(list(response.json()[0].keys())) == sorted(
-            ["id", "content", "file_name"]
+            ["id", "file_name", "content"]
         )
 
-    def test_load_files_get_local(self, mock_file_service_response):
-        response = self.client.get(
-            "/load_files?file=baz.mrc&dir=foo&remote=False&vendor=foo"
+    @pytest.mark.parametrize("library", ["nypl", "bpl"])
+    def test_load_local_files_post(self, mock_file_service_response, marc_file_input):
+        response = self.client.post(
+            "/load-local",
+            files=marc_file_input,
         )
         assert response.status_code == 200
-        assert (
-            response.url
-            == f"{self.client.base_url}/load_files?file=baz.mrc&dir=foo&remote=False&vendor=foo"
+        assert response.url == f"{self.client.base_url}/load-local"
+        assert sorted(list(response.json()[0].keys())) == sorted(
+            ["id", "file_name", "content"]
         )
 
     @pytest.mark.parametrize(
@@ -213,9 +207,9 @@ class TestBackEndAPIRouter:
         assert "333331234567890" in response.text
         assert "9781234567890" in response.text
 
-    def test_write_file_post_remote(self, mock_file_service_response):
+    def test_write_local_file_post(self, mock_file_service_response):
         response = self.client.post(
-            "/write_file?dir=foo&remote=True&vendor=foo",
+            "/write-local?dir=foo",
             json={
                 "id": {"value": "1"},
                 "file_name": "foo.mrc",
@@ -223,14 +217,11 @@ class TestBackEndAPIRouter:
             },
         )
         assert response.status_code == 200
-        assert (
-            response.url
-            == f"{self.client.base_url}/write_file?dir=foo&remote=True&vendor=foo"
-        )
+        assert response.url == f"{self.client.base_url}/write-local?dir=foo"
 
-    def test_write_file_post_local(self, mock_file_service_response):
+    def test_write_remote_file_post(self, mock_file_service_response):
         response = self.client.post(
-            "/write_file?dir=foo&remote=False&vendor=foo",
+            "/write-remote?dir=foo&vendor=foo",
             json={
                 "id": {"value": "1"},
                 "file_name": "foo.mrc",
@@ -238,10 +229,7 @@ class TestBackEndAPIRouter:
             },
         )
         assert response.status_code == 200
-        assert (
-            response.url
-            == f"{self.client.base_url}/write_file?dir=foo&remote=False&vendor=foo"
-        )
+        assert response.url == f"{self.client.base_url}/write-remote?dir=foo&vendor=foo"
 
 
 class TestFrontendRouter:
