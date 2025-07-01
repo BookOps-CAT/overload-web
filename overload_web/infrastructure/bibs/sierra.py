@@ -1,8 +1,7 @@
 """Adapter module for fetching bib records from Sierra.
 
 Includes wrappers for `bookops_bpl_solr` and `bookops_nypl_platform` libraries.
-Converts raw responses data into domain-level structures expected by the `DomainBib`
-model.
+Converts raw responses data into `DomainBib` objects.
 
 Protocols:
 
@@ -94,7 +93,7 @@ class SierraBibFetcher:
             key: name of identifier (e.g., 'isbn', 'bib_id').
 
         Returns:
-            list of domain-formatted bibliographic dictionaries.
+            list of domain-formatted dictionaries.
         """
         match_methods = {
             "bib_id": self.session._get_bibs_by_bib_id,

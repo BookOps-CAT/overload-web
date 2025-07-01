@@ -1,4 +1,4 @@
-"""Adapter for reading MARC files and converting into domain objects"""
+"""Parser for MARC records using bookops_marc and pymarc."""
 
 from __future__ import annotations
 
@@ -16,10 +16,27 @@ from overload_web.domain import models, protocols
 
 
 class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
+    """Parses and serializes MARC records."""
+
     def __init__(self, library: models.bibs.LibrarySystem) -> None:
+        """
+        Initialize `BookopsMarcParser` for a specific library.
+
+        Args:
+            library: library whose records are being parsed as a `LibrarySystem` obj
+        """
         self.library = library
 
     def _map_order_data(self, order: models.bibs.Order) -> dict:
+        """
+        Transform an `Order` domain object into MARC field mappings.
+
+        Args:
+            order: an `Order` domain object
+
+        Returns:
+            a dictionary mapping MARC tags to subfield-value dictionaries.
+        """
         out = {}
         for tag in ["960", "961"]:
             tag_dict = {}
@@ -29,6 +46,16 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
         return out
 
     def parse(self, data: BinaryIO | bytes) -> list[dto.bib.BibDTO]:
+        """
+        Parse binary MARC data into a list of `BibDTO` objects.
+
+        Args:
+            data: MARC records as file-like object or byte stream.
+
+        Returns:
+            a list of `BibDTO` objects containing `bookops_marc.Bib` objects
+            and `DomainBib` objects.
+        """
         records = []
         reader = SierraBibReader(
             data, library=str(self.library), hide_utf8_warnings=True
@@ -40,6 +67,15 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
         return records
 
     def serialize(self, records: list[dto.bib.BibDTO]) -> BinaryIO:
+        """
+        Serialize a list of `BibDTO` objects into a binary MARC stream.
+
+        Args:
+            records: a list of records as `BibDTO` objects
+
+        Returns:
+            MARC binary as an an in-memory file stream.
+        """
         io_data = io.BytesIO()
         for record in records:
             io_data.write(record.bib.as_marc())
@@ -49,6 +85,16 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
     def update_fields(
         self, record: dto.bib.BibDTO, fields: list[dict[str, Any]]
     ) -> dto.bib.BibDTO:
+        """
+        Update a `BibDTO` object's `Bib` attribute with new fields and order data.
+
+        Args:
+            record: `BibDTO` object representing the bibliographic record.
+            fields: a list of new MARC fields to insert as dictionaries.
+
+        Returns:
+            the updated record as a `BibDTO` object
+        """
         bib_rec = copy.deepcopy(record.bib)
         if record.domain_bib.bib_id:
             bib_rec.remove_fields("907")
