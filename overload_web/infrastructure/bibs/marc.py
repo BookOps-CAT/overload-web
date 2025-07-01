@@ -28,7 +28,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
             out[tag] = tag_dict
         return out
 
-    def parse(self, data: BinaryIO) -> list[dto.bib.BibDTO]:
+    def parse(self, data: BinaryIO | bytes) -> list[dto.bib.BibDTO]:
         records = []
         reader = SierraBibReader(
             data, library=str(self.library), hide_utf8_warnings=True

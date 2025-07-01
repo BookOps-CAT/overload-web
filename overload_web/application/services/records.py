@@ -49,7 +49,7 @@ class RecordProcessingService:
             fetcher=sierra.SierraBibFetcher(library=library), matchpoints=matchpoints
         )
 
-    def load(self, data: BinaryIO) -> list[dto.bib.BibDTO]:
+    def load(self, data: BinaryIO | bytes) -> list[dto.bib.BibDTO]:
         return self.parser.parse(data=data)
 
     def process_records(self, records: list[dto.bib.BibDTO]) -> list[dto.bib.BibDTO]:
