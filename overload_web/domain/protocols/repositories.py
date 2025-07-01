@@ -37,17 +37,11 @@ class SqlRepositoryProtocol(Protocol[T, K]):
 @runtime_checkable
 class UnitOfWorkProtocol(Protocol):
     """
-    A `Protocol` that defines the expected interface for a unit of work that manages
+    A protocol that defines the expected interface for a unit of work that manages
     templates.
 
     Attributes:
         templates: `SqlRepositoryProtocol` interface for template persistence.
-
-    Methods:
-        __enter__: Begins a new transactional context.
-        __exit__: Rolls back the transaction and closes the session.
-        commit: Commits the transaction.
-        rollback: Rolls back the transaction.
     """
 
     templates: SqlRepositoryProtocol

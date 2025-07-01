@@ -21,7 +21,7 @@ class FileLoader(Protocol):
     def list(self, dir: str) -> list[str]: ...
 
     """
-    List available files:
+    List available files.
 
     Args:
         dir: the directory whose files to list
