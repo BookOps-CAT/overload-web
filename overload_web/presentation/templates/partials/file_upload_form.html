@@ -1,0 +1,7 @@
+<form hx-post="/htmx/load-local-files" hx-target="#file-preview" hx-swap="innerHTML" enctype="multipart/form-data">
+  <div class="col">
+    <input class="form-control" type="file" id="file" name="file" multiple>
+    <button class="btn my-3" style="border-color: #d52828; border: border-3">Upload</button>
+  </div>
+  </form>
+<div id="file-preview"></div>

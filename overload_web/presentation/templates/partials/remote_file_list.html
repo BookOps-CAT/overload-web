@@ -1,0 +1,11 @@
+<form hx-post="/htmx/load-remote-files" hx-target="#file-preview" hx-swap="innerHTML">
+  {% for f in files %}
+    <label>
+      <input type="checkbox" name="file" value="{{ f }}">{{ f }}
+    </label><br>
+  {% endfor %}
+  <input type="hidden" name="dir" value="{{ dir }}">
+  <input type="hidden" name="vendor" value="{{ vendor }}">
+  <button type="submit" class="btn my-3" style="border-color: #d52828; border: border-3">Load Selected Files</button>
+</form>
+<div id="file-preview"></div>

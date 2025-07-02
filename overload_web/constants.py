@@ -183,6 +183,7 @@ VENDORS: Dict[str, Any] = {
     "amalivre": "Amalivre",
     "ingram": "Ingram",
     "sulaiman": "Sulaiman",
+    "eastview": "Eastview",
 }
 CONTEXT_VALS: list[Dict[str, Any]] = [
     {

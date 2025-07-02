@@ -1,0 +1,18 @@
+<form>
+    <fieldset disabled>
+    <div class="row row-cols-4 gy-1 my-2">
+        {% for val in context_vals %}
+        <div class="col">
+            <div class="form-floating">
+                <select class="form-select" aria-label="{{ val['id'] }}" name="{{ val['id'] }}", id="{{ val['id'] }}">   
+                <option selected value="{{ selected_context[val['id']] }}">{{ val['options'][selected_context[val['id']]] }}</option>
+                </select>
+                <label for="{{ val['id'] }}">{{ val['name'] }}</label>
+            </div>            
+        </div> 
+        {%endfor%} 
+    </div>        
+    </fieldset>
+</form>
+<button hx-get="/htmx/context-form" hx-target="#context-section" hx-swap="innerHTML" class="btn my-3" style="border-color: #d52828;">Edit Library Context</button>
+<div id="main-form" hx-get="/htmx/main-form" hx-target="#main-form" hx-swap="innerHTML" hx-trigger="load"></div>

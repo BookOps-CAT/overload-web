@@ -1,8 +1,9 @@
-{% extends 'pvf.html' %}
-{% import "macros.html" as macro %} 
+{% extends 'home.html' %}
 {% block content %}
 {% block library_context %}
-    {{ super() }}
+  <div class="container text-left" id="context-section">
+    {% include "partials/context_form.html" %}
+  </div>
 {% endblock %}
 {% block disabled_library_context %}{% endblock %}
 {% block pvf_form %}{% endblock %}
