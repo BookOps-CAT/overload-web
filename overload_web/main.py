@@ -8,8 +8,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from overload_web import logging_config
-from overload_web.presentation.api import overload_api
-from overload_web.presentation.frontend import jinja_frontend
+from overload_web.presentation import jinja_frontend, overload_api
 
 logging_config.setup_logging()
 

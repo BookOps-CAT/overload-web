@@ -15,7 +15,7 @@ from overload_web import constants
 from overload_web.application import services
 from overload_web.domain import models
 from overload_web.infrastructure import factories
-from overload_web.presentation.api import schemas
+from overload_web.presentation import schemas
 
 logger = logging.getLogger(__name__)
 api_router = APIRouter()

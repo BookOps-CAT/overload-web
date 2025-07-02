@@ -3,8 +3,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.testclient import TestClient
 
 from overload_web.main import app
-from overload_web.presentation.api.overload_api import api_router
-from overload_web.presentation.frontend.jinja_frontend import frontend_router
+from overload_web.presentation.jinja_frontend import frontend_router
+from overload_web.presentation.overload_api import api_router
 
 
 class TestApp:

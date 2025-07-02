@@ -16,7 +16,7 @@ from overload_web import constants
 
 logger = logging.getLogger(__name__)
 frontend_router = APIRouter()
-templates = Jinja2Templates(directory="overload_web/presentation/frontend/templates")
+templates = Jinja2Templates(directory="overload_web/presentation/templates")
 
 CONTEXT: Dict[str, Any] = {
     "application": constants.APPLICATION,
