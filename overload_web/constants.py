@@ -187,6 +187,11 @@ VENDORS: Dict[str, Any] = {
 }
 CONTEXT_VALS: list[Dict[str, Any]] = [
     {
+        "id": "record_type",
+        "name": "Record Type",
+        "options": {"full": "Full", "order_level": "Order-Level"},
+    },
+    {
         "id": "library",
         "name": "Library System",
         "options": {"bpl": "BPL", "nypl": "NYPL"},
@@ -195,16 +200,6 @@ CONTEXT_VALS: list[Dict[str, Any]] = [
         "id": "collection",
         "name": "Collection",
         "options": {"branches": "Branches", "research": "Research", "None": "None"},
-    },
-    {
-        "id": "record_type",
-        "name": "Record Type",
-        "options": {"full": "Full", "order_level": "Order-Level"},
-    },
-    {
-        "id": "vendor",
-        "name": "Vendor",
-        "options": VENDORS,
     },
 ]
 

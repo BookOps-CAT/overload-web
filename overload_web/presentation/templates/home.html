@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
-{% block header %}{{ page_title }}{% endblock %}  
+{% block header %}<h2>{{ page_title }}</h2>{% endblock %}
 {% block content %}
-{% block library_context %}{% endblock %}  
-BookOps Cataloging Department browser-based toolbox.
+    {% include "partials/app_options.html" %}
 {% endblock %}

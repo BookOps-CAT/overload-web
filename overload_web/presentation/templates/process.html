@@ -1,10 +1,8 @@
 {% extends 'home.html' %}
 {% block content %}
-{% block library_context %}
-  <div class="container text-left" id="context-section">
-    {% include "partials/context_form.html" %}
-  </div>
-{% endblock %}
-{% block disabled_library_context %}{% endblock %}
-{% block pvf_form %}{% endblock %}
+  {% block library_context %}
+    <div class="container text-left" id="context-section">
+      {% include "partials/context_form.html" %}
+    </div>
+  {% endblock %}
 {% endblock %}

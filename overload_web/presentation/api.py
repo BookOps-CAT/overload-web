@@ -104,6 +104,81 @@ def load_local_files(
     ]
 
 
+# @api_router.post("/process/{record_type}", response_class=HTMLResponse)
+# async def process_vendor_file_htmx(
+#     record_type: models.bibs.RecordType,
+#     context: schemas.ContextModel = Form(...),
+#     template_data: schemas.TemplateModel = Form(None),
+#     # Assuming files are sent via a previous upload step and processed here:
+#     records: Optional[list[schemas.VendorFileModel]] = None,
+# ) -> HTMLResponse:
+#     """
+#     Process MARC records and return a download link.
+
+#     This version returns an HTML fragment for HTMX.
+#     """
+
+#     # Create the session context
+#     session_context = models.context.SessionContext(
+#         library=context.library,
+#         collection=context.collection,
+#         vendor=context.vendor,
+#     )
+
+#     # Select processing service based on record type
+#     if str(record_type) == "full":
+#         service = services.records.FullRecordProcessingService(context=session_context)
+#     else:
+#         template = template_data.__dict__ if template_data else {}
+#         matchpoints = [i for i in list(template.get("matchpoints", {}).values()) if i]
+#         template["matchpoints"] = matchpoints
+#         service = services.records.OrderRecordProcessingService(
+#             context=session_context,
+#             template=template,
+#         )
+
+#     # Parse and process the MARC records (simplified)
+#     bibs = service.parse(data=records[0].content)
+#     processed_bibs = service.process_records(records=bibs)
+
+#     # Write MARC binary to a temp file
+#     with tempfile.NamedTemporaryFile(delete=False, suffix=".mrc") as tmpfile:
+#         marc_binary = service.write_marc_binary(records=processed_bibs)
+#         shutil.copyfileobj(marc_binary, tmpfile)
+#         tmpfile_path = tmpfile.name
+
+#     # Generate a URL for downloading the file (you need to implement this route)
+#     download_filename = f"{records[0].file_name}_out.mrc"
+#     download_url = f"/download/{download_filename}"
+
+#     # Optionally, move or copy the temp file to a permanent place accessible for download
+#     # For demo, you might serve temp files or use a file store.
+
+#     # Store the file path somewhere accessible for your download endpoint to fetch
+
+#     # Return an HTMX-friendly HTML snippet
+#     return HTMLResponse(
+#         f'''
+#         <div class="alert alert-success">File processed successfully.</div>
+#         <a href="{download_url}" class="btn btn-primary" download="{download_filename}">Download Processed File</a>
+#         '''
+#     )
+
+
+# @api_router.get("/download/{filename}")
+# def download_processed_file(filename: str):
+#     # Construct full path to file - adjust this based on where you store processed files
+#     file_path = os.path.join("/path/to/processed/files", filename)
+
+#     # Check file exists, return 404 otherwise (not shown here for brevity)
+
+#     return FileResponse(
+#         path=file_path,
+#         filename=filename,
+#         media_type="application/marc",
+#     )
+
+
 @api_router.post("/process/{record_type}")
 def process_vendor_file(
     record_type: models.bibs.RecordType,

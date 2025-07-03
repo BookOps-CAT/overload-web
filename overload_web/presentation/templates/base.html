@@ -5,92 +5,22 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}{% endblock %} - {{ application }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
-    <link rel="stylesheet" href="styles.css">  
-    <style>
-      .navbar {
-        background-color: #d52828;
-        color: white;
-        padding: 0;
-      }
-      .navbar .navbar-brand {
-        font-size: 1.5rem;
-        padding: 10px 0;
-        text-align: center;
-        display: block;
-        color: white;
-      }
-      .navbar-nav {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        margin-bottom: 0;
-      }
-      .navbar-nav .nav-link {
-        color: white;
-        font-size: 1rem;
-        text-align: center;
-        opacity: 0.7;
-      }
-      .navbar-nav .nav-link.active{
-        color: white;
-        font-size: 1rem;
-        text-align: center;
-        opacity: 1;
-      }            
-      .navbar-nav .nav-link:hover {
-        color: white;
-        font-size: 1rem;
-        text-align: center;
-        opacity: 1;
-      }
-      .navbar-nav .nav-item {
-        margin-bottom: 10px;
-      }
-    </style>      
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/style.css">    
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>    
   {% endblock %}
   </head>
   <body>
-    <header>
-      {% block nav %}
-      <nav class="navbar navbar-expand-lg">
-        <div class="container">
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <a class="navbar-brand" href="{{ url_for('root') }}">{{ application }}</a>
-          </ul>
-        </div>   
-      </nav>
-      <nav class="navbar navbar-expand-lg">
-        <div class="container">    
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            {% block nav_links %}
-            <li class="nav-item">
-                <a class="nav-link active" href="{{ url_for('root') }}">Home</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Get Bib</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('vendor_file_page') }}">Process Vendor File</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Worldcat2Sierra</a>
-            </li>
-            {% endblock %}
-          </ul>
-        </div>
-      </nav>
-    {% endblock %}
-    </header>
-    <div class="container my-5">      
-      <h1>{% block header %}{% endblock %}</h1>
-      <h2>{% block page_name %}{%endblock %}</h2>
+    {% block nav %}{% include "partials/nav_bar.html" %}{% endblock %}
+    <div class="container-lg my-4">      
+      {% block header %}{% endblock %}
       {% block content %}
-      <div class="col-lg-8 px-0"></div>
+        {% block library_context %}{% endblock %}
+        {% block disabled_library_context %}{% endblock %}
+        {% block pvf_form %}{% endblock %}
       {% endblock %}
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
-    <script src="main.js"></script>
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/main.js"></script>
   </body>
 </html>

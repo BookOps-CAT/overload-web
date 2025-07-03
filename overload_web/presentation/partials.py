@@ -35,13 +35,11 @@ def set_context(
     record_type: str = Form(...),
     library: str = Form(...),
     collection: str = Form(...),
-    vendor: str = Form(...),
 ):
     selected_context = {
         "record_type": record_type,
         "library": library,
         "collection": collection,
-        "vendor": vendor,
     }
 
     return templates.TemplateResponse(
@@ -91,15 +89,14 @@ def get_remote_file_form(request: Request):
 
 
 @htmx_router.get("/list-remote-files", response_class=HTMLResponse)
-def list_remote_files(request: Request, dir: str, vendor: str):
+def list_remote_files(request: Request, vendor: str):
     service = factories.create_remote_file_service(vendor)
-    files = service.loader.list(dir=dir)
+    files = service.loader.list(dir=os.environ[f"{vendor.upper()}_SRC"])
     return templates.TemplateResponse(
         "partials/remote_file_list.html",
         {
             "request": request,
             "files": files,
-            "directory": os.environ[f"{vendor.upper()}_SRC"],
             "vendor": vendor,
         },
     )

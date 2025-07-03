@@ -239,7 +239,6 @@ class TestFrontendRouter:
     def test_home_get(self):
         response = self.client.get("/")
         assert response.status_code == 200
-        assert "BookOps Cataloging Department browser-based toolbox." in response.text
         assert "Overload Web" in response.text
 
     def test_vendor_file_page_get(self):

@@ -1,7 +1,5 @@
 {% extends 'process.html' %}
-{% block page_name %}Full Records{%endblock %}
 {% block content %}
-{% set vendor = selected_context['vendor'] %}
   {% block library_context %}{% endblock %}
 
   {% block disabled_library_context %}
@@ -11,7 +9,7 @@
   {% endblock %}
 
   {% block pvf_form %}
-  <div id="main-form">
+  <div class="container text-left" id="main-form">
     {% include "partials/main_form.html" %}
   </div>
   {% endblock %}
