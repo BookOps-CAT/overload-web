@@ -231,6 +231,90 @@ def process_vendor_file(
     )
 
 
+@api_router.post("/process/full")
+def process_full_vendor_file(
+    library: str,
+    collection: str,
+    vendor: str,
+    records: list[schemas.VendorFileModel],
+) -> StreamingResponse:
+    """
+    Process a list of `VendorFileModel` objects.
+
+    Args:
+        context:
+            session-specific contextual data including library, collection, and vendor
+        records:
+            a list of files to be process as `VendorFileModel` objects
+
+    Returns:
+        The processed files as a `StreamingResponse`
+
+    """
+    session_context = models.context.SessionContext(
+        library=models.bibs.LibrarySystem(library),
+        collection=models.bibs.Collection(collection),
+        vendor=vendor,
+    )
+    service = services.records.FullRecordProcessingService(context=session_context)
+    bibs = service.parse(data=records[0].content)
+    processed_bibs = service.process_records(records=bibs)
+    marc_binary = service.write_marc_binary(records=processed_bibs)
+    return StreamingResponse(
+        marc_binary,
+        media_type="application/marc",
+        headers={
+            "Content-Disposition": f"attachment; filename={records[0].file_name}_out.mrc"
+        },
+    )
+
+
+@api_router.post("/process/order-level")
+def process_order_vendor_file(
+    library: str,
+    collection: str,
+    vendor: Optional[str],
+    records: list[schemas.VendorFileModel],
+    template_data: Optional[schemas.TemplateModel] = None,
+) -> StreamingResponse:
+    """
+    Process a list of `VendorFileModel` objects.
+
+    Args:
+        context:
+            session-specific contextual data including library, collection, and vendor
+        records:
+            a list of files to be process as `VendorFileModel` objects
+        template_data:
+            optional data to be used to update order records
+
+    Returns:
+        The processed files as a `StreamingResponse`
+
+    """
+    session_context = models.context.SessionContext(
+        library=models.bibs.LibrarySystem(library),
+        collection=models.bibs.Collection(collection),
+        vendor=vendor,
+    )
+    template = template_data.__dict__
+    matchpoints = [i for i in list(template["matchpoints"].__dict__.values()) if i]
+    template["matchpoints"] = matchpoints
+    service = services.records.OrderRecordProcessingService(
+        context=session_context, template=template
+    )
+    bibs = service.parse(data=records[0].content)
+    processed_bibs = service.process_records(records=bibs)
+    marc_binary = service.write_marc_binary(records=processed_bibs)
+    return StreamingResponse(
+        marc_binary,
+        media_type="application/marc",
+        headers={
+            "Content-Disposition": f"attachment; filename={records[0].file_name}_out.mrc"
+        },
+    )
+
+
 @api_router.post("/write-local")
 def write_local_file(
     vendor_file: schemas.VendorFileModel,
