@@ -199,7 +199,7 @@ CONTEXT_VALS: list[Dict[str, Any]] = [
     {
         "id": "collection",
         "name": "Collection",
-        "options": {"branches": "Branches", "research": "Research", "None": "None"},
+        "options": {"BL": "Branches", "RL": "Research", "None": "None"},
     },
 ]
 

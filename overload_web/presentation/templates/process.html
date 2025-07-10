@@ -1,9 +1,16 @@
-{% extends 'home.html' %}
+{% extends 'base.html' %}
+{% block header %}<h2>{{ page_title }}</h2>{% endblock %}
 {% block content %}
-  {% block library_context %}
-    <div class="container text-left" id="context-section">
-      {% include "partials/context_form.html" %}
+  <div class="container text-left">
+    <div class="row gy-1 my-2" id="context-section">
+    {% include "partials/context_form.html" %}
     </div>
-  {% endblock %}
-<div id="output"></div>  
+    <div class="row gy-1 my-2" id="files">
+      <div class="col" id="file-source" hx-get="/htmx/file-source" hx-trigger="submit from:#submit-context" hx-target="this"></div>
+    </div>  
+  </div>
+    <div class="col" id="pvf-form" hx-get="/htmx/pvf-submit-form" hx-trigger="submit from:#submit-context" hx-target="this"></div>
+<div id="pvf-output"></div>  
+<div id="file-output"></div>  
+<div id="context-output"></div>  
 {% endblock %}

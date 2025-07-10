@@ -1,8 +1,0 @@
-<form hx-post="/process/{{ selected_context.record_type }}" hx-target="#output" hx-swap="innerHTML" hx-indicator="#processing-indicator" enctype="multipart/form-data">
-    <h5>Select Files</h5>
-        {% include "partials/files.html" %}         
-    <h5>Apply Template</h5>
-        {% include "partials/template_form.html" %}
-</form>
-<button type="submit" class="btn my-3" style="border-color: #d52828;">Submit</button>
-

@@ -1,1 +1,24 @@
-<div class="col" id="file-source-toggle" hx-get="/htmx/file-source-toggle" hx-trigger="load" hx-target="this"></div>
+<div class="row gy-1 my-2" id="files">  
+    <div class="col" id="files">
+        <h5>File Source</h5> 
+        <div class="row">
+            <div class="col">
+                <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="file-source" value="local" hx-get="/htmx/upload-form" hx-target="#file-form" hx-swap="innerHTML">
+                <label class="form-check-label" for="local">Local Upload</label>
+                </div>
+            </div>  
+            <div class="col">
+                <div class="form-check form-check-inline">  
+                <input class="form-check-input" type="radio" name="file-source" value="remote" hx-get="/htmx/remote-file-form" hx-target="#file-form" hx-swap="innerHTML">
+                <label class="form-check-label" for="remote">Remote Server</label>
+                </div>
+            </div>  
+        </div>  
+    </div>
+    <div class="col">
+    <h5>Select Files</h5> 
+        <div id="file-form"></div>
+    </div>      
+</div>
+</div>

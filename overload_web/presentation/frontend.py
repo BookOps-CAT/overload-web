@@ -15,7 +15,7 @@ from fastapi.templating import Jinja2Templates
 from overload_web import constants
 
 logger = logging.getLogger(__name__)
-frontend_router = APIRouter()
+frontend_router = APIRouter(tags=["frontend"])
 templates = Jinja2Templates(directory="overload_web/presentation/templates")
 
 CONTEXT: Dict[str, Any] = {
@@ -68,7 +68,6 @@ def post_context_form(
     record_type: str = Form(...),
     library: str = Form(...),
     collection: str = Form(...),
-    vendor: str = Form(...),
 ) -> RedirectResponse:
     """
     Takes input from form on `process.html` and redirects to appropriate
@@ -81,20 +80,18 @@ def post_context_form(
             the library whose records are to be processed as a str passed to a form
         collection:
             the collection whose records are to be processed as a str passed to a form
-        vendor:
-            the vendor whose records are to be processed as a str passed to a form
 
     Returns:
         `RedirectResponse` to appropriate endpoint for record type
     """
     if record_type == "full":
         return RedirectResponse(
-            url=f"/process/full?library={library}&collection={collection}&vendor={vendor}",
+            url=f"/process/full?library={library}&collection={collection}",
             status_code=303,
         )
     else:
         return RedirectResponse(
-            url=f"/process/order-level?library={library}&collection={collection}&vendor={vendor}",
+            url=f"/process/order-level?library={library}&collection={collection}",
             status_code=303,
         )
 
@@ -104,7 +101,6 @@ def process_full_records(
     request: Request,
     library: str,
     collection: str,
-    vendor: str,
     page_title: str = "Process Vendor File",
 ) -> HTMLResponse:
     """
@@ -130,7 +126,6 @@ def process_full_records(
             "selected_context": {
                 "library": library,
                 "collection": collection,
-                "vendor": vendor,
                 "record_type": "full",
             },
             "page_title": page_title,
@@ -146,7 +141,6 @@ def process_order_records(
     request: Request,
     library: str,
     collection: str,
-    vendor: str,
     page_title: str = "Process Vendor File",
 ) -> HTMLResponse:
     """
@@ -159,8 +153,6 @@ def process_order_records(
             the library whose records are to be processed passed from `/process` endpoint
         collection:
             the collection whose records are to be processed passed from `/process` endpoint
-        vendor:
-            the vendor whose records are to be processed passed from `/process` endpoint
         page_title:
             optional title for the page.
 
@@ -172,7 +164,6 @@ def process_order_records(
             "selected_context": {
                 "library": library,
                 "collection": collection,
-                "vendor": vendor,
                 "record_type": "order_level",
             },
             "page_title": page_title,

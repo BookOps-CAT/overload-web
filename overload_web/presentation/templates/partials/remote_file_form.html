@@ -1,5 +1,5 @@
 <div class="row row-cols-1 gy-1 my-2">
-  <form hx-get="/htmx/list-remote-files?vendor={{vendor}}" hx-target="#remote-files" hx-swap="innerHTML" hx-trigger="change" hx-indicator="loading-indicator">
+  <form hx-get="/htmx/list-remote-files?vendor={{vendor}}" hx-target="#file-list" hx-swap="innerHTML" hx-trigger="change" hx-indicator="loading-indicator">
     <div class="col">
       <div class="form-floating">
         <select class="form-select" aria-label="vendor" name="vendor", id="vendor">
@@ -13,4 +13,4 @@
       <label for="{{id}}">{{name}}</label>
   </form>
 </div>
-<div id="remote-files"></div>
+<div id="file-list"></div>

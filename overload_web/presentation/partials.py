@@ -4,9 +4,8 @@ Serves HTML partials in response to HTMX requests.
 """
 
 import os
-from typing import Any
 
-from fastapi import APIRouter, File, Form, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
@@ -32,45 +31,21 @@ def get_context_form(request: Request):
 @htmx_router.post("/set-context", response_class=HTMLResponse)
 def set_context(
     request: Request,
-    record_type: str = Form(...),
-    library: str = Form(...),
-    collection: str = Form(...),
+    context: schemas.ContextModel = Depends(schemas.ContextModel.from_form),
 ):
-    selected_context = {
-        "record_type": record_type,
-        "library": library,
-        "collection": collection,
-    }
-
     return templates.TemplateResponse(
         "partials/disabled_context_form.html",
         {
             "request": request,
-            "selected_context": selected_context,
             "context_vals": constants.CONTEXT_VALS,
-            "field_constants": constants.FIELD_CONSTANTS,
+            "context": {k: str(v) for k, v in context.model_dump().items()},
         },
     )
 
 
-@htmx_router.get("/main-form", response_class=HTMLResponse)
-def get_main_form(request: Request):
-    selected_context: dict[str, Any] = {}
-    return templates.TemplateResponse(
-        "partials/main_form.html",
-        {
-            "request": request,
-            "field_constants": constants.FIELD_CONSTANTS,
-            "selected_context": selected_context,
-        },
-    )
-
-
-@htmx_router.get("/file-source-toggle", response_class=HTMLResponse)
-def get_file_source_toggle(request: Request):
-    return templates.TemplateResponse(
-        "partials/file_source_toggle.html", {"request": request}
-    )
+@htmx_router.get("/file-source", response_class=HTMLResponse)
+def get_file_source(request: Request):
+    return templates.TemplateResponse("partials/files.html", {"request": request})
 
 
 @htmx_router.get("/upload-form", response_class=HTMLResponse)
@@ -120,12 +95,12 @@ def load_local_files(request: Request, file: list[UploadFile] = File(...)):
 @htmx_router.post("/load-remote-files", response_class=HTMLResponse)
 def load_remote_files(
     request: Request,
-    file: list[str] = Query(...),
-    dir: str = Query(...),
-    vendor: str = Query(...),
+    file: list[str] = Form(...),
+    vendor: str = Form(...),
 ):
+    vendor_dir = os.environ[f"{vendor.upper()}_SRC"]
     service = factories.create_remote_file_service(vendor)
-    files = [service.loader.load(name=f, dir=dir) for f in file]
+    files = [service.loader.load(name=f, dir=vendor_dir) for f in file]
     models = [schemas.VendorFileModel(**f.__dict__) for f in files]
     return templates.TemplateResponse(
         "partials/loaded_files_summary.html",
@@ -136,22 +111,9 @@ def load_remote_files(
     )
 
 
-@htmx_router.get("/template-form", response_class=HTMLResponse)
-def get_template_form(request: Request):
+@htmx_router.get("/pvf-submit-form", response_class=HTMLResponse)
+def get_pvf_button(request: Request):
     return templates.TemplateResponse(
-        "partials/template_input_form.html", {"request": request}
-    )
-
-
-@htmx_router.get("/processing-status", response_class=HTMLResponse)
-def get_processing_status(request: Request):
-    return templates.TemplateResponse(
-        "partials/processing_status.html", {"request": request}
-    )
-
-
-@htmx_router.get("/output-options", response_class=HTMLResponse)
-def get_output_options(request: Request):
-    return templates.TemplateResponse(
-        "partials/output_options.html", {"request": request}
+        "partials/pvf_submit_form.html",
+        {"request": request},
     )

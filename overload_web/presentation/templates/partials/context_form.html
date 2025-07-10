@@ -1,18 +1,20 @@
-<form hx-post="/htmx/set-context" hx-target="#context-section" hx-swap="innerHTML">
-    <div class="row row-cols-3 gy-1 my-2">
-        {% for val in context_vals %}
-        <div class="col">
-            <div class="form-floating">
-            <select class="form-select" aria-label="{{ val['id'] }}" name="{{ val['id'] }}", id="{{ val['id'] }}">
-                <option selected value=""></option>       
-                {% for k, v in val['options'].items() %}
-                <option value="{{k}}">{{v}}</option>
-                {%endfor%}
-            </select>
-            <label for="{{ val['id'] }}">{{ val['name'] }}</label>
-            </div>
-        </div> 
-        {%endfor%} 
-    </div>    
-    <button type="submit" class="btn my-3" style="border-color: #d52828;">Submit</button>
-</form>
+<div class="col">
+    <form hx-post="/htmx/set-context" hx-target="#context-section" hx-swap="innerHTML" hx-encoding="multipart/form-data" id="submit-context">
+        <div class="row">
+            {% for val in context_vals %}
+            <div class="col">
+                <div class="form-floating">
+                <select class="form-select" aria-label="{{ val['id'] }}" name="{{ val['id'] }}", id="{{ val['id'] }}">
+                    <option selected value=""></option>       
+                    {% for k, v in val['options'].items() %}
+                    <option value="{{k}}">{{v}}</option>
+                    {%endfor%}
+                </select>
+                <label for="{{ val['id'] }}">{{ val['name'] }}</label>
+                </div>
+            </div> 
+            {%endfor%} 
+        </div>
+        <button type="submit" form="submit-context" class="btn my-3" style="border-color: #d52828;">Submit</button>
+    </form>
+</div>

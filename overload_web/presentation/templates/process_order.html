@@ -1,22 +1,4 @@
 {% extends 'process.html' %}
 {% block content %}
-  {% block library_context %}{% endblock %}
-
-  {% block disabled_library_context %}
-  <div class="container text-left" id="context-section">
-    {% include "partials/disabled_context_form.html" %}
-  </div>
-  {% endblock %}
-
-  {% block pvf_form %}
-  <div class="container text-left" id="main-form">
-    <form hx-post="/process/order-level" hx-target="#output" hx-swap="innerHTML" hx-indicator="#processing-indicator" enctype="multipart/form-data">
-    <h5>Select Files</h5>
-        {% include "partials/files.html" %}         
-    <h5>Apply Template</h5>
-        {% include "partials/template_form.html" %}        
-    </form>
-    <div id="output"></div>
-  </div>
-  {% endblock %}
+  {{ super() }}
 {% endblock %}

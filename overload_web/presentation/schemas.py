@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from fastapi import Form
 from pydantic import BaseModel, ConfigDict
 
 from overload_web.domain import models
@@ -31,6 +32,20 @@ class ContextModel(BaseModel):
     library: models.bibs.LibrarySystem
     collection: models.bibs.Collection
     vendor: Optional[str] = None
+    record_type: Optional[str] = None
+
+    @classmethod
+    def from_form(
+        cls,
+        library: str = Form(...),
+        collection: str = Form(...),
+        record_type: str = Form(...),
+    ) -> ContextModel:
+        return ContextModel(
+            library=models.bibs.LibrarySystem(library),
+            collection=models.bibs.Collection(collection),
+            record_type=record_type,
+        )
 
 
 class MatchpointsModel(BaseModel, models.templates.Matchpoints):

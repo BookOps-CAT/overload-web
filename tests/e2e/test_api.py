@@ -274,7 +274,7 @@ class TestFrontendRouter:
         assert "Process Vendor File" in response.text
         assert (
             response.url
-            == f"{self.client.base_url}/process/{record_type}?library=nypl&collection={collection}&vendor=FOO"
+            == f"{self.client.base_url}/process/{record_type}?library=nypl&collection={collection}"
         )
 
     @pytest.mark.parametrize(
