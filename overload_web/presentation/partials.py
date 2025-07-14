@@ -3,43 +3,14 @@
 Serves HTML partials in response to HTMX requests.
 """
 
-import os
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from overload_web import constants
-from overload_web.infrastructure import factories
-from overload_web.presentation import depends_funcs
 
 htmx_router = APIRouter(prefix="/htmx", tags=["htmx"])
 templates = Jinja2Templates(directory="overload_web/presentation/templates")
-
-
-@htmx_router.get("/context-form", response_class=HTMLResponse)
-def get_context_form(
-    request: Request,
-    context: Annotated[
-        dict[str, str | dict], Depends(depends_funcs.get_context_form_fields)
-    ],
-):
-    return templates.TemplateResponse(
-        "context/form.html",
-        {
-            "request": request,
-            "context_form_fields": context,
-        },
-    )
-
-
-@htmx_router.get("/template-input", response_class=HTMLResponse)
-def get_template_input(request: Request):
-    return templates.TemplateResponse(
-        "vendor_templates/template.html",
-        {"request": request, "field_constants": constants.FIELD_CONSTANTS},
-    )
 
 
 @htmx_router.get("/file-source", response_class=HTMLResponse)
@@ -57,21 +28,6 @@ def get_remote_file_form(request: Request):
     return templates.TemplateResponse(
         "partials/remote_form.html",
         {"request": request, "vendors": constants.VENDORS},
-    )
-
-
-@htmx_router.get("/list-remote-files", response_class=HTMLResponse)
-def list_remote_files(request: Request, vendor: str):
-    service = factories.create_remote_file_service(vendor)
-    files = service.loader.list(dir=os.environ[f"{vendor.upper()}_SRC"])
-    return templates.TemplateResponse(
-        "partials/remote_list.html",
-        {
-            "request": request,
-            "files": files,
-            "vendor": vendor,
-            "directory": os.environ[f"{vendor.upper()}_SRC"],
-        },
     )
 
 

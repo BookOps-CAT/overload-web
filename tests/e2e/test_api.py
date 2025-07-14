@@ -69,31 +69,6 @@ class TestBackEndAPIRouter:
         )
         assert response.context["files"] == ["foo.mrc"]
 
-    def test_load_remote_files_get(self, mock_file_service_response):
-        response = self.client.get(
-            "/api/load-remote?vendor=foo&file=bar.mrc&file=baz.mrc&dir=spam"
-        )
-        assert response.status_code == 200
-        assert (
-            response.url
-            == f"{self.client.base_url}/api/load-remote?vendor=foo&file=bar.mrc&file=baz.mrc&dir=spam"
-        )
-        assert sorted(list(response.json()[0].keys())) == sorted(
-            ["id", "file_name", "content"]
-        )
-
-    @pytest.mark.parametrize("library", ["nypl", "bpl"])
-    def test_load_local_files_post(self, mock_file_service_response, marc_file_input):
-        response = self.client.post(
-            "/api/load-local",
-            files=marc_file_input,
-        )
-        assert response.status_code == 200
-        assert response.url == f"{self.client.base_url}/api/load-local"
-        assert sorted(list(response.json()[0].keys())) == sorted(
-            ["id", "file_name", "content"]
-        )
-
     @pytest.mark.parametrize(
         "library, collection",
         [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
