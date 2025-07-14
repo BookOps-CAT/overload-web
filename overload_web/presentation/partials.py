@@ -44,7 +44,7 @@ def get_template_input(request: Request):
 
 @htmx_router.get("/file-source", response_class=HTMLResponse)
 def get_file_source(request: Request):
-    return templates.TemplateResponse("partials/files.html", {"request": request})
+    return templates.TemplateResponse("files/file_source.html", {"request": request})
 
 
 @htmx_router.get("/upload-form", response_class=HTMLResponse)
