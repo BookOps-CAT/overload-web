@@ -40,12 +40,12 @@ class TestBackEndAPIRouter:
         return {"file": ("marc_file.mrc", stub_binary_marc, "text/plain")}
 
     def test_root_get(self):
-        response = self.client.get("/")
+        response = self.client.get("/api/")
         assert response.status_code == 200
         assert response.json() == {"app": "Overload Web"}
 
     def test_get_context_options(self):
-        response = self.client.get("/options/context")
+        response = self.client.get("/api/options/context")
         assert response.status_code == 200
         assert list(response.json().keys()) == ["context"]
         assert sorted(list(response.json()["context"].keys())) == [
@@ -56,14 +56,16 @@ class TestBackEndAPIRouter:
         ]
 
     def test_get_template_input_options(self):
-        response = self.client.get("/options/template")
+        response = self.client.get("/api/options/template")
         assert response.status_code == 200
         assert list(response.json().keys()) == ["field_constants"]
 
     def test_list_remote_files_get(self, mock_file_service_response):
-        response = self.client.get("/list-remote?vendor=foo&dir=bar")
+        response = self.client.get("/api/list-remote?vendor=foo&dir=bar")
         assert response.status_code == 200
-        assert response.url == f"{self.client.base_url}/list-remote?vendor=foo&dir=bar"
+        assert (
+            response.url == f"{self.client.base_url}/api/list-remote?vendor=foo&dir=bar"
+        )
         assert sorted(list(response.json().keys())) == sorted(
             ["files", "directory", "vendor"]
         )
@@ -75,12 +77,12 @@ class TestBackEndAPIRouter:
 
     def test_load_remote_files_get(self, mock_file_service_response):
         response = self.client.get(
-            "/load-remote?vendor=foo&file=bar.mrc&file=baz.mrc&dir=spam"
+            "/api/load-remote?vendor=foo&file=bar.mrc&file=baz.mrc&dir=spam"
         )
         assert response.status_code == 200
         assert (
             response.url
-            == f"{self.client.base_url}/load-remote?vendor=foo&file=bar.mrc&file=baz.mrc&dir=spam"
+            == f"{self.client.base_url}/api/load-remote?vendor=foo&file=bar.mrc&file=baz.mrc&dir=spam"
         )
         assert sorted(list(response.json()[0].keys())) == sorted(
             ["id", "file_name", "content"]
@@ -89,11 +91,11 @@ class TestBackEndAPIRouter:
     @pytest.mark.parametrize("library", ["nypl", "bpl"])
     def test_load_local_files_post(self, mock_file_service_response, marc_file_input):
         response = self.client.post(
-            "/load-local",
+            "/api/load-local",
             files=marc_file_input,
         )
         assert response.status_code == 200
-        assert response.url == f"{self.client.base_url}/load-local"
+        assert response.url == f"{self.client.base_url}/api/load-local"
         assert sorted(list(response.json()[0].keys())) == sorted(
             ["id", "file_name", "content"]
         )
@@ -117,9 +119,9 @@ class TestBackEndAPIRouter:
                 }
             ],
         }
-        response = self.client.post("/process/full", json=context)
+        response = self.client.post("/api/process/full", json=context)
         assert response.status_code == 200
-        assert response.url == f"{self.client.base_url}/process/full"
+        assert response.url == f"{self.client.base_url}/api/process/full"
         assert isinstance(response.content, bytes)
         assert "b123456789" in response.text
         assert "333331234567890" in response.text
@@ -146,7 +148,7 @@ class TestBackEndAPIRouter:
             ],
         }
         with pytest.raises(RequestValidationError) as exc:
-            self.client.post("/process/full", json=context)
+            self.client.post("/api/process/full", json=context)
         assert "Input should be 'bpl' or 'nypl'" in str(exc.value)
 
     @pytest.mark.parametrize(
@@ -171,9 +173,9 @@ class TestBackEndAPIRouter:
             ],
             "template_data": template_data,
         }
-        response = self.client.post("/process/order_level", json=context)
+        response = self.client.post("/api/process/order_level", json=context)
         assert response.status_code == 200
-        assert response.url == f"{self.client.base_url}/process/order_level"
+        assert response.url == f"{self.client.base_url}/api/process/order_level"
         assert isinstance(response.content, bytes)
         assert "b123456789" in response.text
         assert "333331234567890" in response.text
@@ -200,9 +202,9 @@ class TestBackEndAPIRouter:
             ],
             "template_data": template_data,
         }
-        response = self.client.post("/process/order_level", json=context)
+        response = self.client.post("/api/process/order_level", json=context)
         assert response.status_code == 200
-        assert response.url == f"{self.client.base_url}/process/order_level"
+        assert response.url == f"{self.client.base_url}/api/process/order_level"
         assert isinstance(response.content, bytes)
         assert "b123456789" in response.text
         assert "333331234567890" in response.text
@@ -210,7 +212,7 @@ class TestBackEndAPIRouter:
 
     def test_write_local_file_post(self, mock_file_service_response):
         response = self.client.post(
-            "/write-local?dir=foo",
+            "/api/write-local?dir=foo",
             json={
                 "id": {"value": "1"},
                 "file_name": "foo.mrc",
@@ -218,11 +220,11 @@ class TestBackEndAPIRouter:
             },
         )
         assert response.status_code == 200
-        assert response.url == f"{self.client.base_url}/write-local?dir=foo"
+        assert response.url == f"{self.client.base_url}/api/write-local?dir=foo"
 
     def test_write_remote_file_post(self, mock_file_service_response):
         response = self.client.post(
-            "/write-remote?dir=foo&vendor=foo",
+            "/api/write-remote?dir=foo&vendor=foo",
             json={
                 "id": {"value": "1"},
                 "file_name": "foo.mrc",
@@ -230,7 +232,10 @@ class TestBackEndAPIRouter:
             },
         )
         assert response.status_code == 200
-        assert response.url == f"{self.client.base_url}/write-remote?dir=foo&vendor=foo"
+        assert (
+            response.url
+            == f"{self.client.base_url}/api/write-remote?dir=foo&vendor=foo"
+        )
 
 
 class TestFrontendRouter:

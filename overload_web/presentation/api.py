@@ -18,7 +18,7 @@ from overload_web.infrastructure import factories
 from overload_web.presentation import schemas
 
 logger = logging.getLogger(__name__)
-api_router = APIRouter()
+api_router = APIRouter(prefix="/api", tags=["api"])
 
 
 @api_router.get("/")
