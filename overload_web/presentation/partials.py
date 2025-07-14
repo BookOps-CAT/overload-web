@@ -26,7 +26,7 @@ def get_context_form(
     ],
 ):
     return templates.TemplateResponse(
-        "partials/context_form.html",
+        "context/form.html",
         {
             "request": request,
             "context_form_fields": context,
