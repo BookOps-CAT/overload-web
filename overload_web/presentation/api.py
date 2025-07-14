@@ -35,7 +35,7 @@ def root() -> JSONResponse:
 
 
 @api_router.get("/forms/context", response_class=HTMLResponse)
-def get_context_options(
+def get_context_form(
     request: Request,
     context: Annotated[
         dict[str, str | dict], Depends(depends_funcs.get_context_form_fields)
@@ -49,10 +49,14 @@ def get_context_options(
     )
 
 
-@api_router.get("/options/template")
-def get_template_input_options() -> JSONResponse:
+@api_router.get("/forms/template", response_class=HTMLResponse)
+def get_template_form(request: Request) -> HTMLResponse:
     """Get options for template inputs from application constants."""
-    return JSONResponse(content={"field_constants": constants.FIELD_CONSTANTS})
+    return templates.TemplateResponse(
+        request=request,
+        name="vendor_templates/template.html",
+        context={"field_constants": constants.FIELD_CONSTANTS},
+    )
 
 
 @api_router.get("/list-remote")

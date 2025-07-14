@@ -53,10 +53,10 @@ class TestBackEndAPIRouter:
             "record_type",
         ]
 
-    def test_get_template_input_options(self):
-        response = self.client.get("/api/options/template")
+    def test_get_template_form(self):
+        response = self.client.get("/api/forms/template")
         assert response.status_code == 200
-        assert list(response.json().keys()) == ["field_constants"]
+        assert sorted(list(response.context.keys())) == ["field_constants", "request"]
 
     def test_list_remote_files_get(self, mock_file_service_response):
         response = self.client.get("/api/list-remote?vendor=foo&dir=bar")
