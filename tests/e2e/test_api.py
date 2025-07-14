@@ -44,15 +44,13 @@ class TestBackEndAPIRouter:
         assert response.status_code == 200
         assert response.json() == {"app": "Overload Web"}
 
-    def test_get_context_options(self):
-        response = self.client.get("/api/options/context")
+    def test_get_context_form(self):
+        response = self.client.get("/api/forms/context")
         assert response.status_code == 200
-        assert list(response.json().keys()) == ["context"]
-        assert sorted(list(response.json()["context"].keys())) == [
+        assert sorted(list(response.context["context_form_fields"].keys())) == [
             "collection",
             "library",
             "record_type",
-            "vendor",
         ]
 
     def test_get_template_input_options(self):

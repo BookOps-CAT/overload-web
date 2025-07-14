@@ -8,17 +8,19 @@ from __future__ import annotations
 import logging
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, File, Query, UploadFile
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.templating import Jinja2Templates
 
 from overload_web import constants
 from overload_web.application import services
 from overload_web.domain import models
 from overload_web.infrastructure import factories
-from overload_web.presentation import schemas
+from overload_web.presentation import depends_funcs, schemas
 
 logger = logging.getLogger(__name__)
 api_router = APIRouter(prefix="/api", tags=["api"])
+templates = Jinja2Templates(directory="overload_web/presentation/templates")
 
 
 @api_router.get("/")
@@ -32,16 +34,19 @@ def root() -> JSONResponse:
     return JSONResponse(content={"app": "Overload Web"})
 
 
-@api_router.get("/options/context")
-def get_context_options() -> JSONResponse:
-    """Get options for session context from domain and application constants."""
-    context_options = {
-        "library": [i.value for i in models.bibs.RecordType],
-        "collection": [i.value for i in models.bibs.Collection],
-        "record_type": [i.value for i in models.bibs.RecordType],
-        "vendor": [i for i in constants.VENDOR_RULES],
-    }
-    return JSONResponse(content={"context": context_options})
+@api_router.get("/forms/context", response_class=HTMLResponse)
+def get_context_options(
+    request: Request,
+    context: Annotated[
+        dict[str, str | dict], Depends(depends_funcs.get_context_form_fields)
+    ],
+) -> HTMLResponse:
+    """Get options for template inputs from application constants."""
+    return templates.TemplateResponse(
+        request=request,
+        name="context/form.html",
+        context={"context_form_fields": context},
+    )
 
 
 @api_router.get("/options/template")
