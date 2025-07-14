@@ -97,18 +97,58 @@ def process_full_file(
     )
     service = services.records.FullRecordProcessingService(context=session_context)
     bibs = service.parse(data=files[0].content)
-    # processed_bibs = service.process_records(records=bibs)
-    # marc_binary = service.write_marc_binary(records=processed_bibs)
-    file_list = [{k: str(v) for k, v in i.model_dump().items()} for i in files]
+    processed_bibs = service.process_records(records=bibs)
+    marc_binary = service.write_marc_binary(records=processed_bibs)
     return templates.TemplateResponse(
         "partials/pvf_results.html",
         {
             "request": request,
             "library": library,
             "collection": collection,
-            "files": file_list,
+            "files": marc_binary,
             "context": {k: v for k, v in session_context.__dict__.items()},
-            "bibs": [i.domain_bib.bib_id for i in bibs],
+            "bibs": [
+                {"domain_bib": i.domain_bib.__dict__, "bib": str(i.bib)}
+                for i in processed_bibs
+            ],
+        },
+    )
+
+
+@api_router.post("/order-records", response_class=HTMLResponse)
+def process_order_record_file(
+    request: Request,
+    library: Annotated[str, Form(...)],
+    collection: Annotated[str, Form(...)],
+    files: Annotated[
+        list[schemas.VendorFileModel], Depends(depends_funcs.normalize_files)
+    ],
+    template_data: Annotated[schemas.TemplateModel, Form(...)],
+    vendor: Annotated[Optional[str], Form(...)] = None,
+):
+    session_context = models.context.SessionContext(
+        library=models.bibs.LibrarySystem(library),
+        collection=models.bibs.Collection(collection),
+        vendor=vendor,
+    )
+    service = services.records.OrderRecordProcessingService(
+        context=session_context, template=template_data
+    )
+    bibs = service.parse(data=files[0].content)
+    processed_bibs = service.process_records(records=bibs)
+    marc_binary = service.write_marc_binary(records=processed_bibs)
+    return templates.TemplateResponse(
+        "partials/pvf_results.html",
+        {
+            "request": request,
+            "library": library,
+            "collection": collection,
+            "files": marc_binary,
+            "context": {k: v for k, v in session_context.__dict__.items()},
+            "bibs": [
+                {"domain_bib": i.domain_bib.__dict__, "bib": str(i.bib)}
+                for i in processed_bibs
+            ],
         },
     )
 
