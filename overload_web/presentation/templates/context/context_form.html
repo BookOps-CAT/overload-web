@@ -1,4 +1,4 @@
-{% import "partials/macro.html" as macro %}
+{% import "context/macro.html" as macro %}
 <div class="col" id="context-section">
     <form action="/process" method="post" id="context-form">
         {{ macro.render_context_fields(context_form_fields) }}

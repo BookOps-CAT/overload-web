@@ -1,5 +1,5 @@
 {% extends 'process.html' %}
-{% import "partials/macro.html" as macro %}
+{% import "context/macro.html" as macro %}
 {% block header %}<h2>{{ page_title }}</h2>{% endblock %}
 {% block content %}
 <form hx-post="/htmx/process-test" hx-target="#pvf-output" hx-swap="innerHTML" id="pvf-form" hx-encoding="multipart/form-data">
