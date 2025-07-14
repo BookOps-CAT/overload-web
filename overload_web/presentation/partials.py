@@ -37,7 +37,7 @@ def get_context_form(
 @htmx_router.get("/template-input", response_class=HTMLResponse)
 def get_template_input(request: Request):
     return templates.TemplateResponse(
-        "partials/template.html",
+        "vendor_templates/template.html",
         {"request": request, "field_constants": constants.FIELD_CONSTANTS},
     )
 
