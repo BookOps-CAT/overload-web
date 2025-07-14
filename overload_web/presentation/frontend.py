@@ -13,6 +13,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from overload_web import constants
+from overload_web.presentation import depends_funcs
 
 logger = logging.getLogger(__name__)
 frontend_router = APIRouter(tags=["frontend"])
@@ -21,7 +22,7 @@ templates = Jinja2Templates(directory="overload_web/presentation/templates")
 CONTEXT: Dict[str, Any] = {
     "application": constants.APPLICATION,
     "field_constants": constants.FIELD_CONSTANTS,
-    "context_vals": constants.CONTEXT_VALS,
+    "context_form_fields": depends_funcs.get_context_form_fields(),
 }
 
 
@@ -123,7 +124,7 @@ def process_full_records(
     """
     CONTEXT.update(
         {
-            "selected_context": {
+            "context": {
                 "library": library,
                 "collection": collection,
                 "record_type": "full",
@@ -161,7 +162,7 @@ def process_order_records(
     """
     CONTEXT.update(
         {
-            "selected_context": {
+            "context": {
                 "library": library,
                 "collection": collection,
                 "record_type": "order_level",

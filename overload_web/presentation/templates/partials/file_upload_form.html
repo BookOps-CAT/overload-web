@@ -1,7 +1,7 @@
-<div class="row row-cols-1 gy-1 my-2">
-  <form hx-post="/htmx/load-local-files" hx-target="#file-output" hx-swap="innerHTML" hx-indicator="#processing-indicator" hx-encoding="multipart/form-data" id="load-files">
-    <div class="col">
-      <input class="form-control" type="file" id="file" name="file" multiple>
-    </div>
-  </form>
+<h5>Select Files</h5> 
+<div class="row">
+  <input type="hidden" name="source" value="local" />
+  <div class="col">
+    <input class="form-control" type="file" id="files" name="files" multiple>
+  </div>
 </div>

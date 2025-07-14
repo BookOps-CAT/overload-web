@@ -266,7 +266,6 @@ class TestFrontendRouter:
             data={
                 "library": "nypl",
                 "collection": collection,
-                "vendor": "FOO",
                 "record_type": record_type,
             },
         )
@@ -287,7 +286,6 @@ class TestFrontendRouter:
             data={
                 "library": "bpl",
                 "collection": None,
-                "vendor": "FOO",
                 "record_type": record_type,
             },
         )
@@ -295,7 +293,7 @@ class TestFrontendRouter:
         assert "Process Vendor File" in response.text
         assert (
             response.url
-            == f"{self.client.base_url}/process/{record_type}?library=bpl&collection=&vendor=FOO"
+            == f"{self.client.base_url}/process/{record_type}?library=bpl&collection="
         )
 
     @pytest.mark.parametrize(

@@ -1,16 +1,15 @@
-<div class="row row-cols-1 gy-1 my-2">
-  <form hx-get="/htmx/list-remote-files?vendor={{vendor}}" hx-target="#file-list" hx-swap="innerHTML" hx-trigger="change" hx-indicator="loading-indicator">
+<h5>Select Files</h5> 
+<div class="row">
     <div class="col">
       <div class="form-floating">
-        <select class="form-select" aria-label="vendor" name="vendor", id="vendor">
+        <select class="form-select" aria-label="vendor" name="vendor" id="vendor" hx-get="/htmx/list-remote-files?vendor={{vendor}}" hx-target="#file-list" hx-swap="innerHTML" hx-trigger="change" hx-indicator="loading-indicator">
             <option selected value=""></option>       
-                {% for id, name in vendors.items() %}
-                <option value="{{id}}">{{name}}</option>
-                {%endfor%}
+            {% for id, name in vendors.items() %}
+            <option value="{{id}}">{{name}}</option>
+            {%endfor%}
         </select>
         <label for="vendor">Vendor</label>
       </div>
-      <label for="{{id}}">{{name}}</label>
-  </form>
+    </div>
 </div>
 <div id="file-list"></div>

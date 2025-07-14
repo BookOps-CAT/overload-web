@@ -1,33 +1,20 @@
-<div class="col">
-    <form>
-        <fieldset disabled>
-            <div class="row">
-                {% for val in context_vals %}
-                <div class="col">
-                    <div class="form-floating">
-                        <select class="form-select" aria-label="{{ val['id'] }}" name="{{ val['id'] }}", id="{{ val['id'] }}">   
-                        <option selected value="{{ context[val['id']] }}">{{ val['options'][context[val['id']]] }}</option>
-                        </select>
-                        <label for="{{ val['id'] }}">{{ val['name'] }}</label>
-                    </div>      
-                </div> 
-                {%endfor%}
-            </div>                  
-        </fieldset>
-    </form>
-    <div class="row">
-        <div class="col">
-            <button hx-get="/htmx/context-form" hx-target="#context-section" hx-swap="innerHTML" class="btn my-3" style="border-color: #d52828;">Edit Library Context</button>
-        </div>
+{% import "partials/macro.html" as macro %}
+<div class="col" id="context-section">
+  {{ macro.render_context_fields(context_form_fields, context, disabled=True) }}
+  <div class="row">
+    <div class="col">
+      <button hx-get="/htmx/context-form" hx-target="#context-form" hx-swap="innerHTML" class="btn my-3" style="border-color: #d52828;">Edit Library Context</button>
     </div>
+  </div>
 </div>
 <div class="col">
-    <div class="row">       
-        <h3>Context Results</h3>
-            <ul>
-            {% for k,v in context.items() %}
-                {{ k }}: {{ v }}</br>
-            {% endfor %}
-            </ul>
-    </div>        
-</div>
+  <div class="row">       
+    <h3>Context Results</h3>
+    <ul>
+    {% for k,v in context.items() %}
+      <input type="hidden" name="{{ k }}" value="{{ v }}" id="{{ k }}">
+      {{ k }}: {{ v }}</br>
+    {% endfor %}
+    </ul>
+  </div>        
+</div> 

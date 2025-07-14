@@ -4,42 +4,41 @@ Serves HTML partials in response to HTMX requests.
 """
 
 import os
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from overload_web import constants
 from overload_web.infrastructure import factories
-from overload_web.presentation import schemas
+from overload_web.presentation import depends_funcs, schemas
 
 htmx_router = APIRouter(prefix="/htmx", tags=["htmx"])
 templates = Jinja2Templates(directory="overload_web/presentation/templates")
 
 
 @htmx_router.get("/context-form", response_class=HTMLResponse)
-def get_context_form(request: Request):
+def get_context_form(
+    request: Request,
+    context: Annotated[
+        dict[str, str | dict], Depends(depends_funcs.get_context_form_fields)
+    ],
+):
     return templates.TemplateResponse(
         "partials/context_form.html",
         {
             "request": request,
-            "context_vals": constants.CONTEXT_VALS,
+            "context_form_fields": context,
         },
     )
 
 
-@htmx_router.post("/set-context", response_class=HTMLResponse)
-def set_context(
-    request: Request,
-    context: schemas.ContextModel = Depends(schemas.ContextModel.from_form),
-):
+@htmx_router.get("/template-input", response_class=HTMLResponse)
+def get_template_input(request: Request):
     return templates.TemplateResponse(
-        "partials/disabled_context_form.html",
-        {
-            "request": request,
-            "context_vals": constants.CONTEXT_VALS,
-            "context": {k: str(v) for k, v in context.model_dump().items()},
-        },
+        "partials/template.html",
+        {"request": request, "field_constants": constants.FIELD_CONSTANTS},
     )
 
 
@@ -73,21 +72,7 @@ def list_remote_files(request: Request, vendor: str):
             "request": request,
             "files": files,
             "vendor": vendor,
-        },
-    )
-
-
-@htmx_router.post("/load-local-files", response_class=HTMLResponse)
-def load_local_files(request: Request, file: list[UploadFile] = File(...)):
-    models = [
-        schemas.VendorFileModel.create(file_name=f.filename, content=f.file.read())
-        for f in file
-    ]
-    return templates.TemplateResponse(
-        "partials/loaded_files_summary.html",
-        {
-            "request": request,
-            "files": models,
+            "directory": os.environ[f"{vendor.upper()}_SRC"],
         },
     )
 
@@ -111,9 +96,9 @@ def load_remote_files(
     )
 
 
-@htmx_router.get("/pvf-submit-form", response_class=HTMLResponse)
+@htmx_router.get("/pvf-button", response_class=HTMLResponse)
 def get_pvf_button(request: Request):
     return templates.TemplateResponse(
-        "partials/pvf_submit_form.html",
+        "partials/pvf_button.html",
         {"request": request},
     )

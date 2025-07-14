@@ -1,0 +1,23 @@
+{% macro render_context_fields(context_form_fields, context=None, disabled=False) %}
+<div class="row">
+    {% for key,val in context_form_fields.items() %}
+    <div class="col">
+        <div class="form-floating">
+        <select class="form-select" aria-label="{{ key }}" name="{{ key }}", id="{{ key }}" {% if disabled %}disabled{% endif %}>
+        {% if context %}
+            <option selected value="{{ context[val['id']] }}">
+                {{ val['options'][context[key]] }}
+            </option>
+        {% else %}
+            <option selected value=""></option>
+            {% for k, v in val['options'].items() %}
+                <option value="{{k}}">{{v}}</option>
+            {% endfor %}
+        {% endif %}
+        </select>
+        <label for="{{ key }}">{{ val['label'] }}</label>
+        </div>
+    </div> 
+    {%endfor%} 
+</div>
+{% endmacro %}

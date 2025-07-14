@@ -1,0 +1,11 @@
+{
+    "record_type": {
+        "label": "Record Type",
+        "options": {"full": "Full", "order_level": "Order-Level"}
+    },
+    "library": {"label": "Library System", "options": {"bpl": "BPL", "nypl": "NYPL"}},
+    "collection": {
+        "label": "Collection",
+        "options": {"BL": "Branches", "RL": "Research", "None": "None"}
+    }
+}
