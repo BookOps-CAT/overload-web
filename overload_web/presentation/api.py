@@ -9,7 +9,7 @@ import logging
 import os
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 
@@ -77,6 +77,39 @@ def list_remote_files(request: Request, vendor: str) -> HTMLResponse:
         request=request,
         name="files/remote_list.html",
         context={"files": files, "vendor": vendor},
+    )
+
+
+@api_router.post("/full-records", response_class=HTMLResponse)
+def process_full_file(
+    request: Request,
+    library: Annotated[str, Form(...)],
+    collection: Annotated[str, Form(...)],
+    files: Annotated[
+        list[schemas.VendorFileModel], Depends(depends_funcs.normalize_files)
+    ],
+    vendor: Annotated[Optional[str], Form(...)] = None,
+):
+    session_context = models.context.SessionContext(
+        library=models.bibs.LibrarySystem(library),
+        collection=models.bibs.Collection(collection),
+        vendor=vendor,
+    )
+    service = services.records.FullRecordProcessingService(context=session_context)
+    bibs = service.parse(data=files[0].content)
+    # processed_bibs = service.process_records(records=bibs)
+    # marc_binary = service.write_marc_binary(records=processed_bibs)
+    file_list = [{k: str(v) for k, v in i.model_dump().items()} for i in files]
+    return templates.TemplateResponse(
+        "partials/pvf_results.html",
+        {
+            "request": request,
+            "library": library,
+            "collection": collection,
+            "files": file_list,
+            "context": {k: v for k, v in session_context.__dict__.items()},
+            "bibs": [i.domain_bib.bib_id for i in bibs],
+        },
     )
 
 
