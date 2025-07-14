@@ -6,13 +6,13 @@ Serves HTML partials in response to HTMX requests.
 import os
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from overload_web import constants
 from overload_web.infrastructure import factories
-from overload_web.presentation import depends_funcs, schemas
+from overload_web.presentation import depends_funcs
 
 htmx_router = APIRouter(prefix="/htmx", tags=["htmx"])
 templates = Jinja2Templates(directory="overload_web/presentation/templates")
@@ -47,7 +47,7 @@ def get_file_source(request: Request):
     return templates.TemplateResponse("files/file_source.html", {"request": request})
 
 
-@htmx_router.get("/upload-form", response_class=HTMLResponse)
+@htmx_router.get("/local-file-form", response_class=HTMLResponse)
 def get_local_upload_form(request: Request):
     return templates.TemplateResponse("file/local_form.html", {"request": request})
 
@@ -55,7 +55,7 @@ def get_local_upload_form(request: Request):
 @htmx_router.get("/remote-file-form", response_class=HTMLResponse)
 def get_remote_file_form(request: Request):
     return templates.TemplateResponse(
-        "partials/remote_file_form.html",
+        "partials/remote_form.html",
         {"request": request, "vendors": constants.VENDORS},
     )
 
@@ -65,31 +65,12 @@ def list_remote_files(request: Request, vendor: str):
     service = factories.create_remote_file_service(vendor)
     files = service.loader.list(dir=os.environ[f"{vendor.upper()}_SRC"])
     return templates.TemplateResponse(
-        "partials/remote_file_list.html",
+        "partials/remote_list.html",
         {
             "request": request,
             "files": files,
             "vendor": vendor,
             "directory": os.environ[f"{vendor.upper()}_SRC"],
-        },
-    )
-
-
-@htmx_router.post("/load-remote-files", response_class=HTMLResponse)
-def load_remote_files(
-    request: Request,
-    file: list[str] = Form(...),
-    vendor: str = Form(...),
-):
-    vendor_dir = os.environ[f"{vendor.upper()}_SRC"]
-    service = factories.create_remote_file_service(vendor)
-    files = [service.loader.load(name=f, dir=vendor_dir) for f in file]
-    models = [schemas.VendorFileModel(**f.__dict__) for f in files]
-    return templates.TemplateResponse(
-        "partials/loaded_files_summary.html",
-        {
-            "request": request,
-            "files": models,
         },
     )
 
