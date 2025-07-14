@@ -137,7 +137,7 @@ def mock_sftp_client(monkeypatch):
 
 @pytest.fixture
 def mock_file_service_response(monkeypatch, mocker, mock_sftp_client):
-    mock_file = mocker.mock_open(read_data=b"")
+    mock_file = mocker.mock_open(read_data="")
     mocker.patch("builtins.open", mock_file)
 
     def mock_list_resp(*args, **kwargs):

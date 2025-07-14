@@ -1,11 +1,12 @@
 <div class="row row-cols-3">
-  {% for f in files %}
+  {% for file in files %}
   <div class="col">
     <div class="form-check">
-      <input class="form-check-input" type="checkbox" style="color:  #d52828;" name="files" value="{{ f }}">
-      <label class="form-check-label" for="{{ f }}">{{ f }}</label>
+      <input class="form-check-input" type="checkbox" style="color: #d52828;" name="files" value="{{ file }}">
+      <label class="form-check-label" for="{{ file }}">{{ file }}</label>
     </div>  
   </div>
   {% endfor %}
   <input type="hidden" name="vendor" value="{{ vendor }}">
+  <input type="hidden" name="source" value="remote" />
 </div>

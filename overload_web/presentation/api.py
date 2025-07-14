@@ -6,6 +6,7 @@ Includes endpoints for root and processing vendor MARC files.
 from __future__ import annotations
 
 import logging
+import os
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
@@ -59,22 +60,24 @@ def get_template_form(request: Request) -> HTMLResponse:
     )
 
 
-@api_router.get("/list-remote")
-def list_remote_files(dir: str, vendor: str) -> JSONResponse:
+@api_router.get("/list-remote-files", response_class=HTMLResponse)
+def list_remote_files(request: Request, vendor: str) -> HTMLResponse:
     """
     List all files on a vendor's SFTP server
 
     Args:
-        dir: the directory whose files should be listed
         vendor: the vendor whose server should be accessed
 
     Returns:
-        the list of files wrapped in a `JSONResponse` object
+        the list of files wrapped in a `HTMLResponse` object
     """
-
-    service = factories.create_remote_file_service(vendor=vendor)
-    files = service.loader.list(dir=dir)
-    return JSONResponse(content={"files": files, "directory": dir, "vendor": vendor})
+    service = factories.create_remote_file_service(vendor)
+    files = service.loader.list(dir=os.environ[f"{vendor.upper()}_SRC"])
+    return templates.TemplateResponse(
+        request=request,
+        name="files/remote_list.html",
+        context={"files": files, "vendor": vendor},
+    )
 
 
 @api_router.get("/load-remote")
@@ -96,7 +99,6 @@ def load_remote_files(
     Returns:
         the list of files wrapped in a `JSONResponse` object
     """
-    """"""
     service = factories.create_remote_file_service(vendor=vendor)
     files = [service.loader.load(name=f, dir=dir) for f in file]
     return [schemas.VendorFileModel(**i.__dict__) for i in files]

@@ -2,7 +2,7 @@
 <div class="row">
     <div class="col">
       <div class="form-floating">
-        <select class="form-select" aria-label="vendor" name="vendor" id="vendor" hx-get="/htmx/list-remote-files?vendor={{vendor}}" hx-target="#file-list" hx-swap="innerHTML" hx-trigger="change" hx-indicator="loading-indicator">
+        <select class="form-select" aria-label="vendor" name="vendor" id="vendor" hx-get="/api/list-remote-files?vendor={{vendor}}" hx-target="#file-list" hx-swap="innerHTML" hx-trigger="change" hx-indicator="loading-indicator">
             <option selected value=""></option>       
             {% for id, name in vendors.items() %}
             <option value="{{id}}">{{name}}</option>

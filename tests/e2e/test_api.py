@@ -59,19 +59,15 @@ class TestBackEndAPIRouter:
         assert sorted(list(response.context.keys())) == ["field_constants", "request"]
 
     def test_list_remote_files_get(self, mock_file_service_response):
-        response = self.client.get("/api/list-remote?vendor=foo&dir=bar")
+        response = self.client.get("/api/list-remote-files?vendor=foo")
         assert response.status_code == 200
         assert (
-            response.url == f"{self.client.base_url}/api/list-remote?vendor=foo&dir=bar"
+            response.url == f"{self.client.base_url}/api/list-remote-files?vendor=foo"
         )
-        assert sorted(list(response.json().keys())) == sorted(
-            ["files", "directory", "vendor"]
+        assert sorted(list(response.context.keys())) == sorted(
+            ["files", "request", "directory", "vendor"]
         )
-        assert response.json() == {
-            "files": ["foo.mrc"],
-            "directory": "bar",
-            "vendor": "foo",
-        }
+        assert response.context["files"] == ["foo.mrc"]
 
     def test_load_remote_files_get(self, mock_file_service_response):
         response = self.client.get(
