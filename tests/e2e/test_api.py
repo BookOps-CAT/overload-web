@@ -65,7 +65,7 @@ class TestBackEndAPIRouter:
             response.url == f"{self.client.base_url}/api/list-remote-files?vendor=foo"
         )
         assert sorted(list(response.context.keys())) == sorted(
-            ["files", "request", "directory", "vendor"]
+            ["files", "request", "vendor"]
         )
         assert response.context["files"] == ["foo.mrc"]
 
