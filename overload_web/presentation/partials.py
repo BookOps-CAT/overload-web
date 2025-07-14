@@ -49,9 +49,7 @@ def get_file_source(request: Request):
 
 @htmx_router.get("/upload-form", response_class=HTMLResponse)
 def get_local_upload_form(request: Request):
-    return templates.TemplateResponse(
-        "partials/file_upload_form.html", {"request": request}
-    )
+    return templates.TemplateResponse("file/local_form.html", {"request": request})
 
 
 @htmx_router.get("/remote-file-form", response_class=HTMLResponse)
