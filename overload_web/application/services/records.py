@@ -60,14 +60,8 @@ class FullRecordProcessingService:
         Returns:
             `BibMatcher` instance.
         """
-        matchpoints = [
-            self.context.vendor_data.get("primary_matchpoint"),
-            self.context.vendor_data.get("secondary_matchpoint"),
-            self.context.vendor_data.get("tertiary_matchpoint"),
-        ]
         return logic.bibs.BibMatcher(
-            fetcher=sierra.SierraBibFetcher(library=str(self.context.library)),
-            matchpoints=[i for i in matchpoints if i],
+            fetcher=sierra.SierraBibFetcher(library=str(self.context.library))
         )
 
     def parse(self, data: BinaryIO | bytes) -> list[dto.bib.BibDTO]:
@@ -93,10 +87,19 @@ class FullRecordProcessingService:
         Returns:
             a list of processed and updated records as `BibDTO` objects
         """
+        matchpoints = [
+            i
+            for i in [
+                self.context.vendor_data.get("primary_matchpoint"),
+                self.context.vendor_data.get("secondary_matchpoint"),
+                self.context.vendor_data.get("tertiary_matchpoint"),
+            ]
+            if i
+        ]
         update_fields = self.context.vendor_data.get("bib_template", [])
         processed_bibs = []
         for record in records:
-            record.domain_bib = self.matcher.match_bib(record.domain_bib)
+            record.domain_bib = self.matcher.match_bib(record.domain_bib, matchpoints)
             updated_bibs = self.parser.update_fields(
                 record=record, fields=update_fields
             )
@@ -158,8 +161,7 @@ class OrderRecordProcessingService:
             `BibMatcher` instance.
         """
         return logic.bibs.BibMatcher(
-            fetcher=sierra.SierraBibFetcher(library=str(self.context.library)),
-            matchpoints=self.template.get("matchpoints", []),
+            fetcher=sierra.SierraBibFetcher(library=str(self.context.library))
         )
 
     def parse(self, data: BinaryIO | bytes) -> list[dto.bib.BibDTO]:
@@ -188,7 +190,9 @@ class OrderRecordProcessingService:
         """
         processed_bibs = []
         for record in records:
-            record.domain_bib = self.matcher.match_bib(record.domain_bib)
+            record.domain_bib = self.matcher.match_bib(
+                record.domain_bib, self.template.get("matchpoints", [])
+            )
             record.domain_bib.apply_template(template_data=self.template)
             updated_bibs = self.parser.update_fields(
                 record=record, fields=self.template.get("update_fields", [])

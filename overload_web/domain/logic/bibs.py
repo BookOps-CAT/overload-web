@@ -33,11 +33,7 @@ class BibMatcher:
     records.
     """
 
-    def __init__(
-        self,
-        fetcher: protocols.bibs.BibFetcher,
-        matchpoints: Optional[list[str]] = None,
-    ):
+    def __init__(self, fetcher: protocols.bibs.BibFetcher):
         """
         Initialize the match service with a fetcher and optional matchpoints.
 
@@ -46,16 +42,12 @@ class BibMatcher:
             matchpoints: ordered list of fields to use for matching.
         """
         self.fetcher = fetcher
-        self.matchpoints = matchpoints or [
-            "oclc_number",
-            "isbn",
-            "issn",
-            "bib_id",
-            "upc",
-        ]
 
     def _select_best_match(
-        self, bib_to_match: models.bibs.DomainBib, candidates: list[dict[str, Any]]
+        self,
+        bib_to_match: models.bibs.DomainBib,
+        candidates: list[dict[str, Any]],
+        matchpoints: list[str],
     ) -> Optional[models.bibs.BibId]:
         """
         Compare a `DomainBib` to a list of candidate bibs and select the best match.
@@ -71,7 +63,7 @@ class BibMatcher:
         best_match_bib_id = None
         for bib in candidates:
             matched_points = 0
-            for attr in self.matchpoints:
+            for attr in matchpoints:
                 if getattr(bib_to_match, attr) == bib.get(attr):
                     matched_points += 1
 
@@ -83,7 +75,9 @@ class BibMatcher:
                 )
         return best_match_bib_id
 
-    def match_bib(self, bib: models.bibs.DomainBib) -> models.bibs.DomainBib:
+    def match_bib(
+        self, bib: models.bibs.DomainBib, matchpoints: list[str]
+    ) -> models.bibs.DomainBib:
         """
         Attempt to find the best-match in Sierra for a given `DomainBib`.
 
@@ -97,14 +91,14 @@ class BibMatcher:
             the `DomainBib` object with an updated bib_id (either the best match or
             `None` if no candidates found)
         """
-        for key in self.matchpoints:
+        for key in matchpoints:
             value = getattr(bib, key, None)
             if not value:
                 continue
             candidates = self.fetcher.get_bibs_by_id(value=value, key=key)
             if candidates:
                 bib.bib_id = self._select_best_match(
-                    bib_to_match=bib, candidates=candidates
+                    bib_to_match=bib, candidates=candidates, matchpoints=matchpoints
                 )
                 return bib
         return bib
