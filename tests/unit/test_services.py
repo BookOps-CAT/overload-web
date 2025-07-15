@@ -33,6 +33,54 @@ class FakeBibFetcher(StubFetcher):
 @pytest.mark.parametrize(
     "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
 )
+class TestRecordProcessingService:
+    @pytest.fixture
+    def mock_fetcher(self, monkeypatch):
+        def fake_fetcher(*args, **kwargs):
+            return FakeBibFetcher()
+
+        monkeypatch.setattr(
+            "overload_web.infrastructure.bibs.sierra.SierraBibFetcher", fake_fetcher
+        )
+
+    def test_parse(self, library, collection, stub_binary_marc, mock_fetcher):
+        service = services.records.RecordProcessingService(
+            library=library,
+            collection=collection,
+            record_type=models.bibs.RecordType.FULL,
+        )
+        records = service.parse(stub_binary_marc)
+        assert len(records) == 1
+        assert str(records[0].bib.library) == library
+        assert records[0].bib.isbn == "9781234567890"
+        assert str(records[0].domain_bib.library) == library
+        assert records[0].domain_bib.barcodes == ["333331234567890"]
+
+    def test_process_records(self, library, collection, stub_bib_dto, mock_fetcher):
+        assert stub_bib_dto.domain_bib.bib_id is None
+        assert stub_bib_dto.bib.sierra_bib_id is None
+        service = services.records.RecordProcessingService(
+            library=library,
+            collection=collection,
+            record_type=models.bibs.RecordType.FULL,
+        )
+        matched_bibs = service.process_records([stub_bib_dto])
+        assert len(matched_bibs) == 1
+        assert str(matched_bibs[0].domain_bib.bib_id) == "123"
+
+    def test_write_marc_binary(self, stub_bib_dto, library, collection, mock_fetcher):
+        service = services.records.RecordProcessingService(
+            library=library,
+            collection=collection,
+            record_type=models.bibs.RecordType.FULL,
+        )
+        marc_binary = service.write_marc_binary(records=[stub_bib_dto])
+        assert marc_binary.read()[0:2] == b"00"
+
+
+@pytest.mark.parametrize(
+    "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
+)
 class TestFullRecordProcessingService:
     @pytest.fixture
     def full_context(self, library, collection, monkeypatch):
