@@ -208,15 +208,13 @@ VENDOR_RULES: Dict[str, Any] = {
     "nypl": {
         "UNKNOWN": {
             "vendor_tags": {},
-            "bib_template": [],
             "template": {
                 "matchpoints": {
                     "primary": "isbn",
                     "secondary": "oclc_number",
-                }
+                },
+                "bib_template": [],
             },
-            "primary": "isbn",
-            "secondary": "oclc_number",
         },
         "BT SERIES": {
             "vendor_tags": {"901": {"code": "a", "value": "BTSERIES"}},
@@ -224,61 +222,62 @@ VENDOR_RULES: Dict[str, Any] = {
                 "matchpoints": {
                     "primary": "isbn",
                     "secondary": "oclc_number",
-                }
+                },
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=a;",
+                    }
+                ],
             },
-            "primary": "isbn",
-            "secondary": "oclc_number",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
-            ],
         },
         "BT PARADE": {
             "vendor_tags": {"901": {"code": "a", "value": "PARADE"}},
-            "template": {"matchpoints": {"primary": "isbn"}},
-            "primary": "isbn",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
-            ],
+            "template": {
+                "matchpoints": {"primary": "isbn"},
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=a;",
+                    }
+                ],
+            },
         },
         "BT ROMANCE": {
             "vendor_tags": {"901": {"code": "a", "value": "BTROMAN"}},
-            "template": {"matchpoints": {"primary": "isbn"}},
-            "primary": "isbn",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
-            ],
+            "template": {
+                "matchpoints": {"primary": "isbn"},
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=a;",
+                    }
+                ],
+            },
         },
         "BT URBAN": {
             "vendor_tags": {"901": {"code": "a", "value": "BTURBN"}},
-            "template": {"matchpoints": {"primary": "isbn"}},
-            "primary": "isbn",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
-            ],
+            "template": {
+                "matchpoints": {"primary": "isbn"},
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=a;",
+                    }
+                ],
+            },
         },
         "BT ODC": {
             "vendor_tags": {"901": {"code": "a", "value": "BTODC"}},
@@ -286,33 +285,32 @@ VENDOR_RULES: Dict[str, Any] = {
                 "matchpoints": {
                     "primary": "bib_id",
                     "secondary": "isbn",
-                }
+                },
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=a;",
+                    }
+                ],
             },
-            "primary": "bib_id",
-            "secondary": "isbn",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
-            ],
         },
         "BT LEASED": {
             "vendor_tags": {"901": {"code": "a", "value": "LEASED"}},
-            "template": {"matchpoints": {"primary": "isbn"}},
-            "primary": "isbn",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
-            ],
+            "template": {
+                "matchpoints": {"primary": "isbn"},
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=a;",
+                    }
+                ],
+            },
         },
         "Midwest DVD": {
             "vendor_tags": {
@@ -324,20 +322,17 @@ VENDOR_RULES: Dict[str, Any] = {
                     "primary": "oclc_number",
                     "secondary": "isbn",
                     "tertiary": "upc",
-                }
+                },
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=v;",
+                    }
+                ],
             },
-            "primary": "oclc_number",
-            "secondary": "isbn",
-            "tertiary": "upc",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=v;",
-                }
-            ],
         },
         "Midwest Blu-ray": {
             "vendor_tags": {
@@ -349,20 +344,17 @@ VENDOR_RULES: Dict[str, Any] = {
                     "primary": "oclc_number",
                     "secondary": "isbn",
                     "tertiary": "upc",
-                }
+                },
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=b;",
+                    }
+                ],
             },
-            "primary": "oclc_number",
-            "secondary": "isbn",
-            "tertiary": "upc",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=b;",
-                }
-            ],
         },
         "Midwest CD": {
             "vendor_tags": {
@@ -375,20 +367,17 @@ VENDOR_RULES: Dict[str, Any] = {
                     "primary": "oclc_number",
                     "secondary": "isbn",
                     "tertiary": "upc",
-                }
+                },
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=y;",
+                    }
+                ],
             },
-            "primary": "oclc_number",
-            "secondary": "isbn",
-            "tertiary": "upc",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=y;",
-                }
-            ],
         },
         "Midwest Audio": {
             "vendor_tags": {
@@ -401,20 +390,17 @@ VENDOR_RULES: Dict[str, Any] = {
                     "primary": "oclc_number",
                     "secondary": "isbn",
                     "tertiary": "upc",
-                }
+                },
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=u;",
+                    }
+                ],
             },
-            "primary": "oclc_number",
-            "secondary": "isbn",
-            "tertiary": "upc",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=u;",
-                }
-            ],
         },
         "AMALIVRE": {
             "vendor_tags": {"901": {"code": "a", "value": "AUXAM"}},
@@ -422,19 +408,17 @@ VENDOR_RULES: Dict[str, Any] = {
                 "matchpoints": {
                     "primary": "oclc_number",
                     "secondary": "isbn",
-                }
+                },
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=a;",
+                    }
+                ],
             },
-            "primary": "oclc_number",
-            "secondary": "isbn",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
-            ],
         },
         "INGRAM": {
             "vendor_tags": {"901": {"code": "a", "value": "INGRAM"}},
@@ -442,19 +426,17 @@ VENDOR_RULES: Dict[str, Any] = {
                 "matchpoints": {
                     "primary": "oclc_number",
                     "secondary": "isbn",
-                }
+                },
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=a;",
+                    }
+                ],
             },
-            "primary": "oclc_number",
-            "secondary": "isbn",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
-            ],
         },
         "Sulaiman": {
             "vendor_tags": {"037": {"code": "b", "value": "Sulaiman"}},
@@ -462,33 +444,30 @@ VENDOR_RULES: Dict[str, Any] = {
                 "matchpoints": {
                     "primary": "oclc_number",
                     "secondary": "isbn",
-                }
+                },
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=a;",
+                    },
+                    {
+                        "tag": "901",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "SULAIMAN",
+                    },
+                ],
             },
-            "primary": "oclc_number",
-            "secondary": "isbn",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                },
-                {
-                    "tag": "901",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "SULAIMAN",
-                },
-            ],
         },
     },
     "bpl": {
         "UNKNOWN": {
             "vendor_tags": {},
-            "template": {"matchpoints": {"primary": "isbn"}},
-            "primary": "isbn",
+            "template": {"matchpoints": {"primary": "isbn"}, "bib_template": []},
         },
         "INGRAM": {
             "vendor_tags": {"947": {"code": "a", "value": "INGRAM"}},
@@ -497,20 +476,17 @@ VENDOR_RULES: Dict[str, Any] = {
                     "primary": "bib_id",
                     "secondary": "isbn",
                     "tertiary": "oclc_number",
-                }
+                },
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=a;",
+                    }
+                ],
             },
-            "primary": "bib_id",
-            "secondary": "isbn",
-            "tertiary": "oclc_number",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
-            ],
         },
         "BT CLS": {
             "vendor_tags": {"960": {"code": "n", "value": "B&amp;T"}},
@@ -519,95 +495,97 @@ VENDOR_RULES: Dict[str, Any] = {
                     "primary": "bib_id",
                     "secondary": "isbn",
                     "tertiary": "022",
-                }
+                },
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=a;",
+                    }
+                ],
             },
-            "primary": "bib_id",
-            "secondary": "isbn",
-            "tertiary": "022",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
-            ],
         },
         "BT SERIES": {
             "vendor_tags": {"037": {"code": "b", "value": "B&amp;T SERIES"}},
             "alternate_vendor_tags": {"947": {"code": "a", "value": "B&amp;T SERIES"}},
-            "template": {"matchpoints": {"primary": "isbn"}},
-            "primary": "isbn",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
-            ],
+            "template": {
+                "matchpoints": {"primary": "isbn"},
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=a;",
+                    }
+                ],
+            },
         },
         "BT ROMANCE": {
             "vendor_tags": {"037": {"code": "b", "value": "B&amp;T ROMANCE"}},
             "alternate_vendor_tags": {"947": {"code": "a", "value": "B&amp;T ROMANCE"}},
-            "template": {"matchpoints": {"primary": "isbn"}},
-            "primary": "isbn",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
-            ],
+            "template": {
+                "matchpoints": {"primary": "isbn"},
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=a;",
+                    }
+                ],
+            },
         },
         "BT URBAN": {
             "vendor_tags": {"037": {"code": "b", "value": "B&amp;T URBAN"}},
             "alternate_vendor_tags": {"947": {"code": "a", "value": "B&amp;T URBAN"}},
-            "template": {"matchpoints": {"primary": "isbn"}},
-            "primary": "isbn",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
-            ],
+            "template": {
+                "matchpoints": {"primary": "isbn"},
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=a;",
+                    }
+                ],
+            },
         },
         "BT LEASE": {
             "vendor_tags": {"037": {"code": "b", "value": "B&amp;T LEASE"}},
             "alternate_vendor_tags": {"947": {"code": "a", "value": "B&amp;T LEASE"}},
-            "template": {"matchpoints": {"primary": "isbn"}},
-            "primary": "isbn",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
-            ],
+            "template": {
+                "matchpoints": {"primary": "isbn"},
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=a;",
+                    }
+                ],
+            },
         },
         "BT PBP": {
             "vendor_tags": {"037": {"code": "b", "value": "B&amp;T PBP"}},
             "alternate_vendor_tags": {"947": {"code": "a", "value": "B&amp;T PBP"}},
-            "template": {"matchpoints": {"primary": "isbn"}},
-            "primary": "isbn",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
-            ],
+            "template": {
+                "matchpoints": {"primary": "isbn"},
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=a;",
+                    }
+                ],
+            },
         },
         "Midwest DVD": {
             "vendor_tags": {
@@ -618,19 +596,17 @@ VENDOR_RULES: Dict[str, Any] = {
                 "matchpoints": {
                     "primary": "bib_id",
                     "secondary": "isbn",
-                }
+                },
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=h;",
+                    }
+                ],
             },
-            "primary": "bib_id",
-            "secondary": "isbn",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=h;",
-                }
-            ],
         },
         "Midwest Audio": {
             "vendor_tags": {
@@ -641,19 +617,17 @@ VENDOR_RULES: Dict[str, Any] = {
                 "matchpoints": {
                     "primary": "bib_id",
                     "secondary": "isbn",
-                }
+                },
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=i;",
+                    }
+                ],
             },
-            "primary": "bib_id",
-            "secondary": "isbn",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=i;",
-                }
-            ],
         },
         "Midwest CD": {
             "vendor_tags": {
@@ -664,19 +638,17 @@ VENDOR_RULES: Dict[str, Any] = {
                 "matchpoints": {
                     "primary": "bib_id",
                     "secondary": "isbn",
-                }
+                },
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=j;",
+                    }
+                ],
             },
-            "primary": "bib_id",
-            "secondary": "isbn",
-            "bib_template": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=j;",
-                }
-            ],
         },
     },
 }

@@ -18,25 +18,10 @@ class TestApp:
         assert "process_vendor_file" in route_names
 
 
-@pytest.mark.usefixtures("mock_sierra_response")
+@pytest.mark.usefixtures("mock_sierra_response", "mock_sftp_client")
 class TestBackEndAPIRouter:
     client = TestClient(api_router)
-
-    @pytest.fixture
-    def form_input(self, template_data, library, collection) -> dict:
-        data = {"library": library, "collection": collection}
-        data.update({k: v for k, v in template_data.items() if k != "matchpoints"})
-        data.update(
-            {
-                k: template_data["matchpoints"][k]
-                for k in list(template_data["matchpoints"].keys())
-            }
-        )
-        return data
-
-    @pytest.fixture
-    def marc_file_input(self, stub_binary_marc) -> dict:
-        return {"file": ("marc_file.mrc", stub_binary_marc, "text/plain")}
+    base_url = client.base_url
 
     def test_root_get(self):
         response = self.client.get("/api/")
@@ -57,52 +42,42 @@ class TestBackEndAPIRouter:
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["field_constants", "request"]
 
-    def test_list_remote_files_get(self, mock_file_service_response):
+    def test_list_remote_files_get(self):
         response = self.client.get("/api/list-remote-files?vendor=foo")
         assert response.status_code == 200
-        assert (
-            response.url == f"{self.client.base_url}/api/list-remote-files?vendor=foo"
-        )
+        assert response.url == f"{self.base_url}/api/list-remote-files?vendor=foo"
         assert sorted(list(response.context.keys())) == sorted(
             ["files", "request", "vendor"]
         )
         assert response.context["files"] == ["foo.mrc"]
 
-    # @pytest.mark.parametrize(
-    #     "library, collection, record_type",
-    #     [
-    #         ("nypl", "BL", "full"),
-    #         ("nypl", "BL", "order_level"),
-    #         ("nypl", "RL", "full"),
-    #         ("nypl", "RL", "order_level"),
-    #         ("bpl", "NONE", "full"),
-    #         ("bpl", "NONE", "order_level"),
-    #     ],
-    # )
-    # def test_process_vendor_file_local(
-    #     self,
-    #     stub_binary_marc,
-    #     library,
-    #     collection,
-    #     record_type,
-    #     mock_file_service_response,
-    #     template_data,
-    # ):
-    #     context = {
-    #         "library": library,
-    #         "collection": collection,
-    #         "source": "local",
-    #         "record_type": record_type,
-    #         "files": [],
-    #     }
-    #     context.update({k: v for k, v in template_data.items() if k != "matchpoints"})
-    #     context["primary"] = "isbn"
-    #     response = self.client.post(
-    #         "/api/process-vendor-file",
-    #         data=context,
-    #         files={"file": ("marc_file.mrc", stub_binary_marc, "text/plain")},
-    #     )
-    #     assert response.status_code == 200
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [
+            ("nypl", "BL", "full"),
+            ("nypl", "BL", "order_level"),
+            ("nypl", "RL", "full"),
+            ("nypl", "RL", "order_level"),
+            ("bpl", "NONE", "full"),
+            ("bpl", "NONE", "order_level"),
+        ],
+    )
+    def test_process_vendor_file_local(
+        self, stub_binary_marc, library, collection, record_type
+    ):
+        context = {
+            "library": library,
+            "collection": collection,
+            "source": "local",
+            "record_type": record_type,
+            "vendor": None,
+            "primary": "isbn",
+        }
+        files = {"files": ("test.mrc", stub_binary_marc, "application/octet-stream")}
+        response = self.client.post(
+            "/api/process-vendor-file", data=context, files=files
+        )
+        assert response.status_code == 200
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
@@ -116,17 +91,12 @@ class TestBackEndAPIRouter:
         ],
     )
     def test_process_vendor_file_remote(
-        self,
-        library,
-        collection,
-        record_type,
-        mock_file_service_response,
-        form_input,
+        self, library, collection, record_type, template_data
     ):
         context = {
             "library": library,
             "collection": collection,
-            "template_input": form_input,
+            "template_input": template_data,
             "source": "remote",
             "record_type": record_type,
             "vendor": "FOO",
@@ -135,7 +105,37 @@ class TestBackEndAPIRouter:
         response = self.client.post("/api/process-vendor-file", data=context)
         assert response.status_code == 200
 
-    def test_write_local_file_post(self, mock_file_service_response):
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [
+            ("nypl", "BL", "full"),
+            ("nypl", "BL", "order_level"),
+            ("nypl", "RL", "full"),
+            ("nypl", "RL", "order_level"),
+            ("bpl", "NONE", "full"),
+            ("bpl", "NONE", "order_level"),
+        ],
+    )
+    def test_process_vendor_file_remote_no_vendor(
+        self, library, collection, record_type, template_data
+    ):
+        context = {
+            "library": library,
+            "collection": collection,
+            "template_input": template_data,
+            "source": "remote",
+            "record_type": record_type,
+            "vendor": None,
+            "files": ["foo.mrc"],
+        }
+        with pytest.raises(ValueError) as exc:
+            self.client.post("/api/process-vendor-file", data=context)
+        assert str(exc.value) == "Vendor must be provided for remote files"
+
+    def test_write_local_file_post(self, mocker):
+        mock_file = mocker.mock_open(read_data="")
+        mocker.patch("builtins.open", mock_file)
+
         response = self.client.post(
             "/api/write-local?dir=foo",
             json={
@@ -145,9 +145,9 @@ class TestBackEndAPIRouter:
             },
         )
         assert response.status_code == 200
-        assert response.url == f"{self.client.base_url}/api/write-local?dir=foo"
+        assert response.url == f"{self.base_url}/api/write-local?dir=foo"
 
-    def test_write_remote_file_post(self, mock_file_service_response):
+    def test_write_remote_file_post(self):
         response = self.client.post(
             "/api/write-remote?dir=foo&vendor=foo",
             json={
@@ -157,14 +157,12 @@ class TestBackEndAPIRouter:
             },
         )
         assert response.status_code == 200
-        assert (
-            response.url
-            == f"{self.client.base_url}/api/write-remote?dir=foo&vendor=foo"
-        )
+        assert response.url == f"{self.base_url}/api/write-remote?dir=foo&vendor=foo"
 
 
 class TestFrontendRouter:
     client = TestClient(frontend_router)
+    base_url = client.base_url
 
     def test_home_get(self):
         response = self.client.get("/")
@@ -175,7 +173,7 @@ class TestFrontendRouter:
         response = self.client.get("/process")
         assert response.status_code == 200
         assert "Process Vendor File" in response.text
-        assert response.url == f"{self.client.base_url}/process"
+        assert response.url == f"{self.base_url}/process"
         assert response.context["page_title"] == "Process Vendor File"
         assert {"name": "Fund", "id": "fund"} in response.context["field_constants"][
             "fixed_fields"
@@ -203,7 +201,7 @@ class TestFrontendRouter:
         assert "Process Vendor File" in response.text
         assert (
             response.url
-            == f"{self.client.base_url}/process/{record_type}?library=nypl&collection={collection}"
+            == f"{self.base_url}/process/{record_type}?library=nypl&collection={collection}"
         )
 
     @pytest.mark.parametrize(
@@ -223,7 +221,7 @@ class TestFrontendRouter:
         assert "Process Vendor File" in response.text
         assert (
             response.url
-            == f"{self.client.base_url}/process/{record_type}?library=bpl&collection="
+            == f"{self.base_url}/process/{record_type}?library=bpl&collection="
         )
 
     @pytest.mark.parametrize(
@@ -232,13 +230,13 @@ class TestFrontendRouter:
     )
     def test_process_full_records_get(self, library, collection):
         response = self.client.get(
-            f"/process/full?library={library}&collection={collection}&vendor=UNKNOWN"
+            f"/process/full?library={library}&collection={collection}"
         )
         assert response.status_code == 200
         assert "Process Vendor File" in response.text
         assert (
             response.url
-            == f"{self.client.base_url}/process/full?library={library}&collection={collection}&vendor=UNKNOWN"
+            == f"{self.base_url}/process/full?library={library}&collection={collection}"
         )
         assert response.context["page_title"] == "Process Vendor File"
         assert {"name": "Fund", "id": "fund"} in response.context["field_constants"][
@@ -258,7 +256,7 @@ class TestFrontendRouter:
         assert "Process Vendor File" in response.text
         assert (
             response.url
-            == f"{self.client.base_url}/process/order-level?library={library}&collection={collection}"
+            == f"{self.base_url}/process/order-level?library={library}&collection={collection}"
         )
         assert response.context["page_title"] == "Process Vendor File"
         assert {"name": "Fund", "id": "fund"} in response.context["field_constants"][

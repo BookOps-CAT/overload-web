@@ -42,6 +42,10 @@ class RecordProcessingService:
         self.parser = self._get_parser()
         self.matcher = self._get_matcher()
 
+    def _normalize_matchpoints(self, matchpoints: dict[str, Any] = {}) -> list[str]:
+        """Normalize matchpoints to a list."""
+        return [v for k, v in matchpoints.items() if v]
+
     def _normalize_template(
         self, template_data: models.templates.Template | dict[str, Any] = {}
     ) -> dict[str, Any]:
@@ -71,15 +75,12 @@ class RecordProcessingService:
         """
         return marc.BookopsMarcParser(library=self.library)
 
-    def _get_vendor_info(self, bib: dto.bib.BibDTO) -> dict[str, Any]:
+    def _get_vendor_template(self, bib: dto.bib.BibDTO) -> dict[str, Any]:
         vendor_id = context.VendorIdentifier(
             library=str(self.library), collection=str(self.collection)
         )
         info = vendor_id.identify_vendor(bib=bib.bib)
-        info["matchpoints"] = [
-            v for k, v in info["template"]["matchpoints"].items() if v
-        ]
-        return info
+        return info["template"]
 
     def parse(self, data: BinaryIO | bytes) -> list[dto.bib.BibDTO]:
         """
@@ -110,19 +111,21 @@ class RecordProcessingService:
             a list of processed and updated records as `BibDTO` objects
         """
         processed_bibs = []
-        if not isinstance(template_data, dict):
-            template_data = self._normalize_template(template_data=template_data)
+        template_dict = self._normalize_template(template_data=template_data)
         for record in records:
-            matchpoints = template_data.get(
-                "matchpoints", self._get_vendor_info(record).get("matchpoints", [])
+            matchpoints = self._normalize_matchpoints(
+                template_dict.get(
+                    "matchpoints",
+                    self._get_vendor_template(record).get("matchpoints", []),
+                )
             )
             record.domain_bib = self.matcher.match_bib(record.domain_bib, matchpoints)
-            record.domain_bib.apply_template(template_data=template_data)
+            record.domain_bib.apply_template(template_data=template_dict)
             updated_bibs = self.parser.update_fields(
                 record=record,
-                fields=template_data.get(
+                fields=template_dict.get(
                     "bib_template",
-                    self._get_vendor_info(record).get("bib_template", []),
+                    self._get_vendor_template(record).get("bib_template", []),
                 ),
             )
             processed_bibs.append(updated_bibs)

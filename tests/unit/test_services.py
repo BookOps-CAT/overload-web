@@ -28,67 +28,68 @@ class FakeBibFetcher(StubFetcher):
         return [bib_1, bib_2, bib_3, bib_4]
 
 
+@pytest.fixture
+def mock_fetcher(monkeypatch):
+    def fake_fetcher(*args, **kwargs):
+        return FakeBibFetcher()
+
+    monkeypatch.setattr(
+        "overload_web.infrastructure.bibs.sierra.SierraBibFetcher", fake_fetcher
+    )
+
+
+@pytest.mark.usefixtures("mock_fetcher")
 @pytest.mark.parametrize(
-    "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
+    "library, collection, record_type",
+    [
+        ("nypl", "BL", "full"),
+        ("nypl", "BL", "order_level"),
+        ("nypl", "RL", "full"),
+        ("nypl", "RL", "order_level"),
+        ("bpl", "NONE", "full"),
+        ("bpl", "NONE", "order_level"),
+    ],
 )
 class TestRecordProcessingService:
     @pytest.fixture
-    def mock_fetcher(self, monkeypatch):
-        def fake_fetcher(*args, **kwargs):
-            return FakeBibFetcher()
-
-        monkeypatch.setattr(
-            "overload_web.infrastructure.bibs.sierra.SierraBibFetcher", fake_fetcher
-        )
-
-    def test_parse(self, library, collection, stub_binary_marc, mock_fetcher):
-        service = services.records.RecordProcessingService(
+    def stub_service(self, library, collection, record_type):
+        return services.records.RecordProcessingService(
             library=library,
             collection=collection,
-            record_type=models.bibs.RecordType.FULL,
+            record_type=models.bibs.RecordType(record_type),
         )
-        records = service.parse(stub_binary_marc)
+
+    def test_parse(self, stub_service, stub_binary_marc):
+        records = stub_service.parse(stub_binary_marc)
         assert len(records) == 1
-        assert str(records[0].bib.library) == library
+        assert str(records[0].bib.library) == str(stub_service.library)
         assert records[0].bib.isbn == "9781234567890"
-        assert str(records[0].domain_bib.library) == library
+        assert str(records[0].domain_bib.library) == str(stub_service.library)
         assert records[0].domain_bib.barcodes == ["333331234567890"]
 
-    def test_process_records_full(
-        self, library, collection, stub_bib_dto, mock_fetcher
+    @pytest.mark.parametrize(
+        "matchpoints",
+        [{"primary": "issn"}, {"primary": "upc", "secondary": "bib_id"}],
+    )
+    def test_process_records_template_dict(
+        self, stub_service, stub_bib_dto, template_data, matchpoints
     ):
-        assert stub_bib_dto.domain_bib.bib_id is None
-        assert stub_bib_dto.bib.sierra_bib_id is None
-        service = services.records.RecordProcessingService(
-            library=library,
-            collection=collection,
-            record_type=models.bibs.RecordType.FULL,
+        template_data["matchpoints"] = matchpoints
+        matched_bibs = stub_service.process_records(
+            [stub_bib_dto], template_data=template_data
         )
-        matched_bibs = service.process_records([stub_bib_dto])
+        assert len(matched_bibs) == 1
+        assert matched_bibs[0].domain_bib.bib_id is None
+
+    def test_process_records_template(self, stub_service, stub_bib_dto, template_data):
+        matched_bibs = stub_service.process_records(
+            [stub_bib_dto], template_data=models.templates.Template(**template_data)
+        )
         assert len(matched_bibs) == 1
         assert str(matched_bibs[0].domain_bib.bib_id) == "123"
 
-    def test_process_records_order_level(
-        self, library, collection, stub_bib_dto, mock_fetcher
-    ):
-        assert stub_bib_dto.domain_bib.bib_id is None
-        assert stub_bib_dto.bib.sierra_bib_id is None
-        service = services.records.RecordProcessingService(
-            library=library,
-            collection=collection,
-            record_type=models.bibs.RecordType.ORDER_LEVEL,
-        )
-        matched_bibs = service.process_records([stub_bib_dto])
-        assert len(matched_bibs) == 1
-        assert str(matched_bibs[0].domain_bib.bib_id) == "123"
-
-    def test_write_marc_binary(self, stub_bib_dto, library, collection, mock_fetcher):
-        service = services.records.RecordProcessingService(
-            library=library,
-            collection=collection,
-            record_type=models.bibs.RecordType.FULL,
-        )
-        marc_binary = service.write_marc_binary(records=[stub_bib_dto])
+    def test_write_marc_binary(self, stub_bib_dto, stub_service):
+        marc_binary = stub_service.write_marc_binary(records=[stub_bib_dto])
         assert marc_binary.read()[0:2] == b"00"
 
 

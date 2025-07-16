@@ -98,12 +98,8 @@ class TemplateModel(BaseModel, models.templates.Template):
         )
 
     @field_serializer("matchpoints")
-    def serialize_matchpoints(
-        self, matchpoints: MatchpointsModel | models.templates.Matchpoints
-    ) -> dict:
-        if isinstance(matchpoints, models.templates.Matchpoints):
-            return {k: v for k, v in matchpoints.__dict__.items() if v}
-        return {k: v for k, v in matchpoints.model_dump().items() if v}
+    def serialize_matchpoints(self, matchpoints: models.templates.Matchpoints) -> dict:
+        return {k: v for k, v in matchpoints.__dict__.items() if v}
 
 
 class VendorFileModel(BaseModel, models.files.VendorFile):
