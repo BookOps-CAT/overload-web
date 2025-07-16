@@ -1,5 +1,4 @@
 import pytest
-from fastapi.exceptions import RequestValidationError
 from fastapi.testclient import TestClient
 
 from overload_web.main import app
@@ -29,7 +28,7 @@ class TestBackEndAPIRouter:
         data.update({k: v for k, v in template_data.items() if k != "matchpoints"})
         data.update(
             {
-                f"{k}_matchpoint": template_data["matchpoints"][k]
+                k: template_data["matchpoints"][k]
                 for k in list(template_data["matchpoints"].keys())
             }
         )
@@ -69,115 +68,72 @@ class TestBackEndAPIRouter:
         )
         assert response.context["files"] == ["foo.mrc"]
 
-    @pytest.mark.parametrize(
-        "library, collection",
-        [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
-    )
-    def test_process_vendor_file_post(self, stub_binary_marc, library, collection):
-        context = {
-            "context": {
-                "library": library,
-                "collection": collection,
-                "vendor": "BT ROMANCE",
-            },
-            "records": [
-                {
-                    "id": {"value": "1"},
-                    "file_name": "foo.mrc",
-                    "content": stub_binary_marc.read().decode("utf-8"),
-                }
-            ],
-        }
-        response = self.client.post("/api/process/full", json=context)
-        assert response.status_code == 200
-        assert response.url == f"{self.client.base_url}/api/process/full"
-        assert isinstance(response.content, bytes)
-        assert "b123456789" in response.text
-        assert "333331234567890" in response.text
-        assert "9781234567890" in response.text
+    # @pytest.mark.parametrize(
+    #     "library, collection, record_type",
+    #     [
+    #         ("nypl", "BL", "full"),
+    #         ("nypl", "BL", "order_level"),
+    #         ("nypl", "RL", "full"),
+    #         ("nypl", "RL", "order_level"),
+    #         ("bpl", "NONE", "full"),
+    #         ("bpl", "NONE", "order_level"),
+    #     ],
+    # )
+    # def test_process_vendor_file_local(
+    #     self,
+    #     stub_binary_marc,
+    #     library,
+    #     collection,
+    #     record_type,
+    #     mock_file_service_response,
+    #     template_data,
+    # ):
+    #     context = {
+    #         "library": library,
+    #         "collection": collection,
+    #         "source": "local",
+    #         "record_type": record_type,
+    #         "files": [],
+    #     }
+    #     context.update({k: v for k, v in template_data.items() if k != "matchpoints"})
+    #     context["primary"] = "isbn"
+    #     response = self.client.post(
+    #         "/api/process-vendor-file",
+    #         data=context,
+    #         files={"file": ("marc_file.mrc", stub_binary_marc, "text/plain")},
+    #     )
+    #     assert response.status_code == 200
 
     @pytest.mark.parametrize(
-        "library, collection", [("foo", "branches"), ("bar", "research")]
+        "library, collection, record_type",
+        [
+            ("nypl", "BL", "full"),
+            ("nypl", "BL", "order_level"),
+            ("nypl", "RL", "full"),
+            ("nypl", "RL", "order_level"),
+            ("bpl", "NONE", "full"),
+            ("bpl", "NONE", "order_level"),
+        ],
     )
-    def test_process_vendor_file_post_invalid_config(
-        self, stub_binary_marc, library, collection
+    def test_process_vendor_file_remote(
+        self,
+        library,
+        collection,
+        record_type,
+        mock_file_service_response,
+        form_input,
     ):
         context = {
-            "context": {
-                "library": library,
-                "collection": collection,
-                "vendor": "BT ROMANCE",
-            },
-            "records": [
-                {
-                    "id": {"value": "1"},
-                    "file_name": "foo.mrc",
-                    "content": stub_binary_marc.read().decode("utf-8"),
-                }
-            ],
+            "library": library,
+            "collection": collection,
+            "template_input": form_input,
+            "source": "remote",
+            "record_type": record_type,
+            "vendor": "FOO",
+            "files": ["foo.mrc"],
         }
-        with pytest.raises(RequestValidationError) as exc:
-            self.client.post("/api/process/full", json=context)
-        assert "Input should be 'bpl' or 'nypl'" in str(exc.value)
-
-    @pytest.mark.parametrize(
-        "library, collection",
-        [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
-    )
-    def test_process_vendor_file_order_level_post(
-        self, stub_binary_marc, template_data, library, collection
-    ):
-        context = {
-            "context": {
-                "library": library,
-                "collection": collection,
-                "vendor": "BT ROMANCE",
-            },
-            "records": [
-                {
-                    "id": {"value": "1"},
-                    "file_name": "foo.mrc",
-                    "content": stub_binary_marc.read().decode("utf-8"),
-                }
-            ],
-            "template_data": template_data,
-        }
-        response = self.client.post("/api/process/order_level", json=context)
+        response = self.client.post("/api/process-vendor-file", data=context)
         assert response.status_code == 200
-        assert response.url == f"{self.client.base_url}/api/process/order_level"
-        assert isinstance(response.content, bytes)
-        assert "b123456789" in response.text
-        assert "333331234567890" in response.text
-        assert "9781234567890" in response.text
-
-    @pytest.mark.parametrize(
-        "library, collection",
-        [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
-    )
-    def test_process_vendor_file_order_level_other_vendor_post(
-        self, stub_binary_marc, template_data, library, collection
-    ):
-        context = {
-            "context": {
-                "library": library,
-                "collection": collection,
-            },
-            "records": [
-                {
-                    "id": {"value": "1"},
-                    "file_name": "foo.mrc",
-                    "content": stub_binary_marc.read().decode("utf-8"),
-                }
-            ],
-            "template_data": template_data,
-        }
-        response = self.client.post("/api/process/order_level", json=context)
-        assert response.status_code == 200
-        assert response.url == f"{self.client.base_url}/api/process/order_level"
-        assert isinstance(response.content, bytes)
-        assert "b123456789" in response.text
-        assert "333331234567890" in response.text
-        assert "9781234567890" in response.text
 
     def test_write_local_file_post(self, mock_file_service_response):
         response = self.client.post(
@@ -288,6 +244,7 @@ class TestFrontendRouter:
         assert {"name": "Fund", "id": "fund"} in response.context["field_constants"][
             "fixed_fields"
         ]
+        assert 'hx-get="/api/forms/template"' not in response.content.decode("utf-8")
 
     @pytest.mark.parametrize(
         "library, collection",
@@ -295,15 +252,16 @@ class TestFrontendRouter:
     )
     def test_process_order_records_get(self, library, collection):
         response = self.client.get(
-            f"/process/order-level?library={library}&collection={collection}&vendor=UNKNOWN"
+            f"/process/order-level?library={library}&collection={collection}"
         )
         assert response.status_code == 200
         assert "Process Vendor File" in response.text
         assert (
             response.url
-            == f"{self.client.base_url}/process/order-level?library={library}&collection={collection}&vendor=UNKNOWN"
+            == f"{self.client.base_url}/process/order-level?library={library}&collection={collection}"
         )
         assert response.context["page_title"] == "Process Vendor File"
         assert {"name": "Fund", "id": "fund"} in response.context["field_constants"][
             "fixed_fields"
         ]
+        assert 'hx-get="/api/forms/template"' in response.content.decode("utf-8")

@@ -1,8 +1,24 @@
-<h3>Files:</h3>
-<ul>
-  <li>{{ collection }}</li>
-  <li>{{ library }}</li>
-  <li>{{ files }}</li>
-  <li>{{ context }}</li>  
-  <li>{{ bibs }}</li>    
+<h3>Output:</h3>
+  {% if record_type %}    
+<h5>Record Type:</h5>
+  {{ record_type }}
+  {% endif %}
+  {% if library %}  
+<h5>Library:</h5>
+  {{ library }}
+  {% endif %}  
+  {% if collection %}
+<h5>Collection:</h5>
+  {{ collection }}
+  {% endif %}
+  {% if template_data %}  
+<h5>Template Data:</h5>
+  {{ template_data }}
+  {% endif %}  
+  {% if files %}
+<h5>Processed Files:</h5>
+  {% for file in files %}
+  {{ file }}
+  {% endfor %}
+  {% endif %}
 </ul>

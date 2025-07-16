@@ -162,7 +162,7 @@ TEMPLATE_VAR_FIELDS: list[dict] = [
 
 MATCHPOINTS: list[Dict[str, Any]] = [
     {
-        "id": f"{i}_matchpoint",
+        "id": f"{i}",
         "name": i.title(),
         "options": MATCHPOINT,
     }
@@ -211,23 +211,23 @@ VENDOR_RULES: Dict[str, Any] = {
             "bib_template": [],
             "template": {
                 "matchpoints": {
-                    "primary_matchpoint": "isbn",
-                    "secondary_matchpoint": "oclc_number",
+                    "primary": "isbn",
+                    "secondary": "oclc_number",
                 }
             },
-            "primary_matchpoint": "isbn",
-            "secondary_matchpoint": "oclc_number",
+            "primary": "isbn",
+            "secondary": "oclc_number",
         },
         "BT SERIES": {
             "vendor_tags": {"901": {"code": "a", "value": "BTSERIES"}},
             "template": {
                 "matchpoints": {
-                    "primary_matchpoint": "isbn",
-                    "secondary_matchpoint": "oclc_number",
+                    "primary": "isbn",
+                    "secondary": "oclc_number",
                 }
             },
-            "primary_matchpoint": "isbn",
-            "secondary_matchpoint": "oclc_number",
+            "primary": "isbn",
+            "secondary": "oclc_number",
             "bib_template": [
                 {
                     "tag": "949",
@@ -240,8 +240,8 @@ VENDOR_RULES: Dict[str, Any] = {
         },
         "BT PARADE": {
             "vendor_tags": {"901": {"code": "a", "value": "PARADE"}},
-            "template": {"matchpoints": {"primary_matchpoint": "isbn"}},
-            "primary_matchpoint": "isbn",
+            "template": {"matchpoints": {"primary": "isbn"}},
+            "primary": "isbn",
             "bib_template": [
                 {
                     "tag": "949",
@@ -254,8 +254,8 @@ VENDOR_RULES: Dict[str, Any] = {
         },
         "BT ROMANCE": {
             "vendor_tags": {"901": {"code": "a", "value": "BTROMAN"}},
-            "template": {"matchpoints": {"primary_matchpoint": "isbn"}},
-            "primary_matchpoint": "isbn",
+            "template": {"matchpoints": {"primary": "isbn"}},
+            "primary": "isbn",
             "bib_template": [
                 {
                     "tag": "949",
@@ -268,8 +268,8 @@ VENDOR_RULES: Dict[str, Any] = {
         },
         "BT URBAN": {
             "vendor_tags": {"901": {"code": "a", "value": "BTURBN"}},
-            "template": {"matchpoints": {"primary_matchpoint": "isbn"}},
-            "primary_matchpoint": "isbn",
+            "template": {"matchpoints": {"primary": "isbn"}},
+            "primary": "isbn",
             "bib_template": [
                 {
                     "tag": "949",
@@ -284,12 +284,12 @@ VENDOR_RULES: Dict[str, Any] = {
             "vendor_tags": {"901": {"code": "a", "value": "BTODC"}},
             "template": {
                 "matchpoints": {
-                    "primary_matchpoint": "bib_id",
-                    "secondary_matchpoint": "isbn",
+                    "primary": "bib_id",
+                    "secondary": "isbn",
                 }
             },
-            "primary_matchpoint": "bib_id",
-            "secondary_matchpoint": "isbn",
+            "primary": "bib_id",
+            "secondary": "isbn",
             "bib_template": [
                 {
                     "tag": "949",
@@ -302,8 +302,8 @@ VENDOR_RULES: Dict[str, Any] = {
         },
         "BT LEASED": {
             "vendor_tags": {"901": {"code": "a", "value": "LEASED"}},
-            "template": {"matchpoints": {"primary_matchpoint": "isbn"}},
-            "primary_matchpoint": "isbn",
+            "template": {"matchpoints": {"primary": "isbn"}},
+            "primary": "isbn",
             "bib_template": [
                 {
                     "tag": "949",
@@ -321,14 +321,14 @@ VENDOR_RULES: Dict[str, Any] = {
             },
             "template": {
                 "matchpoints": {
-                    "primary_matchpoint": "oclc_number",
-                    "secondary_matchpoint": "isbn",
-                    "tertiary_matchpoint": "upc",
+                    "primary": "oclc_number",
+                    "secondary": "isbn",
+                    "tertiary": "upc",
                 }
             },
-            "primary_matchpoint": "oclc_number",
-            "secondary_matchpoint": "isbn",
-            "tertiary_matchpoint": "upc",
+            "primary": "oclc_number",
+            "secondary": "isbn",
+            "tertiary": "upc",
             "bib_template": [
                 {
                     "tag": "949",
@@ -346,14 +346,14 @@ VENDOR_RULES: Dict[str, Any] = {
             },
             "template": {
                 "matchpoints": {
-                    "primary_matchpoint": "oclc_number",
-                    "secondary_matchpoint": "isbn",
-                    "tertiary_matchpoint": "upc",
+                    "primary": "oclc_number",
+                    "secondary": "isbn",
+                    "tertiary": "upc",
                 }
             },
-            "primary_matchpoint": "oclc_number",
-            "secondary_matchpoint": "isbn",
-            "tertiary_matchpoint": "upc",
+            "primary": "oclc_number",
+            "secondary": "isbn",
+            "tertiary": "upc",
             "bib_template": [
                 {
                     "tag": "949",
@@ -372,14 +372,14 @@ VENDOR_RULES: Dict[str, Any] = {
             },
             "template": {
                 "matchpoints": {
-                    "primary_matchpoint": "oclc_number",
-                    "secondary_matchpoint": "isbn",
-                    "tertiary_matchpoint": "upc",
+                    "primary": "oclc_number",
+                    "secondary": "isbn",
+                    "tertiary": "upc",
                 }
             },
-            "primary_matchpoint": "oclc_number",
-            "secondary_matchpoint": "isbn",
-            "tertiary_matchpoint": "upc",
+            "primary": "oclc_number",
+            "secondary": "isbn",
+            "tertiary": "upc",
             "bib_template": [
                 {
                     "tag": "949",
@@ -398,14 +398,14 @@ VENDOR_RULES: Dict[str, Any] = {
             },
             "template": {
                 "matchpoints": {
-                    "primary_matchpoint": "oclc_number",
-                    "secondary_matchpoint": "isbn",
-                    "tertiary_matchpoint": "upc",
+                    "primary": "oclc_number",
+                    "secondary": "isbn",
+                    "tertiary": "upc",
                 }
             },
-            "primary_matchpoint": "oclc_number",
-            "secondary_matchpoint": "isbn",
-            "tertiary_matchpoint": "upc",
+            "primary": "oclc_number",
+            "secondary": "isbn",
+            "tertiary": "upc",
             "bib_template": [
                 {
                     "tag": "949",
@@ -420,12 +420,12 @@ VENDOR_RULES: Dict[str, Any] = {
             "vendor_tags": {"901": {"code": "a", "value": "AUXAM"}},
             "template": {
                 "matchpoints": {
-                    "primary_matchpoint": "oclc_number",
-                    "secondary_matchpoint": "isbn",
+                    "primary": "oclc_number",
+                    "secondary": "isbn",
                 }
             },
-            "primary_matchpoint": "oclc_number",
-            "secondary_matchpoint": "isbn",
+            "primary": "oclc_number",
+            "secondary": "isbn",
             "bib_template": [
                 {
                     "tag": "949",
@@ -440,12 +440,12 @@ VENDOR_RULES: Dict[str, Any] = {
             "vendor_tags": {"901": {"code": "a", "value": "INGRAM"}},
             "template": {
                 "matchpoints": {
-                    "primary_matchpoint": "oclc_number",
-                    "secondary_matchpoint": "isbn",
+                    "primary": "oclc_number",
+                    "secondary": "isbn",
                 }
             },
-            "primary_matchpoint": "oclc_number",
-            "secondary_matchpoint": "isbn",
+            "primary": "oclc_number",
+            "secondary": "isbn",
             "bib_template": [
                 {
                     "tag": "949",
@@ -460,12 +460,12 @@ VENDOR_RULES: Dict[str, Any] = {
             "vendor_tags": {"037": {"code": "b", "value": "Sulaiman"}},
             "template": {
                 "matchpoints": {
-                    "primary_matchpoint": "oclc_number",
-                    "secondary_matchpoint": "isbn",
+                    "primary": "oclc_number",
+                    "secondary": "isbn",
                 }
             },
-            "primary_matchpoint": "oclc_number",
-            "secondary_matchpoint": "isbn",
+            "primary": "oclc_number",
+            "secondary": "isbn",
             "bib_template": [
                 {
                     "tag": "949",
@@ -487,21 +487,21 @@ VENDOR_RULES: Dict[str, Any] = {
     "bpl": {
         "UNKNOWN": {
             "vendor_tags": {},
-            "template": {"matchpoints": {"primary_matchpoint": "isbn"}},
-            "primary_matchpoint": "isbn",
+            "template": {"matchpoints": {"primary": "isbn"}},
+            "primary": "isbn",
         },
         "INGRAM": {
             "vendor_tags": {"947": {"code": "a", "value": "INGRAM"}},
             "template": {
                 "matchpoints": {
-                    "primary_matchpoint": "bib_id",
-                    "secondary_matchpoint": "isbn",
-                    "tertiary_matchpoint": "oclc_number",
+                    "primary": "bib_id",
+                    "secondary": "isbn",
+                    "tertiary": "oclc_number",
                 }
             },
-            "primary_matchpoint": "bib_id",
-            "secondary_matchpoint": "isbn",
-            "tertiary_matchpoint": "oclc_number",
+            "primary": "bib_id",
+            "secondary": "isbn",
+            "tertiary": "oclc_number",
             "bib_template": [
                 {
                     "tag": "949",
@@ -516,14 +516,14 @@ VENDOR_RULES: Dict[str, Any] = {
             "vendor_tags": {"960": {"code": "n", "value": "B&amp;T"}},
             "template": {
                 "matchpoints": {
-                    "primary_matchpoint": "bib_id",
-                    "secondary_matchpoint": "isbn",
-                    "tertiary_matchpoint": "022",
+                    "primary": "bib_id",
+                    "secondary": "isbn",
+                    "tertiary": "022",
                 }
             },
-            "primary_matchpoint": "bib_id",
-            "secondary_matchpoint": "isbn",
-            "tertiary_matchpoint": "022",
+            "primary": "bib_id",
+            "secondary": "isbn",
+            "tertiary": "022",
             "bib_template": [
                 {
                     "tag": "949",
@@ -537,8 +537,8 @@ VENDOR_RULES: Dict[str, Any] = {
         "BT SERIES": {
             "vendor_tags": {"037": {"code": "b", "value": "B&amp;T SERIES"}},
             "alternate_vendor_tags": {"947": {"code": "a", "value": "B&amp;T SERIES"}},
-            "template": {"matchpoints": {"primary_matchpoint": "isbn"}},
-            "primary_matchpoint": "isbn",
+            "template": {"matchpoints": {"primary": "isbn"}},
+            "primary": "isbn",
             "bib_template": [
                 {
                     "tag": "949",
@@ -552,8 +552,8 @@ VENDOR_RULES: Dict[str, Any] = {
         "BT ROMANCE": {
             "vendor_tags": {"037": {"code": "b", "value": "B&amp;T ROMANCE"}},
             "alternate_vendor_tags": {"947": {"code": "a", "value": "B&amp;T ROMANCE"}},
-            "template": {"matchpoints": {"primary_matchpoint": "isbn"}},
-            "primary_matchpoint": "isbn",
+            "template": {"matchpoints": {"primary": "isbn"}},
+            "primary": "isbn",
             "bib_template": [
                 {
                     "tag": "949",
@@ -567,8 +567,8 @@ VENDOR_RULES: Dict[str, Any] = {
         "BT URBAN": {
             "vendor_tags": {"037": {"code": "b", "value": "B&amp;T URBAN"}},
             "alternate_vendor_tags": {"947": {"code": "a", "value": "B&amp;T URBAN"}},
-            "template": {"matchpoints": {"primary_matchpoint": "isbn"}},
-            "primary_matchpoint": "isbn",
+            "template": {"matchpoints": {"primary": "isbn"}},
+            "primary": "isbn",
             "bib_template": [
                 {
                     "tag": "949",
@@ -582,8 +582,8 @@ VENDOR_RULES: Dict[str, Any] = {
         "BT LEASE": {
             "vendor_tags": {"037": {"code": "b", "value": "B&amp;T LEASE"}},
             "alternate_vendor_tags": {"947": {"code": "a", "value": "B&amp;T LEASE"}},
-            "template": {"matchpoints": {"primary_matchpoint": "isbn"}},
-            "primary_matchpoint": "isbn",
+            "template": {"matchpoints": {"primary": "isbn"}},
+            "primary": "isbn",
             "bib_template": [
                 {
                     "tag": "949",
@@ -597,8 +597,8 @@ VENDOR_RULES: Dict[str, Any] = {
         "BT PBP": {
             "vendor_tags": {"037": {"code": "b", "value": "B&amp;T PBP"}},
             "alternate_vendor_tags": {"947": {"code": "a", "value": "B&amp;T PBP"}},
-            "template": {"matchpoints": {"primary_matchpoint": "isbn"}},
-            "primary_matchpoint": "isbn",
+            "template": {"matchpoints": {"primary": "isbn"}},
+            "primary": "isbn",
             "bib_template": [
                 {
                     "tag": "949",
@@ -616,12 +616,12 @@ VENDOR_RULES: Dict[str, Any] = {
             },
             "template": {
                 "matchpoints": {
-                    "primary_matchpoint": "bib_id",
-                    "secondary_matchpoint": "isbn",
+                    "primary": "bib_id",
+                    "secondary": "isbn",
                 }
             },
-            "primary_matchpoint": "bib_id",
-            "secondary_matchpoint": "isbn",
+            "primary": "bib_id",
+            "secondary": "isbn",
             "bib_template": [
                 {
                     "tag": "949",
@@ -639,12 +639,12 @@ VENDOR_RULES: Dict[str, Any] = {
             },
             "template": {
                 "matchpoints": {
-                    "primary_matchpoint": "bib_id",
-                    "secondary_matchpoint": "isbn",
+                    "primary": "bib_id",
+                    "secondary": "isbn",
                 }
             },
-            "primary_matchpoint": "bib_id",
-            "secondary_matchpoint": "isbn",
+            "primary": "bib_id",
+            "secondary": "isbn",
             "bib_template": [
                 {
                     "tag": "949",
@@ -662,12 +662,12 @@ VENDOR_RULES: Dict[str, Any] = {
             },
             "template": {
                 "matchpoints": {
-                    "primary_matchpoint": "bib_id",
-                    "secondary_matchpoint": "isbn",
+                    "primary": "bib_id",
+                    "secondary": "isbn",
                 }
             },
-            "primary_matchpoint": "bib_id",
-            "secondary_matchpoint": "isbn",
+            "primary": "bib_id",
+            "secondary": "isbn",
             "bib_template": [
                 {
                     "tag": "949",

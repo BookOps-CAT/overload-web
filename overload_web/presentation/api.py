@@ -7,10 +7,10 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from overload_web import constants
@@ -80,128 +80,51 @@ def list_remote_files(request: Request, vendor: str) -> HTMLResponse:
     )
 
 
-@api_router.post("/full-records", response_class=HTMLResponse)
-def process_full_file(
-    request: Request,
-    library: Annotated[str, Form(...)],
-    collection: Annotated[str, Form(...)],
-    files: Annotated[
-        list[schemas.VendorFileModel], Depends(depends_funcs.normalize_files)
-    ],
-    vendor: Annotated[Optional[str], Form(...)] = None,
-):
-    session_context = models.context.SessionContext(
-        library=models.bibs.LibrarySystem(library),
-        collection=models.bibs.Collection(collection),
-        vendor=vendor,
-    )
-    service = services.records.FullRecordProcessingService(context=session_context)
-    bibs = service.parse(data=files[0].content)
-    processed_bibs = service.process_records(records=bibs)
-    marc_binary = service.write_marc_binary(records=processed_bibs)
-    return templates.TemplateResponse(
-        "partials/pvf_results.html",
-        {
-            "request": request,
-            "library": library,
-            "collection": collection,
-            "files": marc_binary,
-            "context": {k: v for k, v in session_context.__dict__.items()},
-            "bibs": [
-                {"domain_bib": i.domain_bib.__dict__, "bib": str(i.bib)}
-                for i in processed_bibs
-            ],
-        },
-    )
-
-
-@api_router.post("/order-records", response_class=HTMLResponse)
-def process_order_record_file(
-    request: Request,
-    library: Annotated[str, Form(...)],
-    collection: Annotated[str, Form(...)],
-    files: Annotated[
-        list[schemas.VendorFileModel], Depends(depends_funcs.normalize_files)
-    ],
-    template_data: Annotated[schemas.TemplateModel, Form(...)],
-    vendor: Annotated[Optional[str], Form(...)] = None,
-):
-    session_context = models.context.SessionContext(
-        library=models.bibs.LibrarySystem(library),
-        collection=models.bibs.Collection(collection),
-        vendor=vendor,
-    )
-    service = services.records.OrderRecordProcessingService(
-        context=session_context, template=template_data
-    )
-    bibs = service.parse(data=files[0].content)
-    processed_bibs = service.process_records(records=bibs)
-    marc_binary = service.write_marc_binary(records=processed_bibs)
-    return templates.TemplateResponse(
-        "partials/pvf_results.html",
-        {
-            "request": request,
-            "library": library,
-            "collection": collection,
-            "files": marc_binary,
-            "context": {k: v for k, v in session_context.__dict__.items()},
-            "bibs": [
-                {"domain_bib": i.domain_bib.__dict__, "bib": str(i.bib)}
-                for i in processed_bibs
-            ],
-        },
-    )
-
-
-@api_router.post("/process/{record_type}")
+@api_router.post("/process-vendor-file", response_class=HTMLResponse)
 def process_vendor_file(
-    record_type: models.bibs.RecordType,
-    context: schemas.ContextModel,
-    records: list[schemas.VendorFileModel],
-    template_data: Optional[schemas.TemplateModel] = None,
-) -> StreamingResponse:
-    """
-    Process a list of `VendorFileModel` objects.
-
-    Args:
-        record_type:
-            the type of records being processed as an enum (either 'full' or 'order-level')
-        context:
-            session-specific contextual data including library, collection, and vendor
-        records:
-            a list of files to be process as `VendorFileModel` objects
-        template_data:
-            optional data to be used to update order records
-
-    Returns:
-        The processed files as a `StreamingResponse`
-
-    """
-    service: (
-        services.records.FullRecordProcessingService
-        | services.records.OrderRecordProcessingService
+    request: Request,
+    record_type: Annotated[models.bibs.RecordType, Form(...)],
+    library: Annotated[models.bibs.LibrarySystem, Form(...)],
+    collection: Annotated[models.bibs.Collection, Form(...)],
+    files: Annotated[
+        list[schemas.VendorFileModel], Depends(depends_funcs.normalize_files)
+    ],
+    template_input: Annotated[
+        schemas.TemplateModel, Depends(schemas.TemplateModel.from_form_data)
+    ],
+):
+    service = services.records.RecordProcessingService(
+        library=library, collection=collection, record_type=record_type
     )
-    session_context = models.context.SessionContext(
-        library=context.library, collection=context.collection, vendor=context.vendor
-    )
-    if str(record_type) == "full":
-        service = services.records.FullRecordProcessingService(context=session_context)
-    else:
-        template = template_data.__dict__
-        matchpoints = [i for i in list(template["matchpoints"].__dict__.values()) if i]
-        template["matchpoints"] = matchpoints
-        service = services.records.OrderRecordProcessingService(
-            context=session_context, template=template
+    template_data = {k: v for k, v in template_input.model_dump().items() if v}
+    context_dict = {
+        "record_type": record_type,
+        "library": library,
+        "collection": collection,
+        "template_data": template_data,
+    }
+    out_files = []
+    for n, file in enumerate(files):
+        bibs = service.parse(data=file.content)
+        processed_bibs = service.process_records(
+            records=bibs, template_data=template_data
         )
-    bibs = service.parse(data=records[0].content)
-    processed_bibs = service.process_records(records=bibs)
-    marc_binary = service.write_marc_binary(records=processed_bibs)
-    return StreamingResponse(
-        marc_binary,
-        media_type="application/marc",
-        headers={
-            "Content-Disposition": f"attachment; filename={records[0].file_name}_out.mrc"
-        },
+        marc_binary = service.write_marc_binary(records=processed_bibs)
+        out_files.append(
+            {
+                f"file_{n}": {
+                    "name": file.file_name,
+                    "binary_content": marc_binary.read()[0:10],
+                    "bibs": [
+                        {"domain_bib": i.domain_bib.__dict__, "bib": str(i.bib)}
+                        for i in processed_bibs
+                    ],
+                }
+            }
+        )
+    context_dict["files"] = out_files
+    return templates.TemplateResponse(
+        request=request, name="partials/pvf_results.html", context=context_dict
     )
 
 

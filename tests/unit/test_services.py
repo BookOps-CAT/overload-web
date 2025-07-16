@@ -1,5 +1,3 @@
-import copy
-
 import pytest
 
 from overload_web.application import services
@@ -56,13 +54,29 @@ class TestRecordProcessingService:
         assert str(records[0].domain_bib.library) == library
         assert records[0].domain_bib.barcodes == ["333331234567890"]
 
-    def test_process_records(self, library, collection, stub_bib_dto, mock_fetcher):
+    def test_process_records_full(
+        self, library, collection, stub_bib_dto, mock_fetcher
+    ):
         assert stub_bib_dto.domain_bib.bib_id is None
         assert stub_bib_dto.bib.sierra_bib_id is None
         service = services.records.RecordProcessingService(
             library=library,
             collection=collection,
             record_type=models.bibs.RecordType.FULL,
+        )
+        matched_bibs = service.process_records([stub_bib_dto])
+        assert len(matched_bibs) == 1
+        assert str(matched_bibs[0].domain_bib.bib_id) == "123"
+
+    def test_process_records_order_level(
+        self, library, collection, stub_bib_dto, mock_fetcher
+    ):
+        assert stub_bib_dto.domain_bib.bib_id is None
+        assert stub_bib_dto.bib.sierra_bib_id is None
+        service = services.records.RecordProcessingService(
+            library=library,
+            collection=collection,
+            record_type=models.bibs.RecordType.ORDER_LEVEL,
         )
         matched_bibs = service.process_records([stub_bib_dto])
         assert len(matched_bibs) == 1
@@ -73,152 +87,6 @@ class TestRecordProcessingService:
             library=library,
             collection=collection,
             record_type=models.bibs.RecordType.FULL,
-        )
-        marc_binary = service.write_marc_binary(records=[stub_bib_dto])
-        assert marc_binary.read()[0:2] == b"00"
-
-
-@pytest.mark.parametrize(
-    "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
-)
-class TestFullRecordProcessingService:
-    @pytest.fixture
-    def full_context(self, library, collection, monkeypatch):
-        def fake_fetcher(*args, **kwargs):
-            return FakeBibFetcher()
-
-        monkeypatch.setattr(
-            "overload_web.infrastructure.bibs.sierra.SierraBibFetcher", fake_fetcher
-        )
-        return models.context.SessionContext(
-            library=models.bibs.LibrarySystem(library),
-            collection=models.bibs.Collection(collection),
-            vendor="BT ROMANCE",
-        )
-
-    def test_parse(self, full_context, stub_binary_marc):
-        service = services.records.FullRecordProcessingService(context=full_context)
-        records = service.parse(stub_binary_marc)
-        assert len(records) == 1
-        assert str(records[0].bib.library) == str(full_context.library)
-        assert records[0].bib.isbn == "9781234567890"
-        assert str(records[0].domain_bib.library) == str(full_context.library)
-        assert records[0].domain_bib.barcodes == ["333331234567890"]
-
-    def test_process_records(self, full_context, stub_bib_dto):
-        assert stub_bib_dto.domain_bib.bib_id is None
-        assert stub_bib_dto.bib.sierra_bib_id is None
-        service = services.records.FullRecordProcessingService(context=full_context)
-        matched_bibs = service.process_records([stub_bib_dto])
-        assert len(matched_bibs) == 1
-        assert str(matched_bibs[0].domain_bib.bib_id) == "123"
-
-    def test_process_records_with_fields(self, full_context, stub_bib_dto):
-        original_bib = copy.deepcopy(stub_bib_dto.bib)
-        service = services.records.FullRecordProcessingService(context=full_context)
-        updated = service.process_records(records=[stub_bib_dto])
-        assert len(original_bib.get_fields("949")) == 1
-        assert len(updated) == 1
-        assert len(updated[0].bib.get_fields("949")) == 2
-
-    def test_write_marc_binary(self, stub_bib_dto, full_context):
-        service = services.records.FullRecordProcessingService(context=full_context)
-        marc_binary = service.write_marc_binary(records=[stub_bib_dto])
-        assert marc_binary.read()[0:2] == b"00"
-
-
-@pytest.mark.parametrize(
-    "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
-)
-class TestOrderRecordProcessingService:
-    @pytest.fixture
-    def full_context(self, library, collection, monkeypatch):
-        def fake_fetcher(*args, **kwargs):
-            return FakeBibFetcher()
-
-        monkeypatch.setattr(
-            "overload_web.infrastructure.bibs.sierra.SierraBibFetcher", fake_fetcher
-        )
-        return models.context.SessionContext(
-            library=models.bibs.LibrarySystem(library),
-            collection=models.bibs.Collection(collection),
-            vendor="BT ROMANCE",
-        )
-
-    def test_parse(self, full_context, stub_binary_marc):
-        service = services.records.OrderRecordProcessingService(
-            context=full_context, template={}
-        )
-        records = service.parse(stub_binary_marc)
-        assert len(records) == 1
-        assert str(records[0].bib.library) == str(full_context.library)
-        assert records[0].bib.isbn == "9781234567890"
-        assert str(records[0].domain_bib.library) == str(full_context.library)
-        assert records[0].domain_bib.barcodes == ["333331234567890"]
-
-    @pytest.mark.parametrize(
-        "matchpoints",
-        [["isbn"], ["isbn", "oclc_number"]],
-    )
-    def test_process_records(self, matchpoints, full_context, stub_bib_dto):
-        assert stub_bib_dto.domain_bib.bib_id is None
-        assert stub_bib_dto.bib.sierra_bib_id is None
-        service = services.records.OrderRecordProcessingService(
-            context=full_context, template={"matchpoints": matchpoints}
-        )
-        matched_bibs = service.process_records([stub_bib_dto])
-        assert len(matched_bibs) == 1
-        assert str(matched_bibs[0].domain_bib.bib_id) == "123"
-
-    @pytest.mark.parametrize(
-        "matchpoints",
-        [["oclc_number"], ["upc"]],
-    )
-    def test_process_records_no_matched_bibs(
-        self, matchpoints, full_context, stub_bib_dto
-    ):
-        assert stub_bib_dto.domain_bib.bib_id is None
-        assert stub_bib_dto.bib.sierra_bib_id is None
-        service = services.records.OrderRecordProcessingService(
-            context=full_context, template={"matchpoints": matchpoints}
-        )
-        matched_bibs = service.process_records([stub_bib_dto])
-        assert len(matched_bibs) == 1
-        assert matched_bibs[0].domain_bib.bib_id is None
-
-    def test_process_records_no_results(self, full_context, stub_bib_dto):
-        service = services.records.OrderRecordProcessingService(
-            context=full_context, template={"matchpoints": ["upc"]}
-        )
-        matched_bibs = service.process_records([stub_bib_dto])
-        assert len(matched_bibs) == 1
-        assert matched_bibs[0].domain_bib.bib_id is None
-
-    def test_process_records_with_fields(
-        self, full_context, template_data, stub_bib_dto
-    ):
-        original_bib = copy.deepcopy(stub_bib_dto.bib)
-        template_data["update_fields"] = [
-            {
-                "tag": "949",
-                "ind1": "",
-                "ind2": "",
-                "subfield_code": "a",
-                "value": "*b2=a;",
-            },
-        ]
-        template_data["matchpoints"] = ["isbn"]
-        service = services.records.OrderRecordProcessingService(
-            context=full_context, template=template_data
-        )
-        updated = service.process_records(records=[stub_bib_dto])
-        assert len(original_bib.get_fields("949")) == 1
-        assert len(updated) == 1
-        assert len(updated[0].bib.get_fields("949")) == 2
-
-    def test_write_marc_binary(self, stub_bib_dto, full_context):
-        service = services.records.OrderRecordProcessingService(
-            context=full_context, template={"matchpoints": ["isbn"]}
         )
         marc_binary = service.write_marc_binary(records=[stub_bib_dto])
         assert marc_binary.read()[0:2] == b"00"
