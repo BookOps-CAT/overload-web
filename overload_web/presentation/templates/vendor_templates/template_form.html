@@ -15,20 +15,20 @@
                 <h5>Sierra Matchpoints</h5> 
                 {%endif%}
                 <div class="row row-cols-3 gy-1 my-2">
-                    {% for field in fields %}
+                    {% for field_id, field_data in fields.items() %}
                     <div class="col">
                         <div class="form-floating">
-                        {% if "options" in field %}
-                            <select class="form-select" aria-label="{{field['id']}}" name="{{field['id']}}", id="{{field['id']}}">
+                        {% if "options" in field_data %}
+                            <select class="form-select" aria-label="{{field_id}}" name="{{field_id}}", id="{{field_id}}">
                                 <option selected value=""></option>       
-                                    {% for k, v in field['options'].items() %}
-                                    <option value="{{k}}">{{v}}</option>
+                                    {% for k, v in field_data['options'].items() %}
+                                    <option value="{{k}}">{{k}} ({{v}})</option>
                                     {%endfor%}
                             </select>
-                            <label for="{{field['id']}}">{{field['name']}}</label>                                        
+                            <label for="{{field_id}}">{{field_data['label']}}</label>                                        
                         {%else%}
-                            <input type="text" class="form-control" value="{{ value|e }}" name="{{field['id']}}" aria-label="{{field['id']}}" id="{{field['id']}}">
-                            <label for="{{field['id']}}">{{field['name']}}</label>                                          
+                            <input type="text" class="form-control" value="{{ value|e }}" name="{{field_id}}" aria-label="{{field_id}}" id="{{field_id}}">
+                            <label for="{{field_id}}">{{field_data['label']}}</label>                                          
                         {%endif%}          
                         </div>
                     </div> 

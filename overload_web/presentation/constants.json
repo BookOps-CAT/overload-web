@@ -1080,7 +1080,493 @@
             "d": "serial paid",
             "f": "serial no enc"
         }
-    },    
+    },
+    "vendors": {
+        "unknown": "Unknown",
+        "BT": "BT",
+        "midwest": "Midwest",
+        "amalivre": "Amalivre",
+        "ingram": "Ingram",
+        "sulaiman": "Sulaiman",
+        "eastview": "Eastview"
+    },
+    "marc_mapping": {
+        "907": {"a": "bib_id"},
+        "960": {
+            "c": "order_code_1",
+            "d": "order_code_2",
+            "e": "order_code_3",
+            "f": "order_code_4",
+            "g": "format",
+            "i": "order_type",
+            "m": "status",
+            "o": "copies",
+            "q": "create_date",
+            "s": "price",
+            "t": "locations",
+            "u": "fund",
+            "v": "vendor_code",
+            "w": "lang",
+            "x": "country",
+            "z": "order_id"
+        },
+        "961": {
+            "d": "internal_note",
+            "f": "selector_note",
+            "h": "vendor_notes",
+            "i": "vendor_title_no",
+            "l": "var_field_isbn",
+            "m": "blanket_po"
+        }
+    },
+    "vendor_rules": {
+        "nypl": {
+            "UNKNOWN": {
+                "vendor_tags": {},
+                "template": {
+                    "matchpoints": {
+                        "primary": "isbn",
+                        "secondary": "oclc_number"
+                    },
+                    "bib_template": []
+                }
+            },
+            "BT SERIES": {
+                "vendor_tags": {"901": {"code": "a", "value": "BTSERIES"}},
+                "template": {
+                    "matchpoints": {
+                        "primary": "isbn",
+                        "secondary": "oclc_number"
+                    },
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=a;"
+                        }
+                    ]
+                }
+            },
+            "BT PARADE": {
+                "vendor_tags": {"901": {"code": "a", "value": "PARADE"}},
+                "template": {
+                    "matchpoints": {"primary": "isbn"},
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=a;"
+                        }
+                    ]
+                }
+            },
+            "BT ROMANCE": {
+                "vendor_tags": {"901": {"code": "a", "value": "BTROMAN"}},
+                "template": {
+                    "matchpoints": {"primary": "isbn"},
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=a;"
+                        }
+                    ]
+                }
+            },
+            "BT URBAN": {
+                "vendor_tags": {"901": {"code": "a", "value": "BTURBN"}},
+                "template": {
+                    "matchpoints": {"primary": "isbn"},
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=a;"
+                        }
+                    ]
+                }
+            },
+            "BT ODC": {
+                "vendor_tags": {"901": {"code": "a", "value": "BTODC"}},
+                "template": {
+                    "matchpoints": {
+                        "primary": "bib_id",
+                        "secondary": "isbn"
+                    },
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=a;"
+                        }
+                    ]
+                }
+            },
+            "BT LEASED": {
+                "vendor_tags": {"901": {"code": "a", "value": "LEASED"}},
+                "template": {
+                    "matchpoints": {"primary": "isbn"},
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=a;"
+                        }
+                    ]
+                }
+            },
+            "Midwest DVD": {
+                "vendor_tags": {
+                    "901": {"code": "a", "value": "Midwest"},
+                    "091": {"code": "f", "value": "DVD"}
+                },
+                "template": {
+                    "matchpoints": {
+                        "primary": "oclc_number",
+                        "secondary": "isbn",
+                        "tertiary": "upc"
+                    },
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=v;"
+                        }
+                    ]
+                }
+            },
+            "Midwest Blu-ray": {
+                "vendor_tags": {
+                    "901": {"code": "a", "value": "Midwest"},
+                    "091": {"code": "f", "value": "BLURAY"}
+                },
+                "template": {
+                    "matchpoints": {
+                        "primary": "oclc_number",
+                        "secondary": "isbn",
+                        "tertiary": "upc"
+                    },
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=b;"
+                        }
+                    ]
+                }
+            },
+            "Midwest CD": {
+                "vendor_tags": {
+                    "901": {"code": "a", "value": "Midwest"},
+                    "091": {"code": "f", "value": "CD"},
+                    "336": {"code": "a", "value": "performed music"}
+                },
+                "template": {
+                    "matchpoints": {
+                        "primary": "oclc_number",
+                        "secondary": "isbn",
+                        "tertiary": "upc"
+                    },
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=y;"
+                        }
+                    ]
+                }
+            },
+            "Midwest Audio": {
+                "vendor_tags": {
+                    "901": {"code": "a", "value": "Midwest"},
+                    "091": {"code": "f", "value": "CD"},
+                    "336": {"code": "a", "value": "spoken word"}
+                },
+                "template": {
+                    "matchpoints": {
+                        "primary": "oclc_number",
+                        "secondary": "isbn",
+                        "tertiary": "upc"
+                    },
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=u;"
+                        }
+                    ]
+                }
+            },
+            "AMALIVRE": {
+                "vendor_tags": {"901": {"code": "a", "value": "AUXAM"}},
+                "template": {
+                    "matchpoints": {
+                        "primary": "oclc_number",
+                        "secondary": "isbn"
+                    },
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=a;"
+                        }
+                    ]
+                }
+            },
+            "INGRAM": {
+                "vendor_tags": {"901": {"code": "a", "value": "INGRAM"}},
+                "template": {
+                    "matchpoints": {
+                        "primary": "oclc_number",
+                        "secondary": "isbn"
+                    },
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=a;"
+                        }
+                    ]
+                }
+            },
+            "Sulaiman": {
+                "vendor_tags": {"037": {"code": "b", "value": "Sulaiman"}},
+                "template": {
+                    "matchpoints": {
+                        "primary": "oclc_number",
+                        "secondary": "isbn"
+                    },
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=a;"
+                        },
+                        {
+                            "tag": "901",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "SULAIMAN"
+                        }
+                    ]
+                }
+            }
+        },
+        "bpl": {
+            "UNKNOWN": {
+                "vendor_tags": {},
+                "template": {"matchpoints": {"primary": "isbn"}, "bib_template": []}
+            },
+            "INGRAM": {
+                "vendor_tags": {"947": {"code": "a", "value": "INGRAM"}},
+                "template": {
+                    "matchpoints": {
+                        "primary": "bib_id",
+                        "secondary": "isbn",
+                        "tertiary": "oclc_number"
+                    },
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=a;"
+                        }
+                    ]
+                }
+            },
+            "BT CLS": {
+                "vendor_tags": {"960": {"code": "n", "value": "B&amp;T"}},
+                "template": {
+                    "matchpoints": {
+                        "primary": "bib_id",
+                        "secondary": "isbn",
+                        "tertiary": "022"
+                    },
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=a;"
+                        }
+                    ]
+                }
+            },
+            "BT SERIES": {
+                "vendor_tags": {"037": {"code": "b", "value": "B&amp;T SERIES"}},
+                "alternate_vendor_tags": {"947": {"code": "a", "value": "B&amp;T SERIES"}},
+                "template": {
+                    "matchpoints": {"primary": "isbn"},
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=a;"
+                        }
+                    ]
+                }
+            },
+            "BT ROMANCE": {
+                "vendor_tags": {"037": {"code": "b", "value": "B&amp;T ROMANCE"}},
+                "alternate_vendor_tags": {"947": {"code": "a", "value": "B&amp;T ROMANCE"}},
+                "template": {
+                    "matchpoints": {"primary": "isbn"},
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=a;"
+                        }
+                    ]
+                }
+            },
+            "BT URBAN": {
+                "vendor_tags": {"037": {"code": "b", "value": "B&amp;T URBAN"}},
+                "alternate_vendor_tags": {"947": {"code": "a", "value": "B&amp;T URBAN"}},
+                "template": {
+                    "matchpoints": {"primary": "isbn"},
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=a;"
+                        }
+                    ]
+                }
+            },
+            "BT LEASE": {
+                "vendor_tags": {"037": {"code": "b", "value": "B&amp;T LEASE"}},
+                "alternate_vendor_tags": {"947": {"code": "a", "value": "B&amp;T LEASE"}},
+                "template": {
+                    "matchpoints": {"primary": "isbn"},
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=a;"
+                        }
+                    ]
+                }
+            },
+            "BT PBP": {
+                "vendor_tags": {"037": {"code": "b", "value": "B&amp;T PBP"}},
+                "alternate_vendor_tags": {"947": {"code": "a", "value": "B&amp;T PBP"}},
+                "template": {
+                    "matchpoints": {"primary": "isbn"},
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=a;"
+                        }
+                    ]
+                }
+            },
+            "Midwest DVD": {
+                "vendor_tags": {
+                    "037": {"code": "b", "value": "Midwest"},
+                    "099": {"code": "a", "value": "DVD"}
+                },
+                "template": {
+                    "matchpoints": {
+                        "primary": "bib_id",
+                        "secondary": "isbn"
+                    },
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=h;"
+                        }
+                    ]
+                }
+            },
+            "Midwest Audio": {
+                "vendor_tags": {
+                    "037": {"code": "b", "value": "Midwest"},
+                    "099": {"code": "a", "value": "AUDIO"}
+                },
+                "template": {
+                    "matchpoints": {
+                        "primary": "bib_id",
+                        "secondary": "isbn"
+                    },
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=i;"
+                        }
+                    ]
+                }
+            },
+            "Midwest CD": {
+                "vendor_tags": {
+                    "037": {"code": "b", "value": "Midwest"},
+                    "099": {"code": "a", "value": "CD"}
+                },
+                "template": {
+                    "matchpoints": {
+                        "primary": "bib_id",
+                        "secondary": "isbn"
+                    },
+                    "bib_template": [
+                        {
+                            "tag": "949",
+                            "ind1": "",
+                            "ind2": "",
+                            "subfield_code": "a",
+                            "value": "*b2=j;"
+                        }
+                    ]
+                }
+            }
+        }
+    },
     "material_form": {
         "label": "Material Form",
         "options": {

@@ -47,8 +47,8 @@ def get_template_form_fields(
         for i in field_list["matchpoints"]
     }
     return {
-        "template_fixed_fields": fixed_fields,
-        "template_var_fields": var_fields,
+        "fixed_fields": fixed_fields,
+        "var_fields": var_fields,
         "matchpoints": matchpoints,
     }
 

@@ -74,6 +74,20 @@ def get_disabled_context_form(
     )
 
 
+@api_router.get("/forms/template-source", response_class=HTMLResponse)
+def get_template_source(
+    request: Request,
+    fields: Annotated[
+        dict[str, str | dict], Depends(dependencies.get_template_form_fields)
+    ],
+):
+    return templates.TemplateResponse(
+        request=request,
+        name="vendor_templates/template_selector.html",
+        context={"field_constants": fields},
+    )
+
+
 @api_router.get("/forms/template", response_class=HTMLResponse)
 def get_template_form(
     request: Request,

@@ -5,14 +5,22 @@ from __future__ import annotations
 import copy
 import datetime
 import io
+import json
+from functools import lru_cache
 from typing import Any, BinaryIO
 
 from bookops_marc import SierraBibReader
 from pymarc import Field, Indicators, Subfield
 
-from overload_web import constants
 from overload_web.application import dto
 from overload_web.domain import models, protocols
+
+
+@lru_cache
+def load_marc_rules() -> dict[str, dict[str, str]]:
+    with open("overload_web/presentation/constants.json", "r", encoding="utf-8") as fh:
+        constants = json.load(fh)
+    return constants["marc_mapping"]
 
 
 class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
@@ -26,6 +34,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
             library: library whose records are being parsed as a `LibrarySystem` obj
         """
         self.library = library
+        self.marc_rules = load_marc_rules()
 
     def _map_order_data(self, order: models.bibs.Order) -> dict:
         """
@@ -40,7 +49,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
         out = {}
         for tag in ["960", "961"]:
             tag_dict = {}
-            for k, v in constants.MARC_MAPPING[tag].items():
+            for k, v in self.marc_rules[tag].items():
                 tag_dict[k] = getattr(order, v)
             out[tag] = tag_dict
         return out

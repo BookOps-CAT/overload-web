@@ -13,9 +13,7 @@ class TestApp:
         routes = self.client.app.router.__dict__["routes"]
         route_names = [i.name for i in routes]
         assert "root" in route_names
-        assert "process_full_records" in route_names
-        assert "process_order_records" in route_names
-        assert "process_vendor_file" in route_names
+        assert "process_records" in route_names
 
 
 @pytest.mark.usefixtures("mock_sierra_response", "mock_sftp_client")
