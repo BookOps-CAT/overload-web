@@ -13,11 +13,10 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
-from overload_web import constants
 from overload_web.application import services
 from overload_web.domain import models
 from overload_web.infrastructure import factories
-from overload_web.presentation import depends_funcs, schemas
+from overload_web.presentation import dependencies, schemas
 
 logger = logging.getLogger(__name__)
 api_router = APIRouter(prefix="/api", tags=["api"])
@@ -38,25 +37,55 @@ def root() -> JSONResponse:
 @api_router.get("/forms/context", response_class=HTMLResponse)
 def get_context_form(
     request: Request,
-    context: Annotated[
-        dict[str, str | dict], Depends(depends_funcs.get_context_form_fields)
+    form_fields: Annotated[
+        dict[str, str | dict], Depends(dependencies.get_context_form_fields)
     ],
 ) -> HTMLResponse:
     """Get options for template inputs from application constants."""
     return templates.TemplateResponse(
         request=request,
         name="context/form.html",
-        context={"context_form_fields": context},
+        context={"context_form_fields": form_fields},
+    )
+
+
+@api_router.get("/forms/disabled-context", response_class=HTMLResponse)
+def get_disabled_context_form(
+    request: Request,
+    form_fields: Annotated[
+        dict[str, str | dict], Depends(dependencies.get_context_form_fields)
+    ],
+    library: str,
+    collection: str,
+    record_type: str,
+) -> HTMLResponse:
+    """Get options for template inputs from application constants."""
+    return templates.TemplateResponse(
+        request=request,
+        name="context/disabled_form.html",
+        context={
+            "context_form_fields": form_fields,
+            "context": {
+                library: "library",
+                collection: "collection",
+                record_type: "record_type",
+            },
+        },
     )
 
 
 @api_router.get("/forms/template", response_class=HTMLResponse)
-def get_template_form(request: Request) -> HTMLResponse:
+def get_template_form(
+    request: Request,
+    fields: Annotated[
+        dict[str, str | dict], Depends(dependencies.get_template_form_fields)
+    ],
+) -> HTMLResponse:
     """Get options for template inputs from application constants."""
     return templates.TemplateResponse(
         request=request,
         name="vendor_templates/template.html",
-        context={"field_constants": constants.FIELD_CONSTANTS},
+        context={"field_constants": fields},
     )
 
 
@@ -87,7 +116,7 @@ def process_vendor_file(
     library: Annotated[models.bibs.LibrarySystem, Form(...)],
     collection: Annotated[models.bibs.Collection, Form(...)],
     files: Annotated[
-        list[schemas.VendorFileModel], Depends(depends_funcs.normalize_files)
+        list[schemas.VendorFileModel], Depends(dependencies.normalize_files)
     ],
     template_input: Annotated[
         schemas.TemplateModel, Depends(schemas.TemplateModel.from_form_data)

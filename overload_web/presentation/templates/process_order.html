@@ -1,4 +1,4 @@
-{% extends 'process.html' %}
+{% extends 'base.html' %}
 {% import "context/macro.html" as macro %}
 {% block header %}<h2>{{ page_title }}</h2>{% endblock %}
 {% block content %}
@@ -6,7 +6,7 @@
   <div class="container text-left">
     <div class="row gy-1 my-2">
       <div class="col" id="context-section">
-        {{ macro.render_context_fields(context_form_fields, context, disabled=True) }}
+        <div class="col" hx-get="/api/forms/disabled-context" hx-trigger="load" hx-target="this" hx-swap="innerHTML" id="context-section" hx-include="#context"></div>
         <div class="row">
           <div class="col">
             <button hx-get="/api/forms/context" hx-target="#context-section" hx-swap="innerHTML" class="btn my-3" style="border-color: #d52828;">Edit Library Context</button>

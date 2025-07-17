@@ -175,9 +175,6 @@ class TestFrontendRouter:
         assert "Process Vendor File" in response.text
         assert response.url == f"{self.base_url}/process"
         assert response.context["page_title"] == "Process Vendor File"
-        assert {"name": "Fund", "id": "fund"} in response.context["field_constants"][
-            "fixed_fields"
-        ]
 
     @pytest.mark.parametrize(
         "collection, record_type",
@@ -201,7 +198,7 @@ class TestFrontendRouter:
         assert "Process Vendor File" in response.text
         assert (
             response.url
-            == f"{self.base_url}/process/{record_type}?library=nypl&collection={collection}"
+            == f"{self.base_url}/process/context?library=nypl&collection={collection}&record_type={record_type}"
         )
 
     @pytest.mark.parametrize(
@@ -221,45 +218,28 @@ class TestFrontendRouter:
         assert "Process Vendor File" in response.text
         assert (
             response.url
-            == f"{self.base_url}/process/{record_type}?library=bpl&collection="
+            == f"{self.base_url}/process/context?library=bpl&collection=&record_type={record_type}"
         )
 
     @pytest.mark.parametrize(
-        "library, collection",
-        [("nypl", "branches"), ("nypl", "research"), ("bpl", None)],
+        "library, collection, record_type",
+        [
+            ("nypl", "branches", "full"),
+            ("nypl", "branches", "order_level"),
+            ("nypl", "research", "full"),
+            ("nypl", "research", "order_level"),
+            ("bpl", None, "full"),
+            ("bpl", None, "order_level"),
+        ],
     )
-    def test_process_full_records_get(self, library, collection):
+    def test_process_records_get(self, library, collection, record_type):
         response = self.client.get(
-            f"/process/full?library={library}&collection={collection}"
+            f"/process/context?library={library}&collection={collection}&record_type={record_type}"
         )
         assert response.status_code == 200
         assert "Process Vendor File" in response.text
         assert (
             response.url
-            == f"{self.base_url}/process/full?library={library}&collection={collection}"
+            == f"{self.base_url}/process/context?library={library}&collection={collection}&record_type={record_type}"
         )
         assert response.context["page_title"] == "Process Vendor File"
-        assert {"name": "Fund", "id": "fund"} in response.context["field_constants"][
-            "fixed_fields"
-        ]
-        assert 'hx-get="/api/forms/template"' not in response.content.decode("utf-8")
-
-    @pytest.mark.parametrize(
-        "library, collection",
-        [("nypl", "branches"), ("nypl", "research"), ("bpl", None)],
-    )
-    def test_process_order_records_get(self, library, collection):
-        response = self.client.get(
-            f"/process/order-level?library={library}&collection={collection}"
-        )
-        assert response.status_code == 200
-        assert "Process Vendor File" in response.text
-        assert (
-            response.url
-            == f"{self.base_url}/process/order-level?library={library}&collection={collection}"
-        )
-        assert response.context["page_title"] == "Process Vendor File"
-        assert {"name": "Fund", "id": "fund"} in response.context["field_constants"][
-            "fixed_fields"
-        ]
-        assert 'hx-get="/api/forms/template"' in response.content.decode("utf-8")

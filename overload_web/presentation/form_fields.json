@@ -1,0 +1,26 @@
+{
+    "context_form": ["record_type", "library", "collection"],
+    "matchpoints": ["primary", "secondary", "tertiary"],
+    "template_var_fields": [
+        "internal_note", 
+        "var_field_isbn",
+        "vendor_notes",
+        "vendor_title_no",
+        "blanket_po"
+    ],
+    "template_fixed_fields": [
+        "acquisition_type", 
+        "claim_code", 
+        "order_code_1", 
+        "order_code_2", 
+        "order_code_3", 
+        "order_code_4", 
+        "receive_action", 
+        "order_format", 
+        "order_note", 
+        "order_type", 
+        "vendor_code", 
+        "lang", 
+        "country"
+    ]
+}
