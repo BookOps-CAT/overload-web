@@ -1,14 +1,20 @@
-<div class="row gy-1 my-2" id="template-source">  
-    <div class="col" id="files">
-        <h5>Order Template</h5> 
+<div class="row gy-1 my-2" id="template">  
+    <div class="col" id="template">
+        <h5>Apply Template</h5> 
         <div class="row">
             <div class="col">
                 <div class="form-check form-check-inline">
-                <input class="form-check-input" type="checkbox" id="template" hx-get="/api/forms/template" hx-target="#template-form">
-                <label class="form-check-label">Apply Template</label>
+                <input class="form-check-input" type="radio" name="template-source" value="new-template" hx-get="/api/forms/new-template" hx-target="#template-form" hx-swap="innerHTML">
+                <label class="form-check-label">Input New Template</label>
+                </div>
+            </div>  
+            <div class="col">
+                <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio"  name="template-source" value="load-template" hx-get="/api/forms/load-template" hx-target="#template-form" hx-swap="innerHTML">
+                <label class="form-check-label">Load Template</label>
                 </div>
             </div>   
         </div>  
-    </div>    
+    </div>
+    <div class="col" id="template-form"></div>      
 </div>
-<div class="col" id="template-form"></div>  

@@ -7,9 +7,9 @@ from overload_web.infrastructure import file_io
 
 
 @pytest.fixture
-def tmp_file(tmp_path, stub_binary_marc, library):
+def tmp_file(tmp_path):
     file = tmp_path / "foo.mrc"
-    file.write_bytes(stub_binary_marc.read())
+    file.write_bytes(b"333331234567890")
 
 
 class TestLocalFiles:
@@ -22,23 +22,20 @@ class TestLocalFiles:
         assert isinstance(loader, protocols.file_io.FileLoader)
         assert isinstance(writer, protocols.file_io.FileWriter)
 
-    @pytest.mark.parametrize("library", ["nypl", "bpl"])
     def test_load(self, tmp_path, tmp_file):
         loader = file_io.local.LocalFileLoader()
         loaded_file = loader.load("foo.mrc", dir=tmp_path)
         assert "333331234567890".encode() in loaded_file.content
         assert "foo.mrc" in os.listdir(tmp_path)
 
-    @pytest.mark.parametrize("library", ["nypl", "bpl"])
     def test_list(self, tmp_path, tmp_file):
         loader = file_io.local.LocalFileLoader()
         file_list = loader.list(dir=tmp_path)
         assert len(file_list) == 1
         assert file_list[0] == "foo.mrc"
 
-    @pytest.mark.parametrize("library", ["nypl", "bpl"])
-    def test_write(self, tmp_path, stub_binary_marc):
-        out_file = self.stub_file(content=stub_binary_marc.read(), file_name="foo.mrc")
+    def test_write(self, tmp_path):
+        out_file = self.stub_file(content=b"333331234567890", file_name="foo.mrc")
         writer = file_io.local.LocalFileWriter()
         new_file = writer.write(file=out_file, dir=tmp_path)
         assert new_file == os.path.join(tmp_path, "foo.mrc")

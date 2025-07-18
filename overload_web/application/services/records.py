@@ -27,6 +27,7 @@ class RecordProcessingService:
         library: models.bibs.LibrarySystem,
         collection: models.bibs.Collection,
         record_type: models.bibs.RecordType,
+        marc_rules: dict[str, dict[str, str]],
     ):
         """
         Initialize `RecordProcessingService`.
@@ -35,11 +36,12 @@ class RecordProcessingService:
             library: the library whose records are to be processed
             collection: the collection whose records are to be processed
             record_type: the type of records to be processed (full or order-level)
+            marc_rules: the marc mapping to be used when processing records
         """
         self.library = library
         self.collection = collection
         self.record_type = record_type
-        self.parser = self._get_parser()
+        self.parser = self._get_parser(marc_rules=marc_rules)
         self.matcher = self._get_matcher()
 
     def _normalize_matchpoints(self, matchpoints: dict[str, Any] = {}) -> list[str]:
@@ -66,14 +68,16 @@ class RecordProcessingService:
             fetcher=sierra.SierraBibFetcher(library=str(self.library))
         )
 
-    def _get_parser(self) -> marc.BookopsMarcParser:
+    def _get_parser(
+        self, marc_rules: dict[str, dict[str, str]]
+    ) -> marc.BookopsMarcParser:
         """
         Get a `BookopsMarcParser` object for the supplied library.
 
         Returns:
             `BookopsMarcParser` instance.
         """
-        return marc.BookopsMarcParser(library=self.library)
+        return marc.BookopsMarcParser(library=self.library, marc_rules=marc_rules)
 
     def _get_vendor_template(self, bib: dto.bib.BibDTO) -> dict[str, Any]:
         vendor_id = context.VendorIdentifier(

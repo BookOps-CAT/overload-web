@@ -5,8 +5,6 @@ from __future__ import annotations
 import copy
 import datetime
 import io
-import json
-from functools import lru_cache
 from typing import Any, BinaryIO
 
 from bookops_marc import SierraBibReader
@@ -16,17 +14,14 @@ from overload_web.application import dto
 from overload_web.domain import models, protocols
 
 
-@lru_cache
-def load_marc_rules() -> dict[str, dict[str, str]]:
-    with open("overload_web/presentation/constants.json", "r", encoding="utf-8") as fh:
-        constants = json.load(fh)
-    return constants["marc_mapping"]
-
-
 class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
     """Parses and serializes MARC records."""
 
-    def __init__(self, library: models.bibs.LibrarySystem) -> None:
+    def __init__(
+        self,
+        library: models.bibs.LibrarySystem,
+        marc_rules: dict[str, dict[str, str]],
+    ) -> None:
         """
         Initialize `BookopsMarcParser` for a specific library.
 
@@ -34,7 +29,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
             library: library whose records are being parsed as a `LibrarySystem` obj
         """
         self.library = library
-        self.marc_rules = load_marc_rules()
+        self.marc_rules = marc_rules
 
     def _map_order_data(self, order: models.bibs.Order) -> dict:
         """

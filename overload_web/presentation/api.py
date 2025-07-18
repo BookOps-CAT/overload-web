@@ -66,9 +66,9 @@ def get_disabled_context_form(
         context={
             "context_form_fields": form_fields,
             "context": {
-                library: "library",
-                collection: "collection",
-                record_type: "record_type",
+                "library": library,
+                "collection": collection,
+                "record_type": record_type,
             },
         },
     )
@@ -88,8 +88,23 @@ def get_template_source(
     )
 
 
-@api_router.get("/forms/template", response_class=HTMLResponse)
+@api_router.get("/forms/load-template", response_class=HTMLResponse)
 def get_template_form(
+    request: Request,
+    fields: Annotated[
+        dict[str, str | dict], Depends(dependencies.get_template_form_fields)
+    ],
+) -> HTMLResponse:
+    """Get options for template inputs from application constants."""
+    return templates.TemplateResponse(
+        request=request,
+        name="vendor_templates/template.html",
+        context={"field_constants": fields},
+    )
+
+
+@api_router.get("/forms/new-template", response_class=HTMLResponse)
+def new_template_form(
     request: Request,
     fields: Annotated[
         dict[str, str | dict], Depends(dependencies.get_template_form_fields)
@@ -135,9 +150,15 @@ def process_vendor_file(
     template_input: Annotated[
         schemas.TemplateModel, Depends(schemas.TemplateModel.from_form_data)
     ],
+    marc_rules: Annotated[
+        dict[str, dict[str, str]], Depends(dependencies.get_marc_rules)
+    ],
 ):
     service = services.records.RecordProcessingService(
-        library=library, collection=collection, record_type=record_type
+        library=library,
+        collection=collection,
+        record_type=record_type,
+        marc_rules=marc_rules,
     )
     template_data = {k: v for k, v in template_input.model_dump().items() if v}
     context_dict = {

@@ -1,7 +1,7 @@
 import json
 import os
 from functools import lru_cache
-from typing import Annotated, Any, Union
+from typing import Annotated, Union
 
 from fastapi import Depends, Form, UploadFile
 
@@ -26,20 +26,22 @@ def load_form_fields() -> dict[str, list[str]]:
 
 
 def get_context_form_fields(
-    constants: Annotated[
-        dict[str, dict[str, str | dict[str, str]]], Depends(load_constants)
-    ],
+    constants: Annotated[dict[str, dict], Depends(load_constants)],
     field_list: Annotated[dict[str, list[str]], Depends(load_form_fields)],
-) -> dict[str, dict[str, str | dict[str, str]]]:
+) -> dict[str, dict]:
     return {i: constants[i] for i in field_list["context_form"]}
 
 
+def get_marc_rules(
+    constants: Annotated[dict[str, dict], Depends(load_constants)],
+) -> dict[str, dict]:
+    return constants["marc_mapping"]
+
+
 def get_template_form_fields(
-    constants: Annotated[
-        dict[str, dict[str, str | dict[str, str]]], Depends(load_constants)
-    ],
+    constants: Annotated[dict[str, dict], Depends(load_constants)],
     field_list: Annotated[dict[str, list[str]], Depends(load_form_fields)],
-) -> dict[str, Any]:
+) -> dict[str, dict]:
     fixed_fields = {i: constants[i] for i in field_list["template_fixed_fields"]}
     var_fields = {i: constants[i] for i in field_list["template_var_fields"]}
     matchpoints = {

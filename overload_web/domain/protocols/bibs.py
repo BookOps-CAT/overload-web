@@ -63,10 +63,12 @@ class MarcParser(Protocol[T]):
 
     Args:
         library: the library to whom the records belong as a `LibrarySystem` object
+        marc_rules: the marc mapping to be used when processing records
 
     """
 
     library: models.bibs.LibrarySystem
+    marc_rules: dict[str, dict[str, str]]
 
     def parse(self, data: BinaryIO | bytes) -> list[T]: ...
 

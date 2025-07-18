@@ -1,6 +1,7 @@
 import copy
 import io
 import os
+from typing import Callable
 
 import pytest
 from bookops_marc import Bib
@@ -205,13 +206,6 @@ def stub_bib(library) -> Bib:
     bib = Bib()
     bib.leader = "00000cam  2200517 i 4500"
     bib.library = library
-    bib.add_field(
-        Field(
-            tag="020",
-            indicators=Indicators(" ", " "),
-            subfields=[Subfield(code="a", value="9781234567890")],
-        )
-    )
     if library == "bpl":
         bib.add_field(
             Field(
@@ -279,13 +273,21 @@ def stub_bib(library) -> Bib:
 
 
 @pytest.fixture
-def stub_binary_marc(stub_bib) -> io.BytesIO:
-    return io.BytesIO(stub_bib.as_marc())
+def make_bib_dto(stub_bib) -> Callable:
+    def _make_dto(data: dict[str, dict[str, str]]):
+        record = copy.deepcopy(stub_bib)
+        for k, v in data.items():
+            record.add_field(
+                Field(
+                    tag=k,
+                    indicators=Indicators(" ", " "),
+                    subfields=[
+                        Subfield(code=v["code"], value=v["value"]),
+                    ],
+                )
+            )
+        return dto.bib.BibDTO(
+            bib=record, domain_bib=models.bibs.DomainBib.from_marc(record)
+        )
 
-
-@pytest.fixture
-def stub_bib_dto(stub_bib) -> dto.bib.BibDTO:
-    record = copy.deepcopy(stub_bib)
-    return dto.bib.BibDTO(
-        bib=record, domain_bib=models.bibs.DomainBib.from_marc(record)
-    )
+    return _make_dto

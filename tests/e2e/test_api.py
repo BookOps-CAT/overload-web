@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 from overload_web.main import app
 from overload_web.presentation.api import api_router
 from overload_web.presentation.frontend import frontend_router
+from overload_web.presentation.partials import htmx_router
 
 
 class TestApp:
@@ -35,8 +36,40 @@ class TestBackEndAPIRouter:
             "record_type",
         ]
 
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [
+            ("nypl", "BL", "full"),
+            ("nypl", "BL", "order_level"),
+            ("nypl", "RL", "full"),
+            ("nypl", "RL", "order_level"),
+            ("bpl", "NONE", "full"),
+            ("bpl", "NONE", "order_level"),
+        ],
+    )
+    def test_get_disabled_context_form(self, library, collection, record_type):
+        response = self.client.get(
+            f"/api/forms/disabled-context?library={library}&collection={collection}&record_type={record_type}"
+        )
+        assert response.status_code == 200
+        assert sorted(list(response.context["context"].keys())) == [
+            "collection",
+            "library",
+            "record_type",
+        ]
+
+    def test_get_template_selector(self):
+        response = self.client.get("/api/forms/template-source")
+        assert response.status_code == 200
+        assert "Apply Template" in response.text
+
     def test_get_template_form(self):
-        response = self.client.get("/api/forms/template")
+        response = self.client.get("/api/forms/load-template")
+        assert response.status_code == 200
+        assert sorted(list(response.context.keys())) == ["field_constants", "request"]
+
+    def test_new_template_form(self):
+        response = self.client.get("/api/forms/new-template")
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["field_constants", "request"]
 
@@ -60,9 +93,7 @@ class TestBackEndAPIRouter:
             ("bpl", "NONE", "order_level"),
         ],
     )
-    def test_process_vendor_file_local(
-        self, stub_binary_marc, library, collection, record_type
-    ):
+    def test_process_vendor_file_local(self, library, collection, record_type):
         context = {
             "library": library,
             "collection": collection,
@@ -71,7 +102,7 @@ class TestBackEndAPIRouter:
             "vendor": None,
             "primary": "isbn",
         }
-        files = {"files": ("test.mrc", stub_binary_marc, "application/octet-stream")}
+        files = {"files": ("test.mrc", b"", "application/octet-stream")}
         response = self.client.post(
             "/api/process-vendor-file", data=context, files=files
         )
@@ -156,6 +187,37 @@ class TestBackEndAPIRouter:
         )
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/api/write-remote?dir=foo&vendor=foo"
+
+
+class TestHTMXRouter:
+    client = TestClient(htmx_router)
+    base_url = client.base_url
+
+    def test_get_file_source(self):
+        response = self.client.get("/htmx/file-source")
+        assert response.status_code == 200
+        assert "File Source" in response.text
+        assert "Local Upload" in response.text
+        assert "Remote Server" in response.text
+        assert response.url == f"{self.base_url}/htmx/file-source"
+
+    def test_get_local_upload_form(self):
+        response = self.client.get("htmx/local-file-form")
+        assert response.status_code == 200
+        assert "Select Files" in response.text
+        assert response.url == f"{self.base_url}/htmx/local-file-form"
+
+    def test_get_remote_file_form(self):
+        response = self.client.get("/htmx/remote-file-form")
+        assert response.status_code == 200
+        assert "Select Files" in response.text
+        assert response.url == f"{self.base_url}/htmx/remote-file-form"
+
+    def test_get_pvf_button(self):
+        response = self.client.get("/htmx/pvf-button")
+        assert response.status_code == 200
+        assert "Process Vendor File" in response.text
+        assert response.url == f"{self.base_url}/htmx/pvf-button"
 
 
 class TestFrontendRouter:
