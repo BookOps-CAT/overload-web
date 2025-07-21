@@ -35,6 +35,19 @@ class TemplateService:
         with self.uow:
             return self.uow.templates.get(id=template_id)
 
+    def list_templates(self) -> list[models.templates.Template]:
+        """
+        Retrieve all templates in the database.
+
+        Args:
+            None
+
+        Returns:
+            A list of `Template` objects.
+        """
+        with self.uow:
+            return self.uow.templates.list()
+
     def save_template(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Save a template.

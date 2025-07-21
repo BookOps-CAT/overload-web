@@ -52,8 +52,8 @@ def test_save_and_update_template(test_sql_session, make_template):
     assert saved_template.lang is None
     template.lang = "eng"
     repo.save(template)
-    updated_template = repo.get(id=1)
-    assert updated_template.lang == "eng"
+    updated_template = repo.list()
+    assert updated_template[0].lang == "eng"
 
 
 def test_mappers(test_sql_session, make_template):

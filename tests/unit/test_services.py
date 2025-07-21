@@ -164,6 +164,10 @@ class TestTemplateService:
         template_obj = service.get_template(template_id="foo")
         assert template_obj is None
 
+    def test_list_templates(self, service):
+        template_list = service.list_templates()
+        assert template_list is None
+
     def test_save_template(self, service, template_data):
         template_data.update({"name": "Foo", "agent": "Bar"})
         template_saver = service.save_template(data=template_data)

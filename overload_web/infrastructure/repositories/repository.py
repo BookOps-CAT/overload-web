@@ -40,6 +40,18 @@ class SqlAlchemyRepository:
         """
         return self.session.query(models.templates.Template).filter_by(id=id).first()
 
+    def list(self) -> list[models.templates.Template]:
+        """
+        Retrieve all `Template` objects in the database.
+
+        Args:
+            None
+
+        Returns:
+            a list of `Template` objects.
+        """
+        return self.session.query(models.templates.Template).all()
+
     def save(self, obj: models.templates.Template) -> None:
         """
         Adds a new or updated `Template` to the database.
