@@ -16,7 +16,7 @@
             ]
         },
         {
-            "name": "Docker: Python - Fastapi",
+            "name": "Docker Run: Python - Fastapi",
             "type": "docker",
             "request": "launch",
             "preLaunchTask": "docker-run: debug",
@@ -29,6 +29,23 @@
                 ],
                 "projectType": "fastapi"
             }
+        },
+        {
+            "name": "Docker Compose: Python - Fastapi",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5678
+            },
+            "pathMappings": [
+                {
+                "localRoot": "${workspaceFolder}",
+                "remoteRoot": "/app"
+                }
+            ],
+            "preLaunchTask": "docker-compose up",
+            "postDebugTask": "docker-compose down"
         }
     ]
 }

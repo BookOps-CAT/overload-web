@@ -29,6 +29,27 @@
 				],
 				"module": "uvicorn"
 			}
+		},
+		{
+			"label": "docker-compose up",
+			"type": "docker-compose",
+			"dockerCompose": {
+				"up": {
+					"build": true,
+					"customOptions": "--watch"
+				},
+				"files": ["${workspaceFolder}/compose.yaml"],
+				"envFiles": ["${workspaceFolder}/debug.env"],
+			},
+		},
+		{
+			"label": "docker-compose down",
+			"type": "docker-compose",
+			"dockerCompose": {
+				"down": {},
+				"files": ["${workspaceFolder}/compose.yaml"],
+				"envFiles": ["${workspaceFolder}/debug.env"]
+			}
 		}
 	]
 }
