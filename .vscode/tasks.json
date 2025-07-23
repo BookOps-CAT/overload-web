@@ -35,7 +35,7 @@
 			"type": "docker-compose",
 			"dockerCompose": {
 				"up": {
-					"build": true,
+					"build": false,
 					"customOptions": "--watch"
 				},
 				"files": ["${workspaceFolder}/compose.yaml"],
