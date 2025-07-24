@@ -3,6 +3,7 @@
 Serves HTML partials in response to HTMX requests.
 """
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
@@ -11,6 +12,7 @@ from fastapi.templating import Jinja2Templates
 
 from overload_web.presentation import dependencies
 
+logger = logging.getLogger(__name__)
 htmx_router = APIRouter(prefix="/htmx", tags=["htmx"])
 templates = Jinja2Templates(directory="overload_web/presentation/templates")
 
