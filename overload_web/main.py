@@ -5,11 +5,18 @@ Initializes the `FastAPI` app and registers backend and frontend routers.
 
 from __future__ import annotations
 
+import logging
+
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from overload_web import logging_config
 from overload_web.presentation import api, frontend, partials
+
+load_dotenv(dotenv_path="debug.env")
+logger = logging.getLogger("overload_web")
+
 
 logging_config.setup_logging()
 
