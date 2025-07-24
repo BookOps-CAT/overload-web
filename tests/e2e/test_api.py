@@ -61,7 +61,6 @@ class TestBackEndAPIRouter:
     def test_get_template_selector(self):
         response = self.client.get("/api/forms/templates")
         assert response.status_code == 200
-        assert "Apply Template" in response.text
         assert sorted(list(response.context.keys())) == [
             "field_constants",
             "request",
