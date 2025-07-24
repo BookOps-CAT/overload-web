@@ -5,51 +5,34 @@ Protocols:
 
 `SqlRepositoryProtocol`
     Defines expected methods for a repository.
-
-`UnitOfWorkProtocol`
-    Defines a unit of work for handling operations within a repository.
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Optional, Protocol, TypeVar, runtime_checkable
+from typing import Optional, Protocol, Sequence, TypeVar, runtime_checkable
+
+from sqlmodel import Session
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
-K = TypeVar("K", contravariant=True)
 
 
 @runtime_checkable
-class SqlRepositoryProtocol(Protocol[T, K]):
+class SqlRepositoryProtocol(Protocol[T]):
     """
     Interface for repository operations on generic objects.
 
     Includes methods for fetching and saving generic objects.
     """
 
-    def get(self, id: K) -> Optional[T]: ...
+    session: Session
 
-    def list(self) -> list[T]: ...
+    def get(self, id: str) -> Optional[T]: ...
+
+    def list(
+        self, offset: Optional[int] = 0, limit: Optional[int] = 0
+    ) -> Sequence[T]: ...
 
     def save(self, obj: T) -> None: ...
-
-
-@runtime_checkable
-class UnitOfWorkProtocol(Protocol):
-    """
-    A protocol that defines the expected interface for a unit of work that manages
-    templates.
-
-    Attributes:
-        templates: `SqlRepositoryProtocol` interface for template persistence.
-    """
-
-    templates: SqlRepositoryProtocol
-
-    def __enter__(self) -> UnitOfWorkProtocol: ...
-
-    def __exit__(self, *args) -> None: ...
-
-    def commit(self) -> None: ...

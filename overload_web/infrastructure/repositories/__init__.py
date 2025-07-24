@@ -1,3 +1,3 @@
-from . import orm, repository
+from . import orm, repository, tables
 
-__all__ = ["orm", "repository"]
+__all__ = ["tables", "orm", "repository"]

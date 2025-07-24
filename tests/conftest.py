@@ -7,13 +7,12 @@ import pytest
 from bookops_marc import Bib
 from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
-from sqlalchemy import create_engine
-from sqlalchemy.orm import clear_mappers, sessionmaker
+from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.application import dto
 from overload_web.domain import models
 from overload_web.infrastructure.bibs import sierra
-from overload_web.infrastructure.repositories import orm
+from overload_web.infrastructure.repositories import tables
 
 
 @pytest.fixture(autouse=True)
@@ -43,10 +42,18 @@ def fake_creds(monkeypatch):
 @pytest.fixture
 def test_sql_session():
     test_engine = create_engine("sqlite:///:memory:")
-    orm.metadata.create_all(test_engine)
-    orm.start_mappers()
-    yield sessionmaker(bind=test_engine)()
-    clear_mappers()
+    SQLModel.metadata.create_all(test_engine)
+    with Session(test_engine) as session:
+        yield session
+
+
+@pytest.fixture
+def make_template():
+    def _make_template(data):
+        template = tables.Template(**data)
+        return template
+
+    return _make_template
 
 
 @pytest.fixture

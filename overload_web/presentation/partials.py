@@ -19,7 +19,7 @@ templates = Jinja2Templates(directory="overload_web/presentation/templates")
 
 @htmx_router.get("/file-source", response_class=HTMLResponse)
 def get_file_source(request: Request):
-    return templates.TemplateResponse("files/file_source.html", {"request": request})
+    return templates.TemplateResponse("partials/file_source.html", {"request": request})
 
 
 @htmx_router.get("/local-file-form", response_class=HTMLResponse)

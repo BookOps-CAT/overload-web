@@ -45,7 +45,10 @@ def get_template_form_fields(
     fixed_fields = {i: constants[i] for i in field_list["template_fixed_fields"]}
     var_fields = {i: constants[i] for i in field_list["template_var_fields"]}
     matchpoints = {
-        i: {"label": f"{i.title()}", "options": constants["matchpoint_options"]}
+        i: {
+            "label": f"{i.split('_')[0].title()}",
+            "options": constants["matchpoint_options"],
+        }
         for i in field_list["matchpoints"]
     }
     return {

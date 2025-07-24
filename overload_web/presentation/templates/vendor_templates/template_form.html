@@ -1,42 +1,13 @@
-<div class="row row-cols-1 gy-1 my-2">
-<div class="accordion" id="template_accordion">
-    <div class="accordion-item">
-        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#template-body">
-            Enter Template Data
-        </button>
-        <div id="template-body" class="accordion-collapse collapse">
-            <div class="accordion-body">
-                {% for type,fields in field_constants.items()%}
-                {% if type=="fixed_fields"%}
-                <h5>Order Fixed Fields</h5>
-                {% elif type=="var_fields"%}
-                <h5>Order Variable Fields</h5>
-                {% elif type=="matchpoints"%}
-                <h5>Sierra Matchpoints</h5> 
-                {%endif%}
-                <div class="row row-cols-3 gy-1 my-2">
-                    {% for field_id, field_data in fields.items() %}
-                    <div class="col">
-                        <div class="form-floating">
-                        {% if "options" in field_data %}
-                            <select class="form-select" name="{{field_id}}" id="{{field_id}}">
-                                <option selected value=""></option>       
-                                    {% for k, v in field_data['options'].items() %}
-                                    <option value="{{k}}">{{k}} ({{v}})</option>
-                                    {%endfor%}
-                            </select>
-                            <label for="{{field_id}}">{{field_data['label']}}</label>                                        
-                        {%else%}
-                            <input type="text" class="form-control" value="{{ value|e }}" name="{{field_id}}" id="{{field_id}}">
-                            <label for="{{field_id}}">{{field_data['label']}}</label>                                          
-                        {%endif%}          
-                        </div>
-                    </div> 
-                    {%endfor%} 
-                </div>
-                {%endfor%}
+{% import "vendor_templates/macro.html" as macro %}
+<div class="row gy-1 my-2" id="record-templates">    
+    <div class="col"  id="template-input">
+        <div class="row">
+            <div class="col" >
+                {{ macro.render_template_list(templates) }}
+            </div>
+            <div class="col" id="template-form-fields">
+               {{ macro.render_template_fields(field_constants) }}
             </div>
         </div>
     </div>
-</div>
 </div>

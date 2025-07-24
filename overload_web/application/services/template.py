@@ -3,26 +3,30 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Optional, Sequence, TypeVar
 
-from overload_web.domain import models, protocols
+from sqlmodel import Session
+
+from overload_web.infrastructure.repositories import repository, tables
 
 logger = logging.getLogger(__name__)
+T = TypeVar("T")
 
 
 class TemplateService:
     """Handles template retrieval and persistence."""
 
-    def __init__(self, uow: protocols.repositories.UnitOfWorkProtocol) -> None:
+    def __init__(self, session: Session) -> None:
         """
-        Initialize `TemplateService` with a `UnitOfWorkProtocol` object.
+        Initialize `TemplateService` with a `sqlmodel.Session` object.
 
         Args:
-            uow: concrete implementation of `UnitOfWorkProtocol` for data access.
+            session: a `sqlmodel.Session` object.
         """
-        self.uow = uow
+        self.session = session
+        self.repo = repository.SqlModelRepository(session=session)
 
-    def get_template(self, template_id: str) -> Optional[models.templates.Template]:
+    def get_template(self, template_id: str) -> Optional[tables.Template]:
         """
         Retrieve a template by its ID.
 
@@ -32,23 +36,24 @@ class TemplateService:
         Returns:
             The retrieved template as a `Template` object or None.
         """
-        with self.uow:
-            return self.uow.templates.get(id=template_id)
+        return self.repo.get(id=template_id)
 
-    def list_templates(self) -> list[models.templates.Template]:
+    def list_templates(
+        self, offset: Optional[int] = 0, limit: Optional[int] = 20
+    ) -> Sequence[tables.Template]:
         """
-        Retrieve all templates in the database.
+        Retrieve a list of templates in the database.
 
         Args:
-            None
+            offset: start position of `Template` objects to return
+            limit: the maximum number of `Template` objects to return
 
         Returns:
             A list of `Template` objects.
         """
-        with self.uow:
-            return self.uow.templates.list()
+        return self.repo.list(offset=offset, limit=limit)
 
-    def save_template(self, data: dict[str, Any]) -> dict[str, Any]:
+    def save_template(self, obj: tables.Template) -> tables.Template:
         """
         Save a template.
 
@@ -61,15 +66,13 @@ class TemplateService:
         Returns:
             The saved template as a dictionary.
         """
-        template = models.templates.Template(**data)
-
-        if not template.name or not template.name.strip():
+        if not hasattr(obj, "name") or not obj.name or not obj.name.strip():
             raise ValueError("Templates must have a name before being saved.")
-        if not template.agent or not template.agent.strip():
+        if not hasattr(obj, "agent") or not obj.agent or not obj.agent.strip():
             raise ValueError("Templates must have an agent before being saved.")
 
-        with self.uow:
-            self.uow.templates.save(obj=template)
-            self.uow.commit()
+        self.repo.save(obj=obj)
+        self.session.commit()
+        self.session.refresh(obj)
 
-        return template.__dict__
+        return obj

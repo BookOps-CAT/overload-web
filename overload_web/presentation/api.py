@@ -7,20 +7,43 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Annotated
+from typing import Annotated, Generator
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+from sqlmodel import Session, SQLModel, create_engine
 
+from overload_web import config
 from overload_web.application import services
 from overload_web.domain import models
-from overload_web.infrastructure import factories
+from overload_web.infrastructure import factories, repositories
 from overload_web.presentation import dependencies, schemas
 
 logger = logging.getLogger(__name__)
+
+uri = config.get_postgres_uri()
+engine = create_engine(uri)
+
+
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
+
+
+def get_session() -> Generator[Session, None, None]:
+    with Session(engine) as session:
+        yield session
+
+
+SessionDep = Annotated[Session, Depends(get_session)]
+
 api_router = APIRouter(prefix="/api", tags=["api"])
 templates = Jinja2Templates(directory="overload_web/presentation/templates")
+
+
+@api_router.on_event("startup")
+def startup_event():
+    create_db_and_tables()
 
 
 @api_router.get("/")
@@ -74,48 +97,103 @@ def get_disabled_context_form(
     )
 
 
-@api_router.get("/forms/template-source", response_class=HTMLResponse)
-def get_template_source(
+@api_router.get("/forms/templates", response_class=HTMLResponse)
+def template_form(
     request: Request,
     fields: Annotated[
         dict[str, str | dict], Depends(dependencies.get_template_form_fields)
     ],
-):
+) -> HTMLResponse:
+    """Get options for template inputs from application constants."""
+    return templates.TemplateResponse(
+        request=request,
+        name="vendor_templates/template_form.html",
+        context={"field_constants": fields},
+    )
+
+
+@api_router.get("/forms/template_selector", response_class=HTMLResponse)
+def template_form_selector(
+    request: Request,
+    fields: Annotated[
+        dict[str, str | dict], Depends(dependencies.get_template_form_fields)
+    ],
+) -> HTMLResponse:
+    """Get options for template inputs from application constants."""
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/template_source.html",
+        context={"field_constants": fields},
+    )
+
+
+@api_router.post("/template", response_class=HTMLResponse)
+def create_template(
+    request: Request,
+    template: Annotated[
+        repositories.tables.TemplateCreate,
+        Depends(repositories.tables.TemplateCreate.from_form),
+        Form(),
+    ],
+    session: SessionDep,
+) -> HTMLResponse:
+    new_template = {}
+    valid_template = repositories.tables.Template.model_validate(template)
+    service = services.template.TemplateService(session=session)
+    saved_template = service.save_template(obj=valid_template)
+    new_template.update(saved_template.model_dump())
+    return templates.TemplateResponse(
+        request=request,
+        name="testing/response.html",
+        context={"new_template": new_template},
+    )
+
+
+@api_router.get("/template/{template_id}", response_class=HTMLResponse)
+def get_template(
+    request: Request,
+    template_id: str,
+    session: SessionDep,
+) -> HTMLResponse:
+    template_out = {}
+    service = services.template.TemplateService(session=session)
+    template = service.get_template(template_id=template_id)
+    if template:
+        template_out.update(template.model_dump())
+    return templates.TemplateResponse(
+        request=request,
+        name="testing/response.html",
+        context={"template": template},
+    )
+
+
+@api_router.get("/templates", response_class=HTMLResponse)
+def get_template_list(
+    request: Request, session: SessionDep, offset: int = 0, limit: int = 20
+) -> HTMLResponse:
+    service = services.template.TemplateService(session=session)
+    template_list = service.list_templates(offset=offset, limit=limit)
     return templates.TemplateResponse(
         request=request,
         name="vendor_templates/template_selector.html",
-        context={"field_constants": fields},
+        context={"templates": [i.model_dump() for i in template_list]},
     )
 
 
-@api_router.get("/forms/load-template", response_class=HTMLResponse)
-def get_template_form(
-    request: Request,
-    fields: Annotated[
-        dict[str, str | dict], Depends(dependencies.get_template_form_fields)
-    ],
-) -> HTMLResponse:
-    """Get options for template inputs from application constants."""
-    return templates.TemplateResponse(
-        request=request,
-        name="vendor_templates/template.html",
-        context={"field_constants": fields},
-    )
-
-
-@api_router.get("/forms/new-template", response_class=HTMLResponse)
-def new_template_form(
-    request: Request,
-    fields: Annotated[
-        dict[str, str | dict], Depends(dependencies.get_template_form_fields)
-    ],
-) -> HTMLResponse:
-    """Get options for template inputs from application constants."""
-    return templates.TemplateResponse(
-        request=request,
-        name="vendor_templates/template.html",
-        context={"field_constants": fields},
-    )
+# @api_router.patch("/templates/{template_id}", response_class=HTMLResponse)
+# def update_template(
+#     request: Request,
+#     template_id: str,
+#     template: repositories.models.TemplateUpdate,
+#     uow: UOWDep,
+# ) -> HTMLResponse:
+#     service = services.template.TemplateService(uow=uow)
+#     updated_template = service.save_template(obj=template)
+#     return templates.TemplateResponse(
+#         request=request,
+#         name="record_templates/update_template.html",
+#         context={"updated_template": updated_template},
+#     )
 
 
 @api_router.get("/list-remote-files", response_class=HTMLResponse)

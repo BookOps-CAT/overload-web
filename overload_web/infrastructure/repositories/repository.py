@@ -2,7 +2,7 @@
 
 Classes:
 
-`SqlAlchemyRepository`
+`SqlModelRepository`
     `SQLAlchemy` implementation of `SqlRepositoryProtocol` for managing
     `Template` objects in a SQL database.
 """
@@ -10,14 +10,17 @@ Classes:
 from __future__ import annotations
 
 import logging
-from typing import Union
+from typing import Optional, Sequence, Union
 
-from overload_web.domain import models
+from sqlmodel import Session, select
+
+from overload_web.domain import protocols
+from overload_web.infrastructure.repositories import tables
 
 logger = logging.getLogger(__name__)
 
 
-class SqlAlchemyRepository:
+class SqlModelRepository(protocols.repositories.SqlRepositoryProtocol[tables.Template]):
     """
     `SQLAlchemy` repository for `Template` objects.
 
@@ -25,10 +28,10 @@ class SqlAlchemyRepository:
         session: a `SQLAlchemy` session.
     """
 
-    def __init__(self, session):
+    def __init__(self, session: Session):
         self.session = session
 
-    def get(self, id: Union[str, int]) -> models.templates.Template:
+    def get(self, id: Union[str, int]) -> Optional[tables.Template]:
         """
         Retrieve a `Template` object by its ID.
 
@@ -38,21 +41,26 @@ class SqlAlchemyRepository:
         Returns:
             a `Template` instance or `None` if not found.
         """
-        return self.session.query(models.templates.Template).filter_by(id=id).first()
+        return self.session.get(tables.Template, id)
 
-    def list(self) -> list[models.templates.Template]:
+    def list(
+        self, offset: Optional[int] = 0, limit: Optional[int] = 0
+    ) -> Sequence[tables.Template]:
         """
         Retrieve all `Template` objects in the database.
 
         Args:
-            None
+            offset: start position of `Template` objects to return
+            limit: the maximum number of `Template` objects to return
 
         Returns:
-            a list of `Template` objects.
+            a sequence of `Template` objects.
         """
-        return self.session.query(models.templates.Template).all()
+        statement = select(tables.Template).offset(offset).limit(limit)
+        results = self.session.exec(statement)
+        return results.all()
 
-    def save(self, obj: models.templates.Template) -> None:
+    def save(self, obj: tables.Template) -> None:
         """
         Adds a new or updated `Template` to the database.
 

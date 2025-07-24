@@ -39,7 +39,7 @@ class _TemplateBase(SQLModel):
 
 
 class Template(_TemplateBase, table=True):
-    id: Annotated[int, Field(default=None, primary_key=True)]
+    id: Annotated[int, Field(default=None, primary_key=True, index=True)]
 
 
 class TemplatePublic(_TemplateBase):
