@@ -59,14 +59,14 @@ class TestBackEndAPIRouter:
         ]
 
     def test_get_template_selector(self):
-        response = self.client.get("/api/forms/template_selector")
-        assert response.status_code == 200
-        assert "Apply Template" in response.text
-
-    def test_get_template_form(self):
         response = self.client.get("/api/forms/templates")
         assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == ["field_constants", "request"]
+        assert "Apply Template" in response.text
+        assert sorted(list(response.context.keys())) == [
+            "field_constants",
+            "request",
+            "template",
+        ]
 
     def test_list_remote_files_get(self):
         response = self.client.get("/api/list-remote-files?vendor=foo")

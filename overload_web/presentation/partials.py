@@ -44,3 +44,18 @@ def get_pvf_button(request: Request):
         "partials/pvf_button.html",
         {"request": request},
     )
+
+
+@htmx_router.get("/template-selector", response_class=HTMLResponse)
+def template_form_selector(
+    request: Request,
+    fields: Annotated[
+        dict[str, str | dict], Depends(dependencies.get_template_form_fields)
+    ],
+) -> HTMLResponse:
+    """Get options for template inputs from application constants."""
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/template_source.html",
+        context={"field_constants": fields},
+    )

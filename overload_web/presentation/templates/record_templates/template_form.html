@@ -1,0 +1,19 @@
+<div class="row gy-1 my-2" id="record-templates">    
+    <div class="col"  id="template-form">
+        <div class="row">
+            <div class="col">
+                <h5>Order Templates</h5>
+                <div class="row gy-1 my-2">
+                    <div name="templates" id="templates" hx-get="/api/templates" hx-target="#template-list" hx-swap="innerHTML" hx-trigger="load"></div>
+                    <div id="template-list"></div>
+                </div>
+            </div>
+            <div class="col" id="template-form-fields">
+               {% include "record_templates/rendered_template.html" %}
+            </div>
+            <div hx-include="#template-form-fields">
+                <button hx-post="/api/template" type="submit" class="btn my-3" style="border-color: #d52828;" hx-indicator="#loading-spinner" hx-target="#template-form">Save Template as New</button>
+            </div>
+        </div>
+    </div>
+</div>

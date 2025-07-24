@@ -1,0 +1,61 @@
+<h5>Template Name</h5>
+<div class="row gy-1 my-2">
+    <div class="col">
+        <div class="form-floating">
+            <input type="text" class="form-control" value="{{ template['name'] if template else value|e }}" name="name" id="name">
+            <label for="name">Name</label>
+        </div>
+    </div>
+    <div class="col">
+        <div class="form-floating">
+            <input type="text" class="form-control" value="{{ template['agent'] if template else value|e }}" name="agent" id="agent">
+            <label for="agent">User</label>
+        </div>
+    </div>                    
+</div>
+
+<h5>Order Fixed Fields</h5>
+<div class="row row-cols-3 gy-1 my-2">
+    {% for field_id, field_data in field_constants["fixed_fields"].items() %}
+    <div class="col">
+        <div class="form-floating">
+            <select class="form-select" name="{{field_id}}", id="{{field_id}}">
+                <option value="" {% if not template %}selected{%endif%}></option>
+                {% for k, v in field_data['options'].items() %}
+                    <option value="{{k}}" {% if template.get(field_id) %}selected{%endif%}>{{k}} ({{v}})</option>
+                {%endfor%}
+            </select>
+            <label for="{{field_id}}">{{field_data['label']}}</label>
+        </div>
+    </div>
+    {% endfor %}        
+</div>
+
+<h5>Order Variable Fields</h5>
+<div class="row row-cols-3 gy-1 my-2">
+    {% for field_id, field_data in field_constants["var_fields"].items() %}
+    <div class="col">
+        <div class="form-floating">
+            <input type="text" class="form-control" value="{{ template[field_id] if template else value|e }}" name="{{field_id}}" id="{{field_id}}">
+            <label for="{{field_id}}">{{field_data['label']}}</label>
+        </div>
+    </div>
+    {% endfor %}        
+</div>
+
+<h5>Sierra Matchpoints</h5> 
+<div class="row row-cols-3 gy-1 my-2">
+    {% for field_id, field_data in field_constants["matchpoints"].items() %}
+    <div class="col">
+        <div class="form-floating">
+            <select class="form-select" name="{{field_id}}", id="{{field_id}}">
+                <option value="" {% if not template %}selected{%endif%}></option>
+                {% for k, v in field_data['options'].items() %}
+                    <option value="{{k}}" {% if template.get(field_id) %}selected{%endif%}>{{k}} ({{v}})</option>
+                {%endfor%}
+            </select>
+            <label for="{{field_id}}">{{field_data['label']}}</label>
+        </div>
+    </div>
+    {% endfor %}       
+</div>

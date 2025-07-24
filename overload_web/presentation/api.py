@@ -36,6 +36,12 @@ def get_session() -> Generator[Session, None, None]:
 
 
 SessionDep = Annotated[Session, Depends(get_session)]
+ContextFormFieldsDep = Annotated[
+    dict[str, str | dict], Depends(dependencies.get_context_form_fields)
+]
+TemplateFormFieldsDep = Annotated[
+    dict[str, str | dict], Depends(dependencies.get_template_form_fields)
+]
 
 api_router = APIRouter(prefix="/api", tags=["api"])
 templates = Jinja2Templates(directory="overload_web/presentation/templates")
@@ -60,9 +66,7 @@ def root() -> JSONResponse:
 @api_router.get("/forms/context", response_class=HTMLResponse)
 def get_context_form(
     request: Request,
-    form_fields: Annotated[
-        dict[str, str | dict], Depends(dependencies.get_context_form_fields)
-    ],
+    form_fields: ContextFormFieldsDep,
 ) -> HTMLResponse:
     """Get options for template inputs from application constants."""
     return templates.TemplateResponse(
@@ -75,9 +79,7 @@ def get_context_form(
 @api_router.get("/forms/disabled-context", response_class=HTMLResponse)
 def get_disabled_context_form(
     request: Request,
-    form_fields: Annotated[
-        dict[str, str | dict], Depends(dependencies.get_context_form_fields)
-    ],
+    fields: ContextFormFieldsDep,
     library: str,
     collection: str,
     record_type: str,
@@ -87,7 +89,7 @@ def get_disabled_context_form(
         request=request,
         name="context/disabled_form.html",
         context={
-            "context_form_fields": form_fields,
+            "context_form_fields": fields,
             "context": {
                 "library": library,
                 "collection": collection,
@@ -100,30 +102,13 @@ def get_disabled_context_form(
 @api_router.get("/forms/templates", response_class=HTMLResponse)
 def template_form(
     request: Request,
-    fields: Annotated[
-        dict[str, str | dict], Depends(dependencies.get_template_form_fields)
-    ],
+    fields: TemplateFormFieldsDep,
 ) -> HTMLResponse:
     """Get options for template inputs from application constants."""
     return templates.TemplateResponse(
         request=request,
-        name="vendor_templates/template_form.html",
-        context={"field_constants": fields},
-    )
-
-
-@api_router.get("/forms/template_selector", response_class=HTMLResponse)
-def template_form_selector(
-    request: Request,
-    fields: Annotated[
-        dict[str, str | dict], Depends(dependencies.get_template_form_fields)
-    ],
-) -> HTMLResponse:
-    """Get options for template inputs from application constants."""
-    return templates.TemplateResponse(
-        request=request,
-        name="partials/template_source.html",
-        context={"field_constants": fields},
+        name="record_templates/template_form.html",
+        context={"field_constants": fields, "template": {}},
     )
 
 
@@ -136,6 +121,7 @@ def create_template(
         Form(),
     ],
     session: SessionDep,
+    fields: TemplateFormFieldsDep,
 ) -> HTMLResponse:
     new_template = {}
     valid_template = repositories.tables.Template.model_validate(template)
@@ -144,26 +130,27 @@ def create_template(
     new_template.update(saved_template.model_dump())
     return templates.TemplateResponse(
         request=request,
-        name="testing/response.html",
-        context={"new_template": new_template},
+        name="record_templates/template_form.html",
+        context={"new_template": new_template, "field_constants": fields},
     )
 
 
-@api_router.get("/template/{template_id}", response_class=HTMLResponse)
+@api_router.get("/template", response_class=HTMLResponse)
 def get_template(
     request: Request,
     template_id: str,
     session: SessionDep,
+    fields: TemplateFormFieldsDep,
 ) -> HTMLResponse:
     template_out = {}
     service = services.template.TemplateService(session=session)
     template = service.get_template(template_id=template_id)
     if template:
-        template_out.update(template.model_dump())
+        template_out.update({k: v for k, v in template.model_dump().items() if v})
     return templates.TemplateResponse(
         request=request,
-        name="testing/response.html",
-        context={"template": template},
+        name="record_templates/rendered_template.html",
+        context={"template": template_out, "field_constants": fields},
     )
 
 
@@ -175,7 +162,7 @@ def get_template_list(
     template_list = service.list_templates(offset=offset, limit=limit)
     return templates.TemplateResponse(
         request=request,
-        name="vendor_templates/template_selector.html",
+        name="record_templates/template_list.html",
         context={"templates": [i.model_dump() for i in template_list]},
     )
 
