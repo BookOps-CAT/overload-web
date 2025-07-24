@@ -19,7 +19,7 @@
                     <div class="col">
                         <div class="form-floating">
                         {% if "options" in field_data %}
-                            <select class="form-select" aria-label="{{field_id}}" name="{{field_id}}", id="{{field_id}}">
+                            <select class="form-select" name="{{field_id}}" id="{{field_id}}">
                                 <option selected value=""></option>       
                                     {% for k, v in field_data['options'].items() %}
                                     <option value="{{k}}">{{k}} ({{v}})</option>
@@ -27,7 +27,7 @@
                             </select>
                             <label for="{{field_id}}">{{field_data['label']}}</label>                                        
                         {%else%}
-                            <input type="text" class="form-control" value="{{ value|e }}" name="{{field_id}}" aria-label="{{field_id}}" id="{{field_id}}">
+                            <input type="text" class="form-control" value="{{ value|e }}" name="{{field_id}}" id="{{field_id}}">
                             <label for="{{field_id}}">{{field_data['label']}}</label>                                          
                         {%endif%}          
                         </div>

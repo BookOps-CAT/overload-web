@@ -3,7 +3,7 @@
     {% for key,val in context_form_fields.items() %}
     <div class="col">
         <div class="form-floating">
-        <select class="form-select" aria-label="{{ key }}" name="{{ key }}", id="{{ key }}" {% if disabled %}disabled{% endif %}>
+        <select class="form-select" name="{{ key }}", id="{{ key }}" {% if disabled %}disabled{% endif %}>
         {% if context %}
             <option selected value="{{ context[val['id']] }}">
                 {{ val['options'][context[key]] }}
