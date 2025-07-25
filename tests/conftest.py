@@ -10,7 +10,6 @@ from pymarc import Field, Indicators, Subfield
 from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.application import dto
-from overload_web.domain import models
 from overload_web.infrastructure import bibs, db
 
 
@@ -294,8 +293,7 @@ def make_bib_dto(stub_bib) -> Callable:
                     ],
                 )
             )
-        return dto.bib.BibDTO(
-            bib=record, domain_bib=models.bibs.DomainBib.from_marc(record)
-        )
+        mapper = bibs.marc.BookopsMarcMapper()
+        return dto.bib.BibDTO(bib=record, domain_bib=mapper.map_bib(record))
 
     return _make_dto

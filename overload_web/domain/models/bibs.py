@@ -7,9 +7,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional, Union
 
-import bookops_marc
-import bookops_marc.models
-
 
 @dataclass(frozen=True)
 class BibId:
@@ -75,30 +72,6 @@ class DomainBib:
         for order in self.orders:
             order.apply_template(template_data=template_data)
 
-    @classmethod
-    def from_marc(cls, bib: bookops_marc.Bib) -> DomainBib:
-        """
-        Factory method used to build a `DomainBib` from a `bookops_marc.Bib` object.
-
-        Args:
-            bib: MARC record represented as a `bookops_marc.Bib` object.
-
-        Returns:
-            DomainBib: domain object populated with structured order and identifier data.
-        """
-        return DomainBib(
-            library=LibrarySystem(bib.library),
-            orders=[Order.from_marc(order=i) for i in bib.orders],
-            bib_id=(BibId(value=bib.sierra_bib_id) if bib.sierra_bib_id else None),
-            upc=bib.upc_number,
-            isbn=bib.isbn,
-            oclc_number=list(bib.oclc_nos.values()),
-            barcodes=bib.barcodes,
-            call_number=(
-                bib.research_call_no if bib.collection == "RL" else bib.branch_call_no
-            ),
-        )
-
 
 class LibrarySystem(Enum):
     """Includes valid values for library system"""
@@ -150,52 +123,6 @@ class Order:
         for k, v in template_data.items():
             if v and k in self.__dict__.keys():
                 setattr(self, k, v)
-
-    @classmethod
-    def from_marc(cls, order: bookops_marc.models.Order) -> Order:
-        """
-        Factory method used to construct an `Order` object from a
-        `bookops_marc.Order` object.
-
-        Args:
-            order: an order from a `bookops_marc.Bib` or `bookops_marc.Order` object
-
-        Returns:
-            an instance of the domain `Order` dataclass populated from MARC data.
-        """
-
-        def from_following_field(code: str):
-            if order._following_field:
-                return order._following_field.get(code, None)
-            return None
-
-        return Order(
-            audience=order.audn,
-            blanket_po=from_following_field("m"),
-            branches=order.branches,
-            copies=order.copies,
-            country=order._field.get("x", None),
-            create_date=order.created,
-            format=order.form,
-            fund=order._field.get("u", None),
-            internal_note=from_following_field("d"),
-            lang=order.lang,
-            locations=order.locs,
-            order_code_1=order._field.get("c", None),
-            order_code_2=order._field.get("d", None),
-            order_code_3=order._field.get("e", None),
-            order_code_4=order._field.get("f", None),
-            order_type=order._field.get("i", None),
-            order_id=(OrderId(value=str(order.order_id)) if order.order_id else None),
-            price=order._field.get("s", None),
-            selector_note=from_following_field("f"),
-            shelves=order.shelves,
-            status=order.status,
-            var_field_isbn=from_following_field("l"),
-            vendor_code=order._field.get("v", None),
-            vendor_notes=order.venNotes,
-            vendor_title_no=from_following_field("i"),
-        )
 
 
 @dataclass(frozen=True)
