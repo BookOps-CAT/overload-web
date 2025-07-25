@@ -1776,5 +1776,30 @@
             "91": "Center for Bkln History",
             "94": "Central Literacy"
         }
-    }    
+    },
+    "context_form": ["record_type", "library", "collection"],
+    "matchpoints": ["primary_matchpoint", "secondary_matchpoint", "tertiary_matchpoint"],
+    "template_var_fields": [
+        "blanket_po",
+        "internal_note",
+        "selector_note",
+        "var_field_isbn",
+        "vendor_notes",
+        "vendor_title_no"
+    ],
+    "template_fixed_fields": [
+    "acquisition_type",
+    "claim_code",
+    "country",
+    "format",
+    "lang",
+    "order_code_1",
+    "order_code_2",
+    "order_code_3",
+    "order_code_4",
+    "order_note",
+    "order_type",
+    "receive_action",
+    "vendor_code"
+    ]  
 }

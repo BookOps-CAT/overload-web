@@ -11,25 +11,16 @@ from overload_web.presentation import schemas
 
 @lru_cache
 def load_constants() -> dict[str, dict[str, str | dict[str, str]]]:
-    with open("overload_web/presentation/constants.json", "r", encoding="utf-8") as fh:
-        constants = json.load(fh)
-    return constants
-
-
-@lru_cache
-def load_form_fields() -> dict[str, list[str]]:
-    with open(
-        "overload_web/presentation/form_fields.json", "r", encoding="utf-8"
-    ) as fh:
+    with open("overload_web/constants.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     return constants
 
 
 def get_context_form_fields(
     constants: Annotated[dict[str, dict], Depends(load_constants)],
-    field_list: Annotated[dict[str, list[str]], Depends(load_form_fields)],
 ) -> dict[str, dict]:
-    return {i: constants[i] for i in field_list["context_form"]}
+    field_list = constants["context_form"]
+    return {i: constants[i] for i in field_list}
 
 
 def get_marc_rules(
@@ -40,21 +31,23 @@ def get_marc_rules(
 
 def get_template_form_fields(
     constants: Annotated[dict[str, dict], Depends(load_constants)],
-    field_list: Annotated[dict[str, list[str]], Depends(load_form_fields)],
 ) -> dict[str, dict]:
-    fixed_fields = {i: constants[i] for i in field_list["template_fixed_fields"]}
-    var_fields = {i: constants[i] for i in field_list["template_var_fields"]}
-    matchpoints = {
+    fixed_field_list = constants["template_fixed_fields"]
+    var_field_list = constants["template_var_fields"]
+    matchpoints = constants["matchpoints"]
+    fixed_fields = {i: constants[i] for i in fixed_field_list}
+    var_fields = {i: constants[i] for i in var_field_list}
+    matchpoint_fields = {
         i: {
             "label": f"{i.split('_')[0].title()}",
             "options": constants["matchpoint_options"],
         }
-        for i in field_list["matchpoints"]
+        for i in matchpoints
     }
     return {
         "fixed_fields": fixed_fields,
         "var_fields": var_fields,
-        "matchpoints": matchpoints,
+        "matchpoints": matchpoint_fields,
     }
 
 

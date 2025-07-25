@@ -9,7 +9,7 @@ from bookops_marc import Bib
 
 @lru_cache
 def load_vendor_rules() -> dict[str, dict[str, str | dict[str, str]]]:
-    with open("overload_web/presentation/constants.json", "r", encoding="utf-8") as fh:
+    with open("overload_web/constants.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     return constants["vendor_rules"]
 
