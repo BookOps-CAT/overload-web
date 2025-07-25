@@ -17,7 +17,7 @@ from sqlmodel import Session, SQLModel, create_engine
 from overload_web import config
 from overload_web.application import services
 from overload_web.domain import models
-from overload_web.infrastructure import db, factories
+from overload_web.infrastructure import db
 from overload_web.presentation import dependencies, schemas
 
 logger = logging.getLogger(__name__)
@@ -194,7 +194,7 @@ def list_remote_files(request: Request, vendor: str) -> HTMLResponse:
     Returns:
         the list of files wrapped in a `HTMLResponse` object
     """
-    service = factories.create_remote_file_service(vendor)
+    service = services.file.FileTransferService.create_remote_file_service(vendor)
     files = service.loader.list(dir=os.environ[f"{vendor.upper()}_SRC"])
     return templates.TemplateResponse(
         request=request,
@@ -263,7 +263,7 @@ def write_local_file(
     dir: str,
 ) -> JSONResponse:
     """Write a file to a local directory."""
-    service = factories.create_local_file_service()
+    service = services.file.FileTransferService.create_local_file_service()
     out_files = service.writer.write(file=vendor_file, dir=dir)
     return JSONResponse(
         content={"app": "Overload Web", "files": out_files, "directory": dir}
@@ -277,7 +277,9 @@ def write_remote_file(
     vendor: str,
 ) -> JSONResponse:
     """Write a file to a remote directory."""
-    service = factories.create_remote_file_service(vendor=vendor)
+    service = services.file.FileTransferService.create_remote_file_service(
+        vendor=vendor
+    )
     out_files = service.writer.write(file=vendor_file, dir=dir)
     return JSONResponse(
         content={"app": "Overload Web", "files": out_files, "directory": dir}

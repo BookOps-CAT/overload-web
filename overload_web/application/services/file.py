@@ -3,7 +3,10 @@
 Uses `FileLoader` and `FileWriter` domain protocols.
 """
 
+from __future__ import annotations
+
 from overload_web.domain import models, protocols
+from overload_web.infrastructure import file_io
 
 
 class FileTransferService:
@@ -59,3 +62,17 @@ class FileTransferService:
             the directory and filename where the file was written.
         """
         return self.writer.write(file=file, dir=dir)
+
+    @classmethod
+    def create_service(cls) -> FileTransferService:
+        return FileTransferService(
+            loader=file_io.local.LocalFileLoader(),
+            writer=file_io.local.LocalFileWriter(),
+        )
+
+    @classmethod
+    def create_remote_file_service(cls, vendor: str) -> FileTransferService:
+        return FileTransferService(
+            loader=file_io.sftp.SFTPFileLoader.create_loader_for_vendor(vendor=vendor),
+            writer=file_io.sftp.SFTPFileWriter.create_writer_for_vendor(vendor=vendor),
+        )
