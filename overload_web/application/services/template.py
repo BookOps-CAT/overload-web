@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional, Sequence, TypeVar
-
-from sqlmodel import Session
+from typing import TYPE_CHECKING, Optional, Sequence
 
 from overload_web.infrastructure import db
 
+if TYPE_CHECKING:  # pragma: no cover
+    from sqlmodel import Session
+
 logger = logging.getLogger(__name__)
-T = TypeVar("T")
 
 
 class TemplateService:

@@ -22,13 +22,16 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Optional, Protocol, Union, runtime_checkable
+from typing import TYPE_CHECKING, Any, Optional, Protocol, Union, runtime_checkable
 
 import requests
 from bookops_bpl_solr import SolrSession
 from bookops_nypl_platform import PlatformSession, PlatformToken
 
 from ... import __title__, __version__
+
+if TYPE_CHECKING:  # pragma: no cover
+    from overload_web.domain import protocols
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +63,7 @@ class SierraBibFetcher:
 
     def _response_to_domain_dict(
         self, records: list[dict[str, Any]]
-    ) -> list[dict[str, Any]]:
+    ) -> list[protocols.bibs.FetcherResponseDict]:
         """
         Converts raw response into dictionaries formatted for the `DomainBib` model.
 
@@ -84,7 +87,9 @@ class SierraBibFetcher:
             ]
         return []
 
-    def get_bibs_by_id(self, value: Union[str, int], key: str) -> list[dict[str, Any]]:
+    def get_bibs_by_id(
+        self, value: Union[str, int], key: str
+    ) -> list[protocols.bibs.FetcherResponseDict]:
         """
         Retrieves bib records by a specific matchpoint (e.g., ISBN, OCLC)
 
@@ -123,13 +128,25 @@ class SierraSessionProtocol(Protocol):
     methods are implemented by all concrete sessions.
     """
 
-    def _get_credentials(self) -> str | PlatformToken: ...
-    def _get_bibs_by_bib_id(self, value: Union[str, int]) -> requests.Response: ...
-    def _get_bibs_by_isbn(self, value: Union[str, int]) -> requests.Response: ...
-    def _get_bibs_by_issn(self, value: Union[str, int]) -> requests.Response: ...
-    def _get_bibs_by_oclc_number(self, value: Union[str, int]) -> requests.Response: ...
-    def _get_bibs_by_upc(self, value: Union[str, int]) -> requests.Response: ...
-    def _parse_response(self, response: requests.Response) -> list[dict[str, Any]]: ...
+    def _get_credentials(self) -> str | PlatformToken: ...  # pragma: no branch
+    def _get_bibs_by_bib_id(
+        self, value: Union[str, int]
+    ) -> requests.Response: ...  # pragma: no branch
+    def _get_bibs_by_isbn(
+        self, value: Union[str, int]
+    ) -> requests.Response: ...  # pragma: no branch
+    def _get_bibs_by_issn(
+        self, value: Union[str, int]
+    ) -> requests.Response: ...  # pragma: no branch
+    def _get_bibs_by_oclc_number(
+        self, value: Union[str, int]
+    ) -> requests.Response: ...  # pragma: no branch
+    def _get_bibs_by_upc(
+        self, value: Union[str, int]
+    ) -> requests.Response: ...  # pragma: no branch
+    def _parse_response(
+        self, response: requests.Response
+    ) -> list[dict[str, Any]]: ...  # pragma: no branch
 
 
 class BPLSolrSession(SolrSession):

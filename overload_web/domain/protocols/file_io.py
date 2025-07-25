@@ -18,7 +18,7 @@ class FileLoader(Protocol):
     Implementations may interact with an FTP/SFTP server or a local file directory.
     """
 
-    def list(self, dir: str) -> list[str]: ...
+    def list(self, dir: str) -> list[str]: ...  # pragma: no branch
 
     """
     List available files.
@@ -30,7 +30,9 @@ class FileLoader(Protocol):
         a list of file names as strings
     """
 
-    def load(self, name: str, dir: str) -> models.files.VendorFile: ...
+    def load(
+        self, name: str, dir: str
+    ) -> models.files.VendorFile: ...  # pragma: no branch
 
     """
     Load the content of a specific file.
@@ -52,7 +54,9 @@ class FileWriter(Protocol):
     Implementations may interact with an FTP/SFTP server or a local file directory.
     """
 
-    def write(self, file: models.files.VendorFile, dir: str) -> str: ...
+    def write(
+        self, file: models.files.VendorFile, dir: str
+    ) -> str: ...  # pragma: no branch
 
     """
     Write a content to a specific file.

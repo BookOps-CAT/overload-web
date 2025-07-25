@@ -16,9 +16,12 @@ Classes:
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Optional
 
-from overload_web.domain import models, protocols
+from overload_web.domain import models
+
+if TYPE_CHECKING:  # pragma: no cover
+    from overload_web.domain import protocols
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +49,7 @@ class BibMatcher:
     def _select_best_match(
         self,
         bib_to_match: models.bibs.DomainBib,
-        candidates: list[dict[str, Any]],
+        candidates: list[protocols.bibs.FetcherResponseDict],
         matchpoints: list[str],
     ) -> Optional[models.bibs.BibId]:
         """

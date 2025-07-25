@@ -29,10 +29,10 @@ class SqlRepositoryProtocol(Protocol[T]):
 
     session: Session
 
-    def get(self, id: str) -> Optional[T]: ...
+    def get(self, id: str) -> Optional[T]: ...  # pragma: no branch
 
     def list(
         self, offset: Optional[int] = 0, limit: Optional[int] = 0
-    ) -> Sequence[T]: ...
+    ) -> Sequence[T]: ...  # pragma: no branch
 
-    def save(self, obj: T) -> None: ...
+    def save(self, obj: T) -> None: ...  # pragma: no branch

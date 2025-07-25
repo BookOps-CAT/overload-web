@@ -6,7 +6,7 @@ Serves HTML pages for Overload Web's user interface.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 frontend_router = APIRouter(tags=["frontend"])
 templates = Jinja2Templates(directory="overload_web/presentation/templates")
 
-CONTEXT: Dict[str, Any] = {"application": "Overload Web"}
+CONTEXT: dict[str, Any] = {"application": "Overload Web"}
 
 
 @frontend_router.get("/", response_class=HTMLResponse)

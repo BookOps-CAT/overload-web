@@ -23,13 +23,24 @@ Protocols:
 from __future__ import annotations
 
 import logging
-from typing import Any, BinaryIO, Protocol, TypeVar, runtime_checkable
+from typing import Any, BinaryIO, Protocol, TypedDict, TypeVar, runtime_checkable
 
 from overload_web.domain import models
 
 T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
+
+
+class FetcherResponseDict(TypedDict):
+    """Defines the dict returned by `BibFetcher.get_bibs_by_id` method"""
+
+    library: str
+    orders: list[str]
+    bib_id: str | None
+    isbn: str | None
+    oclc_number: list[str] | None
+    upc: str | None
 
 
 @runtime_checkable
@@ -42,7 +53,9 @@ class BibFetcher(Protocol):
     NYPL's Platform serivce, or other systems.
     """
 
-    def get_bibs_by_id(self, value: str | int, key: str) -> list[dict[str, Any]]: ...
+    def get_bibs_by_id(
+        self, value: str | int, key: str
+    ) -> list[FetcherResponseDict]: ...  # pragma: no branch
 
     """
     Retrieve candidate bib records that match a key-value identifier.
@@ -70,14 +83,16 @@ class MarcParser(Protocol[T]):
     library: models.bibs.LibrarySystem
     marc_rules: dict[str, dict[str, str]]
 
-    def parse(self, data: BinaryIO | bytes) -> list[T]: ...
+    def parse(self, data: BinaryIO | bytes) -> list[T]: ...  # pragma: no branch
 
     """Convert binary MARC data into a list of `T` objects."""
 
-    def serialize(self, records: list[T]) -> BinaryIO: ...
+    def serialize(self, records: list[T]) -> BinaryIO: ...  # pragma: no branch
 
     """Convert a list of `T` objects into binary MARC data."""
 
-    def update_fields(self, record: T, fields: list[dict[str, Any]]) -> T: ...
+    def update_fields(
+        self, record: T, fields: list[dict[str, Any]]
+    ) -> T: ...  # pragma: no branch
 
     """Provided a list of fields as dicts, update MARC fields in a `T` object"""
