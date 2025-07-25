@@ -52,17 +52,6 @@ def startup_event():
     create_db_and_tables()
 
 
-@api_router.get("/")
-def root() -> JSONResponse:
-    """
-    Root endpoint.
-
-    Returns:
-        JSON response indicating the application is active.
-    """
-    return JSONResponse(content={"app": "Overload Web"})
-
-
 @api_router.get("/forms/context", response_class=HTMLResponse)
 def get_context_form(
     request: Request,

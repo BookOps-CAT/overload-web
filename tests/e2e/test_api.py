@@ -22,11 +22,6 @@ class TestBackEndAPIRouter:
     client = TestClient(api_router)
     base_url = client.base_url
 
-    def test_root_get(self):
-        response = self.client.get("/api/")
-        assert response.status_code == 200
-        assert response.json() == {"app": "Overload Web"}
-
     def test_get_context_form(self):
         response = self.client.get("/api/forms/context")
         assert response.status_code == 200
