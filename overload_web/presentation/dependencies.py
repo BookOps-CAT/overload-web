@@ -1,10 +1,12 @@
 import json
 import os
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, Generator
 
 from fastapi import Depends, Form, UploadFile
+from sqlmodel import Session, SQLModel, create_engine
 
+from overload_web import config
 from overload_web.application import services
 from overload_web.presentation import schemas
 
@@ -14,6 +16,19 @@ def load_constants() -> dict[str, dict[str, str | dict[str, str]]]:
     with open("overload_web/constants.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     return constants
+
+
+uri = config.get_postgres_uri()
+engine = create_engine(uri)
+
+
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
+
+
+def get_session() -> Generator[Session, None, None]:
+    with Session(engine) as session:
+        yield session
 
 
 def get_context_form_fields(
@@ -48,6 +63,7 @@ def get_template_form_fields(
         "fixed_fields": fixed_fields,
         "var_fields": var_fields,
         "matchpoints": matchpoint_fields,
+        "bib_formats": constants["material_form"],
     }
 
 

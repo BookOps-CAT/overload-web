@@ -43,6 +43,25 @@
     {% endfor %}        
 </div>
 
+<h5>Sierra Bib Format</h5> 
+<div class="row row-cols-3 gy-1 my-2">
+    <div class="col">
+        <div class="form-floating">
+            <select class="form-select" name="material_form", id="material_form">
+                <option value="" {% if not template %}selected{%endif%}></option>
+                {% for k, v in field_constants['bib_formats']['options'].items() %}
+                    {% if template.get("material_form") %}    
+                    <option value="{{k}}" selected>{{k}} ({{v}})</option>
+                    {% else %}
+                    <option value="{{k}}">{{k}} ({{v}})</option>
+                    {%endif%}
+                {%endfor%}
+            </select>
+            <label for="material_form">{{field_constants['bib_formats']['label']}}</label>
+        </div>
+    </div>   
+</div>
+
 <h5>Sierra Matchpoints</h5> 
 <div class="row row-cols-3 gy-1 my-2">
     {% for field_id, field_data in field_constants["matchpoints"].items() %}

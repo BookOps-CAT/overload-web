@@ -10,10 +10,10 @@
             </div>
             <div class="col" id="template-form-fields">
                {% include "record_templates/rendered_template.html" %}
-            </div>
-            <div hx-include="#template-form-fields">
-                <button hx-post="/api/template" type="submit" class="btn my-3" style="border-color: #d52828;" hx-indicator="#loading-spinner" hx-target="#template-form">Save Template as New</button>
-            </div>
+                <div hx-include="#template-form-fields">
+                    <button hx-post="/api/template" type="submit" class="btn my-3" style="border-color: #d52828;" hx-indicator="#loading-spinner" hx-target="#template-form">Save Template as New</button>
+                </div>
+            </div>                
         </div>
     </div>
 </div>

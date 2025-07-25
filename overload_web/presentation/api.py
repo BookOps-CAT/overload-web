@@ -7,14 +7,13 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Annotated, Generator
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session
 
-from overload_web import config
 from overload_web.application import services
 from overload_web.domain import models
 from overload_web.infrastructure import db
@@ -22,20 +21,8 @@ from overload_web.presentation import dependencies, schemas
 
 logger = logging.getLogger(__name__)
 
-uri = config.get_postgres_uri()
-engine = create_engine(uri)
 
-
-def create_db_and_tables():
-    SQLModel.metadata.create_all(engine)
-
-
-def get_session() -> Generator[Session, None, None]:
-    with Session(engine) as session:
-        yield session
-
-
-SessionDep = Annotated[Session, Depends(get_session)]
+SessionDep = Annotated[Session, Depends(dependencies.get_session)]
 ContextFormFieldsDep = Annotated[
     dict[str, str | dict], Depends(dependencies.get_context_form_fields)
 ]
@@ -49,7 +36,7 @@ templates = Jinja2Templates(directory="overload_web/presentation/templates")
 
 @api_router.on_event("startup")
 def startup_event():
-    create_db_and_tables()
+    dependencies.create_db_and_tables()
 
 
 @api_router.get("/forms/context", response_class=HTMLResponse)
@@ -120,7 +107,10 @@ def create_template(
     return templates.TemplateResponse(
         request=request,
         name="record_templates/template_form.html",
-        context={"new_template": new_template, "field_constants": fields},
+        context={
+            "template": new_template,
+            "field_constants": fields,
+        },
     )
 
 
