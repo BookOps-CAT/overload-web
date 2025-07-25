@@ -64,7 +64,7 @@ class FileTransferService:
         return self.writer.write(file=file, dir=dir)
 
     @classmethod
-    def create_service(cls) -> FileTransferService:
+    def create_local_file_service(cls) -> FileTransferService:
         return FileTransferService(
             loader=file_io.local.LocalFileLoader(),
             writer=file_io.local.LocalFileWriter(),
