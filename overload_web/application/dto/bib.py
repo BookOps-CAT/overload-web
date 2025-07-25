@@ -2,7 +2,7 @@
 
 from bookops_marc import Bib
 
-from overload_web.domain.models import bibs
+from overload_web.domain import models
 
 
 class BibDTO:
@@ -18,6 +18,6 @@ class BibDTO:
 
     """
 
-    def __init__(self, bib: Bib, domain_bib: bibs.DomainBib):
+    def __init__(self, bib: Bib, domain_bib: models.bibs.DomainBib):
         self.bib = bib
         self.domain_bib = domain_bib
