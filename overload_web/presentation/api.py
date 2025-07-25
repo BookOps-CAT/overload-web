@@ -39,55 +39,6 @@ def startup_event():
     dependencies.create_db_and_tables()
 
 
-@api_router.get("/forms/context", response_class=HTMLResponse)
-def get_context_form(
-    request: Request,
-    form_fields: ContextFormFieldsDep,
-) -> HTMLResponse:
-    """Get options for template inputs from application constants."""
-    return templates.TemplateResponse(
-        request=request,
-        name="context/form.html",
-        context={"context_form_fields": form_fields},
-    )
-
-
-@api_router.get("/forms/disabled-context", response_class=HTMLResponse)
-def get_disabled_context_form(
-    request: Request,
-    fields: ContextFormFieldsDep,
-    library: str,
-    collection: str,
-    record_type: str,
-) -> HTMLResponse:
-    """Get options for template inputs from application constants."""
-    return templates.TemplateResponse(
-        request=request,
-        name="context/disabled_form.html",
-        context={
-            "context_form_fields": fields,
-            "context": {
-                "library": library,
-                "collection": collection,
-                "record_type": record_type,
-            },
-        },
-    )
-
-
-@api_router.get("/forms/templates", response_class=HTMLResponse)
-def template_form(
-    request: Request,
-    fields: TemplateFormFieldsDep,
-) -> HTMLResponse:
-    """Get options for template inputs from application constants."""
-    return templates.TemplateResponse(
-        request=request,
-        name="record_templates/template_form.html",
-        context={"field_constants": fields, "template": {}},
-    )
-
-
 @api_router.post("/template", response_class=HTMLResponse)
 def create_template(
     request: Request,
@@ -121,11 +72,11 @@ def get_template(
     session: SessionDep,
     fields: TemplateFormFieldsDep,
 ) -> HTMLResponse:
-    template_out = {}
     service = services.template.TemplateService(session=session)
     template = service.get_template(template_id=template_id)
-    if template:
-        template_out.update({k: v for k, v in template.model_dump().items() if v})
+    template_out = (
+        {k: v for k, v in template.model_dump().items() if v} if template else {}
+    )
     return templates.TemplateResponse(
         request=request,
         name="record_templates/rendered_template.html",

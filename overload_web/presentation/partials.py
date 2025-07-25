@@ -16,6 +16,13 @@ logger = logging.getLogger(__name__)
 htmx_router = APIRouter(prefix="/htmx", tags=["htmx"])
 templates = Jinja2Templates(directory="overload_web/presentation/templates")
 
+ContextFormFieldsDep = Annotated[
+    dict[str, str | dict], Depends(dependencies.get_context_form_fields)
+]
+TemplateFormFieldsDep = Annotated[
+    dict[str, str | dict], Depends(dependencies.get_template_form_fields)
+]
+
 
 @htmx_router.get("/file-source", response_class=HTMLResponse)
 def get_file_source(request: Request):
@@ -46,7 +53,7 @@ def get_pvf_button(request: Request):
     )
 
 
-@htmx_router.get("/template-selector", response_class=HTMLResponse)
+@htmx_router.get("/apply-template-button", response_class=HTMLResponse)
 def template_form_selector(
     request: Request,
     fields: Annotated[
@@ -58,4 +65,53 @@ def template_form_selector(
         request=request,
         name="partials/template_source.html",
         context={"field_constants": fields},
+    )
+
+
+@htmx_router.get("/forms/context", response_class=HTMLResponse)
+def get_context_form(
+    request: Request,
+    form_fields: ContextFormFieldsDep,
+) -> HTMLResponse:
+    """Get options for template inputs from application constants."""
+    return templates.TemplateResponse(
+        request=request,
+        name="context/form.html",
+        context={"context_form_fields": form_fields},
+    )
+
+
+@htmx_router.get("/forms/disabled-context", response_class=HTMLResponse)
+def get_disabled_context_form(
+    request: Request,
+    fields: ContextFormFieldsDep,
+    library: str,
+    collection: str,
+    record_type: str,
+) -> HTMLResponse:
+    """Get options for template inputs from application constants."""
+    return templates.TemplateResponse(
+        request=request,
+        name="context/disabled_form.html",
+        context={
+            "context_form_fields": fields,
+            "context": {
+                "library": library,
+                "collection": collection,
+                "record_type": record_type,
+            },
+        },
+    )
+
+
+@htmx_router.get("/forms/templates", response_class=HTMLResponse)
+def get_template_form(
+    request: Request,
+    fields: TemplateFormFieldsDep,
+) -> HTMLResponse:
+    """Get options for template inputs from application constants."""
+    return templates.TemplateResponse(
+        request=request,
+        name="record_templates/template_form.html",
+        context={"field_constants": fields, "template": {}},
     )
