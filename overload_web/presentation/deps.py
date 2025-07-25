@@ -31,20 +31,20 @@ def get_session() -> Generator[Session, None, None]:
         yield session
 
 
-def get_context_form_fields(
+def context_form_fields(
     constants: Annotated[dict[str, dict], Depends(load_constants)],
 ) -> dict[str, dict]:
     field_list = constants["context_form"]
     return {i: constants[i] for i in field_list}
 
 
-def get_marc_rules(
+def marc_rules(
     constants: Annotated[dict[str, dict], Depends(load_constants)],
 ) -> dict[str, dict]:
     return constants["marc_mapping"]
 
 
-def get_template_form_fields(
+def template_form_fields(
     constants: Annotated[dict[str, dict], Depends(load_constants)],
 ) -> dict[str, dict]:
     fixed_field_list = constants["template_fixed_fields"]

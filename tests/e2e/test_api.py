@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.main import app
-from overload_web.presentation import dependencies
+from overload_web.presentation import deps
 
 
 def stub_sql_session():
@@ -18,7 +18,7 @@ def test_api_startup(monkeypatch):
         test_engine = create_engine("sqlite:///:memory:")
         SQLModel.metadata.create_all(test_engine)
 
-    monkeypatch.setattr(dependencies, "create_db_and_tables", stub_tables)
+    monkeypatch.setattr(deps, "create_db_and_tables", stub_tables)
 
     with TestClient(app) as client:
         response = client.get("/")
@@ -28,7 +28,7 @@ def test_api_startup(monkeypatch):
 @pytest.mark.usefixtures("mock_sierra_response", "mock_sftp_client")
 class TestApp:
     client = TestClient(app)
-    app.dependency_overrides[dependencies.get_session] = stub_sql_session
+    app.dependency_overrides[deps.get_session] = stub_sql_session
     base_url = client.base_url
 
     def test_root_get(self):

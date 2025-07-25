@@ -59,9 +59,7 @@ def vendor_file_page(
 
 @frontend_router.post("/process", response_class=HTMLResponse)
 def post_context_form_new(
-    record_type: str = Form(...),
-    library: str = Form(...),
-    collection: str = Form(...),
+    record_type: str = Form(...), library: str = Form(...), collection: str = Form(...)
 ) -> RedirectResponse:
     """
     Takes input from form on `process.html` and redirects to appropriate

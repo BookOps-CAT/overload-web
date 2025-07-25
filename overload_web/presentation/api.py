@@ -17,26 +17,21 @@ from sqlmodel import Session
 from overload_web.application import services
 from overload_web.domain import models
 from overload_web.infrastructure import db
-from overload_web.presentation import dependencies, schemas
+from overload_web.presentation import deps, schemas
 
 logger = logging.getLogger(__name__)
-
-
-SessionDep = Annotated[Session, Depends(dependencies.get_session)]
-ContextFormFieldsDep = Annotated[
-    dict[str, str | dict], Depends(dependencies.get_context_form_fields)
-]
-TemplateFormFieldsDep = Annotated[
-    dict[str, str | dict], Depends(dependencies.get_template_form_fields)
-]
-
 api_router = APIRouter(prefix="/api", tags=["api"])
 templates = Jinja2Templates(directory="overload_web/presentation/templates")
 
 
+SessionDep = Annotated[Session, Depends(deps.get_session)]
+ContextFormDep = Annotated[dict[str, str | dict], Depends(deps.context_form_fields)]
+TemplateFormDep = Annotated[dict[str, str | dict], Depends(deps.template_form_fields)]
+
+
 @api_router.on_event("startup")
 def startup_event():
-    dependencies.create_db_and_tables()
+    deps.create_db_and_tables()
 
 
 @api_router.post("/template", response_class=HTMLResponse)
@@ -48,7 +43,7 @@ def create_template(
         Form(),
     ],
     session: SessionDep,
-    fields: TemplateFormFieldsDep,
+    fields: TemplateFormDep,
 ) -> HTMLResponse:
     new_template = {}
     valid_template = db.tables.Template.model_validate(template)
@@ -70,7 +65,7 @@ def get_template(
     request: Request,
     template_id: str,
     session: SessionDep,
-    fields: TemplateFormFieldsDep,
+    fields: TemplateFormDep,
 ) -> HTMLResponse:
     service = services.template.TemplateService(session=session)
     template = service.get_template(template_id=template_id)
@@ -139,16 +134,12 @@ def process_vendor_file(
     record_type: Annotated[models.bibs.RecordType, Form(...)],
     library: Annotated[models.bibs.LibrarySystem, Form(...)],
     collection: Annotated[models.bibs.Collection, Form(...)],
-    files: Annotated[
-        list[schemas.VendorFileModel], Depends(dependencies.normalize_files)
-    ],
+    files: Annotated[list[schemas.VendorFileModel], Depends(deps.normalize_files)],
     template_input: Annotated[
         schemas.TemplateModel, Depends(schemas.TemplateModel.from_form_data)
     ],
-    marc_rules: Annotated[
-        dict[str, dict[str, str]], Depends(dependencies.get_marc_rules)
-    ],
-):
+    marc_rules: Annotated[dict[str, dict[str, str]], Depends(deps.marc_rules)],
+) -> HTMLResponse:
     service = services.records.RecordProcessingService(
         library=library,
         collection=collection,
