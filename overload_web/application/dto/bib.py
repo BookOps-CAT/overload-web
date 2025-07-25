@@ -1,8 +1,13 @@
 """This modules contains data transfer objects (DTOs) for the application."""
 
-from bookops_marc import Bib
+from __future__ import annotations
 
-from overload_web.domain import models
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bookops_marc import Bib
+
+    from overload_web.domain import models
 
 
 class BibDTO:
