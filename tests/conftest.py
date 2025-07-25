@@ -11,8 +11,7 @@ from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.application import dto
 from overload_web.domain import models
-from overload_web.infrastructure.bibs import sierra
-from overload_web.infrastructure.repositories import tables
+from overload_web.infrastructure import bibs, db
 
 
 @pytest.fixture(autouse=True)
@@ -50,7 +49,7 @@ def test_sql_session():
 @pytest.fixture
 def make_template():
     def _make_template(data):
-        template = tables.Template(**data)
+        template = db.tables.Template(**data)
         return template
 
     return _make_template
@@ -90,7 +89,7 @@ def mock_sierra_no_response(mock_sierra_response, monkeypatch):
     monkeypatch.setattr("requests.Session.get", response_none)
 
 
-class FakeSierraSession(sierra.SierraSessionProtocol):
+class FakeSierraSession(bibs.sierra.SierraSessionProtocol):
     def __init__(self) -> None:
         self.credentials = self._get_credentials()
 
@@ -100,7 +99,9 @@ def mock_session(monkeypatch):
     def mock_response(*args, **kwargs):
         return [{"id": "123456789"}]
 
-    monkeypatch.setattr(sierra.SierraSessionProtocol, "_parse_response", mock_response)
+    monkeypatch.setattr(
+        bibs.sierra.SierraSessionProtocol, "_parse_response", mock_response
+    )
     return FakeSierraSession()
 
 

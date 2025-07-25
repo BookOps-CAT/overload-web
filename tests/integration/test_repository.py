@@ -1,10 +1,10 @@
 import pytest
 
-from overload_web.infrastructure.repositories import repository
+from overload_web.infrastructure import db
 
 
 def test_SqlModelRepository(test_sql_session):
-    repo = repository.SqlModelRepository(session=test_sql_session)
+    repo = db.repository.SqlModelRepository(session=test_sql_session)
     assert hasattr(repo, "session")
 
 
@@ -18,7 +18,7 @@ def test_SqlModelRepository(test_sql_session):
     ],
 )
 def test_save_template(id, name, agent, test_sql_session, make_template):
-    repo = repository.SqlModelRepository(session=test_sql_session)
+    repo = db.repository.SqlModelRepository(session=test_sql_session)
     template = make_template(
         data={
             "id": id,

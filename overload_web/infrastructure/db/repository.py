@@ -15,7 +15,7 @@ from typing import Optional, Sequence, Union
 from sqlmodel import Session, select
 
 from overload_web.domain import protocols
-from overload_web.infrastructure.repositories import tables
+from overload_web.infrastructure.db import tables
 
 logger = logging.getLogger(__name__)
 

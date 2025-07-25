@@ -7,7 +7,7 @@ from typing import Optional, Sequence, TypeVar
 
 from sqlmodel import Session
 
-from overload_web.infrastructure.repositories import repository, tables
+from overload_web.infrastructure import db
 
 logger = logging.getLogger(__name__)
 T = TypeVar("T")
@@ -24,9 +24,9 @@ class TemplateService:
             session: a `sqlmodel.Session` object.
         """
         self.session = session
-        self.repo = repository.SqlModelRepository(session=session)
+        self.repo = db.repository.SqlModelRepository(session=session)
 
-    def get_template(self, template_id: str) -> Optional[tables.Template]:
+    def get_template(self, template_id: str) -> Optional[db.tables.Template]:
         """
         Retrieve a template by its ID.
 
@@ -40,7 +40,7 @@ class TemplateService:
 
     def list_templates(
         self, offset: Optional[int] = 0, limit: Optional[int] = 20
-    ) -> Sequence[tables.Template]:
+    ) -> Sequence[db.tables.Template]:
         """
         Retrieve a list of templates in the database.
 
@@ -53,7 +53,7 @@ class TemplateService:
         """
         return self.repo.list(offset=offset, limit=limit)
 
-    def save_template(self, obj: tables.Template) -> tables.Template:
+    def save_template(self, obj: db.tables.Template) -> db.tables.Template:
         """
         Save a template.
 

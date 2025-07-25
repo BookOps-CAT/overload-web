@@ -17,7 +17,7 @@ from sqlmodel import Session, SQLModel, create_engine
 from overload_web import config
 from overload_web.application import services
 from overload_web.domain import models
-from overload_web.infrastructure import factories, repositories
+from overload_web.infrastructure import db, factories
 from overload_web.presentation import dependencies, schemas
 
 logger = logging.getLogger(__name__)
@@ -116,15 +116,15 @@ def template_form(
 def create_template(
     request: Request,
     template: Annotated[
-        repositories.tables.TemplateCreate,
-        Depends(repositories.tables.TemplateCreate.from_form),
+        db.tables.TemplateCreate,
+        Depends(db.tables.TemplateCreate.from_form),
         Form(),
     ],
     session: SessionDep,
     fields: TemplateFormFieldsDep,
 ) -> HTMLResponse:
     new_template = {}
-    valid_template = repositories.tables.Template.model_validate(template)
+    valid_template = db.tables.Template.model_validate(template)
     service = services.template.TemplateService(session=session)
     saved_template = service.save_template(obj=valid_template)
     new_template.update(saved_template.model_dump())
@@ -171,7 +171,7 @@ def get_template_list(
 # def update_template(
 #     request: Request,
 #     template_id: str,
-#     template: repositories.models.TemplateUpdate,
+#     template: db.models.TemplateUpdate,
 #     uow: UOWDep,
 # ) -> HTMLResponse:
 #     service = services.template.TemplateService(uow=uow)
