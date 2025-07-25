@@ -10,7 +10,7 @@ Classes:
 from __future__ import annotations
 
 import logging
-from typing import Optional, Sequence, Union
+from typing import Sequence
 
 from sqlmodel import Session, select
 
@@ -31,7 +31,7 @@ class SqlModelRepository(protocols.repositories.SqlRepositoryProtocol[tables.Tem
     def __init__(self, session: Session):
         self.session = session
 
-    def get(self, id: Union[str, int]) -> Optional[tables.Template]:
+    def get(self, id: str | int) -> tables.Template | None:
         """
         Retrieve a `Template` object by its ID.
 
@@ -44,7 +44,7 @@ class SqlModelRepository(protocols.repositories.SqlRepositoryProtocol[tables.Tem
         return self.session.get(tables.Template, id)
 
     def list(
-        self, offset: Optional[int] = 0, limit: Optional[int] = 0
+        self, offset: int | None = 0, limit: int | None = 0
     ) -> Sequence[tables.Template]:
         """
         Retrieve all `Template` objects in the database.

@@ -10,9 +10,10 @@ Protocols:
 from __future__ import annotations
 
 import logging
-from typing import Optional, Protocol, Sequence, TypeVar, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, Sequence, TypeVar, runtime_checkable
 
-from sqlmodel import Session
+if TYPE_CHECKING:  # pragma: no cover
+    from sqlmodel import Session
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +30,10 @@ class SqlRepositoryProtocol(Protocol[T]):
 
     session: Session
 
-    def get(self, id: str) -> Optional[T]: ...  # pragma: no branch
+    def get(self, id: str) -> T | None: ...  # pragma: no branch
 
     def list(
-        self, offset: Optional[int] = 0, limit: Optional[int] = 0
+        self, offset: int | None = 0, limit: int | None = 0
     ) -> Sequence[T]: ...  # pragma: no branch
 
     def save(self, obj: T) -> None: ...  # pragma: no branch

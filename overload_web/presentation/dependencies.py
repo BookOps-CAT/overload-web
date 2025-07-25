@@ -1,11 +1,11 @@
 import json
 import os
 from functools import lru_cache
-from typing import Annotated, Union
+from typing import Annotated
 
 from fastapi import Depends, Form, UploadFile
 
-from overload_web.infrastructure import factories
+from overload_web.application import services
 from overload_web.presentation import schemas
 
 
@@ -53,7 +53,7 @@ def get_template_form_fields(
 
 def normalize_files(
     source: Annotated[str, Form(...)],
-    files: Annotated[Union[list[UploadFile], list[str]], Form(...)],
+    files: Annotated[list[UploadFile] | list[str], Form(...)],
     vendor: Annotated[str, Form(...)],
 ) -> list[schemas.VendorFileModel]:
     if source == "remote" and not vendor:
@@ -80,7 +80,7 @@ def normalize_files(
         )
     if remote_files and vendor:
         vendor_dir = os.environ[f"{vendor.upper()}_SRC"]
-        service = factories.create_remote_file_service(vendor)
+        service = services.file.FileTransferService.create_remote_file_service(vendor)
         loaded_files = [
             service.loader.load(name=f, dir=vendor_dir) for f in remote_files
         ]

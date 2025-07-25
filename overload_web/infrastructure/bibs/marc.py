@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 import datetime
 import io
-from typing import Any, BinaryIO
+from typing import BinaryIO
 
 from bookops_marc import Bib, SierraBibReader
 from bookops_marc.models import Order
@@ -89,7 +89,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
         return io_data
 
     def update_fields(
-        self, record: dto.bib.BibDTO, fields: list[dict[str, Any]]
+        self, record: dto.bib.BibDTO, fields: list[dict[str, str]]
     ) -> dto.bib.BibDTO:
         """
         Update a `BibDTO` object's `Bib` attribute with new fields and order data.

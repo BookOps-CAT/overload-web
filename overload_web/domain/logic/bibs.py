@@ -16,7 +16,7 @@ Classes:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from overload_web.domain import models
 
@@ -51,7 +51,7 @@ class BibMatcher:
         bib_to_match: models.bibs.DomainBib,
         candidates: list[protocols.bibs.FetcherResponseDict],
         matchpoints: list[str],
-    ) -> Optional[models.bibs.BibId]:
+    ) -> models.bibs.BibId | None:
         """
         Compare a `DomainBib` to a list of candidate bibs and select the best match.
 

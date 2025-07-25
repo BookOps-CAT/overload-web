@@ -7,7 +7,7 @@ compatibility with pydantic while minimizing amount of repeated code.
 from __future__ import annotations
 
 import datetime
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import Form
 from pydantic import BaseModel, ConfigDict, field_serializer
@@ -29,32 +29,32 @@ class TemplateModel(BaseModel, models.templates.Template):
     @classmethod
     def from_form_data(
         cls,
-        agent: Annotated[Optional[str], Form()] = None,
-        name: Annotated[Optional[str], Form()] = None,
-        id: Annotated[Optional[str], Form()] = None,
-        blanket_po: Annotated[Optional[str], Form()] = None,
-        copies: Annotated[Optional[str | int], Form()] = None,
-        country: Annotated[Optional[str], Form()] = None,
-        create_date: Annotated[Optional[datetime.datetime | str], Form()] = None,
-        format: Annotated[Optional[str], Form()] = None,
-        fund: Annotated[Optional[str], Form()] = None,
-        internal_note: Annotated[Optional[str], Form()] = None,
-        lang: Annotated[Optional[str], Form()] = None,
-        order_code_1: Annotated[Optional[str], Form()] = None,
-        order_code_2: Annotated[Optional[str], Form()] = None,
-        order_code_3: Annotated[Optional[str], Form()] = None,
-        order_code_4: Annotated[Optional[str], Form()] = None,
-        order_type: Annotated[Optional[str], Form()] = None,
-        price: Annotated[Optional[str | int], Form()] = None,
-        selector_note: Annotated[Optional[str], Form()] = None,
-        status: Annotated[Optional[str], Form()] = None,
-        vendor_code: Annotated[Optional[str], Form()] = None,
-        var_field_isbn: Annotated[Optional[str], Form()] = None,
-        vendor_notes: Annotated[Optional[str], Form()] = None,
-        vendor_title_no: Annotated[Optional[str], Form()] = None,
-        primary: Annotated[Optional[str], Form()] = None,
-        secondary: Annotated[Optional[str], Form()] = None,
-        tertiary: Annotated[Optional[str], Form()] = None,
+        agent: Annotated[str | None, Form()] = None,
+        name: Annotated[str | None, Form()] = None,
+        id: Annotated[str | None, Form()] = None,
+        blanket_po: Annotated[str | None, Form()] = None,
+        copies: Annotated[str | int | None, Form()] = None,
+        country: Annotated[str | None, Form()] = None,
+        create_date: Annotated[datetime.datetime | str | None, Form()] = None,
+        format: Annotated[str | None, Form()] = None,
+        fund: Annotated[str | None, Form()] = None,
+        internal_note: Annotated[str | None, Form()] = None,
+        lang: Annotated[str | None, Form()] = None,
+        order_code_1: Annotated[str | None, Form()] = None,
+        order_code_2: Annotated[str | None, Form()] = None,
+        order_code_3: Annotated[str | None, Form()] = None,
+        order_code_4: Annotated[str | None, Form()] = None,
+        order_type: Annotated[str | None, Form()] = None,
+        price: Annotated[str | int | None, Form()] = None,
+        selector_note: Annotated[str | None, Form()] = None,
+        status: Annotated[str | None, Form()] = None,
+        vendor_code: Annotated[str | None, Form()] = None,
+        var_field_isbn: Annotated[str | None, Form()] = None,
+        vendor_notes: Annotated[str | None, Form()] = None,
+        vendor_title_no: Annotated[str | None, Form()] = None,
+        primary: Annotated[str | None, Form()] = None,
+        secondary: Annotated[str | None, Form()] = None,
+        tertiary: Annotated[str | None, Form()] = None,
     ) -> TemplateModel:
         """
         Create a `TemplateModel` instance from multipart/form-data submission.

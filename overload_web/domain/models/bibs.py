@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -55,11 +55,11 @@ class DomainBib:
 
     library: LibrarySystem
     orders: list[Order]
-    bib_id: Optional[BibId] = None
-    isbn: Optional[str] = None
-    oclc_number: Optional[Union[str, list[str]]] = None
-    upc: Optional[str] = None
-    call_number: Optional[Union[str, list[str]]] = None
+    bib_id: BibId | None = None
+    isbn: str | None = None
+    oclc_number: str | list[str] | None = None
+    upc: str | None = None
+    call_number: str | list[str] | None = None
     barcodes: list[str] = field(default_factory=list)
 
     def apply_template(self, template_data: dict[str, Any]) -> None:
@@ -88,30 +88,30 @@ class Order:
     """A domain model representing a Sierra order."""
 
     audience: list[str]
-    blanket_po: Optional[str]
+    blanket_po: str | None
     branches: list[str]
-    copies: Optional[Union[str, int]]
-    country: Optional[str]
-    create_date: Optional[Union[datetime.datetime, datetime.date, str]]
-    format: Optional[str]
-    fund: Optional[str]
-    internal_note: Optional[str]
-    lang: Optional[str]
+    copies: str | int | None
+    country: str | None
+    create_date: datetime.datetime | datetime.date | str | None
+    format: str | None
+    fund: str | None
+    internal_note: str | None
+    lang: str | None
     locations: list[str]
-    order_code_1: Optional[str]
-    order_code_2: Optional[str]
-    order_code_3: Optional[str]
-    order_code_4: Optional[str]
-    order_id: Optional[OrderId]
-    order_type: Optional[str]
-    price: Optional[Union[str, int]]
-    selector_note: Optional[str]
+    order_code_1: str | None
+    order_code_2: str | None
+    order_code_3: str | None
+    order_code_4: str | None
+    order_id: OrderId | None
+    order_type: str | None
+    price: str | int | None
+    selector_note: str | None
     shelves: list[str]
-    status: Optional[str]
-    var_field_isbn: Optional[str]
-    vendor_code: Optional[str]
-    vendor_notes: Optional[str]
-    vendor_title_no: Optional[str]
+    status: str | None
+    var_field_isbn: str | None
+    vendor_code: str | None
+    vendor_notes: str | None
+    vendor_title_no: str | None
 
     def apply_template(self, template_data: dict[str, Any]) -> None:
         """

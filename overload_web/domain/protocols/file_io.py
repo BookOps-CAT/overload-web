@@ -5,9 +5,12 @@ and allow for the `FileTransferService` to remain decoupled from any
 specific data source.
 """
 
-from typing import Protocol, runtime_checkable
+from __future__ import annotations
 
-from overload_web.domain import models
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
+
+if TYPE_CHECKING:  # pragma: no cover
+    from overload_web.domain import models
 
 
 @runtime_checkable

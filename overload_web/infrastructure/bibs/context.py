@@ -1,10 +1,13 @@
 """Defines context used for record processing."""
 
+from __future__ import annotations
+
 import json
 from functools import lru_cache
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from bookops_marc import Bib
+if TYPE_CHECKING:  # pragma: no cover
+    from bookops_marc import Bib
 
 
 @lru_cache

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass, field
-from typing import Optional, Union
 
 
 @dataclass
@@ -20,9 +19,9 @@ class Matchpoints:
         tertiary: tertiary field to match on.
     """
 
-    primary: Optional[str] = None
-    secondary: Optional[str] = None
-    tertiary: Optional[str] = None
+    primary: str | None = None
+    secondary: str | None = None
+    tertiary: str | None = None
 
     def __init__(self, *args, **kwargs):
         """
@@ -79,30 +78,30 @@ class Template:
     """
 
     matchpoints: Matchpoints = field(default_factory=Matchpoints)
-    agent: Optional[str] = None
-    id: Optional[TemplateId] = None
-    name: Optional[str] = None
+    agent: str | None = None
+    id: TemplateId | None = None
+    name: str | None = None
 
-    blanket_po: Optional[str] = None
-    copies: Optional[Union[str, int]] = None
-    country: Optional[str] = None
-    create_date: Optional[Union[datetime.datetime, datetime.date, str]] = None
-    format: Optional[str] = None
-    fund: Optional[str] = None
-    internal_note: Optional[str] = None
-    lang: Optional[str] = None
-    order_code_1: Optional[str] = None
-    order_code_2: Optional[str] = None
-    order_code_3: Optional[str] = None
-    order_code_4: Optional[str] = None
-    order_type: Optional[str] = None
-    price: Optional[Union[str, int]] = None
-    selector_note: Optional[str] = None
-    status: Optional[str] = None
-    var_field_isbn: Optional[str] = None
-    vendor_code: Optional[str] = None
-    vendor_notes: Optional[str] = None
-    vendor_title_no: Optional[str] = None
+    blanket_po: str | None = None
+    copies: str | int | None = None
+    country: str | None = None
+    create_date: datetime.datetime | datetime.date | str | None = None
+    format: str | None = None
+    fund: str | None = None
+    internal_note: str | None = None
+    lang: str | None = None
+    order_code_1: str | None = None
+    order_code_2: str | None = None
+    order_code_3: str | None = None
+    order_code_4: str | None = None
+    order_type: str | None = None
+    price: str | int | None = None
+    selector_note: str | None = None
+    status: str | None = None
+    var_field_isbn: str | None = None
+    vendor_code: str | None = None
+    vendor_notes: str | None = None
+    vendor_title_no: str | None = None
 
 
 @dataclass(frozen=True)

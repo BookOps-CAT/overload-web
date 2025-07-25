@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional, Sequence
+from typing import TYPE_CHECKING, Sequence
 
 from overload_web.infrastructure import db
 
@@ -26,7 +26,7 @@ class TemplateService:
         self.session = session
         self.repo = db.repository.SqlModelRepository(session=session)
 
-    def get_template(self, template_id: str) -> Optional[db.tables.Template]:
+    def get_template(self, template_id: str) -> db.tables.Template | None:
         """
         Retrieve a template by its ID.
 
@@ -39,7 +39,7 @@ class TemplateService:
         return self.repo.get(id=template_id)
 
     def list_templates(
-        self, offset: Optional[int] = 0, limit: Optional[int] = 20
+        self, offset: int | None = 0, limit: int | None = 20
     ) -> Sequence[db.tables.Template]:
         """
         Retrieve a list of templates in the database.

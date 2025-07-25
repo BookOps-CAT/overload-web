@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING, Any, Optional, Protocol, Union, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 import requests
 from bookops_bpl_solr import SolrSession
@@ -49,7 +49,7 @@ class SierraBibFetcher:
         library: the library system whose Sierra instance should be queried.
     """
 
-    def __init__(self, library: str, session: Optional[SierraSessionProtocol] = None):
+    def __init__(self, library: str, session: SierraSessionProtocol | None = None):
         self.library = library
         self.session = self._get_session_for_library() if session is None else session
 
@@ -88,7 +88,7 @@ class SierraBibFetcher:
         return []
 
     def get_bibs_by_id(
-        self, value: Union[str, int], key: str
+        self, value: str | int, key: str
     ) -> list[protocols.bibs.FetcherResponseDict]:
         """
         Retrieves bib records by a specific matchpoint (e.g., ISBN, OCLC)
@@ -130,19 +130,19 @@ class SierraSessionProtocol(Protocol):
 
     def _get_credentials(self) -> str | PlatformToken: ...  # pragma: no branch
     def _get_bibs_by_bib_id(
-        self, value: Union[str, int]
+        self, value: str | int
     ) -> requests.Response: ...  # pragma: no branch
     def _get_bibs_by_isbn(
-        self, value: Union[str, int]
+        self, value: str | int
     ) -> requests.Response: ...  # pragma: no branch
     def _get_bibs_by_issn(
-        self, value: Union[str, int]
+        self, value: str | int
     ) -> requests.Response: ...  # pragma: no branch
     def _get_bibs_by_oclc_number(
-        self, value: Union[str, int]
+        self, value: str | int
     ) -> requests.Response: ...  # pragma: no branch
     def _get_bibs_by_upc(
-        self, value: Union[str, int]
+        self, value: str | int
     ) -> requests.Response: ...  # pragma: no branch
     def _parse_response(
         self, response: requests.Response

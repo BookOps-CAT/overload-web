@@ -23,9 +23,17 @@ Protocols:
 from __future__ import annotations
 
 import logging
-from typing import Any, BinaryIO, Protocol, TypedDict, TypeVar, runtime_checkable
+from typing import (
+    TYPE_CHECKING,
+    BinaryIO,
+    Protocol,
+    TypedDict,
+    TypeVar,
+    runtime_checkable,
+)
 
-from overload_web.domain import models
+if TYPE_CHECKING:  # pragma: no cover
+    from overload_web.domain import models
 
 T = TypeVar("T")
 
@@ -92,7 +100,7 @@ class MarcParser(Protocol[T]):
     """Convert a list of `T` objects into binary MARC data."""
 
     def update_fields(
-        self, record: T, fields: list[dict[str, Any]]
+        self, record: T, fields: list[dict[str, str]]
     ) -> T: ...  # pragma: no branch
 
     """Provided a list of fields as dicts, update MARC fields in a `T` object"""
