@@ -48,14 +48,9 @@ class RecordProcessingService:
         """Normalize matchpoints to a list."""
         return [v for k, v in matchpoints.items() if v]
 
-    def _normalize_template(
-        self, template_data: models.templates.Template | dict[str, Any] = {}
-    ) -> dict[str, Any]:
+    def _normalize_template(self, template_data: dict[str, Any] = {}) -> dict[str, Any]:
         """Normalize template data to a dictionary."""
-        if isinstance(template_data, dict):
-            return {k: v for k, v in template_data.items() if v}
-        else:
-            return {k: v for k, v in template_data.__dict__.items() if v}
+        return {k: v for k, v in template_data.items() if v}
 
     def _get_matcher(self) -> logic.bibs.BibMatcher:
         """
@@ -99,9 +94,7 @@ class RecordProcessingService:
         return self.parser.parse(data=data)
 
     def process_records(
-        self,
-        records: list[dto.bib.BibDTO],
-        template_data: models.templates.Template | dict[str, Any] = {},
+        self, records: list[dto.bib.BibDTO], template_data: dict[str, Any] = {}
     ) -> list[dto.bib.BibDTO]:
         """
         Match and update bibliographic records. Uses vendor and template data

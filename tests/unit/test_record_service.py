@@ -3,7 +3,7 @@ import copy
 import pytest
 
 from overload_web.application import services
-from overload_web.domain import models, protocols
+from overload_web.domain import protocols
 
 
 class MockRepository(protocols.repositories.SqlRepositoryProtocol):
@@ -62,7 +62,6 @@ class TestRecordProcessingService:
             "f": "selector_note",
             "h": "vendor_notes",
             "i": "vendor_title_no",
-            "l": "var_field_isbn",
             "m": "blanket_po",
         },
     }
@@ -117,13 +116,6 @@ class TestRecordProcessingService:
         assert str(matched_bibs[0].domain_bib.bib_id) == "123"
         assert [i.order_code_1 for i in original_orders] == ["j"]
         assert [i.order_code_1 for i in matched_bibs[0].domain_bib.orders] == ["b"]
-
-    def test_process_records_template(self, stub_service, stub_bib_dto, template_data):
-        matched_bibs = stub_service.process_records(
-            [stub_bib_dto], template_data=models.templates.Template(**template_data)
-        )
-        assert len(matched_bibs) == 1
-        assert str(matched_bibs[0].domain_bib.bib_id) == "123"
 
     def test_process_records_no_matches(self, stub_service_no_matches, stub_bib_dto):
         matched_bibs = stub_service_no_matches.process_records(
