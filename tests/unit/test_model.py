@@ -1,5 +1,3 @@
-import datetime
-
 import pytest
 
 from overload_web.domain import models
@@ -87,58 +85,6 @@ class TestDomainBib:
         assert bib.orders[0].fund == "10001adbk"
 
 
-class TestMatchpoints:
-    def test_Matchpoints(self):
-        matchpoints = models.templates.Matchpoints(
-            primary="isbn", secondary="oclc_number"
-        )
-        assert matchpoints.primary == "isbn"
-        assert matchpoints.secondary == "oclc_number"
-        assert matchpoints.tertiary is None
-        assert matchpoints.as_list() == ["isbn", "oclc_number"]
-
-    def test_Matchpoints_default(self):
-        matchpoints = models.templates.Matchpoints()
-        assert matchpoints.primary is None
-        assert matchpoints.secondary is None
-        assert matchpoints.tertiary is None
-
-    def test_Matchpoints_positional(self):
-        matchpoints_1 = models.templates.Matchpoints("isbn", "upc", "issn")
-        matchpoints_2 = models.templates.Matchpoints("isbn", "issn")
-        assert matchpoints_1.primary == "isbn"
-        assert matchpoints_1.secondary == "upc"
-        assert matchpoints_1.tertiary == "issn"
-        assert matchpoints_2.primary == "isbn"
-        assert matchpoints_2.secondary == "issn"
-        assert matchpoints_2.tertiary is None
-
-    def test_Matchpoints_eq_not_implemented(self):
-        matchpoints = models.templates.Matchpoints("isbn", "upc")
-        assert matchpoints == models.templates.Matchpoints(
-            primary="isbn", secondary="upc"
-        )
-        assert matchpoints != models.templates.Matchpoints("isbn", "issn")
-        assert matchpoints.__eq__("foo") is NotImplemented
-
-    def test_Matchpoints_value_error_kw(self):
-        with pytest.raises(ValueError) as exc:
-            models.templates.Matchpoints(primary="isbn", tertiary="upc")
-        assert str(exc.value) == "Cannot have tertiary matchpoint without secondary."
-
-    def test_Matchpoints_value_error_positional(self):
-        with pytest.raises(ValueError) as exc:
-            models.templates.Matchpoints("isbn", tertiary="upc")
-        assert str(exc.value) == "Cannot have tertiary matchpoint without secondary."
-
-    def test_Matchpoints_value_error_too_many(self):
-        with pytest.raises(ValueError) as exc:
-            models.templates.Matchpoints("isbn", "upc", "issn", "oclc_number")
-        assert (
-            str(exc.value) == "Matchpoints should be passed no more than three values."
-        )
-
-
 class TestOrder:
     def test_Order(self, order_data):
         order = models.bibs.Order(**order_data)
@@ -168,59 +114,6 @@ class TestOrderId:
         with pytest.raises(ValueError) as exc:
             models.bibs.OrderId(value=987654321)
         assert str(exc.value) == "OrderId must be a non-empty string."
-
-
-class TestTemplate:
-    def test_Template(self, template_data):
-        template_obj = models.templates.Template(**template_data)
-        assert template_obj.create_date == "2024-01-01"
-        assert template_obj.price == "$20.00"
-        assert template_obj.fund == "10001adbk"
-        assert template_obj.copies == "5"
-        assert template_obj.lang == "spa"
-        assert template_obj.country == "xxu"
-        assert template_obj.vendor_code == "0049"
-        assert template_obj.format == "a"
-        assert template_obj.order_code_1 == "b"
-        assert template_obj.order_code_2 is None
-        assert template_obj.order_code_3 == "d"
-        assert template_obj.order_code_4 == "a"
-        assert template_obj.selector_note is None
-        assert template_obj.order_type == "p"
-        assert template_obj.status == "o"
-        assert template_obj.internal_note == "foo"
-        assert template_obj.vendor_notes == "bar"
-        assert template_obj.vendor_title_no is None
-        assert template_obj.blanket_po is None
-
-    def test_Template_no_input(self):
-        template_obj = models.templates.Template()
-        attr_vals = [v for k, v in template_obj.__dict__.items() if k != "matchpoints"]
-        assert all(i is None for i in attr_vals) is True
-        assert list(template_obj.matchpoints.__dict__.values()) == [None, None, None]
-
-    def test_Template_positional_args(self):
-        with pytest.raises(TypeError) as exc:
-            models.templates.Template(
-                "a", None, "7", "xxu", datetime.datetime(2024, 1, 1), "a"
-            )
-        assert (
-            str(exc.value)
-            == "Template.__init__() takes 1 positional argument but 7 were given"
-        )
-
-
-class TestTemplateId:
-    @pytest.mark.parametrize("value", ["123", "456"])
-    def test_TemplateId(self, value):
-        template_id = models.templates.TemplateId(value=value)
-        assert str(template_id) == value
-        assert repr(template_id) == f"TemplateId(value='{value}')"
-
-    def test_TemplateId_invalid(self):
-        with pytest.raises(ValueError) as exc:
-            models.templates.TemplateId(value=123)
-        assert str(exc.value) == "TemplateId must be a non-empty string."
 
 
 class TestVendorFile:
