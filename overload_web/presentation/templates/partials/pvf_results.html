@@ -1,19 +1,9 @@
 <h3>Output:</h3>
-  {% if record_type %}    
-<h5>Record Type:</h5>
-  {{ record_type }}
-  {% endif %}
-  {% if library %}  
-<h5>Library:</h5>
-  {{ library }}
-  {% endif %}  
-  {% if collection %}
-<h5>Collection:</h5>
-  {{ collection }}
-  {% endif %}
   {% if template_data %}  
 <h5>Template Data:</h5>
-  {{ template_data }}
+  {% for k,v in template_data.items() %}
+  {{k}}: {{v}}</br>
+  {% endfor %} 
   {% endif %}  
   {% if files %}
 <h5>Processed Files:</h5>
