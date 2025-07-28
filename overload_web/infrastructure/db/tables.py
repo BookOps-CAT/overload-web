@@ -107,7 +107,7 @@ class TemplateCreate(_TemplateBase):
     @field_validator("*", mode="before")
     @classmethod
     def parse_form_fields(cls, value: str) -> str | None:
-        if value == "" or value.strip() == "":
+        if not value or value.strip() == "":
             return None
         else:
             return value.strip()

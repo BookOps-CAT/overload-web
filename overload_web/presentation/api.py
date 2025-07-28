@@ -38,9 +38,7 @@ def startup_event():
 def create_template(
     request: Request,
     template: Annotated[
-        db.tables.TemplateCreate,
-        Depends(db.tables.TemplateCreate.from_form),
-        Form(),
+        db.tables.TemplateCreate, Depends(db.tables.TemplateCreate.from_form)
     ],
     session: SessionDep,
     fields: TemplateFormDep,
@@ -62,10 +60,7 @@ def create_template(
 
 @api_router.get("/template", response_class=HTMLResponse)
 def get_template(
-    request: Request,
-    template_id: str,
-    session: SessionDep,
-    fields: TemplateFormDep,
+    request: Request, template_id: str, session: SessionDep, fields: TemplateFormDep
 ) -> HTMLResponse:
     service = services.template.TemplateService(session=session)
     template = service.get_template(template_id=template_id)
@@ -131,9 +126,9 @@ def list_remote_files(request: Request, vendor: str) -> HTMLResponse:
 @api_router.post("/process-vendor-file", response_class=HTMLResponse)
 def process_vendor_file(
     request: Request,
-    record_type: Annotated[models.bibs.RecordType, Form(...)],
-    library: Annotated[models.bibs.LibrarySystem, Form(...)],
-    collection: Annotated[models.bibs.Collection, Form(...)],
+    record_type: Annotated[str, Form(...)],
+    library: Annotated[str, Form(...)],
+    collection: Annotated[str, Form(...)],
     files: Annotated[list[schemas.VendorFileModel], Depends(deps.normalize_files)],
     template_input: Annotated[
         schemas.TemplateModel, Depends(schemas.TemplateModel.from_form_data)
@@ -141,9 +136,9 @@ def process_vendor_file(
     marc_rules: Annotated[dict[str, dict[str, str]], Depends(deps.marc_rules)],
 ) -> HTMLResponse:
     service = services.records.RecordProcessingService(
-        library=library,
-        collection=collection,
-        record_type=record_type,
+        library=models.bibs.LibrarySystem(library),
+        collection=models.bibs.Collection(collection),
+        record_type=models.bibs.RecordType(record_type),
         marc_rules=marc_rules,
     )
     template_data = {k: v for k, v in template_input.model_dump().items() if v}
@@ -179,10 +174,7 @@ def process_vendor_file(
 
 
 @api_router.post("/write-local")
-def write_local_file(
-    vendor_file: schemas.VendorFileModel,
-    dir: str,
-) -> JSONResponse:
+def write_local_file(vendor_file: schemas.VendorFileModel, dir: str) -> JSONResponse:
     """Write a file to a local directory."""
     service = services.file.FileTransferService.create_local_file_service()
     out_files = service.writer.write(file=vendor_file, dir=dir)
@@ -193,9 +185,7 @@ def write_local_file(
 
 @api_router.post("/write-remote")
 def write_remote_file(
-    vendor_file: schemas.VendorFileModel,
-    dir: str,
-    vendor: str,
+    vendor_file: schemas.VendorFileModel, dir: str, vendor: str
 ) -> JSONResponse:
     """Write a file to a remote directory."""
     service = services.file.FileTransferService.create_remote_file_service(
