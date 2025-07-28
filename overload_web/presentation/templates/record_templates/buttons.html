@@ -1,0 +1,11 @@
+<div class="row row-cols-3 gy-1 my-2">
+    <div class="col" hx-include="#template-form-fields">
+        <button hx-post="/api/template" type="submit" class="btn my-3" style="border-color: #d52828;" hx-indicator="#loading-spinner" hx-target="#template-form">Save Template as New</button>
+    </div>
+    <div class="col">
+        <button class="btn my-3" style="border-color: #d52828;">Update Template</button>
+    </div>
+    <div class="col">
+        <button hx-get="/htmx/forms/templates" type="submit" class="btn my-3" style="border-color: #d52828;" hx-indicator="#loading-spinner" hx-target="#template-form">Clear Template Form</button>
+    </div>
+</div>

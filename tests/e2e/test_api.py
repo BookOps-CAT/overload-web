@@ -167,10 +167,12 @@ class TestApp:
         context = {
             "library": library,
             "collection": collection,
-            "source": "local",
             "record_type": record_type,
             "vendor": None,
-            "primary": "isbn",
+            "primary_matchpoint": "isbn",
+            "name": "foo",
+            "agent": "bar",
+            "id": 1,
         }
         files = {"files": ("test.mrc", b"", "application/octet-stream")}
         response = self.client.post(
@@ -195,41 +197,18 @@ class TestApp:
         context = {
             "library": library,
             "collection": collection,
-            "template_input": template_data,
-            "source": "remote",
             "record_type": record_type,
             "vendor": "FOO",
-            "files": ["foo.mrc"],
+            "primary_matchpoint": "isbn",
+            "name": "foo",
+            "agent": "bar",
+            "id": 1,
         }
-        response = self.client.post("/api/process-vendor-file", data=context)
+        files = {"files": (None, "test.mrc")}
+        response = self.client.post(
+            "/api/process-vendor-file", data=context, files=files
+        )
         assert response.status_code == 200
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [
-            ("nypl", "BL", "full"),
-            ("nypl", "BL", "order_level"),
-            ("nypl", "RL", "full"),
-            ("nypl", "RL", "order_level"),
-            ("bpl", "NONE", "full"),
-            ("bpl", "NONE", "order_level"),
-        ],
-    )
-    def test_api_process_vendor_file_remote_no_vendor(
-        self, library, collection, record_type, template_data
-    ):
-        context = {
-            "library": library,
-            "collection": collection,
-            "template_input": template_data,
-            "source": "remote",
-            "record_type": record_type,
-            "vendor": None,
-            "files": ["foo.mrc"],
-        }
-        with pytest.raises(ValueError) as exc:
-            self.client.post("/api/process-vendor-file", data=context)
-        assert str(exc.value) == "Vendor must be provided for remote files"
 
     def test_api_write_local_file_post(self, mocker):
         mock_file = mocker.mock_open(read_data="")

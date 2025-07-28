@@ -1,15 +1,17 @@
-<h5>Template Name</h5>
-<div class="row gy-1 my-2">
+{% import "record_templates/macro.html" as macro %}
+<h5>Template Input</h5>
+<div class="row row-cols-3 gy-1 my-2">
+    {{ macro.input_field('name', {'label': 'Name'}, template.get('name')) }}  
+    {{ macro.input_field('agent', {'label': 'User'}, template.get('agent')) }}  
     <div class="col">
         <div class="form-floating">
-            <input type="text" class="form-control" value="{{ template['name'] if template else value|e }}" name="name" id="name">
-            <label for="name">Name</label>
-        </div>
-    </div>
-    <div class="col">
-        <div class="form-floating">
-            <input type="text" class="form-control" value="{{ template['agent'] if template else value|e }}" name="agent" id="agent">
-            <label for="agent">User</label>
+            {% if template %}
+            <input type="text" class="form-control" value="{{ template.get('id') }}" name="id" id="id" disabled>
+            <input type="hidden" class="form-control" value="{{ template.get('id') }}" name="id" id="id">
+            {% else %}
+            <input type="text" class="form-control" value="" name="id" id="id" disabled>
+            {%endif%}
+            <label for="id">Template ID</label>
         </div>
     </div>                    
 </div>
@@ -17,64 +19,25 @@
 <h5>Order Fixed Fields</h5>
 <div class="row row-cols-3 gy-1 my-2">
     {% for field_id, field_data in field_constants["fixed_fields"].items() %}
-    <div class="col">
-        <div class="form-floating">
-            <select class="form-select" name="{{field_id}}", id="{{field_id}}">
-                <option value="" {% if not template %}selected{%endif%}></option>
-                {% for k, v in field_data['options'].items() %}
-                    <option value="{{k}}" {% if template.get(field_id) %}selected{%endif%}>{{k}} ({{v}})</option>
-                {%endfor%}
-            </select>
-            <label for="{{field_id}}">{{field_data['label']}}</label>
-        </div>
-    </div>
-    {% endfor %}        
+        {{ macro.select_field(field_id, field_data, template.get(field_id)) }}
+    {% endfor %}             
 </div>
 
 <h5>Order Variable Fields</h5>
 <div class="row row-cols-3 gy-1 my-2">
     {% for field_id, field_data in field_constants["var_fields"].items() %}
-    <div class="col">
-        <div class="form-floating">
-            <input type="text" class="form-control" value="{{ template[field_id] if template else value|e }}" name="{{field_id}}" id="{{field_id}}">
-            <label for="{{field_id}}">{{field_data['label']}}</label>
-        </div>
-    </div>
+        {{ macro.input_field(field_id, field_data, template.get(field_id)) }}
     {% endfor %}        
 </div>
 
 <h5>Sierra Bib Format</h5> 
 <div class="row row-cols-3 gy-1 my-2">
-    <div class="col">
-        <div class="form-floating">
-            <select class="form-select" name="material_form", id="material_form">
-                <option value="" {% if not template %}selected{%endif%}></option>
-                {% for k, v in field_constants['bib_formats']['options'].items() %}
-                    {% if template.get("material_form") %}    
-                    <option value="{{k}}" selected>{{k}} ({{v}})</option>
-                    {% else %}
-                    <option value="{{k}}">{{k}} ({{v}})</option>
-                    {%endif%}
-                {%endfor%}
-            </select>
-            <label for="material_form">{{field_constants['bib_formats']['label']}}</label>
-        </div>
-    </div>   
+    {{ macro.select_field('material_form', field_constants['bib_formats'], template.get('material_form')) }}  
 </div>
 
 <h5>Sierra Matchpoints</h5> 
 <div class="row row-cols-3 gy-1 my-2">
     {% for field_id, field_data in field_constants["matchpoints"].items() %}
-    <div class="col">
-        <div class="form-floating">
-            <select class="form-select" name="{{field_id}}", id="{{field_id}}">
-                <option value="" {% if not template %}selected{%endif%}></option>
-                {% for k, v in field_data['options'].items() %}
-                    <option value="{{k}}" {% if template.get(field_id) %}selected{%endif%}>{{k}} ({{v}})</option>
-                {%endfor%}
-            </select>
-            <label for="{{field_id}}">{{field_data['label']}}</label>
-        </div>
-    </div>
-    {% endfor %}       
+        {{ macro.select_field(field_id, field_data, template.get(field_id)) }}
+    {% endfor %}         
 </div>

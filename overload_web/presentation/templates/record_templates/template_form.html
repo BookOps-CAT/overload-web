@@ -8,10 +8,12 @@
                     <div id="template-list"></div>
                 </div>
             </div>
-            <div class="col" id="template-form-fields">
-               {% include "record_templates/rendered_template.html" %}
-                <div hx-include="#template-form-fields">
-                    <button hx-post="/api/template" type="submit" class="btn my-3" style="border-color: #d52828;" hx-indicator="#loading-spinner" hx-target="#template-form">Save Template as New</button>
+            <div class="col">
+                <div id="template-form-fields">
+                    {% include "record_templates/rendered_template.html" %}
+                </div>
+                <div id="template-buttons">
+                    {% include "record_templates/buttons.html" %}
                 </div>
             </div>                
         </div>

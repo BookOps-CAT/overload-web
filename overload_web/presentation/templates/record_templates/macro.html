@@ -1,0 +1,32 @@
+{% macro select_field(field_id, data, template_field) %}
+<div class="col">
+    <div class="form-floating">
+        <select class="form-select" name="{{field_id}}" id="{{field_id}}">
+            {% if template_field %}
+                <option value=""></option>
+                <option value="{{ template_field }}" selected>{{ template_field }} ({{ data['options'][template_field] }})</option>                  
+                {% for k, v in data['options'].items() %}
+                    {% if k != template_field %}
+                    <option value="{{k}}">{{k}} ({{v}})</option>
+                    {%endif%}
+                {%endfor%}
+            {% else %}
+                <option value="" selected></option>
+                {% for k, v in data['options'].items() %}
+                <option value="{{k}}">{{k}} ({{v}})</option>
+                {%endfor%}
+            {% endif %}
+        </select>
+        <label for="{{field_id}}">{{data['label']}}</label>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro input_field(field_id, data, template_field) %}
+<div class="col">
+    <div class="form-floating">
+        <input type="text" class="form-control" value="{{ template_field if template_field else value|e }}" name="{{field_id}}" id="{{field_id}}">
+        <label for="{{field_id}}">{{data['label']}}</label>
+    </div>
+</div>
+{% endmacro %}

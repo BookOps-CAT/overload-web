@@ -1,14 +1,18 @@
 import json
+import logging
 import os
 from functools import lru_cache
 from typing import Annotated, Generator
 
 from fastapi import Depends, Form, UploadFile
 from sqlmodel import Session, SQLModel, create_engine
+from starlette.datastructures import UploadFile as StarlettUploadFile
 
 from overload_web import config
 from overload_web.application import services
 from overload_web.presentation import schemas
+
+logger = logging.getLogger(__name__)
 
 
 @lru_cache
@@ -50,41 +54,33 @@ def template_form_fields(
     fixed_field_list = constants["template_fixed_fields"]
     var_field_list = constants["template_var_fields"]
     matchpoints = constants["matchpoints"]
-    fixed_fields = {i: constants[i] for i in fixed_field_list}
-    var_fields = {i: constants[i] for i in var_field_list}
-    matchpoint_fields = {
-        i: {
-            "label": f"{i.split('_')[0].title()}",
-            "options": constants["matchpoint_options"],
-        }
-        for i in matchpoints
-    }
     return {
-        "fixed_fields": fixed_fields,
-        "var_fields": var_fields,
-        "matchpoints": matchpoint_fields,
+        "fixed_fields": {i: constants[i] for i in fixed_field_list},
+        "var_fields": {i: constants[i] for i in var_field_list},
+        "matchpoints": {
+            i: {
+                "label": f"{i.split('_')[0].title()}",
+                "options": constants["matchpoint_options"],
+            }
+            for i in matchpoints
+        },
         "bib_formats": constants["material_form"],
     }
 
 
 def normalize_files(
-    source: Annotated[str, Form(...)],
     files: Annotated[list[UploadFile] | list[str], Form(...)],
     vendor: Annotated[str, Form(...)],
 ) -> list[schemas.VendorFileModel]:
-    if source == "remote" and not vendor:
-        raise ValueError("Vendor must be provided for remote files")
-
-    file_models = []
-
     remote_files = []
     local_files = []
     for file in files:
-        if isinstance(file, UploadFile):
+        if isinstance(file, StarlettUploadFile):
             local_files.append(file)
         else:
             remote_files.append(file)
 
+    file_models = []
     if local_files:
         file_models.extend(
             [

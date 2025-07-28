@@ -43,18 +43,13 @@ def create_template(
     session: SessionDep,
     fields: TemplateFormDep,
 ) -> HTMLResponse:
-    new_template = {}
     valid_template = db.tables.Template.model_validate(template)
     service = services.template.TemplateService(session=session)
     saved_template = service.save_template(obj=valid_template)
-    new_template.update(saved_template.model_dump())
     return templates.TemplateResponse(
         request=request,
         name="record_templates/template_form.html",
-        context={
-            "template": new_template,
-            "field_constants": fields,
-        },
+        context={"template": saved_template.model_dump(), "field_constants": fields},
     )
 
 
@@ -131,7 +126,7 @@ def process_vendor_file(
     collection: Annotated[str, Form(...)],
     files: Annotated[list[schemas.VendorFileModel], Depends(deps.normalize_files)],
     template_input: Annotated[
-        schemas.TemplateModel, Depends(schemas.TemplateModel.from_form_data)
+        db.tables.Template, Depends(db.tables.TemplatePublic.from_loaded_form)
     ],
     marc_rules: Annotated[dict[str, dict[str, str]], Depends(deps.marc_rules)],
 ) -> HTMLResponse:
@@ -141,18 +136,12 @@ def process_vendor_file(
         record_type=models.bibs.RecordType(record_type),
         marc_rules=marc_rules,
     )
-    template_data = {k: v for k, v in template_input.model_dump().items() if v}
-    context_dict = {
-        "record_type": record_type,
-        "library": library,
-        "collection": collection,
-        "template_data": template_data,
-    }
+    template_data = template_input.model_dump()
     out_files = []
     for n, file in enumerate(files):
         bibs = service.parse(data=file.content)
         processed_bibs = service.process_records(
-            records=bibs, template_data=template_data
+            records=bibs, template_data={k: v for k, v in template_data.items() if v}
         )
         marc_binary = service.write_marc_binary(records=processed_bibs)
         out_files.append(
@@ -167,7 +156,7 @@ def process_vendor_file(
                 }
             }
         )
-    context_dict["files"] = out_files
+    context_dict = {"template_data": template_data, "files": out_files}
     return templates.TemplateResponse(
         request=request, name="partials/pvf_results.html", context=context_dict
     )
