@@ -191,7 +191,6 @@ class BookopsMarcMapper:
             selector_note=from_following_field("f"),
             shelves=order.shelves,
             status=order.status,
-            var_field_isbn=from_following_field("l"),
             vendor_code=order._field.get("v", None),
             vendor_notes=order.venNotes,
             vendor_title_no=from_following_field("i"),

@@ -108,7 +108,6 @@ class Order:
     selector_note: str | None
     shelves: list[str]
     status: str | None
-    var_field_isbn: str | None
     vendor_code: str | None
     vendor_notes: str | None
     vendor_title_no: str | None

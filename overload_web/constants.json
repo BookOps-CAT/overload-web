@@ -17,7 +17,6 @@
     "blanket_po": {"label": "Blanket PO"}, 
     "internal_note": {"label": "Internal Note"},
     "selector_note": {"label": "Selector Note"},
-    "var_field_isbn": {"label": "ISBN"},
     "vendor_notes": {"label": "Vendor Notes"},
     "vendor_title_no": {"label": "Vendor Title Number"},
     "acquisition_type": {
@@ -1100,7 +1099,6 @@
             "f": "selector_note",
             "h": "vendor_notes",
             "i": "vendor_title_no",
-            "l": "var_field_isbn",
             "m": "blanket_po"
         }
     },
@@ -1783,7 +1781,6 @@
         "blanket_po",
         "internal_note",
         "selector_note",
-        "var_field_isbn",
         "vendor_notes",
         "vendor_title_no"
     ],

@@ -167,7 +167,6 @@ def order_data() -> dict:
         "selector_note": None,
         "shelves": ["0f", "0f", "0f"],
         "status": "o",
-        "var_field_isbn": None,
         "vendor_code": "0049",
         "vendor_notes": None,
         "vendor_title_no": None,

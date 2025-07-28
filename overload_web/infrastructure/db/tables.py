@@ -30,7 +30,6 @@ class _TemplateBase(SQLModel):
     order_type: Annotated[str | None, Field(default=None)]
     receive_action: Annotated[str | None, Field(default=None)]
     selector_note: Annotated[str | None, Field(default=None)]
-    var_field_isbn: Annotated[str | None, Field(default=None)]
     vendor_code: Annotated[str | None, Field(default=None)]
     vendor_notes: Annotated[str | None, Field(default=None)]
     vendor_title_no: Annotated[str | None, Field(default=None)]
@@ -71,7 +70,6 @@ class TemplateCreate(_TemplateBase):
         order_type: Annotated[str | None, Form(None)],
         receive_action: Annotated[str | None, Form(None)],
         selector_note: Annotated[str | None, Form(None)],
-        var_field_isbn: Annotated[str | None, Form(None)],
         vendor_code: Annotated[str | None, Form(None)],
         vendor_notes: Annotated[str | None, Form(None)],
         vendor_title_no: Annotated[str | None, Form(None)],
@@ -98,7 +96,6 @@ class TemplateCreate(_TemplateBase):
             order_type=order_type,
             receive_action=receive_action,
             selector_note=selector_note,
-            var_field_isbn=var_field_isbn,
             vendor_code=vendor_code,
             vendor_notes=vendor_notes,
             vendor_title_no=vendor_title_no,
@@ -135,7 +132,6 @@ class TemplateUpdate(SQLModel):
     order_type: str | None = None
     receive_action: str | None = None
     selector_note: str | None = None
-    var_field_isbn: str | None = None
     vendor_code: str | None = None
     vendor_notes: str | None = None
     vendor_title_no: str | None = None

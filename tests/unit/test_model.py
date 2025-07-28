@@ -189,7 +189,6 @@ class TestTemplate:
         assert template_obj.order_type == "p"
         assert template_obj.status == "o"
         assert template_obj.internal_note == "foo"
-        assert template_obj.var_field_isbn is None
         assert template_obj.vendor_notes == "bar"
         assert template_obj.vendor_title_no is None
         assert template_obj.blanket_po is None
