@@ -176,7 +176,8 @@ def order_data() -> dict:
 @pytest.fixture
 def template_data() -> dict:
     return {
-        "agent": None,
+        "name": "Foo",
+        "agent": "Bar",
         "blanket_po": None,
         "copies": "5",
         "country": "xxu",
@@ -186,7 +187,6 @@ def template_data() -> dict:
         "id": None,
         "internal_note": "foo",
         "lang": "spa",
-        "name": None,
         "order_code_1": "b",
         "order_code_2": None,
         "order_code_3": "d",
@@ -199,11 +199,9 @@ def template_data() -> dict:
         "vendor_code": "0049",
         "vendor_notes": "bar",
         "vendor_title_no": None,
-        "matchpoints": {
-            "primary": "isbn",
-            "secondary": None,
-            "tertiary": None,
-        },
+        "primary_matchpoint": "isbn",
+        "secondary_matchpoint": None,
+        "tertiary_matchpoint": None,
     }
 
 

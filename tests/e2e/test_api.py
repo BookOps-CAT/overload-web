@@ -117,8 +117,7 @@ class TestApp:
         )
         assert response.context["page_title"] == "Process Vendor File"
 
-    def test_api_create_template(self):
-        template_data = {"name": "foo", "agent": "bar", "primary_matchpoint": "isbn"}
+    def test_api_create_template(self, template_data):
         response = self.client.post("/api/template", data=template_data)
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == [
@@ -191,9 +190,7 @@ class TestApp:
             ("bpl", "NONE", "order_level"),
         ],
     )
-    def test_api_process_vendor_file_remote(
-        self, library, collection, record_type, template_data
-    ):
+    def test_api_process_vendor_file_remote(self, library, collection, record_type):
         context = {
             "library": library,
             "collection": collection,
