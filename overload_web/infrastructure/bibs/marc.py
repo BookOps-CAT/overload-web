@@ -21,7 +21,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
     def __init__(
         self,
         library: models.bibs.LibrarySystem,
-        marc_rules: dict[str, dict[str, str]],
+        marc_mapping: dict[str, dict[str, str]],
     ) -> None:
         """
         Initialize `BookopsMarcParser` for a specific library.
@@ -30,7 +30,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
             library: library whose records are being parsed as a `LibrarySystem` obj
         """
         self.library = library
-        self.marc_rules = marc_rules
+        self.marc_mapping = marc_mapping
         self.mapper = BookopsMarcMapper()
 
     def _map_order_data(self, order: models.bibs.Order) -> dict:
@@ -46,7 +46,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
         out = {}
         for tag in ["960", "961"]:
             tag_dict = {}
-            for k, v in self.marc_rules[tag].items():
+            for k, v in self.marc_mapping[tag].items():
                 tag_dict[k] = getattr(order, v)
             out[tag] = tag_dict
         return out

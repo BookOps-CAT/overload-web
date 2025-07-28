@@ -24,10 +24,10 @@ class RecordProcessingService:
 
     def __init__(
         self,
-        library: models.bibs.LibrarySystem,
-        collection: models.bibs.Collection,
-        record_type: models.bibs.RecordType,
-        marc_rules: dict[str, dict[str, str]],
+        library: str,
+        collection: str,
+        record_type: str,
+        marc_mapping: dict[str, dict[str, str]],
     ):
         """
         Initialize `RecordProcessingService`.
@@ -36,12 +36,12 @@ class RecordProcessingService:
             library: the library whose records are to be processed
             collection: the collection whose records are to be processed
             record_type: the type of records to be processed (full or order-level)
-            marc_rules: the marc mapping to be used when processing records
+            marc_mapping: the marc mapping to be used when processing records
         """
-        self.library = library
-        self.collection = collection
-        self.record_type = record_type
-        self.parser = self._get_parser(marc_rules=marc_rules)
+        self.library = models.bibs.LibrarySystem(library)
+        self.collection = models.bibs.Collection(collection)
+        self.record_type = models.bibs.RecordType(record_type)
+        self.parser = self._get_parser(marc_mapping=marc_mapping)
         self.matcher = self._get_matcher()
 
     def _normalize_matchpoints(self, matchpoints: dict[str, Any] = {}) -> list[str]:
@@ -64,7 +64,7 @@ class RecordProcessingService:
         )
 
     def _get_parser(
-        self, marc_rules: dict[str, dict[str, str]]
+        self, marc_mapping: dict[str, dict[str, str]]
     ) -> marc.BookopsMarcParser:
         """
         Get a `BookopsMarcParser` object for the supplied library.
@@ -72,7 +72,7 @@ class RecordProcessingService:
         Returns:
             `BookopsMarcParser` instance.
         """
-        return marc.BookopsMarcParser(library=self.library, marc_rules=marc_rules)
+        return marc.BookopsMarcParser(library=self.library, marc_mapping=marc_mapping)
 
     def _get_vendor_template(self, bib: dto.bib.BibDTO) -> dict[str, Any]:
         vendor_id = context.VendorIdentifier(

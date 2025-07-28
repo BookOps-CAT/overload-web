@@ -78,7 +78,7 @@ class TestRecordProcessingService:
             library=library,
             collection=collection,
             record_type=record_type,
-            marc_rules=self.stub_mapping,
+            marc_mapping=self.stub_mapping,
         )
 
     @pytest.fixture
@@ -93,7 +93,7 @@ class TestRecordProcessingService:
             library=library,
             collection=collection,
             record_type=record_type,
-            marc_rules=self.stub_mapping,
+            marc_mapping=self.stub_mapping,
         )
 
     @pytest.fixture

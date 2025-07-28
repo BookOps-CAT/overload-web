@@ -9,13 +9,12 @@ import logging
 import os
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session
 
 from overload_web.application import services
-from overload_web.domain import models
 from overload_web.infrastructure import db
 from overload_web.presentation import deps, schemas
 
@@ -121,21 +120,14 @@ def list_remote_files(request: Request, vendor: str) -> HTMLResponse:
 @api_router.post("/process-vendor-file", response_class=HTMLResponse)
 def process_vendor_file(
     request: Request,
-    record_type: Annotated[str, Form(...)],
-    library: Annotated[str, Form(...)],
-    collection: Annotated[str, Form(...)],
+    service: Annotated[
+        services.records.RecordProcessingService, Depends(deps.get_record_service)
+    ],
     files: Annotated[list[schemas.VendorFileModel], Depends(deps.normalize_files)],
     template_input: Annotated[
         db.tables.Template, Depends(db.tables.TemplatePublic.from_loaded_form)
     ],
-    marc_rules: Annotated[dict[str, dict[str, str]], Depends(deps.marc_rules)],
 ) -> HTMLResponse:
-    service = services.records.RecordProcessingService(
-        library=models.bibs.LibrarySystem(library),
-        collection=models.bibs.Collection(collection),
-        record_type=models.bibs.RecordType(record_type),
-        marc_rules=marc_rules,
-    )
     template_data = template_input.model_dump()
     out_files = []
     for n, file in enumerate(files):

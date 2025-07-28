@@ -42,12 +42,6 @@ def context_form_fields(
     return {i: constants[i] for i in field_list}
 
 
-def marc_rules(
-    constants: Annotated[dict[str, dict], Depends(load_constants)],
-) -> dict[str, dict]:
-    return constants["marc_mapping"]
-
-
 def template_form_fields(
     constants: Annotated[dict[str, dict], Depends(load_constants)],
 ) -> dict[str, dict]:
@@ -100,3 +94,17 @@ def normalize_files(
             [schemas.VendorFileModel(**f.__dict__) for f in loaded_files]
         )
     return file_models
+
+
+def get_record_service(
+    record_type: Annotated[str, Form(...)],
+    library: Annotated[str, Form(...)],
+    collection: Annotated[str, Form(...)],
+    constants: Annotated[dict[str, dict], Depends(load_constants)],
+) -> Generator[services.records.RecordProcessingService, None, None]:
+    yield services.records.RecordProcessingService(
+        library=library,
+        collection=collection,
+        record_type=record_type,
+        marc_mapping=constants["marc_mapping"],
+    )
