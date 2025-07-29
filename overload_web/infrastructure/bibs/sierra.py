@@ -31,7 +31,7 @@ from bookops_nypl_platform import PlatformSession, PlatformToken
 from ... import __title__, __version__
 
 if TYPE_CHECKING:  # pragma: no cover
-    from overload_web.domain import protocols
+    from overload_web.domain import models
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ class SierraBibFetcher:
 
     def _response_to_domain_dict(
         self, records: list[dict[str, Any]]
-    ) -> list[protocols.bibs.FetcherResponseDict]:
+    ) -> list[models.bibs.FetcherResponseDict]:
         """
         Converts raw response into dictionaries formatted for the `DomainBib` model.
 
@@ -89,7 +89,7 @@ class SierraBibFetcher:
 
     def get_bibs_by_id(
         self, value: str | int, key: str
-    ) -> list[protocols.bibs.FetcherResponseDict]:
+    ) -> list[models.bibs.FetcherResponseDict]:
         """
         Retrieves bib records by a specific matchpoint (e.g., ISBN, OCLC)
 
