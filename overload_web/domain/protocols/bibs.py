@@ -23,14 +23,9 @@ Protocols:
 from __future__ import annotations
 
 import logging
-from typing import (
-    TYPE_CHECKING,
-    BinaryIO,
-    Protocol,
-    TypedDict,
-    TypeVar,
-    runtime_checkable,
-)
+from typing import TYPE_CHECKING, BinaryIO, Protocol, TypeVar, runtime_checkable
+
+from overload_web.domain import models
 
 if TYPE_CHECKING:  # pragma: no cover
     from overload_web.domain import models
@@ -52,7 +47,7 @@ class BibFetcher(Protocol):
 
     def get_bibs_by_id(
         self, value: str | int, key: str
-    ) -> list[FetcherResponseDict]: ...  # pragma: no branch
+    ) -> list[models.bibs.FetcherResponseDict]: ...  # pragma: no branch
 
     """
     Retrieve candidate bib records that match a key-value identifier.
@@ -64,17 +59,6 @@ class BibFetcher(Protocol):
     Returns:
         a list of bib-like dicts representing candidate matches.
     """
-
-
-class FetcherResponseDict(TypedDict):
-    """Defines the dict returned by `BibFetcher.get_bibs_by_id` method"""
-
-    library: str
-    orders: list[str]
-    bib_id: str | None
-    isbn: str | None
-    oclc_number: list[str] | None
-    upc: str | None
 
 
 @runtime_checkable

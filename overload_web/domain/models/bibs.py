@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, TypedDict
 
 
 @dataclass(frozen=True)
@@ -71,6 +71,17 @@ class DomainBib:
         """
         for order in self.orders:
             order.apply_template(template_data=template_data)
+
+
+class FetcherResponseDict(TypedDict):
+    """Defines the dict returned by `BibFetcher.get_bibs_by_id` method"""
+
+    library: str
+    orders: list[str]
+    bib_id: str | None
+    isbn: str | None
+    oclc_number: list[str] | None
+    upc: str | None
 
 
 class LibrarySystem(Enum):
