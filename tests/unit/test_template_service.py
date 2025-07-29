@@ -22,17 +22,3 @@ class TestTemplateService:
         assert template_saver.name == template_data["name"]
         assert template_saver.agent == template_data["agent"]
         assert template_saver.blanket_po == template_data["blanket_po"]
-
-    def test_save_template_no_name(self, service, template_data, make_template):
-        template_data["name"] = None
-        template = make_template(template_data)
-        with pytest.raises(ValueError) as exc:
-            service.save_template(obj=template)
-        assert str(exc.value) == "Templates must have a name before being saved."
-
-    def test_save_template_no_agent(self, service, template_data, make_template):
-        template_data["agent"] = None
-        template = make_template(template_data)
-        with pytest.raises(ValueError) as exc:
-            service.save_template(obj=template)
-        assert str(exc.value) == "Templates must have an agent before being saved."

@@ -66,11 +66,6 @@ class TemplateService:
         Returns:
             The saved template as a dictionary.
         """
-        if not hasattr(obj, "name") or not obj.name or not obj.name.strip():
-            raise ValueError("Templates must have a name before being saved.")
-        if not hasattr(obj, "agent") or not obj.agent or not obj.agent.strip():
-            raise ValueError("Templates must have an agent before being saved.")
-
         self.repo.save(obj=obj)
         self.session.commit()
         self.session.refresh(obj)
