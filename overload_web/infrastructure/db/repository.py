@@ -1,10 +1,10 @@
-"""A class representing a relational database for `Template` objects.
+"""A class representing a relational database for `OrderTemplate` objects.
 
 Classes:
 
 `SqlModelRepository`
     `SQLModel` implementation of `SqlRepositoryProtocol` for managing
-    `Template` objects in a SQL database.
+    `OrderTemplate` objects in a SQL database.
 """
 
 from __future__ import annotations
@@ -20,9 +20,11 @@ from overload_web.infrastructure.db import tables
 logger = logging.getLogger(__name__)
 
 
-class SqlModelRepository(protocols.repositories.SqlRepositoryProtocol[tables.Template]):
+class SqlModelRepository(
+    protocols.repositories.SqlRepositoryProtocol[tables.OrderTemplate]
+):
     """
-    `SQLModel` repository for `Template` objects.
+    `SQLModel` repository for `OrderTemplate` objects.
 
     Args:
         session: a `sqlmodel.Session`.
@@ -31,40 +33,40 @@ class SqlModelRepository(protocols.repositories.SqlRepositoryProtocol[tables.Tem
     def __init__(self, session: Session):
         self.session = session
 
-    def get(self, id: str | int) -> tables.Template | None:
+    def get(self, id: str | int) -> tables.OrderTemplate | None:
         """
-        Retrieve a `Template` object by its ID.
+        Retrieve a `OrderTemplate` object by its ID.
 
         Args:
-            id: the primary key of the `Template`.
+            id: the primary key of the `OrderTemplate`.
 
         Returns:
-            a `Template` instance or `None` if not found.
+            a `OrderTemplate` instance or `None` if not found.
         """
-        return self.session.get(tables.Template, id)
+        return self.session.get(tables.OrderTemplate, id)
 
     def list(
         self, offset: int | None = 0, limit: int | None = 0
-    ) -> Sequence[tables.Template]:
+    ) -> Sequence[tables.OrderTemplate]:
         """
-        Retrieve all `Template` objects in the database.
+        Retrieve all `OrderTemplate` objects in the database.
 
         Args:
-            offset: start position of `Template` objects to return
-            limit: the maximum number of `Template` objects to return
+            offset: start position of `OrderTemplate` objects to return
+            limit: the maximum number of `OrderTemplate` objects to return
 
         Returns:
-            a sequence of `Template` objects.
+            a sequence of `OrderTemplate` objects.
         """
-        statement = select(tables.Template).offset(offset).limit(limit)
+        statement = select(tables.OrderTemplate).offset(offset).limit(limit)
         results = self.session.exec(statement)
         return results.all()
 
-    def save(self, obj: tables.Template) -> None:
+    def save(self, obj: tables.OrderTemplate) -> None:
         """
-        Adds a new or updated `Template` to the database.
+        Adds a new or updated `OrderTemplate` to the database.
 
         Args:
-            template: the `Template` object to save.
+            obj: the `OrderTemplate` object to save.
         """
         self.session.add(obj)

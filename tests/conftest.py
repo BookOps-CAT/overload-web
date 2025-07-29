@@ -48,7 +48,7 @@ def test_sql_session():
 @pytest.fixture
 def make_template():
     def _make_template(data):
-        template = db.tables.Template(**data)
+        template = db.tables.OrderTemplate(**data)
         return template
 
     return _make_template

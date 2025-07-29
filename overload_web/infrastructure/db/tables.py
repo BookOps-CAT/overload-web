@@ -1,3 +1,24 @@
+"""Models representing templates for order-level record processing.
+
+Order templates are reusable objects used for applying consistent values to orders. The
+attributes of an order template correspond to those available in the `Order` domain model.
+
+Models:
+
+`_OrderTemplateBase`
+    The base data model used to represent an order template and fields that are shared by all
+    models within this module.
+`OrderTemplate`
+    The table model that includes all fields within an order template including fields that
+    are only required for the template to be saved to the database.
+`OrderTemplatePublic`
+    The data model used to represent an order template publicly.
+`OrderTemplateCreate`
+    The data model used to create a new order template.
+`OrderTemplateUpdate`
+    The data model used to update an existing order template.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -11,7 +32,18 @@ logger = logging.getLogger(__name__)
 metadata = MetaData()
 
 
-class _TemplateBase(SQLModel):
+class _OrderTemplateBase(SQLModel):
+    """
+    A reusable template for applying consistent values to orders.
+
+    Attributes:
+        name: the name to be associated with the `OrderTemplate` in the database
+        agent: the user who created the `OrderTemplate`
+
+    All other fields correspond to those available in the `Order` domain model.
+
+    """
+
     name: Annotated[str, Field(nullable=False, unique=True, index=True)]
     agent: Annotated[str, Field(nullable=False, index=True)]
     acquisition_type: Annotated[str | None, Field(default=None)]
@@ -64,7 +96,12 @@ class _TemplateBase(SQLModel):
         vendor_title_no: Annotated[str | None, Form()] = None,
         secondary_matchpoint: Annotated[str | None, Form()] = None,
         tertiary_matchpoint: Annotated[str | None, Form()] = None,
-    ) -> _TemplateBase:
+    ) -> _OrderTemplateBase:
+        """
+        A classmethod used to create an `_OrderTemplateBase` object from an html
+        form. HTML forms can only take data as strings so this class method is
+        needed in order to parse the data into the correct types.
+        """
         return cls(
             name=name,
             agent=agent,
@@ -93,11 +130,11 @@ class _TemplateBase(SQLModel):
         )
 
 
-class Template(_TemplateBase, table=True):
+class OrderTemplate(_OrderTemplateBase, table=True):
     id: Annotated[int, Field(default=None, primary_key=True, index=True)]
 
 
-class TemplatePublic(_TemplateBase):
+class OrderTemplatePublic(_OrderTemplateBase):
     id: int
 
     @classmethod
@@ -128,7 +165,7 @@ class TemplatePublic(_TemplateBase):
         vendor_title_no: Annotated[str | None, Form()] = None,
         secondary_matchpoint: Annotated[str | None, Form()] = None,
         tertiary_matchpoint: Annotated[str | None, Form()] = None,
-    ) -> TemplatePublic:
+    ) -> OrderTemplatePublic:
         return cls(
             name=name,
             agent=agent,
@@ -168,7 +205,7 @@ class TemplatePublic(_TemplateBase):
             return value.strip()
 
 
-class TemplateCreate(_TemplateBase):
+class OrderTemplateCreate(_OrderTemplateBase):
     ...
 
     @field_validator("*", mode="before")
@@ -180,7 +217,7 @@ class TemplateCreate(_TemplateBase):
             return value.strip()
 
 
-class TemplateUpdate(_TemplateBase):
+class OrderTemplateUpdate(_OrderTemplateBase):
     name: str
     agent: str
     primary_matchpoint: str

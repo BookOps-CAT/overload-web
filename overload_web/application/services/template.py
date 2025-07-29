@@ -13,12 +13,12 @@ if TYPE_CHECKING:  # pragma: no cover
 logger = logging.getLogger(__name__)
 
 
-class TemplateService:
-    """Handles template retrieval and persistence."""
+class OrderTemplateService:
+    """Handles order template retrieval and persistence."""
 
     def __init__(self, session: Session) -> None:
         """
-        Initialize `TemplateService` with a `sqlmodel.Session` object.
+        Initialize `OrderTemplateService` with a `sqlmodel.Session` object.
 
         Args:
             session: a `sqlmodel.Session` object.
@@ -26,36 +26,36 @@ class TemplateService:
         self.session = session
         self.repo = db.repository.SqlModelRepository(session=session)
 
-    def get_template(self, template_id: str) -> db.tables.Template | None:
+    def get_template(self, template_id: str) -> db.tables.OrderTemplate | None:
         """
-        Retrieve a template by its ID.
+        Retrieve an order template by its ID.
 
         Args:
             template_id: Identifier of the template.
 
         Returns:
-            The retrieved template as a `Template` object or None.
+            The retrieved template as a `OrderTemplate` object or None.
         """
         return self.repo.get(id=template_id)
 
     def list_templates(
         self, offset: int | None = 0, limit: int | None = 20
-    ) -> Sequence[db.tables.Template]:
+    ) -> Sequence[db.tables.OrderTemplate]:
         """
         Retrieve a list of templates in the database.
 
         Args:
-            offset: start position of `Template` objects to return
-            limit: the maximum number of `Template` objects to return
+            offset: start position of `OrderTemplate` objects to return
+            limit: the maximum number of `OrderTemplate` objects to return
 
         Returns:
-            A list of `Template` objects.
+            A list of `OrderTemplate` objects.
         """
         return self.repo.list(offset=offset, limit=limit)
 
-    def save_template(self, obj: db.tables.Template) -> db.tables.Template:
+    def save_template(self, obj: db.tables.OrderTemplate) -> db.tables.OrderTemplate:
         """
-        Save a template.
+        Save an order template.
 
         Args:
             data: template data as a dict.

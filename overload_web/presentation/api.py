@@ -9,7 +9,7 @@ import logging
 import os
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session
@@ -25,7 +25,9 @@ templates = Jinja2Templates(directory="overload_web/presentation/templates")
 
 SessionDep = Annotated[Session, Depends(deps.get_session)]
 ContextFormDep = Annotated[dict[str, str | dict], Depends(deps.context_form_fields)]
-TemplateFormDep = Annotated[dict[str, str | dict], Depends(deps.template_form_fields)]
+OrderTemplateFormDep = Annotated[
+    dict[str, str | dict], Depends(deps.template_form_fields)
+]
 
 
 @api_router.on_event("startup")
@@ -37,13 +39,13 @@ def startup_event():
 def create_template(
     request: Request,
     template: Annotated[
-        db.tables.TemplateCreate, Depends(db.tables.TemplateCreate.from_form)
+        db.tables.OrderTemplateCreate, Depends(db.tables.OrderTemplateCreate.from_form)
     ],
     session: SessionDep,
-    fields: TemplateFormDep,
+    fields: OrderTemplateFormDep,
 ) -> HTMLResponse:
-    valid_template = db.tables.Template.model_validate(template)
-    service = services.template.TemplateService(session=session)
+    valid_template = db.tables.OrderTemplate.model_validate(template)
+    service = services.template.OrderTemplateService(session=session)
     saved_template = service.save_template(obj=valid_template)
     return templates.TemplateResponse(
         request=request,
@@ -54,9 +56,12 @@ def create_template(
 
 @api_router.get("/template", response_class=HTMLResponse)
 def get_template(
-    request: Request, template_id: str, session: SessionDep, fields: TemplateFormDep
+    request: Request,
+    template_id: str,
+    session: SessionDep,
+    fields: OrderTemplateFormDep,
 ) -> HTMLResponse:
-    service = services.template.TemplateService(session=session)
+    service = services.template.OrderTemplateService(session=session)
     template = service.get_template(template_id=template_id)
     template_out = (
         {k: v for k, v in template.model_dump().items() if v} if template else {}
@@ -72,7 +77,7 @@ def get_template(
 def get_template_list(
     request: Request, session: SessionDep, offset: int = 0, limit: int = 20
 ) -> HTMLResponse:
-    service = services.template.TemplateService(session=session)
+    service = services.template.OrderTemplateService(session=session)
     template_list = service.list_templates(offset=offset, limit=limit)
     return templates.TemplateResponse(
         request=request,
@@ -81,20 +86,26 @@ def get_template_list(
     )
 
 
-# @api_router.patch("/templates/{template_id}", response_class=HTMLResponse)
-# def update_template(
-#     request: Request,
-#     template_id: str,
-#     template: db.models.TemplateUpdate,
-#     uow: UOWDep,
-# ) -> HTMLResponse:
-#     service = services.template.TemplateService(uow=uow)
-#     updated_template = service.save_template(obj=template)
-#     return templates.TemplateResponse(
-#         request=request,
-#         name="record_templates/update_template.html",
-#         context={"updated_template": updated_template},
-#     )
+@api_router.patch("/template", response_class=HTMLResponse)
+def update_template(
+    request: Request,
+    template_id: str,
+    template_patch: db.tables.OrderTemplateUpdate,
+    session: SessionDep,
+    fields: OrderTemplateFormDep,
+) -> HTMLResponse:
+    service = services.template.OrderTemplateService(session=session)
+    template = service.get_template(template_id=template_id)
+    if not template:
+        raise HTTPException(status_code=404, detail="OrderTemplate not found")
+    patch_data = template_patch.model_dump(exclude_unset=True)
+    template.sqlmodel_update(patch_data)
+    updated_template = service.save_template(obj=template)
+    return templates.TemplateResponse(
+        request=request,
+        name="record_templates/rendered_template.html",
+        context={"template": updated_template, "field_constants": fields},
+    )
 
 
 @api_router.get("/list-remote-files", response_class=HTMLResponse)
@@ -125,7 +136,7 @@ def process_vendor_file(
     ],
     files: Annotated[list[schemas.VendorFileModel], Depends(deps.normalize_files)],
     template_input: Annotated[
-        db.tables.Template, Depends(db.tables.TemplatePublic.from_loaded_form)
+        db.tables.OrderTemplate, Depends(db.tables.OrderTemplatePublic.from_loaded_form)
     ],
 ) -> HTMLResponse:
     template_data = template_input.model_dump()
