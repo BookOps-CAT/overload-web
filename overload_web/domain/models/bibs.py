@@ -62,7 +62,7 @@ class DomainBib:
     call_number: str | list[str] | None = None
     barcodes: list[str] = field(default_factory=list)
 
-    def apply_template(self, template_data: dict[str, Any]) -> None:
+    def apply_order_template(self, template_data: dict[str, Any]) -> None:
         """
         Apply template data to all orders in this bib record.
 
@@ -114,7 +114,7 @@ class Order:
 
     def apply_template(self, template_data: dict[str, Any]) -> None:
         """
-        Apply template data to the order, updating any matching non-empty fields.
+        Apply template data to the order, updating any matching, non-empty fields.
 
         Args:
             template_data: Field-value pairs to apply.

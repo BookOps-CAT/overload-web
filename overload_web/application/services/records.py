@@ -117,7 +117,7 @@ class RecordProcessingService:
                 )
             )
             record.domain_bib = self.matcher.match_bib(record.domain_bib, matchpoints)
-            record.domain_bib.apply_template(template_data=template_dict)
+            record.domain_bib.apply_order_template(template_data=template_dict)
             updated_bibs = self.parser.update_fields(
                 record=record,
                 fields=template_dict.get(

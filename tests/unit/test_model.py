@@ -76,12 +76,12 @@ class TestDomainBib:
         )
         assert bib.bib_id == "b123456789"
 
-    def test_DomainBib_apply_template(self, library, order_data, template_data):
+    def test_DomainBib_apply_order_template(self, library, order_data, template_data):
         bib = models.bibs.DomainBib(
             library=library, orders=[models.bibs.Order(**order_data)]
         )
         assert bib.orders[0].fund == "25240adbk"
-        bib.apply_template(template_data=template_data)
+        bib.apply_order_template(template_data=template_data)
         assert bib.orders[0].fund == "10001adbk"
 
 
