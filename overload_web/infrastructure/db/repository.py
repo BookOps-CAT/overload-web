@@ -3,7 +3,7 @@
 Classes:
 
 `SqlModelRepository`
-    `SQLAlchemy` implementation of `SqlRepositoryProtocol` for managing
+    `SQLModel` implementation of `SqlRepositoryProtocol` for managing
     `Template` objects in a SQL database.
 """
 
@@ -22,10 +22,10 @@ logger = logging.getLogger(__name__)
 
 class SqlModelRepository(protocols.repositories.SqlRepositoryProtocol[tables.Template]):
     """
-    `SQLAlchemy` repository for `Template` objects.
+    `SQLModel` repository for `Template` objects.
 
     Args:
-        session: a `SQLAlchemy` session.
+        session: a `sqlmodel.Session`.
     """
 
     def __init__(self, session: Session):

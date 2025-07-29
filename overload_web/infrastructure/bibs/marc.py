@@ -206,19 +206,17 @@ class BookopsMarcMapper:
         Returns:
             DomainBib: domain object populated with structured order and identifier data.
         """
+        if bib.collection == "RL":
+            call_number = bib.research_call_no
+        else:
+            call_number = bib.branch_call_no
         return models.bibs.DomainBib(
             library=models.bibs.LibrarySystem(bib.library),
             orders=[self.map_order(order=i) for i in bib.orders],
-            bib_id=(
-                models.bibs.BibId(value=bib.sierra_bib_id)
-                if bib.sierra_bib_id
-                else None
-            ),
+            bib_id=bib.sierra_bib_id,
             upc=bib.upc_number,
             isbn=bib.isbn,
             oclc_number=list(bib.oclc_nos.values()),
             barcodes=bib.barcodes,
-            call_number=(
-                bib.research_call_no if bib.collection == "RL" else bib.branch_call_no
-            ),
+            call_number=call_number,
         )
