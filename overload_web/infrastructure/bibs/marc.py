@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import copy
-import datetime
 import io
 from typing import BinaryIO
 
@@ -125,9 +124,6 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
                         continue
                     elif isinstance(v, list):
                         subfields.extend([Subfield(code=k, value=str(i)) for i in v])
-                    elif isinstance(v, (datetime.date, datetime.datetime)):
-                        date = datetime.datetime.strftime(v, format="%Y-%m-%d")
-                        subfields.append(Subfield(code=k, value=date))
                     else:
                         subfields.append(Subfield(code=k, value=str(v)))
                 bib_rec.add_field(
@@ -206,14 +202,15 @@ class BookopsMarcMapper:
         Returns:
             DomainBib: domain object populated with structured order and identifier data.
         """
-        if bib.collection == "RL":
-            call_number = bib.research_call_no
-        else:
-            call_number = bib.branch_call_no
+
+        call_number = (
+            bib.research_call_no if bib.collection == "RL" else bib.branch_call_no
+        )
+        bib_id = models.bibs.BibId(bib.sierra_bib_id) if bib.sierra_bib_id else None
         return models.bibs.DomainBib(
             library=models.bibs.LibrarySystem(bib.library),
             orders=[self.map_order(order=i) for i in bib.orders],
-            bib_id=bib.sierra_bib_id,
+            bib_id=bib_id,
             upc=bib.upc_number,
             isbn=bib.isbn,
             oclc_number=list(bib.oclc_nos.values()),
