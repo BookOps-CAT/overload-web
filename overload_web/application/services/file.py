@@ -14,7 +14,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class FileTransferService:
-    """Handles file transfer operations through file loader and writer."""
+    """Handles file transfer operations through `FileLoader` and `FileWriter`."""
 
     def __init__(
         self, loader: protocols.file_io.FileLoader, writer: protocols.file_io.FileWriter
@@ -37,7 +37,7 @@ class FileTransferService:
             dir: The directory to list files from.
 
         Returns:
-            a list of files in the given directory
+            a list of filenames contained within the given directory
         """
         return self.loader.list(dir=dir)
 
@@ -56,11 +56,11 @@ class FileTransferService:
 
     def write_marc_file(self, file: models.files.VendorFile, dir: str) -> str:
         """
-        Write a file to a directory
+        Write a file to a directory.
 
         Args:
-            file: The file to write as a `models.files.VendorFile` object
-            dir: The directory where the file should be written
+            file: The file to write as a `models.files.VendorFile` object.
+            dir: The directory where the file should be written.
 
         Returns:
             the directory and filename where the file was written.
@@ -69,6 +69,7 @@ class FileTransferService:
 
     @classmethod
     def create_local_file_service(cls) -> FileTransferService:
+        """Create a `FileTransferService object for local file handling."""
         return FileTransferService(
             loader=file_io.local.LocalFileLoader(),
             writer=file_io.local.LocalFileWriter(),
@@ -76,6 +77,16 @@ class FileTransferService:
 
     @classmethod
     def create_remote_file_service(cls, vendor: str) -> FileTransferService:
+        """
+        Create a `FileTransferService` object to handle file operations on a
+        vendor's remote storage.
+
+        Args:
+            vendor: the name of the vendor as a string.
+
+        Returns:
+            A `FileTransferService` object for the vendor's remote storage.
+        """
         return FileTransferService(
             loader=file_io.sftp.SFTPFileLoader.create_loader_for_vendor(vendor=vendor),
             writer=file_io.sftp.SFTPFileWriter.create_writer_for_vendor(vendor=vendor),

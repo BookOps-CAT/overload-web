@@ -1,4 +1,8 @@
-"""This modules contains data transfer objects (DTOs) for the application."""
+"""This modules contains data transfer objects (DTOs) for the application.
+
+The data transfer objects defined within this module allow a domain object
+to be bound with associated objects that are reliant on external dependencies.
+"""
 
 from __future__ import annotations
 
@@ -14,11 +18,11 @@ class BibDTO:
     """
     Data Transfer Object for MARC records.
 
-    This class is responsible maintaining a MARC record and its associated
+    This class is responsible binding a MARC record and its associated
     domain bib.
 
     Attributes:
-        bib: The original MARC record as a `bookops-marc.Bib` object.
+        bib: The original MARC record as a `bookops_marc.Bib` object.
         domain_bib: The `DomainBib` object associated with the MARC record.
 
     """
