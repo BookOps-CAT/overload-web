@@ -66,6 +66,37 @@ class TestRecordProcessingService:
         },
     }
 
+    stub_vendor_rules = {
+        "UNKNOWN": {
+            "vendor_tags": {},
+            "template": {
+                "matchpoints": {
+                    "primary_matchpoint": "isbn",
+                    "secondary_matchpoint": "oclc_number",
+                },
+                "bib_template": [],
+            },
+        },
+        "INGRAM": {
+            "vendor_tags": {"901": {"code": "a", "value": "INGRAM"}},
+            "template": {
+                "matchpoints": {
+                    "primary_matchpoint": "oclc_number",
+                    "secondary_matchpoint": "isbn",
+                },
+                "bib_template": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=a;",
+                    }
+                ],
+            },
+        },
+    }
+
     @pytest.fixture
     def stub_service(self, monkeypatch, library, collection, record_type):
         def fake_fetcher(*args, **kwargs):
@@ -79,6 +110,7 @@ class TestRecordProcessingService:
             collection=collection,
             record_type=record_type,
             marc_mapping=self.stub_mapping,
+            vendor_rules=self.stub_vendor_rules,
         )
 
     @pytest.fixture
@@ -94,6 +126,7 @@ class TestRecordProcessingService:
             collection=collection,
             record_type=record_type,
             marc_mapping=self.stub_mapping,
+            vendor_rules=self.stub_vendor_rules,
         )
 
     @pytest.fixture

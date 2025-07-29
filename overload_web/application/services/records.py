@@ -1,9 +1,9 @@
 """Application services for processing files containing bibliographic records.
 
 This module defines record processing services for Full and Order-level MARC records.
-The service contains `library`, `collection`, `record_type`, `parser`, and `matcher`
-attributes. The `parser` attribute is a `BibMatcher` domain object. The `parser
-attribute is a concrete implementation of the `BibParser` domain protocol.
+The service contains `library`, `collection`, `record_type`, `parser`, `matcher`,
+and `marc_mapping` attributes. The `parser` attribute is a `BibMatcher` domain object.
+The `parser attribute is a concrete implementation of the `BibParser` domain protocol.
 
 Classes:
 
@@ -12,11 +12,14 @@ Classes:
     to process both full and order-level MARC records.
 """
 
+import logging
 from typing import Any, BinaryIO
 
 from overload_web.application import dto
 from overload_web.domain import logic, models
 from overload_web.infrastructure.bibs import context, marc, sierra
+
+logger = logging.getLogger(__name__)
 
 
 class RecordProcessingService:
@@ -28,28 +31,36 @@ class RecordProcessingService:
         collection: str,
         record_type: str,
         marc_mapping: dict[str, dict[str, str]],
+        vendor_rules: dict[
+            str, dict[str, dict[str, dict[str, dict[str, str] | list[str]]]]
+        ],
     ):
         """
         Initialize `RecordProcessingService`.
 
         Args:
-            library: the library whose records are to be processed
-            collection: the collection whose records are to be processed
-            record_type: the type of records to be processed (full or order-level)
-            marc_mapping: the marc mapping to be used when processing records
+            library:
+                The library whose records are to be processed as a str.
+            collection:
+                The collection whose records are to be processed as a str.
+            record_type:
+                The type of records to be processed (full or order-level) as a str.
+            marc_mapping:
+                The marc mapping to be used when processing records as a dictionary.
         """
         self.library = models.bibs.LibrarySystem(library)
         self.collection = models.bibs.Collection(collection)
         self.record_type = models.bibs.RecordType(record_type)
         self.parser = self._get_parser(marc_mapping=marc_mapping)
         self.matcher = self._get_matcher()
+        self.vendor_id = self._get_vendor_identifier(vendor_rules)
 
     def _normalize_matchpoints(self, matchpoints: dict[str, Any] = {}) -> list[str]:
-        """Normalize matchpoints to a list."""
+        """Normalize matchpoints from a dict to a list."""
         return [v for k, v in matchpoints.items() if v]
 
     def _normalize_template(self, template_data: dict[str, Any] = {}) -> dict[str, Any]:
-        """Normalize template data to a dictionary."""
+        """Normalize template data to a dictionary and remove `NoneType` values."""
         return {k: v for k, v in template_data.items() if v}
 
     def _get_matcher(self) -> logic.bibs.BibMatcher:
@@ -74,11 +85,15 @@ class RecordProcessingService:
         """
         return marc.BookopsMarcParser(library=self.library, marc_mapping=marc_mapping)
 
+    def _get_vendor_identifier(
+        self, vendor_rules: dict[str, Any]
+    ) -> context.VendorIdentifier:
+        """Create a `VendorIdentifier` obj to id vendor for each bib."""
+        return context.VendorIdentifier(vendor_rules=vendor_rules)
+
     def _get_vendor_template(self, bib: dto.bib.BibDTO) -> dict[str, Any]:
-        vendor_id = context.VendorIdentifier(
-            library=str(self.library), collection=str(self.collection)
-        )
-        info = vendor_id.identify_vendor(bib=bib.bib)
+        """Identify the vendor associated with a specific Bib record"""
+        info = self.vendor_id.identify_vendor(bib=bib.bib)
         return info["template"]
 
     def parse(self, data: BinaryIO | bytes) -> list[dto.bib.BibDTO]:
@@ -86,10 +101,10 @@ class RecordProcessingService:
         Parse binary MARC data into `BibDTO` objects.
 
         Args:
-            data: Binary MARC data as a `BinaryIO` or `bytes` object
+            data: Binary MARC data as a `BinaryIO` or `bytes` object.
 
         Returns:
-            a list of parsed bibliographic records as `BibDTO` objects
+            a list of parsed bibliographic records as `BibDTO` objects.
         """
         return self.parser.parse(data=data)
 
@@ -102,7 +117,7 @@ class RecordProcessingService:
 
         Args:
             records: a list of parsed bibliographic records as `BibDTO` objects.
-            template_data: template data as a `Template` object or dict.
+            template_data: order template data as a dictionary.
 
         Returns:
             a list of processed and updated records as `BibDTO` objects
