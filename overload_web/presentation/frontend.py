@@ -53,12 +53,12 @@ def vendor_file_page(
     """
     CONTEXT["page_title"] = page_title
     return templates.TemplateResponse(
-        request=request, name="context.html", context=CONTEXT
+        request=request, name="context_form.html", context=CONTEXT
     )
 
 
 @frontend_router.post("/process", response_class=HTMLResponse)
-def post_context_form_new(
+def post_context_form(
     record_type: str = Form(...), library: str = Form(...), collection: str = Form(...)
 ) -> RedirectResponse:
     """
@@ -83,7 +83,7 @@ def post_context_form_new(
 
 
 @frontend_router.get("/process/context", response_class=HTMLResponse)
-def process_records(
+def process_records_page(
     request: Request,
     library: str,
     collection: str,

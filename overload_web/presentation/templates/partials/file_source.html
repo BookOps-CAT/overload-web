@@ -4,13 +4,13 @@
         <div class="row">
             <div class="col">
                 <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="file-source" value="local" hx-get="/htmx/local-file-form" hx-target="#file-form" hx-swap="innerHTML">
+                <input class="form-check-input" type="radio" name="file-source" value="local" hx-get="/htmx/forms/local-files" hx-target="#file-form" hx-swap="innerHTML">
                 <label class="form-check-label">Local Upload</label>
                 </div>
             </div>  
             <div class="col">
                 <div class="form-check form-check-inline">  
-                <input class="form-check-input" type="radio" name="file-source" value="remote" hx-get="/htmx/remote-file-form" hx-target="#file-form" hx-swap="innerHTML">
+                <input class="form-check-input" type="radio" name="file-source" value="remote" hx-get="/htmx/forms/remote-files" hx-target="#file-form" hx-swap="innerHTML">
                 <label class="form-check-label">Remote Server</label>
                 </div>
             </div>  

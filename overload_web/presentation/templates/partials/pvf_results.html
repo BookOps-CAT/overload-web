@@ -6,9 +6,8 @@
   {% endfor %} 
   {% endif %}  
   {% if files %}
-<h5>Processed Files:</h5>
+<h5>{{ file_count }} file(s) processed:</h5>
   {% for file in files %}
   {{ file }}
   {% endfor %}
   {% endif %}
-</ul>

@@ -9,14 +9,14 @@
       </div> 
     </div>
     <div class="row gy-1 my-2">
-      <div class="col" id="file-source" hx-get="/htmx/file-source" hx-trigger="load" hx-target="this"></div>
+      {% include "partials/file_source.html" %}
     </div>
     <div class="row gy-1 my-2">
-      <div class="col" id="template-source" hx-get="/htmx/apply-template-button" hx-trigger="load" hx-target="this"></div>
+      {% include "partials/template_source.html" %}
     </div>     
     <div class="row gy-1 my-2">
       <div class="col">
-        <div id="pvf-button" hx-get="/htmx/pvf-button" hx-trigger="load" hx-target="this"></div>
+        {% include "partials/pvf_button.html" %}
       </div>
       <div class="col">
         <div id="loading-spinner" class="spinner-border text-primary" role="status" style="display:none; width: 2rem; height: 2rem; margin-left: 10px;">

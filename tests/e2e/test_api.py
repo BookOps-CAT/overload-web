@@ -35,7 +35,7 @@ class TestApp:
         routes = self.client.app.router.__dict__["routes"]
         route_names = [i.name for i in routes]
         assert "root" in route_names
-        assert "process_records" in route_names
+        assert "process_records_page" in route_names
 
     def test_home_get(self):
         response = self.client.get("/")
@@ -234,31 +234,17 @@ class TestApp:
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/api/write-remote?dir=foo&vendor=foo"
 
-    def test_htmx_get_file_source(self):
-        response = self.client.get("/htmx/file-source")
-        assert response.status_code == 200
-        assert "File Source" in response.text
-        assert "Local Upload" in response.text
-        assert "Remote Server" in response.text
-        assert response.url == f"{self.base_url}/htmx/file-source"
-
     def test_htmx_get_local_upload_form(self):
-        response = self.client.get("htmx/local-file-form")
+        response = self.client.get("/htmx/forms/local-files")
         assert response.status_code == 200
         assert "Select Files" in response.text
-        assert response.url == f"{self.base_url}/htmx/local-file-form"
+        assert response.url == f"{self.base_url}/htmx/forms/local-files"
 
     def test_htmx_get_remote_file_form(self):
-        response = self.client.get("/htmx/remote-file-form")
+        response = self.client.get("/htmx/forms/remote-files")
         assert response.status_code == 200
         assert "Select Files" in response.text
-        assert response.url == f"{self.base_url}/htmx/remote-file-form"
-
-    def test_htmx_get_pvf_button(self):
-        response = self.client.get("/htmx/pvf-button")
-        assert response.status_code == 200
-        assert "Process Vendor File" in response.text
-        assert response.url == f"{self.base_url}/htmx/pvf-button"
+        assert response.url == f"{self.base_url}/htmx/forms/remote-files"
 
     def test_htmx_get_context_form(self):
         response = self.client.get("/htmx/forms/context")
@@ -268,11 +254,6 @@ class TestApp:
             "library",
             "record_type",
         ]
-
-    def test_htmx_template_form_selector(self):
-        response = self.client.get("/htmx/apply-template-button")
-        assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == ["field_constants", "request"]
 
     @pytest.mark.parametrize(
         "library, collection, record_type",

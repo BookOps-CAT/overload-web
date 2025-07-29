@@ -20,17 +20,12 @@ ContextFormDep = Annotated[dict[str, str | dict], Depends(deps.context_form_fiel
 TemplateFormDep = Annotated[dict[str, str | dict], Depends(deps.template_form_fields)]
 
 
-@htmx_router.get("/file-source", response_class=HTMLResponse)
-def get_file_source(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(request=request, name="partials/file_source.html")
-
-
-@htmx_router.get("/local-file-form", response_class=HTMLResponse)
+@htmx_router.get("/forms/local-files", response_class=HTMLResponse)
 def get_local_upload_form(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request=request, name="files/local_form.html")
 
 
-@htmx_router.get("/remote-file-form", response_class=HTMLResponse)
+@htmx_router.get("/forms/remote-files", response_class=HTMLResponse)
 def get_remote_file_form(
     request: Request,
     fields: Annotated[dict[str, str | dict], Depends(deps.load_constants)],
@@ -39,21 +34,6 @@ def get_remote_file_form(
         request=request,
         name="files/remote_form.html",
         context={"vendors": fields["vendors"]},
-    )
-
-
-@htmx_router.get("/pvf-button", response_class=HTMLResponse)
-def get_pvf_button(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(request=request, name="partials/pvf_button.html")
-
-
-@htmx_router.get("/apply-template-button", response_class=HTMLResponse)
-def template_form_selector(request: Request, fields: TemplateFormDep) -> HTMLResponse:
-    """Get options for template inputs from application constants."""
-    return templates.TemplateResponse(
-        request=request,
-        name="partials/template_source.html",
-        context={"field_constants": fields},
     )
 
 
