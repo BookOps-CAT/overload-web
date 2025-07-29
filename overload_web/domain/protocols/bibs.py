@@ -40,17 +40,6 @@ T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
 
-class FetcherResponseDict(TypedDict):
-    """Defines the dict returned by `BibFetcher.get_bibs_by_id` method"""
-
-    library: str
-    orders: list[str]
-    bib_id: str | None
-    isbn: str | None
-    oclc_number: list[str] | None
-    upc: str | None
-
-
 @runtime_checkable
 class BibFetcher(Protocol):
     """
@@ -75,6 +64,17 @@ class BibFetcher(Protocol):
     Returns:
         a list of bib-like dicts representing candidate matches.
     """
+
+
+class FetcherResponseDict(TypedDict):
+    """Defines the dict returned by `BibFetcher.get_bibs_by_id` method"""
+
+    library: str
+    orders: list[str]
+    bib_id: str | None
+    isbn: str | None
+    oclc_number: list[str] | None
+    upc: str | None
 
 
 @runtime_checkable
