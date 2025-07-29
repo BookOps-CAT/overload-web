@@ -5,12 +5,15 @@ Uses `FileLoader` and `FileWriter` domain protocols.
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from overload_web.infrastructure import file_io
 
 if TYPE_CHECKING:  # pragma: no cover
     from overload_web.domain import models, protocols
+
+logger = logging.getLogger(__name__)
 
 
 class FileTransferService:
