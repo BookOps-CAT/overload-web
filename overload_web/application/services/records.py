@@ -17,7 +17,7 @@ from typing import Any, BinaryIO
 
 from overload_web.application import dto
 from overload_web.domain import logic, models
-from overload_web.infrastructure.bibs import context, marc, sierra
+from overload_web.infrastructure.bibs import marc, sierra
 
 logger = logging.getLogger(__name__)
 
@@ -51,50 +51,36 @@ class RecordProcessingService:
         self.library = models.bibs.LibrarySystem(library)
         self.collection = models.bibs.Collection(collection)
         self.record_type = models.bibs.RecordType(record_type)
-        self.parser = self._get_parser(marc_mapping=marc_mapping)
-        self.matcher = self._get_matcher()
-        self.vendor_id = self._get_vendor_identifier(vendor_rules)
-
-    def _normalize_matchpoints(self, matchpoints: dict[str, Any] = {}) -> list[str]:
-        """Normalize matchpoints from a dict to a list."""
-        return [v for k, v in matchpoints.items() if v]
-
-    def _normalize_template(self, template_data: dict[str, Any] = {}) -> dict[str, Any]:
-        """Normalize template data to a dictionary and remove `NoneType` values."""
-        return {k: v for k, v in template_data.items() if v}
-
-    def _get_matcher(self) -> logic.bibs.BibMatcher:
-        """
-        Get a `BibMatcher` object for the supplied library
-
-        Returns:
-            `BibMatcher` instance.
-        """
-        return logic.bibs.BibMatcher(
-            fetcher=sierra.SierraBibFetcher(library=str(self.library))
-        )
-
-    def _get_parser(
-        self, marc_mapping: dict[str, dict[str, str]]
-    ) -> marc.BookopsMarcParser:
-        """
-        Get a `BookopsMarcParser` object for the supplied library.
-
-        Returns:
-            `BookopsMarcParser` instance.
-        """
-        return marc.BookopsMarcParser(library=self.library, marc_mapping=marc_mapping)
-
-    def _get_vendor_identifier(
-        self, vendor_rules: dict[str, Any]
-    ) -> context.VendorIdentifier:
-        """Create a `VendorIdentifier` obj to id vendor for each bib."""
-        return context.VendorIdentifier(vendor_rules=vendor_rules)
+        self.parser = marc.BookopsMarcParser(self.library, marc_mapping)
+        self.matcher = logic.bibs.BibMatcher(sierra.SierraBibFetcher(str(self.library)))
+        self.vendor_rules = vendor_rules
 
     def _get_vendor_template(self, bib: dto.bib.BibDTO) -> dict[str, Any]:
         """Identify the vendor associated with a specific Bib record"""
-        info = self.vendor_id.identify_vendor(bib=bib.bib)
+        info = self.parser.identify_vendor(record=bib, vendor_rules=self.vendor_rules)
         return info["template"]
+
+    def _process_record(
+        self,
+        record: dto.bib.BibDTO,
+        matchpoints: list[str],
+        order_template: dict[str, Any] = {},
+    ) -> dto.bib.BibDTO:
+        vendor_template = self._get_vendor_template(record)
+        if not matchpoints:
+            matchpoints = [
+                v for k, v in vendor_template.items() if v and "_matchpoint" in k
+            ]
+        record.domain_bib = self.matcher.match_bib(record.domain_bib, matchpoints)
+        bib_fields = vendor_template.get("bib_fields", [])
+        if self.record_type == models.bibs.RecordType.ORDER_LEVEL:
+            record.domain_bib.apply_order_template(template_data=order_template)
+            updated_order_rec = self.parser.update_order_fields(record=record)
+            return self.parser.update_bib_fields(
+                record=updated_order_rec, fields=bib_fields
+            )
+        else:
+            return self.parser.update_bib_fields(record=record, fields=bib_fields)
 
     def parse(self, data: BinaryIO | bytes) -> list[dto.bib.BibDTO]:
         """
@@ -109,7 +95,10 @@ class RecordProcessingService:
         return self.parser.parse(data=data)
 
     def process_records(
-        self, records: list[dto.bib.BibDTO], template_data: dict[str, Any] = {}
+        self,
+        records: list[dto.bib.BibDTO],
+        matchpoints: list[str],
+        template_data: dict[str, Any] = {},
     ) -> list[dto.bib.BibDTO]:
         """
         Match and update bibliographic records. Uses vendor and template data
@@ -122,26 +111,12 @@ class RecordProcessingService:
         Returns:
             a list of processed and updated records as `BibDTO` objects
         """
-        processed_bibs = []
-        template_dict = self._normalize_template(template_data=template_data)
-        for record in records:
-            matchpoints = self._normalize_matchpoints(
-                template_dict.get(
-                    "matchpoints",
-                    self._get_vendor_template(record).get("matchpoints", []),
-                )
+        return [
+            self._process_record(
+                record=i, order_template=template_data, matchpoints=matchpoints
             )
-            record.domain_bib = self.matcher.match_bib(record.domain_bib, matchpoints)
-            record.domain_bib.apply_order_template(template_data=template_dict)
-            updated_bibs = self.parser.update_fields(
-                record=record,
-                fields=template_dict.get(
-                    "bib_template",
-                    self._get_vendor_template(record).get("bib_template", []),
-                ),
-            )
-            processed_bibs.append(updated_bibs)
-        return processed_bibs
+            for i in records
+        ]
 
     def write_marc_binary(self, records: list[dto.bib.BibDTO]) -> BinaryIO:
         """

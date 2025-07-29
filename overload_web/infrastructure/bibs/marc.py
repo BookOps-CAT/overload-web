@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import copy
 import io
-from typing import BinaryIO
+from typing import Any, BinaryIO
 
 from bookops_marc import Bib, SierraBibReader
-from bookops_marc.models import Order
+from bookops_marc.models import Order as BookopsMarcOrder
 from pymarc import Field, Indicators, Subfield
 
 from overload_web.application import dto
@@ -50,6 +50,38 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
             out[tag] = tag_dict
         return out
 
+    def _check_vendor_tag(
+        self, record: dto.bib.BibDTO, vendor_tags: dict[str, dict[str, str]]
+    ) -> dict[str, str]:
+        bib_dict: dict = {}
+        for field, data in vendor_tags.items():
+            bib_field = record.bib.get(field)
+            if not bib_field:
+                continue
+            else:
+                bib_dict[field] = {
+                    "code": data["code"],
+                    "value": bib_field.get(data["code"]),
+                }
+        return bib_dict
+
+    def identify_vendor(
+        self, record: dto.bib.BibDTO, vendor_rules: dict[str, Any]
+    ) -> dict[str, Any]:
+        for vendor, info in vendor_rules.items():
+            vendor_tags = info.get("vendor_tags", {})
+            alt_vendor_tags = info.get("alternate_vendor_tags", {})
+            match = self._check_vendor_tag(record=record, vendor_tags=vendor_tags)
+            if match and match == vendor_tags:
+                return vendor_rules[vendor]
+            alt_match = self._check_vendor_tag(
+                record=record, vendor_tags=alt_vendor_tags
+            )
+            if alt_match and alt_match == vendor_tags:
+                return vendor_rules[vendor]
+        vendor = "UNKNOWN"
+        return vendor_rules[vendor]
+
     def parse(self, data: BinaryIO | bytes) -> list[dto.bib.BibDTO]:
         """
         Parse binary MARC data into a list of `BibDTO` objects.
@@ -87,11 +119,11 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
         io_data.seek(0)
         return io_data
 
-    def update_fields(
+    def update_bib_fields(
         self, record: dto.bib.BibDTO, fields: list[dict[str, str]]
     ) -> dto.bib.BibDTO:
         """
-        Update a `BibDTO` object's `Bib` attribute with new fields and order data.
+        Update a `BibDTO` object's `Bib` attribute with new fields.
 
         Args:
             record: `BibDTO` object representing the bibliographic record.
@@ -103,18 +135,38 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
         bib_rec = copy.deepcopy(record.bib)
         if record.domain_bib.bib_id:
             bib_rec.remove_fields("907")
+            bib_id_str = f".b{str(record.domain_bib.bib_id).strip('.b')}"
             bib_rec.add_ordered_field(
                 Field(
                     tag="907",
                     indicators=Indicators(" ", " "),
+                    subfields=[Subfield(code="a", value=bib_id_str)],
+                )
+            )
+        for field in fields:
+            bib_rec.add_ordered_field(
+                Field(
+                    tag=field["tag"],
+                    indicators=Indicators(field["ind1"], field["ind2"]),
                     subfields=[
-                        Subfield(
-                            code="a",
-                            value=f".b{str(record.domain_bib.bib_id).strip('.b')}",
-                        )
+                        Subfield(code=field["subfield_code"], value=field["value"])
                     ],
                 )
             )
+        record.bib = bib_rec
+        return record
+
+    def update_order_fields(self, record: dto.bib.BibDTO) -> dto.bib.BibDTO:
+        """
+        Update a `BibDTO` object's `Bib` attribute with new fields based on order data.
+
+        Args:
+            record: `BibDTO` object representing the bibliographic record.
+
+        Returns:
+            the updated record as a `BibDTO` object
+        """
+        bib_rec = copy.deepcopy(record.bib)
         for order in record.domain_bib.orders:
             order_data = self._map_order_data(order)
             for tag in ["960", "961"]:
@@ -129,22 +181,12 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
                 bib_rec.add_field(
                     Field(tag=tag, indicators=Indicators(" ", " "), subfields=subfields)
                 )
-        for field in fields:
-            bib_rec.add_ordered_field(
-                Field(
-                    tag=field["tag"],
-                    indicators=Indicators(field["ind1"], field["ind2"]),
-                    subfields=[
-                        Subfield(code=field["subfield_code"], value=field["value"])
-                    ],
-                )
-            )
         record.bib = bib_rec
         return record
 
 
 class BookopsMarcMapper:
-    def map_order(self, order: Order) -> models.bibs.Order:
+    def map_order(self, order: BookopsMarcOrder) -> models.bibs.Order:
         """
         Factory method used to construct an `Order` object from a
         `bookops_marc.Order` object.

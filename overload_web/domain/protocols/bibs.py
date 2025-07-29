@@ -23,7 +23,7 @@ Protocols:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, BinaryIO, Protocol, TypeVar, runtime_checkable
+from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, TypeVar, runtime_checkable
 
 from overload_web.domain import models
 
@@ -75,6 +75,12 @@ class MarcParser(Protocol[T]):
     library: models.bibs.LibrarySystem
     marc_mapping: dict[str, dict[str, str]]
 
+    def identify_vendor(
+        self, record: T, vendor_rules: dict[str, Any]
+    ) -> dict[str, Any]: ...  # pragma: no branch
+
+    """Provided a list of vendor rules identify the vendor associated with a record"""
+
     def parse(self, data: BinaryIO | bytes) -> list[T]: ...  # pragma: no branch
 
     """Convert binary MARC data into a list of `T` objects."""
@@ -83,8 +89,12 @@ class MarcParser(Protocol[T]):
 
     """Convert a list of `T` objects into binary MARC data."""
 
-    def update_fields(
+    def update_bib_fields(
         self, record: T, fields: list[dict[str, str]]
     ) -> T: ...  # pragma: no branch
 
     """Provided a list of fields as dicts, update MARC fields in a `T` object"""
+
+    def update_order_fields(self, record: T) -> T: ...  # pragma: no branch
+
+    """Provided update MARC fields in a `T` object based on attributes of object"""

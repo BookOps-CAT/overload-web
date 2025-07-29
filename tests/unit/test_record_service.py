@@ -26,15 +26,8 @@ class FakeBibFetcher(StubFetcher):
 
 
 @pytest.mark.parametrize(
-    "library, collection, record_type",
-    [
-        ("nypl", "BL", "full"),
-        ("nypl", "BL", "order_level"),
-        ("nypl", "RL", "full"),
-        ("nypl", "RL", "order_level"),
-        ("bpl", "NONE", "full"),
-        ("bpl", "NONE", "order_level"),
-    ],
+    "library, collection",
+    [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
 )
 class TestRecordProcessingService:
     stub_mapping = {
@@ -70,21 +63,17 @@ class TestRecordProcessingService:
         "UNKNOWN": {
             "vendor_tags": {},
             "template": {
-                "matchpoints": {
-                    "primary_matchpoint": "isbn",
-                    "secondary_matchpoint": "oclc_number",
-                },
-                "bib_template": [],
+                "primary_matchpoint": "isbn",
+                "secondary_matchpoint": "oclc_number",
+                "bib_fields": [],
             },
         },
         "INGRAM": {
             "vendor_tags": {"901": {"code": "a", "value": "INGRAM"}},
             "template": {
-                "matchpoints": {
-                    "primary_matchpoint": "oclc_number",
-                    "secondary_matchpoint": "isbn",
-                },
-                "bib_template": [
+                "primary_matchpoint": "oclc_number",
+                "secondary_matchpoint": "isbn",
+                "bib_fields": [
                     {
                         "tag": "949",
                         "ind1": "",
@@ -134,6 +123,7 @@ class TestRecordProcessingService:
         dto = make_bib_dto({"020": {"code": "a", "value": "9781234567890"}})
         return dto
 
+    @pytest.mark.parametrize("record_type", ["full", "order_level"])
     def test_parse(self, stub_service, stub_bib_dto):
         records = stub_service.parse(stub_bib_dto.bib.as_marc())
         assert len(records) == 1
@@ -142,21 +132,39 @@ class TestRecordProcessingService:
         assert str(records[0].domain_bib.library) == str(stub_service.library)
         assert records[0].domain_bib.barcodes == ["333331234567890"]
 
-    def test_process_records(self, stub_service, stub_bib_dto, template_data):
+    @pytest.mark.parametrize("record_type", ["full"])
+    def test_process_records_full(self, stub_service, stub_bib_dto, template_data):
         original_orders = copy.deepcopy(stub_bib_dto.domain_bib.orders)
-        matched_bibs = stub_service.process_records([stub_bib_dto], template_data)
+        matched_bibs = stub_service.process_records(
+            [stub_bib_dto], template_data=template_data, matchpoints=[]
+        )
+        assert len(matched_bibs) == 1
+        assert str(matched_bibs[0].domain_bib.bib_id) == "123"
+        assert [i.order_code_1 for i in original_orders] == ["j"]
+        assert [i.order_code_1 for i in matched_bibs[0].domain_bib.orders] == ["j"]
+
+    @pytest.mark.parametrize("record_type", ["order_level"])
+    def test_process_records_order_level(
+        self, stub_service, stub_bib_dto, template_data
+    ):
+        original_orders = copy.deepcopy(stub_bib_dto.domain_bib.orders)
+        matched_bibs = stub_service.process_records(
+            [stub_bib_dto], template_data=template_data, matchpoints=[]
+        )
         assert len(matched_bibs) == 1
         assert str(matched_bibs[0].domain_bib.bib_id) == "123"
         assert [i.order_code_1 for i in original_orders] == ["j"]
         assert [i.order_code_1 for i in matched_bibs[0].domain_bib.orders] == ["b"]
 
+    @pytest.mark.parametrize("record_type", ["full", "order_level"])
     def test_process_records_no_matches(self, stub_service_no_matches, stub_bib_dto):
         matched_bibs = stub_service_no_matches.process_records(
-            [stub_bib_dto], template_data={}
+            [stub_bib_dto], template_data={}, matchpoints=[]
         )
         assert len(matched_bibs) == 1
         assert matched_bibs[0].domain_bib.bib_id is None
 
+    @pytest.mark.parametrize("record_type", ["full", "order_level"])
     def test_process_records_vendor_updates(self, stub_service, make_bib_dto):
         dto = make_bib_dto(
             {
@@ -165,11 +173,14 @@ class TestRecordProcessingService:
             },
         )
         original_bib = copy.deepcopy(dto.bib)
-        matched_bibs = stub_service.process_records([dto], template_data={})
+        matched_bibs = stub_service.process_records(
+            [dto], template_data={}, matchpoints=[]
+        )
         assert len(matched_bibs) == 1
         assert len(original_bib.get_fields("949")) == 1
         assert len(matched_bibs[0].bib.get_fields("949")) == 2
 
+    @pytest.mark.parametrize("record_type", ["full", "order_level"])
     def test_write_marc_binary(self, stub_bib_dto, stub_service):
         marc_binary = stub_service.write_marc_binary(records=[stub_bib_dto])
         assert marc_binary.read()[0:2] == b"00"

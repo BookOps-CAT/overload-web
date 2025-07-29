@@ -136,7 +136,10 @@ def process_vendor_file(
     ],
     files: Annotated[list[schemas.VendorFileModel], Depends(deps.normalize_files)],
     template_input: Annotated[
-        db.tables.OrderTemplate, Depends(db.tables.OrderTemplatePublic.from_loaded_form)
+        schemas.OrderTemplateSchema, Depends(schemas.OrderTemplateSchema.from_form)
+    ],
+    matchpoints: Annotated[
+        schemas.MatchpointSchema, Depends(schemas.MatchpointSchema.from_form)
     ],
 ) -> HTMLResponse:
     template_data = template_input.model_dump()
@@ -144,7 +147,9 @@ def process_vendor_file(
     for n, file in enumerate(files):
         bibs = service.parse(data=file.content)
         processed_bibs = service.process_records(
-            records=bibs, template_data={k: v for k, v in template_data.items() if v}
+            records=bibs,
+            template_data=template_data,
+            matchpoints=matchpoints.as_list(),
         )
         marc_binary = service.write_marc_binary(records=processed_bibs)
         out_files.append(
