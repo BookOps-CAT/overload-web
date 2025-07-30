@@ -217,10 +217,10 @@ class OrderTemplateCreate(_OrderTemplateBase):
             return value.strip()
 
 
-class OrderTemplateUpdate(_OrderTemplateBase):
-    name: str
-    agent: str
-    primary_matchpoint: str
+class OrderTemplateUpdate(SQLModel):
+    name: str | None = None
+    agent: str | None = None
+    primary_matchpoint: str | None = None
     acquisition_type: str | None = None
     blanket_po: str | None = None
     claim_code: str | None = None
@@ -242,3 +242,63 @@ class OrderTemplateUpdate(_OrderTemplateBase):
     vendor_title_no: str | None = None
     secondary_matchpoint: str | None = None
     tertiary_matchpoint: str | None = None
+
+    @classmethod
+    def from_form(
+        cls,
+        name: Annotated[str | None, Form()] = None,
+        agent: Annotated[str | None, Form()] = None,
+        acquisition_type: Annotated[str | None, Form()] = None,
+        blanket_po: Annotated[str | None, Form()] = None,
+        claim_code: Annotated[str | None, Form()] = None,
+        country: Annotated[str | None, Form()] = None,
+        format: Annotated[str | None, Form()] = None,
+        internal_note: Annotated[str | None, Form()] = None,
+        lang: Annotated[str | None, Form()] = None,
+        material_form: Annotated[str | None, Form()] = None,
+        order_code_1: Annotated[str | None, Form()] = None,
+        order_code_2: Annotated[str | None, Form()] = None,
+        order_code_3: Annotated[str | None, Form()] = None,
+        order_code_4: Annotated[str | None, Form()] = None,
+        order_note: Annotated[str | None, Form()] = None,
+        order_type: Annotated[str | None, Form()] = None,
+        receive_action: Annotated[str | None, Form()] = None,
+        selector_note: Annotated[str | None, Form()] = None,
+        vendor_code: Annotated[str | None, Form()] = None,
+        vendor_notes: Annotated[str | None, Form()] = None,
+        vendor_title_no: Annotated[str | None, Form()] = None,
+        primary_matchpoint: Annotated[str | None, Form()] = None,
+        secondary_matchpoint: Annotated[str | None, Form()] = None,
+        tertiary_matchpoint: Annotated[str | None, Form()] = None,
+    ) -> OrderTemplateUpdate:
+        """
+        A classmethod used to create an `OrderTemplateUpdate` object from an html
+        form. HTML forms can only take data as strings so this class method is
+        needed in order to parse the data into the correct types.
+        """
+        return cls(
+            name=name,
+            agent=agent,
+            acquisition_type=acquisition_type,
+            blanket_po=blanket_po,
+            claim_code=claim_code,
+            country=country,
+            format=format,
+            internal_note=internal_note,
+            lang=lang,
+            material_form=material_form,
+            order_code_1=order_code_1,
+            order_code_2=order_code_2,
+            order_code_3=order_code_3,
+            order_code_4=order_code_4,
+            order_note=order_note,
+            order_type=order_type,
+            receive_action=receive_action,
+            selector_note=selector_note,
+            vendor_code=vendor_code,
+            vendor_notes=vendor_notes,
+            vendor_title_no=vendor_title_no,
+            primary_matchpoint=primary_matchpoint,
+            secondary_matchpoint=secondary_matchpoint,
+            tertiary_matchpoint=tertiary_matchpoint,
+        )

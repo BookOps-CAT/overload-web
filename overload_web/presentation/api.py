@@ -9,7 +9,7 @@ import logging
 import os
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session
@@ -24,7 +24,6 @@ templates = Jinja2Templates(directory="overload_web/presentation/templates")
 
 
 SessionDep = Annotated[Session, Depends(deps.get_session)]
-ContextFormDep = Annotated[dict[str, str | dict], Depends(deps.context_form_fields)]
 OrderTemplateFormDep = Annotated[
     dict[str, str | dict], Depends(deps.template_form_fields)
 ]
@@ -89,8 +88,10 @@ def get_template_list(
 @api_router.patch("/template", response_class=HTMLResponse)
 def update_template(
     request: Request,
-    template_id: str,
-    template_patch: db.tables.OrderTemplateUpdate,
+    template_id: Annotated[str, Form(...)],
+    template_patch: Annotated[
+        db.tables.OrderTemplateUpdate, Depends(db.tables.OrderTemplateUpdate.from_form)
+    ],
     session: SessionDep,
     fields: OrderTemplateFormDep,
 ) -> HTMLResponse:
@@ -103,8 +104,8 @@ def update_template(
     updated_template = service.save_template(obj=template)
     return templates.TemplateResponse(
         request=request,
-        name="record_templates/rendered_template.html",
-        context={"template": updated_template, "field_constants": fields},
+        name="record_templates/template_form.html",
+        context={"template": updated_template.model_dump(), "field_constants": fields},
     )
 
 
@@ -142,31 +143,18 @@ def process_vendor_file(
         schemas.MatchpointSchema, Depends(schemas.MatchpointSchema.from_form)
     ],
 ) -> HTMLResponse:
-    template_data = template_input.model_dump()
     out_files = []
-    for n, file in enumerate(files):
+    for file in files:
         bibs = service.parse(data=file.content)
         processed_bibs = service.process_records(
             records=bibs,
-            template_data=template_data,
+            template_data=template_input.model_dump(),
             matchpoints=matchpoints.as_list(),
         )
         marc_binary = service.write_marc_binary(records=processed_bibs)
-        out_files.append(
-            {
-                f"file_{n}": {
-                    "name": file.file_name,
-                    "binary_content": marc_binary.read()[0:10],
-                    "bibs": [
-                        {"domain_bib": i.domain_bib.__dict__, "bib": str(i.bib)}
-                        for i in processed_bibs
-                    ],
-                }
-            }
-        )
-    context_dict = {"template_data": template_data, "files": out_files}
+        out_files.append({"file_name": file.file_name, "binary_content": marc_binary})
     return templates.TemplateResponse(
-        request=request, name="partials/pvf_results.html", context=context_dict
+        request=request, name="partials/pvf_results.html", context={"files": out_files}
     )
 
 

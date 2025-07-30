@@ -2,23 +2,25 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 
+from overload_web.infrastructure import db
 from overload_web.main import app
 from overload_web.presentation import deps
 
 
 def stub_sql_session():
+    template = db.tables.OrderTemplate(
+        name="foo", agent="bar", primary_matchpoint="isbn"
+    )
     test_engine = create_engine("sqlite:///:memory:")
     SQLModel.metadata.create_all(test_engine)
     with Session(test_engine) as session:
+        session.add(template)
+        session.commit()
         yield session
 
 
 def test_api_startup(monkeypatch):
-    def stub_tables():
-        test_engine = create_engine("sqlite:///:memory:")
-        SQLModel.metadata.create_all(test_engine)
-
-    monkeypatch.setattr(deps, "create_db_and_tables", stub_tables)
+    monkeypatch.setattr(deps, "create_db_and_tables", stub_sql_session)
 
     with TestClient(app) as client:
         response = client.get("/")
@@ -125,7 +127,7 @@ class TestApp:
             "request",
             "template",
         ]
-        assert response.context["template"].get("id") == 1
+        assert response.context["template"].get("id") == 2
 
     def test_api_get_template(self):
         response = self.client.get("/api/template?template_id=1")
@@ -135,12 +137,40 @@ class TestApp:
             "request",
             "template",
         ]
-        assert response.context["template"] == {}
+        assert response.context["template"]["id"] == 1
+        assert response.context["template"]["name"] == "foo"
+        assert response.context["template"]["agent"] == "bar"
+        assert response.context["template"]["primary_matchpoint"] == "isbn"
 
     def test_api_get_template_list(self):
         response = self.client.get("/api/templates")
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request", "templates"]
+
+    def test_api_update_template(self):
+        response = self.client.patch(
+            "/api/template",
+            data={
+                "name": "foo",
+                "agent": "bar",
+                "primary_matchpoint": "upc",
+                "lang": "rus",
+                "template_id": 1,
+            },
+        )
+        assert response.status_code == 200
+        assert response.context["template"]["id"] == 1
+        assert response.context["template"]["primary_matchpoint"] == "upc"
+        assert response.context["template"]["lang"] == "rus"
+        assert response.context["template"]["name"] == "foo"
+        assert response.context["template"]["agent"] == "bar"
+
+    def test_api_update_template_not_found(self):
+        response = self.client.patch(
+            "/api/template", data={"primary_matchpoint": "upc", "template_id": 3}
+        )
+        assert response.status_code == 404
+        assert "OrderTemplate not found" in response.text
 
     def test_api_list_remote_files_get(self):
         response = self.client.get("/api/list-remote-files?vendor=foo")
