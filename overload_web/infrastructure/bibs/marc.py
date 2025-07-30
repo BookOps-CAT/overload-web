@@ -77,7 +77,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
             alt_match = self._check_vendor_tag(
                 record=record, vendor_tags=alt_vendor_tags
             )
-            if alt_match and alt_match == vendor_tags:
+            if alt_match and alt_match == alt_vendor_tags:
                 return vendor_rules[vendor]
         vendor = "UNKNOWN"
         return vendor_rules[vendor]

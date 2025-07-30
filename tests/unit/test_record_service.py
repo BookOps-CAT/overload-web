@@ -84,6 +84,22 @@ class TestRecordProcessingService:
                 ],
             },
         },
+        "BT SERIES": {
+            "vendor_tags": {"037": {"code": "b", "value": "B&amp;T SERIES"}},
+            "alternate_vendor_tags": {"947": {"code": "a", "value": "B&amp;T SERIES"}},
+            "template": {
+                "primary_matchpoint": "isbn",
+                "bib_fields": [
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=afoobar;",
+                    }
+                ],
+            },
+        },
     }
 
     @pytest.fixture
@@ -168,6 +184,7 @@ class TestRecordProcessingService:
     def test_process_records_vendor_updates(self, stub_service, make_bib_dto):
         dto = make_bib_dto(
             {
+                "020": {"code": "a", "value": "9781234567890"},
                 "901": {"code": "a", "value": "INGRAM"},
                 "947": {"code": "a", "value": "INGRAM"},
             },
@@ -177,8 +194,23 @@ class TestRecordProcessingService:
             [dto], template_data={}, matchpoints=[]
         )
         assert len(matched_bibs) == 1
+        assert str(matched_bibs[0].domain_bib.bib_id) == "123"
         assert len(original_bib.get_fields("949")) == 1
         assert len(matched_bibs[0].bib.get_fields("949")) == 2
+
+    @pytest.mark.parametrize("record_type", ["full"])
+    def test_process_records_alternate_tags(self, stub_service, make_bib_dto):
+        dto = make_bib_dto(
+            {
+                "020": {"code": "a", "value": "9781234567890"},
+                "947": {"code": "a", "value": "B&amp;T SERIES"},
+            },
+        )
+        matched_bibs = stub_service.process_records(
+            [dto], template_data={}, matchpoints=[]
+        )
+        assert len(matched_bibs) == 1
+        assert str(matched_bibs[0].domain_bib.bib_id) == "123"
 
     @pytest.mark.parametrize("record_type", ["full", "order_level"])
     def test_write_marc_binary(self, stub_bib_dto, stub_service):
