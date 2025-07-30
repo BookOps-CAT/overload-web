@@ -136,7 +136,7 @@ class TestRecordProcessingService:
     def test_process_records_full(self, stub_service, stub_bib_dto, template_data):
         original_orders = copy.deepcopy(stub_bib_dto.domain_bib.orders)
         matched_bibs = stub_service.process_records(
-            [stub_bib_dto], template_data=template_data, matchpoints=[]
+            [stub_bib_dto], template_data=template_data, matchpoints=["isbn"]
         )
         assert len(matched_bibs) == 1
         assert str(matched_bibs[0].domain_bib.bib_id) == "123"
@@ -149,7 +149,7 @@ class TestRecordProcessingService:
     ):
         original_orders = copy.deepcopy(stub_bib_dto.domain_bib.orders)
         matched_bibs = stub_service.process_records(
-            [stub_bib_dto], template_data=template_data, matchpoints=[]
+            [stub_bib_dto], template_data=template_data, matchpoints=["isbn"]
         )
         assert len(matched_bibs) == 1
         assert str(matched_bibs[0].domain_bib.bib_id) == "123"
