@@ -82,7 +82,7 @@ class _OrderTemplateBase(SQLModel):
         format: Annotated[str | None, Form()] = None,
         internal_note: Annotated[str | None, Form()] = None,
         lang: Annotated[str | None, Form()] = None,
-        material_form: Annotated[str | None, Field()] = None,
+        material_form: Annotated[str | None, Form()] = None,
         order_code_1: Annotated[str | None, Form()] = None,
         order_code_2: Annotated[str | None, Form()] = None,
         order_code_3: Annotated[str | None, Form()] = None,
@@ -228,7 +228,7 @@ class OrderTemplateUpdate(_OrderTemplateBase):
     format: str | None = None
     internal_note: str | None = None
     lang: str | None = None
-    material_form: str | None
+    material_form: str | None = None
     order_code_1: str | None = None
     order_code_2: str | None = None
     order_code_3: str | None = None
