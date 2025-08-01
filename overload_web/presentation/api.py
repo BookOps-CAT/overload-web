@@ -11,22 +11,19 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from sqlmodel import Session
 
+from overload_web import config
 from overload_web.application import services
 from overload_web.infrastructure import db
 from overload_web.presentation import deps, schemas
 
 logger = logging.getLogger(__name__)
 api_router = APIRouter(prefix="/api", tags=["api"])
-templates = Jinja2Templates(directory="overload_web/presentation/templates")
 
+templates = config.get_templates()
 
 SessionDep = Annotated[Session, Depends(deps.get_session)]
-OrderTemplateFormDep = Annotated[
-    dict[str, str | dict], Depends(deps.template_form_fields)
-]
 
 
 @api_router.on_event("startup")
@@ -41,7 +38,6 @@ def create_template(
         db.tables.OrderTemplateCreate, Depends(db.tables.OrderTemplateCreate.from_form)
     ],
     session: SessionDep,
-    fields: OrderTemplateFormDep,
 ) -> HTMLResponse:
     valid_template = db.tables.OrderTemplate.model_validate(template)
     service = services.template.OrderTemplateService(session=session)
@@ -49,16 +45,13 @@ def create_template(
     return templates.TemplateResponse(
         request=request,
         name="record_templates/template_form.html",
-        context={"template": saved_template.model_dump(), "field_constants": fields},
+        context={"template": saved_template.model_dump()},
     )
 
 
 @api_router.get("/template", response_class=HTMLResponse)
 def get_template(
-    request: Request,
-    template_id: str,
-    session: SessionDep,
-    fields: OrderTemplateFormDep,
+    request: Request, template_id: str, session: SessionDep
 ) -> HTMLResponse:
     service = services.template.OrderTemplateService(session=session)
     template = service.get_template(template_id=template_id)
@@ -68,7 +61,7 @@ def get_template(
     return templates.TemplateResponse(
         request=request,
         name="record_templates/rendered_template.html",
-        context={"template": template_out, "field_constants": fields},
+        context={"template": template_out},
     )
 
 
@@ -93,7 +86,6 @@ def update_template(
         db.tables.OrderTemplateUpdate, Depends(db.tables.OrderTemplateUpdate.from_form)
     ],
     session: SessionDep,
-    fields: OrderTemplateFormDep,
 ) -> HTMLResponse:
     service = services.template.OrderTemplateService(session=session)
     template = service.get_template(template_id=template_id)
@@ -105,7 +97,7 @@ def update_template(
     return templates.TemplateResponse(
         request=request,
         name="record_templates/template_form.html",
-        context={"template": updated_template.model_dump(), "field_constants": fields},
+        context={"template": updated_template.model_dump()},
     )
 
 

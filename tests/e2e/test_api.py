@@ -122,21 +122,13 @@ class TestApp:
     def test_api_create_template(self, template_data):
         response = self.client.post("/api/template", data=template_data)
         assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == [
-            "field_constants",
-            "request",
-            "template",
-        ]
+        assert sorted(list(response.context.keys())) == ["request", "template"]
         assert response.context["template"].get("id") == 2
 
     def test_api_get_template(self):
         response = self.client.get("/api/template?template_id=1")
         assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == [
-            "field_constants",
-            "request",
-            "template",
-        ]
+        assert sorted(list(response.context.keys())) == ["request", "template"]
         assert response.context["template"]["id"] == 1
         assert response.context["template"]["name"] == "foo"
         assert response.context["template"]["agent"] == "bar"
@@ -279,11 +271,7 @@ class TestApp:
     def test_htmx_get_context_form(self):
         response = self.client.get("/htmx/forms/context")
         assert response.status_code == 200
-        assert sorted(list(response.context["context_form_fields"].keys())) == [
-            "collection",
-            "library",
-            "record_type",
-        ]
+        assert list(response.context.keys()) == ["request"]
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
@@ -310,8 +298,4 @@ class TestApp:
     def test_htmx_get_template_form(self):
         response = self.client.get("/htmx/forms/templates")
         assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == [
-            "field_constants",
-            "request",
-            "template",
-        ]
+        assert sorted(list(response.context.keys())) == ["request", "template"]

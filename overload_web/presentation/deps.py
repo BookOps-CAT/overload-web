@@ -35,33 +35,6 @@ def get_session() -> Generator[Session, None, None]:
         yield session
 
 
-def context_form_fields(
-    constants: Annotated[dict[str, dict], Depends(load_constants)],
-) -> dict[str, dict]:
-    field_list = constants["context_form"]
-    return {i: constants[i] for i in field_list}
-
-
-def template_form_fields(
-    constants: Annotated[dict[str, dict], Depends(load_constants)],
-) -> dict[str, dict]:
-    fixed_field_list = constants["template_fixed_fields"]
-    var_field_list = constants["template_var_fields"]
-    matchpoints = constants["matchpoints"]
-    return {
-        "fixed_fields": {i: constants[i] for i in fixed_field_list},
-        "var_fields": {i: constants[i] for i in var_field_list},
-        "matchpoints": {
-            i: {
-                "label": f"{i.split('_')[0].title()}",
-                "options": constants["matchpoint_options"],
-            }
-            for i in matchpoints
-        },
-        "bib_formats": constants["material_form"],
-    }
-
-
 def normalize_files(
     files: Annotated[list[UploadFile] | list[str], Form(...)],
     vendor: Annotated[str, Form(...)],

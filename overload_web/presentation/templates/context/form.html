@@ -1,7 +1,11 @@
 {% import "context/macro.html" as macro %}
 <div class="col" id="context-section">
     <form action="/process" method="post" id="context-form">
-        {{ macro.render_context_fields(context_form_fields) }}
+        <div class="row">
+            {% for field_id, field_data in context_fields.items() %}
+                {{ macro.select_field(field_id, field_data) }}
+            {% endfor %}
+        </div>    
         <button type="submit" form="context-form" class="btn my-3" style="border-color: #d52828;">Submit</button>
     </form>
 </div>

@@ -1,4 +1,7 @@
 {% import "record_templates/macro.html" as macro %}
+{% if not template %}
+    {% set template = {} %}
+{% endif %}
 <h5>Template Input</h5>
 <div class="row row-cols-3 gy-1 my-2">
     {{ macro.input_field('name', {'label': 'Name'}, template.get('name')) }}  
@@ -18,26 +21,26 @@
 
 <h5>Order Fixed Fields</h5>
 <div class="row row-cols-3 gy-1 my-2">
-    {% for field_id, field_data in field_constants["fixed_fields"].items() %}
+    {% for field_id, field_data in fixed_fields.items() %}
         {{ macro.select_field(field_id, field_data, template.get(field_id)) }}
     {% endfor %}             
 </div>
 
 <h5>Order Variable Fields</h5>
 <div class="row row-cols-3 gy-1 my-2">
-    {% for field_id, field_data in field_constants["var_fields"].items() %}
+    {% for field_id, field_data in var_fields.items() %}
         {{ macro.input_field(field_id, field_data, template.get(field_id)) }}
     {% endfor %}        
 </div>
 
 <h5>Sierra Bib Format</h5> 
 <div class="row row-cols-3 gy-1 my-2">
-    {{ macro.select_field('material_form', field_constants['bib_formats'], template.get('material_form')) }}  
+    {{ macro.select_field('material_form', bib_formats, template.get('material_form')) }}  
 </div>
 
 <h5>Sierra Matchpoints</h5> 
 <div class="row row-cols-3 gy-1 my-2">
-    {% for field_id, field_data in field_constants["matchpoints"].items() %}
+    {% for field_id, field_data in matchpoints.items() %}
         {{ macro.select_field(field_id, field_data, template.get(field_id)) }}
     {% endfor %}         
 </div>
