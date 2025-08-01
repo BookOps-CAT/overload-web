@@ -298,4 +298,4 @@ class TestApp:
     def test_htmx_get_template_form(self):
         response = self.client.get("/htmx/forms/templates")
         assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == ["request", "template"]
+        assert sorted(list(response.context.keys())) == ["request"]
