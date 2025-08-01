@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import datetime
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, TypedDict
 
@@ -37,30 +37,42 @@ class Collection(Enum):
         return self.value
 
 
-@dataclass
 class DomainBib:
     """
     A domain model representing a bib record and its associated order data.
 
     Attributes:
-        library: the library to whom the record belongs as an enum.
-        orders: list of orders associated with the record.
-        bib_id: sierra bib ID.
-        isbn: ISBN for the title, if present.
-        oclc_number: OCLC number(s) identifying the record, if present.
-        upc: UPC number, if present.
-        call_number: call number for the record, if present.
         barcodes: list of barcodes associated with the record.
+        bib_id: sierra bib ID.
+        call_number: call number for the record, if present.
+        isbn: ISBN for the title, if present.
+        library: the library to whom the record belongs as an enum.
+        oclc_number: OCLC number(s) identifying the record, if present.
+        orders: list of orders associated with the record.
+        upc: UPC number, if present.
+
+
     """
 
-    library: LibrarySystem
-    orders: list[Order]
-    bib_id: BibId | None = None
-    isbn: str | None = None
-    oclc_number: str | list[str] | None = None
-    upc: str | None = None
-    call_number: str | list[str] | None = None
-    barcodes: list[str] = field(default_factory=list)
+    def __init__(
+        self,
+        library: LibrarySystem,
+        barcodes: list[str] = [],
+        bib_id: BibId | None = None,
+        call_number: str | list[str] | None = None,
+        isbn: str | None = None,
+        oclc_number: str | list[str] | None = None,
+        orders: list[Order] = [],
+        upc: str | None = None,
+    ) -> None:
+        self.barcodes = barcodes
+        self.bib_id = bib_id
+        self.call_number = call_number
+        self.isbn = isbn
+        self.library = library
+        self.oclc_number = oclc_number
+        self.orders = orders
+        self.upc = upc
 
     def apply_order_template(self, template_data: dict[str, Any]) -> None:
         """
@@ -94,34 +106,60 @@ class LibrarySystem(Enum):
         return self.value
 
 
-@dataclass
 class Order:
     """A domain model representing a Sierra order."""
 
-    audience: list[str]
-    blanket_po: str | None
-    branches: list[str]
-    copies: str | int | None
-    country: str | None
-    create_date: datetime.datetime | datetime.date | str | None
-    format: str | None
-    fund: str | None
-    internal_note: str | None
-    lang: str | None
-    locations: list[str]
-    order_code_1: str | None
-    order_code_2: str | None
-    order_code_3: str | None
-    order_code_4: str | None
-    order_id: OrderId | None
-    order_type: str | None
-    price: str | int | None
-    selector_note: str | None
-    shelves: list[str]
-    status: str | None
-    vendor_code: str | None
-    vendor_notes: str | None
-    vendor_title_no: str | None
+    def __init__(
+        self,
+        audience: list[str],
+        blanket_po: str | None,
+        branches: list[str],
+        copies: str | int | None,
+        country: str | None,
+        create_date: datetime.datetime | datetime.date | str | None,
+        format: str | None,
+        fund: str | None,
+        internal_note: str | None,
+        lang: str | None,
+        locations: list[str],
+        order_code_1: str | None,
+        order_code_2: str | None,
+        order_code_3: str | None,
+        order_code_4: str | None,
+        order_id: OrderId | None,
+        order_type: str | None,
+        price: str | int | None,
+        selector_note: str | None,
+        shelves: list[str],
+        status: str | None,
+        vendor_code: str | None,
+        vendor_notes: str | None,
+        vendor_title_no: str | None,
+    ) -> None:
+        self.audience = audience
+        self.blanket_po = blanket_po
+        self.branches = branches
+        self.copies = copies
+        self.country = country
+        self.create_date = create_date
+        self.format = format
+        self.fund = fund
+        self.internal_note = internal_note
+        self.lang = lang
+        self.locations = locations
+        self.order_code_1 = order_code_1
+        self.order_code_2 = order_code_2
+        self.order_code_3 = order_code_3
+        self.order_code_4 = order_code_4
+        self.order_id = order_id
+        self.order_type = order_type
+        self.price = price
+        self.selector_note = selector_note
+        self.shelves = shelves
+        self.status = status
+        self.vendor_code = vendor_code
+        self.vendor_notes = vendor_notes
+        self.vendor_title_no = vendor_title_no
 
     def apply_template(self, template_data: dict[str, Any]) -> None:
         """
