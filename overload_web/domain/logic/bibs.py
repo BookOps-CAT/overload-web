@@ -50,7 +50,7 @@ class BibMatcher:
         self,
         bib_to_match: models.bibs.DomainBib,
         candidates: list[models.bibs.FetcherResponseDict],
-        matchpoints: list[str],
+        matchpoints: dict[str, str],
     ) -> models.bibs.BibId | None:
         """
         Compare a `DomainBib` to a list of candidate bibs and select the best match.
@@ -58,6 +58,7 @@ class BibMatcher:
         Args:
             bib_to_match: the bib record to match as a `DomainBib`.
             candidates: a list of candidate bib records as dicts
+            matchpoints: a dictionary containing matchpoints
 
         Returns:
             the Sierra Bib ID of the best candidate, or `None` if no match
@@ -66,7 +67,7 @@ class BibMatcher:
         best_match_bib_id = None
         for bib in candidates:
             matched_points = 0
-            for attr in matchpoints:
+            for priority, attr in matchpoints.items():
                 if getattr(bib_to_match, attr) == bib.get(attr):
                     matched_points += 1
 
@@ -79,7 +80,7 @@ class BibMatcher:
         return best_match_bib_id
 
     def match_bib(
-        self, bib: models.bibs.DomainBib, matchpoints: list[str]
+        self, bib: models.bibs.DomainBib, matchpoints: dict[str, str]
     ) -> models.bibs.DomainBib:
         """
         Attempt to find the best-match in Sierra for a given `DomainBib`.
@@ -94,7 +95,7 @@ class BibMatcher:
             the `DomainBib` object with an updated bib_id (either the best match or
             `None` if no candidates found)
         """
-        for key in matchpoints:
+        for priority, key in matchpoints.items():
             value = getattr(bib, key, None)
             if not value:
                 continue

@@ -58,27 +58,23 @@ class RecordProcessingService:
     def _get_vendor_template(self, bib: dto.bib.BibDTO) -> dict[str, Any]:
         """Identify the vendor associated with a specific Bib record"""
         info = self.parser.identify_vendor(record=bib, vendor_rules=self.vendor_rules)
-        return info["template"]
+        return info
 
     def _process_record(
         self,
         record: dto.bib.BibDTO,
-        matchpoints: list[str],
-        order_template: dict[str, Any] = {},
+        matchpoints: dict[str, str],
+        order_template: dict[str, Any],
     ) -> dto.bib.BibDTO:
-        vendor_template = self._get_vendor_template(record)
+        vendor_rules = self._get_vendor_template(record)
         if not matchpoints:
-            matchpoints = [
-                v for k, v in vendor_template.items() if v and "_matchpoint" in k
-            ]
+            matchpoints = vendor_rules["matchpoints"]
         record.domain_bib = self.matcher.match_bib(record.domain_bib, matchpoints)
-        bib_fields = vendor_template.get("bib_fields", [])
+        bib_fields = vendor_rules.get("bib_fields", [])
         if self.record_type == models.bibs.RecordType.ORDER_LEVEL:
             record.domain_bib.apply_order_template(template_data=order_template)
-            updated_order_rec = self.parser.update_order_fields(record=record)
-            return self.parser.update_bib_fields(
-                record=updated_order_rec, fields=bib_fields
-            )
+            updated_rec = self.parser.update_order_fields(record=record)
+            return self.parser.update_bib_fields(record=updated_rec, fields=bib_fields)
         else:
             return self.parser.update_bib_fields(record=record, fields=bib_fields)
 
@@ -97,7 +93,7 @@ class RecordProcessingService:
     def process_records(
         self,
         records: list[dto.bib.BibDTO],
-        matchpoints: list[str],
+        matchpoints: dict[str, str],
         template_data: dict[str, Any] = {},
     ) -> list[dto.bib.BibDTO]:
         """

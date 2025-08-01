@@ -62,43 +62,41 @@ class TestRecordProcessingService:
     stub_vendor_rules = {
         "UNKNOWN": {
             "vendor_tags": {},
-            "template": {
+            "matchpoints": {
                 "primary_matchpoint": "isbn",
                 "secondary_matchpoint": "oclc_number",
-                "bib_fields": [],
             },
+            "bib_fields": [],
         },
         "INGRAM": {
             "vendor_tags": {"901": {"code": "a", "value": "INGRAM"}},
-            "template": {
+            "matchpoints": {
                 "primary_matchpoint": "oclc_number",
                 "secondary_matchpoint": "isbn",
-                "bib_fields": [
-                    {
-                        "tag": "949",
-                        "ind1": "",
-                        "ind2": "",
-                        "subfield_code": "a",
-                        "value": "*b2=a;",
-                    }
-                ],
             },
+            "bib_fields": [
+                {
+                    "tag": "949",
+                    "ind1": "",
+                    "ind2": "",
+                    "subfield_code": "a",
+                    "value": "*b2=a;",
+                }
+            ],
         },
         "BT SERIES": {
             "vendor_tags": {"037": {"code": "b", "value": "B&amp;T SERIES"}},
             "alternate_vendor_tags": {"947": {"code": "a", "value": "B&amp;T SERIES"}},
-            "template": {
-                "primary_matchpoint": "isbn",
-                "bib_fields": [
-                    {
-                        "tag": "949",
-                        "ind1": "",
-                        "ind2": "",
-                        "subfield_code": "a",
-                        "value": "*b2=afoobar;",
-                    }
-                ],
-            },
+            "matchpoints": {"primary_matchpoint": "isbn"},
+            "bib_fields": [
+                {
+                    "tag": "949",
+                    "ind1": "",
+                    "ind2": "",
+                    "subfield_code": "a",
+                    "value": "*b2=afoobar;",
+                }
+            ],
         },
     }
 
@@ -152,7 +150,9 @@ class TestRecordProcessingService:
     def test_process_records_full(self, stub_service, stub_bib_dto, template_data):
         original_orders = copy.deepcopy(stub_bib_dto.domain_bib.orders)
         matched_bibs = stub_service.process_records(
-            [stub_bib_dto], template_data=template_data, matchpoints=["isbn"]
+            [stub_bib_dto],
+            template_data=template_data,
+            matchpoints={"primary_matchpoint": "isbn"},
         )
         assert len(matched_bibs) == 1
         assert str(matched_bibs[0].domain_bib.bib_id) == "123"
@@ -165,7 +165,9 @@ class TestRecordProcessingService:
     ):
         original_orders = copy.deepcopy(stub_bib_dto.domain_bib.orders)
         matched_bibs = stub_service.process_records(
-            [stub_bib_dto], template_data=template_data, matchpoints=["isbn"]
+            [stub_bib_dto],
+            template_data=template_data,
+            matchpoints={"primary_matchpoint": "isbn"},
         )
         assert len(matched_bibs) == 1
         assert str(matched_bibs[0].domain_bib.bib_id) == "123"
@@ -175,7 +177,7 @@ class TestRecordProcessingService:
     @pytest.mark.parametrize("record_type", ["full", "order_level"])
     def test_process_records_no_matches(self, stub_service_no_matches, stub_bib_dto):
         matched_bibs = stub_service_no_matches.process_records(
-            [stub_bib_dto], template_data={}, matchpoints=[]
+            [stub_bib_dto], template_data={}, matchpoints={}
         )
         assert len(matched_bibs) == 1
         assert matched_bibs[0].domain_bib.bib_id is None
@@ -191,7 +193,7 @@ class TestRecordProcessingService:
         )
         original_bib = copy.deepcopy(dto.bib)
         matched_bibs = stub_service.process_records(
-            [dto], template_data={}, matchpoints=[]
+            [dto], template_data={}, matchpoints={}
         )
         assert len(matched_bibs) == 1
         assert str(matched_bibs[0].domain_bib.bib_id) == "123"
@@ -207,7 +209,7 @@ class TestRecordProcessingService:
             },
         )
         matched_bibs = stub_service.process_records(
-            [dto], template_data={}, matchpoints=[]
+            [dto], template_data={}, matchpoints={}
         )
         assert len(matched_bibs) == 1
         assert str(matched_bibs[0].domain_bib.bib_id) == "123"

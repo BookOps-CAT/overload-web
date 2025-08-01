@@ -141,7 +141,7 @@ def process_vendor_file(
         processed_bibs = service.process_records(
             records=bibs,
             template_data=template_input.model_dump(),
-            matchpoints=matchpoints.as_list(),
+            matchpoints=matchpoints.model_dump(),
         )
         marc_binary = service.write_marc_binary(records=processed_bibs)
         out_files.append({"file_name": file.file_name, "binary_content": marc_binary})

@@ -71,16 +71,15 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
         for vendor, info in vendor_rules.items():
             vendor_tags = info.get("vendor_tags", {})
             alt_vendor_tags = info.get("alternate_vendor_tags", {})
-            match = self._check_vendor_tag(record=record, vendor_tags=vendor_tags)
-            if match and match == vendor_tags:
+            tag_match = self._check_vendor_tag(record=record, vendor_tags=vendor_tags)
+            if tag_match and tag_match == vendor_tags:
                 return vendor_rules[vendor]
-            alt_match = self._check_vendor_tag(
+            alt_tag_match = self._check_vendor_tag(
                 record=record, vendor_tags=alt_vendor_tags
             )
-            if alt_match and alt_match == alt_vendor_tags:
+            if alt_tag_match and alt_tag_match == alt_vendor_tags:
                 return vendor_rules[vendor]
-        vendor = "UNKNOWN"
-        return vendor_rules[vendor]
+        return vendor_rules["UNKNOWN"]
 
     def parse(self, data: BinaryIO | bytes) -> list[dto.bib.BibDTO]:
         """
