@@ -161,8 +161,8 @@ class TestApp:
         response = self.client.patch(
             "/api/template", data={"primary_matchpoint": "upc", "template_id": 3}
         )
-        assert response.status_code == 404
-        assert "OrderTemplate not found" in response.text
+        assert response.status_code == 200
+        assert response.context["template"] == {}
 
     def test_api_list_remote_files_get(self):
         response = self.client.get("/api/list-remote-files?vendor=foo")

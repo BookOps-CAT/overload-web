@@ -9,7 +9,7 @@ import logging
 import os
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlmodel import Session
 
@@ -39,9 +39,8 @@ def create_template(
     ],
     session: SessionDep,
 ) -> HTMLResponse:
-    valid_template = db.tables.OrderTemplate.model_validate(template)
     service = template_service.OrderTemplateService(session=session)
-    saved_template = service.save_template(obj=valid_template)
+    saved_template = service.save_template(obj=template)
     return templates.TemplateResponse(
         request=request,
         name="record_templates/template_form.html",
@@ -88,16 +87,18 @@ def update_template(
     session: SessionDep,
 ) -> HTMLResponse:
     service = template_service.OrderTemplateService(session=session)
-    template = service.get_template(template_id=template_id)
-    if not template:
-        raise HTTPException(status_code=404, detail="OrderTemplate not found")
-    patch_data = template_patch.model_dump(exclude_unset=True)
-    template.sqlmodel_update(patch_data)
-    updated_template = service.save_template(obj=template)
+    updated_template = service.update_template(
+        template_id=template_id, obj=template_patch
+    )
+    template_out = (
+        {k: v for k, v in updated_template.model_dump().items() if v}
+        if updated_template
+        else {}
+    )
     return templates.TemplateResponse(
         request=request,
         name="record_templates/template_form.html",
-        context={"template": updated_template.model_dump()},
+        context={"template": template_out},
     )
 
 

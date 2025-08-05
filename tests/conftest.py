@@ -184,7 +184,7 @@ def template_data() -> dict:
         "create_date": "2024-01-01",
         "format": "a",
         "fund": "10001adbk",
-        "id": None,
+        "id": 1,
         "internal_note": "foo",
         "lang": "spa",
         "order_code_1": "b",

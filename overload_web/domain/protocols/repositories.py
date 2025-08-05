@@ -37,3 +37,7 @@ class SqlRepositoryProtocol(Protocol[T]):
     ) -> Sequence[T]: ...  # pragma: no branch
 
     def save(self, obj: T) -> None: ...  # pragma: no branch
+
+    def update(
+        self, id: str, data: dict[str, str]
+    ) -> T | None: ...  # pragma: no branch

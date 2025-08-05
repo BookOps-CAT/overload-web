@@ -64,9 +64,28 @@ class SqlModelRepository(
 
     def save(self, obj: tables.OrderTemplate) -> None:
         """
-        Adds a new or updated `OrderTemplate` to the database.
+        Adds a new `OrderTemplate` to the database.
 
         Args:
             obj: the `OrderTemplate` object to save.
         """
         self.session.add(obj)
+
+    def update(self, id: str, data: dict[str, str]) -> tables.OrderTemplate | None:
+        """
+        Updates an existing `OrderTemplate` in the database.
+
+        Args:
+            id: the id of the template to be updated
+            data: the data to be used to update the existing template.
+        Returns:
+            a `OrderTemplate` instance or `None` if not found.
+        """
+        template = self.session.get(tables.OrderTemplate, id)
+        if not template:
+            logger.error(f"Template '{id}' does not exist")
+            return None
+        else:
+            template.sqlmodel_update(data)
+            self.session.add(template)
+            return template
