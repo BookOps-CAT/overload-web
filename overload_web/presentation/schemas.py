@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import Form
-from pydantic import BaseModel, ConfigDict, model_serializer
+from pydantic import BaseModel, ConfigDict
 
 from overload_web.domain import models
 
@@ -20,18 +20,6 @@ class MatchpointSchema(BaseModel):
     primary_matchpoint: str | None = None
     secondary_matchpoint: str | None = None
     tertiary_matchpoint: str | None = None
-
-    @model_serializer
-    def as_list(self) -> list[str]:
-        return [
-            i
-            for i in [
-                self.primary_matchpoint,
-                self.secondary_matchpoint,
-                self.tertiary_matchpoint,
-            ]
-            if i is not None
-        ]
 
     @classmethod
     def from_form(
