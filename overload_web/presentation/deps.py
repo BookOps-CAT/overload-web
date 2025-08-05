@@ -2,9 +2,11 @@ import json
 import logging
 import os
 from functools import lru_cache
-from typing import Annotated, Generator
+from inspect import Parameter, Signature
+from typing import Annotated, Generator, TypeVar
 
 from fastapi import Depends, Form, UploadFile
+from pydantic import BaseModel
 from sqlmodel import Session, SQLModel, create_engine
 from starlette.datastructures import UploadFile as StarlettUploadFile
 
@@ -13,6 +15,7 @@ from overload_web.application import file_service, record_service
 from overload_web.presentation import schemas
 
 logger = logging.getLogger(__name__)
+T = TypeVar("T", bound=BaseModel)
 
 
 @lru_cache
@@ -82,3 +85,31 @@ def get_record_service(
         marc_mapping=constants["marc_mapping"],
         vendor_rules=constants["vendor_rules"][library],
     )
+
+
+def from_form(model_class: type[T]):
+    """
+    A generic function used to create an object from an html form.
+    HTML forms can only take data as strings so this class method is
+    needed in order to parse the data into the correct types.
+    """
+    form_fields = []
+    for field_name, model_field in model_class.model_fields.items():
+        annotation = model_field.annotation
+        default = Form(...) if model_field.is_required() else Form(default=None)
+        form_fields.append((field_name, annotation, default))
+
+    def func(**data):
+        return model_class(**data)
+
+    params = [
+        Parameter(
+            name,
+            Parameter.POSITIONAL_OR_KEYWORD,
+            default=default,
+            annotation=annotation,
+        )
+        for name, annotation, default in form_fields
+    ]
+    func.__signature__ = Signature(parameters=params)  # type: ignore[attr-defined]
+    return func

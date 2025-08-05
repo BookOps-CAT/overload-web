@@ -35,7 +35,8 @@ def startup_event():
 def create_template(
     request: Request,
     template: Annotated[
-        db.tables.OrderTemplateCreate, Depends(db.tables.OrderTemplateCreate.from_form)
+        db.tables.OrderTemplateCreate,
+        Depends(deps.from_form(db.tables.OrderTemplateCreate)),
     ],
     session: SessionDep,
 ) -> HTMLResponse:
@@ -82,7 +83,8 @@ def update_template(
     request: Request,
     template_id: Annotated[str, Form(...)],
     template_patch: Annotated[
-        db.tables.OrderTemplateUpdate, Depends(db.tables.OrderTemplateUpdate.from_form)
+        db.tables.OrderTemplateUpdate,
+        Depends(deps.from_form(db.tables.OrderTemplateUpdate)),
     ],
     session: SessionDep,
 ) -> HTMLResponse:
@@ -131,10 +133,11 @@ def process_vendor_file(
     ],
     files: Annotated[list[schemas.VendorFileModel], Depends(deps.normalize_files)],
     template_input: Annotated[
-        schemas.OrderTemplateSchema, Depends(schemas.OrderTemplateSchema.from_form)
+        schemas.OrderTemplateSchema,
+        Depends(deps.from_form(schemas.OrderTemplateSchema)),
     ],
     matchpoints: Annotated[
-        schemas.MatchpointSchema, Depends(schemas.MatchpointSchema.from_form)
+        schemas.MatchpointSchema, Depends(deps.from_form(schemas.MatchpointSchema))
     ],
 ) -> HTMLResponse:
     out_files = []
