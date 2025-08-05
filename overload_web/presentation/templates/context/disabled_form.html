@@ -1,6 +1,6 @@
 {% import "context/macro.html" as macro %}
 <div id="context-section" class="row gy-1 my-2">
-  <div class="col">
+  <div class="col-10">
     <div class="row">
       {% for field_id, field_data in context_fields.items() %} {{
       macro.select_field(field_id, field_data, context.get(field_id)) }} {%
@@ -20,14 +20,6 @@
     </div>
   </div>
   <div class="col">
-    <div class="row">
-      <h3>Context Results</h3>
-      {% for k,v in context.items() %}
-      <input id="{{ k }}" name="{{ k }}" type="hidden" value="{{ v }}" />
-      <ul>
-        {{ k }}: {{ v }}
-      </ul>
-      {% endfor %}
-    </div>
+    <div class="row">{% include "partials/context_display.html" %}</div>
   </div>
 </div>

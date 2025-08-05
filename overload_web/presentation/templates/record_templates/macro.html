@@ -3,10 +3,10 @@
   <div class="form-floating">
     <select id="{{field_id}}" class="form-select" name="{{field_id}}">
       {% if template_field %}
+      <option value=""></option>
       <option value="{{ template_field }}" selected>
         {{ template_field }} ({{ data['options'][template_field] }})
       </option>
-      <option value=""></option>
       {% for k, v in data['options'].items() %} {% if k != template_field %}
       <option value="{{k}}">{{k}} ({{v}})</option>
       {%endif%} {%endfor%} {% else %}
