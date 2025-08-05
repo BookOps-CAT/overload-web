@@ -1,18 +1,20 @@
 {% macro select_field(field_id, data, context_field=None) %}
 <div class="col">
-    <div class="form-floating">
-        {% if context_field %}
-        <select class="form-select" name="{{field_id}}" id="{{field_id}}" disabled>
-            <option value="{{ context_field }}" selected>{{ data['options'][context_field] }}</option>                  
-        {% else %}
-        <select class="form-select" name="{{field_id}}" id="{{field_id}}">
-                <option value="" selected></option>
-                {% for k, v in data['options'].items() %}
-                <option value="{{k}}">{{v}}</option>
-                {%endfor%}
-        {% endif %}
-        </select>
-        <label for="{{field_id}}">{{data['label']}}</label>
-    </div>
+  <div class="form-floating">
+    {% if context_field %}
+    <select id="{{field_id}}" class="form-select" name="{{field_id}}" disabled>
+      <option value="{{ context_field }}" selected>
+        {{ data['options'][context_field] }}
+      </option>
+    </select>
+    {% else %}
+    <select id="{{field_id}}" class="form-select" name="{{field_id}}">
+      <option value="" selected></option>
+      {% for k, v in data['options'].items() %}
+      <option value="{{k}}">{{v}}</option>
+      {%endfor%}</select
+    >{% endif %}
+    <label for="{{field_id}}">{{data['label']}}</label>
+  </div>
 </div>
 {% endmacro %}

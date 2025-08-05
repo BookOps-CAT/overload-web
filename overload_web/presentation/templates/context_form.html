@@ -1,8 +1,15 @@
-{% extends 'base.html' %}
-{% block header %}<h2>{{ page_title }}</h2>{% endblock %}
-{% block content %}
-  <div class="container text-left">
-    <div class="row gy-1 my-2">
-      <div class="col" hx-get="/htmx/forms/context" hx-trigger="load" hx-target="this" hx-swap="innerHTML" id="context-section"></div>
-    </div>
-{% endblock %}
+{% extends 'base.html' %} {% block header %}
+<h2>{{ page_title }}</h2>
+{% endblock %} {% block content %}
+<div class="container text-left">
+  <div class="row gy-1 my-2">
+    <div
+      id="context-section"
+      class="col"
+      hx-get="/htmx/forms/context"
+      hx-target="this"
+      hx-trigger="load"
+    ></div>
+  </div>
+  {% endblock %}
+</div>

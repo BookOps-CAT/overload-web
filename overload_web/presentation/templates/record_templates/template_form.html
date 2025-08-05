@@ -1,21 +1,27 @@
-<div class="row gy-1 my-2" id="record-templates">    
-    <div class="col"  id="template-form">
-        <div class="row">
-            <div class="col">
-                <h5>Saved Templates</h5>
-                <div class="row gy-1 my-2">
-                    <div name="templates" id="templates" hx-get="/api/templates" hx-target="#template-list" hx-swap="innerHTML" hx-trigger="load"></div>
-                    <div id="template-list"></div>
-                </div>
-            </div>
-            <div class="col">
-                <div id="template-form-fields">
-                    {% include "record_templates/rendered_template.html" %}
-                </div>
-                <div id="template-buttons">
-                    {% include "record_templates/buttons.html" %}
-                </div>
-            </div>                
+<div class="row gy-1 my-2" id="record-templates">
+  <div class="col" id="template-form">
+    <div class="row">
+      <div class="col">
+        <h5>Saved Templates</h5>
+        <div class="row gy-1 my-2">
+          <div
+            id="templates"
+            hx-get="/api/templates"
+            hx-target="#template-list"
+            hx-trigger="load"
+            name="templates"
+          ></div>
+          <div id="template-list"></div>
         </div>
+      </div>
+      <div class="col">
+        <div id="template-form-fields">
+          {% include "record_templates/rendered_template.html" %}
+        </div>
+        <div id="template-buttons">
+          {% include "record_templates/buttons.html" %}
+        </div>
+      </div>
     </div>
+  </div>
 </div>

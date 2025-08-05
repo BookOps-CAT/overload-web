@@ -1,20 +1,34 @@
-<div class="row gy-1 my-2" id="files">  
-    <div class="col" id="files">
-        <h5>File Source</h5> 
-        <div class="row">
-            <div class="col">
-                <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="file-source" value="local" hx-get="/htmx/forms/local-files" hx-target="#file-form" hx-swap="innerHTML">
-                <label class="form-check-label">Local Upload</label>
-                </div>
-            </div>  
-            <div class="col">
-                <div class="form-check form-check-inline">  
-                <input class="form-check-input" type="radio" name="file-source" value="remote" hx-get="/htmx/forms/remote-files" hx-target="#file-form" hx-swap="innerHTML">
-                <label class="form-check-label">Remote Server</label>
-                </div>
-            </div>  
-        </div>  
+<div class="row gy-1 my-2">
+  <div class="col">
+    <h5>File Source</h5>
+    <div class="row">
+      <div class="col">
+        <div class="form-check form-check-inline">
+          <input
+            class="form-check-input"
+            hx-get="/htmx/forms/local-files"
+            hx-target="#file-form"
+            name="file-source"
+            type="radio"
+            value="local"
+          />
+          <label class="form-check-label">Local Upload</label>
+        </div>
+      </div>
+      <div class="col">
+        <div class="form-check form-check-inline">
+          <input
+            class="form-check-input"
+            hx-get="/htmx/forms/remote-files"
+            hx-target="#file-form"
+            name="file-source"
+            type="radio"
+            value="remote"
+          />
+          <label class="form-check-label">Remote Server</label>
+        </div>
+      </div>
     </div>
-    <div class="col" id="file-form"></div>      
+  </div>
+  <div id="file-form" class="col"></div>
 </div>

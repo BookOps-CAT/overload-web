@@ -1,11 +1,38 @@
 <div class="row row-cols-3 gy-1 my-2">
-    <div class="col" hx-include="#template-form-fields">
-        <button hx-post="/api/template" type="submit" class="btn my-3" style="border-color: #d52828;" hx-indicator="#loading-spinner" hx-target="#template-form">Save Template as New</button>
-    </div>
-    <div class="col">
-        <button hx-patch="/api/template" type="submit" class="btn my-3" style="border-color: #d52828;" hx-indicator="#loading-spinner" hx-target="#template-form">Update Template</button>
-    </div>
-    <div class="col">
-        <button hx-get="/htmx/forms/templates" type="submit" class="btn my-3" style="border-color: #d52828;" hx-indicator="#loading-spinner" hx-target="#template-form">Clear Template Form</button>
-    </div>
+  <div class="col" hx-include="#template-form-fields">
+    <button
+      class="btn my-3"
+      hx-post="/api/template"
+      hx-indicator="#loading-spinner"
+      hx-target="#template-form"
+      style="border-color: #d52828"
+      type="submit"
+    >
+      Save Template as New
+    </button>
+  </div>
+  <div class="col">
+    <button
+      class="btn my-3"
+      hx-patch="/api/template"
+      hx-indicator="#loading-spinner"
+      hx-target="#template-form"
+      style="border-color: #d52828"
+      type="submit"
+    >
+      Update Template
+    </button>
+  </div>
+  <div class="col">
+    <button
+      class="btn my-3"
+      hx-get="/htmx/forms/templates"
+      hx-indicator="#loading-spinner"
+      hx-target="#template-form"
+      style="border-color: #d52828"
+      type="reset"
+    >
+      Clear Template Form
+    </button>
+  </div>
 </div>

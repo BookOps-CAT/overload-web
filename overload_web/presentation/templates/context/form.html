@@ -1,11 +1,17 @@
 {% import "context/macro.html" as macro %}
-<div class="col" id="context-section">
-    <form action="/process" method="post" id="context-form">
-        <div class="row">
-            {% for field_id, field_data in context_fields.items() %}
-                {{ macro.select_field(field_id, field_data) }}
-            {% endfor %}
-        </div>    
-        <button type="submit" form="context-form" class="btn my-3" style="border-color: #d52828;">Submit</button>
-    </form>
+<div id="context-section" class="col">
+  <form id="context-form" action="/process" method="post">
+    <div class="row">
+      {% for field_id, field_data in context_fields.items() %} {{
+      macro.select_field(field_id, field_data) }} {% endfor %}
+    </div>
+    <button
+      class="btn my-3"
+      form="context-form"
+      style="border-color: #d52828"
+      type="submit"
+    >
+      Submit
+    </button>
+  </form>
 </div>

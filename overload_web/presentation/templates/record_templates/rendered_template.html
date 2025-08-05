@@ -1,46 +1,65 @@
-{% import "record_templates/macro.html" as macro %}
-{% if not template %}
-    {% set template = {} %}
-{% endif %}
+{% import "record_templates/macro.html" as macro %} {% if not template %} {% set
+template = {} %} {% endif %}
 <h5>Template Input</h5>
 <div class="row row-cols-3 gy-1 my-2">
-    {{ macro.input_field('name', {'label': 'Name'}, template.get('name')) }}  
-    {{ macro.input_field('agent', {'label': 'User'}, template.get('agent')) }}  
-    <div class="col">
-        <div class="form-floating">
-            {% if template %}
-            <input type="text" class="form-control" value="{{ template.get('id') }}" name="id" id="id" disabled>
-            <input type="hidden" class="form-control" value="{{ template.get('id') }}" name="id" id="id">
-            {% else %}
-            <input type="text" class="form-control" value="" name="id" id="id" disabled>
-            {%endif%}
-            <label for="id">Template ID</label>
-        </div>
-    </div>                    
+  {{ macro.input_field('name', {'label': 'Name'}, template.get('name')) }} {{
+  macro.input_field('agent', {'label': 'User'}, template.get('agent')) }}
+  <div class="col">
+    <div class="form-floating">
+      {% if template %}
+      <input
+        id="id"
+        class="form-control"
+        name="id"
+        type="text"
+        value="{{ template.get('id') }}"
+        disabled
+      />
+      <input
+        id="id"
+        class="form-control"
+        name="id"
+        type="hidden"
+        value="{{ template.get('id') }}"
+      />
+      {% else %}
+      <input
+        id="id"
+        class="form-control"
+        name="id"
+        type="text"
+        value=""
+        disabled
+      />
+      {%endif%}
+      <label for="id">Template ID</label>
+    </div>
+  </div>
 </div>
 
 <h5>Order Fixed Fields</h5>
 <div class="row row-cols-3 gy-1 my-2">
-    {% for field_id, field_data in fixed_fields.items() %}
-        {{ macro.select_field(field_id, field_data, template.get(field_id)) }}
-    {% endfor %}             
+  {% for field_id, field_data in fixed_fields.items() %} {{
+  macro.select_field(field_id, field_data, template.get(field_id)) }} {% endfor
+  %}
 </div>
 
 <h5>Order Variable Fields</h5>
 <div class="row row-cols-3 gy-1 my-2">
-    {% for field_id, field_data in var_fields.items() %}
-        {{ macro.input_field(field_id, field_data, template.get(field_id)) }}
-    {% endfor %}        
+  {% for field_id, field_data in var_fields.items() %} {{
+  macro.input_field(field_id, field_data, template.get(field_id)) }} {% endfor
+  %}
 </div>
 
-<h5>Sierra Bib Format</h5> 
+<h5>Sierra Bib Format</h5>
 <div class="row row-cols-3 gy-1 my-2">
-    {{ macro.select_field('material_form', bib_formats, template.get('material_form')) }}  
+  {{ macro.select_field('material_form', bib_formats,
+  template.get('material_form')) }}
 </div>
 
-<h5>Sierra Matchpoints</h5> 
+<h5>Sierra Matchpoints</h5>
 <div class="row row-cols-3 gy-1 my-2">
-    {% for field_id, field_data in matchpoints.items() %}
-        {{ macro.select_field(field_id, field_data, template.get(field_id)) }}
-    {% endfor %}         
+  {% for field_id, field_data in matchpoints.items() %} {{
+  macro.select_field(field_id, field_data, template.get(field_id)) }} {% endfor
+  %}
 </div>
