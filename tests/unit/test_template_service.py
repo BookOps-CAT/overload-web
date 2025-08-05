@@ -1,12 +1,12 @@
 import pytest
 
-from overload_web.application import services
+from overload_web.application import template_service
 
 
 class TestTemplateService:
     @pytest.fixture
     def service(self, test_sql_session):
-        return services.template.OrderTemplateService(session=test_sql_session)
+        return template_service.OrderTemplateService(session=test_sql_session)
 
     def test_get_template(self, service):
         template_obj = service.get_template(template_id="foo")

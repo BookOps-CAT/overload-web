@@ -1,4 +1,4 @@
-from overload_web.application import services
+from overload_web.application import file_service
 from overload_web.domain import models, protocols
 
 
@@ -32,12 +32,12 @@ class FakeFileWriter(StubFileWriter):
 
 
 class TestFileTransferServices:
-    service = services.file.FileTransferService(
+    service = file_service.FileTransferService(
         loader=FakeFileLoader(), writer=FakeFileWriter()
     )
 
     def test_service_protocols(self):
-        service = services.file.FileTransferService(
+        service = file_service.FileTransferService(
             loader=StubFileLoader(), writer=StubFileWriter()
         )
         vendor_file = models.files.VendorFile.create(file_name="foo.mrc", content=b"")

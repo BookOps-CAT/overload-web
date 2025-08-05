@@ -2,7 +2,7 @@ import copy
 
 import pytest
 
-from overload_web.application import services
+from overload_web.application import record_service
 from overload_web.domain import protocols
 
 
@@ -108,7 +108,7 @@ class TestRecordProcessingService:
         monkeypatch.setattr(
             "overload_web.infrastructure.bibs.sierra.SierraBibFetcher", fake_fetcher
         )
-        return services.records.RecordProcessingService(
+        return record_service.RecordProcessingService(
             library=library,
             collection=collection,
             record_type=record_type,
@@ -124,7 +124,7 @@ class TestRecordProcessingService:
         monkeypatch.setattr(
             "overload_web.infrastructure.bibs.sierra.SierraBibFetcher", fake_fetcher
         )
-        return services.records.RecordProcessingService(
+        return record_service.RecordProcessingService(
             library=library,
             collection=collection,
             record_type=record_type,

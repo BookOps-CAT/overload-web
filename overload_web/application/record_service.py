@@ -55,17 +55,17 @@ class RecordProcessingService:
         self.matcher = logic.bibs.BibMatcher(sierra.SierraBibFetcher(str(self.library)))
         self.vendor_rules = vendor_rules
 
-    def _get_vendor_template(self, bib: dto.bib.BibDTO) -> dict[str, Any]:
+    def _get_vendor_template(self, bib: dto.BibDTO) -> dict[str, Any]:
         """Identify the vendor associated with a specific Bib record"""
         info = self.parser.identify_vendor(record=bib, vendor_rules=self.vendor_rules)
         return info
 
     def _process_record(
         self,
-        record: dto.bib.BibDTO,
+        record: dto.BibDTO,
         matchpoints: dict[str, str],
         order_template: dict[str, Any],
-    ) -> dto.bib.BibDTO:
+    ) -> dto.BibDTO:
         vendor_rules = self._get_vendor_template(record)
         if not matchpoints:
             matchpoints = vendor_rules["matchpoints"]
@@ -78,7 +78,7 @@ class RecordProcessingService:
         else:
             return self.parser.update_bib_fields(record=record, fields=bib_fields)
 
-    def parse(self, data: BinaryIO | bytes) -> list[dto.bib.BibDTO]:
+    def parse(self, data: BinaryIO | bytes) -> list[dto.BibDTO]:
         """
         Parse binary MARC data into `BibDTO` objects.
 
@@ -92,10 +92,10 @@ class RecordProcessingService:
 
     def process_records(
         self,
-        records: list[dto.bib.BibDTO],
+        records: list[dto.BibDTO],
         matchpoints: dict[str, str],
         template_data: dict[str, Any] = {},
-    ) -> list[dto.bib.BibDTO]:
+    ) -> list[dto.BibDTO]:
         """
         Match and update bibliographic records. Uses vendor and template data
         to determine which fields to update.
@@ -114,7 +114,7 @@ class RecordProcessingService:
             for i in records
         ]
 
-    def write_marc_binary(self, records: list[dto.bib.BibDTO]) -> BinaryIO:
+    def write_marc_binary(self, records: list[dto.BibDTO]) -> BinaryIO:
         """
         Serialize records into MARC binary.
 

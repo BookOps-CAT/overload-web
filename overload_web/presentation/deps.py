@@ -9,7 +9,7 @@ from sqlmodel import Session, SQLModel, create_engine
 from starlette.datastructures import UploadFile as StarlettUploadFile
 
 from overload_web import config
-from overload_web.application import services
+from overload_web.application import file_service, record_service
 from overload_web.presentation import schemas
 
 logger = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ def normalize_files(
         )
     if remote_files and vendor:
         vendor_dir = os.environ[f"{vendor.upper()}_SRC"]
-        service = services.file.FileTransferService.create_remote_file_service(vendor)
+        service = file_service.FileTransferService.create_remote_file_service(vendor)
         loaded_files = [
             service.loader.load(name=f, dir=vendor_dir) for f in remote_files
         ]
@@ -74,8 +74,8 @@ def get_record_service(
     library: Annotated[str, Form(...)],
     collection: Annotated[str, Form(...)],
     constants: Annotated[dict[str, dict], Depends(load_constants)],
-) -> Generator[services.records.RecordProcessingService, None, None]:
-    yield services.records.RecordProcessingService(
+) -> Generator[record_service.RecordProcessingService, None, None]:
+    yield record_service.RecordProcessingService(
         library=library,
         collection=collection,
         record_type=record_type,

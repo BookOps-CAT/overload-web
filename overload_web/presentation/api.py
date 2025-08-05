@@ -14,7 +14,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from sqlmodel import Session
 
 from overload_web import config
-from overload_web.application import services
+from overload_web.application import file_service, record_service, template_service
 from overload_web.infrastructure import db
 from overload_web.presentation import deps, schemas
 
@@ -40,7 +40,7 @@ def create_template(
     session: SessionDep,
 ) -> HTMLResponse:
     valid_template = db.tables.OrderTemplate.model_validate(template)
-    service = services.template.OrderTemplateService(session=session)
+    service = template_service.OrderTemplateService(session=session)
     saved_template = service.save_template(obj=valid_template)
     return templates.TemplateResponse(
         request=request,
@@ -53,7 +53,7 @@ def create_template(
 def get_template(
     request: Request, template_id: str, session: SessionDep
 ) -> HTMLResponse:
-    service = services.template.OrderTemplateService(session=session)
+    service = template_service.OrderTemplateService(session=session)
     template = service.get_template(template_id=template_id)
     template_out = (
         {k: v for k, v in template.model_dump().items() if v} if template else {}
@@ -69,7 +69,7 @@ def get_template(
 def get_template_list(
     request: Request, session: SessionDep, offset: int = 0, limit: int = 20
 ) -> HTMLResponse:
-    service = services.template.OrderTemplateService(session=session)
+    service = template_service.OrderTemplateService(session=session)
     template_list = service.list_templates(offset=offset, limit=limit)
     return templates.TemplateResponse(
         request=request,
@@ -87,7 +87,7 @@ def update_template(
     ],
     session: SessionDep,
 ) -> HTMLResponse:
-    service = services.template.OrderTemplateService(session=session)
+    service = template_service.OrderTemplateService(session=session)
     template = service.get_template(template_id=template_id)
     if not template:
         raise HTTPException(status_code=404, detail="OrderTemplate not found")
@@ -112,7 +112,7 @@ def list_remote_files(request: Request, vendor: str) -> HTMLResponse:
     Returns:
         the list of files wrapped in a `HTMLResponse` object
     """
-    service = services.file.FileTransferService.create_remote_file_service(vendor)
+    service = file_service.FileTransferService.create_remote_file_service(vendor)
     files = service.loader.list(dir=os.environ[f"{vendor.upper()}_SRC"])
     return templates.TemplateResponse(
         request=request,
@@ -125,7 +125,8 @@ def list_remote_files(request: Request, vendor: str) -> HTMLResponse:
 def process_vendor_file(
     request: Request,
     service: Annotated[
-        services.records.RecordProcessingService, Depends(deps.get_record_service)
+        record_service.RecordProcessingService,
+        Depends(deps.get_record_service),
     ],
     files: Annotated[list[schemas.VendorFileModel], Depends(deps.normalize_files)],
     template_input: Annotated[
@@ -153,7 +154,7 @@ def process_vendor_file(
 @api_router.post("/write-local")
 def write_local_file(vendor_file: schemas.VendorFileModel, dir: str) -> JSONResponse:
     """Write a file to a local directory."""
-    service = services.file.FileTransferService.create_local_file_service()
+    service = file_service.FileTransferService.create_local_file_service()
     out_files = service.writer.write(file=vendor_file, dir=dir)
     return JSONResponse(
         content={"app": "Overload Web", "files": out_files, "directory": dir}
@@ -165,9 +166,7 @@ def write_remote_file(
     vendor_file: schemas.VendorFileModel, dir: str, vendor: str
 ) -> JSONResponse:
     """Write a file to a remote directory."""
-    service = services.file.FileTransferService.create_remote_file_service(
-        vendor=vendor
-    )
+    service = file_service.FileTransferService.create_remote_file_service(vendor=vendor)
     out_files = service.writer.write(file=vendor_file, dir=dir)
     return JSONResponse(
         content={"app": "Overload Web", "files": out_files, "directory": dir}

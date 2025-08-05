@@ -14,7 +14,7 @@ from overload_web.application import dto
 from overload_web.domain import models, protocols
 
 
-class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
+class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
     """Parses and serializes MARC records."""
 
     def __init__(
@@ -51,7 +51,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
         return out
 
     def _check_vendor_tag(
-        self, record: dto.bib.BibDTO, vendor_tags: dict[str, dict[str, str]]
+        self, record: dto.BibDTO, vendor_tags: dict[str, dict[str, str]]
     ) -> dict[str, str]:
         bib_dict: dict = {}
         for field, data in vendor_tags.items():
@@ -66,7 +66,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
         return bib_dict
 
     def identify_vendor(
-        self, record: dto.bib.BibDTO, vendor_rules: dict[str, Any]
+        self, record: dto.BibDTO, vendor_rules: dict[str, Any]
     ) -> dict[str, Any]:
         for vendor, info in vendor_rules.items():
             vendor_tags = info.get("vendor_tags", {})
@@ -81,7 +81,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
                 return vendor_rules[vendor]
         return vendor_rules["UNKNOWN"]
 
-    def parse(self, data: BinaryIO | bytes) -> list[dto.bib.BibDTO]:
+    def parse(self, data: BinaryIO | bytes) -> list[dto.BibDTO]:
         """
         Parse binary MARC data into a list of `BibDTO` objects.
 
@@ -98,11 +98,11 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
         )
         for record in reader:
             mapped_domain_bib = self.mapper.map_bib(bib=record)
-            obj = dto.bib.BibDTO(bib=record, domain_bib=mapped_domain_bib)
+            obj = dto.BibDTO(bib=record, domain_bib=mapped_domain_bib)
             records.append(obj)
         return records
 
-    def serialize(self, records: list[dto.bib.BibDTO]) -> BinaryIO:
+    def serialize(self, records: list[dto.BibDTO]) -> BinaryIO:
         """
         Serialize a list of `BibDTO` objects into a binary MARC stream.
 
@@ -119,8 +119,8 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
         return io_data
 
     def update_bib_fields(
-        self, record: dto.bib.BibDTO, fields: list[dict[str, str]]
-    ) -> dto.bib.BibDTO:
+        self, record: dto.BibDTO, fields: list[dict[str, str]]
+    ) -> dto.BibDTO:
         """
         Update a `BibDTO` object's `Bib` attribute with new fields.
 
@@ -155,7 +155,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.bib.BibDTO]):
         record.bib = bib_rec
         return record
 
-    def update_order_fields(self, record: dto.bib.BibDTO) -> dto.bib.BibDTO:
+    def update_order_fields(self, record: dto.BibDTO) -> dto.BibDTO:
         """
         Update a `BibDTO` object's `Bib` attribute with new fields based on order data.
 

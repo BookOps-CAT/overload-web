@@ -291,6 +291,6 @@ def make_bib_dto(stub_bib) -> Callable:
                 )
             )
         mapper = bibs.marc.BookopsMarcMapper()
-        return dto.bib.BibDTO(bib=record, domain_bib=mapper.map_bib(record))
+        return dto.BibDTO(bib=record, domain_bib=mapper.map_bib(record))
 
     return _make_dto
