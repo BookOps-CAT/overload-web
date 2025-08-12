@@ -39,7 +39,7 @@ def create_logger_dict() -> dict:
             "overload_web": {
                 "handlers": ["stream", "loggly"],
                 "level": "DEBUG",
-                "propagate": False,
+                "propagate": True,
             },
         },
     }

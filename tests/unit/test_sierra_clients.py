@@ -3,6 +3,7 @@ import os
 import pytest
 import yaml
 
+from overload_web import errors
 from overload_web.infrastructure.bibs import sierra
 
 
@@ -98,3 +99,23 @@ class TestSierraSessions:
         fetcher = sierra.SierraBibFetcher(library=library)
         bibs = fetcher.get_bibs_by_id(value="123456789", key="isbn")
         assert bibs == []
+
+    @pytest.mark.parametrize(
+        "library,error_type",
+        [("bpl", "BookopsSolrError"), ("nypl", "BookopsPlatformError")],
+    )
+    def test_get_bibs_by_id_error(self, library, mock_sierra_error, caplog, error_type):
+        fetcher = sierra.SierraBibFetcher(library=library)
+        with pytest.raises(errors.OverloadError) as exc:
+            fetcher.get_bibs_by_id(value="123456789", key="isbn")
+        assert "Connection error: " in str(exc.value)
+        assert (
+            f"{error_type} while running Platform queries. Closing session and aborting processing."
+            in caplog.text
+        )
+
+    @pytest.mark.parametrize("library", ["nypl"])
+    def test_get_bibs_by_id_nypl_auth_error(self, library, mock_sierra_nypl_auth_error):
+        with pytest.raises(errors.OverloadError) as exc:
+            sierra.SierraBibFetcher(library=library)
+        assert "Trouble connecting: " in str(exc.value)

@@ -4,6 +4,7 @@ import os
 from typing import Callable
 
 import pytest
+import requests
 from bookops_marc import Bib
 from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
@@ -11,6 +12,11 @@ from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.application import dto
 from overload_web.infrastructure import bibs, db
+
+
+@pytest.fixture(autouse=True)
+def set_caplog_level(caplog):
+    caplog.set_level("DEBUG")
 
 
 @pytest.fixture(autouse=True)
@@ -86,6 +92,22 @@ def mock_sierra_no_response(mock_sierra_response, monkeypatch):
         return None
 
     monkeypatch.setattr("requests.Session.get", response_none)
+
+
+@pytest.fixture
+def mock_sierra_nypl_auth_error(monkeypatch, mock_sierra_response):
+    def mock_nypl_error(*args, **kwargs):
+        raise requests.exceptions.Timeout
+
+    monkeypatch.setattr("requests.post", mock_nypl_error)
+
+
+@pytest.fixture
+def mock_sierra_error(monkeypatch, mock_sierra_response):
+    def mock_nypl_error(*args, **kwargs):
+        raise requests.exceptions.ConnectionError
+
+    monkeypatch.setattr("requests.Session.get", mock_nypl_error)
 
 
 class FakeSierraSession(bibs.sierra.SierraSessionProtocol):

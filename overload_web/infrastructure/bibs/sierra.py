@@ -25,8 +25,10 @@ import os
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 import requests
-from bookops_bpl_solr import SolrSession
-from bookops_nypl_platform import PlatformSession, PlatformToken
+from bookops_bpl_solr import BookopsSolrError, SolrSession
+from bookops_nypl_platform import BookopsPlatformError, PlatformSession, PlatformToken
+
+from overload_web import errors
 
 from ... import __title__, __version__
 
@@ -59,7 +61,11 @@ class SierraBibFetcher:
         elif self.library == "bpl":
             return BPLSolrSession()
         else:
-            return NYPLPlatformSession()
+            try:
+                return NYPLPlatformSession()
+            except BookopsPlatformError as exc:
+                logger.error(f"Trouble connecting: {str(exc)}")
+                raise errors.OverloadError(str(exc))
 
     def _response_to_domain_dict(
         self, records: list[dict[str, Any]]
@@ -114,8 +120,16 @@ class SierraBibFetcher:
                 f"{sorted([i for i in match_methods.keys()])}"
             )
         bibs = []
-        if value is not None:
-            response = match_methods[key](value)
+        if value is None:
+            logger.debug(f"Attempted Sierra query on {key} with value: {value}")
+        else:
+            try:
+                response = match_methods[key](value)
+            except (BookopsPlatformError, BookopsSolrError) as exc:
+                logger.error(
+                    f"{exc.__class__.__name__} while running Platform queries. Closing session and aborting processing."
+                )
+                raise errors.OverloadError(str(exc))
             json_records = self.session._parse_response(response)
             bibs.extend(self._response_to_domain_dict(json_records))
         return bibs
