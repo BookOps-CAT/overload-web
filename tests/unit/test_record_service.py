@@ -138,13 +138,15 @@ class TestRecordProcessingService:
         return dto
 
     @pytest.mark.parametrize("record_type", ["full", "order_level"])
-    def test_parse(self, stub_service, stub_bib_dto):
+    def test_parse(self, stub_service, stub_bib_dto, caplog):
         records = stub_service.parse(stub_bib_dto.bib.as_marc())
         assert len(records) == 1
         assert str(records[0].bib.library) == str(stub_service.library)
         assert records[0].bib.isbn == "9781234567890"
         assert str(records[0].domain_bib.library) == str(stub_service.library)
         assert records[0].domain_bib.barcodes == ["333331234567890"]
+        assert len(caplog.records) == 1
+        assert "Vendor record parsed: " in caplog.records[0].msg
 
     @pytest.mark.parametrize("record_type", ["full"])
     def test_process_records_full(self, stub_service, stub_bib_dto, template_data):
@@ -215,6 +217,8 @@ class TestRecordProcessingService:
         assert str(matched_bibs[0].domain_bib.bib_id) == "123"
 
     @pytest.mark.parametrize("record_type", ["full", "order_level"])
-    def test_write_marc_binary(self, stub_bib_dto, stub_service):
+    def test_write_marc_binary(self, stub_bib_dto, stub_service, caplog):
         marc_binary = stub_service.write_marc_binary(records=[stub_bib_dto])
         assert marc_binary.read()[0:2] == b"00"
+        assert len(caplog.records) == 1
+        assert "Writing MARC binary for record: " in caplog.records[0].msg

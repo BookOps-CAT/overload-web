@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import io
+import logging
 from typing import Any, BinaryIO
 
 from bookops_marc import Bib, SierraBibReader
@@ -12,6 +13,8 @@ from pymarc import Field, Indicators, Subfield
 
 from overload_web.application import dto
 from overload_web.domain import models, protocols
+
+logger = logging.getLogger(__name__)
 
 
 class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
@@ -68,6 +71,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
     def identify_vendor(
         self, record: dto.BibDTO, vendor_rules: dict[str, Any]
     ) -> dict[str, Any]:
+        logger.info(f"Identifying vendor for record: {record.__dict__}")
         for vendor, info in vendor_rules.items():
             vendor_tags = info.get("vendor_tags", {})
             alt_vendor_tags = info.get("alternate_vendor_tags", {})
@@ -98,6 +102,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
         )
         for record in reader:
             mapped_domain_bib = self.mapper.map_bib(bib=record)
+            logger.info(f"Vendor record parsed: {mapped_domain_bib}")
             obj = dto.BibDTO(bib=record, domain_bib=mapped_domain_bib)
             records.append(obj)
         return records
@@ -114,6 +119,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
         """
         io_data = io.BytesIO()
         for record in records:
+            logger.info(f"Writing MARC binary for record: {record.domain_bib.__dict__}")
             io_data.write(record.bib.as_marc())
         io_data.seek(0)
         return io_data
