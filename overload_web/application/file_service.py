@@ -42,7 +42,9 @@ class FileTransferService:
         Returns:
             a list of filenames contained within the given directory
         """
-        return self.loader.list(dir=dir)
+        files = self.loader.list(dir=dir)
+        logger.info(f"Files in {dir}: {files}")
+        return files
 
     def load_file(self, name: str, dir: str) -> models.files.VendorFile:
         """
@@ -55,7 +57,9 @@ class FileTransferService:
         Returns:
             The loaded file as a `models.files.VendorFile` object.
         """
-        return self.loader.load(name=name, dir=dir)
+        file = self.loader.load(name=name, dir=dir)
+        logger.info(f"File loaded: {name}")
+        return file
 
     def write_marc_file(self, file: models.files.VendorFile, dir: str) -> str:
         """
@@ -68,7 +72,9 @@ class FileTransferService:
         Returns:
             the directory and filename where the file was written.
         """
-        return self.writer.write(file=file, dir=dir)
+        out_file = self.writer.write(file=file, dir=dir)
+        logger.info(f"Writing file to directory: {dir}/{out_file}")
+        return out_file
 
     @classmethod
     def create_local_file_service(cls) -> FileTransferService:
