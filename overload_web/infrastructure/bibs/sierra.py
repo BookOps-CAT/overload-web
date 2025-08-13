@@ -115,23 +115,27 @@ class SierraBibFetcher:
         }
 
         if key not in match_methods:
+            logger.error(f"Unsupported query matchpoint: {key}")
             raise ValueError(
                 f"Invalid matchpoint: '{key}'. Available matchpoints are: "
                 f"{sorted([i for i in match_methods.keys()])}"
             )
         bibs = []
         if value is None:
-            logger.debug(f"Attempted Sierra query on {key} with value: {value}")
-        else:
-            try:
-                response = match_methods[key](value)
-            except (BookopsPlatformError, BookopsSolrError) as exc:
-                logger.error(
-                    f"{exc.__class__.__name__} while running Platform queries. Closing session and aborting processing."
-                )
-                raise errors.OverloadError(str(exc))
-            json_records = self.session._parse_response(response)
-            bibs.extend(self._response_to_domain_dict(json_records))
+            logger.debug(f"Skipping Sierra query on {key} with missing value.")
+            return bibs
+        try:
+            logger.debug(
+                f"Querying Sierra with {self.session.__class__.__name__} on {key} with value: {value}."
+            )
+            response = match_methods[key](value)
+        except (BookopsPlatformError, BookopsSolrError) as exc:
+            logger.error(
+                f"{exc.__class__.__name__} while running Sierra queries. Closing session and aborting processing."
+            )
+            raise errors.OverloadError(str(exc))
+        json_records = self.session._parse_response(response)
+        bibs.extend(self._response_to_domain_dict(json_records))
         return bibs
 
 
@@ -183,7 +187,9 @@ class BPLSolrSession(SolrSession):
 
     def _parse_response(self, response: requests.Response) -> list[dict[str, Any]]:
         bibs = []
+        logger.info(f"Sierra Session response code: {response.status_code}.")
         if response and response.ok:
+            logger.debug("Converting Sierra session response to json.")
             json_response = response.json()
             bibs.extend(json_response["response"]["docs"])
         return bibs
@@ -229,7 +235,9 @@ class NYPLPlatformSession(PlatformSession):
 
     def _parse_response(self, response: requests.Response) -> list[dict[str, Any]]:
         bibs = []
+        logger.info(f"Sierra Session response code: {response.status_code}.")
         if response and response.ok:
+            logger.debug("Converting Sierra session response to json.")
             json_response = response.json()
             bibs.extend(json_response["data"])
         return bibs

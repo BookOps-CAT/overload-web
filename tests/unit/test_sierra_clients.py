@@ -88,17 +88,36 @@ class TestSierraSessions:
         assert isinstance(fetcher.session, session_type)
 
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
-    def test_get_bibs_by_id_issn(self, library, mock_sierra_response):
+    def test_get_bibs_by_id_issn(self, library, mock_sierra_response, caplog):
         fetcher = sierra.SierraBibFetcher(library=library)
         with pytest.raises(NotImplementedError) as exc:
             fetcher.get_bibs_by_id(value="123456789", key="issn")
         assert "Search by ISSN not implemented" in str(exc.value)
+        assert "Invalid matchpoint: 'issn'. Available matchpoints are: isbn, upc, oclc_number, bib_id"
 
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_get_bibs_by_id_no_response(self, library, mock_sierra_no_response):
         fetcher = sierra.SierraBibFetcher(library=library)
         bibs = fetcher.get_bibs_by_id(value="123456789", key="isbn")
         assert bibs == []
+
+    @pytest.mark.parametrize(
+        "library,session_type",
+        [("bpl", "BPLSolrSession"), ("nypl", "NYPLPlatformSession")],
+    )
+    @pytest.mark.parametrize("matchpoint", ["bib_id", "upc", "isbn", "oclc_number"])
+    def test_get_bibs_by_id_logging(
+        self, library, session_type, matchpoint, mock_sierra_response, caplog
+    ):
+        fetcher = sierra.SierraBibFetcher(library=library)
+        fetcher.get_bibs_by_id(value="123456789", key=matchpoint)
+        assert len(caplog.records) == 3
+        assert (
+            caplog.records[0].msg
+            == f"Querying Sierra with {session_type} on {matchpoint} with value: 123456789."
+        )
+        assert caplog.records[1].msg == "Sierra Session response code: 200."
+        assert caplog.records[2].msg == "Converting Sierra session response to json."
 
     @pytest.mark.parametrize(
         "library,error_type",
@@ -110,7 +129,7 @@ class TestSierraSessions:
             fetcher.get_bibs_by_id(value="123456789", key="isbn")
         assert "Connection error: " in str(exc.value)
         assert (
-            f"{error_type} while running Platform queries. Closing session and aborting processing."
+            f"{error_type} while running Sierra queries. Closing session and aborting processing."
             in caplog.text
         )
 

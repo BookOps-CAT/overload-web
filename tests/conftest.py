@@ -60,17 +60,18 @@ def make_template():
     return _make_template
 
 
+class MockHTTPResponse:
+    def __init__(self, status_code: int, ok: bool, stub_json: dict):
+        self.status_code = status_code
+        self.ok = ok
+        self.stub_json = stub_json
+
+    def json(self):
+        return self.stub_json
+
+
 @pytest.fixture
 def mock_sierra_response(monkeypatch):
-    class MockHTTPResponse:
-        def __init__(self, status_code: int, ok: bool, stub_json: dict):
-            self.status_code = status_code
-            self.ok = ok
-            self.stub_json = stub_json
-
-        def json(self):
-            return self.stub_json
-
     def mock_response(*args, **kwargs):
         json = {
             "response": {"docs": [{"id": "123456789"}]},
@@ -89,7 +90,8 @@ def mock_sierra_response(monkeypatch):
 @pytest.fixture
 def mock_sierra_no_response(mock_sierra_response, monkeypatch):
     def response_none(*args, **kwargs):
-        return None
+        json = {"response": {"docs": []}, "data": []}
+        return MockHTTPResponse(status_code=200, ok=True, stub_json=json)
 
     monkeypatch.setattr("requests.Session.get", response_none)
 
@@ -116,7 +118,7 @@ class FakeSierraSession(bibs.sierra.SierraSessionProtocol):
 
 
 @pytest.fixture
-def mock_session(monkeypatch):
+def mock_session(monkeypatch, mock_sierra_response):
     def mock_response(*args, **kwargs):
         return [{"id": "123456789"}]
 
