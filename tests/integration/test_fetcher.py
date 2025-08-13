@@ -39,10 +39,10 @@ class TestSierraBibFetcher:
             == "Invalid matchpoint: 'bar'. Available matchpoints are: ['bib_id', 'isbn', 'issn', 'oclc_number', 'upc']"
         )
 
-    # @pytest.mark.parametrize("match", ["bib_id", "upc", "isbn", "oclc_number", "issn"])
-    # def test_get_bibs_by_id_no_response(self, match, mock_session_no_response):
-    #     fetcher = sierra.SierraBibFetcher(
-    #         library="library", session=mock_session_no_response
-    #     )
-    #     bibs = fetcher.get_bibs_by_id(value="123456789", key=match)
-    #     assert bibs == []
+    @pytest.mark.parametrize("match", ["bib_id", "upc", "isbn", "oclc_number", "issn"])
+    def test_get_bibs_by_id_no_response(self, match, mock_session_no_response):
+        fetcher = sierra.SierraBibFetcher(
+            library="library", session=mock_session_no_response
+        )
+        bibs = fetcher.get_bibs_by_id(value="123456789", key=match)
+        assert bibs == []
