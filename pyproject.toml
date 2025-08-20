@@ -47,3 +47,7 @@ omit = [
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]
+"tests/test_overload_web.py" = ["F401"]
