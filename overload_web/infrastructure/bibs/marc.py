@@ -247,7 +247,8 @@ class BookopsMarcMapper:
             bib: MARC record represented as a `bookops_marc.Bib` object.
 
         Returns:
-            DomainBib: domain object populated with structured order and identifier data.
+            DomainBib: domain object populated with structured order and identifier
+            data.
         """
 
         call_number = (
