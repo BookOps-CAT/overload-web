@@ -126,12 +126,14 @@ class SierraBibFetcher:
             return bibs
         try:
             logger.debug(
-                f"Querying Sierra with {self.session.__class__.__name__} on {key} with value: {value}."
+                f"Querying Sierra with {self.session.__class__.__name__} "
+                f"on {key} with value: {value}."
             )
             response = match_methods[key](value)
         except (BookopsPlatformError, BookopsSolrError) as exc:
             logger.error(
-                f"{exc.__class__.__name__} while running Sierra queries. Closing session and aborting processing."
+                f"{exc.__class__.__name__} while running Sierra queries. "
+                "Closing session and aborting processing."
             )
             raise errors.OverloadError(str(exc))
         json_records = self.session._parse_response(response)
