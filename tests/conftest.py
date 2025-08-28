@@ -1,5 +1,6 @@
 import copy
 import io
+import logging
 import os
 from typing import Callable
 
@@ -17,6 +18,10 @@ from overload_web.infrastructure import bibs, db
 @pytest.fixture(autouse=True)
 def set_caplog_level(caplog):
     caplog.set_level("DEBUG")
+    logger = logging.getLogger("overload_web")
+    for handler in logger.handlers:
+        if not isinstance(handler, logging.StreamHandler):
+            logger.removeHandler(handler)
 
 
 @pytest.fixture(autouse=True)
