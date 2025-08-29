@@ -38,7 +38,8 @@ logger = logging.getLogger(__name__)
 @runtime_checkable
 class BibFetcher(Protocol):
     """
-    Protocol for a service that can fetch bib records from Sierra based on an identifier.
+    Protocol for a service that can fetch bib records from Sierra based on an
+    identifier.
 
     This abstraction allows the `BibMatcher` to remain decoupled from any specific
     data source or API. Implementations can include REST APIs, BPL's Solr service,
