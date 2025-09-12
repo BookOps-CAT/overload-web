@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, TypedDict
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -31,6 +31,7 @@ class Collection(Enum):
 
     BRANCH = "BL"
     RESEARCH = "RL"
+    MIXED = "MIXED"
     NONE = "NONE"
 
     def __str__(self):
@@ -59,20 +60,32 @@ class DomainBib:
         library: LibrarySystem,
         barcodes: list[str] = [],
         bib_id: BibId | None = None,
-        call_number: str | list[str] | None = None,
+        branch_call_number: str | list[str] | None = None,
+        cat_source: str | None = None,
+        collection: Collection | None = None,
         isbn: str | None = None,
         oclc_number: str | list[str] | None = None,
         orders: list[Order] = [],
+        research_call_number: str | list[str] | None = None,
+        title: str | None = None,
         upc: str | None = None,
+        update_date: datetime.datetime | str | None = None,
+        vendor: str | None = None,
     ) -> None:
         self.barcodes = barcodes
         self.bib_id = bib_id
-        self.call_number = call_number
+        self.branch_call_number = branch_call_number
+        self.cat_source = cat_source
+        self.collection = collection
         self.isbn = isbn
         self.library = library
         self.oclc_number = oclc_number
         self.orders = orders
+        self.research_call_number = research_call_number
+        self.title = title
         self.upc = upc
+        self.update_date = update_date
+        self.vendor = vendor
 
     def apply_order_template(self, template_data: dict[str, Any]) -> None:
         """
@@ -83,17 +96,6 @@ class DomainBib:
         """
         for order in self.orders:
             order.apply_template(template_data=template_data)
-
-
-class FetcherResponseDict(TypedDict):
-    """Defines the dict returned by `BibFetcher.get_bibs_by_id` method"""
-
-    library: str
-    orders: list[str]
-    bib_id: str | None
-    isbn: str | None
-    oclc_number: list[str] | None
-    upc: str | None
 
 
 class LibrarySystem(Enum):

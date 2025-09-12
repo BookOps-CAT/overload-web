@@ -251,17 +251,18 @@ class BookopsMarcMapper:
             data.
         """
 
-        call_number = (
-            bib.research_call_no if bib.collection == "RL" else bib.branch_call_no
-        )
         bib_id = models.bibs.BibId(bib.sierra_bib_id) if bib.sierra_bib_id else None
         return models.bibs.DomainBib(
-            library=models.bibs.LibrarySystem(bib.library),
-            orders=[self.map_order(order=i) for i in bib.orders],
-            bib_id=bib_id,
-            upc=bib.upc_number,
-            isbn=bib.isbn,
-            oclc_number=list(bib.oclc_nos.values()),
             barcodes=bib.barcodes,
-            call_number=call_number,
+            bib_id=bib_id,
+            branch_call_number=bib.branch_call_no,
+            collection=models.bibs.Collection(str(bib.collection).upper()),
+            isbn=bib.isbn,
+            library=models.bibs.LibrarySystem(bib.library),
+            oclc_number=list(bib.oclc_nos.values()),
+            orders=[self.map_order(order=i) for i in bib.orders],
+            research_call_number=bib.research_call_no,
+            title=bib.title,
+            upc=bib.upc_number,
+            update_date=str(bib.get("005")),
         )
