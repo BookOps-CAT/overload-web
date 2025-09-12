@@ -48,7 +48,7 @@ class BibFetcher(Protocol):
 
     def get_bibs_by_id(
         self, value: str | int, key: str
-    ) -> list[models.bibs.FetcherResponseDict]: ...  # pragma: no branch
+    ) -> list[models.responses.FetcherResponseDict]: ...  # pragma: no branch
 
     """
     Retrieve candidate bib records that match a key-value identifier.

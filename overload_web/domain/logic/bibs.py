@@ -49,7 +49,7 @@ class BibMatcher:
     def _select_best_match(
         self,
         bib_to_match: models.bibs.DomainBib,
-        candidates: list[models.bibs.FetcherResponseDict],
+        candidates: list[models.responses.FetcherResponseDict],
         matchpoints: dict[str, str],
     ) -> models.bibs.BibId | None:
         """
