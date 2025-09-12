@@ -27,6 +27,12 @@ def test_api_startup(monkeypatch):
         assert response.status_code == 200
 
 
+def test_deps():
+    deps.create_db_and_tables()
+    session = deps.get_session()
+    assert isinstance(next(session), Session)
+
+
 @pytest.mark.usefixtures("mock_sierra_response", "mock_sftp_client")
 class TestApp:
     client = TestClient(app)

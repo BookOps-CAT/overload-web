@@ -6,12 +6,14 @@ from fastapi.templating import Jinja2Templates
 
 
 def get_postgres_uri() -> str:
-    host = os.environ.get("POSTGRES_HOST", "localhost")
-    port = os.environ.get("POSTGRES_PORT", 5432)
-    password = os.environ.get("POSTGRES_PASSWORD", "")
-    user = os.environ.get("POSTGRES_USER", "overload")
-    db_name = os.environ.get("POSTGRES_DB", "overload_dev")
-    return f"postgresql://{user}:{password}@{host}:{port}/{db_name}"
+    db_type = os.environ.get("DB_TYPE", "sqlite")
+    host = os.environ.get("POSTGRES_HOST")
+    port = os.environ.get("POSTGRES_PORT")
+    password = os.environ.get("POSTGRES_PASSWORD")
+    user = os.environ.get("POSTGRES_USER")
+    db_name = os.environ.get("POSTGRES_DB")
+    uri = f"{db_type}://{user}:{password}@{host}:{port}/{db_name}"
+    return uri.replace("sqlite://None:None@None:None/None", "sqlite:///:memory:")
 
 
 @lru_cache
