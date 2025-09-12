@@ -22,18 +22,16 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 import requests
 from bookops_bpl_solr import BookopsSolrError, SolrSession
 from bookops_nypl_platform import BookopsPlatformError, PlatformSession, PlatformToken
 
 from overload_web import errors
+from overload_web.domain import models
 
 from ... import __title__, __version__
-
-if TYPE_CHECKING:  # pragma: no cover
-    from overload_web.domain import models
 
 logger = logging.getLogger(__name__)
 
@@ -68,8 +66,8 @@ class SierraBibFetcher:
                 raise errors.OverloadError(str(exc))
 
     def _response_to_domain_dict(
-        self, records: list[dict[str, Any]]
-    ) -> list[models.bibs.FetcherResponseDict]:
+        self, records: list[models.responses.BaseSierraResponse]
+    ) -> list[models.responses.FetcherResponseDict]:
         """
         Converts raw response into dictionaries formatted for the `DomainBib` model.
 
@@ -80,22 +78,12 @@ class SierraBibFetcher:
             list of cleaned domain-ready dictionaries.
         """
         if records:
-            return [
-                {
-                    "library": self.library,
-                    "orders": [],
-                    "bib_id": i["id"],
-                    "isbn": i.get("isbn"),
-                    "oclc_number": i.get("oclc_number"),
-                    "upc": i.get("upc"),
-                }
-                for i in records
-            ]
+            return [i.to_dict() for i in records]
         return []
 
     def get_bibs_by_id(
         self, value: str | int, key: str
-    ) -> list[models.bibs.FetcherResponseDict]:
+    ) -> list[models.responses.FetcherResponseDict]:
         """
         Retrieves bib records by a specific matchpoint (e.g., ISBN, OCLC)
 
@@ -131,10 +119,7 @@ class SierraBibFetcher:
             )
             response = match_methods[key](value)
         except (BookopsPlatformError, BookopsSolrError) as exc:
-            logger.error(
-                f"{exc.__class__.__name__} while running Sierra queries. "
-                "Closing session and aborting processing."
-            )
+            logger.error(f"{exc.__class__.__name__} while running Sierra queries. ")
             raise errors.OverloadError(str(exc))
         json_records = self.session._parse_response(response)
         bibs.extend(self._response_to_domain_dict(json_records))
@@ -166,7 +151,7 @@ class SierraSessionProtocol(Protocol):
     ) -> requests.Response: ...  # pragma: no branch
     def _parse_response(
         self, response: requests.Response
-    ) -> list[dict[str, Any]]: ...  # pragma: no branch
+    ) -> list[models.responses.BaseSierraResponse]: ...  # pragma: no branch
 
 
 class BPLSolrSession(SolrSession):
@@ -187,29 +172,28 @@ class BPLSolrSession(SolrSession):
     def _get_credentials(self) -> str:
         return os.environ["BPL_SOLR_CLIENT"]
 
-    def _parse_response(self, response: requests.Response) -> list[dict[str, Any]]:
-        bibs = []
+    def _parse_response(
+        self, response: requests.Response
+    ) -> list[models.responses.BaseSierraResponse]:
         logger.info(f"Sierra Session response code: {response.status_code}.")
-        if response and response.ok:
-            logger.debug("Converting Sierra session response to json.")
-            json_response = response.json()
-            bibs.extend(json_response["response"]["docs"])
-        return bibs
+        json_response = response.json()
+        bibs = json_response["response"]["docs"]
+        return [models.responses.BPLSolrResponse(i) for i in bibs]
 
     def _get_bibs_by_bib_id(self, value: str | int) -> requests.Response:
-        return self.search_bibNo(str(value))
+        return self.search_bibNo(str(value), default_response_fields=False)
 
     def _get_bibs_by_isbn(self, value: str | int) -> requests.Response:
-        return self.search_isbns([str(value)])
+        return self.search_isbns([str(value)], default_response_fields=False)
 
     def _get_bibs_by_issn(self, value: str | int) -> requests.Response:
         raise NotImplementedError("Search by ISSN not implemented in BPL Solr")
 
     def _get_bibs_by_oclc_number(self, value: str | int) -> requests.Response:
-        return self.search_controlNo(str(value))
+        return self.search_controlNo(str(value), default_response_fields=False)
 
     def _get_bibs_by_upc(self, value: str | int) -> requests.Response:
-        return self.search_upcs([str(value)])
+        return self.search_upcs([str(value)], default_response_fields=False)
 
 
 class NYPLPlatformSession(PlatformSession):
@@ -235,14 +219,13 @@ class NYPLPlatformSession(PlatformSession):
             os.environ["NYPL_PLATFORM_AGENT"],
         )
 
-    def _parse_response(self, response: requests.Response) -> list[dict[str, Any]]:
-        bibs = []
+    def _parse_response(
+        self, response: requests.Response
+    ) -> list[models.responses.BaseSierraResponse]:
         logger.info(f"Sierra Session response code: {response.status_code}.")
-        if response and response.ok:
-            logger.debug("Converting Sierra session response to json.")
-            json_response = response.json()
-            bibs.extend(json_response["data"])
-        return bibs
+        json_response = response.json()
+        bibs = json_response["data"]
+        return [models.responses.NYPLPlatformResponse(i) for i in bibs]
 
     def _get_bibs_by_bib_id(self, value: str | int) -> requests.Response:
         return self.search_bibNos(str(value))

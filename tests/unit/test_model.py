@@ -137,3 +137,122 @@ class TestVendorFile:
         with pytest.raises(ValueError) as exc:
             models.files.VendorFileId(value=123)
         assert str(exc.value) == "VendorFileId must be a non-empty string."
+
+
+class TestSierraResponses:
+    BASE_RESPONSE = {"id": "1234567890", "title": "Foo"}
+
+    def test_nypl_response_bl(self):
+        data = {
+            "varFields": [
+                {
+                    "marcTag": "091",
+                    "fieldTag": "c",
+                    "subfields": [
+                        {"tag": "a", "content": "FIC"},
+                        {"tag": "c", "content": "BAR"},
+                    ],
+                },
+                {
+                    "marcTag": "901",
+                    "fieldTag": "y",
+                    "subfields": [{"tag": "b", "content": "CATBL"}],
+                },
+                {
+                    "marcTag": "910",
+                    "fieldTag": "y",
+                    "subfields": [{"tag": "a", "content": "BL"}],
+                },
+                {
+                    "marcTag": "020",
+                    "fieldTag": "i",
+                    "subfields": [{"tag": "a", "content": "9781234567890"}],
+                },
+                {
+                    "marcTag": "024",
+                    "fieldTag": "y",
+                    "subfields": [{"tag": "a", "content": "12345"}],
+                },
+                {
+                    "marcTag": "028",
+                    "fieldTag": "y",
+                    "subfields": [{"tag": "a", "content": "67890"}],
+                },
+                {
+                    "marcTag": "035",
+                    "fieldTag": "y",
+                    "subfields": [{"tag": "a", "content": "(OCoLC)9876543210)"}],
+                },
+            ],
+            "standardNumbers": ["9781234567890"],
+            "controlNumber": ["on9876543210"],
+            "updatedDate": "2020-01-01T00:00:01",
+            **self.BASE_RESPONSE,
+        }
+        response = models.responses.NYPLPlatformResponse(data)
+        assert response.cat_source == "inhouse"
+        assert response.collection == "BL"
+
+    def test_nypl_response_rl(self):
+        data = {
+            "varFields": [
+                {
+                    "marcTag": "852",
+                    "fieldTag": "y",
+                    "subfields": [{"tag": "a", "content": "ReCAP 20-123456"}],
+                },
+                {
+                    "marcTag": "910",
+                    "fieldTag": "y",
+                    "subfields": [{"tag": "a", "content": "RL"}],
+                },
+            ],
+            **self.BASE_RESPONSE,
+        }
+        response = models.responses.NYPLPlatformResponse(data)
+        assert response.cat_source == "vendor"
+        assert response.collection == "RL"
+
+    def test_nypl_response_mixed(self):
+        data = {
+            "varFields": [
+                {
+                    "marcTag": "910",
+                    "fieldTag": "y",
+                    "subfields": [{"tag": "a", "content": "RL"}],
+                },
+                {
+                    "marcTag": "910",
+                    "fieldTag": "y",
+                    "subfields": [{"tag": "a", "content": "BL"}],
+                },
+            ],
+            **self.BASE_RESPONSE,
+        }
+        response = models.responses.NYPLPlatformResponse(data)
+        assert response.cat_source == "vendor"
+        assert response.collection == "MIXED"
+
+    def test_bpl_response(self):
+        data = {
+            "sm_item_data": ['{"barcode": "333331234567890"}'],
+            "ss_marc_tag_001": "on9876543210",
+            "ss_marc_tag_003": "OCoLC",
+            "ss_marc_tag_005": "20200101000001.0",
+            "sm_bib_varfields": [
+                "005 || 20200101000001.0",
+                "020 || {{a}} 9781234567890",
+                "024 || {{a}} 12345",
+                "028 || {{a}} 67890",
+                "035 || {{a}} (OCoLC)9876543210",
+                "099 || {{a}} FIC || {{a}} BAR",
+            ],
+            "isbn": ["9781234567890"],
+            "call_number": "FIC BAR",
+            **self.BASE_RESPONSE,
+        }
+        response = models.responses.BPLSolrResponse(data)
+        assert response.barcodes == ["333331234567890"]
+        assert response.branch_call_no == ["FIC BAR"]
+        assert response.cat_source == "inhouse"
+        assert len(response.var_fields) == 5

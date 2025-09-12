@@ -2,7 +2,7 @@ import copy
 import io
 import logging
 import os
-from typing import Callable
+from typing import Any, Callable
 
 import pytest
 import requests
@@ -12,6 +12,7 @@ from pymarc import Field, Indicators, Subfield
 from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.application import dto
+from overload_web.domain import models
 from overload_web.infrastructure import bibs, db
 
 
@@ -78,9 +79,10 @@ class MockHTTPResponse:
 @pytest.fixture
 def mock_sierra_response(monkeypatch):
     def mock_response(*args, **kwargs):
+        stub_record = {"id": "123456789", "title": "foo"}
         json = {
-            "response": {"docs": [{"id": "123456789"}]},
-            "data": [{"id": "123456789"}],
+            "response": {"docs": [stub_record]},
+            "data": [stub_record],
         }
         return MockHTTPResponse(status_code=200, ok=True, stub_json=json)
 
@@ -122,10 +124,54 @@ class FakeSierraSession(bibs.sierra.SierraSessionProtocol):
         self.credentials = self._get_credentials()
 
 
+class FakeSierraResponse(models.responses.BaseSierraResponse):
+    library = "library"
+
+    @property
+    def barcodes(self) -> list[str]:
+        return ["333331234567890"]
+
+    @property
+    def branch_call_no(self) -> list[str]:
+        return ["FIC"]
+
+    @property
+    def cat_source(self) -> str:
+        return "inhouse"
+
+    @property
+    def collection(self) -> str | None:
+        return None
+
+    @property
+    def isbn(self) -> list[str]:
+        return [self._data["id"]]
+
+    @property
+    def oclc_number(self) -> list[str]:
+        return [self._data["id"]]
+
+    @property
+    def research_call_no(self) -> list[str]:
+        return ["FOO"]
+
+    @property
+    def upc(self) -> list[str]:
+        return [self._data["id"]]
+
+    @property
+    def update_date(self) -> str | None:
+        return None
+
+    @property
+    def var_fields(self) -> list[dict[str, Any]]:
+        return [{"020": self._data["id"]}]
+
+
 @pytest.fixture
 def mock_session(monkeypatch, mock_sierra_response):
     def mock_response(*args, **kwargs):
-        return [{"id": "123456789"}]
+        return [FakeSierraResponse({"id": "123456789", "title": "foo"})]
 
     monkeypatch.setattr(
         bibs.sierra.SierraSessionProtocol, "_parse_response", mock_response
