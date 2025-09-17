@@ -1,16 +1,17 @@
 """Models representing templates for order-level record processing.
 
 Order templates are reusable objects used for applying consistent values to orders. The
-attributes of an order template correspond to those available in the `Order` domain model.
+attributes of an order template correspond to those available in the `Order` domain
+model.
 
 Models:
 
 `_OrderTemplateBase`
-    The base data model used to represent an order template and fields that are shared by all
-    models within this module.
+    The base data model used to represent an order template and fields that are shared
+    by all models within this module.
 `OrderTemplate`
-    The table model that includes all fields within an order template including fields that
-    are only required for the template to be saved to the database.
+    The table model that includes all fields within an order template including fields
+    that are only required for the template to be saved to the database.
 `OrderTemplateCreate`
     The data model used to create a new order template.
 `OrderTemplateUpdate`
