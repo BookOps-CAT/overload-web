@@ -147,7 +147,6 @@ class TestSierraResponses:
             "varFields": [
                 {
                     "marcTag": "091",
-                    "fieldTag": "c",
                     "subfields": [
                         {"tag": "a", "content": "FIC"},
                         {"tag": "c", "content": "BAR"},
@@ -155,32 +154,26 @@ class TestSierraResponses:
                 },
                 {
                     "marcTag": "901",
-                    "fieldTag": "y",
                     "subfields": [{"tag": "b", "content": "CATBL"}],
                 },
                 {
                     "marcTag": "910",
-                    "fieldTag": "y",
                     "subfields": [{"tag": "a", "content": "BL"}],
                 },
                 {
                     "marcTag": "020",
-                    "fieldTag": "i",
                     "subfields": [{"tag": "a", "content": "9781234567890"}],
                 },
                 {
                     "marcTag": "024",
-                    "fieldTag": "y",
                     "subfields": [{"tag": "a", "content": "12345"}],
                 },
                 {
                     "marcTag": "028",
-                    "fieldTag": "y",
                     "subfields": [{"tag": "a", "content": "67890"}],
                 },
                 {
                     "marcTag": "035",
-                    "fieldTag": "y",
                     "subfields": [{"tag": "a", "content": "(OCoLC)9876543210)"}],
                 },
             ],
@@ -198,12 +191,11 @@ class TestSierraResponses:
             "varFields": [
                 {
                     "marcTag": "852",
-                    "fieldTag": "y",
+                    "ind1": "8",
                     "subfields": [{"tag": "a", "content": "ReCAP 20-123456"}],
                 },
                 {
                     "marcTag": "910",
-                    "fieldTag": "y",
                     "subfields": [{"tag": "a", "content": "RL"}],
                 },
             ],
@@ -218,12 +210,10 @@ class TestSierraResponses:
             "varFields": [
                 {
                     "marcTag": "910",
-                    "fieldTag": "y",
                     "subfields": [{"tag": "a", "content": "RL"}],
                 },
                 {
                     "marcTag": "910",
-                    "fieldTag": "y",
                     "subfields": [{"tag": "a", "content": "BL"}],
                 },
             ],

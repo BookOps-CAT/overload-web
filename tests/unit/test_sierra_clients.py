@@ -129,6 +129,7 @@ class TestLiveSierraSession:
             "branch_call_no",
             "cat_source",
             "collection",
+            "control_number",
             "isbn",
             "library",
             "oclc_number",

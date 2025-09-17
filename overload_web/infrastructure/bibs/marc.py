@@ -257,6 +257,7 @@ class BookopsMarcMapper:
             bib_id=bib_id,
             branch_call_number=bib.branch_call_no,
             collection=models.bibs.Collection(str(bib.collection).upper()),
+            control_number=bib.control_number,
             isbn=bib.isbn,
             library=models.bibs.LibrarySystem(bib.library),
             oclc_number=list(bib.oclc_nos.values()),

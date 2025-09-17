@@ -63,6 +63,7 @@ class DomainBib:
         branch_call_number: str | list[str] | None = None,
         cat_source: str | None = None,
         collection: Collection | None = None,
+        control_number: str | None = None,
         isbn: str | None = None,
         oclc_number: str | list[str] | None = None,
         orders: list[Order] = [],
@@ -77,6 +78,7 @@ class DomainBib:
         self.branch_call_number = branch_call_number
         self.cat_source = cat_source
         self.collection = collection
+        self.control_number = control_number
         self.isbn = isbn
         self.library = library
         self.oclc_number = oclc_number

@@ -144,6 +144,10 @@ class FakeSierraResponse(models.responses.BaseSierraResponse):
         return None
 
     @property
+    def control_number(self) -> str | None:
+        return self._data["id"]
+
+    @property
     def isbn(self) -> list[str]:
         return [self._data["id"]]
 

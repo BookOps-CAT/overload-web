@@ -19,19 +19,20 @@ AGENT = f"{__title__}/{__version__}"
 class FetcherResponseDict(TypedDict):
     """Defines the dict returned by `BibFetcher.get_bibs_by_id` method"""
 
-    title: str
     barcodes: list[str]
+    bib_id: str
     branch_call_no: list[str]
     cat_source: str
     collection: str | None
+    control_number: str | None
     isbn: list[str]
+    library: str
     oclc_number: list[str]
     research_call_no: list[str]
+    title: str
     upc: list[str]
     update_date: str | None
     var_fields: list[dict[str, Any]]
-    library: str
-    bib_id: str | None
 
 
 class BaseSierraResponse(ABC):
@@ -40,8 +41,8 @@ class BaseSierraResponse(ABC):
     def __init__(self, data: dict[str, Any]) -> None:
         self._data = data
         self.bib_id: str = data["id"]
-        self.title: str = data["title"]
         self.library = self.__class__.library
+        self.title: str = data["title"]
 
     @property
     @abstractmethod
@@ -58,6 +59,9 @@ class BaseSierraResponse(ABC):
     @property
     @abstractmethod
     def collection(self) -> str | None: ...  # pragma: no branch
+
+    @property
+    def control_number(self) -> str | None: ...  # pragma: no branch
 
     @property
     @abstractmethod
@@ -90,6 +94,7 @@ class BaseSierraResponse(ABC):
             "branch_call_no": self.branch_call_no,
             "cat_source": self.cat_source,
             "collection": self.collection,
+            "control_number": self.control_number,
             "isbn": self.isbn,
             "oclc_number": self.oclc_number,
             "research_call_no": self.research_call_no,
@@ -116,7 +121,7 @@ class BPLSolrResponse(BaseSierraResponse):
     def branch_call_no(self) -> list[str]:
         tag_091 = [i for i in self.var_fields if i["marc_tag"] == "099"]
         call_nos = [" ".join(i["content"] for i in j["subfields"]) for j in tag_091]
-        call_nos.append(self._data.get("call_number", ""))
+        call_nos.append(self._data.get("call_no", ""))
         return list(set([i for i in call_nos if i]))
 
     @property
@@ -131,6 +136,10 @@ class BPLSolrResponse(BaseSierraResponse):
     @property
     def collection(self) -> None:
         return None
+
+    @property
+    def control_number(self) -> str | None:
+        return self._data.get("ss_marc_tag_001")
 
     @property
     def isbn(self) -> list[str]:
@@ -235,6 +244,10 @@ class NYPLPlatformResponse(BaseSierraResponse):
             return collections[0]
         else:
             return None
+
+    @property
+    def control_number(self) -> str | None:
+        return self._data.get("controlNumber")
 
     @property
     def isbn(self) -> list[str]:
