@@ -223,6 +223,31 @@ class TestSierraResponses:
         assert response.cat_source == "vendor"
         assert response.collection == "MIXED"
 
+    @pytest.mark.parametrize(
+        "field, collection",
+        [({"marcTag": "091"}, "BL"), ({"marcTag": "852", "ind1": "8"}, "RL")],
+    )
+    def test_nypl_response_call_number_check(self, field, collection):
+        field["subfields"] = [{"tag": "a", "content": "Foo"}]
+        data = {"varFields": [field], **self.BASE_RESPONSE}
+        response = models.responses.NYPLPlatformResponse(data)
+        assert response.collection == collection
+
+    def test_nypl_response_call_number_mixed(self):
+        data = {
+            "varFields": [
+                {
+                    "marcTag": "852",
+                    "ind1": "8",
+                    "subfields": [{"tag": "a", "content": "ReCAP 20-123456"}],
+                },
+                {"marcTag": "091", "subfields": [{"tag": "a", "content": "FIC"}]},
+            ],
+            **self.BASE_RESPONSE,
+        }
+        response = models.responses.NYPLPlatformResponse(data)
+        assert response.collection == "MIXED"
+
     def test_bpl_response(self):
         data = {
             "sm_item_data": ['{"barcode": "333331234567890"}'],
@@ -243,6 +268,6 @@ class TestSierraResponses:
         }
         response = models.responses.BPLSolrResponse(data)
         assert response.barcodes == ["333331234567890"]
-        assert response.branch_call_no == ["FIC BAR"]
+        assert response.branch_call_number == ["FIC BAR"]
         assert response.cat_source == "inhouse"
         assert len(response.var_fields) == 5

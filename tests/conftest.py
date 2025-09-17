@@ -132,7 +132,7 @@ class FakeSierraResponse(models.responses.BaseSierraResponse):
         return ["333331234567890"]
 
     @property
-    def branch_call_no(self) -> list[str]:
+    def branch_call_number(self) -> list[str]:
         return ["FIC"]
 
     @property
@@ -156,7 +156,7 @@ class FakeSierraResponse(models.responses.BaseSierraResponse):
         return [self._data["id"]]
 
     @property
-    def research_call_no(self) -> list[str]:
+    def research_call_number(self) -> list[str]:
         return ["FOO"]
 
     @property

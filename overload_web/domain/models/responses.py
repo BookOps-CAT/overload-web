@@ -21,14 +21,14 @@ class FetcherResponseDict(TypedDict):
 
     barcodes: list[str]
     bib_id: str
-    branch_call_no: list[str]
+    branch_call_number: list[str]
     cat_source: str
     collection: str | None
     control_number: str | None
     isbn: list[str]
     library: str
     oclc_number: list[str]
-    research_call_no: list[str]
+    research_call_number: list[str]
     title: str
     upc: list[str]
     update_date: str | None
@@ -50,7 +50,7 @@ class BaseSierraResponse(ABC):
 
     @property
     @abstractmethod
-    def branch_call_no(self) -> list[str]: ...  # pragma: no branch
+    def branch_call_number(self) -> list[str]: ...  # pragma: no branch
 
     @property
     @abstractmethod
@@ -73,7 +73,7 @@ class BaseSierraResponse(ABC):
 
     @property
     @abstractmethod
-    def research_call_no(self) -> list[str]: ...  # pragma: no branch
+    def research_call_number(self) -> list[str]: ...  # pragma: no branch
 
     @property
     @abstractmethod
@@ -91,13 +91,13 @@ class BaseSierraResponse(ABC):
         return {
             "title": self.title,
             "barcodes": self.barcodes,
-            "branch_call_no": self.branch_call_no,
+            "branch_call_number": self.branch_call_number,
             "cat_source": self.cat_source,
             "collection": self.collection,
             "control_number": self.control_number,
             "isbn": self.isbn,
             "oclc_number": self.oclc_number,
-            "research_call_no": self.research_call_no,
+            "research_call_number": self.research_call_number,
             "upc": self.upc,
             "update_date": self.update_date,
             "var_fields": self.var_fields,
@@ -118,10 +118,10 @@ class BPLSolrResponse(BaseSierraResponse):
         return [i.get("barcode") for i in items if i and i.get("barcode")]
 
     @property
-    def branch_call_no(self) -> list[str]:
+    def branch_call_number(self) -> list[str]:
         tag_091 = [i for i in self.var_fields if i["marc_tag"] == "099"]
         call_nos = [" ".join(i["content"] for i in j["subfields"]) for j in tag_091]
-        call_nos.append(self._data.get("call_no", ""))
+        call_nos.append(self._data.get("call_number", ""))
         return list(set([i for i in call_nos if i]))
 
     @property
@@ -166,7 +166,7 @@ class BPLSolrResponse(BaseSierraResponse):
         return list(set([i for i in oclc_nums if i]))
 
     @property
-    def research_call_no(self) -> list[str]:
+    def research_call_number(self) -> list[str]:
         return []
 
     @property
@@ -211,7 +211,7 @@ class NYPLPlatformResponse(BaseSierraResponse):
         return []
 
     @property
-    def branch_call_no(self) -> list[str]:
+    def branch_call_number(self) -> list[str]:
         tag_091 = [i for i in self.var_fields if i["marcTag"] == "091"]
         return [" ".join(i["content"] for i in j["subfields"]) for j in tag_091]
 
@@ -242,6 +242,12 @@ class NYPLPlatformResponse(BaseSierraResponse):
             return "MIXED"
         elif len(collections) == 1:
             return collections[0]
+        if self.branch_call_number and self.research_call_number:
+            return "MIXED"
+        elif self.branch_call_number and not self.research_call_number:
+            return "BL"
+        elif self.research_call_number and not self.branch_call_number:
+            return "RL"
         else:
             return None
 
@@ -274,7 +280,7 @@ class NYPLPlatformResponse(BaseSierraResponse):
         return list(set([i for i in isbns if i]))
 
     @property
-    def research_call_no(self) -> list[str]:
+    def research_call_number(self) -> list[str]:
         tag_852 = [
             i for i in self.var_fields if i["marcTag"] == "852" and i["ind1"] == "8"
         ]
