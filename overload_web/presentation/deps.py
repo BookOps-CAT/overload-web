@@ -82,7 +82,6 @@ def get_record_service(
         library=library,
         collection=collection,
         record_type=record_type,
-        marc_mapping=constants["marc_mapping"],
         vendor_rules=constants["vendor_rules"][library],
     )
 

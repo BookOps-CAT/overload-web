@@ -112,7 +112,6 @@ class TestRecordProcessingService:
             library=library,
             collection=collection,
             record_type=record_type,
-            marc_mapping=self.stub_mapping,
             vendor_rules=self.stub_vendor_rules,
         )
 
@@ -128,7 +127,6 @@ class TestRecordProcessingService:
             library=library,
             collection=collection,
             record_type=record_type,
-            marc_mapping=self.stub_mapping,
             vendor_rules=self.stub_vendor_rules,
         )
 

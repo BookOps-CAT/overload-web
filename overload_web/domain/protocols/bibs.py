@@ -73,7 +73,6 @@ class MarcParser(Protocol[T]):
 
     """
 
-    library: models.bibs.LibrarySystem
     marc_mapping: dict[str, dict[str, str]]
 
     def identify_vendor(
@@ -82,7 +81,9 @@ class MarcParser(Protocol[T]):
 
     """Provided a list of vendor rules identify the vendor associated with a record"""
 
-    def parse(self, data: BinaryIO | bytes) -> list[T]: ...  # pragma: no branch
+    def parse(
+        self, data: BinaryIO | bytes, library: models.bibs.LibrarySystem
+    ) -> list[T]: ...  # pragma: no branch
 
     """Convert binary MARC data into a list of `T` objects."""
 

@@ -30,7 +30,6 @@ class RecordProcessingService:
         library: str,
         collection: str,
         record_type: str,
-        marc_mapping: dict[str, dict[str, str]],
         vendor_rules: dict[
             str, dict[str, dict[str, dict[str, dict[str, str] | list[str]]]]
         ],
@@ -51,7 +50,7 @@ class RecordProcessingService:
         self.library = models.bibs.LibrarySystem(library)
         self.collection = models.bibs.Collection(collection)
         self.record_type = models.bibs.RecordType(record_type)
-        self.parser = marc.BookopsMarcParser(self.library, marc_mapping)
+        self.parser = marc.BookopsMarcParser()
         self.matcher = logic.bibs.BibMatcher(sierra.SierraBibFetcher(str(self.library)))
         self.vendor_rules = vendor_rules
 
@@ -85,7 +84,7 @@ class RecordProcessingService:
         Returns:
             a list of parsed bibliographic records as `BibDTO` objects.
         """
-        return self.parser.parse(data=data)
+        return self.parser.parse(data=data, library=self.library)
 
     def process_records(
         self,

@@ -20,10 +20,78 @@ logger = logging.getLogger(__name__)
 class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
     """Parses and serializes MARC records."""
 
+    MARC_ORDER_MAPPING: dict[str, dict[str, str]] = {
+        "907": {"a": "bib_id"},
+        "960": {
+            "c": "order_code_1",
+            "d": "order_code_2",
+            "e": "order_code_3",
+            "f": "order_code_4",
+            "g": "format",
+            "i": "order_type",
+            "m": "status",
+            "o": "copies",
+            "q": "create_date",
+            "s": "price",
+            "t": "locations",
+            "u": "fund",
+            "v": "vendor_code",
+            "w": "lang",
+            "x": "country",
+            "z": "order_id",
+        },
+        "961": {
+            "d": "internal_note",
+            "f": "selector_note",
+            "h": "vendor_notes",
+            "i": "vendor_title_no",
+            "m": "blanket_po",
+        },
+    }
+    BOOKOPS_MARC_BIB_MAPPING: dict[str, str | dict[str, str]] = {
+        "barcodes": "barcodes",
+        "branch_call_number": "branch_call_no",
+        "control_number": "control_number",
+        "isbn": "isbn",
+        "research_call_number": "research_call_no",
+        "title": "title",
+        "upc": "upc_number",
+        "update_date": {"tag": "005"},
+    }
+    BOOKOPS_MARC_ORDER_MAPPING: dict[str, str | dict[str, str]] = {
+        "audience": "audn",
+        "branches": "branches",
+        "copies": "copies",
+        "create_date": "created",
+        "format": "form",
+        "lang": "lang",
+        "locations": "locs",
+        "order_id": "order_id",
+        "shelves": "shelves",
+        "status": "status",
+        "vendor_notes": "venNotes",
+        "_field": {
+            "c": "order_code_1",
+            "d": "order_code_2",
+            "e": "order_code_3",
+            "f": "order_code_4",
+            "i": "order_type",
+            "s": "price",
+            "u": "fund",
+            "v": "vendor_code",
+            "x": "country",
+        },
+        "_following_field": {
+            "d": "internal_note",
+            "f": "selector_note",
+            "i": "vendor_title_no",
+            "m": "blanket_po",
+        },
+    }
+
     def __init__(
         self,
-        library: models.bibs.LibrarySystem,
-        marc_mapping: dict[str, dict[str, str]],
+        marc_mapping: dict[str, dict[str, str]] = MARC_ORDER_MAPPING,
     ) -> None:
         """
         Initialize `BookopsMarcParser` for a specific library.
@@ -31,9 +99,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
         Args:
             library: library whose records are being parsed as a `LibrarySystem` obj
         """
-        self.library = library
         self.marc_mapping = marc_mapping
-        self.mapper = BookopsMarcMapper()
 
     def _map_order_data(self, order: models.bibs.Order) -> dict:
         """
@@ -48,10 +114,64 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
         out = {}
         for tag in ["960", "961"]:
             tag_dict = {}
-            for k, v in self.marc_mapping[tag].items():
+            for k, v in self.MARC_ORDER_MAPPING[tag].items():
                 tag_dict[k] = getattr(order, v)
             out[tag] = tag_dict
         return out
+
+    def _map_order_from_marc(self, order: BookopsMarcOrder) -> dict:
+        """
+        Factory method used to construct an `Order` object from a
+        `bookops_marc.Order` object.
+
+        Args:
+            order: an order from a `bookops_marc.Bib` or `bookops_marc.Order` object
+
+        Returns:
+            an instance of the domain `Order` dataclass populated from MARC data.
+        """
+        out: dict[str, Any] = {}
+
+        for k, v in self.BOOKOPS_MARC_ORDER_MAPPING.items():
+            if isinstance(v, str):
+                out[k] = getattr(order, v)
+            else:
+                field = getattr(order, k)
+                for code, attr in v.items():
+                    out[attr] = field.get(code) if field else None
+        out["order_id"] = (
+            models.bibs.OrderId(value=out["order_id"]) if out["order_id"] else None
+        )
+        return out
+
+    def _map_bib_from_marc(self, bib: Bib) -> models.bibs.DomainBib:
+        """
+        Factory method used to build a `DomainBib` from a `bookops_marc.Bib` object.
+
+        Args:
+            bib: MARC record represented as a `bookops_marc.Bib` object.
+
+        Returns:
+            DomainBib: domain object populated with structured order and identifier
+            data.
+        """
+        out: dict[str, Any] = {}
+
+        out["bib_id"] = (
+            models.bibs.BibId(bib.sierra_bib_id) if bib.sierra_bib_id else None
+        )
+        out["library"] = models.bibs.LibrarySystem(bib.library)
+        out["collection"] = models.bibs.Collection(str(bib.collection).upper())
+        out["orders"] = [
+            models.bibs.Order(**self._map_order_from_marc(i)) for i in bib.orders
+        ]
+        out["oclc_number"] = list(bib.oclc_nos.values())
+        for k, v in self.BOOKOPS_MARC_BIB_MAPPING.items():
+            if isinstance(v, dict):
+                out[k] = str(bib.get(v["tag"]))
+            else:
+                out[k] = getattr(bib, v)
+        return models.bibs.DomainBib(**out)
 
     def _check_vendor_tag(
         self, record: dto.BibDTO, vendor_tags: dict[str, dict[str, str]]
@@ -85,7 +205,9 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
                 return vendor_rules[vendor]
         return vendor_rules["UNKNOWN"]
 
-    def parse(self, data: BinaryIO | bytes) -> list[dto.BibDTO]:
+    def parse(
+        self, data: BinaryIO | bytes, library: models.bibs.LibrarySystem
+    ) -> list[dto.BibDTO]:
         """
         Parse binary MARC data into a list of `BibDTO` objects.
 
@@ -97,11 +219,9 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
             and `DomainBib` objects.
         """
         records = []
-        reader = SierraBibReader(
-            data, library=str(self.library), hide_utf8_warnings=True
-        )
+        reader = SierraBibReader(data, library=str(library), hide_utf8_warnings=True)
         for record in reader:
-            mapped_domain_bib = self.mapper.map_bib(bib=record)
+            mapped_domain_bib = self._map_bib_from_marc(bib=record)
             logger.info(f"Vendor record parsed: {mapped_domain_bib}")
             obj = dto.BibDTO(bib=record, domain_bib=mapped_domain_bib)
             records.append(obj)
@@ -188,82 +308,3 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
                 )
         record.bib = bib_rec
         return record
-
-
-class BookopsMarcMapper:
-    def map_order(self, order: BookopsMarcOrder) -> models.bibs.Order:
-        """
-        Factory method used to construct an `Order` object from a
-        `bookops_marc.Order` object.
-
-        Args:
-            order: an order from a `bookops_marc.Bib` or `bookops_marc.Order` object
-
-        Returns:
-            an instance of the domain `Order` dataclass populated from MARC data.
-        """
-
-        def from_following_field(code: str):
-            if order._following_field:
-                return order._following_field.get(code, None)
-            return None
-
-        return models.bibs.Order(
-            audience=order.audn,
-            blanket_po=from_following_field("m"),
-            branches=order.branches,
-            copies=order.copies,
-            country=order._field.get("x", None),
-            create_date=order.created,
-            format=order.form,
-            fund=order._field.get("u", None),
-            internal_note=from_following_field("d"),
-            lang=order.lang,
-            locations=order.locs,
-            order_code_1=order._field.get("c", None),
-            order_code_2=order._field.get("d", None),
-            order_code_3=order._field.get("e", None),
-            order_code_4=order._field.get("f", None),
-            order_type=order._field.get("i", None),
-            order_id=(
-                models.bibs.OrderId(value=str(order.order_id))
-                if order.order_id
-                else None
-            ),
-            price=order._field.get("s", None),
-            selector_note=from_following_field("f"),
-            shelves=order.shelves,
-            status=order.status,
-            vendor_code=order._field.get("v", None),
-            vendor_notes=order.venNotes,
-            vendor_title_no=from_following_field("i"),
-        )
-
-    def map_bib(self, bib: Bib) -> models.bibs.DomainBib:
-        """
-        Factory method used to build a `DomainBib` from a `bookops_marc.Bib` object.
-
-        Args:
-            bib: MARC record represented as a `bookops_marc.Bib` object.
-
-        Returns:
-            DomainBib: domain object populated with structured order and identifier
-            data.
-        """
-
-        bib_id = models.bibs.BibId(bib.sierra_bib_id) if bib.sierra_bib_id else None
-        return models.bibs.DomainBib(
-            barcodes=bib.barcodes,
-            bib_id=bib_id,
-            branch_call_number=bib.branch_call_no,
-            collection=models.bibs.Collection(str(bib.collection).upper()),
-            control_number=bib.control_number,
-            isbn=bib.isbn,
-            library=models.bibs.LibrarySystem(bib.library),
-            oclc_number=list(bib.oclc_nos.values()),
-            orders=[self.map_order(order=i) for i in bib.orders],
-            research_call_number=bib.research_call_no,
-            title=bib.title,
-            upc=bib.upc_number,
-            update_date=str(bib.get("005")),
-        )
