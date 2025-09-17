@@ -141,12 +141,12 @@ def process_vendor_file(
     ],
 ) -> HTMLResponse:
     out_files = []
+    template = template_input.model_dump()
+    matchpoint_list = matchpoints.model_dump()
     for file in files:
         bibs = service.parse(data=file.content)
         processed_bibs = service.process_records(
-            records=bibs,
-            template_data=template_input.model_dump(),
-            matchpoints=matchpoints.model_dump(),
+            records=bibs, template_data=template, matchpoints=matchpoint_list
         )
         marc_binary = service.write_marc_binary(records=processed_bibs)
         out_files.append({"file_name": file.file_name, "binary_content": marc_binary})
