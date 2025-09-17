@@ -55,18 +55,15 @@ class RecordProcessingService:
         self.matcher = logic.bibs.BibMatcher(sierra.SierraBibFetcher(str(self.library)))
         self.vendor_rules = vendor_rules
 
-    def _get_vendor_template(self, bib: dto.BibDTO) -> dict[str, Any]:
-        """Identify the vendor associated with a specific Bib record"""
-        info = self.parser.identify_vendor(record=bib, vendor_rules=self.vendor_rules)
-        return info
-
     def _process_record(
         self,
         record: dto.BibDTO,
         matchpoints: dict[str, str],
         order_template: dict[str, Any],
     ) -> dto.BibDTO:
-        vendor_rules = self._get_vendor_template(record)
+        vendor_rules = self.parser.identify_vendor(
+            record=record, vendor_rules=self.vendor_rules
+        )
         if not matchpoints:
             matchpoints = vendor_rules["matchpoints"]
         record.domain_bib = self.matcher.match_bib(record.domain_bib, matchpoints)
