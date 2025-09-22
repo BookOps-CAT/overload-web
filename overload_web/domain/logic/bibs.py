@@ -42,7 +42,6 @@ class BibMatcher:
 
         Args:
             fetcher: An injected `BibFetcher` that provides candidate bibs.
-            matchpoints: ordered list of fields to use for matching.
         """
         self.fetcher = fetcher
 
