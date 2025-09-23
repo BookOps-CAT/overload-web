@@ -88,7 +88,7 @@ class RecordProcessingService:
         """
         out = []
         for record in records:
-            vendor_info = self.vendor_reviewer.vendor_id(record.bib)
+            vendor_info = self.vendor_reviewer.identify_vendor(record.bib)
             if not matchpoints:
                 matchpoints = vendor_info.matchpoints
             record.domain_bib = self.matcher.match_bib(record.domain_bib, matchpoints)
