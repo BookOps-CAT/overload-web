@@ -91,7 +91,9 @@ class RecordProcessingService:
             vendor_info = self.vendor_reviewer.identify_vendor(record.bib)
             if not matchpoints:
                 matchpoints = vendor_info.matchpoints
-            record.domain_bib = self.matcher.match_bib(record.domain_bib, matchpoints)
+            record.domain_bib = self.matcher.match_bib(
+                record.domain_bib, matchpoints, self.record_type
+            )
             if self.record_type == models.bibs.RecordType.ORDER_LEVEL:
                 record.domain_bib.apply_order_template(template_data=template_data)
                 rec = self.updater.update_order_record(record=record)
