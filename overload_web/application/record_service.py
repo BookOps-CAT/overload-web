@@ -2,8 +2,9 @@
 
 This module defines record processing services for Full and Order-level MARC records.
 The service contains `library`, `collection`, `record_type`, `parser`, `matcher`,
-and `marc_mapping` attributes. The `parser` attribute is a `BibMatcher` domain object.
-The `parser attribute is a concrete implementation of the `BibParser` domain protocol.
+`updater`, and `vendor_reviewer` attributes. The `parser` attribute is a `BibMatcher`
+domain object. The `parser attribute is a concrete implementation of the `BibParser`
+domain protocol.
 
 Classes:
 
