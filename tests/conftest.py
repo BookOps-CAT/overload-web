@@ -371,7 +371,9 @@ def make_bib_dto(stub_bib, stub_constants) -> Callable:
                 )
             )
         parser = bibs.marc.BookopsMarcParser(stub_constants["bookops_marc_mapping"])
-        return dto.BibDTO(bib=record, domain_bib=parser._map_bib_from_marc(record))
+        return dto.BibDTO(
+            bib=record, domain_bib=parser._map_domain_bib_from_marc(record)
+        )
 
     return _make_dto
 
