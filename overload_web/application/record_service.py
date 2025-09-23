@@ -8,7 +8,7 @@ The `parser attribute is a concrete implementation of the `BibParser` domain pro
 Classes:
 
 `RecordProcessingService`
-    an application service for processing MARC records. This service can be used
+    An application service for processing MARC records. This service can be used
     to process both full and order-level MARC records.
 """
 
@@ -43,7 +43,8 @@ class RecordProcessingService:
             record_type:
                 The type of records to be processed (full or order-level) as a str.
             rules:
-                The marc mapping to be used when processing records as a dictionary.
+                A dictionary containing the marc mapping and vendor rules to be used
+                when processing records.
         """
         self.library = library
         self.collection = collection
@@ -65,7 +66,7 @@ class RecordProcessingService:
             data: Binary MARC data as a `BinaryIO` or `bytes` object.
 
         Returns:
-            a list of parsed bibliographic records as `BibDTO` objects.
+            A list of parsed bibliographic records as `BibDTO` objects.
         """
         return self.parser.parse(data=data, library=self.library)
 
@@ -80,11 +81,15 @@ class RecordProcessingService:
         to determine which fields to update.
 
         Args:
-            records: a list of parsed bibliographic records as `BibDTO` objects.
-            template_data: order template data as a dictionary.
+            records:
+                A list of parsed bibliographic records as `BibDTO` objects.
+            matchpoints:
+                A dictionary containing matchpoints to be used in matching records.
+            template_data:
+                Order template data as a dictionary.
 
         Returns:
-            a list of processed and updated records as `BibDTO` objects
+            A list of processed and updated records as `BibDTO` objects
         """
         out = []
         for record in records:
@@ -104,7 +109,7 @@ class RecordProcessingService:
         Serialize records into MARC binary.
 
         Args:
-            records:  a list of parsed bibliographic records as `BibDTO` objects.
+            records:  A list of parsed bibliographic records as `BibDTO` objects.
 
         Returns:
             MARC data as a `BinaryIO` object
