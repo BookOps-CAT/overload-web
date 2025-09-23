@@ -57,12 +57,12 @@ class DomainBib:
 
     def __init__(
         self,
-        library: LibrarySystem,
+        library: LibrarySystem | str,
         barcodes: list[str] = [],
-        bib_id: BibId | None = None,
+        bib_id: BibId | str | None = None,
         branch_call_number: str | list[str] | None = None,
         cat_source: str | None = None,
-        collection: Collection | None = None,
+        collection: Collection | str | None = None,
         control_number: str | None = None,
         isbn: str | None = None,
         oclc_number: str | list[str] | None = None,
@@ -71,23 +71,23 @@ class DomainBib:
         title: str | None = None,
         upc: str | None = None,
         update_date: datetime.datetime | str | None = None,
-        vendor: str | None = None,
     ) -> None:
         self.barcodes = barcodes
-        self.bib_id = bib_id
+        self.bib_id = BibId(bib_id) if isinstance(bib_id, str) else bib_id
         self.branch_call_number = branch_call_number
         self.cat_source = cat_source
-        self.collection = collection
+        self.collection = (
+            Collection(collection) if isinstance(collection, str) else collection
+        )
         self.control_number = control_number
         self.isbn = isbn
-        self.library = library
+        self.library = LibrarySystem(library) if isinstance(library, str) else library
         self.oclc_number = oclc_number
         self.orders = orders
         self.research_call_number = research_call_number
         self.title = title
         self.upc = upc
         self.update_date = update_date
-        self.vendor = vendor
 
     def apply_order_template(self, template_data: dict[str, Any]) -> None:
         """
@@ -130,7 +130,7 @@ class Order:
         order_code_2: str | None,
         order_code_3: str | None,
         order_code_4: str | None,
-        order_id: OrderId | None,
+        order_id: OrderId | str | None,
         order_type: str | None,
         price: str | int | None,
         selector_note: str | None,
@@ -155,7 +155,7 @@ class Order:
         self.order_code_2 = order_code_2
         self.order_code_3 = order_code_3
         self.order_code_4 = order_code_4
-        self.order_id = order_id
+        self.order_id = OrderId(order_id) if isinstance(order_id, str) else order_id
         self.order_type = order_type
         self.price = price
         self.selector_note = selector_note
@@ -175,6 +175,27 @@ class Order:
         for k, v in template_data.items():
             if v and k in self.__dict__.keys():
                 setattr(self, k, v)
+
+    def map_to_marc(
+        self, rules: dict[str, dict[str, str]]
+    ) -> dict[str, dict[str, str | int | OrderId | list[str] | None]]:
+        """
+        Map order data to MARC using a set of mapping rules
+
+        Args:
+            rules: a dict defining the fields and subfields to map `Order` attributes to
+
+        Returns:
+            the attributes of the `Order` as a dict mapped to MARC fields and subfields
+        """
+
+        out = {}
+        for key in rules.keys():
+            tag_dict = {}
+            for k, v in rules[key].items():
+                tag_dict[k] = getattr(self, v)
+            out[key] = tag_dict
+        return out
 
 
 @dataclass(frozen=True)
@@ -203,3 +224,10 @@ class RecordType(Enum):
 
     def __str__(self):
         return self.value
+
+
+@dataclass(frozen=True)
+class VendorInfo:
+    bib_fields: list[dict[str, str]]
+    matchpoints: dict[str, str]
+    name: str

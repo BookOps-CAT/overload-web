@@ -74,7 +74,7 @@ class TestDomainBib:
             orders=[models.bibs.Order(**order_data)],
             bib_id="b123456789",
         )
-        assert bib.bib_id == "b123456789"
+        assert str(bib.bib_id) == "b123456789"
 
     def test_DomainBib_apply_order_template(self, library, order_data, template_data):
         bib = models.bibs.DomainBib(

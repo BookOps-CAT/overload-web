@@ -79,10 +79,7 @@ def get_record_service(
     constants: Annotated[dict[str, dict], Depends(load_constants)],
 ) -> Generator[record_service.RecordProcessingService, None, None]:
     yield record_service.RecordProcessingService(
-        library=library,
-        collection=collection,
-        record_type=record_type,
-        vendor_rules=constants["vendor_rules"][library],
+        library=library, collection=collection, record_type=record_type, rules=constants
     )
 
 

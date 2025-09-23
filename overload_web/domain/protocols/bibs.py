@@ -68,21 +68,14 @@ class MarcParser(Protocol[T]):
     Parse binary MARC data to a generic type, `T`.
 
     Args:
-        library: the library to whom the records belong as a `LibrarySystem` object
         marc_mapping: the marc mapping to be used when processing records
 
     """
 
-    marc_mapping: dict[str, dict[str, str]]
-
-    def identify_vendor(
-        self, record: T, vendor_rules: dict[str, Any]
-    ) -> dict[str, Any]: ...  # pragma: no branch
-
-    """Provided a list of vendor rules identify the vendor associated with a record"""
+    marc_mapping: dict[str, Any]
 
     def parse(
-        self, data: BinaryIO | bytes, library: models.bibs.LibrarySystem
+        self, data: BinaryIO | bytes, library: str
     ) -> list[T]: ...  # pragma: no branch
 
     """Convert binary MARC data into a list of `T` objects."""
@@ -91,12 +84,21 @@ class MarcParser(Protocol[T]):
 
     """Convert a list of `T` objects into binary MARC data."""
 
-    def update_bib_fields(
-        self, record: T, fields: list[dict[str, str]]
+
+@runtime_checkable
+class MarcUpdater(Protocol[T]):
+    """
+    Update MARC records with appropriate fields during last stage of record processing.
+    """
+
+    order_mapping: dict[str, Any]
+
+    def update_bib_record(
+        self, bib: T, vendor_info: models.bibs.VendorInfo
     ) -> T: ...  # pragma: no branch
 
-    """Provided a list of fields as dicts, update MARC fields in a `T` object"""
+    """Update MARC fields in a full-level `T` object based on rules."""
 
-    def update_order_fields(self, record: T) -> T: ...  # pragma: no branch
+    def update_order_record(self, bib: T) -> T: ...  # pragma: no branch
 
-    """Provided update MARC fields in a `T` object based on attributes of object"""
+    """Update MARC fields in an order-level `T` object based on rules."""

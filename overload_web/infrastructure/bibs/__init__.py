@@ -1,3 +1,3 @@
-from . import marc, sierra
+from . import marc, sierra, vendor
 
-__all__ = ["marc", "sierra"]
+__all__ = ["marc", "sierra", "vendor"]

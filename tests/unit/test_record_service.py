@@ -30,78 +30,10 @@ class FakeBibFetcher(StubFetcher):
     [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
 )
 class TestRecordProcessingService:
-    stub_mapping = {
-        "907": {"a": "bib_id"},
-        "960": {
-            "c": "order_code_1",
-            "d": "order_code_2",
-            "e": "order_code_3",
-            "f": "order_code_4",
-            "g": "format",
-            "i": "order_type",
-            "m": "status",
-            "o": "copies",
-            "q": "create_date",
-            "s": "price",
-            "t": "locations",
-            "u": "fund",
-            "v": "vendor_code",
-            "w": "lang",
-            "x": "country",
-            "z": "order_id",
-        },
-        "961": {
-            "d": "internal_note",
-            "f": "selector_note",
-            "h": "vendor_notes",
-            "i": "vendor_title_no",
-            "m": "blanket_po",
-        },
-    }
-
-    stub_vendor_rules = {
-        "UNKNOWN": {
-            "vendor_tags": {},
-            "matchpoints": {
-                "primary_matchpoint": "isbn",
-                "secondary_matchpoint": "oclc_number",
-            },
-            "bib_fields": [],
-        },
-        "INGRAM": {
-            "vendor_tags": {"901": {"code": "a", "value": "INGRAM"}},
-            "matchpoints": {
-                "primary_matchpoint": "oclc_number",
-                "secondary_matchpoint": "isbn",
-            },
-            "bib_fields": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
-            ],
-        },
-        "BT SERIES": {
-            "vendor_tags": {"037": {"code": "b", "value": "B&amp;T SERIES"}},
-            "alternate_vendor_tags": {"947": {"code": "a", "value": "B&amp;T SERIES"}},
-            "matchpoints": {"primary_matchpoint": "isbn"},
-            "bib_fields": [
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=afoobar;",
-                }
-            ],
-        },
-    }
-
     @pytest.fixture
-    def stub_service(self, monkeypatch, library, collection, record_type):
+    def stub_service(
+        self, monkeypatch, library, collection, record_type, stub_constants
+    ):
         def fake_fetcher(*args, **kwargs):
             return FakeBibFetcher()
 
@@ -112,11 +44,13 @@ class TestRecordProcessingService:
             library=library,
             collection=collection,
             record_type=record_type,
-            vendor_rules=self.stub_vendor_rules,
+            rules=stub_constants,
         )
 
     @pytest.fixture
-    def stub_service_no_matches(self, monkeypatch, library, collection, record_type):
+    def stub_service_no_matches(
+        self, monkeypatch, library, collection, record_type, stub_constants
+    ):
         def fake_fetcher(*args, **kwargs):
             return StubFetcher()
 
@@ -127,7 +61,7 @@ class TestRecordProcessingService:
             library=library,
             collection=collection,
             record_type=record_type,
-            vendor_rules=self.stub_vendor_rules,
+            rules=stub_constants,
         )
 
     @pytest.fixture

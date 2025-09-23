@@ -1,5 +1,6 @@
 import copy
 import io
+import json
 import logging
 import os
 from typing import Any, Callable
@@ -356,7 +357,7 @@ def stub_bib(library) -> Bib:
 
 
 @pytest.fixture
-def make_bib_dto(stub_bib) -> Callable:
+def make_bib_dto(stub_bib, stub_constants) -> Callable:
     def _make_dto(data: dict[str, dict[str, str]]):
         record = copy.deepcopy(stub_bib)
         for k, v in data.items():
@@ -369,7 +370,14 @@ def make_bib_dto(stub_bib) -> Callable:
                     ],
                 )
             )
-        parser = bibs.marc.BookopsMarcParser()
+        parser = bibs.marc.BookopsMarcParser(stub_constants["bookops_marc_mapping"])
         return dto.BibDTO(bib=record, domain_bib=parser._map_bib_from_marc(record))
 
     return _make_dto
+
+
+@pytest.fixture
+def stub_constants():
+    with open("overload_web/constants.json", "r", encoding="utf-8") as fh:
+        constants = json.load(fh)
+    return constants
