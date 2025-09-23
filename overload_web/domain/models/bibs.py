@@ -47,7 +47,6 @@ class DomainBib:
         barcodes: list of barcodes associated with the record.
         bib_id: sierra bib ID.
         branch_call_number: branch call number for the record, if present.
-        cat_source: the source of cataloging as a string.
         collection: the collection to whom the record belongs as an enum or str.
         control_number: the record's control number, if present.
         isbn: ISBN for the title, if present.
@@ -57,6 +56,7 @@ class DomainBib:
         title: the title associated with the record.
         upc: UPC number, if present.
         update_date: the date the record was last updated.
+        vendor: the vendor to whom the record belongs, if applicable.
     """
 
     def __init__(
@@ -65,7 +65,6 @@ class DomainBib:
         barcodes: list[str] = [],
         bib_id: BibId | str | None = None,
         branch_call_number: str | list[str] | None = None,
-        cat_source: str | None = None,
         collection: Collection | str | None = None,
         control_number: str | None = None,
         isbn: str | None = None,
@@ -75,11 +74,11 @@ class DomainBib:
         title: str | None = None,
         upc: str | None = None,
         update_date: datetime.datetime | str | None = None,
+        vendor: str | None = None,
     ) -> None:
         self.barcodes = barcodes
         self.bib_id = BibId(bib_id) if isinstance(bib_id, str) else bib_id
         self.branch_call_number = branch_call_number
-        self.cat_source = cat_source
         self.collection = (
             Collection(collection) if isinstance(collection, str) else collection
         )
@@ -92,6 +91,7 @@ class DomainBib:
         self.title = title
         self.upc = upc
         self.update_date = update_date
+        self.vendor = vendor
 
     def apply_order_template(self, template_data: dict[str, Any]) -> None:
         """
