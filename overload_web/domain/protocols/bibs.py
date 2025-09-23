@@ -23,7 +23,7 @@ Protocols:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, TypeVar, runtime_checkable
+from typing import TYPE_CHECKING, BinaryIO, Protocol, TypeVar, runtime_checkable
 
 from overload_web.domain import models
 
@@ -72,7 +72,7 @@ class MarcParser(Protocol[T]):
 
     """
 
-    marc_mapping: dict[str, Any]
+    marc_mapping: dict[str, dict[str, str | dict[str, str]]]
 
     def parse(
         self, data: BinaryIO | bytes, library: str
@@ -91,7 +91,7 @@ class MarcUpdater(Protocol[T]):
     Update MARC records with appropriate fields during last stage of record processing.
     """
 
-    order_mapping: dict[str, Any]
+    order_mapping: dict[str, dict[str, str]]
 
     def update_bib_record(
         self, bib: T, vendor_info: models.bibs.VendorInfo

@@ -26,11 +26,7 @@ class RecordProcessingService:
     """Handles MARC record parsing, matching, and serialization."""
 
     def __init__(
-        self,
-        library: str,
-        collection: str,
-        record_type: str,
-        rules: dict[str, dict[str, dict[str, str]]],
+        self, library: str, collection: str, record_type: str, rules: dict[str, Any]
     ):
         """
         Initialize `RecordProcessingService`.
@@ -53,9 +49,8 @@ class RecordProcessingService:
         self.matcher = logic.bibs.BibMatcher(sierra.SierraBibFetcher(self.library))
         self.updater = marc.BookopsMarcUpdater(rules["order_subfield_mapping"])
         self.vendor_reviewer = vendor.VendorIdentifier(
-            vendor_tags=rules["vendor_tags"],
-            vendor_info=rules["vendor_info"],
-            library=library,
+            vendor_tags=rules["vendor_tags"][library.casefold()],
+            vendor_info=rules["vendor_info"][library.casefold()],
         )
 
     def parse(self, data: BinaryIO | bytes) -> list[dto.BibDTO]:

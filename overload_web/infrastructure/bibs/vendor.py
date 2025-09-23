@@ -12,11 +12,12 @@ logger = logging.getLogger(__name__)
 
 class VendorIdentifier:
     def __init__(
-        self, vendor_tags: dict[str, Any], vendor_info: dict[str, Any], library: str
+        self,
+        vendor_tags: dict[str, dict[str, dict[str, dict[str, str]]]],
+        vendor_info: dict[str, Any],
     ) -> None:
-        self.library = library
-        self.vendor_tags = vendor_tags[self.library.casefold()]
-        self.vendor_info = vendor_info[self.library.casefold()]
+        self.vendor_tags = vendor_tags
+        self.vendor_info = vendor_info
 
     def _get_tag_from_bib(
         self, record: Bib, tags: dict[str, dict[str, str]]
@@ -32,7 +33,7 @@ class VendorIdentifier:
 
     def vendor_id(self, record: Bib) -> models.bibs.VendorInfo:
         for vendor, info in self.vendor_tags.items():
-            tags = info.get("primary", {})
+            tags: dict[str, dict[str, str]] = info.get("primary", {})
             tag_match = self._get_tag_from_bib(record=record, tags=tags)
             if tag_match and tag_match == tags:
                 return models.bibs.VendorInfo(

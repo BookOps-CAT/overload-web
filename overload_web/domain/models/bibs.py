@@ -43,16 +43,20 @@ class DomainBib:
     A domain model representing a bib record and its associated order data.
 
     Attributes:
+        library: the library to whom the record belongs as an enum or str.
         barcodes: list of barcodes associated with the record.
         bib_id: sierra bib ID.
-        call_number: call number for the record, if present.
+        branch_call_number: branch call number for the record, if present.
+        cat_source: the source of cataloging as a string.
+        collection: the collection to whom the record belongs as an enum or str.
+        control_number: the record's control number, if present.
         isbn: ISBN for the title, if present.
-        library: the library to whom the record belongs as an enum.
         oclc_number: OCLC number(s) identifying the record, if present.
         orders: list of orders associated with the record.
+        research_call_number: research call number for the record, if present.
+        title: the title associated with the record.
         upc: UPC number, if present.
-
-
+        update_date: the date the record was last updated.
     """
 
     def __init__(
@@ -95,6 +99,9 @@ class DomainBib:
 
         Args:
             template_data: dictionary of order fields and values to overwrite
+
+        Returns:
+            None
         """
         for order in self.orders:
             order.apply_template(template_data=template_data)
@@ -228,6 +235,8 @@ class RecordType(Enum):
 
 @dataclass(frozen=True)
 class VendorInfo:
+    """A dataclass to define a vendor rules as an entity"""
+
     bib_fields: list[dict[str, str]]
     matchpoints: dict[str, str]
     name: str

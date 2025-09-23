@@ -1,4 +1,4 @@
-"""Parser for MARC records using bookops_marc and pymarc."""
+"""Parsers for MARC records using bookops_marc and pymarc."""
 
 from __future__ import annotations
 
@@ -19,16 +19,20 @@ logger = logging.getLogger(__name__)
 class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
     """Parses and serializes MARC records."""
 
-    def __init__(self, marc_mapping: dict[str, Any]) -> None:
+    def __init__(
+        self, marc_mapping: dict[str, dict[str, str | dict[str, str]]]
+    ) -> None:
         """
-        Initialize `BookopsMarcParser` for a specific library.
+        Initialize `BookopsMarcParser` using a specific set of marc mapping rules.
 
         Args:
-            library: library whose records are being parsed as a `LibrarySystem` obj
+            marc_mapping:
+                A dictionary containing set of rules to use when mapping MARC records
+                to domain objects.
         """
         self.marc_mapping = marc_mapping
 
-    def _map_bib_from_marc(self, bib: Bib) -> models.bibs.DomainBib:
+    def _map_domain_bib_from_marc(self, bib: Bib) -> models.bibs.DomainBib:
         """
         Factory method used to build a `DomainBib` from a `bookops_marc.Bib` object.
 
@@ -74,7 +78,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
         records = []
         reader = SierraBibReader(data, library=library, hide_utf8_warnings=True)
         for record in reader:
-            mapped_domain_bib = self._map_bib_from_marc(bib=record)
+            mapped_domain_bib = self._map_domain_bib_from_marc(bib=record)
             logger.info(f"Vendor record parsed: {mapped_domain_bib}")
             records.append(dto.BibDTO(bib=record, domain_bib=mapped_domain_bib))
         return records
@@ -98,16 +102,24 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
 
 
 class BookopsMarcUpdater(protocols.bibs.MarcUpdater[dto.BibDTO]):
-    def __init__(self, order_mapping: dict[str, Any]) -> None:
+    """Update MARC records based on attributes of domain objects."""
+
+    def __init__(self, order_mapping: dict[str, dict[str, str]]) -> None:
         """
-        rules includes `order_subfield_mapping` which maps attrs of an `Order`
-        object to marc fields/subfields
+        Initialize a `BookopsMarcUpdater` using a specific set of marc mapping rules.
+
+        Args:
+            order_mapping:
+                A dictionary containing set of rules to use when mapping `Order`
+                objects to MARC records. These rules map attributes of an `Order` to
+                MARC fields and subfields.
         """
         self.order_mapping = order_mapping
 
     def _add_bib_fields(
         self, record: dto.BibDTO, fields: list[dict[str, str]]
     ) -> dto.BibDTO:
+        """Add MARC fields to a `BibDTO` object."""
         bib_rec = copy.deepcopy(record.bib)
         for field in fields:
             bib_rec.add_ordered_field(
@@ -123,6 +135,10 @@ class BookopsMarcUpdater(protocols.bibs.MarcUpdater[dto.BibDTO]):
         return record
 
     def _update_bib_id(self, record: dto.BibDTO) -> dto.BibDTO:
+        """
+        Update the bib_id associated with a `BibDTO.bib` object to reflect a change made
+        to its corresponding `DomainBib` object.
+        """
         if not record.domain_bib.bib_id:
             return record
         bib_rec = copy.deepcopy(record.bib)
@@ -141,10 +157,12 @@ class BookopsMarcUpdater(protocols.bibs.MarcUpdater[dto.BibDTO]):
     def update_bib_record(
         self, record: dto.BibDTO, vendor_info: models.bibs.VendorInfo
     ) -> dto.BibDTO:
+        """Update the bib_id and add MARC fields to a `BibDTO` object."""
         updated_rec = self._update_bib_id(record=record)
         return self._add_bib_fields(record=updated_rec, fields=vendor_info.bib_fields)
 
     def update_order_record(self, record: dto.BibDTO) -> dto.BibDTO:
+        """Update the MARC order fields within a `BibDTO` object."""
         bib_rec = copy.deepcopy(record.bib)
         for order in record.domain_bib.orders:
             order_data = order.map_to_marc(rules=self.order_mapping)
