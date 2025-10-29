@@ -46,18 +46,6 @@ class BibMatcher:
         """
         self.fetcher = fetcher
 
-    # def _select_best_match(
-    #     self,
-    #     bib_to_match: models.bibs.DomainBib,
-    #     candidates: list[models.responses.FetcherResponseDict],
-    #     matchpoints: dict[str, str],
-    #     record_type: models.bibs.RecordType,
-    # ) -> models.bibs.BibId | None:
-    #     reviewed_results = ReviewedResults(
-    #         input=bib_to_match, record_type=record_type, results=candidates
-    #     )
-    #     return reviewed_results.target_bib_id
-
     def _select_best_match(
         self,
         bib_to_match: models.bibs.DomainBib,
