@@ -1,0 +1,46 @@
+{
+  "results": [
+    {
+      "barcodes": ["33333123456789"],
+      "call_number": "Foo",
+      "cat_source": "vendor",
+      "collection": "RL",
+      "update_date": "2020-01-01T00:01:00Z",
+      "bib_id": "123",
+      "isbn": "9781234567890",
+      "title": "Record 1"
+    },
+    {
+      "barcodes": ["33333123456789"],
+      "call_number": "Foo",
+      "cat_source": "vendor",
+      "collection": "RL",
+      "update_date": "2020-01-01T00:01:00Z",
+      "bib_id": "234",
+      "isbn": "1234567890",
+      "oclc_number": "123456789",
+      "title": "Record 2"
+    },
+    {
+      "barcodes": ["33333123456789"],
+      "call_number": "Foo",
+      "cat_source": "vendor",
+      "collection": "RL",
+      "update_date": "2020-01-01T00:01:00Z",
+      "bib_id": "345",
+      "isbn": "9781234567890",
+      "oclc_number": "123456789",
+      "title": "Record 3"
+    },
+    {
+      "barcodes": ["33333123456789"],
+      "call_number": "Foo",
+      "cat_source": "vendor",
+      "collection": "RL",
+      "update_date": "2020-01-01T00:01:00Z",
+      "bib_id": "456",
+      "upc": "333",
+      "title": "Record 4"
+    }
+  ]
+}

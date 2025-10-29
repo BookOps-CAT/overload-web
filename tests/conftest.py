@@ -286,7 +286,7 @@ def template_data() -> dict:
 
 
 @pytest.fixture
-def stub_bib(library) -> Bib:
+def stub_bib(library, collection) -> Bib:
     bib = Bib()
     bib.leader = "00000cam  2200517 i 4500"
     bib.library = library
@@ -299,6 +299,14 @@ def stub_bib(library) -> Bib:
                     Subfield(code="a", value="123"),
                     Subfield(code="b", value="OverDrive, Inc."),
                 ],
+            )
+        )
+    else:
+        bib.add_field(
+            Field(
+                tag="910",
+                indicators=Indicators(" ", " "),
+                subfields=[Subfield(code="a", value=str(collection))],
             )
         )
     bib.add_field(

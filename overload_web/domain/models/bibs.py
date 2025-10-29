@@ -80,7 +80,9 @@ class DomainBib:
         self.bib_id = BibId(bib_id) if isinstance(bib_id, str) else bib_id
         self.branch_call_number = branch_call_number
         self.collection = (
-            Collection(collection) if isinstance(collection, str) else collection
+            Collection(str(collection).upper())
+            if not isinstance(collection, Collection)
+            else collection
         )
         self.control_number = control_number
         self.isbn = isbn

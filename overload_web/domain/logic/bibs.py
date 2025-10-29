@@ -50,9 +50,8 @@ class BibMatcher:
         self,
         bib_to_match: models.bibs.DomainBib,
         candidates: list[models.responses.FetcherResponseDict],
-        matchpoints: dict[str, str],
         record_type: models.bibs.RecordType,
-    ) -> models.bibs.BibId | None:
+    ) -> ReviewedResults:
         """
         Compare a `DomainBib` to a list of candidate bibs and select the best match.
 
@@ -63,23 +62,12 @@ class BibMatcher:
             record_type: the type of record as an enum (either `FULL` or `ORDER_LEVEL`)
 
         Returns:
-            the Sierra Bib ID of the best candidate, or `None` if no match
+            The results as a `ReviewedResults` object.
         """
-        max_matched_points = -1
-        best_match_bib_id = None
-        for bib in candidates:
-            matched_points = 0
-            for priority, attr in matchpoints.items():
-                if getattr(bib_to_match, attr) == bib.get(attr):
-                    matched_points += 1
-
-            if matched_points > max_matched_points:
-                max_matched_points = matched_points
-                best_match = bib.get("bib_id")
-                best_match_bib_id = (
-                    models.bibs.BibId(best_match) if best_match else None
-                )
-        return best_match_bib_id
+        reviewed_results = ReviewedResults(
+            input=bib_to_match, record_type=record_type, results=candidates
+        )
+        return reviewed_results
 
     def match_bib(
         self,
@@ -108,11 +96,8 @@ class BibMatcher:
             candidates = self.fetcher.get_bibs_by_id(value=value, key=key)
             if candidates:
                 bib.bib_id = self._select_best_match(
-                    bib_to_match=bib,
-                    candidates=candidates,
-                    matchpoints=matchpoints,
-                    record_type=record_type,
-                )
+                    bib_to_match=bib, candidates=candidates, record_type=record_type
+                ).target_bib_id
                 return bib
         return bib
 
@@ -187,13 +172,13 @@ class ReviewedResults:
         return None
 
     @property
-    def target_bib_id(self) -> str | None:
+    def target_bib_id(self) -> models.bibs.BibId | None:
         bib_id = None
         if len(self.matched_results) == 1:
-            return self.matched_results[0]["bib_id"]
+            return models.bibs.BibId(self.matched_results[0]["bib_id"])
         elif len(self.matched_results) == 0:
             return bib_id
         for result in self.matched_results:
-            if result["branch_call_number"] or result["research_call_number"]:
-                return result["bib_id"]
+            if result.get("branch_call_number") or result.get("research_call_number"):
+                return models.bibs.BibId(result["bib_id"])
         return bib_id

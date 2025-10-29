@@ -1,4 +1,5 @@
 import copy
+import json
 
 import pytest
 
@@ -17,12 +18,27 @@ class StubFetcher(protocols.bibs.BibFetcher):
 
 
 class FakeBibFetcher(StubFetcher):
+    def __init__(self, library, collection, record_type):
+        super().__init__()
+        self.library = library
+        self.collection = collection
+        self.record_type = record_type
+
     def get_bibs_by_id(self, value, key):
-        bib_1 = {"bib_id": "123", "isbn": "9781234567890"}
-        bib_2 = {"bib_id": "234", "isbn": "1234567890", "oclc_number": "123456789"}
-        bib_3 = {"bib_id": "345", "isbn": "9781234567890", "oclc_number": "123456789"}
-        bib_4 = {"bib_id": "456", "upc": "333"}
-        return [bib_1, bib_2, bib_3, bib_4]
+        with open("tests/data/process_bibs_results.json", "r", encoding="utf-8") as fh:
+            bibs = json.loads(fh.read())
+        results = bibs["results"]
+        for result in results:
+            result["collection"] = str(self.collection)
+            if str(self.collection) == "RL":
+                result["research_call_number"] = result["call_number"]
+            elif str(self.collection) == "BL" or str(self.library) == "BPL":
+                result["branch_call_number"] = result["call_number"]
+            else:
+                result["branch_call_number"] = result["call_number"]
+                result["research_call_number"] = result["call_number"]
+            result.pop("call_number", None)
+        return results
 
 
 @pytest.mark.parametrize(
@@ -35,7 +51,7 @@ class TestRecordProcessingService:
         self, monkeypatch, library, collection, record_type, stub_constants
     ):
         def fake_fetcher(*args, **kwargs):
-            return FakeBibFetcher()
+            return FakeBibFetcher(library, collection, record_type)
 
         monkeypatch.setattr(
             "overload_web.infrastructure.bibs.sierra.SierraBibFetcher", fake_fetcher
@@ -65,7 +81,7 @@ class TestRecordProcessingService:
         )
 
     @pytest.fixture
-    def stub_bib_dto(self, library, make_bib_dto):
+    def stub_bib_dto(self, library, make_bib_dto, collection):
         dto = make_bib_dto({"020": {"code": "a", "value": "9781234567890"}})
         return dto
 
