@@ -16,7 +16,7 @@ Classes:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from overload_web.domain import models
 
@@ -197,19 +197,3 @@ class ReviewedResults:
             if result["branch_call_number"] or result["research_call_number"]:
                 return result["bib_id"]
         return bib_id
-
-
-class BibReviewer:
-    def __init__(self, rules: dict[str, Any]) -> None:
-        self.rules = rules
-
-    def review_results(
-        self,
-        input: models.bibs.DomainBib,
-        results: list[models.responses.FetcherResponseDict],
-        record_type: models.bibs.RecordType,
-    ) -> ReviewedResults:
-        reviewed_results = ReviewedResults(
-            input=input, results=results, record_type=record_type
-        )
-        return reviewed_results
