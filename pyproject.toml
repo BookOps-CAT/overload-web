@@ -15,7 +15,7 @@ dependencies = [
     "bookops-marc @ git+https://github.com/BookOps-CAT/bookops-marc.git",
     "sqlalchemy (>=2.0.40)",
     "loggly-python-handler (>=1.0.1)",
-    "file-retriever @ git+https://github.com/BookOps-CAT/file-retriever.git",
+    "file-retriever @ git+https://github.com/BookOps-CAT/file-retriever.git#release/v0.3.0",
     "sqlmodel (>=0.0.24,<0.0.25)",
     "psycopg2-binary (>=2.9.10,<3.0.0)",
     "debugpy (>=1.8.15,<2.0.0)",
