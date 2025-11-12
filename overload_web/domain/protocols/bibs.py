@@ -25,8 +25,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, BinaryIO, Protocol, TypeVar, runtime_checkable
 
-from overload_web.domain import models
-
 if TYPE_CHECKING:  # pragma: no cover
     from overload_web.domain import models
 
