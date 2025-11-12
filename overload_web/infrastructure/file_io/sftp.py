@@ -70,9 +70,7 @@ class SFTPFileWriter:
             file_mode=None,
             file_size=0,
         )
-        out_file = self.client.put_file(
-            file=converted_file, check=False, remote=True, dir=dir
-        )
+        out_file = self.client.put_file(file=converted_file, remote=True, dir=dir)
         return getattr(out_file, "file_name", file.file_name)
 
     @classmethod
