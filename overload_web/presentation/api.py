@@ -15,8 +15,8 @@ from sqlmodel import Session
 
 from overload_web import config
 from overload_web.application import file_service, record_service, template_service
-from overload_web.infrastructure import db
-from overload_web.presentation import deps, schemas
+from overload_web.infrastructure import db, schemas
+from overload_web.presentation import deps
 
 logger = logging.getLogger(__name__)
 api_router = APIRouter(prefix="/api", tags=["api"])

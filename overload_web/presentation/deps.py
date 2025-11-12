@@ -12,7 +12,7 @@ from starlette.datastructures import UploadFile as StarlettUploadFile
 
 from overload_web import config
 from overload_web.application import file_service, record_service
-from overload_web.presentation import schemas
+from overload_web.infrastructure import schemas
 
 logger = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseModel)
