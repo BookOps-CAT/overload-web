@@ -10,10 +10,7 @@ Protocols:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Protocol, Sequence, TypeVar, runtime_checkable
-
-if TYPE_CHECKING:  # pragma: no cover
-    from sqlmodel import Session
+from typing import Any, Protocol, Sequence, TypeVar, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +25,7 @@ class SqlRepositoryProtocol(Protocol[T]):
     Includes methods for fetching and saving generic objects.
     """
 
-    session: Session
+    session: Any
 
     def get(self, id: str) -> T | None: ...  # pragma: no branch
 
