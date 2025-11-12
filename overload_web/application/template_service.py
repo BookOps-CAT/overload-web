@@ -3,12 +3,9 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Sequence
+from typing import Sequence
 
 from overload_web.infrastructure import db
-
-if TYPE_CHECKING:  # pragma: no cover
-    from sqlmodel import Session
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +13,7 @@ logger = logging.getLogger(__name__)
 class OrderTemplateService:
     """Handles order template retrieval and persistence."""
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: db.repository.Session) -> None:
         """
         Initialize `OrderTemplateService` with a `sqlmodel.Session` object.
 
