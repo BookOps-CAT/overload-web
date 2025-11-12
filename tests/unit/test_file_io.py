@@ -5,7 +5,7 @@ import yaml
 from file_retriever import Client
 
 from overload_web.domain import models
-from overload_web.infrastructure import file_io
+from overload_web.infrastructure import local_io, sftp
 
 
 @pytest.mark.livetest
@@ -26,18 +26,18 @@ class TestLiveLocalFiles:
             os.rmdir(self.test_dir)
 
     def test_load(self, setup_dirs):
-        loader = file_io.local.LocalFileLoader()
+        loader = local_io.LocalFileLoader()
         loaded_file = loader.load("test_bib.mrc", dir=self.test_dir)
         assert loaded_file.content[0:8] == b"02741pam"
 
     def test_list(self, setup_dirs):
-        loader = file_io.local.LocalFileLoader()
+        loader = local_io.LocalFileLoader()
         files = loader.list(dir=self.test_dir)
         assert len(files) == 1
         assert files[0] == "test_bib.mrc"
 
     def test_write(self, setup_dirs):
-        writer = file_io.local.LocalFileWriter()
+        writer = local_ioLocalFileWriter()
         file = models.files.VendorFile(
             id="foo.mrc", file_name="foo.mrc", content=b"Test content"
         )
@@ -79,7 +79,7 @@ class TestSFTPFiles:
         )
 
     def test_write(self, live_test_client):
-        writer = file_io.sftp.SFTPFileWriter(client=live_test_client)
+        writer = sftp.SFTPFileWriter(client=live_test_client)
         outfile = writer.write(
             file=models.files.VendorFile(
                 id="test_bib.mrc",
@@ -92,13 +92,13 @@ class TestSFTPFiles:
         assert outfile == "test_bib.mrc"
 
     def test_list(self, live_test_client):
-        loader = file_io.sftp.SFTPFileLoader(client=live_test_client)
+        loader = sftp.SFTPFileLoader(client=live_test_client)
         file_list = loader.list(dir=self.test_dir)
         assert len(file_list) == 1
         assert file_list[0] == "test_bib.mrc"
 
     def test_load(self, live_test_client):
-        loader = file_io.sftp.SFTPFileLoader(client=live_test_client)
+        loader = sftp.SFTPFileLoader(client=live_test_client)
         file = loader.load(name="test_bib.mrc", dir=self.test_dir)
         assert file.file_name == "test_bib.mrc"
         assert file.content[0:8] == b"02741pam"

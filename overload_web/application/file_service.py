@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from overload_web.infrastructure import file_io
+from overload_web.infrastructure import local_io, sftp
 
 if TYPE_CHECKING:  # pragma: no cover
     from overload_web.domain import models, protocols
@@ -80,8 +80,8 @@ class FileTransferService:
     def create_local_file_service(cls) -> FileTransferService:
         """Create a `FileTransferService object for local file handling."""
         return FileTransferService(
-            loader=file_io.local.LocalFileLoader(),
-            writer=file_io.local.LocalFileWriter(),
+            loader=local_io.LocalFileLoader(),
+            writer=local_io.LocalFileWriter(),
         )
 
     @classmethod
@@ -97,6 +97,6 @@ class FileTransferService:
             A `FileTransferService` object for the vendor's remote storage.
         """
         return FileTransferService(
-            loader=file_io.sftp.SFTPFileLoader.create_loader_for_vendor(vendor=vendor),
-            writer=file_io.sftp.SFTPFileWriter.create_writer_for_vendor(vendor=vendor),
+            loader=sftp.SFTPFileLoader.create_loader_for_vendor(vendor=vendor),
+            writer=sftp.SFTPFileWriter.create_writer_for_vendor(vendor=vendor),
         )
