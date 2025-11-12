@@ -12,9 +12,8 @@ from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.application import dto
 from overload_web.domain import models
-from overload_web.infrastructure import bibs, db
+from overload_web.infrastructure import bibs, db, dto
 
 
 @pytest.fixture(autouse=True)
