@@ -13,7 +13,7 @@ from pymarc import Field, Indicators, Subfield
 from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.domain import models
-from overload_web.infrastructure import bibs, dto, tables
+from overload_web.infrastructure import dto, marc, sierra, tables
 
 
 @pytest.fixture(autouse=True)
@@ -119,7 +119,7 @@ def mock_sierra_error(monkeypatch, mock_sierra_response):
     monkeypatch.setattr("requests.Session.get", mock_nypl_error)
 
 
-class FakeSierraSession(bibs.sierra.SierraSessionProtocol):
+class FakeSierraSession(sierra.SierraSessionProtocol):
     def __init__(self) -> None:
         self.credentials = self._get_credentials()
 
@@ -177,9 +177,7 @@ def mock_session(monkeypatch, mock_sierra_response):
     def mock_response(*args, **kwargs):
         return [FakeSierraResponse({"id": "123456789", "title": "foo"})]
 
-    monkeypatch.setattr(
-        bibs.sierra.SierraSessionProtocol, "_parse_response", mock_response
-    )
+    monkeypatch.setattr(sierra.SierraSessionProtocol, "_parse_response", mock_response)
     return FakeSierraSession()
 
 
@@ -377,7 +375,7 @@ def make_bib_dto(stub_bib, stub_constants) -> Callable:
                     ],
                 )
             )
-        parser = bibs.marc.BookopsMarcParser(stub_constants["bookops_marc_mapping"])
+        parser = marc.BookopsMarcParser(stub_constants["bookops_marc_mapping"])
         return dto.BibDTO(
             bib=record, domain_bib=parser._map_domain_bib_from_marc(record)
         )

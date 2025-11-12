@@ -17,8 +17,7 @@ import logging
 from typing import Any, BinaryIO
 
 from overload_web.domain import logic, models
-from overload_web.infrastructure import dto
-from overload_web.infrastructure.bibs import marc, sierra, vendor
+from overload_web.infrastructure import dto, marc, sierra, vendor
 
 logger = logging.getLogger(__name__)
 
