@@ -15,7 +15,7 @@ from sqlmodel import Session
 
 from overload_web import config
 from overload_web.application import file_service, record_service, template_service
-from overload_web.infrastructure import db, schemas
+from overload_web.infrastructure import schemas, tables
 from overload_web.presentation import deps
 
 logger = logging.getLogger(__name__)
@@ -35,8 +35,8 @@ def startup_event():
 def create_template(
     request: Request,
     template: Annotated[
-        db.tables.OrderTemplateCreate,
-        Depends(deps.from_form(db.tables.OrderTemplateCreate)),
+        tables.OrderTemplateCreate,
+        Depends(deps.from_form(tables.OrderTemplateCreate)),
     ],
     session: SessionDep,
 ) -> HTMLResponse:
@@ -83,8 +83,8 @@ def update_template(
     request: Request,
     template_id: Annotated[str, Form(...)],
     template_patch: Annotated[
-        db.tables.OrderTemplateUpdate,
-        Depends(deps.from_form(db.tables.OrderTemplateUpdate)),
+        tables.OrderTemplateUpdate,
+        Depends(deps.from_form(tables.OrderTemplateUpdate)),
     ],
     session: SessionDep,
 ) -> HTMLResponse:

@@ -13,7 +13,7 @@ from pymarc import Field, Indicators, Subfield
 from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.domain import models
-from overload_web.infrastructure import bibs, db, dto
+from overload_web.infrastructure import bibs, dto, tables
 
 
 @pytest.fixture(autouse=True)
@@ -60,7 +60,7 @@ def test_sql_session():
 @pytest.fixture
 def make_template():
     def _make_template(data):
-        template = db.tables.OrderTemplate(**data)
+        template = tables.OrderTemplate(**data)
         return template
 
     return _make_template

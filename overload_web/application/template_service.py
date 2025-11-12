@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Sequence
 
-from overload_web.infrastructure import db
+from overload_web.infrastructure import repository, tables
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class OrderTemplateService:
     """Handles order template retrieval and persistence."""
 
-    def __init__(self, session: db.repository.Session) -> None:
+    def __init__(self, session: repository.Session) -> None:
         """
         Initialize `OrderTemplateService` with a `sqlmodel.Session` object.
 
@@ -21,9 +21,9 @@ class OrderTemplateService:
             session: a `sqlmodel.Session` object.
         """
         self.session = session
-        self.repo = db.repository.SqlModelRepository(session=session)
+        self.repo = repository.SqlModelRepository(session=session)
 
-    def get_template(self, template_id: str) -> db.tables.OrderTemplate | None:
+    def get_template(self, template_id: str) -> tables.OrderTemplate | None:
         """
         Retrieve an order template by its ID.
 
@@ -38,7 +38,7 @@ class OrderTemplateService:
 
     def list_templates(
         self, offset: int | None = 0, limit: int | None = 20
-    ) -> Sequence[db.tables.OrderTemplate]:
+    ) -> Sequence[tables.OrderTemplate]:
         """
         Retrieve a list of templates in the database.
 
@@ -51,9 +51,7 @@ class OrderTemplateService:
         """
         return self.repo.list(offset=offset, limit=limit)
 
-    def save_template(
-        self, obj: db.tables._OrderTemplateBase
-    ) -> db.tables.OrderTemplate:
+    def save_template(self, obj: tables._OrderTemplateBase) -> tables.OrderTemplate:
         """
         Save an order template.
 
@@ -66,7 +64,7 @@ class OrderTemplateService:
         Returns:
             The saved template.
         """
-        valid_obj = db.tables.OrderTemplate.model_validate(obj)
+        valid_obj = tables.OrderTemplate.model_validate(obj)
         self.repo.save(obj=valid_obj)
         self.session.commit()
         self.session.refresh(valid_obj)
@@ -74,8 +72,8 @@ class OrderTemplateService:
         return valid_obj
 
     def update_template(
-        self, template_id: str, obj: db.tables.OrderTemplateUpdate
-    ) -> db.tables.OrderTemplate | None:
+        self, template_id: str, obj: tables.OrderTemplateUpdate
+    ) -> tables.OrderTemplate | None:
         """
         Update an existing an order template.
 

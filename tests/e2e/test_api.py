@@ -2,15 +2,13 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.infrastructure import db
+from overload_web.infrastructure import tables
 from overload_web.main import app
 from overload_web.presentation import deps
 
 
 def stub_sql_session():
-    template = db.tables.OrderTemplate(
-        name="foo", agent="bar", primary_matchpoint="isbn"
-    )
+    template = tables.OrderTemplate(name="foo", agent="bar", primary_matchpoint="isbn")
     test_engine = create_engine("sqlite:///:memory:")
     SQLModel.metadata.create_all(test_engine)
     with Session(test_engine) as session:

@@ -15,7 +15,7 @@ from typing import Sequence
 from sqlmodel import Session, select
 
 from overload_web.domain import protocols
-from overload_web.infrastructure.db import tables
+from overload_web.infrastructure import tables
 
 logger = logging.getLogger(__name__)
 
