@@ -224,7 +224,7 @@ class NYPLPlatformSession(PlatformSession):
     ) -> list[models.responses.BaseSierraResponse]:
         logger.info(f"Sierra Session response code: {response.status_code}.")
         json_response = response.json()
-        bibs = json_response["data"]
+        bibs = json_response.get("data", [])
         return [models.responses.NYPLPlatformResponse(i) for i in bibs]
 
     def _get_bibs_by_bib_id(self, value: str | int) -> requests.Response:
