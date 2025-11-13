@@ -8,7 +8,7 @@ import logging
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
-from overload_web import config
+from overload_web.presentation import config
 
 logger = logging.getLogger(__name__)
 htmx_router = APIRouter(prefix="/htmx", tags=["htmx"])

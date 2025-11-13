@@ -12,9 +12,8 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from overload_web import config
 from overload_web.infrastructure import schemas, tables
-from overload_web.presentation import deps
+from overload_web.presentation import config, deps
 
 logger = logging.getLogger(__name__)
 api_router = APIRouter(prefix="/api", tags=["api"], lifespan=deps.lifespan)
