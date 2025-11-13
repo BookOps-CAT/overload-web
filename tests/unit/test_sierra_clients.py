@@ -26,7 +26,7 @@ class TestLiveSierraSession:
             matched_bibs = session._parse_response(response=response)
             assert isinstance(matched_bibs, list)
             assert len(matched_bibs) == 2
-            assert isinstance(matched_bibs[0], sierra.BPLSolrResponse)
+            assert isinstance(matched_bibs[0], sierra.models.responses.BPLSolrResponse)
             assert sorted(list(response.json()["response"]["docs"][0].keys())) == [
                 "_version_",
                 "additional_contributor",
@@ -64,6 +64,7 @@ class TestLiveSierraSession:
                 "ss_marc_tag_001",
                 "ss_marc_tag_003",
                 "ss_marc_tag_005",
+                "ss_publisher_name",
                 "ss_title_autocomplete",
                 "ss_type",
                 "subjects",
@@ -90,7 +91,9 @@ class TestLiveSierraSession:
             matched_bibs = session._parse_response(response=response)
             assert isinstance(matched_bibs, list)
             assert len(matched_bibs) == 1
-            assert isinstance(matched_bibs[0], sierra.NYPLPlatformResponse)
+            assert isinstance(
+                matched_bibs[0], sierra.models.responses.NYPLPlatformResponse
+            )
             assert sorted(list(response.json()["data"][0].keys())) == [
                 "author",
                 "bibLevel",
@@ -126,14 +129,14 @@ class TestLiveSierraSession:
         assert sorted(list(bibs[0].keys())) == [
             "barcodes",
             "bib_id",
-            "branch_call_no",
+            "branch_call_number",
             "cat_source",
             "collection",
             "control_number",
             "isbn",
             "library",
             "oclc_number",
-            "research_call_no",
+            "research_call_number",
             "title",
             "upc",
             "update_date",

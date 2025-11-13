@@ -37,7 +37,7 @@ class TestLiveLocalFiles:
         assert files[0] == "test_bib.mrc"
 
     def test_write(self, setup_dirs):
-        writer = local_ioLocalFileWriter()
+        writer = local_io.LocalFileWriter()
         file = models.files.VendorFile(
             id="foo.mrc", file_name="foo.mrc", content=b"Test content"
         )
