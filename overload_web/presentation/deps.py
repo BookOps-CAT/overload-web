@@ -3,19 +3,18 @@ import logging
 import os
 from functools import lru_cache
 from inspect import Parameter, Signature
-from typing import Annotated, Generator, TypeVar
+from typing import Annotated, Any, Generator, TypeVar
 
 from fastapi import Depends, Form, UploadFile
-from pydantic import BaseModel
 from sqlmodel import Session, SQLModel, create_engine
 from starlette.datastructures import UploadFile as StarlettUploadFile
 
 from overload_web import config
-from overload_web.application import file_service, record_service
+from overload_web.application import file_service, record_service, template_service
 from overload_web.infrastructure import schemas
 
 logger = logging.getLogger(__name__)
-T = TypeVar("T", bound=BaseModel)
+T = TypeVar("T", bound=schemas.BaseModelAlias)
 
 
 @lru_cache
@@ -25,8 +24,7 @@ def load_constants() -> dict[str, dict[str, str | dict[str, str]]]:
     return constants
 
 
-uri = config.get_postgres_uri()
-engine = create_engine(uri)
+engine = create_engine(config.get_postgres_uri())
 
 
 def create_db_and_tables():
@@ -72,7 +70,7 @@ def normalize_files(
     return file_models
 
 
-def get_record_service(
+def record_processing_service(
     record_type: Annotated[str, Form(...)],
     library: Annotated[str, Form(...)],
     collection: Annotated[str, Form(...)],
@@ -109,3 +107,19 @@ def from_form(model_class: type[T]):
     ]
     func.__signature__ = Signature(parameters=params)  # type: ignore[attr-defined]
     return func
+
+
+def local_file_handler() -> Generator[file_service.FileTransferService, None, None]:
+    yield file_service.FileTransferService.create_local_file_service()
+
+
+def remote_file_handler(
+    vendor: str,
+) -> Generator[file_service.FileTransferService, None, None]:
+    yield file_service.FileTransferService.create_remote_file_service(vendor=vendor)
+
+
+def template_handler(
+    session: Annotated[Any, Depends(get_session)],
+) -> Generator[template_service.OrderTemplateService, None, None]:
+    yield template_service.OrderTemplateService(session=session)
