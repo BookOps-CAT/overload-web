@@ -6,9 +6,13 @@ compatibility with pydantic while minimizing amount of repeated code.
 
 from __future__ import annotations
 
+from typing import TypeAlias
+
 from pydantic import BaseModel, ConfigDict
 
 from overload_web.domain import models
+
+BaseModelAlias: TypeAlias = BaseModel
 
 
 class MatchpointSchema(BaseModel):
