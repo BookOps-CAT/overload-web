@@ -28,7 +28,7 @@ class FileLoader(Protocol):
 
     Args:
         dir: the directory whose files to list
-    
+
     Returns:
         a list of file names as strings
     """
@@ -67,7 +67,7 @@ class FileWriter(Protocol):
     Args:
         file: the file to write as a `VendorFile` object
         dir: the directory where the file should be written
-        
+
     Returns:
         the name of the file that has just been written
     """
