@@ -17,7 +17,7 @@ import logging
 from typing import Any, BinaryIO
 
 from overload_web.domain import logic, models
-from overload_web.infrastructure import dto, marc, sierra, vendor
+from overload_web.infrastructure import dto, marc, sierra
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class RecordProcessingService:
         self.parser = marc.BookopsMarcParser(rules["bookops_marc_mapping"])
         self.matcher = logic.bibs.BibMatcher(sierra.SierraBibFetcher(self.library))
         self.updater = marc.BookopsMarcUpdater(rules["order_subfield_mapping"])
-        self.vendor_reviewer = vendor.VendorIdentifier(
+        self.vendor_reviewer = marc.VendorIdentifier(
             vendor_tags=rules["vendor_tags"][library.casefold()],
             vendor_info=rules["vendor_info"][library.casefold()],
         )
