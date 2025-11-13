@@ -28,10 +28,14 @@ def load_constants() -> dict[str, dict[str, str | dict[str, str]]]:
 engine = create_engine(config.get_postgres_uri())
 
 
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
+
+
 @asynccontextmanager
 async def lifespan(app: APIRouter) -> AsyncGenerator[None, None]:
     logger.info("Starting up Overload...")
-    SQLModel.metadata.create_all(engine)
+    create_db_and_tables()
     yield
     logger.info("Shutting down Overload...")
 
