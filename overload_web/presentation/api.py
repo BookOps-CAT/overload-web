@@ -17,16 +17,11 @@ from overload_web.infrastructure import schemas, tables
 from overload_web.presentation import deps
 
 logger = logging.getLogger(__name__)
-api_router = APIRouter(prefix="/api", tags=["api"])
+api_router = APIRouter(prefix="/api", tags=["api"], lifespan=deps.lifespan)
 
 templates = config.get_templates()
 
 TemplateServiceDep = Annotated[Any, Depends(deps.template_handler)]
-
-
-@api_router.on_event("startup")
-def startup_event():
-    deps.create_db_and_tables()
 
 
 @api_router.post("/template", response_class=HTMLResponse)

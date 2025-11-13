@@ -1,11 +1,12 @@
 import json
 import logging
 import os
+from contextlib import asynccontextmanager
 from functools import lru_cache
 from inspect import Parameter, Signature
-from typing import Annotated, Any, Generator, TypeVar
+from typing import Annotated, Any, AsyncGenerator, Generator, TypeVar
 
-from fastapi import Depends, Form, UploadFile
+from fastapi import APIRouter, Depends, Form, UploadFile
 from sqlmodel import Session, SQLModel, create_engine
 from starlette.datastructures import UploadFile as StarlettUploadFile
 
@@ -27,8 +28,12 @@ def load_constants() -> dict[str, dict[str, str | dict[str, str]]]:
 engine = create_engine(config.get_postgres_uri())
 
 
-def create_db_and_tables():
+@asynccontextmanager
+async def lifespan(app: APIRouter) -> AsyncGenerator[None, None]:
+    logger.info("Starting up Overload...")
     SQLModel.metadata.create_all(engine)
+    yield
+    logger.info("Shutting down Overload...")
 
 
 def get_session() -> Generator[Session, None, None]:
