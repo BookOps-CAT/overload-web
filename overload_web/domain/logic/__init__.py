@@ -1,3 +1,3 @@
-from . import bibs
+from . import bib_matcher
 
-__all__ = ["bibs"]
+__all__ = ["bib_matcher"]

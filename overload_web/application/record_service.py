@@ -51,7 +51,9 @@ class RecordProcessingService:
             order_mapping=rules["order_subfield_mapping"],
             vendor_rules=rules,
         )
-        self.matcher = logic.bibs.BibMatcher(sierra.SierraBibFetcher(self.library))
+        self.matcher = logic.bib_matcher.BibMatcher(
+            sierra.SierraBibFetcher(self.library)
+        )
 
     def parse(self, data: BinaryIO | bytes) -> list[dto.BibDTO]:
         """
