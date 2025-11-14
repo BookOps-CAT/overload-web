@@ -46,10 +46,12 @@ class RecordProcessingService:
         self.collection = collection
         self.record_type = models.bibs.RecordType(record_type)
         self.parser = marc.BookopsMarcParser(
-            rules["bookops_marc_mapping"], self.library, rules
+            library=self.library,
+            marc_mapping=rules["bookops_marc_mapping"],
+            order_mapping=rules["order_subfield_mapping"],
+            vendor_rules=rules,
         )
         self.matcher = logic.bibs.BibMatcher(sierra.SierraBibFetcher(self.library))
-        self.updater = marc.BookopsMarcUpdater(rules["order_subfield_mapping"])
 
     def parse(self, data: BinaryIO | bytes) -> list[dto.BibDTO]:
         """
@@ -62,6 +64,60 @@ class RecordProcessingService:
             A list of parsed bibliographic records as `BibDTO` objects.
         """
         return self.parser.parse(data=data, library=self.library)
+
+    def match_records(
+        self,
+        records: list[dto.BibDTO],
+        matchpoints: dict[str, str],
+    ) -> list[dto.BibDTO]:
+        """
+        Match bibliographic records against Sierra.
+
+        Args:
+            records:
+                A list of parsed bibliographic records as `BibDTO` objects.
+            matchpoints:
+
+        Returns:
+            A list of matched records as `BibDTO` objects
+        """
+        out = []
+        for record in records:
+            if not matchpoints:
+                matchpoints = record.vendor_info.matchpoints
+            record.domain_bib = self.matcher.match_bib(
+                record.domain_bib, matchpoints, self.record_type
+            )
+            record.update(bib_id=record.domain_bib.bib_id)
+            out.append(record)
+        return out
+
+    def update_records(
+        self, records: list[dto.BibDTO], template_data: dict[str, Any] = {}
+    ) -> list[dto.BibDTO]:
+        """
+        Update bibliographic records using vendor and template data
+        to determine which fields to update.
+
+        Args:
+            records:
+                A list of parsed bibliographic records as `BibDTO` objects.
+            template_data:
+                Order template data as a dictionary.
+
+        Returns:
+            A list of processed and updated records as `BibDTO` objects
+        """
+        out = []
+        for record in records:
+            if self.record_type == models.bibs.RecordType.ORDER_LEVEL:
+                record.domain_bib.apply_order_template(template_data=template_data)
+                rec = self.parser.update_order_record(record=record)
+            rec = self.parser.update_bib_record(
+                record=record, vendor_info=record.vendor_info
+            )
+            out.append(rec)
+        return out
 
     def process_records(
         self,
@@ -93,8 +149,8 @@ class RecordProcessingService:
             )
             if self.record_type == models.bibs.RecordType.ORDER_LEVEL:
                 record.domain_bib.apply_order_template(template_data=template_data)
-                rec = self.updater.update_order_record(record=record)
-            rec = self.updater.update_bib_record(
+                rec = self.parser.update_order_record(record=record)
+            rec = self.parser.update_bib_record(
                 record=record, vendor_info=record.vendor_info
             )
             out.append(rec)

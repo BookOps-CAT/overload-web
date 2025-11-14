@@ -376,7 +376,10 @@ def make_bib_dto(stub_bib, stub_constants, library) -> Callable:
                 )
             )
         parser = marc.BookopsMarcParser(
-            stub_constants["bookops_marc_mapping"], library, stub_constants
+            library=library,
+            marc_mapping=stub_constants["bookops_marc_mapping"],
+            order_mapping=stub_constants["order_subfield_mapping"],
+            vendor_rules=stub_constants,
         )
         return dto.BibDTO(
             bib=record,

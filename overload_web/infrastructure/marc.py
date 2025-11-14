@@ -17,25 +17,33 @@ logger = logging.getLogger(__name__)
 
 
 class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
-    """Parses and serializes MARC records."""
+    """Parses, serializes and updates MARC records based on domain objects."""
 
     def __init__(
         self,
-        marc_mapping: dict[str, dict[str, str | dict[str, str]]],
         library: str,
+        marc_mapping: dict[str, dict[str, str | dict[str, str]]],
+        order_mapping: dict[str, dict[str, str]],
         vendor_rules: dict[str, Any],
     ) -> None:
         """
         Initialize `BookopsMarcParser` using a specific set of marc mapping rules.
 
         Args:
+            library:
+                The library whose records are to be processed.
             marc_mapping:
                 A dictionary containing set of rules to use when mapping MARC records
                 to domain objects.
+            order_mapping:
+                A dictionary containing set of rules to use when mapping `Order`
+                objects to MARC records. These rules map attributes of an `Order` to
+                MARC fields and subfields.
             rules:
                 A dictionary containing vendor identification rules.
         """
         self.marc_mapping = marc_mapping
+        self.order_mapping = order_mapping
         self.vendor_tags = vendor_rules["vendor_tags"][library.casefold()]
         self.vendor_info = vendor_rules["vendor_info"][library.casefold()]
 
@@ -62,32 +70,6 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
             else:
                 bib_dict[tag] = {"code": data["code"], "value": field.get(data["code"])}
         return bib_dict
-
-    def identify_vendor(self, record: Bib) -> models.bibs.VendorInfo:
-        """Identify the vendor to whom a `bookops_marc.Bib` record belongs."""
-        print(self.vendor_info)
-        for vendor, info in self.vendor_tags.items():
-            tags: dict[str, dict[str, str]] = info.get("primary", {})
-            tag_match = self._get_tag_from_bib(record=record, tags=tags)
-            if tag_match and tag_match == tags:
-                return models.bibs.VendorInfo(
-                    name=vendor,
-                    bib_fields=self.vendor_info[vendor]["bib_fields"],
-                    matchpoints=self.vendor_info[vendor]["matchpoints"],
-                )
-            alt_tags = info.get("alternate", {})
-            alt_match = self._get_tag_from_bib(record=record, tags=alt_tags)
-            if alt_match and alt_match == alt_tags:
-                return models.bibs.VendorInfo(
-                    name=vendor,
-                    bib_fields=self.vendor_info[vendor]["bib_fields"],
-                    matchpoints=self.vendor_info[vendor]["matchpoints"],
-                )
-        return models.bibs.VendorInfo(
-            name="UNKNOWN",
-            bib_fields=self.vendor_info["UNKNOWN"]["bib_fields"],
-            matchpoints=self.vendor_info["UNKNOWN"]["matchpoints"],
-        )
 
     def _map_domain_bib_from_marc(self, bib: Bib) -> models.bibs.DomainBib:
         """
@@ -120,6 +102,70 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
                         order_dict[attr] = field.get(code) if field else None
             out["orders"].append(models.bibs.Order(**order_dict))
         return models.bibs.DomainBib(**out)
+
+    def _add_bib_fields(
+        self, record: dto.BibDTO, fields: list[dict[str, str]]
+    ) -> dto.BibDTO:
+        """Add MARC fields to a `BibDTO` object."""
+        bib_rec = copy.deepcopy(record.bib)
+        for field in fields:
+            bib_rec.add_ordered_field(
+                Field(
+                    tag=field["tag"],
+                    indicators=Indicators(field["ind1"], field["ind2"]),
+                    subfields=[
+                        Subfield(code=field["subfield_code"], value=field["value"])
+                    ],
+                )
+            )
+        record.bib = bib_rec
+        return record
+
+    def _update_bib_id(self, record: dto.BibDTO) -> dto.BibDTO:
+        """
+        Update the bib_id associated with a `BibDTO.bib` object to reflect a change made
+        to its corresponding `DomainBib` object.
+        """
+        if not record.domain_bib.bib_id:
+            return record
+        bib_rec = copy.deepcopy(record.bib)
+        bib_rec.remove_fields("907")
+        bib_id = f".b{str(record.domain_bib.bib_id).strip('.b')}"
+        bib_rec.add_ordered_field(
+            Field(
+                tag="907",
+                indicators=Indicators(" ", " "),
+                subfields=[Subfield(code="a", value=bib_id)],
+            )
+        )
+        record.bib = bib_rec
+        return record
+
+    def identify_vendor(self, record: Bib) -> models.bibs.VendorInfo:
+        """Identify the vendor to whom a `bookops_marc.Bib` record belongs."""
+        print(self.vendor_info)
+        for vendor, info in self.vendor_tags.items():
+            tags: dict[str, dict[str, str]] = info.get("primary", {})
+            tag_match = self._get_tag_from_bib(record=record, tags=tags)
+            if tag_match and tag_match == tags:
+                return models.bibs.VendorInfo(
+                    name=vendor,
+                    bib_fields=self.vendor_info[vendor]["bib_fields"],
+                    matchpoints=self.vendor_info[vendor]["matchpoints"],
+                )
+            alt_tags = info.get("alternate", {})
+            alt_match = self._get_tag_from_bib(record=record, tags=alt_tags)
+            if alt_match and alt_match == alt_tags:
+                return models.bibs.VendorInfo(
+                    name=vendor,
+                    bib_fields=self.vendor_info[vendor]["bib_fields"],
+                    matchpoints=self.vendor_info[vendor]["matchpoints"],
+                )
+        return models.bibs.VendorInfo(
+            name="UNKNOWN",
+            bib_fields=self.vendor_info["UNKNOWN"]["bib_fields"],
+            matchpoints=self.vendor_info["UNKNOWN"]["matchpoints"],
+        )
 
     def parse(self, data: BinaryIO | bytes, library: str) -> list[dto.BibDTO]:
         """
@@ -161,6 +207,33 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
             io_data.write(record.bib.as_marc())
         io_data.seek(0)
         return io_data
+
+    def update_bib_record(
+        self, record: dto.BibDTO, vendor_info: models.bibs.VendorInfo
+    ) -> dto.BibDTO:
+        """Update the bib_id and add MARC fields to a `BibDTO` object."""
+        updated_rec = self._update_bib_id(record=record)
+        return self._add_bib_fields(record=updated_rec, fields=vendor_info.bib_fields)
+
+    def update_order_record(self, record: dto.BibDTO) -> dto.BibDTO:
+        """Update the MARC order fields within a `BibDTO` object."""
+        bib_rec = copy.deepcopy(record.bib)
+        for order in record.domain_bib.orders:
+            order_data = order.map_to_marc(rules=self.order_mapping)
+            for tag in order_data.keys():
+                subfields = []
+                for k, v in order_data[tag].items():
+                    if v is None:
+                        continue
+                    elif isinstance(v, list):
+                        subfields.extend([Subfield(code=k, value=str(i)) for i in v])
+                    else:
+                        subfields.append(Subfield(code=k, value=str(v)))
+                bib_rec.add_field(
+                    Field(tag=tag, indicators=Indicators(" ", " "), subfields=subfields)
+                )
+        record.bib = bib_rec
+        return record
 
 
 class BookopsMarcUpdater(protocols.bibs.MarcUpdater[dto.BibDTO]):
@@ -242,75 +315,3 @@ class BookopsMarcUpdater(protocols.bibs.MarcUpdater[dto.BibDTO]):
                 )
         record.bib = bib_rec
         return record
-
-
-class VendorIdentifier:
-    """Parses MARC records to identify the records' vendors based on a set of rules."""
-
-    def __init__(
-        self,
-        vendor_tags: dict[str, dict[str, dict[str, dict[str, str]]]],
-        vendor_info: dict[str, Any],
-    ) -> None:
-        """
-        Initialize `VendorIdentifier` using a specific set of marc mapping rules.
-
-        Args:
-            vendor_tags:
-                A dictionary a list of vendors and tags that are present in their
-                records.
-            vendor_info:
-                A dictionary containing information about matchpoints to use and fields
-                to add to records for vendors.
-        """
-        self.vendor_tags = vendor_tags
-        self.vendor_info = vendor_info
-
-    def _get_tag_from_bib(
-        self, record: Bib, tags: dict[str, dict[str, str]]
-    ) -> dict[str, dict[str, str]]:
-        """
-        Get the MARC tag, subfield code, and value from a record based on a dictionary
-        containing tags and subfield codes that would be present in a vendor's records
-
-        Args:
-            record: A bookops_marc.Bib object
-            tags: A dictionary containing MARC tags, subfield codes, and subfield values
-
-        Returns:
-            A dictionary containing the values present in the MARC fields/subfields.
-
-        """
-        bib_dict: dict = {}
-        for tag, data in tags.items():
-            field = record.get(tag)
-            if not field:
-                continue
-            else:
-                bib_dict[tag] = {"code": data["code"], "value": field.get(data["code"])}
-        return bib_dict
-
-    def identify_vendor(self, record: Bib) -> models.bibs.VendorInfo:
-        """Identify the vendor to whom a `bookops_marc.Bib` record belongs."""
-        for vendor, info in self.vendor_tags.items():
-            tags: dict[str, dict[str, str]] = info.get("primary", {})
-            tag_match = self._get_tag_from_bib(record=record, tags=tags)
-            if tag_match and tag_match == tags:
-                return models.bibs.VendorInfo(
-                    name=vendor,
-                    bib_fields=self.vendor_info[vendor]["bib_fields"],
-                    matchpoints=self.vendor_info[vendor]["matchpoints"],
-                )
-            alt_tags = info.get("alternate", {})
-            alt_match = self._get_tag_from_bib(record=record, tags=alt_tags)
-            if alt_match and alt_match == alt_tags:
-                return models.bibs.VendorInfo(
-                    name=vendor,
-                    bib_fields=self.vendor_info[vendor]["bib_fields"],
-                    matchpoints=self.vendor_info[vendor]["matchpoints"],
-                )
-        return models.bibs.VendorInfo(
-            name="UNKNOWN",
-            bib_fields=self.vendor_info["UNKNOWN"]["bib_fields"],
-            matchpoints=self.vendor_info["UNKNOWN"]["matchpoints"],
-        )
