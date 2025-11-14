@@ -13,7 +13,8 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from overload_web.files.infrastructure import file_models
-from overload_web.infrastructure import schemas, tables
+from overload_web.infrastructure import schemas
+from overload_web.order_templates.infrastructure import tables
 from overload_web.presentation import config, deps
 
 logger = logging.getLogger(__name__)

@@ -13,7 +13,8 @@ from pymarc import Field, Indicators, Subfield
 from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.domain_models import responses
-from overload_web.infrastructure import dto, marc, sierra, tables
+from overload_web.infrastructure import dto, marc, sierra
+from overload_web.order_templates.infrastructure import tables
 
 
 @pytest.fixture(autouse=True)
@@ -375,13 +376,7 @@ def make_bib_dto(stub_bib, stub_constants, library) -> Callable:
                     ],
                 )
             )
-        parser = marc.BookopsMarcParser(
-            library=library,
-            rules=stub_constants,
-            # marc_mapping=stub_constants["bookops_marc_mapping"],
-            # order_mapping=stub_constants["order_subfield_mapping"],
-            # vendor_rules=stub_constants,
-        )
+        parser = marc.BookopsMarcParser(library=library, rules=stub_constants)
         return dto.BibDTO(
             bib=record,
             domain_bib=parser._map_domain_bib_from_marc(record),

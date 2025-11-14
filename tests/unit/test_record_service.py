@@ -4,11 +4,11 @@ import json
 import pytest
 
 from overload_web.application import record_service
-from overload_web.domain_protocols import repositories
 from overload_web.domain_services import bib_matcher
+from overload_web.order_templates.domain import sql_protocol
 
 
-class MockRepository(repositories.SqlRepositoryProtocol):
+class MockRepository(sql_protocol.SqlRepositoryProtocol):
     def __init__(self, templates):
         self.templates = templates
 

@@ -1,6 +1,6 @@
 import pytest
 
-from overload_web.infrastructure import repository
+from overload_web.order_templates.infrastructure import repository
 
 
 def test_SqlModelRepository(test_sql_session):

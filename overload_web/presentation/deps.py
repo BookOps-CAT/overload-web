@@ -10,10 +10,11 @@ from fastapi import APIRouter, Depends, Form, UploadFile
 from sqlmodel import Session, SQLModel, create_engine
 from starlette.datastructures import UploadFile as StarlettUploadFile
 
-from overload_web.application import record_service, template_service
+from overload_web.application import record_service
 from overload_web.files.application import file_app_service
 from overload_web.files.infrastructure import file_models
 from overload_web.infrastructure import schemas
+from overload_web.order_templates.application import template_service
 from overload_web.presentation import config
 
 logger = logging.getLogger(__name__)

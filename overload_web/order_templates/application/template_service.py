@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Sequence
 
-from overload_web.infrastructure import repository, tables
+from overload_web.order_templates.infrastructure import repository, tables
 
 logger = logging.getLogger(__name__)
 
