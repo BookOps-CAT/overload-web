@@ -16,9 +16,8 @@ Classes:
 import logging
 from typing import Any, BinaryIO
 
-from overload_web.domain_models import bibs
-from overload_web.domain_services import bib_matcher
-from overload_web.infrastructure import dto, marc, sierra
+from overload_web.bib_records.domain import bib_matcher, bibs
+from overload_web.bib_records.infrastructure import dto, marc, sierra
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 import pytest
 
-from overload_web.domain_models import bibs, responses
+from overload_web.bib_records.domain import bibs, responses
 from overload_web.files.domain import vendor_files
 
 

@@ -29,9 +29,9 @@ from bookops_bpl_solr import BookopsSolrError, SolrSession
 from bookops_nypl_platform import BookopsPlatformError, PlatformSession, PlatformToken
 
 from overload_web import errors
-from overload_web.domain_models import responses
+from overload_web.bib_records.domain import responses
 
-from .. import __title__, __version__
+from ... import __title__, __version__
 
 logger = logging.getLogger(__name__)
 

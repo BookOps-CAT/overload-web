@@ -12,7 +12,7 @@ from typing import Optional
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain_models import bibs
+from overload_web.bib_records.domain import bibs
 
 
 class BibDTO:

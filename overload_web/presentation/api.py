@@ -12,10 +12,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from overload_web.files.infrastructure import file_models
-from overload_web.infrastructure import schemas
-from overload_web.order_templates.infrastructure import tables
-from overload_web.presentation import config, deps
+from overload_web.presentation import config, deps, schemas
 
 logger = logging.getLogger(__name__)
 api_router = APIRouter(prefix="/api", tags=["api"], lifespan=deps.lifespan)
@@ -29,8 +26,8 @@ TemplateServiceDep = Annotated[Any, Depends(deps.template_handler)]
 def create_template(
     request: Request,
     template: Annotated[
-        tables.OrderTemplateCreate,
-        Depends(deps.from_form(tables.OrderTemplateCreate)),
+        schemas.OrderTemplateCreateType,
+        Depends(deps.from_form(schemas.OrderTemplateCreateType)),
     ],
     service: TemplateServiceDep,
 ) -> HTMLResponse:
@@ -74,8 +71,8 @@ def update_template(
     request: Request,
     template_id: Annotated[str, Form(...)],
     template_patch: Annotated[
-        tables.OrderTemplateUpdate,
-        Depends(deps.from_form(tables.OrderTemplateUpdate)),
+        schemas.OrderTemplateUpdateType,
+        Depends(deps.from_form(schemas.OrderTemplateUpdateType)),
     ],
     service: TemplateServiceDep,
 ) -> HTMLResponse:
@@ -121,10 +118,10 @@ def list_remote_files(
 def process_vendor_file(
     request: Request,
     service: Annotated[Any, Depends(deps.record_processing_service)],
-    files: Annotated[list[file_models.VendorFileModel], Depends(deps.normalize_files)],
+    files: Annotated[list[schemas.VendorFileType], Depends(deps.normalize_files)],
     template_input: Annotated[
-        schemas.OrderTemplateSchema,
-        Depends(deps.from_form(schemas.OrderTemplateSchema)),
+        schemas.OrderTemplateSchemaType,
+        Depends(deps.from_form(schemas.OrderTemplateSchemaType)),
     ],
     matchpoints: Annotated[
         schemas.MatchpointSchema, Depends(deps.from_form(schemas.MatchpointSchema))
@@ -147,7 +144,7 @@ def process_vendor_file(
 
 @api_router.post("/write-local")
 def write_local_file(
-    vendor_file: file_models.VendorFileModel,
+    vendor_file: schemas.VendorFileType,
     dir: str,
     service: Annotated[Any, Depends(deps.local_file_handler)],
 ) -> JSONResponse:
@@ -160,7 +157,7 @@ def write_local_file(
 
 @api_router.post("/write-remote")
 def write_remote_file(
-    vendor_file: file_models.VendorFileModel,
+    vendor_file: schemas.VendorFileType,
     dir: str,
     vendor: str,
     service: Annotated[Any, Depends(deps.remote_file_handler)],

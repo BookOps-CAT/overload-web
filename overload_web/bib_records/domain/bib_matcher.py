@@ -18,8 +18,7 @@ from __future__ import annotations
 import logging
 from typing import BinaryIO, Protocol, runtime_checkable
 
-from overload_web.domain_models import bibs, responses
-from overload_web.domain_protocols import marc_protocols
+from overload_web.bib_records.domain import bibs, marc_protocols, responses
 
 logger = logging.getLogger(__name__)
 

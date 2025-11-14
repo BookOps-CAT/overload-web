@@ -26,7 +26,7 @@ import logging
 from typing import TYPE_CHECKING, BinaryIO, Protocol, TypeVar, runtime_checkable
 
 if TYPE_CHECKING:  # pragma: no cover
-    from overload_web.domain_models import bibs
+    from overload_web.bib_records.domain import bibs
 
 T = TypeVar("T")
 

@@ -3,8 +3,8 @@ import json
 
 import pytest
 
-from overload_web.application import record_service
-from overload_web.domain_services import bib_matcher
+from overload_web.bib_records.application import record_service
+from overload_web.bib_records.domain import bib_matcher
 from overload_web.order_templates.domain import sql_protocol
 
 
@@ -55,7 +55,8 @@ class TestRecordProcessingService:
             return FakeBibFetcher(library, collection, record_type)
 
         monkeypatch.setattr(
-            "overload_web.infrastructure.sierra.SierraBibFetcher", fake_fetcher
+            "overload_web.bib_records.infrastructure.sierra.SierraBibFetcher",
+            fake_fetcher,
         )
         return record_service.RecordProcessingService(
             library=library,
@@ -72,7 +73,8 @@ class TestRecordProcessingService:
             return StubFetcher()
 
         monkeypatch.setattr(
-            "overload_web.infrastructure.sierra.SierraBibFetcher", fake_fetcher
+            "overload_web.bib_records.infrastructure.sierra.SierraBibFetcher",
+            fake_fetcher,
         )
         return record_service.RecordProcessingService(
             library=library,

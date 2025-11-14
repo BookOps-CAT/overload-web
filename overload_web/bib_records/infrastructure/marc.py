@@ -10,9 +10,8 @@ from typing import Any, BinaryIO
 from bookops_marc import Bib, SierraBibReader
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain_models import bibs
-from overload_web.domain_protocols import marc_protocols
-from overload_web.infrastructure import dto
+from overload_web.bib_records.domain import bibs, marc_protocols
+from overload_web.bib_records.infrastructure import dto
 
 logger = logging.getLogger(__name__)
 

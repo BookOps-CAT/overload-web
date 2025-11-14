@@ -17,7 +17,9 @@ class FileTransferService:
     """Handles file transfer operations through `FileLoader` and `FileWriter`."""
 
     def __init__(
-        self, loader: file_protocols.FileLoader, writer: file_protocols.FileWriter
+        self,
+        loader: file_protocols.FileLoader,
+        writer: file_protocols.FileWriter,
     ):
         """
         Initialize `FileTransferService` obj.
