@@ -20,7 +20,10 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
     """Parses and serializes MARC records."""
 
     def __init__(
-        self, marc_mapping: dict[str, dict[str, str | dict[str, str]]]
+        self,
+        marc_mapping: dict[str, dict[str, str | dict[str, str]]],
+        library: str,
+        vendor_rules: dict[str, Any],
     ) -> None:
         """
         Initialize `BookopsMarcParser` using a specific set of marc mapping rules.
@@ -29,8 +32,62 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
             marc_mapping:
                 A dictionary containing set of rules to use when mapping MARC records
                 to domain objects.
+            rules:
+                A dictionary containing vendor identification rules.
         """
         self.marc_mapping = marc_mapping
+        self.vendor_tags = vendor_rules["vendor_tags"][library.casefold()]
+        self.vendor_info = vendor_rules["vendor_info"][library.casefold()]
+
+    def _get_tag_from_bib(
+        self, record: Bib, tags: dict[str, dict[str, str]]
+    ) -> dict[str, dict[str, str]]:
+        """
+        Get the MARC tag, subfield code, and value from a record based on a dictionary
+        containing tags and subfield codes that would be present in a vendor's records
+
+        Args:
+            record: A bookops_marc.Bib object
+            tags: A dictionary containing MARC tags, subfield codes, and subfield values
+
+        Returns:
+            A dictionary containing the values present in the MARC fields/subfields.
+
+        """
+        bib_dict: dict = {}
+        for tag, data in tags.items():
+            field = record.get(tag)
+            if not field:
+                continue
+            else:
+                bib_dict[tag] = {"code": data["code"], "value": field.get(data["code"])}
+        return bib_dict
+
+    def identify_vendor(self, record: Bib) -> models.bibs.VendorInfo:
+        """Identify the vendor to whom a `bookops_marc.Bib` record belongs."""
+        print(self.vendor_info)
+        for vendor, info in self.vendor_tags.items():
+            tags: dict[str, dict[str, str]] = info.get("primary", {})
+            tag_match = self._get_tag_from_bib(record=record, tags=tags)
+            if tag_match and tag_match == tags:
+                return models.bibs.VendorInfo(
+                    name=vendor,
+                    bib_fields=self.vendor_info[vendor]["bib_fields"],
+                    matchpoints=self.vendor_info[vendor]["matchpoints"],
+                )
+            alt_tags = info.get("alternate", {})
+            alt_match = self._get_tag_from_bib(record=record, tags=alt_tags)
+            if alt_match and alt_match == alt_tags:
+                return models.bibs.VendorInfo(
+                    name=vendor,
+                    bib_fields=self.vendor_info[vendor]["bib_fields"],
+                    matchpoints=self.vendor_info[vendor]["matchpoints"],
+                )
+        return models.bibs.VendorInfo(
+            name="UNKNOWN",
+            bib_fields=self.vendor_info["UNKNOWN"]["bib_fields"],
+            matchpoints=self.vendor_info["UNKNOWN"]["matchpoints"],
+        )
 
     def _map_domain_bib_from_marc(self, bib: Bib) -> models.bibs.DomainBib:
         """
@@ -78,9 +135,14 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
         records = []
         reader = SierraBibReader(data, library=library, hide_utf8_warnings=True)
         for record in reader:
+            vendor_info = self.identify_vendor(record=record)
             mapped_domain_bib = self._map_domain_bib_from_marc(bib=record)
             logger.info(f"Vendor record parsed: {mapped_domain_bib}")
-            records.append(dto.BibDTO(bib=record, domain_bib=mapped_domain_bib))
+            records.append(
+                dto.BibDTO(
+                    bib=record, domain_bib=mapped_domain_bib, vendor_info=vendor_info
+                )
+            )
         return records
 
     def serialize(self, records: list[dto.BibDTO]) -> BinaryIO:

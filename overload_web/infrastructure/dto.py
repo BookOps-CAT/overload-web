@@ -24,9 +24,16 @@ class BibDTO:
     Attributes:
         bib: The original MARC record as a `bookops_marc.Bib` object.
         domain_bib: The `DomainBib` object associated with the MARC record.
+        vendor_info: The `VendorInfo` object associated with the MARC record.
 
     """
 
-    def __init__(self, bib: Bib, domain_bib: models.bibs.DomainBib):
+    def __init__(
+        self,
+        bib: Bib,
+        domain_bib: models.bibs.DomainBib,
+        vendor_info: models.bibs.VendorInfo,
+    ):
         self.bib = bib
         self.domain_bib = domain_bib
+        self.vendor_info = vendor_info

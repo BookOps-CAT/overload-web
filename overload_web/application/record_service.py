@@ -45,13 +45,11 @@ class RecordProcessingService:
         self.library = library
         self.collection = collection
         self.record_type = models.bibs.RecordType(record_type)
-        self.parser = marc.BookopsMarcParser(rules["bookops_marc_mapping"])
+        self.parser = marc.BookopsMarcParser(
+            rules["bookops_marc_mapping"], self.library, rules
+        )
         self.matcher = logic.bibs.BibMatcher(sierra.SierraBibFetcher(self.library))
         self.updater = marc.BookopsMarcUpdater(rules["order_subfield_mapping"])
-        self.vendor_reviewer = marc.VendorIdentifier(
-            vendor_tags=rules["vendor_tags"][library.casefold()],
-            vendor_info=rules["vendor_info"][library.casefold()],
-        )
 
     def parse(self, data: BinaryIO | bytes) -> list[dto.BibDTO]:
         """
@@ -88,16 +86,17 @@ class RecordProcessingService:
         """
         out = []
         for record in records:
-            vendor_info = self.vendor_reviewer.identify_vendor(record.bib)
             if not matchpoints:
-                matchpoints = vendor_info.matchpoints
+                matchpoints = record.vendor_info.matchpoints
             record.domain_bib = self.matcher.match_bib(
                 record.domain_bib, matchpoints, self.record_type
             )
             if self.record_type == models.bibs.RecordType.ORDER_LEVEL:
                 record.domain_bib.apply_order_template(template_data=template_data)
                 rec = self.updater.update_order_record(record=record)
-            rec = self.updater.update_bib_record(record=record, vendor_info=vendor_info)
+            rec = self.updater.update_bib_record(
+                record=record, vendor_info=record.vendor_info
+            )
             out.append(rec)
         return out
 
