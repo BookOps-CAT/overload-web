@@ -18,7 +18,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from overload_web.domain import models
+from overload_web.domain_models import bibs, responses
 
 if TYPE_CHECKING:  # pragma: no cover
     from overload_web.domain import protocols
@@ -42,15 +42,14 @@ class BibMatcher:
 
         Args:
             fetcher: An injected `BibFetcher` that provides candidate bibs.
-            rev
         """
         self.fetcher = fetcher
 
     def _select_best_match(
         self,
-        bib_to_match: models.bibs.DomainBib,
-        candidates: list[models.responses.FetcherResponseDict],
-        record_type: models.bibs.RecordType,
+        bib_to_match: bibs.DomainBib,
+        candidates: list[responses.FetcherResponseDict],
+        record_type: bibs.RecordType,
     ) -> ReviewedResults:
         """
         Compare a `DomainBib` to a list of candidate bibs and select the best match.
@@ -71,10 +70,10 @@ class BibMatcher:
 
     def match_bib(
         self,
-        bib: models.bibs.DomainBib,
+        bib: bibs.DomainBib,
         matchpoints: dict[str, str],
-        record_type: models.bibs.RecordType,
-    ) -> models.bibs.DomainBib:
+        record_type: bibs.RecordType,
+    ) -> bibs.DomainBib:
         """
         Attempt to find the best-match in Sierra for a given `DomainBib`.
 
@@ -105,9 +104,9 @@ class BibMatcher:
 class ReviewedResults:
     def __init__(
         self,
-        input: models.bibs.DomainBib,
-        results: list[models.responses.FetcherResponseDict],
-        record_type: models.bibs.RecordType,
+        input: bibs.DomainBib,
+        results: list[responses.FetcherResponseDict],
+        record_type: bibs.RecordType,
     ) -> None:
         self.input = input
         self.results = results
@@ -115,9 +114,9 @@ class ReviewedResults:
         self.record_type = record_type
         self.action = None
 
-        self.matched_results: list[models.responses.FetcherResponseDict] = []
-        self.mixed_results: list[models.responses.FetcherResponseDict] = []
-        self.other_results: list[models.responses.FetcherResponseDict] = []
+        self.matched_results: list[responses.FetcherResponseDict] = []
+        self.mixed_results: list[responses.FetcherResponseDict] = []
+        self.other_results: list[responses.FetcherResponseDict] = []
 
         self._sort_results()
 
@@ -172,13 +171,13 @@ class ReviewedResults:
         return None
 
     @property
-    def target_bib_id(self) -> models.bibs.BibId | None:
+    def target_bib_id(self) -> bibs.BibId | None:
         bib_id = None
         if len(self.matched_results) == 1:
-            return models.bibs.BibId(self.matched_results[0]["bib_id"])
+            return bibs.BibId(self.matched_results[0]["bib_id"])
         elif len(self.matched_results) == 0:
             return bib_id
         for result in self.matched_results:
             if result.get("branch_call_number") or result.get("research_call_number"):
-                return models.bibs.BibId(result["bib_id"])
+                return bibs.BibId(result["bib_id"])
         return bib_id

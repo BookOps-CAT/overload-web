@@ -10,7 +10,8 @@ from typing import Any, BinaryIO
 from bookops_marc import Bib, SierraBibReader
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain import models, protocols
+from overload_web.domain import protocols
+from overload_web.domain_models import bibs
 from overload_web.infrastructure import dto
 
 logger = logging.getLogger(__name__)
@@ -19,13 +20,7 @@ logger = logging.getLogger(__name__)
 class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
     """Parses, serializes and updates MARC records based on domain objects."""
 
-    def __init__(
-        self,
-        library: str,
-        marc_mapping: dict[str, dict[str, str | dict[str, str]]],
-        order_mapping: dict[str, dict[str, str]],
-        vendor_rules: dict[str, Any],
-    ) -> None:
+    def __init__(self, library: str, rules: dict[str, Any]) -> None:
         """
         Initialize `BookopsMarcParser` using a specific set of marc mapping rules.
 
@@ -40,12 +35,14 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
                 objects to MARC records. These rules map attributes of an `Order` to
                 MARC fields and subfields.
             rules:
-                A dictionary containing vendor identification rules.
+                A dictionary containing vendor identification rules, rules to use when
+                mapping MARC records, to domain objects, and rules to use when mapping
+                `Order` objects to MARC fields and subfields.
         """
-        self.marc_mapping = marc_mapping
-        self.order_mapping = order_mapping
-        self.vendor_tags = vendor_rules["vendor_tags"][library.casefold()]
-        self.vendor_info = vendor_rules["vendor_info"][library.casefold()]
+        self.marc_mapping = rules["bookops_marc_mapping"]
+        self.order_mapping = rules["order_subfield_mapping"]
+        self.vendor_tags = rules["vendor_tags"][library.casefold()]
+        self.vendor_info = rules["vendor_info"][library.casefold()]
 
     def _get_tag_from_bib(
         self, record: Bib, tags: dict[str, dict[str, str]]
@@ -71,7 +68,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
                 bib_dict[tag] = {"code": data["code"], "value": field.get(data["code"])}
         return bib_dict
 
-    def _map_domain_bib_from_marc(self, bib: Bib) -> models.bibs.DomainBib:
+    def _map_domain_bib_from_marc(self, bib: Bib) -> bibs.DomainBib:
         """
         Factory method used to build a `DomainBib` from a `bookops_marc.Bib` object.
 
@@ -100,8 +97,8 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
                     field = getattr(order, k)
                     for code, attr in v.items():
                         order_dict[attr] = field.get(code) if field else None
-            out["orders"].append(models.bibs.Order(**order_dict))
-        return models.bibs.DomainBib(**out)
+            out["orders"].append(bibs.Order(**order_dict))
+        return bibs.DomainBib(**out)
 
     def _add_bib_fields(
         self, record: dto.BibDTO, fields: list[dict[str, str]]
@@ -141,14 +138,14 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
         record.bib = bib_rec
         return record
 
-    def identify_vendor(self, record: Bib) -> models.bibs.VendorInfo:
+    def identify_vendor(self, record: Bib) -> bibs.VendorInfo:
         """Identify the vendor to whom a `bookops_marc.Bib` record belongs."""
         print(self.vendor_info)
         for vendor, info in self.vendor_tags.items():
             tags: dict[str, dict[str, str]] = info.get("primary", {})
             tag_match = self._get_tag_from_bib(record=record, tags=tags)
             if tag_match and tag_match == tags:
-                return models.bibs.VendorInfo(
+                return bibs.VendorInfo(
                     name=vendor,
                     bib_fields=self.vendor_info[vendor]["bib_fields"],
                     matchpoints=self.vendor_info[vendor]["matchpoints"],
@@ -156,12 +153,12 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
             alt_tags = info.get("alternate", {})
             alt_match = self._get_tag_from_bib(record=record, tags=alt_tags)
             if alt_match and alt_match == alt_tags:
-                return models.bibs.VendorInfo(
+                return bibs.VendorInfo(
                     name=vendor,
                     bib_fields=self.vendor_info[vendor]["bib_fields"],
                     matchpoints=self.vendor_info[vendor]["matchpoints"],
                 )
-        return models.bibs.VendorInfo(
+        return bibs.VendorInfo(
             name="UNKNOWN",
             bib_fields=self.vendor_info["UNKNOWN"]["bib_fields"],
             matchpoints=self.vendor_info["UNKNOWN"]["matchpoints"],
@@ -209,7 +206,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
         return io_data
 
     def update_bib_record(
-        self, record: dto.BibDTO, vendor_info: models.bibs.VendorInfo
+        self, record: dto.BibDTO, vendor_info: bibs.VendorInfo
     ) -> dto.BibDTO:
         """Update the bib_id and add MARC fields to a `BibDTO` object."""
         updated_rec = self._update_bib_id(record=record)
@@ -290,7 +287,7 @@ class BookopsMarcUpdater(protocols.bibs.MarcUpdater[dto.BibDTO]):
         return record
 
     def update_bib_record(
-        self, record: dto.BibDTO, vendor_info: models.bibs.VendorInfo
+        self, record: dto.BibDTO, vendor_info: bibs.VendorInfo
     ) -> dto.BibDTO:
         """Update the bib_id and add MARC fields to a `BibDTO` object."""
         updated_rec = self._update_bib_id(record=record)

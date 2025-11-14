@@ -14,7 +14,7 @@ import os
 
 from file_retriever import Client, File
 
-from overload_web.domain import models
+from overload_web.domain_models import files
 
 
 class SFTPFileLoader:
@@ -31,11 +31,11 @@ class SFTPFileLoader:
     def list(self, dir: str) -> list[str]:
         return self.client.list_files(remote_dir=dir)
 
-    def load(self, name: str, dir: str) -> models.files.VendorFile:
+    def load(self, name: str, dir: str) -> files.VendorFile:
         file_info = self.client.get_file_info(file_name=name, remote_dir=dir)
         file = self.client.get_file(file=file_info, remote_dir=dir)
         file.file_stream.seek(0)
-        return models.files.VendorFile.create(
+        return files.VendorFile.create(
             content=file.file_stream.read(), file_name=file.file_name
         )
 
@@ -62,7 +62,7 @@ class SFTPFileWriter:
     def __init__(self, client: Client) -> None:
         self.client = client
 
-    def write(self, file: models.files.VendorFile, dir: str) -> str:
+    def write(self, file: files.VendorFile, dir: str) -> str:
         converted_file = File(
             file_name=file.file_name,
             file_stream=io.BytesIO(file.content),

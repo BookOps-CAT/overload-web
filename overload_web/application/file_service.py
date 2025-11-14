@@ -11,8 +11,8 @@ from typing import TYPE_CHECKING
 from overload_web.infrastructure import local_io, sftp
 
 if TYPE_CHECKING:  # pragma: no cover
-    from overload_web.domain import models, protocols
-
+    from overload_web.domain import protocols
+    from overload_web.domain_models import files
 logger = logging.getLogger(__name__)
 
 
@@ -46,7 +46,7 @@ class FileTransferService:
         logger.info(f"Files in {dir}: {files}")
         return files
 
-    def load_file(self, name: str, dir: str) -> models.files.VendorFile:
+    def load_file(self, name: str, dir: str) -> files.VendorFile:
         """
         Load a file from a directory.
 
@@ -55,18 +55,18 @@ class FileTransferService:
             dir: The directory to load the file from.
 
         Returns:
-            The loaded file as a `models.files.VendorFile` object.
+            The loaded file as a `files.VendorFile` object.
         """
         file = self.loader.load(name=name, dir=dir)
         logger.info(f"File loaded: {name}")
         return file
 
-    def write_marc_file(self, file: models.files.VendorFile, dir: str) -> str:
+    def write_marc_file(self, file: files.VendorFile, dir: str) -> str:
         """
         Write a file to a directory.
 
         Args:
-            file: The file to write as a `models.files.VendorFile` object.
+            file: The file to write as a `files.VendorFile` object.
             dir: The directory where the file should be written.
 
         Returns:

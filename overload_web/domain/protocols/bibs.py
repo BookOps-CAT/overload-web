@@ -26,7 +26,7 @@ import logging
 from typing import TYPE_CHECKING, BinaryIO, Protocol, TypeVar, runtime_checkable
 
 if TYPE_CHECKING:  # pragma: no cover
-    from overload_web.domain import models
+    from overload_web.domain_models import bibs, responses
 
 T = TypeVar("T")
 
@@ -46,7 +46,7 @@ class BibFetcher(Protocol):
 
     def get_bibs_by_id(
         self, value: str | int, key: str
-    ) -> list[models.responses.FetcherResponseDict]: ...  # pragma: no branch
+    ) -> list[responses.FetcherResponseDict]: ...  # pragma: no branch
 
     """
     Retrieve candidate bib records that match a key-value identifier.
@@ -92,7 +92,7 @@ class MarcUpdater(Protocol[T]):
     order_mapping: dict[str, dict[str, str]]
 
     def update_bib_record(
-        self, bib: T, vendor_info: models.bibs.VendorInfo
+        self, bib: T, vendor_info: bibs.VendorInfo
     ) -> T: ...  # pragma: no branch
 
     """Update MARC fields in a full-level `T` object based on rules."""

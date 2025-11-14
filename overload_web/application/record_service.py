@@ -16,7 +16,8 @@ Classes:
 import logging
 from typing import Any, BinaryIO
 
-from overload_web.domain import logic, models
+from overload_web.domain import logic
+from overload_web.domain_models import bibs
 from overload_web.infrastructure import dto, marc, sierra
 
 logger = logging.getLogger(__name__)
@@ -44,13 +45,8 @@ class RecordProcessingService:
         """
         self.library = library
         self.collection = collection
-        self.record_type = models.bibs.RecordType(record_type)
-        self.parser = marc.BookopsMarcParser(
-            library=self.library,
-            marc_mapping=rules["bookops_marc_mapping"],
-            order_mapping=rules["order_subfield_mapping"],
-            vendor_rules=rules,
-        )
+        self.record_type = bibs.RecordType(record_type)
+        self.parser = marc.BookopsMarcParser(library=self.library, rules=rules)
         self.matcher = logic.bib_matcher.BibMatcher(
             sierra.SierraBibFetcher(self.library)
         )
@@ -112,7 +108,7 @@ class RecordProcessingService:
         """
         out = []
         for record in records:
-            if self.record_type == models.bibs.RecordType.ORDER_LEVEL:
+            if self.record_type == bibs.RecordType.ORDER_LEVEL:
                 record.domain_bib.apply_order_template(template_data=template_data)
                 rec = self.parser.update_order_record(record=record)
             rec = self.parser.update_bib_record(
@@ -149,7 +145,7 @@ class RecordProcessingService:
             record.domain_bib = self.matcher.match_bib(
                 record.domain_bib, matchpoints, self.record_type
             )
-            if self.record_type == models.bibs.RecordType.ORDER_LEVEL:
+            if self.record_type == bibs.RecordType.ORDER_LEVEL:
                 record.domain_bib.apply_order_template(template_data=template_data)
                 rec = self.parser.update_order_record(record=record)
             rec = self.parser.update_bib_record(

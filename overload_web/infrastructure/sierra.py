@@ -29,7 +29,7 @@ from bookops_bpl_solr import BookopsSolrError, SolrSession
 from bookops_nypl_platform import BookopsPlatformError, PlatformSession, PlatformToken
 
 from overload_web import errors
-from overload_web.domain import models
+from overload_web.domain_models import responses
 
 from .. import __title__, __version__
 
@@ -66,8 +66,8 @@ class SierraBibFetcher:
                 raise errors.OverloadError(str(exc))
 
     def _response_to_domain_dict(
-        self, records: list[models.responses.BaseSierraResponse]
-    ) -> list[models.responses.FetcherResponseDict]:
+        self, records: list[responses.BaseSierraResponse]
+    ) -> list[responses.FetcherResponseDict]:
         """
         Converts raw response into dictionaries formatted for the `DomainBib` model.
 
@@ -83,7 +83,7 @@ class SierraBibFetcher:
 
     def get_bibs_by_id(
         self, value: str | int, key: str
-    ) -> list[models.responses.FetcherResponseDict]:
+    ) -> list[responses.FetcherResponseDict]:
         """
         Retrieves bib records by a specific matchpoint (e.g., ISBN, OCLC)
 
@@ -151,7 +151,7 @@ class SierraSessionProtocol(Protocol):
     ) -> requests.Response: ...  # pragma: no branch
     def _parse_response(
         self, response: requests.Response
-    ) -> list[models.responses.BaseSierraResponse]: ...  # pragma: no branch
+    ) -> list[responses.BaseSierraResponse]: ...  # pragma: no branch
 
 
 class BPLSolrSession(SolrSession):
@@ -174,11 +174,11 @@ class BPLSolrSession(SolrSession):
 
     def _parse_response(
         self, response: requests.Response
-    ) -> list[models.responses.BaseSierraResponse]:
+    ) -> list[responses.BaseSierraResponse]:
         logger.info(f"Sierra Session response code: {response.status_code}.")
         json_response = response.json()
         bibs = json_response["response"]["docs"]
-        return [models.responses.BPLSolrResponse(i) for i in bibs]
+        return [responses.BPLSolrResponse(i) for i in bibs]
 
     def _get_bibs_by_bib_id(self, value: str | int) -> requests.Response:
         return self.search_bibNo(str(value), default_response_fields=False)
@@ -221,11 +221,11 @@ class NYPLPlatformSession(PlatformSession):
 
     def _parse_response(
         self, response: requests.Response
-    ) -> list[models.responses.BaseSierraResponse]:
+    ) -> list[responses.BaseSierraResponse]:
         logger.info(f"Sierra Session response code: {response.status_code}.")
         json_response = response.json()
         bibs = json_response.get("data", [])
-        return [models.responses.NYPLPlatformResponse(i) for i in bibs]
+        return [responses.NYPLPlatformResponse(i) for i in bibs]
 
     def _get_bibs_by_bib_id(self, value: str | int) -> requests.Response:
         return self.search_bibNos(str(value))

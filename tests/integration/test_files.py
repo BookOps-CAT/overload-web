@@ -2,7 +2,8 @@ import os
 
 import pytest
 
-from overload_web.domain import models, protocols
+from overload_web.domain import protocols
+from overload_web.domain_models import files
 from overload_web.infrastructure import local_io, sftp
 
 
@@ -14,7 +15,7 @@ def tmp_file(tmp_path):
 
 class TestLocalFiles:
     def stub_file(self, content, file_name):
-        return models.files.VendorFile.create(content=content, file_name=file_name)
+        return files.VendorFile.create(content=content, file_name=file_name)
 
     def test_local_objs(self, tmp_path):
         loader = local_io.LocalFileLoader()
@@ -45,7 +46,7 @@ class TestLocalFiles:
 
 class TestSFTPFiles:
     def stub_file(self, content, file_name):
-        return models.files.VendorFile.create(content=content, file_name=file_name)
+        return files.VendorFile.create(content=content, file_name=file_name)
 
     def test_sftp_loader(self, mock_sftp_client):
         loader = sftp.SFTPFileLoader(client=mock_sftp_client)

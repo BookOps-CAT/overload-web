@@ -1,5 +1,6 @@
 from overload_web.application import file_service
-from overload_web.domain import models, protocols
+from overload_web.domain import protocols
+from overload_web.domain_models import files
 
 
 class StubFileLoader(protocols.file_io.FileLoader):
@@ -19,15 +20,15 @@ class FakeFileLoader(StubFileLoader):
     def list(self, dir: str) -> list[str]:
         return ["foo.mrc"]
 
-    def load(self, name: str, dir: str) -> models.files.VendorFile:
-        return models.files.VendorFile.create(file_name=name, content=b"")
+    def load(self, name: str, dir: str) -> files.VendorFile:
+        return files.VendorFile.create(file_name=name, content=b"")
 
 
 class FakeFileWriter(StubFileWriter):
     def __init__(self) -> None:
         pass
 
-    def write(self, file: models.files.VendorFile, dir: str) -> str:
+    def write(self, file: files.VendorFile, dir: str) -> str:
         return file.file_name
 
 
@@ -40,7 +41,7 @@ class TestFileTransferServices:
         service = file_service.FileTransferService(
             loader=StubFileLoader(), writer=StubFileWriter()
         )
-        vendor_file = models.files.VendorFile.create(file_name="foo.mrc", content=b"")
+        vendor_file = files.VendorFile.create(file_name="foo.mrc", content=b"")
         assert service.load_file(name="foo.mrc", dir="foo") is None
         assert service.list_files(dir="foo") is None
         assert service.write_marc_file(file=vendor_file, dir="bar") is None
@@ -58,7 +59,7 @@ class TestFileTransferServices:
 
     def test_write_marc_file(self):
         out_file = self.service.write_marc_file(
-            file=models.files.VendorFile.create(file_name="foo.mrc", content=b""),
+            file=files.VendorFile.create(file_name="foo.mrc", content=b""),
             dir="bar",
         )
         assert out_file == "foo.mrc"

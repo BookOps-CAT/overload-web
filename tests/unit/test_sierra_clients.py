@@ -26,7 +26,7 @@ class TestLiveSierraSession:
             matched_bibs = session._parse_response(response=response)
             assert isinstance(matched_bibs, list)
             assert len(matched_bibs) == 2
-            assert isinstance(matched_bibs[0], sierra.models.responses.BPLSolrResponse)
+            assert isinstance(matched_bibs[0], sierra.responses.BPLSolrResponse)
             assert sorted(list(response.json()["response"]["docs"][0].keys())) == [
                 "_version_",
                 "additional_contributor",
@@ -91,9 +91,7 @@ class TestLiveSierraSession:
             matched_bibs = session._parse_response(response=response)
             assert isinstance(matched_bibs, list)
             assert len(matched_bibs) == 1
-            assert isinstance(
-                matched_bibs[0], sierra.models.responses.NYPLPlatformResponse
-            )
+            assert isinstance(matched_bibs[0], sierra.responses.NYPLPlatformResponse)
             assert sorted(list(response.json()["data"][0].keys())) == [
                 "author",
                 "bibLevel",

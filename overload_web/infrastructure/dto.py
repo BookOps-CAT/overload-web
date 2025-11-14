@@ -12,7 +12,7 @@ from typing import Optional
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain import models
+from overload_web.domain_models import bibs
 
 
 class BibDTO:
@@ -32,14 +32,14 @@ class BibDTO:
     def __init__(
         self,
         bib: Bib,
-        domain_bib: models.bibs.DomainBib,
-        vendor_info: models.bibs.VendorInfo,
+        domain_bib: bibs.DomainBib,
+        vendor_info: bibs.VendorInfo,
     ):
         self.bib = bib
         self.domain_bib = domain_bib
         self.vendor_info = vendor_info
 
-    def update(self, bib_id: Optional[models.bibs.BibId]) -> None:
+    def update(self, bib_id: Optional[bibs.BibId]) -> None:
         """
         Update the bib_id associated with a `BibDTO.bib` object to reflect a change made
         to its corresponding `DomainBib` object.
@@ -49,7 +49,7 @@ class BibDTO:
             normalized_bib_id = f".b{str(bib_id).strip('.b')}"
 
             # then update the domain bib
-            self.domain_bib.bib_id = models.bibs.BibId(normalized_bib_id)
+            self.domain_bib.bib_id = bibs.BibId(normalized_bib_id)
 
             # finally update the MARC record
             bib_rec = copy.deepcopy(self.bib)

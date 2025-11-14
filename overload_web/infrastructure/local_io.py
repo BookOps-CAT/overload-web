@@ -9,7 +9,7 @@ The classes within this module are concrete implementations of the `FileLoader` 
 
 import os
 
-from overload_web.domain import models
+from overload_web.domain_models import files
 
 
 class LocalFileLoader:
@@ -26,9 +26,9 @@ class LocalFileLoader:
     def list(self, dir: str) -> list[str]:
         return os.listdir(dir)
 
-    def load(self, name: str, dir: str) -> models.files.VendorFile:
+    def load(self, name: str, dir: str) -> files.VendorFile:
         with open(os.path.join(dir, name), "rb") as fh:
-            file_dto = models.files.VendorFile.create(content=fh.read(), file_name=name)
+            file_dto = files.VendorFile.create(content=fh.read(), file_name=name)
         return file_dto
 
 
@@ -43,7 +43,7 @@ class LocalFileWriter:
     def __init__(self):
         pass
 
-    def write(self, file: models.files.VendorFile, dir: str) -> str:
+    def write(self, file: files.VendorFile, dir: str) -> str:
         path = os.path.join(dir, file.file_name)
         with open(path, "wb") as f:
             f.write(file.content)

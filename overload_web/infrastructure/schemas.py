@@ -10,7 +10,7 @@ from typing import TypeAlias
 
 from pydantic import BaseModel, ConfigDict
 
-from overload_web.domain import models
+from overload_web.domain_models import files
 
 BaseModelAlias: TypeAlias = BaseModel
 
@@ -47,7 +47,7 @@ class OrderTemplateSchema(BaseModel):
     vendor_title_no: str | None = None
 
 
-class VendorFileModel(BaseModel, models.files.VendorFile):
+class VendorFileModel(BaseModel, files.VendorFile):
     """Pydantic model for serializing/deserializing `VendorFile` domain objects."""
 
     model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
@@ -55,6 +55,6 @@ class VendorFileModel(BaseModel, models.files.VendorFile):
     @classmethod
     def create(cls, content: bytes, file_name: str | None) -> VendorFileModel:
         """Factory method to enforce ID assignment and domain rules."""
-        file_id = models.files.VendorFileId.new()
+        file_id = files.VendorFileId.new()
         file_name = str(file_id) if not file_name else file_name
         return cls(id=file_id, content=content, file_name=file_name)

@@ -12,7 +12,7 @@ from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.domain import models
+from overload_web.domain_models import responses
 from overload_web.infrastructure import dto, marc, sierra, tables
 
 
@@ -124,7 +124,7 @@ class FakeSierraSession(sierra.SierraSessionProtocol):
         self.credentials = self._get_credentials()
 
 
-class FakeSierraResponse(models.responses.BaseSierraResponse):
+class FakeSierraResponse(responses.BaseSierraResponse):
     library = "library"
 
     @property
@@ -377,9 +377,10 @@ def make_bib_dto(stub_bib, stub_constants, library) -> Callable:
             )
         parser = marc.BookopsMarcParser(
             library=library,
-            marc_mapping=stub_constants["bookops_marc_mapping"],
-            order_mapping=stub_constants["order_subfield_mapping"],
-            vendor_rules=stub_constants,
+            rules=stub_constants,
+            # marc_mapping=stub_constants["bookops_marc_mapping"],
+            # order_mapping=stub_constants["order_subfield_mapping"],
+            # vendor_rules=stub_constants,
         )
         return dto.BibDTO(
             bib=record,
