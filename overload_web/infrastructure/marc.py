@@ -10,14 +10,14 @@ from typing import Any, BinaryIO
 from bookops_marc import Bib, SierraBibReader
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain import protocols
 from overload_web.domain_models import bibs
+from overload_web.domain_protocols import marc_protocols
 from overload_web.infrastructure import dto
 
 logger = logging.getLogger(__name__)
 
 
-class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
+class BookopsMarcParser(marc_protocols.MarcParser[dto.BibDTO]):
     """Parses, serializes and updates MARC records based on domain objects."""
 
     def __init__(self, library: str, rules: dict[str, Any]) -> None:
@@ -233,7 +233,7 @@ class BookopsMarcParser(protocols.bibs.MarcParser[dto.BibDTO]):
         return record
 
 
-class BookopsMarcUpdater(protocols.bibs.MarcUpdater[dto.BibDTO]):
+class BookopsMarcUpdater(marc_protocols.MarcUpdater[dto.BibDTO]):
     """Update MARC records based on attributes of domain objects."""
 
     def __init__(self, order_mapping: dict[str, dict[str, str]]) -> None:

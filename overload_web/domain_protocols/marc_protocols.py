@@ -26,38 +26,11 @@ import logging
 from typing import TYPE_CHECKING, BinaryIO, Protocol, TypeVar, runtime_checkable
 
 if TYPE_CHECKING:  # pragma: no cover
-    from overload_web.domain_models import bibs, responses
+    from overload_web.domain_models import bibs
 
 T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
-
-
-@runtime_checkable
-class BibFetcher(Protocol):
-    """
-    Protocol for a service that can fetch bib records from Sierra based on an
-    identifier.
-
-    This abstraction allows the `BibMatcher` to remain decoupled from any specific
-    data source or API. Implementations can include REST APIs, BPL's Solr service,
-    NYPL's Platform serivce, or other systems.
-    """
-
-    def get_bibs_by_id(
-        self, value: str | int, key: str
-    ) -> list[responses.FetcherResponseDict]: ...  # pragma: no branch
-
-    """
-    Retrieve candidate bib records that match a key-value identifier.
-
-    Args:
-        value: the identifier value to search by (eg. "9781234567890").
-        key: the field name corresponding to the identifier (eg. "isbn").
-
-    Returns:
-        a list of bib-like dicts representing candidate matches.
-    """
 
 
 @runtime_checkable

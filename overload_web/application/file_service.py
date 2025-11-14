@@ -11,17 +11,15 @@ from typing import TYPE_CHECKING
 from overload_web.infrastructure import local_io, sftp
 
 if TYPE_CHECKING:  # pragma: no cover
-    from overload_web.domain import protocols
     from overload_web.domain_models import files
+    from overload_web.domain_protocols import file_io
 logger = logging.getLogger(__name__)
 
 
 class FileTransferService:
     """Handles file transfer operations through `FileLoader` and `FileWriter`."""
 
-    def __init__(
-        self, loader: protocols.file_io.FileLoader, writer: protocols.file_io.FileWriter
-    ):
+    def __init__(self, loader: file_io.FileLoader, writer: file_io.FileWriter):
         """
         Initialize `FileTransferService` obj.
 

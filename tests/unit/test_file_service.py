@@ -1,14 +1,14 @@
 from overload_web.application import file_service
-from overload_web.domain import protocols
 from overload_web.domain_models import files
+from overload_web.domain_protocols import file_io
 
 
-class StubFileLoader(protocols.file_io.FileLoader):
+class StubFileLoader(file_io.FileLoader):
     def __init__(self) -> None:
         pass
 
 
-class StubFileWriter(protocols.file_io.FileWriter):
+class StubFileWriter(file_io.FileWriter):
     def __init__(self) -> None:
         pass
 

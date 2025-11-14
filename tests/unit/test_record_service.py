@@ -4,15 +4,16 @@ import json
 import pytest
 
 from overload_web.application import record_service
-from overload_web.domain import protocols
+from overload_web.domain_protocols import repositories
+from overload_web.domain_services import bib_matcher
 
 
-class MockRepository(protocols.repositories.SqlRepositoryProtocol):
+class MockRepository(repositories.SqlRepositoryProtocol):
     def __init__(self, templates):
         self.templates = templates
 
 
-class StubFetcher(protocols.bibs.BibFetcher):
+class StubFetcher(bib_matcher.BibFetcher):
     def __init__(self) -> None:
         self.session = None
 
