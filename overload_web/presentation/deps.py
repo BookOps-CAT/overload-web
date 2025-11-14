@@ -10,10 +10,8 @@ from fastapi import APIRouter, Depends, Form, UploadFile
 from sqlmodel import Session, SQLModel, create_engine
 from starlette.datastructures import UploadFile as StarlettUploadFile
 
-from overload_web.bib_records.application import record_service
-from overload_web.files.application import file_app_service
+from overload_web.application import file_service, record_service, template_service
 from overload_web.files.infrastructure import file_models
-from overload_web.order_templates.application import template_service
 from overload_web.presentation import config, schemas
 
 logger = logging.getLogger(__name__)
@@ -71,9 +69,7 @@ def normalize_files(
         )
     if remote_files and vendor:
         vendor_dir = os.environ[f"{vendor.upper()}_SRC"]
-        service = file_app_service.FileTransferService.create_remote_file_service(
-            vendor
-        )
+        service = file_service.FileTransferService.create_remote_file_service(vendor)
         loaded_files = [
             service.loader.load(name=f, dir=vendor_dir) for f in remote_files
         ]
@@ -122,14 +118,14 @@ def from_form(model_class: type[T]):
     return func
 
 
-def local_file_handler() -> Generator[file_app_service.FileTransferService, None, None]:
-    yield file_app_service.FileTransferService.create_local_file_service()
+def local_file_handler() -> Generator[file_service.FileTransferService, None, None]:
+    yield file_service.FileTransferService.create_local_file_service()
 
 
 def remote_file_handler(
     vendor: str,
-) -> Generator[file_app_service.FileTransferService, None, None]:
-    yield file_app_service.FileTransferService.create_remote_file_service(vendor=vendor)
+) -> Generator[file_service.FileTransferService, None, None]:
+    yield file_service.FileTransferService.create_remote_file_service(vendor=vendor)
 
 
 def template_handler(

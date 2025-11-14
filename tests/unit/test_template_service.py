@@ -1,6 +1,6 @@
 import pytest
 
-from overload_web.order_templates.application import template_service
+from overload_web.application import template_service
 
 
 class TestTemplateService:

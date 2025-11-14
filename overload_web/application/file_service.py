@@ -17,9 +17,7 @@ class FileTransferService:
     """Handles file transfer operations through `FileLoader` and `FileWriter`."""
 
     def __init__(
-        self,
-        loader: file_protocols.FileLoader,
-        writer: file_protocols.FileWriter,
+        self, loader: file_protocols.FileLoader, writer: file_protocols.FileWriter
     ):
         """
         Initialize `FileTransferService` obj.
@@ -79,8 +77,7 @@ class FileTransferService:
     def create_local_file_service(cls) -> FileTransferService:
         """Create a `FileTransferService object for local file handling."""
         return FileTransferService(
-            loader=local_io.LocalFileLoader(),
-            writer=local_io.LocalFileWriter(),
+            loader=local_io.LocalFileLoader(), writer=local_io.LocalFileWriter()
         )
 
     @classmethod

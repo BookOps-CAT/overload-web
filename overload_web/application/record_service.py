@@ -72,7 +72,7 @@ class RecordProcessingService:
             records:
                 A list of parsed bibliographic records as `BibDTO` objects.
             matchpoints:
-
+                A dictionary containing matchpoints to be used in matching records.
         Returns:
             A list of matched records as `BibDTO` objects
         """

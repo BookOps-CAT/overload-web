@@ -3,14 +3,8 @@ import json
 
 import pytest
 
-from overload_web.bib_records.application import record_service
+from overload_web.application import record_service
 from overload_web.bib_records.domain import bib_matcher
-from overload_web.order_templates.domain import sql_protocol
-
-
-class MockRepository(sql_protocol.SqlRepositoryProtocol):
-    def __init__(self, templates):
-        self.templates = templates
 
 
 class StubFetcher(bib_matcher.BibFetcher):
