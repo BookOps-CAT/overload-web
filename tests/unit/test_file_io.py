@@ -4,8 +4,8 @@ import pytest
 import yaml
 from file_retriever import Client
 
-from overload_web.domain_models import files
-from overload_web.infrastructure import local_io, sftp
+from overload_web.files.domain import vendor_files
+from overload_web.files.infrastructure import local_io, sftp
 
 
 @pytest.mark.livetest
@@ -38,7 +38,7 @@ class TestLiveLocalFiles:
 
     def test_write(self, setup_dirs):
         writer = local_io.LocalFileWriter()
-        file = files.VendorFile(
+        file = vendor_files.VendorFile(
             id="foo.mrc", file_name="foo.mrc", content=b"Test content"
         )
         new_file = writer.write(file=file, dir=self.test_dir)
@@ -81,7 +81,7 @@ class TestSFTPFiles:
     def test_write(self, live_test_client):
         writer = sftp.SFTPFileWriter(client=live_test_client)
         outfile = writer.write(
-            file=files.VendorFile(
+            file=vendor_files.VendorFile(
                 id="test_bib.mrc",
                 file_name="test_bib.mrc",
                 content=b"02741pam  a2200445 a 4500",

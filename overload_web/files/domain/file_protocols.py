@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:  # pragma: no cover
-    from overload_web.domain_models import files
+    from overload_web.files.domain import vendor_files
 
 
 @runtime_checkable
@@ -33,7 +33,9 @@ class FileLoader(Protocol):
         a list of file names as strings
     """
 
-    def load(self, name: str, dir: str) -> files.VendorFile: ...  # pragma: no branch
+    def load(
+        self, name: str, dir: str
+    ) -> vendor_files.VendorFile: ...  # pragma: no branch
 
     """
     Load the content of a specific file.
@@ -55,7 +57,9 @@ class FileWriter(Protocol):
     Implementations may interact with an FTP/SFTP server or a local file directory.
     """
 
-    def write(self, file: files.VendorFile, dir: str) -> str: ...  # pragma: no branch
+    def write(
+        self, file: vendor_files.VendorFile, dir: str
+    ) -> str: ...  # pragma: no branch
 
     """
     Write a content to a specific file.

@@ -1,14 +1,13 @@
-from overload_web.application import file_service
-from overload_web.domain_models import files
-from overload_web.domain_protocols import file_io
+from overload_web.files.application import file_app_service
+from overload_web.files.domain import file_protocols, vendor_files
 
 
-class StubFileLoader(file_io.FileLoader):
+class StubFileLoader(file_protocols.FileLoader):
     def __init__(self) -> None:
         pass
 
 
-class StubFileWriter(file_io.FileWriter):
+class StubFileWriter(file_protocols.FileWriter):
     def __init__(self) -> None:
         pass
 
@@ -20,28 +19,28 @@ class FakeFileLoader(StubFileLoader):
     def list(self, dir: str) -> list[str]:
         return ["foo.mrc"]
 
-    def load(self, name: str, dir: str) -> files.VendorFile:
-        return files.VendorFile.create(file_name=name, content=b"")
+    def load(self, name: str, dir: str) -> vendor_files.VendorFile:
+        return vendor_files.VendorFile.create(file_name=name, content=b"")
 
 
 class FakeFileWriter(StubFileWriter):
     def __init__(self) -> None:
         pass
 
-    def write(self, file: files.VendorFile, dir: str) -> str:
+    def write(self, file: vendor_files.VendorFile, dir: str) -> str:
         return file.file_name
 
 
 class TestFileTransferServices:
-    service = file_service.FileTransferService(
+    service = file_app_service.FileTransferService(
         loader=FakeFileLoader(), writer=FakeFileWriter()
     )
 
     def test_service_protocols(self):
-        service = file_service.FileTransferService(
+        service = file_app_service.FileTransferService(
             loader=StubFileLoader(), writer=StubFileWriter()
         )
-        vendor_file = files.VendorFile.create(file_name="foo.mrc", content=b"")
+        vendor_file = vendor_files.VendorFile.create(file_name="foo.mrc", content=b"")
         assert service.load_file(name="foo.mrc", dir="foo") is None
         assert service.list_files(dir="foo") is None
         assert service.write_marc_file(file=vendor_file, dir="bar") is None
@@ -59,7 +58,7 @@ class TestFileTransferServices:
 
     def test_write_marc_file(self):
         out_file = self.service.write_marc_file(
-            file=files.VendorFile.create(file_name="foo.mrc", content=b""),
+            file=vendor_files.VendorFile.create(file_name="foo.mrc", content=b""),
             dir="bar",
         )
         assert out_file == "foo.mrc"

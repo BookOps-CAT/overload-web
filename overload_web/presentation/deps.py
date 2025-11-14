@@ -10,7 +10,9 @@ from fastapi import APIRouter, Depends, Form, UploadFile
 from sqlmodel import Session, SQLModel, create_engine
 from starlette.datastructures import UploadFile as StarlettUploadFile
 
-from overload_web.application import file_service, record_service, template_service
+from overload_web.application import record_service, template_service
+from overload_web.files.application import file_app_service
+from overload_web.files.infrastructure import file_models
 from overload_web.infrastructure import schemas
 from overload_web.presentation import config
 
@@ -48,7 +50,7 @@ def get_session() -> Generator[Session, None, None]:
 def normalize_files(
     files: Annotated[list[UploadFile] | list[str], Form(...)],
     vendor: Annotated[str, Form(...)],
-) -> list[schemas.VendorFileModel]:
+) -> list[file_models.VendorFileModel]:
     remote_files = []
     local_files = []
     for file in files:
@@ -57,11 +59,11 @@ def normalize_files(
         else:
             remote_files.append(file)
 
-    file_models = []
+    file_list = []
     if local_files:
-        file_models.extend(
+        file_list.extend(
             [
-                schemas.VendorFileModel.create(
+                file_models.VendorFileModel.create(
                     file_name=f.filename, content=f.file.read()
                 )
                 for f in local_files
@@ -69,14 +71,16 @@ def normalize_files(
         )
     if remote_files and vendor:
         vendor_dir = os.environ[f"{vendor.upper()}_SRC"]
-        service = file_service.FileTransferService.create_remote_file_service(vendor)
+        service = file_app_service.FileTransferService.create_remote_file_service(
+            vendor
+        )
         loaded_files = [
             service.loader.load(name=f, dir=vendor_dir) for f in remote_files
         ]
-        file_models.extend(
-            [schemas.VendorFileModel(**f.__dict__) for f in loaded_files]
+        file_list.extend(
+            [file_models.VendorFileModel(**f.__dict__) for f in loaded_files]
         )
-    return file_models
+    return file_list
 
 
 def record_processing_service(
@@ -118,14 +122,14 @@ def from_form(model_class: type[T]):
     return func
 
 
-def local_file_handler() -> Generator[file_service.FileTransferService, None, None]:
-    yield file_service.FileTransferService.create_local_file_service()
+def local_file_handler() -> Generator[file_app_service.FileTransferService, None, None]:
+    yield file_app_service.FileTransferService.create_local_file_service()
 
 
 def remote_file_handler(
     vendor: str,
-) -> Generator[file_service.FileTransferService, None, None]:
-    yield file_service.FileTransferService.create_remote_file_service(vendor=vendor)
+) -> Generator[file_app_service.FileTransferService, None, None]:
+    yield file_app_service.FileTransferService.create_remote_file_service(vendor=vendor)
 
 
 def template_handler(

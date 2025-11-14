@@ -1,6 +1,7 @@
 import pytest
 
-from overload_web.domain_models import bibs, files, responses
+from overload_web.domain_models import bibs, responses
+from overload_web.files.domain import vendor_files
 
 
 class TestBibId:
@@ -114,24 +115,24 @@ class TestOrderId:
 
 class TestVendorFile:
     def test_VendorFile(self):
-        file = files.VendorFile(id="foo", content=b"", file_name="bar.mrc")
+        file = vendor_files.VendorFile(id="foo", content=b"", file_name="bar.mrc")
         assert file.id == "foo"
         assert hasattr(file.content, "hex")
         assert file.file_name == "bar.mrc"
 
     def test_VendorFile_create(self):
-        file = files.VendorFile.create(content=b"", file_name="bar.mrc")
-        assert isinstance(file.id, files.VendorFileId)
+        file = vendor_files.VendorFile.create(content=b"", file_name="bar.mrc")
+        assert isinstance(file.id, vendor_files.VendorFileId)
         assert repr(file.id) == f"VendorFileId(value='{str(file.id)}')"
 
     def test_VendorFileId_new(self):
-        id = files.VendorFileId.new()
-        assert isinstance(id, files.VendorFileId)
+        id = vendor_files.VendorFileId.new()
+        assert isinstance(id, vendor_files.VendorFileId)
         assert repr(id) == f"VendorFileId(value='{str(id)}')"
 
     def test_VendorFileId_invalid(self):
         with pytest.raises(ValueError) as exc:
-            files.VendorFileId(value=123)
+            vendor_files.VendorFileId(value=123)
         assert str(exc.value) == "VendorFileId must be a non-empty string."
 
 

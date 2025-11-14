@@ -6,20 +6,19 @@ Uses `FileLoader` and `FileWriter` domain protocols.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
 
-from overload_web.infrastructure import local_io, sftp
+from overload_web.files.domain import file_protocols, vendor_files
+from overload_web.files.infrastructure import local_io, sftp
 
-if TYPE_CHECKING:  # pragma: no cover
-    from overload_web.domain_models import files
-    from overload_web.domain_protocols import file_io
 logger = logging.getLogger(__name__)
 
 
 class FileTransferService:
     """Handles file transfer operations through `FileLoader` and `FileWriter`."""
 
-    def __init__(self, loader: file_io.FileLoader, writer: file_io.FileWriter):
+    def __init__(
+        self, loader: file_protocols.FileLoader, writer: file_protocols.FileWriter
+    ):
         """
         Initialize `FileTransferService` obj.
 
@@ -44,7 +43,7 @@ class FileTransferService:
         logger.info(f"Files in {dir}: {files}")
         return files
 
-    def load_file(self, name: str, dir: str) -> files.VendorFile:
+    def load_file(self, name: str, dir: str) -> vendor_files.VendorFile:
         """
         Load a file from a directory.
 
@@ -59,7 +58,7 @@ class FileTransferService:
         logger.info(f"File loaded: {name}")
         return file
 
-    def write_marc_file(self, file: files.VendorFile, dir: str) -> str:
+    def write_marc_file(self, file: vendor_files.VendorFile, dir: str) -> str:
         """
         Write a file to a directory.
 

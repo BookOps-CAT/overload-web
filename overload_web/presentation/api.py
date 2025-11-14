@@ -12,6 +12,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
+from overload_web.files.infrastructure import file_models
 from overload_web.infrastructure import schemas, tables
 from overload_web.presentation import config, deps
 
@@ -119,7 +120,7 @@ def list_remote_files(
 def process_vendor_file(
     request: Request,
     service: Annotated[Any, Depends(deps.record_processing_service)],
-    files: Annotated[list[schemas.VendorFileModel], Depends(deps.normalize_files)],
+    files: Annotated[list[file_models.VendorFileModel], Depends(deps.normalize_files)],
     template_input: Annotated[
         schemas.OrderTemplateSchema,
         Depends(deps.from_form(schemas.OrderTemplateSchema)),
@@ -145,7 +146,7 @@ def process_vendor_file(
 
 @api_router.post("/write-local")
 def write_local_file(
-    vendor_file: schemas.VendorFileModel,
+    vendor_file: file_models.VendorFileModel,
     dir: str,
     service: Annotated[Any, Depends(deps.local_file_handler)],
 ) -> JSONResponse:
@@ -158,7 +159,7 @@ def write_local_file(
 
 @api_router.post("/write-remote")
 def write_remote_file(
-    vendor_file: schemas.VendorFileModel,
+    vendor_file: file_models.VendorFileModel,
     dir: str,
     vendor: str,
     service: Annotated[Any, Depends(deps.remote_file_handler)],
