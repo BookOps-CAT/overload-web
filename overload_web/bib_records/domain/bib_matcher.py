@@ -16,9 +16,9 @@ Classes:
 from __future__ import annotations
 
 import logging
-from typing import BinaryIO, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
-from overload_web.bib_records.domain import bibs, marc_protocols, responses
+from overload_web.bib_records.domain import bibs, responses
 
 logger = logging.getLogger(__name__)
 
@@ -48,32 +48,6 @@ class BibFetcher(Protocol):
     Returns:
         a list of bib-like dicts representing candidate matches.
     """
-
-
-class BibParser:
-    """Domain service for parsing bib records from MARC data."""
-
-    def __init(self, parser: marc_protocols.MarcParser) -> None:
-        """
-        Initialize the bib parser service.
-
-        Args:
-            parser: An injected `MarcParser` that handles MARC parsing.
-        """
-        self.parser = parser
-
-    def parse(self, data: bytes | BinaryIO, library: str) -> list:
-        """
-        Parse MARC data into a list of `BibDTO` objects.
-
-        Args:
-            data: Binary MARC data as a `BinaryIO` or `bytes` object.
-            library: The library code for which to parse the records.
-
-        Returns:
-            A list of parsed bibliographic records as `BibDTO` objects.
-        """
-        return self.parser.parse(data=data)
 
 
 class BibMatcher:
