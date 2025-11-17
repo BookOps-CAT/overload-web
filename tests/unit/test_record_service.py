@@ -84,7 +84,7 @@ class TestRecordProcessingService:
 
     @pytest.mark.parametrize("record_type", ["full", "order_level"])
     def test_parse(self, stub_service, stub_bib_dto, caplog):
-        records = stub_service.parse(stub_bib_dto.bib.as_marc())
+        records = stub_service.parser.parse(stub_bib_dto.bib.as_marc())
         assert len(records) == 1
         assert str(records[0].bib.library) == str(stub_service.library)
         assert records[0].bib.isbn == "9781234567890"
@@ -94,9 +94,9 @@ class TestRecordProcessingService:
         assert "Vendor record parsed: " in caplog.records[0].msg
 
     @pytest.mark.parametrize("record_type", ["full"])
-    def test_process_records_full(self, stub_service, stub_bib_dto, template_data):
+    def test_match_and_attach_full(self, stub_service, stub_bib_dto, template_data):
         original_orders = copy.deepcopy(stub_bib_dto.domain_bib.orders)
-        matched_bibs = stub_service.process_records(
+        matched_bibs = stub_service.matcher.match_and_attach(
             [stub_bib_dto],
             template_data=template_data,
             matchpoints={"primary_matchpoint": "isbn"},
@@ -107,11 +107,11 @@ class TestRecordProcessingService:
         assert [i.order_code_1 for i in matched_bibs[0].domain_bib.orders] == ["j"]
 
     @pytest.mark.parametrize("record_type", ["order_level"])
-    def test_process_records_order_level(
+    def test_match_and_attach_order_level(
         self, stub_service, stub_bib_dto, template_data
     ):
         original_orders = copy.deepcopy(stub_bib_dto.domain_bib.orders)
-        matched_bibs = stub_service.process_records(
+        matched_bibs = stub_service.matcher.match_and_attach(
             [stub_bib_dto],
             template_data=template_data,
             matchpoints={"primary_matchpoint": "isbn"},
@@ -122,15 +122,15 @@ class TestRecordProcessingService:
         assert [i.order_code_1 for i in matched_bibs[0].domain_bib.orders] == ["b"]
 
     @pytest.mark.parametrize("record_type", ["full", "order_level"])
-    def test_process_records_no_matches(self, stub_service_no_matches, stub_bib_dto):
-        matched_bibs = stub_service_no_matches.process_records(
+    def test_match_and_attach_no_matches(self, stub_service_no_matches, stub_bib_dto):
+        matched_bibs = stub_service_no_matches.matcher.match_and_attach(
             [stub_bib_dto], template_data={}, matchpoints={}
         )
         assert len(matched_bibs) == 1
         assert matched_bibs[0].domain_bib.bib_id is None
 
     @pytest.mark.parametrize("record_type", ["full", "order_level"])
-    def test_process_records_vendor_updates(self, stub_service, make_bib_dto):
+    def test_match_and_attach_vendor_updates(self, stub_service, make_bib_dto):
         dto = make_bib_dto(
             {
                 "020": {"code": "a", "value": "9781234567890"},
@@ -139,7 +139,7 @@ class TestRecordProcessingService:
             },
         )
         original_bib = copy.deepcopy(dto.bib)
-        matched_bibs = stub_service.process_records(
+        matched_bibs = stub_service.matcher.match_and_attach(
             [dto], template_data={}, matchpoints={}
         )
         assert len(matched_bibs) == 1
@@ -148,22 +148,22 @@ class TestRecordProcessingService:
         assert len(matched_bibs[0].bib.get_fields("949")) == 2
 
     @pytest.mark.parametrize("record_type", ["full"])
-    def test_process_records_alternate_tags(self, stub_service, make_bib_dto):
+    def test_match_and_attach_alternate_tags(self, stub_service, make_bib_dto):
         dto = make_bib_dto(
             {
                 "020": {"code": "a", "value": "9781234567890"},
                 "947": {"code": "a", "value": "B&amp;T SERIES"},
             },
         )
-        matched_bibs = stub_service.process_records(
+        matched_bibs = stub_service.matcher.match_and_attach(
             [dto], template_data={}, matchpoints={}
         )
         assert len(matched_bibs) == 1
         assert str(matched_bibs[0].domain_bib.bib_id) == "123"
 
     @pytest.mark.parametrize("record_type", ["full", "order_level"])
-    def test_write_marc_binary(self, stub_bib_dto, stub_service, caplog):
-        marc_binary = stub_service.write_marc_binary(records=[stub_bib_dto])
+    def test_serialize(self, stub_bib_dto, stub_service, caplog):
+        marc_binary = stub_service.parser.serialize(records=[stub_bib_dto])
         assert marc_binary.read()[0:2] == b"00"
         assert len(caplog.records) == 1
         assert "Writing MARC binary for record: " in caplog.records[0].msg
