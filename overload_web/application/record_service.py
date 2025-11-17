@@ -47,7 +47,11 @@ class RecordProcessingService:
         self.record_type = bibs.RecordType(record_type)
         self.parser = marc.BookopsMarcParser(library=self.library, rules=rules)
         self.matcher = bib_matcher.BibMatcher(
-            sierra.SierraBibFetcher(self.library), bibs.RecordType(record_type)
+            fetcher=sierra.SierraBibFetcher(self.library),
+            record_type=bibs.RecordType(record_type),
+            attacher=marc.BookopsMarcUpdater(
+                rules=rules["order_subfield_mapping"], record_type=self.record_type
+            ),
         )
         self.updater = marc.BookopsMarcUpdater(
             rules=rules["order_subfield_mapping"], record_type=self.record_type
@@ -85,7 +89,7 @@ class RecordProcessingService:
         for record in records:
             if not matchpoints:
                 matchpoints = record.vendor_info.matchpoints
-            bib_id = self.matcher.match_bib(record.domain_bib, matchpoints)
+            bib_id = self.matcher.match_bib(record, matchpoints)
             record.domain_bib.bib_id = bib_id
             out.append(record)
         return out
@@ -136,18 +140,10 @@ class RecordProcessingService:
         Returns:
             A list of processed and updated records as `BibDTO` objects
         """
-        out = []
-        for record in records:
-            if not matchpoints:
-                matchpoints = record.vendor_info.matchpoints
-            bib_id = self.matcher.match_bib(record.domain_bib, matchpoints)
-            record.domain_bib.bib_id = bib_id
-            if self.record_type == bibs.RecordType.ORDER_LEVEL:
-                record.domain_bib.apply_order_template(template_data=template_data)
-                rec = self.updater.update_order(record=record)
-            rec = self.updater.update_bib_data(record=record)
-            out.append(rec)
-        return out
+
+        return self.matcher.match_and_attach(
+            records, matchpoints=matchpoints, template_data=template_data
+        )
 
     def write_marc_binary(self, records: list[dto.BibDTO]) -> BinaryIO:
         """
@@ -160,3 +156,30 @@ class RecordProcessingService:
             MARC data as a `BinaryIO` object
         """
         return self.parser.serialize(records=records)
+
+    def process_vendor_file(
+        self,
+        data: BinaryIO | bytes,
+        template_data: dict[str, Any],
+        matchpoints: dict[str, Any],
+    ) -> BinaryIO:
+        """
+        Parse MARC records, match them against Sierra, update the records with required
+        fields and write them to MARC binary.
+
+        Args:
+            data: Binary MARC data as a `BinaryIO` or `bytes` object.
+            matchpoints:
+                A dictionary containing matchpoints to be used in matching records.
+            template_data:
+                Order template data as a dictionary.
+
+        Returns:
+            MARC data as a `BinaryIO` object
+        """
+        parsed_records = self.parser.parse(data=data)
+        matched_records = self.matcher.match_and_attach(
+            parsed_records, matchpoints=matchpoints, template_data=template_data
+        )
+        output = self.parser.serialize(matched_records)
+        return output
