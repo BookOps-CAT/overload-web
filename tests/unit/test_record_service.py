@@ -86,9 +86,9 @@ class TestRecordProcessingService:
     def test_parse(self, stub_service, stub_bib_dto, caplog):
         records = stub_service.parser.parse(stub_bib_dto.bib.as_marc())
         assert len(records) == 1
-        assert str(records[0].bib.library) == str(stub_service.library)
+        assert str(records[0].bib.library) == str(stub_service.parser.library)
         assert records[0].bib.isbn == "9781234567890"
-        assert str(records[0].domain_bib.library) == str(stub_service.library)
+        assert str(records[0].domain_bib.library) == str(stub_service.parser.library)
         assert records[0].domain_bib.barcodes == ["333331234567890"]
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg

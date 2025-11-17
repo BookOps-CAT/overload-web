@@ -42,19 +42,19 @@ class RecordProcessingService:
                 A dictionary containing the marc mapping and vendor rules to be used
                 when processing records.
         """
-        self.library = library
         self.collection = collection
-        self.record_type = bibs.RecordType(record_type)
-        self.parser = marc.BookopsMarcParser(library=self.library, rules=rules)
+        self.parser = marc.BookopsMarcParser(library=library, rules=rules)
         self.matcher = bib_matcher.BibMatcher(
-            fetcher=sierra.SierraBibFetcher(self.library),
+            fetcher=sierra.SierraBibFetcher(library),
             record_type=bibs.RecordType(record_type),
             attacher=marc.BookopsMarcUpdater(
-                rules=rules["order_subfield_mapping"], record_type=self.record_type
+                rules=rules["order_subfield_mapping"],
+                record_type=bibs.RecordType(record_type),
             ),
         )
         self.updater = marc.BookopsMarcUpdater(
-            rules=rules["order_subfield_mapping"], record_type=self.record_type
+            rules=rules["order_subfield_mapping"],
+            record_type=bibs.RecordType(record_type),
         )
 
     def process_vendor_file(
