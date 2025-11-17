@@ -247,6 +247,18 @@ class VendorInfo:
 
 
 class ReviewedResults:
+    """
+    Compare a `DomainBib` to a list of candidate bibs and select the best match.
+
+    Args:
+        input: the bib record to match as a `DomainBib`.
+        results: a list of candidate bib records as dicts
+        record_type: the type of record as an enum (either `FULL` or `ORDER_LEVEL`)
+
+    Returns:
+        The results as a `bibs.ReviewedResults` object.
+    """
+
     def __init__(
         self,
         input: DomainBib,

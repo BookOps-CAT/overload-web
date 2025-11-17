@@ -86,44 +86,20 @@ class BibMatcher:
     records.
     """
 
-    def __init__(self, fetcher: BibFetcher):
+    def __init__(self, fetcher: BibFetcher, record_type: bibs.RecordType) -> None:
         """
         Initialize the match service with a fetcher and optional matchpoints.
 
         Args:
             fetcher: An injected `BibFetcher` that provides candidate bibs.
+            record_type: the type of record as an enum (either `FULL` or `ORDER_LEVEL`)
         """
         self.fetcher = fetcher
-
-    def _select_best_match(
-        self,
-        bib_to_match: bibs.DomainBib,
-        candidates: list[responses.FetcherResponseDict],
-        record_type: bibs.RecordType,
-    ) -> bibs.ReviewedResults:
-        """
-        Compare a `DomainBib` to a list of candidate bibs and select the best match.
-
-        Args:
-            bib_to_match: the bib record to match as a `DomainBib`.
-            candidates: a list of candidate bib records as dicts
-            matchpoints: a dictionary containing matchpoints
-            record_type: the type of record as an enum (either `FULL` or `ORDER_LEVEL`)
-
-        Returns:
-            The results as a `bibs.ReviewedResults` object.
-        """
-        reviewed_results = bibs.ReviewedResults(
-            input=bib_to_match, record_type=record_type, results=candidates
-        )
-        return reviewed_results
+        self.record_type = record_type
 
     def match_bib(
-        self,
-        bib: bibs.DomainBib,
-        matchpoints: dict[str, str],
-        record_type: bibs.RecordType,
-    ) -> bibs.DomainBib:
+        self, bib: bibs.DomainBib, matchpoints: dict[str, str]
+    ) -> bibs.BibId | None:
         """
         Attempt to find the best-match in Sierra for a given `DomainBib`.
 
@@ -144,8 +120,8 @@ class BibMatcher:
                 continue
             candidates = self.fetcher.get_bibs_by_id(value=value, key=key)
             if candidates:
-                bib.bib_id = self._select_best_match(
-                    bib_to_match=bib, candidates=candidates, record_type=record_type
-                ).target_bib_id
-                return bib
-        return bib
+                best_match = bibs.ReviewedResults(
+                    input=bib, record_type=self.record_type, results=candidates
+                )
+                return best_match.target_bib_id
+        return bib.bib_id

@@ -46,7 +46,9 @@ class RecordProcessingService:
         self.collection = collection
         self.record_type = bibs.RecordType(record_type)
         self.parser = marc.BookopsMarcParser(library=self.library, rules=rules)
-        self.matcher = bib_matcher.BibMatcher(sierra.SierraBibFetcher(self.library))
+        self.matcher = bib_matcher.BibMatcher(
+            sierra.SierraBibFetcher(self.library), bibs.RecordType(record_type)
+        )
 
     def parse(self, data: BinaryIO | bytes) -> list[dto.BibDTO]:
         """
@@ -80,9 +82,8 @@ class RecordProcessingService:
         for record in records:
             if not matchpoints:
                 matchpoints = record.vendor_info.matchpoints
-            record.domain_bib = self.matcher.match_bib(
-                record.domain_bib, matchpoints, self.record_type
-            )
+            bib_id = self.matcher.match_bib(record.domain_bib, matchpoints)
+            record.domain_bib.bib_id = bib_id
             out.append(record)
         return out
 
@@ -138,9 +139,8 @@ class RecordProcessingService:
         for record in records:
             if not matchpoints:
                 matchpoints = record.vendor_info.matchpoints
-            record.domain_bib = self.matcher.match_bib(
-                record.domain_bib, matchpoints, self.record_type
-            )
+            bib_id = self.matcher.match_bib(record.domain_bib, matchpoints)
+            record.domain_bib.bib_id = bib_id
             if self.record_type == bibs.RecordType.ORDER_LEVEL:
                 record.domain_bib.apply_order_template(template_data=template_data)
                 rec = self.parser.update_order_record(record=record)
