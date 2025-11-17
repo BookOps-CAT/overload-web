@@ -1,12 +1,15 @@
 import pytest
 
 from overload_web.application import template_service
+from overload_web.order_templates.infrastructure import repository
 
 
 class TestTemplateService:
     @pytest.fixture
     def service(self, test_sql_session):
-        return template_service.OrderTemplateService(session=test_sql_session)
+        return template_service.OrderTemplateService(
+            repo=repository.SqlModelRepository(session=test_sql_session)
+        )
 
     def test_get_template(self, service):
         template_obj = service.get_template(template_id="foo")

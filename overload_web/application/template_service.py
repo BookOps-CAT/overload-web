@@ -5,7 +5,8 @@ from __future__ import annotations
 import logging
 from typing import Sequence
 
-from overload_web.order_templates.infrastructure import repository, tables
+from overload_web.order_templates.domain import sql_protocol
+from overload_web.order_templates.infrastructure import tables
 
 logger = logging.getLogger(__name__)
 
@@ -13,15 +14,14 @@ logger = logging.getLogger(__name__)
 class OrderTemplateService:
     """Handles order template retrieval and persistence."""
 
-    def __init__(self, session: repository.Session) -> None:
+    def __init__(self, repo: sql_protocol.SqlRepositoryProtocol) -> None:
         """
-        Initialize `OrderTemplateService` with a `sqlmodel.Session` object.
+        Initialize `OrderTemplateService`.
 
         Args:
-            session: a `sqlmodel.Session` object.
+            repo: a `sql_protocol.SqlRepositoryProtocol` object.
         """
-        self.session = session
-        self.repo = repository.SqlModelRepository(session=session)
+        self.repo = repo
 
     def get_template(self, template_id: str) -> tables.OrderTemplate | None:
         """
@@ -66,8 +66,8 @@ class OrderTemplateService:
         """
         valid_obj = tables.OrderTemplate.model_validate(obj)
         self.repo.save(obj=valid_obj)
-        self.session.commit()
-        self.session.refresh(valid_obj)
+        self.repo.session.commit()
+        self.repo.session.refresh(valid_obj)
 
         return valid_obj
 
@@ -89,6 +89,6 @@ class OrderTemplateService:
         patch_data = obj.model_dump(exclude_unset=True)
         updated_template = self.repo.update(id=template_id, data=patch_data)
         if updated_template:
-            self.session.commit()
-            self.session.refresh(updated_template)
+            self.repo.session.commit()
+            self.repo.session.refresh(updated_template)
         return updated_template

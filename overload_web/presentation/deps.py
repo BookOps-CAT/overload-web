@@ -12,6 +12,7 @@ from starlette.datastructures import UploadFile as StarlettUploadFile
 
 from overload_web.application import file_service, record_service, template_service
 from overload_web.files.infrastructure import file_models
+from overload_web.order_templates.infrastructure import repository
 from overload_web.presentation import config, schemas
 
 logger = logging.getLogger(__name__)
@@ -131,4 +132,6 @@ def remote_file_handler(
 def template_handler(
     session: Annotated[Any, Depends(get_session)],
 ) -> Generator[template_service.OrderTemplateService, None, None]:
-    yield template_service.OrderTemplateService(session=session)
+    yield template_service.OrderTemplateService(
+        repo=repository.SqlModelRepository(session=session)
+    )
