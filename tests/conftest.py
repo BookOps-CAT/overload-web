@@ -13,7 +13,7 @@ from pymarc import Field, Indicators, Subfield
 from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.bib_records.domain import responses
-from overload_web.bib_records.infrastructure import dto, marc, sierra
+from overload_web.bib_records.infrastructure import marc, sierra
 from overload_web.order_templates.infrastructure import tables
 
 
@@ -377,7 +377,7 @@ def make_bib_dto(stub_bib, stub_constants, library) -> Callable:
                 )
             )
         parser = marc.BookopsMarcParser(library=library, rules=stub_constants)
-        return dto.BibDTO(
+        return marc.BibDTO(
             bib=record,
             domain_bib=parser._map_domain_bib_from_marc(record),
             vendor_info=parser.identify_vendor(record=record),

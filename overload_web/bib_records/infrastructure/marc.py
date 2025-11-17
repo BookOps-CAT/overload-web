@@ -11,9 +11,30 @@ from bookops_marc import Bib, SierraBibReader
 from pymarc import Field, Indicators, Subfield
 
 from overload_web.bib_records.domain import bibs
-from overload_web.bib_records.infrastructure import dto
 
 logger = logging.getLogger(__name__)
+
+
+class BibDTO:
+    """
+    Data Transfer Object for MARC records.
+
+    This class is responsible binding a MARC record and its associated
+    domain bib.
+
+    Attributes:
+        bib: The original MARC record as a `bookops_marc.Bib` object.
+        domain_bib: The `DomainBib` object associated with the MARC record.
+        vendor_info: The `VendorInfo` object associated with the MARC record.
+
+    """
+
+    def __init__(
+        self, bib: Bib, domain_bib: bibs.DomainBib, vendor_info: bibs.VendorInfo
+    ):
+        self.bib = bib
+        self.domain_bib = domain_bib
+        self.vendor_info = vendor_info
 
 
 class BookopsMarcParser:
@@ -117,7 +138,7 @@ class BookopsMarcParser:
             matchpoints=vendor_info["UNKNOWN"]["matchpoints"],
         )
 
-    def parse(self, data: BinaryIO | bytes) -> list[dto.BibDTO]:
+    def parse(self, data: BinaryIO | bytes) -> list[BibDTO]:
         """
         Parse binary MARC data into a list of `BibDTO` objects.
 
@@ -135,13 +156,13 @@ class BookopsMarcParser:
             mapped_domain_bib = self._map_domain_bib_from_marc(record=record)
             logger.info(f"Vendor record parsed: {mapped_domain_bib}")
             records.append(
-                dto.BibDTO(
+                BibDTO(
                     bib=record, domain_bib=mapped_domain_bib, vendor_info=vendor_info
                 )
             )
         return records
 
-    def serialize(self, records: list[dto.BibDTO]) -> BinaryIO:
+    def serialize(self, records: list[BibDTO]) -> BinaryIO:
         """
         Serialize a list of `BibDTO` objects into a binary MARC stream.
 
@@ -176,7 +197,7 @@ class BookopsMarcUpdater:
         """
         self.rules = rules
 
-    def update_bib_data(self, record: dto.BibDTO) -> dto.BibDTO:
+    def update_bib_data(self, record: BibDTO) -> BibDTO:
         """Update the bib_id and add MARC fields to a `BibDTO` object."""
         bib_rec = copy.deepcopy(record.bib)
         if record.domain_bib.bib_id:
@@ -202,7 +223,7 @@ class BookopsMarcUpdater:
         record.bib = bib_rec
         return record
 
-    def update_order(self, record: dto.BibDTO) -> dto.BibDTO:
+    def update_order(self, record: BibDTO) -> BibDTO:
         """Update the MARC order fields within a `BibDTO` object."""
         bib_rec = copy.deepcopy(record.bib)
         for order in record.domain_bib.orders:
@@ -224,10 +245,10 @@ class BookopsMarcUpdater:
 
     def update_record(
         self,
-        record: dto.BibDTO,
+        record: BibDTO,
         record_type: bibs.RecordType,
         template_data: dict[str, Any] = {},
-    ) -> dto.BibDTO:
+    ) -> BibDTO:
         """Update a MARC record based on its type and template data."""
         if record_type == bibs.RecordType.ORDER_LEVEL:
             record.domain_bib.apply_order_template(template_data=template_data)

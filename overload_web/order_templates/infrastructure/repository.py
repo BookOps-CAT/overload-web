@@ -14,15 +14,16 @@ from typing import Sequence
 
 from sqlmodel import Session, select
 
-from overload_web.order_templates.domain import sql_protocol
 from overload_web.order_templates.infrastructure import tables
 
 logger = logging.getLogger(__name__)
 
 
-class SqlModelRepository(sql_protocol.SqlRepositoryProtocol[tables.OrderTemplate]):
+class SqlModelRepository:
     """
     `SQLModel` repository for `OrderTemplate` objects.
+
+    This class is a concrete implementation of the `SqlRepositoryProtocol` protocol.
 
     Args:
         session: a `sqlmodel.Session`.
