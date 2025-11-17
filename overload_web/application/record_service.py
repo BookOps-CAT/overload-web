@@ -83,7 +83,6 @@ class RecordProcessingService:
             record.domain_bib = self.matcher.match_bib(
                 record.domain_bib, matchpoints, self.record_type
             )
-            record.update(bib_id=record.domain_bib.bib_id)
             out.append(record)
         return out
 
