@@ -131,12 +131,10 @@ def process_vendor_file(
     template = template_input.model_dump()
     matchpoint_list = matchpoints.model_dump()
     for file in files:
-        bibs = service.parse(data=file.content)
-        processed_bibs = service.process_records(
-            records=bibs, template_data=template, matchpoints=matchpoint_list
+        output = service.process_vendor_file(
+            data=file.content, template_data=template, matchpoints=matchpoint_list
         )
-        marc_binary = service.write_marc_binary(records=processed_bibs)
-        out_files.append({"file_name": file.file_name, "binary_content": marc_binary})
+        out_files.append({"file_name": file.file_name, "binary_content": output})
     return templates.TemplateResponse(
         request=request, name="partials/pvf_results.html", context={"files": out_files}
     )
