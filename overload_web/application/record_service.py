@@ -16,7 +16,7 @@ Classes:
 import logging
 from typing import Any, BinaryIO
 
-from overload_web.bib_records.domain import bib_matcher, bibs
+from overload_web.bib_records.domain_services import matcher
 from overload_web.bib_records.infrastructure import marc, sierra
 
 logger = logging.getLogger(__name__)
@@ -44,9 +44,9 @@ class RecordProcessingService:
         """
         self.collection = collection
         self.parser = marc.BookopsMarcParser(library=library, rules=rules)
-        self.matcher = bib_matcher.BibMatcher(
+        self.matcher = matcher.BibMatcher(
             fetcher=sierra.SierraBibFetcher(library),
-            record_type=bibs.RecordType(record_type),
+            record_type=record_type,
             attacher=marc.BookopsMarcUpdater(rules=rules["order_subfield_mapping"]),
         )
 

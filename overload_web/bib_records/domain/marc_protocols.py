@@ -2,8 +2,8 @@
 
 This module defines the fetcher used in the infrastructure layer responsible for
 finding the duplicate records in Sierra for a `DomainBib` as well as the parser
-used in the infrastructure layer to convert data between pymarc/bookops_marc objects
-and domain objects.
+and updater used in the infrastructure layer to convert data between
+pymarc/bookops_marc objects and domain objects.
 
 Protocols:
 
@@ -18,6 +18,10 @@ Protocols:
     objects. Concrete implementations of this protocol are defined in the infrastructure
     layer.
 
+`MarUpdater`
+    a protocol that defines an adapter used to update MARC records based on attributes
+    of domain objects and rules. Concrete implementations of this protocol are defined
+    in the infrastructure layer.
 """
 
 from __future__ import annotations

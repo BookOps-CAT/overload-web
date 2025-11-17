@@ -10,30 +10,30 @@ from typing import Any, BinaryIO
 from bookops_marc import Bib, SierraBibReader
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.bib_records.domain import bibs, marc_protocols
+from overload_web.bib_records.domain import bibs
 from overload_web.bib_records.infrastructure import dto
 
 logger = logging.getLogger(__name__)
 
 
-class BookopsMarcParser(marc_protocols.MarcParser[dto.BibDTO]):
-    """Parses, serializes and updates MARC records based on domain objects."""
+class BookopsMarcParser:
+    """Parses and serializes MARC records based on domain objects."""
 
     def __init__(self, library: str, rules: dict[str, Any]) -> None:
         """
         Initialize `BookopsMarcParser` using a specific set of marc mapping rules.
 
+        This class is a concrete implementation of the `MarcParser` protocol.
+
         Args:
+            library:
+                The library whose records are to be processed.
             rules:
                 A dictionary containing vendor identification rules, and rules to use
                 when mapping MARC records, to domain objects.
-            library:
-                The library whose records are to be processed.
         """
         self.library = library
-        self.marc_mapping = rules["bookops_marc_mapping"]
-        self.vendor_tags = rules["vendor_tags"][library.casefold()]
-        self.vendor_info = rules["vendor_info"][library.casefold()]
+        self.rules = rules
 
     def _get_tag_from_bib(
         self, record: Bib, tags: dict[str, dict[str, str]]
@@ -72,8 +72,9 @@ class BookopsMarcParser(marc_protocols.MarcParser[dto.BibDTO]):
         """
         out: dict[str, Any] = {}
 
+        marc_mapping = self.rules["bookops_marc_mapping"]
         out["oclc_number"] = list(record.oclc_nos.values())
-        for k, v in self.marc_mapping["bib"].items():
+        for k, v in marc_mapping["bib"].items():
             if isinstance(v, dict):
                 out[k] = str(record.get(v["tag"]))
             else:
@@ -81,7 +82,7 @@ class BookopsMarcParser(marc_protocols.MarcParser[dto.BibDTO]):
         out["orders"] = []
         for order in record.orders:
             order_dict = {}
-            for k, v in self.marc_mapping["order"].items():
+            for k, v in marc_mapping["order"].items():
                 if isinstance(v, str):
                     order_dict[k] = getattr(order, v)
                 else:
@@ -93,9 +94,11 @@ class BookopsMarcParser(marc_protocols.MarcParser[dto.BibDTO]):
 
     def identify_vendor(self, record: Bib) -> bibs.VendorInfo:
         """Identify the vendor to whom a `bookops_marc.Bib` record belongs."""
-        for vendor, info in self.vendor_tags.items():
-            fields = self.vendor_info.get(vendor, {}).get("bib_fields", [])
-            matchpoints = self.vendor_info.get(vendor, {}).get("matchpoints", {})
+        vendor_tags = self.rules["vendor_tags"][self.library.casefold()]
+        vendor_info = self.rules["vendor_info"][self.library.casefold()]
+        for vendor, info in vendor_tags.items():
+            fields = vendor_info.get(vendor, {}).get("bib_fields", [])
+            matchpoints = vendor_info.get(vendor, {}).get("matchpoints", {})
             tags: dict[str, dict[str, str]] = info.get("primary", {})
             tag_match = self._get_tag_from_bib(record=record, tags=tags)
             if tag_match and tag_match == tags:
@@ -110,8 +113,8 @@ class BookopsMarcParser(marc_protocols.MarcParser[dto.BibDTO]):
                 )
         return bibs.VendorInfo(
             name="UNKNOWN",
-            bib_fields=self.vendor_info["UNKNOWN"]["bib_fields"],
-            matchpoints=self.vendor_info["UNKNOWN"]["matchpoints"],
+            bib_fields=vendor_info["UNKNOWN"]["bib_fields"],
+            matchpoints=vendor_info["UNKNOWN"]["matchpoints"],
         )
 
     def parse(self, data: BinaryIO | bytes) -> list[dto.BibDTO]:
@@ -156,12 +159,14 @@ class BookopsMarcParser(marc_protocols.MarcParser[dto.BibDTO]):
         return io_data
 
 
-class BookopsMarcUpdater(marc_protocols.MarcUpdater[dto.BibDTO]):
+class BookopsMarcUpdater:
     """Update MARC records based on attributes of domain objects."""
 
     def __init__(self, rules: dict[str, dict[str, str]]) -> None:
         """
         Initialize a `BookopsMarcUpdater` using a specific set of marc mapping rules.
+
+        This class is a concrete implementation of the `MarcUpdater` protocol.
 
         Args:
             rules:

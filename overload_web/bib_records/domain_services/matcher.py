@@ -50,7 +50,7 @@ class BibMatcher:
         self,
         attacher: marc_protocols.MarcUpdater,
         fetcher: marc_protocols.BibFetcher,
-        record_type: bibs.RecordType,
+        record_type: str,
     ) -> None:
         """
         Initialize the match service with a fetcher and optional matchpoints.
@@ -62,7 +62,7 @@ class BibMatcher:
         """
         self.attacher = attacher
         self.fetcher = fetcher
-        self.record_type = record_type
+        self.record_type = bibs.RecordType(record_type)
 
     def match_bib(self, record: T, matchpoints: dict[str, str]) -> bibs.BibId | None:
         """
