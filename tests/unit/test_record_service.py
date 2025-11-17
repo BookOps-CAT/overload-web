@@ -4,10 +4,10 @@ import json
 import pytest
 
 from overload_web.application import record_service
-from overload_web.bib_records.domain import bib_matcher
+from overload_web.bib_records.domain import marc_protocols
 
 
-class StubFetcher(bib_matcher.BibFetcher):
+class StubFetcher(marc_protocols.BibFetcher):
     def __init__(self) -> None:
         self.session = None
 
