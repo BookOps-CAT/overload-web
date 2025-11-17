@@ -47,10 +47,7 @@ class RecordProcessingService:
         self.matcher = bib_matcher.BibMatcher(
             fetcher=sierra.SierraBibFetcher(library),
             record_type=bibs.RecordType(record_type),
-            attacher=marc.BookopsMarcUpdater(
-                rules=rules["order_subfield_mapping"],
-                record_type=bibs.RecordType(record_type),
-            ),
+            attacher=marc.BookopsMarcUpdater(rules=rules["order_subfield_mapping"]),
         )
 
     def process_vendor_file(

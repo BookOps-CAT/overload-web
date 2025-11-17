@@ -64,7 +64,7 @@ class BibMatcher:
         self.fetcher = fetcher
         self.record_type = record_type
 
-    def match_bib(self, bib: T, matchpoints: dict[str, str]) -> bibs.BibId | None:
+    def match_bib(self, record: T, matchpoints: dict[str, str]) -> bibs.BibId | None:
         """
         Attempt to find the best-match in Sierra for a given bib record.
 
@@ -72,7 +72,7 @@ class BibMatcher:
         The first non-empty match that returns candidates is used for comparison.
 
         Args:
-            bib:
+            record:
                 The bibliographic record to match against Sierra represented as a
                 `BibVar` object.
             matchpoints:
@@ -80,20 +80,20 @@ class BibMatcher:
         Returns:
             the `BibID` for the best match or `None` if no candidates found
         """
-        matchpoints = bib.vendor_info.matchpoints if not matchpoints else matchpoints
+        matchpoints = record.vendor_info.matchpoints if not matchpoints else matchpoints
         for priority, key in matchpoints.items():
-            value = getattr(bib.domain_bib, key, None)
+            value = getattr(record.domain_bib, key, None)
             if not value:
                 continue
             candidates = self.fetcher.get_bibs_by_id(value=value, key=key)
             if candidates:
                 best_match = bibs.ReviewedResults(
-                    input=bib.domain_bib,
+                    input=record.domain_bib,
                     record_type=self.record_type,
                     results=candidates,
                 )
                 return best_match.target_bib_id
-        return bib.domain_bib.bib_id
+        return record.domain_bib.bib_id
 
     def attach_bib(
         self,
@@ -115,7 +115,9 @@ class BibMatcher:
             An updated record as a `BibVar` object
         """
         record.domain_bib.bib_id = bib_id
-        return self.attacher.update_record(bib=record, template_data=template_data)
+        return self.attacher.update_record(
+            record=record, template_data=template_data, record_type=self.record_type
+        )
 
     def match_and_attach(
         self,
@@ -138,10 +140,10 @@ class BibMatcher:
             A list of processed and updated records as `BibVar` objects
         """
         out = []
-        for bib in records:
-            bib_id = self.match_bib(bib=bib, matchpoints=matchpoints)
+        for record in records:
+            bib_id = self.match_bib(record=record, matchpoints=matchpoints)
             rec = self.attach_bib(
-                record=bib, bib_id=bib_id, template_data=template_data
+                record=record, bib_id=bib_id, template_data=template_data
             )
             out.append(rec)
         return out

@@ -24,26 +24,16 @@ class BookopsMarcParser(marc_protocols.MarcParser[dto.BibDTO]):
         Initialize `BookopsMarcParser` using a specific set of marc mapping rules.
 
         Args:
+            rules:
+                A dictionary containing vendor identification rules, and rules to use
+                when mapping MARC records, to domain objects.
             library:
                 The library whose records are to be processed.
-            marc_mapping:
-                A dictionary containing set of rules to use when mapping MARC records
-                to domain objects.
-            order_mapping:
-                A dictionary containing set of rules to use when mapping `Order`
-                objects to MARC records. These rules map attributes of an `Order` to
-                MARC fields and subfields.
-            rules:
-                A dictionary containing vendor identification rules, rules to use when
-                mapping MARC records, to domain objects, and rules to use when mapping
-                `Order` objects to MARC fields and subfields.
         """
-        self.rules = rules
         self.library = library
-        self.marc_mapping = self.rules["bookops_marc_mapping"]
-        self.order_mapping = self.rules["order_subfield_mapping"]
-        self.vendor_tags = self.rules["vendor_tags"][library.casefold()]
-        self.vendor_info = self.rules["vendor_info"][library.casefold()]
+        self.marc_mapping = rules["bookops_marc_mapping"]
+        self.vendor_tags = rules["vendor_tags"][library.casefold()]
+        self.vendor_info = rules["vendor_info"][library.casefold()]
 
     def _get_tag_from_bib(
         self, record: Bib, tags: dict[str, dict[str, str]]
@@ -69,12 +59,12 @@ class BookopsMarcParser(marc_protocols.MarcParser[dto.BibDTO]):
                 bib_dict[tag] = {"code": data["code"], "value": field.get(data["code"])}
         return bib_dict
 
-    def _map_domain_bib_from_marc(self, bib: Bib) -> bibs.DomainBib:
+    def _map_domain_bib_from_marc(self, record: Bib) -> bibs.DomainBib:
         """
         Factory method used to build a `DomainBib` from a `bookops_marc.Bib` object.
 
         Args:
-            bib: MARC record represented as a `bookops_marc.Bib` object.
+            record: MARC record represented as a `bookops_marc.Bib` object.
 
         Returns:
             DomainBib: domain object populated with structured order and identifier
@@ -82,14 +72,14 @@ class BookopsMarcParser(marc_protocols.MarcParser[dto.BibDTO]):
         """
         out: dict[str, Any] = {}
 
-        out["oclc_number"] = list(bib.oclc_nos.values())
+        out["oclc_number"] = list(record.oclc_nos.values())
         for k, v in self.marc_mapping["bib"].items():
             if isinstance(v, dict):
-                out[k] = str(bib.get(v["tag"]))
+                out[k] = str(record.get(v["tag"]))
             else:
-                out[k] = getattr(bib, v)
+                out[k] = getattr(record, v)
         out["orders"] = []
-        for order in bib.orders:
+        for order in record.orders:
             order_dict = {}
             for k, v in self.marc_mapping["order"].items():
                 if isinstance(v, str):
@@ -139,7 +129,7 @@ class BookopsMarcParser(marc_protocols.MarcParser[dto.BibDTO]):
         reader = SierraBibReader(data, library=self.library, hide_utf8_warnings=True)
         for record in reader:
             vendor_info = self.identify_vendor(record=record)
-            mapped_domain_bib = self._map_domain_bib_from_marc(bib=record)
+            mapped_domain_bib = self._map_domain_bib_from_marc(record=record)
             logger.info(f"Vendor record parsed: {mapped_domain_bib}")
             records.append(
                 dto.BibDTO(
@@ -169,9 +159,7 @@ class BookopsMarcParser(marc_protocols.MarcParser[dto.BibDTO]):
 class BookopsMarcUpdater(marc_protocols.MarcUpdater[dto.BibDTO]):
     """Update MARC records based on attributes of domain objects."""
 
-    def __init__(
-        self, rules: dict[str, dict[str, str]], record_type: bibs.RecordType
-    ) -> None:
+    def __init__(self, rules: dict[str, dict[str, str]]) -> None:
         """
         Initialize a `BookopsMarcUpdater` using a specific set of marc mapping rules.
 
@@ -182,7 +170,6 @@ class BookopsMarcUpdater(marc_protocols.MarcUpdater[dto.BibDTO]):
                 MARC fields and subfields.
         """
         self.rules = rules
-        self.record_type = record_type
 
     def update_bib_data(self, record: dto.BibDTO) -> dto.BibDTO:
         """Update the bib_id and add MARC fields to a `BibDTO` object."""
@@ -231,10 +218,14 @@ class BookopsMarcUpdater(marc_protocols.MarcUpdater[dto.BibDTO]):
         return record
 
     def update_record(
-        self, bib: dto.BibDTO, template_data: dict[str, Any] = {}
+        self,
+        record: dto.BibDTO,
+        record_type: bibs.RecordType,
+        template_data: dict[str, Any] = {},
     ) -> dto.BibDTO:
-        if self.record_type == bibs.RecordType.ORDER_LEVEL:
-            bib.domain_bib.apply_order_template(template_data=template_data)
-            record = self.update_order(record=bib)
-        record = self.update_bib_data(record=bib)
+        """Update a MARC record based on its type and template data."""
+        if record_type == bibs.RecordType.ORDER_LEVEL:
+            record.domain_bib.apply_order_template(template_data=template_data)
+            record = self.update_order(record=record)
+        record = self.update_bib_data(record=record)
         return record
