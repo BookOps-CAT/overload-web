@@ -52,10 +52,6 @@ class RecordProcessingService:
                 record_type=bibs.RecordType(record_type),
             ),
         )
-        self.updater = marc.BookopsMarcUpdater(
-            rules=rules["order_subfield_mapping"],
-            record_type=bibs.RecordType(record_type),
-        )
 
     def process_vendor_file(
         self,
