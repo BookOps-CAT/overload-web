@@ -60,7 +60,7 @@ class RecordProcessingService:
         Returns:
             A list of parsed bibliographic records as `BibDTO` objects.
         """
-        return self.parser.parse(data=data, library=self.library)
+        return self.parser.parse(data=data)
 
     def match_records(
         self,
@@ -107,8 +107,8 @@ class RecordProcessingService:
         for record in records:
             if self.record_type == bibs.RecordType.ORDER_LEVEL:
                 record.domain_bib.apply_order_template(template_data=template_data)
-                rec = self.parser.update_order_record(record=record)
-            rec = self.parser.update_bib_record(
+                rec = self.parser.update_order(record=record)
+            rec = self.parser.update_bib_data(
                 record=record, vendor_info=record.vendor_info
             )
             out.append(rec)
@@ -143,8 +143,8 @@ class RecordProcessingService:
             record.domain_bib.bib_id = bib_id
             if self.record_type == bibs.RecordType.ORDER_LEVEL:
                 record.domain_bib.apply_order_template(template_data=template_data)
-                rec = self.parser.update_order_record(record=record)
-            rec = self.parser.update_bib_record(
+                rec = self.parser.update_order(record=record)
+            rec = self.parser.update_bib_data(
                 record=record, vendor_info=record.vendor_info
             )
             out.append(rec)

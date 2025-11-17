@@ -23,7 +23,7 @@ Protocols:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, BinaryIO, Protocol, TypeVar, runtime_checkable
+from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, TypeVar, runtime_checkable
 
 if TYPE_CHECKING:  # pragma: no cover
     from overload_web.bib_records.domain import bibs
@@ -39,15 +39,14 @@ class MarcParser(Protocol[T]):
     Parse binary MARC data to a generic type, `T`.
 
     Args:
-        marc_mapping: the marc mapping to be used when processing records
-
+        rules: the marc mapping rules to be used when processing records
+        library: the library whose records are being parsed
     """
 
-    marc_mapping: dict[str, dict[str, str | dict[str, str]]]
+    rules: dict[str, dict[str, str | dict[str, str]]]
+    library: str
 
-    def parse(
-        self, data: BinaryIO | bytes, library: str
-    ) -> list[T]: ...  # pragma: no branch
+    def parse(self, data: BinaryIO | bytes) -> list[T]: ...  # pragma: no branch
 
     """Convert binary MARC data into a list of `T` objects."""
 
@@ -62,14 +61,20 @@ class MarcUpdater(Protocol[T]):
     Update MARC records with appropriate fields during last stage of record processing.
     """
 
-    order_mapping: dict[str, dict[str, str]]
+    rules: dict[str, dict[str, str]]
 
-    def update_bib_record(
+    def update_bib_data(
         self, bib: T, vendor_info: bibs.VendorInfo
     ) -> T: ...  # pragma: no branch
 
     """Update MARC fields in a full-level `T` object based on rules."""
 
-    def update_order_record(self, bib: T) -> T: ...  # pragma: no branch
+    def update_order(self, bib: T) -> T: ...  # pragma: no branch
 
     """Update MARC fields in an order-level `T` object based on rules."""
+
+    def update_record(
+        self, bib: T, template_data: dict[str, Any]
+    ) -> T: ...  # pragma: no branch
+
+    """Update a MARC record `T` object."""

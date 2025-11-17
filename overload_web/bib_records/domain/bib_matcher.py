@@ -73,7 +73,7 @@ class BibParser:
         Returns:
             A list of parsed bibliographic records as `BibDTO` objects.
         """
-        return self.parser.parse(data=data, library=library)
+        return self.parser.parse(data=data)
 
 
 class BibMatcher:

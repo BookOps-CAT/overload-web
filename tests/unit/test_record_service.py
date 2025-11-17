@@ -49,7 +49,7 @@ class TestRecordProcessingService:
             return FakeBibFetcher(library, collection, record_type)
 
         monkeypatch.setattr(
-            "overload_web.bib_records.infrastructure.sierra.SierraBibFetcher",
+            "overload_web.application.record_service.sierra.SierraBibFetcher",
             fake_fetcher,
         )
         return record_service.RecordProcessingService(
@@ -67,7 +67,7 @@ class TestRecordProcessingService:
             return StubFetcher()
 
         monkeypatch.setattr(
-            "overload_web.bib_records.infrastructure.sierra.SierraBibFetcher",
+            "overload_web.application.record_service.sierra.SierraBibFetcher",
             fake_fetcher,
         )
         return record_service.RecordProcessingService(
