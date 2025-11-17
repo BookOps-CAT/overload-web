@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import copy
-import io
 import logging
 from typing import Any, BinaryIO
 
@@ -37,10 +36,16 @@ class BibDTO:
         self.vendor_info = vendor_info
 
 
-class BookopsMarcParser:
+class BookopsMarcReader:
+    def read_records(self, data: BinaryIO | bytes, library: str) -> list[Bib]:
+        reader = SierraBibReader(data, library=library)
+        return [i for i in reader]
+
+
+class BookopsMarcMapper:
     """Parses and serializes MARC records based on domain objects."""
 
-    def __init__(self, library: str, rules: dict[str, Any]) -> None:
+    def __init__(self, rules: dict[str, Any]) -> None:
         """
         Initialize `BookopsMarcParser` using a specific set of marc mapping rules.
 
@@ -53,7 +58,60 @@ class BookopsMarcParser:
                 A dictionary containing vendor identification rules, and rules to use
                 when mapping MARC records, to domain objects.
         """
-        self.library = library
+        self.rules = rules
+
+    def map_bib(self, record: Bib, info: bibs.VendorInfo) -> BibDTO:
+        """
+        Factory method used to build a `DomainBib` from a `bookops_marc.Bib` object.
+
+        Args:
+            record: MARC record represented as a `bookops_marc.Bib` object.
+            info: a VendorInfo object for the record's vendor
+
+        Returns:
+            a list of `BibDTO` objects containing `bookops_marc.Bib` objects
+            and `DomainBib` objects.
+        """
+        out: dict[str, Any] = {}
+
+        marc_mapping = self.rules["bookops_marc_mapping"]
+        out["oclc_number"] = list(record.oclc_nos.values())
+        for k, v in marc_mapping["bib"].items():
+            if isinstance(v, dict):
+                out[k] = str(record.get(v["tag"]))
+            else:
+                out[k] = getattr(record, v)
+        out["orders"] = []
+        for order in record.orders:
+            order_dict = {}
+            for k, v in marc_mapping["order"].items():
+                if isinstance(v, str):
+                    order_dict[k] = getattr(order, v)
+                else:
+                    field = getattr(order, k)
+                    for code, attr in v.items():
+                        order_dict[attr] = field.get(code) if field else None
+            out["orders"].append(bibs.Order(**order_dict))
+        return BibDTO(domain_bib=bibs.DomainBib(**out), bib=record, vendor_info=info)
+
+    def map_bib_to_dto(self, bib_dict: dict[str, Any]) -> BibDTO:
+        return BibDTO(**bib_dict)
+
+
+class BookopsMarcVendorIdentifier:
+    """Parses and serializes MARC records based on domain objects."""
+
+    def __init__(self, rules: dict[str, Any]) -> None:
+        """
+        Initialize `BookopsMarcParser` using a specific set of marc mapping rules.
+
+        This class is a concrete implementation of the `MarcParser` protocol.
+
+        Args:
+            rules:
+                A dictionary containing vendor identification rules, and rules to use
+                when mapping MARC records, to domain objects.
+        """
         self.rules = rules
 
     def _get_tag_from_bib(
@@ -80,44 +138,10 @@ class BookopsMarcParser:
                 bib_dict[tag] = {"code": data["code"], "value": field.get(data["code"])}
         return bib_dict
 
-    def _map_domain_bib_from_marc(self, record: Bib) -> bibs.DomainBib:
-        """
-        Factory method used to build a `DomainBib` from a `bookops_marc.Bib` object.
-
-        Args:
-            record: MARC record represented as a `bookops_marc.Bib` object.
-
-        Returns:
-            DomainBib: domain object populated with structured order and identifier
-            data.
-        """
-        out: dict[str, Any] = {}
-
-        marc_mapping = self.rules["bookops_marc_mapping"]
-        out["oclc_number"] = list(record.oclc_nos.values())
-        for k, v in marc_mapping["bib"].items():
-            if isinstance(v, dict):
-                out[k] = str(record.get(v["tag"]))
-            else:
-                out[k] = getattr(record, v)
-        out["orders"] = []
-        for order in record.orders:
-            order_dict = {}
-            for k, v in marc_mapping["order"].items():
-                if isinstance(v, str):
-                    order_dict[k] = getattr(order, v)
-                else:
-                    field = getattr(order, k)
-                    for code, attr in v.items():
-                        order_dict[attr] = field.get(code) if field else None
-            out["orders"].append(bibs.Order(**order_dict))
-        return bibs.DomainBib(**out)
-
-    def identify_vendor(self, record: Bib) -> bibs.VendorInfo:
+    def identify_vendor(self, record: Bib, library: str) -> bibs.VendorInfo:
         """Identify the vendor to whom a `bookops_marc.Bib` record belongs."""
-        vendor_tags = self.rules["vendor_tags"][self.library.casefold()]
-        vendor_info = self.rules["vendor_info"][self.library.casefold()]
-        for vendor, info in vendor_tags.items():
+        vendor_info = self.rules["vendor_info"][library.casefold()]
+        for vendor, info in self.rules["vendor_tags"][library.casefold()].items():
             fields = vendor_info.get(vendor, {}).get("bib_fields", [])
             matchpoints = vendor_info.get(vendor, {}).get("matchpoints", {})
             tags: dict[str, dict[str, str]] = info.get("primary", {})
@@ -126,58 +150,32 @@ class BookopsMarcParser:
                 return bibs.VendorInfo(
                     name=vendor, bib_fields=fields, matchpoints=matchpoints
                 )
+                # return {
+                #     "name": vendor,
+                #     "bib_fields": fields,
+                #     "matchpoints": matchpoints,
+                # }
             alt_tags = info.get("alternate", {})
             alt_match = self._get_tag_from_bib(record=record, tags=alt_tags)
             if alt_match and alt_match == alt_tags:
+                # return {
+                #     "name": vendor,
+                #     "bib_fields": fields,
+                #     "matchpoints": matchpoints,
+                # }
                 return bibs.VendorInfo(
                     name=vendor, bib_fields=fields, matchpoints=matchpoints
                 )
+        # return {
+        #     "name": "UNKNOWN",
+        #     "bib_fields": vendor_info["UNKNOWN"]["bib_fields"],
+        #     "matchpoints": vendor_info["UNKNOWN"]["matchpoints"],
+        # }
         return bibs.VendorInfo(
             name="UNKNOWN",
             bib_fields=vendor_info["UNKNOWN"]["bib_fields"],
             matchpoints=vendor_info["UNKNOWN"]["matchpoints"],
         )
-
-    def parse(self, data: BinaryIO | bytes) -> list[BibDTO]:
-        """
-        Parse binary MARC data into a list of `BibDTO` objects.
-
-        Args:
-            data: MARC records as file-like object or byte stream.
-
-        Returns:
-            a list of `BibDTO` objects containing `bookops_marc.Bib` objects
-            and `DomainBib` objects.
-        """
-        records = []
-        reader = SierraBibReader(data, library=self.library, hide_utf8_warnings=True)
-        for record in reader:
-            vendor_info = self.identify_vendor(record=record)
-            mapped_domain_bib = self._map_domain_bib_from_marc(record=record)
-            logger.info(f"Vendor record parsed: {mapped_domain_bib}")
-            records.append(
-                BibDTO(
-                    bib=record, domain_bib=mapped_domain_bib, vendor_info=vendor_info
-                )
-            )
-        return records
-
-    def serialize(self, records: list[BibDTO]) -> BinaryIO:
-        """
-        Serialize a list of `BibDTO` objects into a binary MARC stream.
-
-        Args:
-            records: a list of records as `BibDTO` objects
-
-        Returns:
-            MARC binary as an an in-memory file stream.
-        """
-        io_data = io.BytesIO()
-        for record in records:
-            logger.info(f"Writing MARC binary for record: {record.domain_bib.__dict__}")
-            io_data.write(record.bib.as_marc())
-        io_data.seek(0)
-        return io_data
 
 
 class BookopsMarcUpdater:
@@ -246,11 +244,11 @@ class BookopsMarcUpdater:
     def update_record(
         self,
         record: BibDTO,
-        record_type: bibs.RecordType,
+        record_type: str,
         template_data: dict[str, Any] = {},
     ) -> BibDTO:
         """Update a MARC record based on its type and template data."""
-        if record_type == bibs.RecordType.ORDER_LEVEL:
+        if bibs.RecordType(record_type) == bibs.RecordType.ORDER_LEVEL:
             record.domain_bib.apply_order_template(template_data=template_data)
             record = self.update_order(record=record)
         record = self.update_bib_data(record=record)

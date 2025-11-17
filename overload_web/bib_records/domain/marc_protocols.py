@@ -30,11 +30,20 @@ import logging
 from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, TypeVar, runtime_checkable
 
 if TYPE_CHECKING:  # pragma: no cover
-    from overload_web.bib_records.domain import bibs, responses
+    from overload_web.bib_records.domain import bibs
 
-T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
+
+
+class MapperVar(Protocol):
+    bib: Any
+    domain_bib: Any
+    vendor_info: Any
+
+
+B = TypeVar("B", contravariant=True)  # for bookops_marc.Bib objects
+D = TypeVar("D", bound=MapperVar)  # for BibDTO object
 
 
 @runtime_checkable
@@ -50,7 +59,7 @@ class BibFetcher(Protocol):
 
     def get_bibs_by_id(
         self, value: str | int, key: str
-    ) -> list[responses.FetcherResponseDict]: ...  # pragma: no branch
+    ) -> list[bibs.responses.FetcherResponseDict]: ...  # pragma: no branch
 
     """
     Retrieve candidate bib records that match a key-value identifier.
@@ -65,7 +74,7 @@ class BibFetcher(Protocol):
 
 
 @runtime_checkable
-class MarcParser(Protocol[T]):
+class MarcParser(Protocol[D]):
     """
     Parse binary MARC data to a generic type, `T`.
 
@@ -77,33 +86,60 @@ class MarcParser(Protocol[T]):
     rules: dict[str, dict[str, str | dict[str, str]]]
     library: str
 
-    def parse(self, data: BinaryIO | bytes) -> list[T]: ...  # pragma: no branch
+    def parse(self, data: BinaryIO | bytes) -> list[D]: ...  # pragma: no branch
 
-    """Convert binary MARC data into a list of `T` objects."""
+    """Convert binary MARC data into a list of `D` objects."""
 
-    def serialize(self, records: list[T]) -> BinaryIO: ...  # pragma: no branch
+    def serialize(self, records: list[D]) -> BinaryIO: ...  # pragma: no branch
 
-    """Convert a list of `T` objects into binary MARC data."""
+    """Convert a list of `D` objects into binary MARC data."""
 
 
 @runtime_checkable
-class MarcUpdater(Protocol[T]):
+class MarcUpdater(Protocol[D]):
     """
     Update MARC records with appropriate fields during last stage of record processing.
     """
 
     rules: dict[str, dict[str, str]]
 
-    def update_bib_data(self, record: T) -> T: ...  # pragma: no branch
-
-    """Update MARC fields in a full-level `T` object based on rules."""
-
-    def update_order(self, record: T) -> T: ...  # pragma: no branch
-
-    """Update MARC fields in an order-level `T` object based on rules."""
-
     def update_record(
-        self, record: T, record_type: bibs.RecordType, template_data: dict[str, Any]
-    ) -> T: ...  # pragma: no branch
+        self, record: D, record_type: str, template_data: dict[str, Any]
+    ) -> D: ...  # pragma: no branch
 
     """Update a MARC record `T` object."""
+
+
+class VendorInfoVar(Protocol):
+    bib_fields: list[dict[str, str]]
+    matchpoints: dict[str, str]
+    name: str
+
+
+@runtime_checkable
+class VendorIdentifier(Protocol):
+    """Identify vendor based on rules"""
+
+    rules: dict[str, Any]
+
+    def identify_vendor(
+        self, record: B, library: str
+    ) -> VendorInfoVar: ...  # pragma: no branch
+
+
+@runtime_checkable
+class BibMapper(Protocol[B]):
+    """Map object to `DomainBib` based on rules"""
+
+    rules: dict[str, Any]
+
+    def map_bib(
+        self, record: B, info: VendorInfoVar
+    ) -> MapperVar: ...  # pragma: no branch
+
+
+@runtime_checkable
+class BibReader(Protocol):
+    def read_records(
+        self, data: BinaryIO | bytes, library: str
+    ) -> list[B]: ...  # pragma: no branch

@@ -16,7 +16,7 @@ Classes:
 import logging
 from typing import Any, BinaryIO
 
-from overload_web.bib_records.domain_services import matcher
+from overload_web.bib_records.domain_services import matcher, parser
 from overload_web.bib_records.infrastructure import marc, sierra
 
 logger = logging.getLogger(__name__)
@@ -43,11 +43,16 @@ class RecordProcessingService:
                 when processing records.
         """
         self.collection = collection
-        self.parser = marc.BookopsMarcParser(library=library, rules=rules)
         self.matcher = matcher.BibMatcher(
             fetcher=sierra.SierraBibFetcher(library),
             record_type=record_type,
             attacher=marc.BookopsMarcUpdater(rules=rules["order_subfield_mapping"]),
+        )
+        self.parser = parser.BibParser(
+            mapper=marc.BookopsMarcMapper(rules=rules),
+            vendor_identifier=marc.BookopsMarcVendorIdentifier(rules=rules),
+            reader=marc.BookopsMarcReader(),
+            library=library,
         )
 
     def process_vendor_file(
@@ -70,7 +75,7 @@ class RecordProcessingService:
         Returns:
             MARC data as a `BinaryIO` object
         """
-        parsed_records = self.parser.parse(data=data)
+        parsed_records: list[marc.BibDTO] = self.parser.parse(data=data)
         matched_records = self.matcher.match_and_attach(
             parsed_records, matchpoints=matchpoints, template_data=template_data
         )

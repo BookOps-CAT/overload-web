@@ -263,7 +263,7 @@ class ReviewedResults:
         self,
         input: DomainBib,
         results: list[responses.FetcherResponseDict],
-        record_type: RecordType,
+        record_type: str,
     ) -> None:
         self.input = input
         self.results = results

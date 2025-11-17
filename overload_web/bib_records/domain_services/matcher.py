@@ -18,19 +18,14 @@ Classes:
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, Protocol, TypeVar
+from typing import Any, Optional, TypeVar
 
 from overload_web.bib_records.domain import bibs, marc_protocols
 
 logger = logging.getLogger(__name__)
 
 
-class BibVar(Protocol):
-    domain_bib: bibs.DomainBib
-    vendor_info: bibs.VendorInfo
-
-
-T = TypeVar("T", bound=BibVar)
+T = TypeVar("T", bound=marc_protocols.MapperVar)
 
 
 class BibMatcher:
@@ -62,7 +57,7 @@ class BibMatcher:
         """
         self.attacher = attacher
         self.fetcher = fetcher
-        self.record_type = bibs.RecordType(record_type)
+        self.record_type = record_type
 
     def match_bib(self, record: T, matchpoints: dict[str, str]) -> bibs.BibId | None:
         """

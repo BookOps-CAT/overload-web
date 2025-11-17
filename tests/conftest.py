@@ -376,11 +376,11 @@ def make_bib_dto(stub_bib, stub_constants, library) -> Callable:
                     ],
                 )
             )
-        parser = marc.BookopsMarcParser(library=library, rules=stub_constants)
-        return marc.BibDTO(
-            bib=record,
-            domain_bib=parser._map_domain_bib_from_marc(record),
-            vendor_info=parser.identify_vendor(record=record),
+        vendor_id = marc.BookopsMarcVendorIdentifier(rules=stub_constants)
+        mapper = marc.BookopsMarcMapper(rules=stub_constants)
+        return mapper.map_bib(
+            record=record,
+            info=vendor_id.identify_vendor(record=record, library=library),
         )
 
     return _make_dto
