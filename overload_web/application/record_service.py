@@ -108,9 +108,7 @@ class RecordProcessingService:
             if self.record_type == bibs.RecordType.ORDER_LEVEL:
                 record.domain_bib.apply_order_template(template_data=template_data)
                 rec = self.parser.update_order(record=record)
-            rec = self.parser.update_bib_data(
-                record=record, vendor_info=record.vendor_info
-            )
+            rec = self.parser.update_bib_data(record=record)
             out.append(rec)
         return out
 
@@ -144,9 +142,7 @@ class RecordProcessingService:
             if self.record_type == bibs.RecordType.ORDER_LEVEL:
                 record.domain_bib.apply_order_template(template_data=template_data)
                 rec = self.parser.update_order(record=record)
-            rec = self.parser.update_bib_data(
-                record=record, vendor_info=record.vendor_info
-            )
+            rec = self.parser.update_bib_data(record=record)
             out.append(rec)
         return out
 

@@ -141,23 +141,20 @@ class BookopsMarcParser(marc_protocols.MarcParser[dto.BibDTO]):
 
     def identify_vendor(self, record: Bib) -> bibs.VendorInfo:
         """Identify the vendor to whom a `bookops_marc.Bib` record belongs."""
-        print(self.vendor_info)
         for vendor, info in self.vendor_tags.items():
+            fields = self.vendor_info.get(vendor, {}).get("bib_fields", [])
+            matchpoints = self.vendor_info.get(vendor, {}).get("matchpoints", {})
             tags: dict[str, dict[str, str]] = info.get("primary", {})
             tag_match = self._get_tag_from_bib(record=record, tags=tags)
             if tag_match and tag_match == tags:
                 return bibs.VendorInfo(
-                    name=vendor,
-                    bib_fields=self.vendor_info[vendor]["bib_fields"],
-                    matchpoints=self.vendor_info[vendor]["matchpoints"],
+                    name=vendor, bib_fields=fields, matchpoints=matchpoints
                 )
             alt_tags = info.get("alternate", {})
             alt_match = self._get_tag_from_bib(record=record, tags=alt_tags)
             if alt_match and alt_match == alt_tags:
                 return bibs.VendorInfo(
-                    name=vendor,
-                    bib_fields=self.vendor_info[vendor]["bib_fields"],
-                    matchpoints=self.vendor_info[vendor]["matchpoints"],
+                    name=vendor, bib_fields=fields, matchpoints=matchpoints
                 )
         return bibs.VendorInfo(
             name="UNKNOWN",
@@ -206,12 +203,12 @@ class BookopsMarcParser(marc_protocols.MarcParser[dto.BibDTO]):
         io_data.seek(0)
         return io_data
 
-    def update_bib_data(
-        self, record: dto.BibDTO, vendor_info: bibs.VendorInfo
-    ) -> dto.BibDTO:
+    def update_bib_data(self, record: dto.BibDTO) -> dto.BibDTO:
         """Update the bib_id and add MARC fields to a `BibDTO` object."""
         updated_rec = self._update_bib_id(record=record)
-        return self._add_bib_fields(record=updated_rec, fields=vendor_info.bib_fields)
+        return self._add_bib_fields(
+            record=updated_rec, fields=record.vendor_info.bib_fields
+        )
 
     def update_order(self, record: dto.BibDTO) -> dto.BibDTO:
         """Update the MARC order fields within a `BibDTO` object."""
@@ -287,12 +284,12 @@ class BookopsMarcUpdater(marc_protocols.MarcUpdater[dto.BibDTO]):
         record.bib = bib_rec
         return record
 
-    def update_bib_data(
-        self, record: dto.BibDTO, vendor_info: bibs.VendorInfo
-    ) -> dto.BibDTO:
+    def update_bib_data(self, record: dto.BibDTO) -> dto.BibDTO:
         """Update the bib_id and add MARC fields to a `BibDTO` object."""
         updated_rec = self._update_bib_id(record=record)
-        return self._add_bib_fields(record=updated_rec, fields=vendor_info.bib_fields)
+        return self._add_bib_fields(
+            record=updated_rec, fields=record.vendor_info.bib_fields
+        )
 
     def update_order(self, record: dto.BibDTO) -> dto.BibDTO:
         """Update the MARC order fields within a `BibDTO` object."""

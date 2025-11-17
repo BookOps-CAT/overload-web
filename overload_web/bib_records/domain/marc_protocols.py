@@ -26,7 +26,7 @@ import logging
 from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, TypeVar, runtime_checkable
 
 if TYPE_CHECKING:  # pragma: no cover
-    from overload_web.bib_records.domain import bibs, responses
+    from overload_web.bib_records.domain import responses
 
 T = TypeVar("T")
 
@@ -90,9 +90,7 @@ class MarcUpdater(Protocol[T]):
 
     rules: dict[str, dict[str, str]]
 
-    def update_bib_data(
-        self, bib: T, vendor_info: bibs.VendorInfo
-    ) -> T: ...  # pragma: no branch
+    def update_bib_data(self, bib: T) -> T: ...  # pragma: no branch
 
     """Update MARC fields in a full-level `T` object based on rules."""
 
