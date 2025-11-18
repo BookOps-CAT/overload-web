@@ -29,10 +29,7 @@ class BibDTO:
     """
 
     def __init__(
-        self,
-        bib: Bib,
-        domain_bib: bibs.DomainBib,
-        vendor_info: bibs.VendorInfo | None = None,
+        self, bib: Bib, domain_bib: bibs.DomainBib, vendor_info: bibs.VendorInfo
     ):
         self.bib = bib
         self.domain_bib = domain_bib

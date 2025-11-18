@@ -20,7 +20,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Optional, TypeVar
 
-from overload_web.bib_records.domain import bibs, marc_protocols
+from overload_web.bib_records.domain import marc_protocols
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +46,7 @@ class BibMatcher:
         attacher: marc_protocols.MarcUpdater,
         fetcher: marc_protocols.BibFetcher,
         record_type: str,
+        reviewer: marc_protocols.ResultsReviewer,
     ) -> None:
         """
         Initialize the match service with a fetcher and optional matchpoints.
@@ -58,8 +59,9 @@ class BibMatcher:
         self.attacher = attacher
         self.fetcher = fetcher
         self.record_type = record_type
+        self.reviewer = reviewer
 
-    def match_bib(self, record: T, matchpoints: dict[str, str]) -> bibs.BibId | None:
+    def match_bib(self, record: T, matchpoints: dict[str, str]) -> str | None:
         """
         Attempt to find the best-match in Sierra for a given bib record.
 
@@ -82,18 +84,16 @@ class BibMatcher:
                 continue
             candidates = self.fetcher.get_bibs_by_id(value=value, key=key)
             if candidates:
-                best_match = bibs.ReviewedResults(
-                    input=record.domain_bib,
-                    record_type=self.record_type,
-                    results=candidates,
+                best_match = self.reviewer.review_results(
+                    record.domain_bib, results=candidates
                 )
-                return best_match.target_bib_id
+                return best_match
         return record.domain_bib.bib_id
 
     def attach_bib(
         self,
         record: T,
-        bib_id: Optional[bibs.BibId],
+        bib_id: Optional[str],
         template_data: dict[str, Any] = {},
     ) -> T:
         """

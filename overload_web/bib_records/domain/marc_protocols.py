@@ -41,7 +41,7 @@ class BibDTOProtocol(Protocol):
 
     bib: Any
     domain_bib: Any
-    vendor_info: Any | None = None
+    vendor_info: Any
 
 
 ConBib = TypeVar("ConBib", contravariant=True)  # for bookops_marc.Bib objects as inputs
@@ -62,7 +62,7 @@ class BibFetcher(Protocol):
 
     def get_bibs_by_id(
         self, value: str | int, key: str
-    ) -> list[bibs.responses.FetcherResponseDict]: ...  # pragma: no branch
+    ) -> list[bibs.FetcherResponseDict]: ...  # pragma: no branch
 
     """
     Retrieve candidate bib records that match a key-value identifier.
@@ -109,6 +109,17 @@ class MarcUpdater(Protocol[D]):
     ) -> D: ...  # pragma: no branch
 
     """Update a MARC record `T` object."""
+
+
+@runtime_checkable
+class ResultsReviewer(Protocol):
+    """Review results of Sierra queries and select best match"""
+
+    record_type: str
+
+    def review_results(
+        self, input: bibs.DomainBib, results: list[bibs.FetcherResponseDict]
+    ) -> str | None: ...  # pragma: no branch
 
 
 @runtime_checkable

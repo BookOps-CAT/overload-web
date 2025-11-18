@@ -5,28 +5,11 @@ from __future__ import annotations
 import json
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, TypedDict
+from typing import Any
+
+from overload_web.bib_records.domain import bibs
 
 logger = logging.getLogger(__name__)
-
-
-class FetcherResponseDict(TypedDict):
-    """Defines the dict returned by `BibFetcher.get_bibs_by_id` method"""
-
-    barcodes: list[str]
-    bib_id: str
-    branch_call_number: list[str]
-    cat_source: str
-    collection: str | None
-    control_number: str | None
-    isbn: list[str]
-    library: str
-    oclc_number: list[str]
-    research_call_number: list[str]
-    title: str
-    upc: list[str]
-    update_date: str | None
-    var_fields: list[dict[str, Any]]
 
 
 class BaseSierraResponse(ABC):
@@ -81,7 +64,7 @@ class BaseSierraResponse(ABC):
     @abstractmethod
     def var_fields(self) -> list[dict[str, Any]]: ...  # pragma: no branch
 
-    def to_dict(self) -> FetcherResponseDict:
+    def to_dict(self) -> bibs.FetcherResponseDict:
         return {
             "title": self.title,
             "barcodes": self.barcodes,

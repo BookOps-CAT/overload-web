@@ -5,9 +5,7 @@ from __future__ import annotations
 import datetime
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
-
-from overload_web.bib_records.domain import responses
+from typing import Any, TypedDict
 
 
 @dataclass(frozen=True)
@@ -246,95 +244,114 @@ class VendorInfo:
     name: str
 
 
-class ReviewedResults:
-    """
-    Compare a `DomainBib` to a list of candidate bibs and select the best match.
+class FetcherResponseDict(TypedDict):
+    """Defines the dict returned by `BibFetcher.get_bibs_by_id` method"""
 
-    Args:
-        input: the bib record to match as a `DomainBib`.
-        results: a list of candidate bib records as dicts
-        record_type: the type of record as an enum (either `FULL` or `ORDER_LEVEL`)
+    barcodes: list[str]
+    bib_id: str
+    branch_call_number: list[str]
+    cat_source: str
+    collection: str | None
+    control_number: str | None
+    isbn: list[str]
+    library: str
+    oclc_number: list[str]
+    research_call_number: list[str]
+    title: str
+    upc: list[str]
+    update_date: str | None
+    var_fields: list[dict[str, Any]]
 
-    Returns:
-        The results as a `bibs.ReviewedResults` object.
-    """
 
-    def __init__(
-        self,
-        input: DomainBib,
-        results: list[responses.FetcherResponseDict],
-        record_type: str,
-    ) -> None:
-        self.input = input
-        self.results = results
-        self.vendor = input.vendor
-        self.record_type = record_type
-        self.action = None
+# class ReviewedResults:
+#     """
+#     Compare a `DomainBib` to a list of candidate bibs and select the best match.
 
-        self.matched_results: list[responses.FetcherResponseDict] = []
-        self.mixed_results: list[responses.FetcherResponseDict] = []
-        self.other_results: list[responses.FetcherResponseDict] = []
+#     Args:
+#         input: the bib record to match as a `DomainBib`.
+#         results: a list of candidate bib records as dicts
+#         record_type: the type of record as an enum (either `FULL` or `ORDER_LEVEL`)
 
-        self._sort_results()
+#     Returns:
+#         The results as a `bibs.ReviewedResults` object.
+#     """
 
-    def _sort_results(self) -> None:
-        sorted_results = sorted(
-            self.results, key=lambda i: int(i["bib_id"].strip(".b"))
-        )
-        for result in sorted_results:
-            if result["collection"] == "MIXED":
-                self.mixed_results.append(result)
-            elif result["collection"] == str(self.input.collection):
-                self.matched_results.append(result)
-            else:
-                self.other_results.append(result)
+#     def __init__(
+#         self,
+#         input: DomainBib,
+#         results: list[bibs.FetcherResponseDict],
+#         record_type: str,
+#     ) -> None:
+#         self.input = input
+#         self.results = results
+#         self.vendor = input.vendor
+#         self.record_type = record_type
+#         self.action = None
 
-    @property
-    def duplicate_records(self) -> list[str]:
-        duplicate_records: list[str] = []
-        if len(self.matched_results) > 1:
-            return [i["bib_id"] for i in self.matched_results]
-        return duplicate_records
+#         self.matched_results: list[bibs.FetcherResponseDict] = []
+#         self.mixed_results: list[bibs.FetcherResponseDict] = []
+#         self.other_results: list[bibs.FetcherResponseDict] = []
 
-    @property
-    def input_call_no(self) -> str | None:
-        if str(self.input.collection) == "RL":
-            call_no = self.input.research_call_number
-            return call_no[0] if isinstance(call_no, list) else call_no
-        elif str(self.input.collection) == "BL":
-            call_no = self.input.branch_call_number
-            return call_no[0] if isinstance(call_no, list) else call_no
-        elif str(self.input.library) == "BPL":
-            call_no = self.input.branch_call_number
-            return call_no[0] if isinstance(call_no, list) else call_no
-        return None
+#         self._sort_results()
 
-    @property
-    def resource_id(self) -> str | None:
-        if self.input.bib_id:
-            return str(self.input.bib_id)
-        elif self.input.control_number:
-            return self.input.control_number
-        elif self.input.isbn:
-            return self.input.isbn
-        elif self.input.oclc_number:
-            return (
-                self.input.oclc_number
-                if isinstance(self.input.oclc_number, str)
-                else self.input.oclc_number[0]
-            )
-        elif self.input.upc:
-            return self.input.upc
-        return None
+#     def _sort_results(self) -> None:
+#         sorted_results = sorted(
+#             self.results, key=lambda i: int(i["bib_id"].strip(".b"))
+#         )
+#         for result in sorted_results:
+#             if result["collection"] == "MIXED":
+#                 self.mixed_results.append(result)
+#             elif result["collection"] == str(self.input.collection):
+#                 self.matched_results.append(result)
+#             else:
+#                 self.other_results.append(result)
 
-    @property
-    def target_bib_id(self) -> BibId | None:
-        bib_id = None
-        if len(self.matched_results) == 1:
-            return BibId(self.matched_results[0]["bib_id"])
-        elif len(self.matched_results) == 0:
-            return bib_id
-        for result in self.matched_results:
-            if result.get("branch_call_number") or result.get("research_call_number"):
-                return BibId(result["bib_id"])
-        return bib_id
+#     @property
+#     def duplicate_records(self) -> list[str]:
+#         duplicate_records: list[str] = []
+#         if len(self.matched_results) > 1:
+#             return [i["bib_id"] for i in self.matched_results]
+#         return duplicate_records
+
+#     @property
+#     def input_call_no(self) -> str | None:
+#         if str(self.input.collection) == "RL":
+#             call_no = self.input.research_call_number
+#             return call_no[0] if isinstance(call_no, list) else call_no
+#         elif str(self.input.collection) == "BL":
+#             call_no = self.input.branch_call_number
+#             return call_no[0] if isinstance(call_no, list) else call_no
+#         elif str(self.input.library) == "BPL":
+#             call_no = self.input.branch_call_number
+#             return call_no[0] if isinstance(call_no, list) else call_no
+#         return None
+
+#     @property
+#     def resource_id(self) -> str | None:
+#         if self.input.bib_id:
+#             return str(self.input.bib_id)
+#         elif self.input.control_number:
+#             return self.input.control_number
+#         elif self.input.isbn:
+#             return self.input.isbn
+#         elif self.input.oclc_number:
+#             return (
+#                 self.input.oclc_number
+#                 if isinstance(self.input.oclc_number, str)
+#                 else self.input.oclc_number[0]
+#             )
+#         elif self.input.upc:
+#             return self.input.upc
+#         return None
+
+#     @property
+#     def target_bib_id(self) -> BibId | None:
+#         bib_id = None
+#         if len(self.matched_results) == 1:
+#             return BibId(self.matched_results[0]["bib_id"])
+#         elif len(self.matched_results) == 0:
+#             return bib_id
+#         for result in self.matched_results:
+#             if result.get("branch_call_number") or result.get("research_call_number"):
+#                 return BibId(result["bib_id"])
+#         return bib_id

@@ -12,8 +12,7 @@ from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.bib_records.domain import responses
-from overload_web.bib_records.infrastructure import marc, sierra
+from overload_web.bib_records.infrastructure import marc, sierra, sierra_responses
 from overload_web.order_templates.infrastructure import tables
 
 
@@ -125,7 +124,7 @@ class FakeSierraSession(sierra.SierraSessionProtocol):
         self.credentials = self._get_credentials()
 
 
-class FakeSierraResponse(responses.BaseSierraResponse):
+class FakeSierraResponse(sierra_responses.BaseSierraResponse):
     library = "library"
 
     @property
