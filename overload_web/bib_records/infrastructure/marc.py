@@ -150,27 +150,12 @@ class BookopsMarcVendorIdentifier:
                 return bibs.VendorInfo(
                     name=vendor, bib_fields=fields, matchpoints=matchpoints
                 )
-                # return {
-                #     "name": vendor,
-                #     "bib_fields": fields,
-                #     "matchpoints": matchpoints,
-                # }
             alt_tags = info.get("alternate", {})
             alt_match = self._get_tag_from_bib(record=record, tags=alt_tags)
             if alt_match and alt_match == alt_tags:
-                # return {
-                #     "name": vendor,
-                #     "bib_fields": fields,
-                #     "matchpoints": matchpoints,
-                # }
                 return bibs.VendorInfo(
                     name=vendor, bib_fields=fields, matchpoints=matchpoints
                 )
-        # return {
-        #     "name": "UNKNOWN",
-        #     "bib_fields": vendor_info["UNKNOWN"]["bib_fields"],
-        #     "matchpoints": vendor_info["UNKNOWN"]["matchpoints"],
-        # }
         return bibs.VendorInfo(
             name="UNKNOWN",
             bib_fields=vendor_info["UNKNOWN"]["bib_fields"],
