@@ -25,7 +25,7 @@ from overload_web.bib_records.domain import bibs, marc_protocols
 logger = logging.getLogger(__name__)
 
 
-T = TypeVar("T", bound=marc_protocols.MapperVar)
+T = TypeVar("T", bound=marc_protocols.BibDTOProtocol)
 
 
 class BibMatcher:

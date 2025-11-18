@@ -1,27 +1,28 @@
 """Protocols for defining services that retrieve and parse bib records.
 
 This module defines the fetcher used in the infrastructure layer responsible for
-finding the duplicate records in Sierra for a `DomainBib` as well as the parser
-and updater used in the infrastructure layer to convert data between
-pymarc/bookops_marc objects and domain objects.
+finding the duplicate records in Sierra for a `DomainBib` as well as the parser,
+vendor identifier, and updater used in the infrastructure layer to convert data
+between pymarc/bookops_marc objects and domain objects. Concrete implementations of
+these protocols are defined in the infrastructure layer.
 
 Protocols:
 
 `BibFetcher`
     a protocol that defines the any adapter to Sierra that is capable of retrieving
     records based on identifier keys. Matching is based on specific identifiers such
-    as OCLC number, ISBN, or Sierra Bib ID. Concrete implementations of this protocol
-    are defined in the infrastructure layer.
+    as OCLC number, ISBN, or Sierra Bib ID.
 
-`MarcParser`
+`MarcMapper`
     a protocol that defines an adapter used to convert MARC objects to domain
-    objects. Concrete implementations of this protocol are defined in the infrastructure
-    layer.
+    objects.
 
-`MarUpdater`
+`MarcUpdater`
     a protocol that defines an adapter used to update MARC records based on attributes
-    of domain objects and rules. Concrete implementations of this protocol are defined
-    in the infrastructure layer.
+    of domain objects and rules.
+
+`VendorIdentifier`
+    a protocol that defines an adapter used to identify the vendor to created a record
 """
 
 from __future__ import annotations
@@ -30,20 +31,21 @@ import logging
 from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, TypeVar, runtime_checkable
 
 if TYPE_CHECKING:  # pragma: no cover
-    from overload_web.bib_records.domain import bibs
+    from bookops_marc import Bib
 
+    from overload_web.bib_records.domain import bibs
 
 logger = logging.getLogger(__name__)
 
 
-class MapperVar(Protocol):
+class BibDTOProtocol(Protocol):
     bib: Any
     domain_bib: Any
-    vendor_info: Any
+    vendor_info: Any | None = None
 
 
-B = TypeVar("B", contravariant=True)  # for bookops_marc.Bib objects
-D = TypeVar("D", bound=MapperVar)  # for BibDTO object
+B = TypeVar("B", bound="Bib")  # for bookops_marc.Bib objects
+D = TypeVar("D", bound=BibDTOProtocol)  # for BibDTO objects
 
 
 @runtime_checkable
@@ -74,25 +76,18 @@ class BibFetcher(Protocol):
 
 
 @runtime_checkable
-class MarcParser(Protocol[D]):
-    """
-    Parse binary MARC data to a generic type, `T`.
+class BibMapper(Protocol[B]):
+    """Map object to `DomainBib` based on rules"""
 
-    Args:
-        rules: the marc mapping rules to be used when processing records
-        library: the library whose records are being parsed
-    """
+    rules: dict[str, Any]
 
-    rules: dict[str, dict[str, str | dict[str, str]]]
-    library: str
+    def map_bib(
+        self, record: B, info: bibs.VendorInfo
+    ) -> BibDTOProtocol: ...  # pragma: no branch
 
-    def parse(self, data: BinaryIO | bytes) -> list[D]: ...  # pragma: no branch
-
-    """Convert binary MARC data into a list of `D` objects."""
-
-    def serialize(self, records: list[D]) -> BinaryIO: ...  # pragma: no branch
-
-    """Convert a list of `D` objects into binary MARC data."""
+    def read_records(
+        self, data: bytes | BinaryIO, library: str
+    ) -> list[B]: ...  # pragma: no branch
 
 
 @runtime_checkable
@@ -110,12 +105,6 @@ class MarcUpdater(Protocol[D]):
     """Update a MARC record `T` object."""
 
 
-class VendorInfoVar(Protocol):
-    bib_fields: list[dict[str, str]]
-    matchpoints: dict[str, str]
-    name: str
-
-
 @runtime_checkable
 class VendorIdentifier(Protocol):
     """Identify vendor based on rules"""
@@ -124,22 +113,4 @@ class VendorIdentifier(Protocol):
 
     def identify_vendor(
         self, record: B, library: str
-    ) -> VendorInfoVar: ...  # pragma: no branch
-
-
-@runtime_checkable
-class BibMapper(Protocol[B]):
-    """Map object to `DomainBib` based on rules"""
-
-    rules: dict[str, Any]
-
-    def map_bib(
-        self, record: B, info: VendorInfoVar
-    ) -> MapperVar: ...  # pragma: no branch
-
-
-@runtime_checkable
-class BibReader(Protocol):
-    def read_records(
-        self, data: BinaryIO | bytes, library: str
-    ) -> list[B]: ...  # pragma: no branch
+    ) -> bibs.VendorInfo: ...  # pragma: no branch

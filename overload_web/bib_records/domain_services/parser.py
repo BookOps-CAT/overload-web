@@ -14,18 +14,16 @@ class BibParser:
         self,
         mapper: marc_protocols.BibMapper,
         vendor_identifier: marc_protocols.VendorIdentifier,
-        reader: marc_protocols.BibReader,
         library: str,
     ) -> None:
         self.library = library
         self.mapper = mapper
-        self.reader = reader
         self.vendor_identifier = vendor_identifier
 
-    def parse(self, data: BinaryIO | bytes) -> list[marc_protocols.MapperVar]:
+    def parse(self, data: BinaryIO | bytes) -> list[marc_protocols.BibDTOProtocol]:
         records = []
-        read_records: list = self.reader.read_records(data, self.library)
-        for record in read_records:
+        bibs: list = self.mapper.read_records(data, self.library)
+        for record in bibs:
             vendor_info = self.vendor_identifier.identify_vendor(
                 record=record, library=self.library
             )
@@ -34,7 +32,7 @@ class BibParser:
             records.append(mapped_bib)
         return records
 
-    def serialize(self, records: list[marc_protocols.MapperVar]) -> BinaryIO:
+    def serialize(self, records: list[marc_protocols.BibDTOProtocol]) -> BinaryIO:
         """
         Serialize a list of `BibDTO` objects into a binary MARC stream.
 
