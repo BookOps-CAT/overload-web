@@ -74,9 +74,7 @@ class RecordProcessingService:
         Returns:
             MARC data as a `BinaryIO` object
         """
-        parsed_records: list[parser.marc_protocols.BibDTOProtocol] = self.parser.parse(
-            data=data
-        )
+        parsed_records = self.parser.parse(data=data)
         matched_records = self.matcher.match_and_attach(
             parsed_records, matchpoints=matchpoints, template_data=template_data
         )

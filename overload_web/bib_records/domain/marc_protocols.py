@@ -31,20 +31,20 @@ import logging
 from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, TypeVar, runtime_checkable
 
 if TYPE_CHECKING:  # pragma: no cover
-    from bookops_marc import Bib
-
     from overload_web.bib_records.domain import bibs
 
 logger = logging.getLogger(__name__)
 
 
 class BibDTOProtocol(Protocol):
+    """Defines attributes of a BibDTO object for use as a TypeVar"""
+
     bib: Any
     domain_bib: Any
     vendor_info: Any | None = None
 
 
-B = TypeVar("B", bound="Bib")  # for bookops_marc.Bib objects
+B = TypeVar("B")  # for bookops_marc.Bib objects
 D = TypeVar("D", bound=BibDTOProtocol)  # for BibDTO objects
 
 

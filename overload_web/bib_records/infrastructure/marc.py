@@ -258,10 +258,7 @@ class BookopsMarcUpdater:
         return record
 
     def update_record(
-        self,
-        record: BibDTO,
-        record_type: str,
-        template_data: dict[str, Any] = {},
+        self, record: BibDTO, record_type: str, template_data: dict[str, Any]
     ) -> BibDTO:
         """Update a MARC record based on its type and template data."""
         if bibs.RecordType(record_type) == bibs.RecordType.ORDER_LEVEL:
