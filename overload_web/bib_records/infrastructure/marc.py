@@ -71,9 +71,8 @@ class BookopsMarcMapper:
         """
         out: dict[str, Any] = {}
 
-        marc_mapping = self.rules["bookops_marc_mapping"]
         out["oclc_number"] = list(record.oclc_nos.values())
-        for k, v in marc_mapping["bib"].items():
+        for k, v in self.rules["bib"].items():
             if isinstance(v, dict):
                 out[k] = str(record.get(v["tag"]))
             else:
@@ -81,7 +80,7 @@ class BookopsMarcMapper:
         out["orders"] = []
         for order in record.orders:
             order_dict = {}
-            for k, v in marc_mapping["order"].items():
+            for k, v in self.rules["order"].items():
                 if isinstance(v, str):
                     order_dict[k] = getattr(order, v)
                 else:
@@ -91,8 +90,13 @@ class BookopsMarcMapper:
             out["orders"].append(bibs.Order(**order_dict))
         return BibDTO(domain_bib=bibs.DomainBib(**out), bib=record, vendor_info=info)
 
-    def read_records(self, data: bytes | BinaryIO, library: str) -> list[Bib]:
-        reader = SierraBibReader(data, library=library)
+
+class BookopsMarcReader:
+    def __init__(self, library: str) -> None:
+        self.library = library
+
+    def read_records(self, data: bytes | BinaryIO) -> list[Bib]:
+        reader = SierraBibReader(data, library=self.library)
         return [i for i in reader]
 
 
@@ -135,19 +139,18 @@ class BookopsMarcVendorIdentifier:
                 bib_dict[tag] = {"code": data["code"], "value": field.get(data["code"])}
         return bib_dict
 
-    def identify_vendor(self, record: Bib, library: str) -> bibs.VendorInfo:
+    def identify_vendor(self, record: Bib) -> bibs.VendorInfo:
         """Identify the vendor to whom a `bookops_marc.Bib` record belongs."""
-        vendor_info = self.rules["vendor_info"][library.casefold()]
-        for vendor, info in self.rules["vendor_tags"][library.casefold()].items():
-            fields = vendor_info.get(vendor, {}).get("bib_fields", [])
-            matchpoints = vendor_info.get(vendor, {}).get("matchpoints", {})
-            tags: dict[str, dict[str, str]] = info.get("primary", {})
+        for vendor, info in self.rules.items():
+            fields = info.get("bib_fields", [])
+            matchpoints = info.get("matchpoints", {})
+            tags = info["vendor_tags"].get("primary", {})
             tag_match = self._get_tag_from_bib(record=record, tags=tags)
             if tag_match and tag_match == tags:
                 return bibs.VendorInfo(
                     name=vendor, bib_fields=fields, matchpoints=matchpoints
                 )
-            alt_tags = info.get("alternate", {})
+            alt_tags = info["vendor_tags"].get("alternate", {})
             alt_match = self._get_tag_from_bib(record=record, tags=alt_tags)
             if alt_match and alt_match == alt_tags:
                 return bibs.VendorInfo(
@@ -155,8 +158,8 @@ class BookopsMarcVendorIdentifier:
                 )
         return bibs.VendorInfo(
             name="UNKNOWN",
-            bib_fields=vendor_info["UNKNOWN"]["bib_fields"],
-            matchpoints=vendor_info["UNKNOWN"]["matchpoints"],
+            bib_fields=self.rules["UNKNOWN"]["bib_fields"],
+            matchpoints=self.rules["UNKNOWN"]["matchpoints"],
         )
 
 

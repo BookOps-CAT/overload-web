@@ -376,11 +376,12 @@ def make_bib_dto(stub_bib, stub_constants, library) -> Callable:
                     ],
                 )
             )
-        vendor_id = marc.BookopsMarcVendorIdentifier(rules=stub_constants)
-        mapper = marc.BookopsMarcMapper(rules=stub_constants)
+        vendor_id = marc.BookopsMarcVendorIdentifier(
+            rules=stub_constants["vendor_rules"][library.casefold()]
+        )
+        mapper = marc.BookopsMarcMapper(rules=stub_constants["mapper_rules"])
         return mapper.map_bib(
-            record=record,
-            info=vendor_id.identify_vendor(record=record, library=library),
+            record=record, info=vendor_id.identify_vendor(record=record)
         )
 
     return _make_dto

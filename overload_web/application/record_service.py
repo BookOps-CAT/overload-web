@@ -46,12 +46,14 @@ class RecordProcessingService:
         self.matcher = matcher.BibMatcher(
             fetcher=sierra.SierraBibFetcher(library),
             record_type=record_type,
-            attacher=marc.BookopsMarcUpdater(rules=rules["order_subfield_mapping"]),
+            attacher=marc.BookopsMarcUpdater(rules=rules["updater_rules"]),
         )
         self.parser = parser.BibParser(
-            mapper=marc.BookopsMarcMapper(rules=rules),
-            vendor_identifier=marc.BookopsMarcVendorIdentifier(rules=rules),
-            library=library,
+            mapper=marc.BookopsMarcMapper(rules=rules["mapper_rules"]),
+            vendor_identifier=marc.BookopsMarcVendorIdentifier(
+                rules=rules["vendor_rules"][library.casefold()]
+            ),
+            reader=marc.BookopsMarcReader(library=library),
         )
 
     def process_vendor_file(

@@ -13,24 +13,22 @@ class BibParser:
     def __init__(
         self,
         mapper: marc_protocols.BibMapper,
+        reader: marc_protocols.MarcReaderProtocol,
         vendor_identifier: marc_protocols.VendorIdentifier,
-        library: str,
     ) -> None:
-        self.library = library
         self.mapper = mapper
+        self.reader = reader
         self.vendor_identifier = vendor_identifier
 
     def parse(self, data: BinaryIO | bytes) -> list[marc_protocols.BibDTOProtocol]:
-        records = []
-        bibs: list = self.mapper.read_records(data, self.library)
-        for record in bibs:
-            vendor_info = self.vendor_identifier.identify_vendor(
-                record=record, library=self.library
-            )
+        mapped_bibs = []
+        records: list = self.reader.read_records(data)
+        for record in records:
+            vendor_info = self.vendor_identifier.identify_vendor(record=record)
             mapped_bib = self.mapper.map_bib(record=record, info=vendor_info)
             logger.info(f"Vendor record parsed: {mapped_bib}")
-            records.append(mapped_bib)
-        return records
+            mapped_bibs.append(mapped_bib)
+        return mapped_bibs
 
     def serialize(self, records: list[marc_protocols.BibDTOProtocol]) -> BinaryIO:
         """

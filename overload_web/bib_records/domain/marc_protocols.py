@@ -44,8 +44,9 @@ class BibDTOProtocol(Protocol):
     vendor_info: Any | None = None
 
 
-B = TypeVar("B")  # for bookops_marc.Bib objects
+ConBib = TypeVar("ConBib", contravariant=True)  # for bookops_marc.Bib objects as inputs
 D = TypeVar("D", bound=BibDTOProtocol)  # for BibDTO objects
+InvarBib = TypeVar("InvarBib")  # for bookops_marc.Bib objects as return types
 
 
 @runtime_checkable
@@ -76,18 +77,23 @@ class BibFetcher(Protocol):
 
 
 @runtime_checkable
-class BibMapper(Protocol[B]):
+class BibMapper(Protocol[ConBib]):
     """Map object to `DomainBib` based on rules"""
 
     rules: dict[str, Any]
 
     def map_bib(
-        self, record: B, info: bibs.VendorInfo
+        self, record: ConBib, info: bibs.VendorInfo
     ) -> BibDTOProtocol: ...  # pragma: no branch
 
+
+@runtime_checkable
+class MarcReaderProtocol(Protocol[InvarBib]):
+    library: str
+
     def read_records(
-        self, data: bytes | BinaryIO, library: str
-    ) -> list[B]: ...  # pragma: no branch
+        self, data: bytes | BinaryIO
+    ) -> list[InvarBib]: ...  # pragma: no branch
 
 
 @runtime_checkable
@@ -106,11 +112,11 @@ class MarcUpdater(Protocol[D]):
 
 
 @runtime_checkable
-class VendorIdentifier(Protocol):
+class VendorIdentifier(Protocol[ConBib]):
     """Identify vendor based on rules"""
 
     rules: dict[str, Any]
 
     def identify_vendor(
-        self, record: B, library: str
+        self, record: ConBib
     ) -> bibs.VendorInfo: ...  # pragma: no branch
