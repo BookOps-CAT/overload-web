@@ -32,18 +32,12 @@ class FakeFileWriter(StubFileWriter):
 
 
 class TestFileTransferServices:
-    service = file_service.FileTransferService(
-        loader=FakeFileLoader(), writer=FakeFileWriter()
-    )
+    service = file_service.FileTransferService(loader=FakeFileLoader())
 
     def test_service_protocols(self):
-        service = file_service.FileTransferService(
-            loader=StubFileLoader(), writer=StubFileWriter()
-        )
-        vendor_file = vendor_files.VendorFile.create(file_name="foo.mrc", content=b"")
+        service = file_service.FileTransferService(loader=StubFileLoader())
         assert service.load_file(name="foo.mrc", dir="foo") is None
         assert service.list_files(dir="foo") is None
-        assert service.write_marc_file(file=vendor_file, dir="bar") is None
 
     def test_list_files(self):
         file_list = self.service.list_files(dir="foo")
@@ -55,6 +49,15 @@ class TestFileTransferServices:
         assert file.id is not None
         assert file.file_name == "foo.mrc"
         assert file.content == b""
+
+
+class TestFileWriterServices:
+    service = file_service.FileWriterService(writer=FakeFileWriter())
+
+    def test_service_protocols(self):
+        service = file_service.FileWriterService(writer=StubFileWriter())
+        vendor_file = vendor_files.VendorFile.create(file_name="foo.mrc", content=b"")
+        assert service.write_marc_file(file=vendor_file, dir="bar") is None
 
     def test_write_marc_file(self):
         out_file = self.service.write_marc_file(

@@ -94,7 +94,7 @@ def update_template(
 def list_remote_files(
     request: Request,
     vendor: str,
-    service: Annotated[Any, Depends(service_deps.remote_file_handler)],
+    service: Annotated[Any, Depends(service_deps.remote_file_loader)],
 ) -> HTMLResponse:
     """
     List all files on a vendor's SFTP server
@@ -143,7 +143,7 @@ def process_vendor_file(
 def write_local_file(
     vendor_file: schemas.VendorFileType,
     dir: str,
-    service: Annotated[Any, Depends(service_deps.local_file_handler)],
+    service: Annotated[Any, Depends(service_deps.local_file_writer)],
 ) -> JSONResponse:
     """Write a file to a local directory."""
     out_files = service.writer.write(file=vendor_file, dir=dir)
@@ -157,7 +157,7 @@ def write_remote_file(
     vendor_file: schemas.VendorFileType,
     dir: str,
     vendor: str,
-    service: Annotated[Any, Depends(service_deps.remote_file_handler)],
+    service: Annotated[Any, Depends(service_deps.remote_file_writer)],
 ) -> JSONResponse:
     """Write a file to a remote directory."""
     out_files = service.writer.write(file=vendor_file, dir=dir)

@@ -9,14 +9,14 @@ from sqlmodel import SQLModel, create_engine
 from starlette.datastructures import UploadFile as StarlettUploadFile
 
 from overload_web.application import file_service
-from overload_web.files.infrastructure import file_models
+from overload_web.files.infrastructure import file_models, sftp
 from overload_web.presentation import schemas
 
 logger = logging.getLogger(__name__)
 T = TypeVar("T", bound=schemas.BaseModelAlias)
 
 
-def create_db_and_tables():
+def get_postgres_uri() -> str:
     db_type = os.environ.get("DB_TYPE", "sqlite")
     host = os.environ.get("POSTGRES_HOST")
     port = os.environ.get("POSTGRES_PORT")
@@ -24,8 +24,13 @@ def create_db_and_tables():
     user = os.environ.get("POSTGRES_USER")
     db_name = os.environ.get("POSTGRES_DB")
     uri = f"{db_type}://{user}:{password}@{host}:{port}/{db_name}"
-    uri.replace("sqlite://None:None@None:None/None", "sqlite:///:memory:")
-    engine = create_engine(uri)
+    return uri.replace("sqlite://None:None@None:None/None", "sqlite:///:memory:")
+
+
+engine = create_engine(get_postgres_uri())
+
+
+def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 
 
@@ -61,7 +66,9 @@ def normalize_files(
         )
     if remote_files and vendor:
         vendor_dir = os.environ[f"{vendor.upper()}_SRC"]
-        service = file_service.FileTransferService.create_remote_file_service(vendor)
+        service = file_service.FileTransferService(
+            loader=sftp.SFTPFileLoader.create_loader_for_vendor(vendor)
+        )
         loaded_files = [
             service.loader.load(name=f, dir=vendor_dir) for f in remote_files
         ]

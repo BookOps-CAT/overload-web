@@ -8,6 +8,7 @@ from fastapi import Depends, Form
 from sqlmodel import Session, create_engine
 
 from overload_web.application import file_service, record_service, template_service
+from overload_web.files.infrastructure import local_io, sftp
 from overload_web.order_templates.infrastructure import repository
 
 logger = logging.getLogger(__name__)
@@ -45,14 +46,24 @@ def record_processing_service(
     )
 
 
-def local_file_handler() -> Generator[file_service.FileTransferService, None, None]:
-    yield file_service.FileTransferService.create_local_file_service()
+def local_file_writer() -> Generator[file_service.FileWriterService, None, None]:
+    yield file_service.FileWriterService(writer=local_io.LocalFileWriter())
 
 
-def remote_file_handler(
+def remote_file_loader(
     vendor: str,
 ) -> Generator[file_service.FileTransferService, None, None]:
-    yield file_service.FileTransferService.create_remote_file_service(vendor=vendor)
+    yield file_service.FileTransferService(
+        loader=sftp.SFTPFileLoader.create_loader_for_vendor(vendor=vendor)
+    )
+
+
+def remote_file_writer(
+    vendor: str,
+) -> Generator[file_service.FileWriterService, None, None]:
+    yield file_service.FileWriterService(
+        writer=sftp.SFTPFileWriter.create_writer_for_vendor(vendor=vendor)
+    )
 
 
 def template_handler(
