@@ -16,10 +16,7 @@ class ReviewedResults:
         The results as a `bibs.ReviewedResults` object.
     """
 
-    def __init__(
-        self,
-        record_type: str,
-    ) -> None:
+    def __init__(self, record_type: str) -> None:
         self.record_type = record_type
 
     def _sort_results(self) -> None:
