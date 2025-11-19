@@ -169,9 +169,9 @@ class TestApp:
         assert response.context["template"] == {}
 
     def test_api_list_remote_files_get(self):
-        response = self.client.get("/api/list-remote-files?vendor=foo")
+        response = self.client.get("/api/remote-files?vendor=foo")
         assert response.status_code == 200
-        assert response.url == f"{self.base_url}/api/list-remote-files?vendor=foo"
+        assert response.url == f"{self.base_url}/api/remote-files?vendor=foo"
         assert sorted(list(response.context.keys())) == sorted(
             ["files", "request", "vendor"]
         )
@@ -238,7 +238,7 @@ class TestApp:
         mocker.patch("builtins.open", mock_file)
 
         response = self.client.post(
-            "/api/write-local?dir=foo",
+            "/api/local-file?dir=foo",
             json={
                 "id": {"value": "1"},
                 "file_name": "foo.mrc",
@@ -246,11 +246,11 @@ class TestApp:
             },
         )
         assert response.status_code == 200
-        assert response.url == f"{self.base_url}/api/write-local?dir=foo"
+        assert response.url == f"{self.base_url}/api/local-file?dir=foo"
 
     def test_api_write_remote_file_post(self):
         response = self.client.post(
-            "/api/write-remote?dir=foo&vendor=foo",
+            "/api/remote-file?dir=foo&vendor=foo",
             json={
                 "id": {"value": "1"},
                 "file_name": "foo.mrc",
@@ -258,7 +258,7 @@ class TestApp:
             },
         )
         assert response.status_code == 200
-        assert response.url == f"{self.base_url}/api/write-remote?dir=foo&vendor=foo"
+        assert response.url == f"{self.base_url}/api/remote-file?dir=foo&vendor=foo"
 
     def test_htmx_get_local_upload_form(self):
         response = self.client.get("/htmx/forms/local-files")
