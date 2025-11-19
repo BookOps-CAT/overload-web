@@ -7,23 +7,34 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Annotated, Any
+from contextlib import asynccontextmanager
+from typing import Annotated, Any, AsyncGenerator
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from overload_web.presentation import deps, schemas, service_deps
+from overload_web.presentation import deps, service_deps
 
 logger = logging.getLogger(__name__)
-api_router = APIRouter(prefix="/api", tags=["api"], lifespan=deps.lifespan)
+
+
+@asynccontextmanager
+async def lifespan(app: APIRouter) -> AsyncGenerator[None, None]:
+    logger.info("Starting up Overload...")
+    deps.create_db_and_tables()
+    yield
+    logger.info("Shutting down Overload...")
+
+
+api_router = APIRouter(prefix="/api", tags=["api"], lifespan=lifespan)
 
 
 @api_router.post("/template", response_class=HTMLResponse)
 def create_template(
     request: Request,
     template: Annotated[
-        schemas.OrderTemplateCreateType,
-        Depends(deps.from_form(schemas.OrderTemplateCreateType)),
+        deps.schemas.OrderTemplateCreateType,
+        Depends(deps.from_form(deps.schemas.OrderTemplateCreateType)),
     ],
     service: Annotated[Any, Depends(service_deps.template_handler)],
 ) -> HTMLResponse:
@@ -104,8 +115,8 @@ def update_template(
     request: Request,
     template_id: Annotated[str, Form(...)],
     template_patch: Annotated[
-        schemas.OrderTemplateUpdateType,
-        Depends(deps.from_form(schemas.OrderTemplateUpdateType)),
+        deps.schemas.OrderTemplateUpdateType,
+        Depends(deps.from_form(deps.schemas.OrderTemplateUpdateType)),
     ],
     service: Annotated[Any, Depends(service_deps.template_handler)],
 ) -> HTMLResponse:
@@ -140,7 +151,7 @@ def update_template(
 
 @api_router.post("/local-file")
 def write_local_file(
-    vendor_file: schemas.VendorFileType,
+    vendor_file: deps.schemas.VendorFileType,
     dir: str,
     service: Annotated[Any, Depends(service_deps.local_file_writer)],
 ) -> JSONResponse:
@@ -176,7 +187,7 @@ def list_remote_files(
 
 @api_router.post("/remote-file")
 def write_remote_file(
-    vendor_file: schemas.VendorFileType,
+    vendor_file: deps.schemas.VendorFileType,
     dir: str,
     vendor: str,
     service: Annotated[Any, Depends(service_deps.remote_file_writer)],
@@ -192,13 +203,14 @@ def write_remote_file(
 def process_vendor_file(
     request: Request,
     service: Annotated[Any, Depends(service_deps.record_processing_service)],
-    files: Annotated[list[schemas.VendorFileType], Depends(deps.normalize_files)],
+    files: Annotated[list[deps.schemas.VendorFileType], Depends(deps.normalize_files)],
     order_template: Annotated[
-        schemas.OrderTemplateSchemaType,
-        Depends(deps.from_form(schemas.OrderTemplateSchemaType)),
+        deps.schemas.OrderTemplateSchemaType,
+        Depends(deps.from_form(deps.schemas.OrderTemplateSchemaType)),
     ],
     matchpoints: Annotated[
-        schemas.MatchpointSchema, Depends(deps.from_form(schemas.MatchpointSchema))
+        deps.schemas.MatchpointSchema,
+        Depends(deps.from_form(deps.schemas.MatchpointSchema)),
     ],
 ) -> HTMLResponse:
     """

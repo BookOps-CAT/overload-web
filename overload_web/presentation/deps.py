@@ -1,19 +1,17 @@
 import logging
 import os
-from contextlib import asynccontextmanager
 from inspect import Parameter, Signature
-from typing import Annotated, AsyncGenerator, TypeVar
+from typing import Annotated
 
-from fastapi import APIRouter, Form, UploadFile
+from fastapi import Form, UploadFile
 from sqlmodel import SQLModel, create_engine
 from starlette.datastructures import UploadFile as StarlettUploadFile
 
 from overload_web.application import file_service
-from overload_web.files.infrastructure import file_models, sftp
+from overload_web.files.infrastructure import sftp
 from overload_web.presentation import schemas
 
 logger = logging.getLogger(__name__)
-T = TypeVar("T", bound=schemas.BaseModelAlias)
 
 
 def get_postgres_uri() -> str:
@@ -34,18 +32,10 @@ def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 
 
-@asynccontextmanager
-async def lifespan(app: APIRouter) -> AsyncGenerator[None, None]:
-    logger.info("Starting up Overload...")
-    create_db_and_tables()
-    yield
-    logger.info("Shutting down Overload...")
-
-
 def normalize_files(
     files: Annotated[list[UploadFile] | list[str], Form(...)],
     vendor: Annotated[str, Form(...)],
-) -> list[file_models.VendorFileModel]:
+) -> list[schemas.VendorFileType]:
     remote_files = []
     local_files = []
     for file in files:
@@ -58,7 +48,7 @@ def normalize_files(
     if local_files:
         file_list.extend(
             [
-                file_models.VendorFileModel.create(
+                schemas.VendorFileType.create(
                     file_name=f.filename, content=f.file.read()
                 )
                 for f in local_files
@@ -72,13 +62,11 @@ def normalize_files(
         loaded_files = [
             service.loader.load(name=f, dir=vendor_dir) for f in remote_files
         ]
-        file_list.extend(
-            [file_models.VendorFileModel(**f.__dict__) for f in loaded_files]
-        )
+        file_list.extend([schemas.VendorFileType(**f.__dict__) for f in loaded_files])
     return file_list
 
 
-def from_form(model_class: type[T]):
+def from_form(model_class: schemas.BaseModelAlias):
     """
     A generic function used to create an object from an html form.
     HTML forms can only take data as strings so this class method is
