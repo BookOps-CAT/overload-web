@@ -28,7 +28,7 @@ class LocalFileLoader:
 
     def load(self, name: str, dir: str) -> vendor_files.VendorFile:
         with open(os.path.join(dir, name), "rb") as fh:
-            file_dto = vendor_files.VendorFile.create(content=fh.read(), file_name=name)
+            file_dto = vendor_files.VendorFile(content=fh.read(), file_name=name)
         return file_dto
 
 

@@ -115,22 +115,6 @@ class TestOrderId:
 
 class TestVendorFile:
     def test_VendorFile(self):
-        file = vendor_files.VendorFile(id="foo", content=b"", file_name="bar.mrc")
-        assert file.id == "foo"
+        file = vendor_files.VendorFile(content=b"", file_name="bar.mrc")
         assert hasattr(file.content, "hex")
         assert file.file_name == "bar.mrc"
-
-    def test_VendorFile_create(self):
-        file = vendor_files.VendorFile.create(content=b"", file_name="bar.mrc")
-        assert isinstance(file.id, vendor_files.VendorFileId)
-        assert repr(file.id) == f"VendorFileId(value='{str(file.id)}')"
-
-    def test_VendorFileId_new(self):
-        id = vendor_files.VendorFileId.new()
-        assert isinstance(id, vendor_files.VendorFileId)
-        assert repr(id) == f"VendorFileId(value='{str(id)}')"
-
-    def test_VendorFileId_invalid(self):
-        with pytest.raises(ValueError) as exc:
-            vendor_files.VendorFileId(value=123)
-        assert str(exc.value) == "VendorFileId must be a non-empty string."

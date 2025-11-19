@@ -35,7 +35,7 @@ class SFTPFileLoader:
         file_info = self.client.get_file_info(file_name=name, remote_dir=dir)
         file = self.client.get_file(file=file_info, remote_dir=dir)
         file.file_stream.seek(0)
-        return vendor_files.VendorFile.create(
+        return vendor_files.VendorFile(
             content=file.file_stream.read(), file_name=file.file_name
         )
 

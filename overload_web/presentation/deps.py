@@ -9,7 +9,7 @@ from starlette.datastructures import UploadFile as StarlettUploadFile
 
 from overload_web.application import file_service
 from overload_web.files.infrastructure import sftp
-from overload_web.presentation import schemas
+from overload_web.presentation import dto
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ def create_db_and_tables():
 def normalize_files(
     files: Annotated[list[UploadFile] | list[str], Form(...)],
     vendor: Annotated[str, Form(...)],
-) -> list[schemas.VendorFileType]:
+) -> list[dto.VendorFileModel]:
     remote_files = []
     local_files = []
     for file in files:
@@ -48,9 +48,7 @@ def normalize_files(
     if local_files:
         file_list.extend(
             [
-                schemas.VendorFileType.create(
-                    file_name=f.filename, content=f.file.read()
-                )
+                dto.VendorFileModel(file_name=str(f.filename), content=f.file.read())
                 for f in local_files
             ]
         )
@@ -62,11 +60,11 @@ def normalize_files(
         loaded_files = [
             service.loader.load(name=f, dir=vendor_dir) for f in remote_files
         ]
-        file_list.extend([schemas.VendorFileType(**f.__dict__) for f in loaded_files])
+        file_list.extend([dto.VendorFileModel(**f.__dict__) for f in loaded_files])
     return file_list
 
 
-def from_form(model_class: schemas.BaseModelAlias):
+def from_form(model_class: dto.BaseModelAlias):
     """
     A generic function used to create an object from an html form.
     HTML forms can only take data as strings so this class method is

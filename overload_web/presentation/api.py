@@ -33,8 +33,8 @@ api_router = APIRouter(prefix="/api", tags=["api"], lifespan=lifespan)
 def create_template(
     request: Request,
     template: Annotated[
-        deps.schemas.OrderTemplateCreateType,
-        Depends(deps.from_form(deps.schemas.OrderTemplateCreateType)),
+        deps.dto.OrderTemplateCreateType,
+        Depends(deps.from_form(deps.dto.OrderTemplateCreateType)),
     ],
     service: Annotated[Any, Depends(service_deps.template_handler)],
 ) -> HTMLResponse:
@@ -115,8 +115,8 @@ def update_template(
     request: Request,
     template_id: Annotated[str, Form(...)],
     template_patch: Annotated[
-        deps.schemas.OrderTemplateUpdateType,
-        Depends(deps.from_form(deps.schemas.OrderTemplateUpdateType)),
+        deps.dto.OrderTemplateUpdateType,
+        Depends(deps.from_form(deps.dto.OrderTemplateUpdateType)),
     ],
     service: Annotated[Any, Depends(service_deps.template_handler)],
 ) -> HTMLResponse:
@@ -151,7 +151,7 @@ def update_template(
 
 @api_router.post("/local-file")
 def write_local_file(
-    vendor_file: deps.schemas.VendorFileType,
+    vendor_file: deps.dto.VendorFileModel,
     dir: str,
     service: Annotated[Any, Depends(service_deps.local_file_writer)],
 ) -> JSONResponse:
@@ -187,7 +187,7 @@ def list_remote_files(
 
 @api_router.post("/remote-file")
 def write_remote_file(
-    vendor_file: deps.schemas.VendorFileType,
+    vendor_file: deps.dto.VendorFileModel,
     dir: str,
     vendor: str,
     service: Annotated[Any, Depends(service_deps.remote_file_writer)],
@@ -203,14 +203,14 @@ def write_remote_file(
 def process_vendor_file(
     request: Request,
     service: Annotated[Any, Depends(service_deps.record_processing_service)],
-    files: Annotated[list[deps.schemas.VendorFileType], Depends(deps.normalize_files)],
+    files: Annotated[list[deps.dto.VendorFileModel], Depends(deps.normalize_files)],
     order_template: Annotated[
-        deps.schemas.OrderTemplateSchemaType,
-        Depends(deps.from_form(deps.schemas.OrderTemplateSchemaType)),
+        deps.dto.OrderTemplateSchemaType,
+        Depends(deps.from_form(deps.dto.OrderTemplateSchemaType)),
     ],
     matchpoints: Annotated[
-        deps.schemas.MatchpointSchema,
-        Depends(deps.from_form(deps.schemas.MatchpointSchema)),
+        deps.dto.MatchpointSchema,
+        Depends(deps.from_form(deps.dto.MatchpointSchema)),
     ],
 ) -> HTMLResponse:
     """

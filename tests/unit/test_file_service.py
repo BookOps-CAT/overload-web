@@ -20,7 +20,7 @@ class FakeFileLoader(StubFileLoader):
         return ["foo.mrc"]
 
     def load(self, name: str, dir: str) -> vendor_files.VendorFile:
-        return vendor_files.VendorFile.create(file_name=name, content=b"")
+        return vendor_files.VendorFile(file_name=name, content=b"")
 
 
 class FakeFileWriter(StubFileWriter):
@@ -46,7 +46,6 @@ class TestFileTransferServices:
 
     def test_load_file(self):
         file = self.service.load_file(name="foo.mrc", dir="foo")
-        assert file.id is not None
         assert file.file_name == "foo.mrc"
         assert file.content == b""
 
@@ -56,12 +55,12 @@ class TestFileWriterServices:
 
     def test_service_protocols(self):
         service = file_service.FileWriterService(writer=StubFileWriter())
-        vendor_file = vendor_files.VendorFile.create(file_name="foo.mrc", content=b"")
+        vendor_file = vendor_files.VendorFile(file_name="foo.mrc", content=b"")
         assert service.write_marc_file(file=vendor_file, dir="bar") is None
 
     def test_write_marc_file(self):
         out_file = self.service.write_marc_file(
-            file=vendor_files.VendorFile.create(file_name="foo.mrc", content=b""),
+            file=vendor_files.VendorFile(file_name="foo.mrc", content=b""),
             dir="bar",
         )
         assert out_file == "foo.mrc"

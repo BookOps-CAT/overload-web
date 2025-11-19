@@ -8,9 +8,10 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from overload_web.order_templates.infrastructure import tables
+from overload_web.shared import schemas
 
 BaseModelAlias: TypeAlias = BaseModel
 OrderTemplateSchemaType: TypeAlias = tables.OrderTemplateSchema
@@ -18,9 +19,11 @@ OrderTemplateCreateType: TypeAlias = tables.OrderTemplateCreate
 OrderTemplateUpdateType: TypeAlias = tables.OrderTemplateUpdate
 
 
-class MatchpointSchema(BaseModel):
+class MatchpointSchema(BaseModel, schemas.Matchpoints):
     """Pydantic model for serializing/deserializing matchpoints from order templates"""
 
-    primary_matchpoint: str | None = None
-    secondary_matchpoint: str | None = None
-    tertiary_matchpoint: str | None = None
+
+class VendorFileModel(BaseModel, schemas.FileData):
+    """Pydantic model for serializing/deserializing `VendorFile` domain objects."""
+
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)

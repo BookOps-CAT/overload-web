@@ -14,7 +14,7 @@ def tmp_file(tmp_path):
 
 class TestLocalFiles:
     def stub_file(self, content, file_name):
-        return vendor_files.VendorFile.create(content=content, file_name=file_name)
+        return vendor_files.VendorFile(content=content, file_name=file_name)
 
     def test_local_objs(self, tmp_path):
         loader = local_io.LocalFileLoader()
@@ -45,7 +45,7 @@ class TestLocalFiles:
 
 class TestSFTPFiles:
     def stub_file(self, content, file_name):
-        return vendor_files.VendorFile.create(content=content, file_name=file_name)
+        return vendor_files.VendorFile(content=content, file_name=file_name)
 
     def test_sftp_loader(self, mock_sftp_client):
         loader = sftp.SFTPFileLoader(client=mock_sftp_client)
@@ -72,7 +72,6 @@ class TestSFTPFiles:
         loader = sftp.SFTPFileLoader(client=mock_sftp_client)
         file = loader.load(name="foo.mrc", dir="test")
         assert file.content == b""
-        assert file.id is not None
 
     def test_write(self, mock_sftp_client):
         writer = sftp.SFTPFileWriter(client=mock_sftp_client)
