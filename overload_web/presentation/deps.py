@@ -1,32 +1,22 @@
-import json
 import logging
 import os
 from contextlib import asynccontextmanager
-from functools import lru_cache
 from inspect import Parameter, Signature
-from typing import Annotated, Any, AsyncGenerator, Generator, TypeVar
+from typing import Annotated, AsyncGenerator, TypeVar
 
-from fastapi import APIRouter, Depends, Form, UploadFile
-from sqlmodel import Session, SQLModel, create_engine
+from fastapi import APIRouter, Form, UploadFile
+from sqlmodel import SQLModel, create_engine
 from starlette.datastructures import UploadFile as StarlettUploadFile
 
-from overload_web.application import file_service, record_service, template_service
+from overload_web.application import file_service
 from overload_web.files.infrastructure import file_models
-from overload_web.order_templates.infrastructure import repository
 from overload_web.presentation import schemas
 
 logger = logging.getLogger(__name__)
 T = TypeVar("T", bound=schemas.BaseModelAlias)
 
 
-@lru_cache
-def load_constants() -> dict[str, dict[str, str | dict[str, str]]]:
-    with open("overload_web/constants.json", "r", encoding="utf-8") as fh:
-        constants = json.load(fh)
-    return constants
-
-
-def get_postgres_uri() -> str:
+def create_db_and_tables():
     db_type = os.environ.get("DB_TYPE", "sqlite")
     host = os.environ.get("POSTGRES_HOST")
     port = os.environ.get("POSTGRES_PORT")
@@ -34,13 +24,8 @@ def get_postgres_uri() -> str:
     user = os.environ.get("POSTGRES_USER")
     db_name = os.environ.get("POSTGRES_DB")
     uri = f"{db_type}://{user}:{password}@{host}:{port}/{db_name}"
-    return uri.replace("sqlite://None:None@None:None/None", "sqlite:///:memory:")
-
-
-engine = create_engine(get_postgres_uri())
-
-
-def create_db_and_tables():
+    uri.replace("sqlite://None:None@None:None/None", "sqlite:///:memory:")
+    engine = create_engine(uri)
     SQLModel.metadata.create_all(engine)
 
 
@@ -50,11 +35,6 @@ async def lifespan(app: APIRouter) -> AsyncGenerator[None, None]:
     create_db_and_tables()
     yield
     logger.info("Shutting down Overload...")
-
-
-def get_session() -> Generator[Session, None, None]:
-    with Session(engine) as session:
-        yield session
 
 
 def normalize_files(
@@ -91,17 +71,6 @@ def normalize_files(
     return file_list
 
 
-def record_processing_service(
-    record_type: Annotated[str, Form(...)],
-    library: Annotated[str, Form(...)],
-    collection: Annotated[str, Form(...)],
-    constants: Annotated[dict[str, dict], Depends(load_constants)],
-) -> Generator[record_service.RecordProcessingService, None, None]:
-    yield record_service.RecordProcessingService(
-        library=library, collection=collection, record_type=record_type, rules=constants
-    )
-
-
 def from_form(model_class: type[T]):
     """
     A generic function used to create an object from an html form.
@@ -128,21 +97,3 @@ def from_form(model_class: type[T]):
     ]
     func.__signature__ = Signature(parameters=params)  # type: ignore[attr-defined]
     return func
-
-
-def local_file_handler() -> Generator[file_service.FileTransferService, None, None]:
-    yield file_service.FileTransferService.create_local_file_service()
-
-
-def remote_file_handler(
-    vendor: str,
-) -> Generator[file_service.FileTransferService, None, None]:
-    yield file_service.FileTransferService.create_remote_file_service(vendor=vendor)
-
-
-def template_handler(
-    session: Annotated[Any, Depends(get_session)],
-) -> Generator[template_service.OrderTemplateService, None, None]:
-    yield template_service.OrderTemplateService(
-        repo=repository.SqlModelRepository(session=session)
-    )

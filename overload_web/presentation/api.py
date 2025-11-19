@@ -12,13 +12,13 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from overload_web.presentation import deps, schemas
+from overload_web.presentation import deps, schemas, service_deps
 
 logger = logging.getLogger(__name__)
 api_router = APIRouter(prefix="/api", tags=["api"], lifespan=deps.lifespan)
 
 
-TemplateServiceDep = Annotated[Any, Depends(deps.template_handler)]
+TemplateServiceDep = Annotated[Any, Depends(service_deps.template_handler)]
 
 
 @api_router.post("/template", response_class=HTMLResponse)
@@ -94,7 +94,7 @@ def update_template(
 def list_remote_files(
     request: Request,
     vendor: str,
-    service: Annotated[Any, Depends(deps.remote_file_handler)],
+    service: Annotated[Any, Depends(service_deps.remote_file_handler)],
 ) -> HTMLResponse:
     """
     List all files on a vendor's SFTP server
@@ -116,9 +116,9 @@ def list_remote_files(
 @api_router.post("/process-vendor-file", response_class=HTMLResponse)
 def process_vendor_file(
     request: Request,
-    service: Annotated[Any, Depends(deps.record_processing_service)],
+    service: Annotated[Any, Depends(service_deps.record_processing_service)],
     files: Annotated[list[schemas.VendorFileType], Depends(deps.normalize_files)],
-    template_input: Annotated[
+    order_template: Annotated[
         schemas.OrderTemplateSchemaType,
         Depends(deps.from_form(schemas.OrderTemplateSchemaType)),
     ],
@@ -127,7 +127,7 @@ def process_vendor_file(
     ],
 ) -> HTMLResponse:
     out_files = []
-    template = template_input.model_dump()
+    template = order_template.model_dump()
     matchpoint_list = matchpoints.model_dump()
     for file in files:
         output = service.process_vendor_file(
@@ -143,7 +143,7 @@ def process_vendor_file(
 def write_local_file(
     vendor_file: schemas.VendorFileType,
     dir: str,
-    service: Annotated[Any, Depends(deps.local_file_handler)],
+    service: Annotated[Any, Depends(service_deps.local_file_handler)],
 ) -> JSONResponse:
     """Write a file to a local directory."""
     out_files = service.writer.write(file=vendor_file, dir=dir)
@@ -157,7 +157,7 @@ def write_remote_file(
     vendor_file: schemas.VendorFileType,
     dir: str,
     vendor: str,
-    service: Annotated[Any, Depends(deps.remote_file_handler)],
+    service: Annotated[Any, Depends(service_deps.remote_file_handler)],
 ) -> JSONResponse:
     """Write a file to a remote directory."""
     out_files = service.writer.write(file=vendor_file, dir=dir)

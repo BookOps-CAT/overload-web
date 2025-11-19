@@ -388,6 +388,6 @@ def make_bib_dto(stub_bib, stub_constants, library) -> Callable:
 
 @pytest.fixture
 def stub_constants():
-    with open("overload_web/constants.json", "r", encoding="utf-8") as fh:
+    with open("overload_web/vendor_specs.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     return constants

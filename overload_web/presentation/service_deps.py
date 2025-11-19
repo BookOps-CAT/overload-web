@@ -1,0 +1,63 @@
+import json
+import logging
+import os
+from functools import lru_cache
+from typing import Annotated, Any, Generator
+
+from fastapi import Depends, Form
+from sqlmodel import Session, create_engine
+
+from overload_web.application import file_service, record_service, template_service
+from overload_web.order_templates.infrastructure import repository
+
+logger = logging.getLogger(__name__)
+
+
+@lru_cache
+def load_constants() -> dict[str, dict[str, str | dict[str, str]]]:
+    with open("overload_web/vendor_specs.json", "r", encoding="utf-8") as fh:
+        constants = json.load(fh)
+    return constants
+
+
+def get_session() -> Generator[Session, None, None]:
+    db_type = os.environ.get("DB_TYPE", "sqlite")
+    host = os.environ.get("POSTGRES_HOST")
+    port = os.environ.get("POSTGRES_PORT")
+    password = os.environ.get("POSTGRES_PASSWORD")
+    user = os.environ.get("POSTGRES_USER")
+    db_name = os.environ.get("POSTGRES_DB")
+    uri = f"{db_type}://{user}:{password}@{host}:{port}/{db_name}"
+    uri.replace("sqlite://None:None@None:None/None", "sqlite:///:memory:")
+    engine = create_engine(uri)
+    with Session(engine) as session:
+        yield session
+
+
+def record_processing_service(
+    record_type: Annotated[str, Form(...)],
+    library: Annotated[str, Form(...)],
+    collection: Annotated[str, Form(...)],
+    constants: Annotated[dict[str, dict], Depends(load_constants)],
+) -> Generator[record_service.RecordProcessingService, None, None]:
+    yield record_service.RecordProcessingService(
+        library=library, collection=collection, record_type=record_type, rules=constants
+    )
+
+
+def local_file_handler() -> Generator[file_service.FileTransferService, None, None]:
+    yield file_service.FileTransferService.create_local_file_service()
+
+
+def remote_file_handler(
+    vendor: str,
+) -> Generator[file_service.FileTransferService, None, None]:
+    yield file_service.FileTransferService.create_remote_file_service(vendor=vendor)
+
+
+def template_handler(
+    session: Annotated[Any, Depends(get_session)],
+) -> Generator[template_service.OrderTemplateService, None, None]:
+    yield template_service.OrderTemplateService(
+        repo=repository.SqlModelRepository(session=session)
+    )
