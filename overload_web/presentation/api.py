@@ -18,9 +18,6 @@ logger = logging.getLogger(__name__)
 api_router = APIRouter(prefix="/api", tags=["api"], lifespan=deps.lifespan)
 
 
-TemplateServiceDep = Annotated[Any, Depends(service_deps.template_handler)]
-
-
 @api_router.post("/template", response_class=HTMLResponse)
 def create_template(
     request: Request,
@@ -28,7 +25,7 @@ def create_template(
         schemas.OrderTemplateCreateType,
         Depends(deps.from_form(schemas.OrderTemplateCreateType)),
     ],
-    service: TemplateServiceDep,
+    service: Annotated[Any, Depends(service_deps.template_handler)],
 ) -> HTMLResponse:
     saved_template = service.save_template(obj=template)
     return request.app.state.templates.TemplateResponse(
@@ -40,7 +37,9 @@ def create_template(
 
 @api_router.get("/template", response_class=HTMLResponse)
 def get_template(
-    request: Request, template_id: str, service: TemplateServiceDep
+    request: Request,
+    template_id: str,
+    service: Annotated[Any, Depends(service_deps.template_handler)],
 ) -> HTMLResponse:
     template = service.get_template(template_id=template_id)
     template_out = (
@@ -55,7 +54,10 @@ def get_template(
 
 @api_router.get("/templates", response_class=HTMLResponse)
 def get_template_list(
-    request: Request, service: TemplateServiceDep, offset: int = 0, limit: int = 20
+    request: Request,
+    service: Annotated[Any, Depends(service_deps.template_handler)],
+    offset: int = 0,
+    limit: int = 20,
 ) -> HTMLResponse:
     template_list = service.list_templates(offset=offset, limit=limit)
     return request.app.state.templates.TemplateResponse(
@@ -73,7 +75,7 @@ def update_template(
         schemas.OrderTemplateUpdateType,
         Depends(deps.from_form(schemas.OrderTemplateUpdateType)),
     ],
-    service: TemplateServiceDep,
+    service: Annotated[Any, Depends(service_deps.template_handler)],
 ) -> HTMLResponse:
     updated_template = service.update_template(
         template_id=template_id, obj=template_patch

@@ -21,7 +21,7 @@ def load_constants() -> dict[str, dict[str, str | dict[str, str]]]:
     return constants
 
 
-def get_session() -> Generator[Session, None, None]:
+def get_postgres_uri() -> str:
     db_type = os.environ.get("DB_TYPE", "sqlite")
     host = os.environ.get("POSTGRES_HOST")
     port = os.environ.get("POSTGRES_PORT")
@@ -29,8 +29,13 @@ def get_session() -> Generator[Session, None, None]:
     user = os.environ.get("POSTGRES_USER")
     db_name = os.environ.get("POSTGRES_DB")
     uri = f"{db_type}://{user}:{password}@{host}:{port}/{db_name}"
-    uri.replace("sqlite://None:None@None:None/None", "sqlite:///:memory:")
-    engine = create_engine(uri)
+    return uri.replace("sqlite://None:None@None:None/None", "sqlite:///:memory:")
+
+
+engine = create_engine(get_postgres_uri())
+
+
+def get_session() -> Generator[Session, None, None]:
     with Session(engine) as session:
         yield session
 
