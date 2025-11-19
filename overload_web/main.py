@@ -11,16 +11,18 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from overload_web import logging_config
+from overload_web import config
 from overload_web.presentation import api, frontend, partials
 
 load_dotenv(dotenv_path="debug.env")
 logger = logging.getLogger("overload_web")
 
 
-logging_config.setup_logging()
+config.setup_logging()
 
 app = FastAPI()
+
+app.state.templates = config.get_templates()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.include_router(frontend.frontend_router)

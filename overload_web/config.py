@@ -1,16 +1,20 @@
-"""Creates dictionary to configure logger for Overload"""
+"""Functions to help configure FastAPI Application"""
 
+import json
 import logging
 import logging.config
 import os
+from functools import lru_cache
+
+from fastapi.templating import Jinja2Templates
 
 logger = logging.getLogger(__name__)
 
 
-def create_logger_dict() -> dict:
-    """Create a dictionary to configure logger."""
+def setup_logging():
+    """Sets up logging based on logger dict"""
     loggly_token = os.environ.get("LOGGLY_TOKEN")
-    return {
+    logger_config = {
         "version": 1,
         "disable_existing_loggers": False,
         "formatters": {
@@ -43,8 +47,20 @@ def create_logger_dict() -> dict:
             },
         },
     }
-
-
-def setup_logging():
-    logger_config = create_logger_dict()
     logging.config.dictConfig(logger_config)
+
+
+@lru_cache
+def get_templates() -> Jinja2Templates:
+    """Loads Jinja2 templates and sets env vars"""
+    with open("overload_web/form_constants.json", "r", encoding="utf-8") as fh:
+        constants = json.load(fh)
+    templates = Jinja2Templates(directory="overload_web/presentation/templates")
+    templates.env.globals["fixed_fields"] = constants["fixed_fields"]
+    templates.env.globals["var_fields"] = constants["var_fields"]
+    templates.env.globals["matchpoints"] = constants["matchpoints"]
+    templates.env.globals["bib_formats"] = constants["material_form"]
+    templates.env.globals["context_fields"] = constants["context_fields"]
+    templates.env.globals["vendors"] = constants["vendors"]
+    templates.env.globals["application"] = "Overload Web"
+    return templates

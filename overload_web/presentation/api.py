@@ -12,12 +12,11 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from overload_web.presentation import config, deps, schemas
+from overload_web.presentation import deps, schemas
 
 logger = logging.getLogger(__name__)
 api_router = APIRouter(prefix="/api", tags=["api"], lifespan=deps.lifespan)
 
-templates = config.get_templates()
 
 TemplateServiceDep = Annotated[Any, Depends(deps.template_handler)]
 
@@ -32,7 +31,7 @@ def create_template(
     service: TemplateServiceDep,
 ) -> HTMLResponse:
     saved_template = service.save_template(obj=template)
-    return templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(
         request=request,
         name="record_templates/template_form.html",
         context={"template": saved_template.model_dump()},
@@ -47,7 +46,7 @@ def get_template(
     template_out = (
         {k: v for k, v in template.model_dump().items() if v} if template else {}
     )
-    return templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(
         request=request,
         name="record_templates/rendered_template.html",
         context={"template": template_out},
@@ -59,7 +58,7 @@ def get_template_list(
     request: Request, service: TemplateServiceDep, offset: int = 0, limit: int = 20
 ) -> HTMLResponse:
     template_list = service.list_templates(offset=offset, limit=limit)
-    return templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(
         request=request,
         name="record_templates/template_list.html",
         context={"templates": [i.model_dump() for i in template_list]},
@@ -84,7 +83,7 @@ def update_template(
         if updated_template
         else {}
     )
-    return templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(
         request=request,
         name="record_templates/template_form.html",
         context={"template": template_out},
@@ -107,7 +106,7 @@ def list_remote_files(
         the list of files wrapped in a `HTMLResponse` object
     """
     files = service.loader.list(dir=os.environ[f"{vendor.upper()}_SRC"])
-    return templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(
         request=request,
         name="files/remote_list.html",
         context={"files": files, "vendor": vendor},
@@ -135,7 +134,7 @@ def process_vendor_file(
             data=file.content, template_data=template, matchpoints=matchpoint_list
         )
         out_files.append({"file_name": file.file_name, "binary_content": output})
-    return templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(
         request=request, name="partials/pvf_results.html", context={"files": out_files}
     )
 

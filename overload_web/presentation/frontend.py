@@ -1,4 +1,4 @@
-"""Frontend router using `Jinja2` templates.
+"""Frontend router using `Jinja2` request.app.state.templates.
 
 Serves HTML pages for Overload Web's user interface.
 """
@@ -10,11 +10,8 @@ import logging
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from overload_web.presentation import config
-
 logger = logging.getLogger(__name__)
 frontend_router = APIRouter(tags=["frontend"])
-templates = config.get_templates()
 
 
 @frontend_router.get("/", response_class=HTMLResponse)
@@ -29,7 +26,7 @@ def root(request: Request, page_title: str = "Overload Web") -> HTMLResponse:
     Returns:
         HTML response for the home page.
     """
-    return templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(
         request=request, name="home.html", context={"page_title": page_title}
     )
 
@@ -48,7 +45,7 @@ def vendor_file_page(
     Returns:
         HTML response for the home page.
     """
-    return templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(
         request=request, name="context_form.html", context={"page_title": page_title}
     )
 
@@ -107,7 +104,7 @@ def process_records_page(
     Returns:
         HTML response for the vendor file page.
     """
-    return templates.TemplateResponse(
+    return request.app.state.templates.TemplateResponse(
         request=request,
         name="process.html",
         context={

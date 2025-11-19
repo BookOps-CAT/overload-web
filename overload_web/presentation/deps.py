@@ -13,7 +13,7 @@ from starlette.datastructures import UploadFile as StarlettUploadFile
 from overload_web.application import file_service, record_service, template_service
 from overload_web.files.infrastructure import file_models
 from overload_web.order_templates.infrastructure import repository
-from overload_web.presentation import config, schemas
+from overload_web.presentation import schemas
 
 logger = logging.getLogger(__name__)
 T = TypeVar("T", bound=schemas.BaseModelAlias)
@@ -26,7 +26,18 @@ def load_constants() -> dict[str, dict[str, str | dict[str, str]]]:
     return constants
 
 
-engine = create_engine(config.get_postgres_uri())
+def get_postgres_uri() -> str:
+    db_type = os.environ.get("DB_TYPE", "sqlite")
+    host = os.environ.get("POSTGRES_HOST")
+    port = os.environ.get("POSTGRES_PORT")
+    password = os.environ.get("POSTGRES_PASSWORD")
+    user = os.environ.get("POSTGRES_USER")
+    db_name = os.environ.get("POSTGRES_DB")
+    uri = f"{db_type}://{user}:{password}@{host}:{port}/{db_name}"
+    return uri.replace("sqlite://None:None@None:None/None", "sqlite:///:memory:")
+
+
+engine = create_engine(get_postgres_uri())
 
 
 def create_db_and_tables():
