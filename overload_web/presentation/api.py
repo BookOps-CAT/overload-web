@@ -13,7 +13,7 @@ from typing import Annotated, Any, AsyncGenerator
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from overload_web.presentation import deps, service_deps
+from overload_web.presentation import deps, dto, service_deps
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +33,7 @@ api_router = APIRouter(prefix="/api", tags=["api"], lifespan=lifespan)
 def create_template(
     request: Request,
     template: Annotated[
-        deps.dto.OrderTemplateCreateType,
-        Depends(deps.from_form(deps.dto.OrderTemplateCreateType)),
+        dto.TemplateCreateModel, Depends(deps.from_form(dto.TemplateCreateModel))
     ],
     service: Annotated[Any, Depends(service_deps.template_handler)],
 ) -> HTMLResponse:
@@ -42,7 +41,7 @@ def create_template(
     Save a new order template to the template DB.
 
     Args:
-        template: the order template to save as an `OrderTemplateCreate` object.
+        template: the order template to save as an `TemplateCreateModel` object.
         service: an `OrderTemplateService` object used to interact with the DB
 
     Returns:
@@ -52,7 +51,7 @@ def create_template(
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="record_templates/template_form.html",
-        context={"template": saved_template.model_dump()},
+        context={"template": saved_template.__dict__},
     )
 
 
@@ -73,9 +72,7 @@ def get_template(
         the retrieved order template wrapped in a `HTMLResponse` object
     """
     template = service.get_template(template_id=template_id)
-    template_out = (
-        {k: v for k, v in template.model_dump().items() if v} if template else {}
-    )
+    template_out = {k: v for k, v in template.__dict__.items() if v} if template else {}
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="record_templates/rendered_template.html",
@@ -106,7 +103,7 @@ def get_template_list(
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="record_templates/template_list.html",
-        context={"templates": [i.model_dump() for i in template_list]},
+        context={"templates": template_list},
     )
 
 
@@ -115,8 +112,8 @@ def update_template(
     request: Request,
     template_id: Annotated[str, Form(...)],
     template_patch: Annotated[
-        deps.dto.OrderTemplateUpdateType,
-        Depends(deps.from_form(deps.dto.OrderTemplateUpdateType)),
+        dto.TemplatePatchModel,
+        Depends(deps.from_form(dto.TemplatePatchModel)),
     ],
     service: Annotated[Any, Depends(service_deps.template_handler)],
 ) -> HTMLResponse:
@@ -127,7 +124,7 @@ def update_template(
         template_id:
             the template's ID as a string.
         template_patch:
-            data to be updated in the template as an `OrderTemplateUpdate` object
+            data to be updated in the template as an `TemplatePatchModel` object
         service:
             an `OrderTemplateService` object used to interact with the DB
 
@@ -138,7 +135,7 @@ def update_template(
         template_id=template_id, obj=template_patch
     )
     template_out = (
-        {k: v for k, v in updated_template.model_dump().items() if v}
+        {k: v for k, v in updated_template.__dict__.items() if v}
         if updated_template
         else {}
     )
@@ -151,7 +148,7 @@ def update_template(
 
 @api_router.post("/local-file")
 def write_local_file(
-    vendor_file: deps.dto.VendorFileModel,
+    vendor_file: dto.VendorFileModel,
     dir: str,
     service: Annotated[Any, Depends(service_deps.local_file_writer)],
 ) -> JSONResponse:
@@ -187,7 +184,7 @@ def list_remote_files(
 
 @api_router.post("/remote-file")
 def write_remote_file(
-    vendor_file: deps.dto.VendorFileModel,
+    vendor_file: dto.VendorFileModel,
     dir: str,
     vendor: str,
     service: Annotated[Any, Depends(service_deps.remote_file_writer)],
@@ -203,14 +200,13 @@ def write_remote_file(
 def process_vendor_file(
     request: Request,
     service: Annotated[Any, Depends(service_deps.record_processing_service)],
-    files: Annotated[list[deps.dto.VendorFileModel], Depends(deps.normalize_files)],
+    files: Annotated[list[dto.VendorFileModel], Depends(deps.normalize_files)],
     order_template: Annotated[
-        deps.dto.OrderTemplateSchemaType,
-        Depends(deps.from_form(deps.dto.OrderTemplateSchemaType)),
+        dto.TemplateDataModel, Depends(deps.from_form(dto.TemplateDataModel))
     ],
     matchpoints: Annotated[
-        deps.dto.MatchpointSchema,
-        Depends(deps.from_form(deps.dto.MatchpointSchema)),
+        dto.MatchpointSchema,
+        Depends(deps.from_form(dto.MatchpointSchema)),
     ],
 ) -> HTMLResponse:
     """

@@ -8,7 +8,7 @@ from overload_web.presentation import deps, service_deps
 
 
 def stub_sql_session():
-    template = tables.OrderTemplate(name="foo", agent="bar", primary_matchpoint="isbn")
+    template = tables.TemplateTable(name="foo", agent="bar", primary_matchpoint="isbn")
     test_engine = create_engine("sqlite:///:memory:")
     SQLModel.metadata.create_all(test_engine)
     with Session(test_engine) as session:

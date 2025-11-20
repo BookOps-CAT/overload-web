@@ -5,8 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Sequence
 
-from overload_web.order_templates.domain import sql_protocol
-from overload_web.order_templates.infrastructure import tables
+from overload_web.order_templates.domain import sql_protocol, templates
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +22,7 @@ class OrderTemplateService:
         """
         self.repo = repo
 
-    def get_template(self, template_id: str) -> tables.OrderTemplate | None:
+    def get_template(self, template_id: str) -> templates.OrderTemplate | None:
         """
         Retrieve an order template by its ID.
 
@@ -33,12 +32,11 @@ class OrderTemplateService:
         Returns:
             The retrieved template as a `OrderTemplate` object or None.
         """
-        template = self.repo.get(id=template_id)
-        return template
+        return self.repo.get(id=template_id)
 
     def list_templates(
         self, offset: int | None = 0, limit: int | None = 20
-    ) -> Sequence[tables.OrderTemplate]:
+    ) -> Sequence[templates.OrderTemplate]:
         """
         Retrieve a list of templates in the database.
 
@@ -51,7 +49,9 @@ class OrderTemplateService:
         """
         return self.repo.list(offset=offset, limit=limit)
 
-    def save_template(self, obj: tables._OrderTemplateBase) -> tables.OrderTemplate:
+    def save_template(
+        self, obj: templates.OrderTemplateBase
+    ) -> templates.OrderTemplate:
         """
         Save an order template.
 
@@ -59,36 +59,24 @@ class OrderTemplateService:
             data: template data as a dict.
 
         Raises:
-            ValueError: If the template lacks a name or agent.
+            ValidationError: If the template lacks a name, agent, or primary_matchpoint.
 
         Returns:
             The saved template.
         """
-        valid_obj = tables.OrderTemplate.model_validate(obj)
-        self.repo.save(obj=valid_obj)
-        self.repo.session.commit()
-        self.repo.session.refresh(valid_obj)
-
-        return valid_obj
+        save_template = self.repo.save(obj=obj)
+        return templates.OrderTemplate(**save_template.model_dump())
 
     def update_template(
-        self, template_id: str, obj: tables.OrderTemplateUpdate
-    ) -> tables.OrderTemplate | None:
+        self, template_id: str, obj: templates.OrderTemplateBase
+    ) -> templates.OrderTemplate | None:
         """
         Update an existing an order template.
 
         Args:
             data: template data as a dict.
 
-        Raises:
-            ValueError: If the template lacks a name or agent.
-
         Returns:
-            The updated template or None if it does not exist
+            The updated template or None if the template does not exist
         """
-        patch_data = obj.model_dump(exclude_unset=True)
-        updated_template = self.repo.update(id=template_id, data=patch_data)
-        if updated_template:
-            self.repo.session.commit()
-            self.repo.session.refresh(updated_template)
-        return updated_template
+        return self.repo.update(id=template_id, data=obj)

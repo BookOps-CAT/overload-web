@@ -30,4 +30,4 @@ def test_save_template(id, name, agent, test_sql_session, make_template):
     )
     repo.save(template)
     saved_template = repo.get(id=id)
-    assert saved_template == template
+    assert saved_template.__dict__ == template.model_dump()

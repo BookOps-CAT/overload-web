@@ -1,10 +1,10 @@
-"""A class representing a relational database for `OrderTemplate` objects.
+"""A class representing a relational database for `TemplateTable` objects.
 
 Classes:
 
 `SqlModelRepository`
     `SQLModel` implementation of `SqlRepositoryProtocol` for managing
-    `OrderTemplate` objects in a SQL database.
+    `TemplateTable` objects in a SQL database.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ from typing import Sequence
 
 from sqlmodel import Session, select
 
+from overload_web.order_templates.domain import templates
 from overload_web.order_templates.infrastructure import tables
 
 logger = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class SqlModelRepository:
     """
-    `SQLModel` repository for `OrderTemplate` objects.
+    `SQLModel` repository for `TemplateTable` objects.
 
     This class is a concrete implementation of the `SqlRepositoryProtocol` protocol.
 
@@ -32,7 +33,7 @@ class SqlModelRepository:
     def __init__(self, session: Session):
         self.session = session
 
-    def get(self, id: str | int) -> tables.OrderTemplate | None:
+    def get(self, id: str | int) -> templates.OrderTemplate | None:
         """
         Retrieve a `OrderTemplate` object by its ID.
 
@@ -42,11 +43,12 @@ class SqlModelRepository:
         Returns:
             a `OrderTemplate` instance or `None` if not found.
         """
-        return self.session.get(tables.OrderTemplate, id)
+        template = self.session.get(tables.TemplateTable, id)
+        return templates.OrderTemplate(**template.model_dump()) if template else None
 
     def list(
         self, offset: int | None = 0, limit: int | None = 0
-    ) -> Sequence[tables.OrderTemplate]:
+    ) -> Sequence[templates.OrderTemplate]:
         """
         Retrieve all `OrderTemplate` objects in the database.
 
@@ -57,20 +59,25 @@ class SqlModelRepository:
         Returns:
             a sequence of `OrderTemplate` objects.
         """
-        statement = select(tables.OrderTemplate).offset(offset).limit(limit)
+        statement = select(tables.TemplateTable).offset(offset).limit(limit)
         results = self.session.exec(statement)
-        return results.all()
+        all_templates = results.all()
+        return [templates.OrderTemplate(**i.model_dump()) for i in all_templates]
 
-    def save(self, obj: tables.OrderTemplate) -> None:
+    def save(self, obj: tables.TemplateTable) -> tables.TemplateTable:
         """
-        Adds a new `OrderTemplate` to the database.
+        Adds a new `TemplateTable` to the database.
 
         Args:
-            obj: the `OrderTemplate` object to save.
+            obj: the `TemplateTable` object to save.
         """
-        self.session.add(obj)
+        valid_obj = tables.TemplateTable.model_validate(obj, from_attributes=True)
+        self.session.add(valid_obj)
+        self.session.commit()
+        self.session.refresh(valid_obj)
+        return valid_obj
 
-    def update(self, id: str, data: dict[str, str]) -> tables.OrderTemplate | None:
+    def update(self, id: str, data: tables.SQLModel) -> templates.OrderTemplate | None:
         """
         Updates an existing `OrderTemplate` in the database.
 
@@ -78,13 +85,15 @@ class SqlModelRepository:
             id: the id of the template to be updated
             data: the data to be used to update the existing template.
         Returns:
-            a `OrderTemplate` instance or `None` if not found.
+            a `TemplateTable` instance or `None` if not found.
         """
-        template = self.session.get(tables.OrderTemplate, id)
+        template = self.session.get(tables.TemplateTable, id)
         if not template:
             logger.error(f"Template '{id}' does not exist")
-            return None
         else:
-            template.sqlmodel_update(data)
+            patch_data = data.model_dump(exclude_unset=True)
+            template.sqlmodel_update(patch_data)
             self.session.add(template)
-            return template
+            self.session.commit()
+            self.session.refresh(template)
+        return templates.OrderTemplate(**template.model_dump()) if template else None

@@ -6,16 +6,12 @@ model.
 
 Models:
 
-`_OrderTemplateBase`
+`_TemplateTableBase`
     The base data model used to represent an order template and fields that are shared
     by all models within this module.
-`OrderTemplate`
+`TemplateTable`
     The table model that includes all fields within an order template including fields
     that are only required for the template to be saved to the database.
-`OrderTemplateCreate`
-    The data model used to create a new order template.
-`OrderTemplateUpdate`
-    The data model used to update an existing order template.
 """
 
 from __future__ import annotations
@@ -23,20 +19,19 @@ from __future__ import annotations
 import logging
 from typing import Annotated
 
-from pydantic import BaseModel, field_validator
 from sqlmodel import Field, MetaData, SQLModel
 
 logger = logging.getLogger(__name__)
 metadata = MetaData()
 
 
-class _OrderTemplateBase(SQLModel):
+class _TemplateTableBase(SQLModel):
     """
     A reusable template for applying consistent values to orders.
 
     Attributes:
-        name: the name to be associated with the `OrderTemplate` in the database
-        agent: the user who created the `OrderTemplate`
+        name: the name to be associated with the `TemplateTable` in the database
+        agent: the user who created the `TemplateTable`
 
     All other fields correspond to those available in the `Order` domain model.
 
@@ -68,68 +63,5 @@ class _OrderTemplateBase(SQLModel):
     tertiary_matchpoint: Annotated[str | None, Field(default=None)]
 
 
-class OrderTemplate(_OrderTemplateBase, table=True):
+class TemplateTable(_TemplateTableBase, table=True):
     id: Annotated[int, Field(default=None, primary_key=True, index=True)]
-
-
-class OrderTemplateCreate(_OrderTemplateBase):
-    ...
-
-    @field_validator("*", mode="before")
-    @classmethod
-    def parse_form_fields(cls, value: str) -> str | None:
-        if not value or value.strip() == "":
-            return None
-        else:
-            return value.strip()
-
-
-class OrderTemplateUpdate(SQLModel):
-    name: str | None = None
-    agent: str | None = None
-    primary_matchpoint: str | None = None
-    acquisition_type: str | None = None
-    blanket_po: str | None = None
-    claim_code: str | None = None
-    country: str | None = None
-    format: str | None = None
-    internal_note: str | None = None
-    lang: str | None = None
-    material_form: str | None = None
-    order_code_1: str | None = None
-    order_code_2: str | None = None
-    order_code_3: str | None = None
-    order_code_4: str | None = None
-    order_note: str | None = None
-    order_type: str | None = None
-    receive_action: str | None = None
-    selector_note: str | None = None
-    vendor_code: str | None = None
-    vendor_notes: str | None = None
-    vendor_title_no: str | None = None
-    secondary_matchpoint: str | None = None
-    tertiary_matchpoint: str | None = None
-
-
-class OrderTemplateSchema(BaseModel):
-    """Pydantic model for serializing/deserializing order templates"""
-
-    acquisition_type: str | None = None
-    blanket_po: str | None = None
-    claim_code: str | None = None
-    country: str | None = None
-    format: str | None = None
-    internal_note: str | None = None
-    lang: str | None = None
-    material_form: str | None = None
-    order_code_1: str | None = None
-    order_code_2: str | None = None
-    order_code_3: str | None = None
-    order_code_4: str | None = None
-    order_note: str | None = None
-    order_type: str | None = None
-    receive_action: str | None = None
-    selector_note: str | None = None
-    vendor_code: str | None = None
-    vendor_notes: str | None = None
-    vendor_title_no: str | None = None

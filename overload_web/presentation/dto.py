@@ -1,22 +1,18 @@
 """Pydantic models for request validation and response serialization.
 
-These models wrap domain models when possible in order to to enable
-compatibility with pydantic while minimizing amount of repeated code.
+These models wrap dataclasses from shared schemas when possible in order
+to enable compatibility with pydantic while minimizing amount of repeated code.
 """
 
 from __future__ import annotations
 
 from typing import TypeAlias
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, field_validator
 
-from overload_web.order_templates.infrastructure import tables
 from overload_web.shared import schemas
 
 BaseModelAlias: TypeAlias = BaseModel
-OrderTemplateSchemaType: TypeAlias = tables.OrderTemplateSchema
-OrderTemplateCreateType: TypeAlias = tables.OrderTemplateCreate
-OrderTemplateUpdateType: TypeAlias = tables.OrderTemplateUpdate
 
 
 class MatchpointSchema(BaseModel, schemas._Matchpoints):
@@ -26,4 +22,32 @@ class MatchpointSchema(BaseModel, schemas._Matchpoints):
 class VendorFileModel(BaseModel, schemas._VendorFile):
     """Pydantic model for serializing/deserializing `VendorFile` domain objects."""
 
-    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
+
+class TemplateDataModel(BaseModel, schemas._TemplateData):
+    """Pydantic model for serializing/deserializing order template data"""
+
+
+class TemplatePatchModel(BaseModel, schemas._TemplateBase):
+    """
+    Pydantic model for serializing/deserializing order template data
+    when used to update a template in the DB.
+    """
+
+
+class TemplateCreateModel(BaseModel, schemas._TemplateBase):
+    """
+    Pydantic model for serializing/deserializing order template data
+    used when creating a template in the DB.
+    """
+
+    name: str
+    agent: str
+    primary_matchpoint: str
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def parse_form_fields(cls, value: str) -> str | None:
+        if not value or value.strip() == "":
+            return None
+        else:
+            return value.strip()
