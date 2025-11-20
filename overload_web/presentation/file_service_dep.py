@@ -69,13 +69,3 @@ def normalize_files(
         ]
         file_list.extend([dto.VendorFileModel(**f.__dict__) for f in loaded_files])
     return file_list
-
-
-# def normalize_upload_files(
-#     files: Annotated[list[str], Depends(normalize_files)]
-#     | Annotated[list[StarlettUploadFile], Depends(normalize_upload_files)],
-# ) -> list[dto.VendorFileModel]:
-#     return [
-#         dto.VendorFileModel(file_name=str(f.filename), content=f.file.read())
-#         for f in files
-#     ]
