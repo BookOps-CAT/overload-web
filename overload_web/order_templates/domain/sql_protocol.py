@@ -33,8 +33,6 @@ class SqlRepositoryProtocol(Protocol[T]):
         self, offset: int | None = 0, limit: int | None = 0
     ) -> Sequence[T]: ...  # pragma: no branch
 
-    def save(self, obj: T) -> None: ...  # pragma: no branch
+    def save(self, obj: T) -> T: ...  # pragma: no branch
 
-    def update(
-        self, id: str, data: dict[str, str]
-    ) -> T | None: ...  # pragma: no branch
+    def update(self, id: str, data: T) -> T | None: ...  # pragma: no branch
