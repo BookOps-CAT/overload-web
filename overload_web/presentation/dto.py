@@ -6,13 +6,9 @@ to enable compatibility with pydantic while minimizing amount of repeated code.
 
 from __future__ import annotations
 
-from typing import TypeAlias
-
 from pydantic import BaseModel, field_validator
 
 from overload_web.shared import schemas
-
-BaseModelAlias: TypeAlias = BaseModel
 
 
 class MatchpointSchema(BaseModel, schemas._Matchpoints):

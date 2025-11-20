@@ -1,70 +1,28 @@
 import logging
 import os
 from inspect import Parameter, Signature
-from typing import Annotated
 
-from fastapi import Form, UploadFile
+from fastapi import Form
+from pydantic import BaseModel
 from sqlmodel import SQLModel, create_engine
-from starlette.datastructures import UploadFile as StarlettUploadFile
 
-from overload_web.application import file_service
-from overload_web.files.infrastructure import sftp
-from overload_web.presentation import dto
+from overload_web.shared import schemas
 
 logger = logging.getLogger(__name__)
 
 
-def get_postgres_uri() -> str:
-    db_type = os.environ.get("DB_TYPE", "sqlite")
-    host = os.environ.get("POSTGRES_HOST")
-    port = os.environ.get("POSTGRES_PORT")
-    password = os.environ.get("POSTGRES_PASSWORD")
-    user = os.environ.get("POSTGRES_USER")
-    db_name = os.environ.get("POSTGRES_DB")
-    uri = f"{db_type}://{user}:{password}@{host}:{port}/{db_name}"
-    return uri.replace("sqlite://None:None@None:None/None", "sqlite:///:memory:")
-
-
-engine = create_engine(get_postgres_uri())
+class MatchpointSchema(BaseModel, schemas._Matchpoints):
+    """Pydantic model for serializing/deserializing matchpoints from order templates"""
 
 
 def create_db_and_tables():
+    uri = f"{os.environ.get('DB_TYPE', 'sqlite')}://{os.environ.get('POSTGRES_USER')}:{os.environ.get('POSTGRES_PASSWORD')}@{os.environ.get('POSTGRES_HOST')}:{os.environ.get('POSTGRES_PORT')}/{os.environ.get('POSTGRES_DB')}"
+    uri.replace("sqlite://None:None@None:None/None", "sqlite:///:memory:")
+    engine = create_engine(uri)
     SQLModel.metadata.create_all(engine)
 
 
-def normalize_files(
-    files: Annotated[list[UploadFile] | list[str], Form(...)],
-    vendor: Annotated[str, Form(...)],
-) -> list[dto.VendorFileModel]:
-    remote_files = []
-    local_files = []
-    for file in files:
-        if isinstance(file, StarlettUploadFile):
-            local_files.append(file)
-        else:
-            remote_files.append(file)
-
-    file_list = []
-    if local_files:
-        file_list.extend(
-            [
-                dto.VendorFileModel(file_name=str(f.filename), content=f.file.read())
-                for f in local_files
-            ]
-        )
-    if remote_files and vendor:
-        vendor_dir = os.environ[f"{vendor.upper()}_SRC"]
-        service = file_service.FileTransferService(
-            loader=sftp.SFTPFileLoader.create_loader_for_vendor(vendor)
-        )
-        loaded_files = [
-            service.loader.load(name=f, dir=vendor_dir) for f in remote_files
-        ]
-        file_list.extend([dto.VendorFileModel(**f.__dict__) for f in loaded_files])
-    return file_list
-
-
-def from_form(model_class: dto.BaseModelAlias):
+def from_form(model_class: BaseModel):
     """
     A generic function used to create an object from an html form.
     HTML forms can only take data as strings so this class method is

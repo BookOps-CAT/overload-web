@@ -4,7 +4,7 @@ from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.main import app
 from overload_web.order_templates.infrastructure import tables
-from overload_web.presentation import deps, service_deps
+from overload_web.presentation import deps, template_service_dep
 
 
 def stub_sql_session():
@@ -27,14 +27,14 @@ def test_api_startup(monkeypatch):
 
 def test_deps():
     deps.create_db_and_tables()
-    session = service_deps.get_session()
+    session = template_service_dep.get_session()
     assert isinstance(next(session), Session)
 
 
 @pytest.mark.usefixtures("mock_sierra_response", "mock_sftp_client")
 class TestApp:
     client = TestClient(app)
-    app.dependency_overrides[service_deps.get_session] = stub_sql_session
+    app.dependency_overrides[template_service_dep.get_session] = stub_sql_session
     base_url = client.base_url
 
     def test_root_get(self):

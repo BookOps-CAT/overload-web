@@ -5,6 +5,7 @@ import pytest
 
 from overload_web.application import record_service
 from overload_web.bib_records.domain import marc_protocols
+from overload_web.bib_records.infrastructure import marc, sierra
 
 
 class StubFetcher(marc_protocols.BibFetcher):
@@ -49,14 +50,25 @@ class TestRecordProcessingService:
             return FakeBibFetcher(library, collection, record_type)
 
         monkeypatch.setattr(
-            "overload_web.application.record_service.sierra.SierraBibFetcher",
+            "overload_web.bib_records.infrastructure.sierra.SierraBibFetcher",
             fake_fetcher,
         )
+        # return record_service.RecordProcessingService(
+        #     library=library,
+        #     collection=collection,
+        #     record_type=record_type,
+        #     rules=stub_constants,
+        # )
         return record_service.RecordProcessingService(
-            library=library,
             collection=collection,
             record_type=record_type,
-            rules=stub_constants,
+            bib_fetcher=sierra.SierraBibFetcher(library),
+            mapper=marc.BookopsMarcMapper(rules=stub_constants["mapper_rules"]),
+            updater=marc.BookopsMarcUpdater(rules=stub_constants["updater_rules"]),
+            vendor_id=marc.BookopsMarcVendorIdentifier(
+                rules=stub_constants["vendor_rules"][library.casefold()]
+            ),
+            reader=marc.BookopsMarcReader(library=library),
         )
 
     @pytest.fixture
@@ -67,14 +79,19 @@ class TestRecordProcessingService:
             return StubFetcher()
 
         monkeypatch.setattr(
-            "overload_web.application.record_service.sierra.SierraBibFetcher",
+            "overload_web.bib_records.infrastructure.sierra.SierraBibFetcher",
             fake_fetcher,
         )
         return record_service.RecordProcessingService(
-            library=library,
             collection=collection,
             record_type=record_type,
-            rules=stub_constants,
+            bib_fetcher=sierra.SierraBibFetcher(library),
+            mapper=marc.BookopsMarcMapper(rules=stub_constants["mapper_rules"]),
+            updater=marc.BookopsMarcUpdater(rules=stub_constants["updater_rules"]),
+            vendor_id=marc.BookopsMarcVendorIdentifier(
+                rules=stub_constants["vendor_rules"][library.casefold()]
+            ),
+            reader=marc.BookopsMarcReader(library=library),
         )
 
     @pytest.fixture

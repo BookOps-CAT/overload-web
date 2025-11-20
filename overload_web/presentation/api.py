@@ -13,7 +13,13 @@ from typing import Annotated, Any, AsyncGenerator
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from overload_web.presentation import deps, dto, service_deps
+from overload_web.presentation import (
+    deps,
+    dto,
+    file_service_dep,
+    record_service_deps,
+    template_service_dep,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,14 +34,14 @@ async def lifespan(app: APIRouter) -> AsyncGenerator[None, None]:
 
 api_router = APIRouter(prefix="/api", tags=["api"], lifespan=lifespan)
 
+TemplateService = Annotated[Any, Depends(template_service_dep.template_handler)]
+
 
 @api_router.post("/template", response_class=HTMLResponse)
 def create_template(
     request: Request,
-    template: Annotated[
-        dto.TemplateCreateModel, Depends(deps.from_form(dto.TemplateCreateModel))
-    ],
-    service: Annotated[Any, Depends(service_deps.template_handler)],
+    template: Annotated[Any, Depends(deps.from_form(dto.TemplateCreateModel))],
+    service: TemplateService,
 ) -> HTMLResponse:
     """
     Save a new order template to the template DB.
@@ -57,9 +63,7 @@ def create_template(
 
 @api_router.get("/template", response_class=HTMLResponse)
 def get_template(
-    request: Request,
-    template_id: str,
-    service: Annotated[Any, Depends(service_deps.template_handler)],
+    request: Request, template_id: str, service: TemplateService
 ) -> HTMLResponse:
     """
     Retrieve an order template from the DB.
@@ -83,7 +87,7 @@ def get_template(
 @api_router.get("/templates", response_class=HTMLResponse)
 def get_template_list(
     request: Request,
-    service: Annotated[Any, Depends(service_deps.template_handler)],
+    service: TemplateService,
     offset: int = 0,
     limit: int = 20,
 ) -> HTMLResponse:
@@ -111,11 +115,8 @@ def get_template_list(
 def update_template(
     request: Request,
     template_id: Annotated[str, Form(...)],
-    template_patch: Annotated[
-        dto.TemplatePatchModel,
-        Depends(deps.from_form(dto.TemplatePatchModel)),
-    ],
-    service: Annotated[Any, Depends(service_deps.template_handler)],
+    template_patch: Annotated[Any, Depends(deps.from_form(dto.TemplatePatchModel))],
+    service: TemplateService,
 ) -> HTMLResponse:
     """
     Apply patch updates to an order templates in the DB.
@@ -150,7 +151,7 @@ def update_template(
 def write_local_file(
     vendor_file: dto.VendorFileModel,
     dir: str,
-    service: Annotated[Any, Depends(service_deps.local_file_writer)],
+    service: Annotated[Any, Depends(file_service_dep.local_file_writer)],
 ) -> JSONResponse:
     """Write a file to a local directory."""
     out_files = service.writer.write(file=vendor_file, dir=dir)
@@ -163,7 +164,7 @@ def write_local_file(
 def list_remote_files(
     request: Request,
     vendor: str,
-    service: Annotated[Any, Depends(service_deps.remote_file_loader)],
+    service: Annotated[Any, Depends(file_service_dep.remote_file_loader)],
 ) -> HTMLResponse:
     """
     List all files on a vendor's SFTP server.
@@ -187,7 +188,7 @@ def write_remote_file(
     vendor_file: dto.VendorFileModel,
     dir: str,
     vendor: str,
-    service: Annotated[Any, Depends(service_deps.remote_file_writer)],
+    service: Annotated[Any, Depends(file_service_dep.remote_file_writer)],
 ) -> JSONResponse:
     """Write a file to a remote directory."""
     out_files = service.writer.write(file=vendor_file, dir=dir)
@@ -199,15 +200,12 @@ def write_remote_file(
 @api_router.post("/process-vendor-file", response_class=HTMLResponse)
 def process_vendor_file(
     request: Request,
-    service: Annotated[Any, Depends(service_deps.record_processing_service)],
-    files: Annotated[list[dto.VendorFileModel], Depends(deps.normalize_files)],
-    order_template: Annotated[
-        dto.TemplateDataModel, Depends(deps.from_form(dto.TemplateDataModel))
+    service: Annotated[Any, Depends(record_service_deps.record_processing_service)],
+    files: Annotated[
+        list[dto.VendorFileModel], Depends(file_service_dep.normalize_files)
     ],
-    matchpoints: Annotated[
-        dto.MatchpointSchema,
-        Depends(deps.from_form(dto.MatchpointSchema)),
-    ],
+    order_template: Annotated[Any, Depends(deps.from_form(dto.TemplateDataModel))],
+    matchpoints: Annotated[Any, Depends(deps.from_form(dto.MatchpointSchema))],
 ) -> HTMLResponse:
     """
     Process one or more MARC files using the `RecordProcessingService`.

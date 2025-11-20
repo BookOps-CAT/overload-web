@@ -16,8 +16,8 @@ Classes:
 import logging
 from typing import Any, BinaryIO
 
+from overload_web.bib_records.domain import marc_protocols
 from overload_web.bib_records.domain_services import matcher, parser, reviewer
-from overload_web.bib_records.infrastructure import marc, sierra
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,14 @@ class RecordProcessingService:
     """Handles MARC record parsing, matching, and serialization."""
 
     def __init__(
-        self, library: str, collection: str, record_type: str, rules: dict[str, Any]
+        self,
+        collection: str,
+        record_type: str,
+        bib_fetcher: marc_protocols.BibFetcher,
+        mapper: marc_protocols.BibMapper,
+        updater: marc_protocols.MarcUpdater,
+        vendor_id: marc_protocols.VendorIdentifier,
+        reader: marc_protocols.MarcReaderProtocol,
     ):
         """
         Initialize `RecordProcessingService`.
@@ -44,17 +51,13 @@ class RecordProcessingService:
         """
         self.collection = collection
         self.matcher = matcher.BibMatcher(
-            fetcher=sierra.SierraBibFetcher(library),
+            fetcher=bib_fetcher,
             record_type=record_type,
-            attacher=marc.BookopsMarcUpdater(rules=rules["updater_rules"]),
+            attacher=updater,
             reviewer=reviewer.ReviewedResults(record_type=record_type),
         )
         self.parser = parser.BibParser(
-            mapper=marc.BookopsMarcMapper(rules=rules["mapper_rules"]),
-            vendor_identifier=marc.BookopsMarcVendorIdentifier(
-                rules=rules["vendor_rules"][library.casefold()]
-            ),
-            reader=marc.BookopsMarcReader(library=library),
+            mapper=mapper, vendor_identifier=vendor_id, reader=reader
         )
 
     def process_vendor_file(
