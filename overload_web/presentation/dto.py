@@ -19,11 +19,11 @@ OrderTemplateCreateType: TypeAlias = tables.OrderTemplateCreate
 OrderTemplateUpdateType: TypeAlias = tables.OrderTemplateUpdate
 
 
-class MatchpointSchema(BaseModel, schemas.Matchpoints):
+class MatchpointSchema(BaseModel, schemas._Matchpoints):
     """Pydantic model for serializing/deserializing matchpoints from order templates"""
 
 
-class VendorFileModel(BaseModel, schemas.FileData):
+class VendorFileModel(BaseModel, schemas._VendorFile):
     """Pydantic model for serializing/deserializing `VendorFile` domain objects."""
 
     model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)

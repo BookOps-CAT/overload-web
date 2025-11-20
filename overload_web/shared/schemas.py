@@ -6,13 +6,13 @@ from dataclasses import dataclass
 
 
 @dataclass
-class FileData:
+class _VendorFile:
     content: bytes
     file_name: str
 
 
 @dataclass
-class Matchpoints:
+class _Matchpoints:
     primary_matchpoint: str | None = None
     secondary_matchpoint: str | None = None
     tertiary_matchpoint: str | None = None

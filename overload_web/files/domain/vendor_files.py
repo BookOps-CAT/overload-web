@@ -8,7 +8,7 @@ from overload_web.shared import schemas
 
 
 @dataclass(kw_only=True)
-class VendorFile(schemas.FileData):
+class VendorFile(schemas._VendorFile):
     """
     Represents a vendor file.
 
