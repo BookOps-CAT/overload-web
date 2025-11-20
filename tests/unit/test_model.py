@@ -4,19 +4,6 @@ from overload_web.bib_records.domain import bibs
 from overload_web.files.domain import vendor_files
 
 
-class TestBibId:
-    @pytest.mark.parametrize("value", ["b123456789", ".b123456789"])
-    def test_BibId(self, value):
-        bib_id = bibs.BibId(value=value)
-        assert str(bib_id) == value
-        assert repr(bib_id) == f"BibId(value='{value}')"
-
-    def test_BibId_invalid(self):
-        with pytest.raises(ValueError) as exc:
-            bibs.BibId(value=123456789)
-        assert str(exc.value) == "BibId must be a non-empty string."
-
-
 class TestContext:
     @pytest.mark.parametrize("value", ["BL", "RL"])
     def test_Collection(self, value):

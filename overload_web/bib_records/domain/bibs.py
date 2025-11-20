@@ -8,24 +8,6 @@ from enum import Enum
 from typing import Any, TypedDict
 
 
-@dataclass(frozen=True)
-class BibId:
-    """A dataclass to define a BibId as an entity"""
-
-    value: str
-
-    def __post_init__(self):
-        """Validate that the Bib ID is a string"""
-        if not self.value or not isinstance(self.value, str):
-            raise ValueError("BibId must be a non-empty string.")
-
-    def __str__(self):
-        return self.value
-
-    def __repr__(self):
-        return f"BibId(value={self.value!r})"
-
-
 class Collection(Enum):
     """Includes valid values for NYPL and BPL collection"""
 
@@ -63,7 +45,7 @@ class DomainBib:
         self,
         library: LibrarySystem | str,
         barcodes: list[str] = [],
-        bib_id: BibId | str | None = None,
+        bib_id: str | None = None,
         branch_call_number: str | list[str] | None = None,
         collection: Collection | str | None = None,
         control_number: str | None = None,
@@ -77,7 +59,7 @@ class DomainBib:
         vendor: str | None = None,
     ) -> None:
         self.barcodes = barcodes
-        self.bib_id = BibId(bib_id) if isinstance(bib_id, str) else bib_id
+        self.bib_id = bib_id
         self.branch_call_number = branch_call_number
         self.collection = (
             Collection(str(collection).upper())

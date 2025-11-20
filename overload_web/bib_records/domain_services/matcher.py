@@ -75,7 +75,7 @@ class BibMatcher:
             matchpoints:
                 a dictionary containing matchpoints
         Returns:
-            the `BibID` for the best match or `None` if no candidates found
+            the bib id for the best match as a string or `None` if no candidates found
         """
         matchpoints = record.vendor_info.matchpoints if not matchpoints else matchpoints
         for priority, key in matchpoints.items():
