@@ -362,7 +362,7 @@ def stub_bib(library, collection) -> Bib:
 
 
 @pytest.fixture
-def make_bib_dto(stub_bib, stub_constants, library) -> Callable:
+def make_domain_bib(stub_bib, stub_constants, library) -> Callable:
     def _make_dto(data: dict[str, dict[str, str]]):
         record = copy.deepcopy(stub_bib)
         for k, v in data.items():
@@ -379,9 +379,9 @@ def make_bib_dto(stub_bib, stub_constants, library) -> Callable:
             rules=stub_constants["vendor_rules"][library.casefold()]
         )
         mapper = marc.BookopsMarcMapper(rules=stub_constants["mapper_rules"])
-        return mapper.map_bib(
-            record=record, info=vendor_id.identify_vendor(record=record)
-        )
+        bib = mapper.map_bib(record=record)
+        bib.vendor_info = vendor_id.identify_vendor(record=record)
+        return bib
 
     return _make_dto
 

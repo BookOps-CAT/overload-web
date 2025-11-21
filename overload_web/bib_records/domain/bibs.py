@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, BinaryIO, TypedDict
+from typing import Any, TypedDict
 
 
 class Collection(Enum):
@@ -46,7 +46,7 @@ class DomainBib:
     def __init__(
         self,
         library: LibrarySystem | str,
-        binary_data: bytes | BinaryIO,
+        binary_data: bytes,
         barcodes: list[str] = [],
         bib_id: str | None = None,
         branch_call_number: str | list[str] | None = None,

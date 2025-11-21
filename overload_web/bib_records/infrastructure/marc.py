@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 import logging
 from typing import Any, BinaryIO
 
@@ -12,28 +11,6 @@ from pymarc import Field, Indicators, Subfield
 from overload_web.bib_records.domain import bibs
 
 logger = logging.getLogger(__name__)
-
-
-class BibDTO:
-    """
-    Data Transfer Object for MARC records.
-
-    This class is responsible binding a MARC record and its associated
-    domain bib.
-
-    Attributes:
-        bib: The original MARC record as a `bookops_marc.Bib` object.
-        domain_bib: The `DomainBib` object associated with the MARC record.
-        vendor_info: The `VendorInfo` object associated with the MARC record.
-
-    """
-
-    def __init__(
-        self, bib: Bib, domain_bib: bibs.DomainBib, vendor_info: bibs.VendorInfo
-    ):
-        self.bib = bib
-        self.domain_bib = domain_bib
-        self.vendor_info = vendor_info
 
 
 class BookopsMarcMapper:
@@ -46,24 +23,21 @@ class BookopsMarcMapper:
         This class is a concrete implementation of the `MarcParser` protocol.
 
         Args:
-            library:
-                The library whose records are to be processed.
             rules:
                 A dictionary containing vendor identification rules, and rules to use
                 when mapping MARC records, to domain objects.
         """
         self.rules = rules
 
-    def map_bib(self, record: Bib, info: bibs.VendorInfo) -> BibDTO:
+    def map_bib(self, record: Bib) -> bibs.DomainBib:
         """
         Factory method used to build a `DomainBib` from a `bookops_marc.Bib` object.
 
         Args:
             record: MARC record represented as a `bookops_marc.Bib` object.
-            info: a VendorInfo object for the record's vendor
 
         Returns:
-            a list of `BibDTO` objects containing `bookops_marc.Bib` objects
+            a list of `bibs.DomainBib` objects containing `bookops_marc.Bib` objects
             and `DomainBib` objects.
         """
         out: dict[str, Any] = {}
@@ -86,8 +60,7 @@ class BookopsMarcMapper:
                         order_dict[attr] = field.get(code) if field else None
             out["orders"].append(bibs.Order(**order_dict))
         out["binary_data"] = record.as_marc()
-        out["vendor_info"] = info
-        return BibDTO(domain_bib=bibs.DomainBib(**out), bib=record, vendor_info=info)
+        return bibs.DomainBib(**out)
 
 
 class BookopsMarcReader:
@@ -179,12 +152,12 @@ class BookopsMarcUpdater:
         """
         self.rules = rules
 
-    def update_bib_data(self, record: BibDTO) -> BibDTO:
-        """Update the bib_id and add MARC fields to a `BibDTO` object."""
-        bib_rec = copy.deepcopy(record.bib)
-        if record.domain_bib.bib_id:
+    def update_bib_data(self, record: bibs.DomainBib) -> bibs.DomainBib:
+        """Update the bib_id and add MARC fields to a `bibs.DomainBib` object."""
+        bib_rec = Bib(record.binary_data, library=str(record.library))  # type: ignore
+        if record.bib_id:
             bib_rec.remove_fields("907")
-            bib_id = f".b{str(record.domain_bib.bib_id).strip('.b')}"
+            bib_id = f".b{str(record.bib_id).strip('.b')}"
             bib_rec.add_ordered_field(
                 Field(
                     tag="907",
@@ -202,13 +175,13 @@ class BookopsMarcUpdater:
                     ],
                 )
             )
-        record.bib = bib_rec
+        record.binary_data = bib_rec.as_marc()
         return record
 
-    def update_order(self, record: BibDTO) -> BibDTO:
-        """Update the MARC order fields within a `BibDTO` object."""
-        bib_rec = copy.deepcopy(record.bib)
-        for order in record.domain_bib.orders:
+    def update_order(self, record: bibs.DomainBib) -> bibs.DomainBib:
+        """Update the MARC order fields within a `bibs.DomainBib` object."""
+        bib_rec = Bib(record.binary_data, library=str(record.library))  # type: ignore
+        for order in record.orders:
             order_data = order.map_to_marc(rules=self.rules)
             for tag in order_data.keys():
                 subfields = []
@@ -222,15 +195,18 @@ class BookopsMarcUpdater:
                 bib_rec.add_field(
                     Field(tag=tag, indicators=Indicators(" ", " "), subfields=subfields)
                 )
-        record.bib = bib_rec
+        record.binary_data = bib_rec.as_marc()
         return record
 
-    def update_record(
-        self, record: BibDTO, record_type: str, template_data: dict[str, Any]
-    ) -> BibDTO:
+    def update_full_record(self, record: bibs.DomainBib) -> bibs.DomainBib:
         """Update a MARC record based on its type and template data."""
-        if bibs.RecordType(record_type) == bibs.RecordType.ORDER_LEVEL:
-            record.domain_bib.apply_order_template(template_data=template_data)
-            record = self.update_order(record=record)
+        return self.update_bib_data(record=record)
+
+    def update_order_record(
+        self, record: bibs.DomainBib, template_data: dict[str, Any]
+    ) -> bibs.DomainBib:
+        """Update a MARC record based on its type and template data."""
+        record.apply_order_template(template_data=template_data)
+        record = self.update_order(record=record)
         record = self.update_bib_data(record=record)
         return record

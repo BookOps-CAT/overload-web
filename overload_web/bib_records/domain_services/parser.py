@@ -2,9 +2,9 @@
 
 import io
 import logging
-from typing import BinaryIO
+from typing import BinaryIO, Literal, overload
 
-from overload_web.bib_records.domain import marc_protocols
+from overload_web.bib_records.domain import bibs, marc_protocols
 
 logger = logging.getLogger(__name__)
 
@@ -20,29 +20,61 @@ class BibParser:
         self.reader = reader
         self.vendor_identifier = vendor_identifier
 
-    def parse(self, data: BinaryIO | bytes) -> list[marc_protocols.BibDTOProtocol]:
+    def _parse_full_records(self, data: BinaryIO | bytes) -> list[bibs.DomainBib]:
         mapped_bibs = []
         records: list = self.reader.read_records(data)
         for record in records:
-            vendor_info = self.vendor_identifier.identify_vendor(record=record)
-            mapped_bib = self.mapper.map_bib(record=record, info=vendor_info)
+            mapped_bib = self.mapper.map_bib(record=record)
+            mapped_bib.vendor_info = self.vendor_identifier.identify_vendor(
+                record=record
+            )
             logger.info(f"Vendor record parsed: {mapped_bib}")
             mapped_bibs.append(mapped_bib)
         return mapped_bibs
 
-    def serialize(self, records: list[marc_protocols.BibDTOProtocol]) -> BinaryIO:
+    def _parse_order_level_records(
+        self, data: BinaryIO | bytes
+    ) -> list[bibs.DomainBib]:
+        mapped_bibs = []
+        records: list = self.reader.read_records(data)
+        for record in records:
+            mapped_bib = self.mapper.map_bib(record=record)
+            logger.info(f"Vendor record parsed: {mapped_bib}")
+            mapped_bibs.append(mapped_bib)
+        return mapped_bibs
+
+    @overload
+    def parse(
+        self, data: BinaryIO | bytes, record_type: Literal[bibs.RecordType.FULL]
+    ) -> list[bibs.DomainBib]: ...
+
+    @overload
+    def parse(
+        self, data: BinaryIO | bytes, record_type: Literal[bibs.RecordType.ORDER_LEVEL]
+    ) -> list[bibs.DomainBib]: ...
+
+    def parse(
+        self, data: BinaryIO | bytes, record_type: bibs.RecordType
+    ) -> list[bibs.DomainBib]:
+        match record_type:
+            case bibs.RecordType.FULL:
+                return self._parse_full_records(data=data)
+            case _:
+                return self._parse_order_level_records(data=data)
+
+    def serialize(self, records: list[bibs.DomainBib]) -> BinaryIO:
         """
-        Serialize a list of `BibDTO` objects into a binary MARC stream.
+        Serialize a list of `bibs.DomainBib` objects into a binary MARC stream.
 
         Args:
-            records: a list of records as `BibDTO` objects
+            records: a list of records as `bibs.DomainBib` objects
 
         Returns:
             MARC binary as an an in-memory file stream.
         """
         io_data = io.BytesIO()
         for record in records:
-            logger.info(f"Writing MARC binary for record: {record.domain_bib.__dict__}")
-            io_data.write(record.bib.as_marc())
+            logger.info(f"Writing MARC binary for record: {record.__dict__}")
+            io_data.write(record.binary_data)
         io_data.seek(0)
         return io_data

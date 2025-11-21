@@ -36,16 +36,7 @@ if TYPE_CHECKING:  # pragma: no cover
 logger = logging.getLogger(__name__)
 
 
-class BibDTOProtocol(Protocol):
-    """Defines attributes of a BibDTO object for use as a TypeVar"""
-
-    bib: Any
-    domain_bib: Any
-    vendor_info: Any
-
-
 ConBib = TypeVar("ConBib", contravariant=True)  # for bookops_marc.Bib objects as inputs
-D = TypeVar("D", bound=BibDTOProtocol)  # for BibDTO objects
 InvarBib = TypeVar("InvarBib")  # for bookops_marc.Bib objects as return types
 
 
@@ -82,9 +73,7 @@ class BibMapper(Protocol[ConBib]):
 
     rules: dict[str, Any]
 
-    def map_bib(
-        self, record: ConBib, info: bibs.VendorInfo
-    ) -> BibDTOProtocol: ...  # pragma: no branch
+    def map_bib(self, record: ConBib) -> bibs.DomainBib: ...  # pragma: no branch
 
 
 @runtime_checkable
@@ -97,25 +86,29 @@ class MarcReaderProtocol(Protocol[InvarBib]):
 
 
 @runtime_checkable
-class MarcUpdater(Protocol[D]):
+class MarcUpdater(Protocol):
     """
     Update MARC records with appropriate fields during last stage of record processing.
     """
 
     rules: dict[str, dict[str, str]]
 
-    def update_record(
-        self, record: D, record_type: str, template_data: dict[str, Any]
-    ) -> D: ...  # pragma: no branch
+    def update_order_record(
+        self, record: bibs.DomainBib, template_data: dict[str, Any]
+    ) -> bibs.DomainBib: ...  # pragma: no branch
 
-    """Update a MARC record `T` object."""
+    """Update an order-level MARC record."""
+
+    def update_full_record(
+        self, record: bibs.DomainBib
+    ) -> bibs.DomainBib: ...  # pragma: no branch
+
+    """Update a Full MARC record."""
 
 
 @runtime_checkable
 class ResultsReviewer(Protocol):
     """Review results of Sierra queries and select best match"""
-
-    record_type: str
 
     def review_results(
         self, input: bibs.DomainBib, results: list[bibs.FetcherResponseDict]

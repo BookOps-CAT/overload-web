@@ -206,6 +206,7 @@ def process_vendor_file(
     ],
     order_template: Annotated[Any, Depends(deps.from_form(dto.TemplateDataModel))],
     matchpoints: Annotated[Any, Depends(deps.from_form(dto.MatchpointSchema))],
+    record_type: Annotated[str, Form(...)],
 ) -> HTMLResponse:
     """
     Process one or more MARC files using the `RecordProcessingService`.
@@ -220,6 +221,8 @@ def process_vendor_file(
             an order template loaded from the DB or created via a form
         matchpoints:
             a list of matchpoints created from a form
+        record_type:
+            The type of record as an Literal value from bibs.RecordType.
 
     Returns:
         the processed files wrapped in a `HTMLResponse` object
@@ -231,6 +234,7 @@ def process_vendor_file(
             data=file.content,
             template_data=order_template.model_dump(),
             matchpoints=matchpoints.model_dump(),
+            record_type=record_type,
         )
         out_files.append({"file_name": file.file_name, "binary_content": output})
     return request.app.state.templates.TemplateResponse(

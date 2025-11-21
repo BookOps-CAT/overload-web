@@ -8,16 +8,11 @@ class ReviewedResults:
     Compare a `DomainBib` to a list of candidate bibs and select the best match.
 
     Args:
-        input: the bib record to match as a `DomainBib`.
-        results: a list of candidate bib records as dicts
-        record_type: the type of record as an enum (either `FULL` or `ORDER_LEVEL`)
+        None
 
     Returns:
         The results as a `bibs.ReviewedResults` object.
     """
-
-    def __init__(self, record_type: str) -> None:
-        self.record_type = record_type
 
     def _sort_results(self) -> None:
         sorted_results = sorted(
