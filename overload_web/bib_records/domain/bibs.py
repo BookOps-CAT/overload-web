@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, TypedDict
+from typing import Any, BinaryIO, TypedDict
 
 
 class Collection(Enum):
@@ -26,6 +26,7 @@ class DomainBib:
 
     Attributes:
         library: the library to whom the record belongs as an enum or str.
+        binary_data: the marc record as a bytes or BinaryIO object
         barcodes: list of barcodes associated with the record.
         bib_id: sierra bib ID.
         branch_call_number: branch call number for the record, if present.
@@ -39,11 +40,13 @@ class DomainBib:
         upc: UPC number, if present.
         update_date: the date the record was last updated.
         vendor: the vendor to whom the record belongs, if applicable.
+        vendor_info: info about the vendor as a `VendorInfo` object
     """
 
     def __init__(
         self,
         library: LibrarySystem | str,
+        binary_data: bytes | BinaryIO,
         barcodes: list[str] = [],
         bib_id: str | None = None,
         branch_call_number: str | list[str] | None = None,
@@ -57,6 +60,7 @@ class DomainBib:
         upc: str | None = None,
         update_date: datetime.datetime | str | None = None,
         vendor: str | None = None,
+        vendor_info: VendorInfo | None = None,
     ) -> None:
         self.barcodes = barcodes
         self.bib_id = bib_id
@@ -76,6 +80,8 @@ class DomainBib:
         self.upc = upc
         self.update_date = update_date
         self.vendor = vendor
+        self.binary_data = binary_data
+        self.vendor_info = vendor_info
 
     def apply_order_template(self, template_data: dict[str, Any]) -> None:
         """

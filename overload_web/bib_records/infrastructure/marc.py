@@ -85,6 +85,8 @@ class BookopsMarcMapper:
                     for code, attr in v.items():
                         order_dict[attr] = field.get(code) if field else None
             out["orders"].append(bibs.Order(**order_dict))
+        out["binary_data"] = record.as_marc()
+        out["vendor_info"] = info
         return BibDTO(domain_bib=bibs.DomainBib(**out), bib=record, vendor_info=info)
 
 

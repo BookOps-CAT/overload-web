@@ -166,3 +166,4 @@ temp/*
 .ssh
 .pydeps
 *.svg
+*.mrc

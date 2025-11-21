@@ -51,7 +51,9 @@ class TestContext:
 @pytest.mark.parametrize("library", ["bpl", "nypl"])
 class TestDomainBib:
     def test_DomainBib(self, library, order_data):
-        bib = bibs.DomainBib(library=library, orders=[bibs.Order(**order_data)])
+        bib = bibs.DomainBib(
+            library=library, orders=[bibs.Order(**order_data)], binary_data=b""
+        )
         assert bib.bib_id is None
 
     def test_DomainBib_bib_id(self, library, order_data):
@@ -59,11 +61,14 @@ class TestDomainBib:
             library=library,
             orders=[bibs.Order(**order_data)],
             bib_id="b123456789",
+            binary_data=b"",
         )
         assert str(bib.bib_id) == "b123456789"
 
     def test_DomainBib_apply_order_template(self, library, order_data, template_data):
-        bib = bibs.DomainBib(library=library, orders=[bibs.Order(**order_data)])
+        bib = bibs.DomainBib(
+            library=library, orders=[bibs.Order(**order_data)], binary_data=b""
+        )
         assert bib.orders[0].fund == "25240adbk"
         bib.apply_order_template(template_data=template_data)
         assert bib.orders[0].fund == "10001adbk"
