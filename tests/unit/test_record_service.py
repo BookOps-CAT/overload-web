@@ -41,7 +41,7 @@ class FakeBibFetcher(StubFetcher):
     "library, collection",
     [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
 )
-class TestRecordProcessingService:
+class TestRecordProcessingMatcher:
     @pytest.fixture
     def stub_service(self, monkeypatch, library, collection, stub_constants):
         def fake_fetcher(*args, **kwargs):
@@ -51,15 +51,10 @@ class TestRecordProcessingService:
             "overload_web.bib_records.infrastructure.sierra.SierraBibFetcher",
             fake_fetcher,
         )
-        return record_service.RecordProcessingService(
-            collection=collection,
-            bib_fetcher=sierra.SierraBibFetcher(library),
-            mapper=marc.BookopsMarcMapper(rules=stub_constants["mapper_rules"]),
-            updater=marc.BookopsMarcUpdater(rules=stub_constants["updater_rules"]),
-            vendor_id=marc.BookopsMarcVendorIdentifier(
-                rules=stub_constants["vendor_rules"][library.casefold()]
-            ),
-            reader=marc.BookopsMarcReader(library=library),
+        return record_service.matcher.BibMatcher(
+            fetcher=sierra.SierraBibFetcher(library),
+            attacher=marc.BookopsMarcUpdater(rules=stub_constants["updater_rules"]),
+            reviewer=record_service.reviewer.ReviewedResults(),
         )
 
     @pytest.fixture
@@ -71,15 +66,10 @@ class TestRecordProcessingService:
             "overload_web.bib_records.infrastructure.sierra.SierraBibFetcher",
             fake_fetcher,
         )
-        return record_service.RecordProcessingService(
-            collection=collection,
-            bib_fetcher=sierra.SierraBibFetcher(library),
-            mapper=marc.BookopsMarcMapper(rules=stub_constants["mapper_rules"]),
-            updater=marc.BookopsMarcUpdater(rules=stub_constants["updater_rules"]),
-            vendor_id=marc.BookopsMarcVendorIdentifier(
-                rules=stub_constants["vendor_rules"][library.casefold()]
-            ),
-            reader=marc.BookopsMarcReader(library=library),
+        return record_service.matcher.BibMatcher(
+            fetcher=sierra.SierraBibFetcher(library),
+            attacher=marc.BookopsMarcUpdater(rules=stub_constants["updater_rules"]),
+            reviewer=record_service.reviewer.ReviewedResults(),
         )
 
     @pytest.fixture
@@ -87,22 +77,9 @@ class TestRecordProcessingService:
         dto = make_domain_bib({"020": {"code": "a", "value": "9781234567890"}})
         return dto
 
-    @pytest.mark.parametrize("record_type", ["full", "order_level"])
-    def test_parse(self, stub_service, stub_domain_bib, caplog, record_type):
-        records = stub_service.parser.parse(
-            stub_domain_bib.binary_data, record_type=bibs.RecordType(record_type)
-        )
-        assert len(records) == 1
-        assert str(records[0].library) == str(stub_service.parser.reader.library)
-        assert records[0].isbn == "9781234567890"
-        assert str(records[0].library) == str(stub_service.parser.reader.library)
-        assert records[0].barcodes == ["333331234567890"]
-        assert len(caplog.records) == 1
-        assert "Vendor record parsed: " in caplog.records[0].msg
-
     def test_match_and_attach_full(self, stub_service, stub_domain_bib):
         original_orders = copy.deepcopy(stub_domain_bib.orders)
-        matched_bibs = stub_service.matcher.match_and_attach(
+        matched_bibs = stub_service.match_and_attach(
             [stub_domain_bib], record_type=bibs.RecordType.FULL
         )
         assert len(matched_bibs) == 1
@@ -114,7 +91,7 @@ class TestRecordProcessingService:
         self, stub_service, stub_domain_bib, template_data
     ):
         original_orders = copy.deepcopy(stub_domain_bib.orders)
-        matched_bibs = stub_service.matcher.match_and_attach(
+        matched_bibs = stub_service.match_and_attach(
             [stub_domain_bib],
             template_data=template_data,
             matchpoints={"primary_matchpoint": "isbn"},
@@ -128,7 +105,7 @@ class TestRecordProcessingService:
     def test_match_and_attach_full_no_matches(
         self, stub_service_no_matches, stub_domain_bib
     ):
-        matched_bibs = stub_service_no_matches.matcher.match_and_attach(
+        matched_bibs = stub_service_no_matches.match_and_attach(
             [stub_domain_bib], record_type=bibs.RecordType.FULL
         )
         assert len(matched_bibs) == 1
@@ -137,7 +114,7 @@ class TestRecordProcessingService:
     def test_match_and_attach_order_level_no_matches(
         self, stub_service_no_matches, stub_domain_bib, template_data
     ):
-        matched_bibs = stub_service_no_matches.matcher.match_and_attach(
+        matched_bibs = stub_service_no_matches.match_and_attach(
             [stub_domain_bib],
             template_data=template_data,
             matchpoints={"primary_matchpoint": "isbn"},
@@ -157,7 +134,7 @@ class TestRecordProcessingService:
             },
         )
         original_bib = copy.deepcopy(Bib(dto.binary_data, library=library))
-        matched_bibs = stub_service.matcher.match_and_attach(
+        matched_bibs = stub_service.match_and_attach(
             [dto], record_type=bibs.RecordType.FULL
         )
         assert len(matched_bibs) == 1
@@ -175,14 +152,48 @@ class TestRecordProcessingService:
                 "947": {"code": "a", "value": "B&amp;T SERIES"},
             },
         )
-        matched_bibs = stub_service.matcher.match_and_attach(
+        matched_bibs = stub_service.match_and_attach(
             [dto], record_type=bibs.RecordType.FULL
         )
         assert len(matched_bibs) == 1
         assert str(matched_bibs[0].bib_id) == "123"
 
+
+@pytest.mark.parametrize(
+    "library, collection",
+    [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
+)
+class TestRecordProcessingParser:
+    @pytest.fixture
+    def stub_service(self, library, stub_constants):
+        return record_service.parser.BibParser(
+            mapper=marc.BookopsMarcMapper(rules=stub_constants["mapper_rules"]),
+            vendor_identifier=marc.BookopsMarcVendorIdentifier(
+                rules=stub_constants["vendor_rules"][library.casefold()]
+            ),
+            reader=marc.BookopsMarcReader(library=library),
+        )
+
+    @pytest.fixture
+    def stub_domain_bib(self, collection, make_domain_bib):
+        dto = make_domain_bib({"020": {"code": "a", "value": "9781234567890"}})
+        return dto
+
+    @pytest.mark.parametrize("record_type", ["full", "order_level"])
+    def test_parse(self, stub_service, stub_domain_bib, caplog, record_type):
+        records = stub_service.parse(
+            stub_domain_bib.binary_data, record_type=bibs.RecordType(record_type)
+        )
+        assert len(records) == 1
+        assert str(records[0].library) == str(stub_service.reader.library)
+        assert records[0].isbn == "9781234567890"
+        assert str(records[0].library) == str(stub_service.reader.library)
+        assert records[0].barcodes == ["333331234567890"]
+        assert len(caplog.records) == 1
+        assert "Vendor record parsed: " in caplog.records[0].msg
+
     def test_serialize(self, stub_domain_bib, stub_service, caplog):
-        marc_binary = stub_service.parser.serialize(records=[stub_domain_bib])
+        marc_binary = stub_service.serialize(records=[stub_domain_bib])
         assert marc_binary.read()[0:2] == b"00"
         assert len(caplog.records) == 1
         assert "Writing MARC binary for record: " in caplog.records[0].msg
