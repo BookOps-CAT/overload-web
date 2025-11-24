@@ -245,15 +245,15 @@ class NYPLPlatformResponse(BaseSierraResponse):
 
     @property
     def oclc_number(self) -> list[str]:
-        isbns = [
+        oclcs = [
             subfield["content"]
             for j in self.var_fields
             if j["marcTag"] == "035"
             for subfield in j["subfields"]
             if subfield["tag"] == "a"
         ]
-        isbns.append(self._data.get("controlNumber"))
-        return list(set([i for i in isbns if i]))
+        oclcs.append(self._data.get("controlNumber"))
+        return list(set([i for i in oclcs if i]))
 
     @property
     def research_call_number(self) -> list[str]:
