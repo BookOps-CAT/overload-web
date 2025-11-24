@@ -362,7 +362,34 @@ def stub_bib(library, collection) -> Bib:
 
 
 @pytest.fixture
-def make_domain_bib(stub_bib, stub_constants, library) -> Callable:
+def make_domain_bib(stub_bib, stub_constants, library, record_type) -> Callable:
+    def _make_dto(data: dict[str, dict[str, str]]):
+        record = copy.deepcopy(stub_bib)
+        for k, v in data.items():
+            record.add_field(
+                Field(
+                    tag=k,
+                    indicators=Indicators(" ", " "),
+                    subfields=[
+                        Subfield(code=v["code"], value=v["value"]),
+                    ],
+                )
+            )
+        mapper = marc.BookopsMarcMapper(
+            rules=stub_constants["mapper_rules"], library=library
+        )
+        bib = (
+            mapper.map_full_bib(record=record)
+            if str(record_type) == "FULL"
+            else mapper.map_order_bib(record=record)
+        )
+        return bib
+
+    return _make_dto
+
+
+@pytest.fixture
+def make_full_bib(stub_bib, stub_constants, library) -> Callable:
     def _make_dto(data: dict[str, dict[str, str]]):
         record = copy.deepcopy(stub_bib)
         for k, v in data.items():
@@ -379,6 +406,29 @@ def make_domain_bib(stub_bib, stub_constants, library) -> Callable:
             rules=stub_constants["mapper_rules"], library=library
         )
         bib = mapper.map_full_bib(record=record)
+        return bib
+
+    return _make_dto
+
+
+@pytest.fixture
+def make_order_bib(stub_bib, stub_constants, library) -> Callable:
+    def _make_dto(data: dict[str, dict[str, str]]):
+        record = copy.deepcopy(stub_bib)
+        for k, v in data.items():
+            record.add_field(
+                Field(
+                    tag=k,
+                    indicators=Indicators(" ", " "),
+                    subfields=[
+                        Subfield(code=v["code"], value=v["value"]),
+                    ],
+                )
+            )
+        mapper = marc.BookopsMarcMapper(
+            rules=stub_constants["mapper_rules"], library=library
+        )
+        bib = mapper.map_order_bib(record=record)
         return bib
 
     return _make_dto

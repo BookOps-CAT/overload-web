@@ -37,6 +37,18 @@ class FakeBibFetcher(StubFetcher):
         return results
 
 
+@pytest.fixture
+def stub_full_bib(make_full_bib):
+    dto = make_full_bib({"020": {"code": "a", "value": "9781234567890"}})
+    return dto
+
+
+@pytest.fixture
+def stub_order_bib(make_order_bib):
+    dto = make_order_bib({"020": {"code": "a", "value": "9781234567890"}})
+    return dto
+
+
 @pytest.mark.parametrize(
     "library, collection",
     [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
@@ -58,7 +70,7 @@ class TestRecordProcessingMatcher:
         )
 
     @pytest.fixture
-    def stub_service_no_matches(self, monkeypatch, library, collection, stub_constants):
+    def stub_service_no_matches(self, monkeypatch, library, stub_constants):
         def fake_fetcher(*args, **kwargs):
             return StubFetcher()
 
@@ -72,61 +84,29 @@ class TestRecordProcessingMatcher:
             reviewer=record_service.reviewer.ReviewedResults(),
         )
 
-    @pytest.fixture
-    def stub_domain_bib(self, library, make_domain_bib):
-        dto = make_domain_bib({"020": {"code": "a", "value": "9781234567890"}})
-        return dto
-
-    def test_match_and_attach_full(self, stub_service, stub_domain_bib):
-        original_orders = copy.deepcopy(stub_domain_bib.orders)
+    def test_match_and_attach_full(self, stub_service, stub_full_bib):
+        original_orders = copy.deepcopy(stub_full_bib.orders)
         matched_bibs = stub_service.match_and_attach(
-            [stub_domain_bib], record_type=bibs.RecordType.FULL
+            [stub_full_bib], record_type=bibs.RecordType.FULL
         )
         assert len(matched_bibs) == 1
         assert str(matched_bibs[0].bib_id) == "123"
         assert [i.order_code_1 for i in original_orders] == ["j"]
         assert [i.order_code_1 for i in matched_bibs[0].orders] == ["j"]
 
-    def test_match_and_attach_order_level(
-        self, stub_service, stub_domain_bib, template_data
-    ):
-        original_orders = copy.deepcopy(stub_domain_bib.orders)
-        matched_bibs = stub_service.match_and_attach(
-            [stub_domain_bib],
-            template_data=template_data,
-            matchpoints={"primary_matchpoint": "isbn"},
-            record_type=bibs.RecordType.ORDER_LEVEL,
-        )
-        assert len(matched_bibs) == 1
-        assert str(matched_bibs[0].bib_id) == "123"
-        assert [i.order_code_1 for i in original_orders] == ["j"]
-        assert [i.order_code_1 for i in matched_bibs[0].orders] == ["b"]
-
     def test_match_and_attach_full_no_matches(
-        self, stub_service_no_matches, stub_domain_bib
+        self, stub_service_no_matches, stub_full_bib
     ):
         matched_bibs = stub_service_no_matches.match_and_attach(
-            [stub_domain_bib], record_type=bibs.RecordType.FULL
-        )
-        assert len(matched_bibs) == 1
-        assert matched_bibs[0].bib_id is None
-
-    def test_match_and_attach_order_level_no_matches(
-        self, stub_service_no_matches, stub_domain_bib, template_data
-    ):
-        matched_bibs = stub_service_no_matches.match_and_attach(
-            [stub_domain_bib],
-            template_data=template_data,
-            matchpoints={"primary_matchpoint": "isbn"},
-            record_type=bibs.RecordType.ORDER_LEVEL,
+            [stub_full_bib], record_type=bibs.RecordType.FULL
         )
         assert len(matched_bibs) == 1
         assert matched_bibs[0].bib_id is None
 
     def test_match_and_attach_vendor_updates(
-        self, stub_service, make_domain_bib, library
+        self, stub_service, make_full_bib, library
     ):
-        dto = make_domain_bib(
+        dto = make_full_bib(
             {
                 "020": {"code": "a", "value": "9781234567890"},
                 "901": {"code": "a", "value": "INGRAM"},
@@ -145,8 +125,8 @@ class TestRecordProcessingMatcher:
             == 2
         )
 
-    def test_match_and_attach_alternate_tags(self, stub_service, make_domain_bib):
-        dto = make_domain_bib(
+    def test_match_and_attach_alternate_tags(self, stub_service, make_full_bib):
+        dto = make_full_bib(
             {
                 "020": {"code": "a", "value": "9781234567890"},
                 "947": {"code": "a", "value": "B&amp;T SERIES"},
@@ -157,6 +137,33 @@ class TestRecordProcessingMatcher:
         )
         assert len(matched_bibs) == 1
         assert str(matched_bibs[0].bib_id) == "123"
+
+    def test_match_and_attach_order_level(
+        self, stub_service, stub_order_bib, template_data
+    ):
+        original_orders = copy.deepcopy(stub_order_bib.orders)
+        matched_bibs = stub_service.match_and_attach(
+            [stub_order_bib],
+            template_data=template_data,
+            matchpoints={"primary_matchpoint": "isbn"},
+            record_type=bibs.RecordType.ORDER_LEVEL,
+        )
+        assert len(matched_bibs) == 1
+        assert str(matched_bibs[0].bib_id) == "123"
+        assert [i.order_code_1 for i in original_orders] == ["j"]
+        assert [i.order_code_1 for i in matched_bibs[0].orders] == ["b"]
+
+    def test_match_and_attach_order_level_no_matches(
+        self, stub_service_no_matches, stub_order_bib, template_data
+    ):
+        matched_bibs = stub_service_no_matches.match_and_attach(
+            [stub_order_bib],
+            template_data=template_data,
+            matchpoints={"primary_matchpoint": "isbn"},
+            record_type=bibs.RecordType.ORDER_LEVEL,
+        )
+        assert len(matched_bibs) == 1
+        assert matched_bibs[0].bib_id is None
 
 
 @pytest.mark.parametrize(
@@ -172,15 +179,9 @@ class TestRecordProcessingParser:
             )
         )
 
-    @pytest.fixture
-    def stub_domain_bib(self, collection, make_domain_bib):
-        dto = make_domain_bib({"020": {"code": "a", "value": "9781234567890"}})
-        return dto
-
-    @pytest.mark.parametrize("record_type", ["full", "order_level"])
-    def test_parse(self, stub_service, stub_domain_bib, caplog, record_type):
+    def test_parse_full(self, stub_service, stub_full_bib, caplog):
         records = stub_service.parse(
-            stub_domain_bib.binary_data, record_type=bibs.RecordType(record_type)
+            stub_full_bib.binary_data, record_type=bibs.RecordType.FULL
         )
         assert len(records) == 1
         assert str(records[0].library) == str(stub_service.mapper.library)
@@ -190,8 +191,20 @@ class TestRecordProcessingParser:
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
 
-    def test_serialize(self, stub_domain_bib, stub_service, caplog):
-        marc_binary = stub_service.serialize(records=[stub_domain_bib])
+    def test_parse(self, stub_service, stub_order_bib, caplog):
+        records = stub_service.parse(
+            stub_order_bib.binary_data, record_type=bibs.RecordType.ORDER_LEVEL
+        )
+        assert len(records) == 1
+        assert str(records[0].library) == str(stub_service.mapper.library)
+        assert records[0].isbn == "9781234567890"
+        assert str(records[0].library) == str(stub_service.mapper.library)
+        assert records[0].barcodes == ["333331234567890"]
+        assert len(caplog.records) == 1
+        assert "Vendor record parsed: " in caplog.records[0].msg
+
+    def test_serialize(self, stub_order_bib, stub_service, caplog):
+        marc_binary = stub_service.serialize(records=[stub_order_bib])
         assert marc_binary.read()[0:2] == b"00"
         assert len(caplog.records) == 1
         assert "Writing MARC binary for record: " in caplog.records[0].msg

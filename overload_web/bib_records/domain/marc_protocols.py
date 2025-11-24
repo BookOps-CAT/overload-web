@@ -13,30 +13,26 @@ Protocols:
     records based on identifier keys. Matching is based on specific identifiers such
     as OCLC number, ISBN, or Sierra Bib ID.
 
-`MarcMapper`
+`BibMapper`
     a protocol that defines an adapter used to convert MARC objects to domain
     objects.
 
-`MarcUpdater`
+`BibUpdater`
     a protocol that defines an adapter used to update MARC records based on attributes
     of domain objects and rules.
-
-`VendorIdentifier`
-    a protocol that defines an adapter used to identify the vendor to created a record
 """
 
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, BinaryIO, Protocol, TypeVar, runtime_checkable
-
-if TYPE_CHECKING:  # pragma: no cover
-    from overload_web.bib_records.domain import bibs
+from typing import Any, BinaryIO, Protocol, TypeVar, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
 
-B = TypeVar("B", contravariant=True)  # variable for bookops_marc.Bib objects as inputs
+B = TypeVar("B", contravariant=True)  # variable for bookops_marc.Bib type as an input
+D = TypeVar("D")  # variable for DomainBib type
+F = TypeVar("F", bound=dict)  # variable for FetcherResponseDict type
 
 
 @runtime_checkable
@@ -52,7 +48,7 @@ class BibFetcher(Protocol):
 
     def get_bibs_by_id(
         self, value: str | int, key: str
-    ) -> list[bibs.FetcherResponseDict]: ...  # pragma: no branch
+    ) -> list[F]: ...  # pragma: no branch
 
     """
     Retrieve candidate bib records that match a key-value identifier.
@@ -67,26 +63,20 @@ class BibFetcher(Protocol):
 
 
 @runtime_checkable
-class BibMapper(Protocol[B]):
+class BibMapper(Protocol[D]):
     """Map object to `DomainBib` based on rules"""
 
     rules: dict[str, Any]
 
-    def map_full_bib(self, record: B) -> bibs.DomainBib: ...  # pragma: no branch
-
-    def map_order_bib(self, record: B) -> bibs.DomainBib: ...  # pragma: no branch
-
-    def map_full_bibs(
-        self, data: bytes | BinaryIO
-    ) -> list[bibs.DomainBib]: ...  # pragma: no branch
+    def map_full_bibs(self, data: bytes | BinaryIO) -> list[D]: ...  # pragma: no branch
 
     def map_order_bibs(
         self, data: bytes | BinaryIO
-    ) -> list[bibs.DomainBib]: ...  # pragma: no branch
+    ) -> list[D]: ...  # pragma: no branch
 
 
 @runtime_checkable
-class MarcUpdater(Protocol):
+class BibUpdater(Protocol):
     """
     Update MARC records with appropriate fields during last stage of record processing.
     """
@@ -94,14 +84,12 @@ class MarcUpdater(Protocol):
     rules: dict[str, dict[str, str]]
 
     def update_order_record(
-        self, record: bibs.DomainBib, template_data: dict[str, Any]
-    ) -> bibs.DomainBib: ...  # pragma: no branch
+        self, record: D, template_data: dict[str, Any]
+    ) -> D: ...  # pragma: no branch
 
     """Update an order-level MARC record."""
 
-    def update_full_record(
-        self, record: bibs.DomainBib
-    ) -> bibs.DomainBib: ...  # pragma: no branch
+    def update_full_record(self, record: D) -> D: ...  # pragma: no branch
 
     """Update a Full MARC record."""
 
@@ -111,11 +99,5 @@ class ResultsReviewer(Protocol):
     """Review results of Sierra queries and select best match"""
 
     def review_results(
-        self, input: bibs.DomainBib, results: list[bibs.FetcherResponseDict]
+        self, input: D, results: list[F]
     ) -> str | None: ...  # pragma: no branch
-
-    """Identify vendor based on rules"""
-
-    rules: dict[str, Any]
-
-    def identify_vendor(self, record: B) -> bibs.VendorInfo: ...  # pragma: no branch

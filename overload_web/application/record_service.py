@@ -1,10 +1,11 @@
 """Application services for processing files containing bibliographic records.
 
 This module defines record processing services for Full and Order-level MARC records.
-The service contains `library`, `collection`, `record_type`, `parser`, `matcher`,
-`updater`, and `vendor_reviewer` attributes. The `parser` attribute is a `BibMatcher`
-domain object. The `parser attribute is a concrete implementation of the `BibParser`
-domain protocol.
+The service takes a `collection`, `BibFetcher`, `BibMapper`, and `BibUpdate` as args and
+has `collection`, `parser`, and `matcher` attributes. The `parser` attribute is a
+`BibParser` domain object and contains a concrete implementation of the `BibMapper`
+domain protocol. The `matcher` attribute is a `BibMatcher` domain object and contains
+a concrete implementation of the `BibFetcher` domain protocol.
 
 Classes:
 
@@ -30,7 +31,7 @@ class RecordProcessingService:
         collection: str,
         bib_fetcher: marc_protocols.BibFetcher,
         mapper: marc_protocols.BibMapper,
-        updater: marc_protocols.MarcUpdater,
+        updater: marc_protocols.BibUpdater,
     ):
         """
         Initialize `RecordProcessingService`.
@@ -43,7 +44,7 @@ class RecordProcessingService:
             mapper:
                 A `marc_protocols.BibMapper` object
             updater:
-                A `marc_protocols.MarcUpdater` object
+                A `marc_protocols.BibUpdater` object
         """
         self.collection = collection
         self.matcher = matcher.BibMatcher(
