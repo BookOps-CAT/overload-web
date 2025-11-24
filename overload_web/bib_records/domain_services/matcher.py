@@ -41,7 +41,7 @@ class BibMatcher:
 
     def __init__(
         self,
-        attacher: marc_protocols.MarcUpdater,
+        attacher: marc_protocols.BibUpdater,
         fetcher: marc_protocols.BibFetcher,
         reviewer: marc_protocols.ResultsReviewer,
     ) -> None:
@@ -113,7 +113,7 @@ class BibMatcher:
         record_type: Literal[bibs.RecordType.ORDER_LEVEL],
         template_data: Optional[dict[str, Any]] = None,
         matchpoints: Optional[dict[str, str]] = None,
-    ) -> list[bibs.DomainBib]: ...
+    ) -> list[bibs.DomainBib]: ...  # pragma: no branch
 
     @overload
     def match_and_attach(
@@ -122,7 +122,7 @@ class BibMatcher:
         record_type: Literal[bibs.RecordType.FULL],
         template_data: Optional[dict[str, Any]] = None,
         matchpoints: Optional[dict[str, str]] = None,
-    ) -> list[bibs.DomainBib]: ...
+    ) -> list[bibs.DomainBib]: ...  # pragma: no branch
 
     def match_and_attach(
         self,

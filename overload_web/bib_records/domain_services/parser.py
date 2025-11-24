@@ -26,12 +26,12 @@ class BibParser:
     @overload
     def parse(
         self, data: BinaryIO | bytes, record_type: Literal[bibs.RecordType.FULL]
-    ) -> list[bibs.DomainBib]: ...
+    ) -> list[bibs.DomainBib]: ...  # pragma: no branch
 
     @overload
     def parse(
         self, data: BinaryIO | bytes, record_type: Literal[bibs.RecordType.ORDER_LEVEL]
-    ) -> list[bibs.DomainBib]: ...
+    ) -> list[bibs.DomainBib]: ...  # pragma: no branch
 
     def parse(
         self, data: BinaryIO | bytes, record_type: bibs.RecordType

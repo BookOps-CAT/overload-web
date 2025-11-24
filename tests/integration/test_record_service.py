@@ -7,6 +7,7 @@ from bookops_marc import Bib
 from overload_web.application import record_service
 from overload_web.bib_records.domain import bibs, marc_protocols
 from overload_web.bib_records.infrastructure import marc, sierra
+from overload_web.errors import OverloadError
 
 
 class StubFetcher(marc_protocols.BibFetcher):
@@ -103,6 +104,13 @@ class TestRecordProcessingMatcher:
         assert len(matched_bibs) == 1
         assert matched_bibs[0].bib_id is None
 
+    def test_match_and_attach_full_no_vendor_index(self, stub_service, stub_order_bib):
+        with pytest.raises(OverloadError) as exc:
+            stub_service.match_and_attach(
+                [stub_order_bib], record_type=bibs.RecordType.FULL
+            )
+        assert str(exc.value) == "Vendor index required for cataloging workflow."
+
     def test_match_and_attach_vendor_updates(
         self, stub_service, make_full_bib, library
     ):
@@ -164,6 +172,34 @@ class TestRecordProcessingMatcher:
         )
         assert len(matched_bibs) == 1
         assert matched_bibs[0].bib_id is None
+
+    def test_match_and_attach_order_level_no_template(
+        self, stub_service, stub_order_bib
+    ):
+        with pytest.raises(OverloadError) as exc:
+            stub_service.match_and_attach(
+                [stub_order_bib],
+                matchpoints={"primary_matchpoint": "isbn"},
+                record_type=bibs.RecordType.ORDER_LEVEL,
+            )
+        assert (
+            str(exc.value)
+            == "Order template required for selection or acquisition workflow."
+        )
+
+    def test_match_and_attach_order_level_no_matchpoints(
+        self, stub_service, stub_order_bib, template_data
+    ):
+        with pytest.raises(OverloadError) as exc:
+            stub_service.match_and_attach(
+                [stub_order_bib],
+                template_data=template_data,
+                record_type=bibs.RecordType.ORDER_LEVEL,
+            )
+        assert (
+            str(exc.value)
+            == "Order template required for selection or acquisition workflow."
+        )
 
 
 @pytest.mark.parametrize(

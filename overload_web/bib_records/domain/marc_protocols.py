@@ -30,13 +30,12 @@ from typing import Any, BinaryIO, Protocol, TypeVar, runtime_checkable
 logger = logging.getLogger(__name__)
 
 
-B = TypeVar("B", contravariant=True)  # variable for bookops_marc.Bib type as an input
 D = TypeVar("D")  # variable for DomainBib type
 F = TypeVar("F", bound=dict)  # variable for FetcherResponseDict type
 
 
 @runtime_checkable
-class BibFetcher(Protocol):
+class BibFetcher(Protocol[F]):
     """
     Protocol for a service that can fetch bib records from Sierra based on an
     identifier.
