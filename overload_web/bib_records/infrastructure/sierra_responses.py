@@ -164,7 +164,6 @@ class BPLSolrResponse(BaseSierraResponse):
     @property
     def var_fields(self) -> list[dict[str, Any]]:
         var_fields: list[dict[str, Any]] = []
-        print(self._data.get("sm_bib_varfields", []))
         for field in self._data.get("sm_bib_varfields", []):
             tag, data = field.split(" || ", 1)
             if "{{" not in data:
