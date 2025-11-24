@@ -18,7 +18,7 @@ import logging
 from typing import Any, BinaryIO, Optional
 
 from overload_web.bib_records.domain import bibs, marc_protocols
-from overload_web.bib_records.domain_services import matcher, parser, reviewer
+from overload_web.bib_records.domain_services import attacher, matcher, parser, reviewer
 
 logger = logging.getLogger(__name__)
 
@@ -48,9 +48,10 @@ class RecordProcessingService:
         """
         self.collection = collection
         self.matcher = matcher.BibMatcher(
-            fetcher=bib_fetcher, attacher=updater, reviewer=reviewer.ReviewedResults()
+            fetcher=bib_fetcher, reviewer=reviewer.ReviewedResults()
         )
         self.parser = parser.BibParser(mapper=mapper)
+        self.attacher = attacher.BibAttacher(attacher=updater)
 
     def process_vendor_file(
         self,
@@ -81,11 +82,15 @@ class RecordProcessingService:
             else record_type
         )
         parsed_records = self.parser.parse(data=data, record_type=record_type.value)
-        matched_records = self.matcher.match_and_attach(
+        matched_records = self.matcher.match(
             records=parsed_records,
-            template_data=template_data,
             matchpoints=matchpoints,
             record_type=record_type.value,
         )
-        output = self.parser.serialize(matched_records)
+        updated_records = self.attacher.attach(
+            records=matched_records,
+            template_data=template_data,
+            record_type=record_type.value,
+        )
+        output = self.parser.serialize(updated_records)
         return output

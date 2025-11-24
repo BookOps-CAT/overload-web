@@ -4,8 +4,8 @@ import json
 import pytest
 from bookops_marc import Bib
 
-from overload_web.application import record_service
 from overload_web.bib_records.domain import bibs, marc_protocols
+from overload_web.bib_records.domain_services import attacher, matcher, parser, reviewer
 from overload_web.bib_records.infrastructure import marc, sierra
 from overload_web.errors import OverloadError
 
@@ -56,7 +56,7 @@ def stub_order_bib(make_order_bib):
 )
 class TestRecordProcessingMatcher:
     @pytest.fixture
-    def stub_service(self, monkeypatch, library, collection, stub_constants):
+    def stub_service(self, monkeypatch, library, collection):
         def fake_fetcher(*args, **kwargs):
             return FakeBibFetcher(library, collection)
 
@@ -64,14 +64,13 @@ class TestRecordProcessingMatcher:
             "overload_web.bib_records.infrastructure.sierra.SierraBibFetcher",
             fake_fetcher,
         )
-        return record_service.matcher.BibMatcher(
+        return matcher.BibMatcher(
             fetcher=sierra.SierraBibFetcher(library),
-            attacher=marc.BookopsMarcUpdater(rules=stub_constants["updater_rules"]),
-            reviewer=record_service.reviewer.ReviewedResults(),
+            reviewer=reviewer.ReviewedResults(),
         )
 
     @pytest.fixture
-    def stub_service_no_matches(self, monkeypatch, library, stub_constants):
+    def stub_service_no_matches(self, monkeypatch, library):
         def fake_fetcher(*args, **kwargs):
             return StubFetcher()
 
@@ -79,41 +78,104 @@ class TestRecordProcessingMatcher:
             "overload_web.bib_records.infrastructure.sierra.SierraBibFetcher",
             fake_fetcher,
         )
-        return record_service.matcher.BibMatcher(
+        return matcher.BibMatcher(
             fetcher=sierra.SierraBibFetcher(library),
-            attacher=marc.BookopsMarcUpdater(rules=stub_constants["updater_rules"]),
-            reviewer=record_service.reviewer.ReviewedResults(),
+            reviewer=reviewer.ReviewedResults(),
         )
 
-    def test_match_and_attach_full(self, stub_service, stub_full_bib):
-        original_orders = copy.deepcopy(stub_full_bib.orders)
-        matched_bibs = stub_service.match_and_attach(
+    def test_match_full(self, stub_service, stub_full_bib):
+        matched_bibs = stub_service.match(
             [stub_full_bib], record_type=bibs.RecordType.FULL
         )
         assert len(matched_bibs) == 1
         assert str(matched_bibs[0].bib_id) == "123"
-        assert [i.order_code_1 for i in original_orders] == ["j"]
-        assert [i.order_code_1 for i in matched_bibs[0].orders] == ["j"]
 
-    def test_match_and_attach_full_no_matches(
-        self, stub_service_no_matches, stub_full_bib
-    ):
-        matched_bibs = stub_service_no_matches.match_and_attach(
+    def test_match_full_no_matches(self, stub_service_no_matches, stub_full_bib):
+        matched_bibs = stub_service_no_matches.match(
             [stub_full_bib], record_type=bibs.RecordType.FULL
         )
         assert len(matched_bibs) == 1
         assert matched_bibs[0].bib_id is None
 
-    def test_match_and_attach_full_no_vendor_index(self, stub_service, stub_order_bib):
+    def test_match_full_no_vendor_index(self, stub_service, stub_order_bib):
         with pytest.raises(OverloadError) as exc:
-            stub_service.match_and_attach(
-                [stub_order_bib], record_type=bibs.RecordType.FULL
-            )
+            stub_service.match([stub_order_bib], record_type=bibs.RecordType.FULL)
         assert str(exc.value) == "Vendor index required for cataloging workflow."
 
-    def test_match_and_attach_vendor_updates(
-        self, stub_service, make_full_bib, library
+    def test_match_alternate_tags(self, stub_service, make_full_bib):
+        dto = make_full_bib(
+            {
+                "020": {"code": "a", "value": "9781234567890"},
+                "947": {"code": "a", "value": "B&amp;T SERIES"},
+            },
+        )
+        matched_bibs = stub_service.match([dto], record_type=bibs.RecordType.FULL)
+        assert len(matched_bibs) == 1
+        assert str(matched_bibs[0].bib_id) == "123"
+
+    def test_match_order_level(self, stub_service, stub_order_bib):
+        matched_bibs = stub_service.match(
+            [stub_order_bib],
+            matchpoints={"primary_matchpoint": "isbn"},
+            record_type=bibs.RecordType.ORDER_LEVEL,
+        )
+        assert len(matched_bibs) == 1
+        assert str(matched_bibs[0].bib_id) == "123"
+
+    def test_match_order_level_no_matches(
+        self, stub_service_no_matches, stub_order_bib
     ):
+        matched_bibs = stub_service_no_matches.match(
+            [stub_order_bib],
+            matchpoints={"primary_matchpoint": "isbn"},
+            record_type=bibs.RecordType.ORDER_LEVEL,
+        )
+        assert len(matched_bibs) == 1
+        assert matched_bibs[0].bib_id is None
+
+    def test_match_order_level_no_matchpoints(self, stub_service, stub_order_bib):
+        with pytest.raises(OverloadError) as exc:
+            stub_service.match(
+                [stub_order_bib],
+                record_type=bibs.RecordType.ORDER_LEVEL,
+            )
+        assert (
+            str(exc.value)
+            == "Matchpoints from order template required for selection or acquisition workflow."
+        )
+
+
+@pytest.mark.parametrize(
+    "library, collection",
+    [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
+)
+class TestRecordProcessingAttacher:
+    @pytest.fixture
+    def stub_service(self, library, stub_constants):
+        return attacher.BibAttacher(
+            attacher=marc.BookopsMarcUpdater(rules=stub_constants["updater_rules"]),
+        )
+
+    def test_attach_full(self, stub_service, stub_full_bib):
+        original_bib = Bib(
+            copy.deepcopy(stub_full_bib.binary_data), library=str(stub_full_bib.library)
+        )
+        stub_full_bib.bib_id = "12345"
+        updated_bibs = stub_service.attach(
+            [stub_full_bib], record_type=bibs.RecordType.FULL
+        )
+        updated_bib = Bib(
+            updated_bibs[0].binary_data, library=str(updated_bibs[0].library)
+        )
+        assert len(original_bib.get_fields("907")) == 0
+        assert len(updated_bib.get_fields("907")) == 1
+
+    def test_attach_full_no_vendor_index(self, stub_service, stub_order_bib):
+        with pytest.raises(OverloadError) as exc:
+            stub_service.attach([stub_order_bib], record_type=bibs.RecordType.FULL)
+        assert str(exc.value) == "Vendor index required for cataloging workflow."
+
+    def test_attach_vendor_updates(self, stub_service, make_full_bib, library):
         dto = make_full_bib(
             {
                 "020": {"code": "a", "value": "9781234567890"},
@@ -122,79 +184,27 @@ class TestRecordProcessingMatcher:
             },
         )
         original_bib = copy.deepcopy(Bib(dto.binary_data, library=library))
-        matched_bibs = stub_service.match_and_attach(
-            [dto], record_type=bibs.RecordType.FULL
-        )
-        assert len(matched_bibs) == 1
-        assert str(matched_bibs[0].bib_id) == "123"
+        updated_bibs = stub_service.attach([dto], record_type=bibs.RecordType.FULL)
         assert len(original_bib.get_fields("949")) == 1
         assert (
-            len(Bib(matched_bibs[0].binary_data, library=library).get_fields("949"))
+            len(Bib(updated_bibs[0].binary_data, library=library).get_fields("949"))
             == 2
         )
 
-    def test_match_and_attach_alternate_tags(self, stub_service, make_full_bib):
-        dto = make_full_bib(
-            {
-                "020": {"code": "a", "value": "9781234567890"},
-                "947": {"code": "a", "value": "B&amp;T SERIES"},
-            },
-        )
-        matched_bibs = stub_service.match_and_attach(
-            [dto], record_type=bibs.RecordType.FULL
-        )
-        assert len(matched_bibs) == 1
-        assert str(matched_bibs[0].bib_id) == "123"
-
-    def test_match_and_attach_order_level(
-        self, stub_service, stub_order_bib, template_data
-    ):
+    def test_attach_order_level(self, stub_service, stub_order_bib, template_data):
         original_orders = copy.deepcopy(stub_order_bib.orders)
-        matched_bibs = stub_service.match_and_attach(
+        updated_bibs = stub_service.attach(
             [stub_order_bib],
             template_data=template_data,
-            matchpoints={"primary_matchpoint": "isbn"},
             record_type=bibs.RecordType.ORDER_LEVEL,
         )
-        assert len(matched_bibs) == 1
-        assert str(matched_bibs[0].bib_id) == "123"
         assert [i.order_code_1 for i in original_orders] == ["j"]
-        assert [i.order_code_1 for i in matched_bibs[0].orders] == ["b"]
+        assert [i.order_code_1 for i in updated_bibs[0].orders] == ["b"]
 
-    def test_match_and_attach_order_level_no_matches(
-        self, stub_service_no_matches, stub_order_bib, template_data
-    ):
-        matched_bibs = stub_service_no_matches.match_and_attach(
-            [stub_order_bib],
-            template_data=template_data,
-            matchpoints={"primary_matchpoint": "isbn"},
-            record_type=bibs.RecordType.ORDER_LEVEL,
-        )
-        assert len(matched_bibs) == 1
-        assert matched_bibs[0].bib_id is None
-
-    def test_match_and_attach_order_level_no_template(
-        self, stub_service, stub_order_bib
-    ):
+    def test_attach_order_level_no_template(self, stub_service, stub_order_bib):
         with pytest.raises(OverloadError) as exc:
-            stub_service.match_and_attach(
-                [stub_order_bib],
-                matchpoints={"primary_matchpoint": "isbn"},
-                record_type=bibs.RecordType.ORDER_LEVEL,
-            )
-        assert (
-            str(exc.value)
-            == "Order template required for selection or acquisition workflow."
-        )
-
-    def test_match_and_attach_order_level_no_matchpoints(
-        self, stub_service, stub_order_bib, template_data
-    ):
-        with pytest.raises(OverloadError) as exc:
-            stub_service.match_and_attach(
-                [stub_order_bib],
-                template_data=template_data,
-                record_type=bibs.RecordType.ORDER_LEVEL,
+            stub_service.attach(
+                [stub_order_bib], record_type=bibs.RecordType.ORDER_LEVEL
             )
         assert (
             str(exc.value)
@@ -209,7 +219,7 @@ class TestRecordProcessingMatcher:
 class TestRecordProcessingParser:
     @pytest.fixture
     def stub_service(self, library, stub_constants):
-        return record_service.parser.BibParser(
+        return parser.BibParser(
             mapper=marc.BookopsMarcMapper(
                 rules=stub_constants["mapper_rules"], library=library
             )
