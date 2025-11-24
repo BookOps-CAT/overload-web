@@ -10,37 +10,17 @@ logger = logging.getLogger(__name__)
 
 
 class BibParser:
-    def __init__(
-        self,
-        mapper: marc_protocols.BibMapper,
-        reader: marc_protocols.MarcReaderProtocol,
-        vendor_identifier: marc_protocols.VendorIdentifier,
-    ) -> None:
+    def __init__(self, mapper: marc_protocols.BibMapper) -> None:
         self.mapper = mapper
-        self.reader = reader
-        self.vendor_identifier = vendor_identifier
 
     def _parse_full_records(self, data: BinaryIO | bytes) -> list[bibs.DomainBib]:
-        mapped_bibs = []
-        records: list = self.reader.read_records(data)
-        for record in records:
-            mapped_bib = self.mapper.map_bib(record=record)
-            mapped_bib.vendor_info = self.vendor_identifier.identify_vendor(
-                record=record
-            )
-            logger.info(f"Vendor record parsed: {mapped_bib}")
-            mapped_bibs.append(mapped_bib)
+        mapped_bibs = self.mapper.map_full_bibs(data=data)
         return mapped_bibs
 
     def _parse_order_level_records(
         self, data: BinaryIO | bytes
     ) -> list[bibs.DomainBib]:
-        mapped_bibs = []
-        records: list = self.reader.read_records(data)
-        for record in records:
-            mapped_bib = self.mapper.map_bib(record=record)
-            logger.info(f"Vendor record parsed: {mapped_bib}")
-            mapped_bibs.append(mapped_bib)
+        mapped_bibs = self.mapper.map_order_bibs(data)
         return mapped_bibs
 
     @overload

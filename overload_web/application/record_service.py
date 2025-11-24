@@ -31,8 +31,6 @@ class RecordProcessingService:
         bib_fetcher: marc_protocols.BibFetcher,
         mapper: marc_protocols.BibMapper,
         updater: marc_protocols.MarcUpdater,
-        vendor_id: marc_protocols.VendorIdentifier,
-        reader: marc_protocols.MarcReaderProtocol,
     ):
         """
         Initialize `RecordProcessingService`.
@@ -46,18 +44,12 @@ class RecordProcessingService:
                 A `marc_protocols.BibMapper` object
             updater:
                 A `marc_protocols.MarcUpdater` object
-            vendor_id:
-                A `marc_protocols.VendorIdentifier` object
-            reader:
-                A `marc_protocols.MarcReaderProtocol` object
         """
         self.collection = collection
         self.matcher = matcher.BibMatcher(
             fetcher=bib_fetcher, attacher=updater, reviewer=reviewer.ReviewedResults()
         )
-        self.parser = parser.BibParser(
-            mapper=mapper, vendor_identifier=vendor_id, reader=reader
-        )
+        self.parser = parser.BibParser(mapper=mapper)
 
     def process_vendor_file(
         self,

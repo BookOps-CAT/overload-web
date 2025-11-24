@@ -375,12 +375,10 @@ def make_domain_bib(stub_bib, stub_constants, library) -> Callable:
                     ],
                 )
             )
-        vendor_id = marc.BookopsMarcVendorIdentifier(
-            rules=stub_constants["vendor_rules"][library.casefold()]
+        mapper = marc.BookopsMarcMapper(
+            rules=stub_constants["mapper_rules"], library=library
         )
-        mapper = marc.BookopsMarcMapper(rules=stub_constants["mapper_rules"])
-        bib = mapper.map_bib(record=record)
-        bib.vendor_info = vendor_id.identify_vendor(record=record)
+        bib = mapper.map_full_bib(record=record)
         return bib
 
     return _make_dto

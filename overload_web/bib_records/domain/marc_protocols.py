@@ -36,8 +36,7 @@ if TYPE_CHECKING:  # pragma: no cover
 logger = logging.getLogger(__name__)
 
 
-ConBib = TypeVar("ConBib", contravariant=True)  # for bookops_marc.Bib objects as inputs
-InvarBib = TypeVar("InvarBib")  # for bookops_marc.Bib objects as return types
+B = TypeVar("B", contravariant=True)  # variable for bookops_marc.Bib objects as inputs
 
 
 @runtime_checkable
@@ -68,21 +67,22 @@ class BibFetcher(Protocol):
 
 
 @runtime_checkable
-class BibMapper(Protocol[ConBib]):
+class BibMapper(Protocol[B]):
     """Map object to `DomainBib` based on rules"""
 
     rules: dict[str, Any]
 
-    def map_bib(self, record: ConBib) -> bibs.DomainBib: ...  # pragma: no branch
+    def map_full_bib(self, record: B) -> bibs.DomainBib: ...  # pragma: no branch
 
+    def map_order_bib(self, record: B) -> bibs.DomainBib: ...  # pragma: no branch
 
-@runtime_checkable
-class MarcReaderProtocol(Protocol[InvarBib]):
-    library: str
-
-    def read_records(
+    def map_full_bibs(
         self, data: bytes | BinaryIO
-    ) -> list[InvarBib]: ...  # pragma: no branch
+    ) -> list[bibs.DomainBib]: ...  # pragma: no branch
+
+    def map_order_bibs(
+        self, data: bytes | BinaryIO
+    ) -> list[bibs.DomainBib]: ...  # pragma: no branch
 
 
 @runtime_checkable
@@ -114,13 +114,8 @@ class ResultsReviewer(Protocol):
         self, input: bibs.DomainBib, results: list[bibs.FetcherResponseDict]
     ) -> str | None: ...  # pragma: no branch
 
-
-@runtime_checkable
-class VendorIdentifier(Protocol[ConBib]):
     """Identify vendor based on rules"""
 
     rules: dict[str, Any]
 
-    def identify_vendor(
-        self, record: ConBib
-    ) -> bibs.VendorInfo: ...  # pragma: no branch
+    def identify_vendor(self, record: B) -> bibs.VendorInfo: ...  # pragma: no branch

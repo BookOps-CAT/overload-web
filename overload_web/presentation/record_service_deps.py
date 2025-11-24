@@ -26,10 +26,6 @@ def record_processing_service(
     yield record_service.RecordProcessingService(
         collection=collection,
         bib_fetcher=sierra.SierraBibFetcher(library),
-        mapper=marc.BookopsMarcMapper(rules=constants["mapper_rules"]),
+        mapper=marc.BookopsMarcMapper(rules=constants["mapper_rules"], library=library),
         updater=marc.BookopsMarcUpdater(rules=constants["updater_rules"]),
-        vendor_id=marc.BookopsMarcVendorIdentifier(
-            rules=constants["vendor_rules"][library.casefold()]
-        ),
-        reader=marc.BookopsMarcReader(library=library),
     )

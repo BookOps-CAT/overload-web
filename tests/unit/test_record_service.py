@@ -73,7 +73,7 @@ class TestRecordProcessingMatcher:
         )
 
     @pytest.fixture
-    def stub_domain_bib(self, library, make_domain_bib, collection):
+    def stub_domain_bib(self, library, make_domain_bib):
         dto = make_domain_bib({"020": {"code": "a", "value": "9781234567890"}})
         return dto
 
@@ -167,11 +167,9 @@ class TestRecordProcessingParser:
     @pytest.fixture
     def stub_service(self, library, stub_constants):
         return record_service.parser.BibParser(
-            mapper=marc.BookopsMarcMapper(rules=stub_constants["mapper_rules"]),
-            vendor_identifier=marc.BookopsMarcVendorIdentifier(
-                rules=stub_constants["vendor_rules"][library.casefold()]
-            ),
-            reader=marc.BookopsMarcReader(library=library),
+            mapper=marc.BookopsMarcMapper(
+                rules=stub_constants["mapper_rules"], library=library
+            )
         )
 
     @pytest.fixture
@@ -185,9 +183,9 @@ class TestRecordProcessingParser:
             stub_domain_bib.binary_data, record_type=bibs.RecordType(record_type)
         )
         assert len(records) == 1
-        assert str(records[0].library) == str(stub_service.reader.library)
+        assert str(records[0].library) == str(stub_service.mapper.library)
         assert records[0].isbn == "9781234567890"
-        assert str(records[0].library) == str(stub_service.reader.library)
+        assert str(records[0].library) == str(stub_service.mapper.library)
         assert records[0].barcodes == ["333331234567890"]
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
