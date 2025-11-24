@@ -26,7 +26,7 @@ class DomainBib:
 
     Attributes:
         library: the library to whom the record belongs as an enum or str.
-        binary_data: the marc record as a bytes or BinaryIO object
+        binary_data: the marc record in binary (`bytes`)
         barcodes: list of barcodes associated with the record.
         bib_id: sierra bib ID.
         branch_call_number: branch call number for the record, if present.
