@@ -140,7 +140,7 @@ class TestLiveSierraSession:
             "update_date",
             "var_fields",
         ]
-        assert bibs[0]["title"] is not None
+        assert bibs[0].title is not None
 
 
 class TestSierraSessions:
@@ -154,7 +154,7 @@ class TestSierraSessions:
     ):
         fetcher = sierra.SierraBibFetcher(library=library)
         bibs = fetcher.get_bibs_by_id(value="123456789", key=matchpoint)
-        assert bibs[0]["bib_id"] == "123456789"
+        assert bibs[0].bib_id == "123456789"
         assert isinstance(fetcher.session, session_type)
 
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
@@ -239,19 +239,31 @@ class TestSierraResponses:
                     "marcTag": "028",
                     "subfields": [{"tag": "a", "content": "67890"}],
                 },
-                {
-                    "marcTag": "035",
-                    "subfields": [{"tag": "a", "content": "(OCoLC)9876543210)"}],
-                },
             ],
             "standardNumbers": ["9781234567890"],
-            "controlNumber": ["on9876543210"],
+            "controlNumber": "on9876543210",
             "updatedDate": "2020-01-01T00:00:01",
             **self.BASE_RESPONSE,
         }
         response = sierra_responses.NYPLPlatformResponse(data)
         assert response.cat_source == "inhouse"
         assert response.collection == "BL"
+        assert list(response.to_dict().keys()) == [
+            "title",
+            "barcodes",
+            "branch_call_number",
+            "cat_source",
+            "collection",
+            "control_number",
+            "isbn",
+            "oclc_number",
+            "research_call_number",
+            "upc",
+            "update_date",
+            "var_fields",
+            "library",
+            "bib_id",
+        ]
 
     def test_nypl_response_rl(self):
         data = {
@@ -289,6 +301,10 @@ class TestSierraResponses:
         response = sierra_responses.NYPLPlatformResponse(data)
         assert response.cat_source == "vendor"
         assert response.collection == "MIXED"
+
+    def test_nypl_response_no_collection(self):
+        response = sierra_responses.NYPLPlatformResponse(self.BASE_RESPONSE)
+        assert response.collection is None
 
     @pytest.mark.parametrize(
         "field, collection",
@@ -333,8 +349,45 @@ class TestSierraResponses:
             "call_number": "FIC BAR",
             **self.BASE_RESPONSE,
         }
-        response = sierra_responses.BPLSolrResponse(data)
+        response = sierra_responses.BPLSolrResponse(data=data)
         assert response.barcodes == ["333331234567890"]
         assert response.branch_call_number == ["FIC BAR"]
         assert response.cat_source == "inhouse"
         assert len(response.var_fields) == 5
+
+    def test_bpl_response_vendor(self):
+        data = {
+            "ss_marc_tag_001": "on9876543210",
+            "ss_marc_tag_005": "20200101000001.0",
+            "sm_bib_varfields": [
+                "005 || 20200101000001.0",
+                "020 || {{a}} 9781234567890",
+                "024 || {{a}} 12345",
+                "028 || {{a}} 67890",
+                "035 || {{a}} (OCoLC)9876543210",
+                "099 || {{a}} FIC || {{a}} BAR",
+            ],
+            "isbn": ["9781234567890"],
+            "call_number": "FIC BAR",
+            **self.BASE_RESPONSE,
+        }
+        response = sierra_responses.BPLSolrResponse(data=data)
+        assert response.barcodes == []
+        assert response.branch_call_number == ["FIC BAR"]
+        assert response.cat_source == "vendor"
+        assert list(response.to_dict().keys()) == [
+            "title",
+            "barcodes",
+            "branch_call_number",
+            "cat_source",
+            "collection",
+            "control_number",
+            "isbn",
+            "oclc_number",
+            "research_call_number",
+            "upc",
+            "update_date",
+            "var_fields",
+            "library",
+            "bib_id",
+        ]

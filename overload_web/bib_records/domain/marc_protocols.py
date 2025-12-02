@@ -75,22 +75,28 @@ class BibMapper(Protocol[D]):
 
 
 @runtime_checkable
-class BibUpdater(Protocol):
+class BibUpdater(Protocol[D]):
     """
     Update MARC records with appropriate fields during last stage of record processing.
     """
 
     rules: dict[str, dict[str, str]]
 
-    def update_order_record(
+    def update_acquisitions_record(
         self, record: D, template_data: dict[str, Any]
     ) -> D: ...  # pragma: no branch
 
-    """Update an order-level MARC record."""
+    """Update an order-level MARC record for acquisitions department."""
 
-    def update_full_record(self, record: D) -> D: ...  # pragma: no branch
+    def update_cataloging_record(self, record: D) -> D: ...  # pragma: no branch
 
-    """Update a Full MARC record."""
+    """Update a Full MARC record for cataloging department."""
+
+    def update_selection_record(
+        self, record: D, template_data: dict[str, Any]
+    ) -> D: ...  # pragma: no branch
+
+    """Update an order-level MARC record for selection department."""
 
 
 @runtime_checkable
@@ -98,5 +104,5 @@ class ResultsReviewer(Protocol):
     """Review results of Sierra queries and select best match"""
 
     def review_results(
-        self, input: D, results: list[F]
+        self, input: D, results: list[F], record_type: Any
     ) -> str | None: ...  # pragma: no branch

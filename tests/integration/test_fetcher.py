@@ -22,7 +22,7 @@ class TestSierraBibFetcher:
     def test_get_bibs_by_id(self, match, mock_session):
         fetcher = sierra.SierraBibFetcher(library="library", session=mock_session)
         bibs = fetcher.get_bibs_by_id(value="123456789", key=match)
-        assert bibs[0]["bib_id"] == "123456789"
+        assert bibs[0].bib_id == "123456789"
 
     @pytest.mark.parametrize("match", ["bib_id", "upc", "isbn", "oclc_number", "issn"])
     def test_get_bibs_by_id_no_value_passed(self, match, mock_session):

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from overload_web.bib_records.domain import bibs
+from overload_web.bib_records.infrastructure import sierra_responses
 
 
 class ReviewedResults:
@@ -14,30 +15,40 @@ class ReviewedResults:
         The results as a `bibs.ReviewedResults` object.
     """
 
+    def __init__(self) -> None:
+        self.input: bibs.DomainBib
+        self.results: list[sierra_responses.BaseSierraResponse]
+        self.vendor: str | None
+        self.call_number_match: bool
+        self.action: str | None = None
+
+        self.matched_results: list[sierra_responses.BaseSierraResponse] = []
+        self.mixed_results: list[sierra_responses.BaseSierraResponse] = []
+        self.other_results: list[sierra_responses.BaseSierraResponse] = []
+
     def _sort_results(self) -> None:
-        sorted_results = sorted(
-            self.results, key=lambda i: int(i["bib_id"].strip(".b"))
-        )
+        sorted_results = sorted(self.results, key=lambda i: int(i.bib_id.strip(".b")))
         for result in sorted_results:
-            if result["collection"] == "MIXED":
+            if result.library == "bpl":
+                self.matched_results.append(result)
+            elif result.collection == "MIXED":
                 self.mixed_results.append(result)
-            elif result["collection"] == str(self.input.collection):
+            elif str(result.collection) == str(self.input.collection):
                 self.matched_results.append(result)
             else:
                 self.other_results.append(result)
 
     def review_results(
-        self, input: bibs.DomainBib, results: list[bibs.FetcherResponseDict]
+        self,
+        input: bibs.DomainBib,
+        results: list[sierra_responses.BaseSierraResponse],
+        record_type: bibs.RecordType,
     ) -> str | None:
         self.input = input
         self.results = results
         self.vendor = input.vendor
 
         self.action = None
-
-        self.matched_results: list[bibs.FetcherResponseDict] = []
-        self.mixed_results: list[bibs.FetcherResponseDict] = []
-        self.other_results: list[bibs.FetcherResponseDict] = []
 
         self._sort_results()
         return self.target_bib_id
@@ -46,7 +57,7 @@ class ReviewedResults:
     def duplicate_records(self) -> list[str]:
         duplicate_records: list[str] = []
         if len(self.matched_results) > 1:
-            return [i["bib_id"] for i in self.matched_results]
+            return [i.bib_id for i in self.matched_results]
         return duplicate_records
 
     @property
@@ -84,10 +95,10 @@ class ReviewedResults:
     def target_bib_id(self) -> str | None:
         bib_id = None
         if len(self.matched_results) == 1:
-            return self.matched_results[0]["bib_id"]
+            return self.matched_results[0].bib_id
         elif len(self.matched_results) == 0:
             return bib_id
         for result in self.matched_results:
-            if result.get("branch_call_number") or result.get("research_call_number"):
-                return result["bib_id"]
+            if result.branch_call_number or result.research_call_number:
+                return result.bib_id
         return bib_id

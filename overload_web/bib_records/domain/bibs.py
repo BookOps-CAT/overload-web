@@ -216,8 +216,9 @@ class OrderId:
 class RecordType(Enum):
     """Includes valid values for record type"""
 
-    FULL = "full"
-    ORDER_LEVEL = "order_level"
+    ACQUISITIONS = "acq"
+    CATALOGING = "cat"
+    SELECTION = "sel"
 
     def __str__(self):
         return self.value

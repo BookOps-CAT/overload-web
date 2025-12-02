@@ -37,25 +37,34 @@ class BibAttacher:
         """
         self.attacher = attacher
 
-    def _attach_order(
+    def _attach_acq(
         self,
         record: bibs.DomainBib,
         template_data: dict[str, Any],
     ) -> bibs.DomainBib:
-        return self.attacher.update_order_record(
+        return self.attacher.update_acquisitions_record(
             record=record, template_data=template_data
         )
 
-    def _attach_full(self, record: bibs.DomainBib) -> bibs.DomainBib:
+    def _attach_cat(self, record: bibs.DomainBib) -> bibs.DomainBib:
         if not record.vendor_info:
             raise OverloadError("Vendor index required for cataloging workflow.")
-        return self.attacher.update_full_record(record=record)
+        return self.attacher.update_cataloging_record(record=record)
+
+    def _attach_sel(
+        self,
+        record: bibs.DomainBib,
+        template_data: dict[str, Any],
+    ) -> bibs.DomainBib:
+        return self.attacher.update_selection_record(
+            record=record, template_data=template_data
+        )
 
     @overload
     def attach(
         self,
         records: list[bibs.DomainBib],
-        record_type: Literal[bibs.RecordType.ORDER_LEVEL],
+        record_type: Literal[bibs.RecordType.SELECTION],
         template_data: Optional[dict[str, Any]] = None,
     ) -> list[bibs.DomainBib]: ...  # pragma: no branch
 
@@ -63,7 +72,15 @@ class BibAttacher:
     def attach(
         self,
         records: list[bibs.DomainBib],
-        record_type: Literal[bibs.RecordType.FULL],
+        record_type: Literal[bibs.RecordType.CATALOGING],
+        template_data: Optional[dict[str, Any]] = None,
+    ) -> list[bibs.DomainBib]: ...  # pragma: no branch
+
+    @overload
+    def attach(
+        self,
+        records: list[bibs.DomainBib],
+        record_type: Literal[bibs.RecordType.ACQUISITIONS],
         template_data: Optional[dict[str, Any]] = None,
     ) -> list[bibs.DomainBib]: ...  # pragma: no branch
 
@@ -90,13 +107,15 @@ class BibAttacher:
         out = []
         for record in records:
             match record_type:
-                case bibs.RecordType.FULL:
-                    rec = self._attach_full(record=record)
-                case bibs.RecordType.ORDER_LEVEL if not template_data:
-                    raise OverloadError(
-                        "Order template required for selection or acquisition workflow."
-                    )
+                case bibs.RecordType.CATALOGING:
+                    rec = self._attach_cat(record=record)
+                case bibs.RecordType.ACQUISITIONS if template_data:
+                    rec = self._attach_acq(record=record, template_data=template_data)
+                case bibs.RecordType.SELECTION if template_data:
+                    rec = self._attach_sel(record=record, template_data=template_data)
                 case _:
-                    rec = self._attach_order(record=record, template_data=template_data)
+                    raise OverloadError(
+                        "Order template required for acquisition or selection workflow."
+                    )
             out.append(rec)
         return out

@@ -65,25 +65,9 @@ class SierraBibFetcher:
                 logger.error(f"Trouble connecting: {str(exc)}")
                 raise errors.OverloadError(str(exc))
 
-    def _response_to_domain_dict(
-        self, records: list[sierra_responses.BaseSierraResponse]
-    ) -> list[sierra_responses.bibs.FetcherResponseDict]:
-        """
-        Converts raw response into dictionaries formatted for the `DomainBib` model.
-
-        Args:
-            records: list of raw bib responses from Sierra service
-
-        Returns:
-            list of cleaned domain-ready dictionaries.
-        """
-        if records:
-            return [i.to_dict() for i in records]
-        return []
-
     def get_bibs_by_id(
         self, value: str | int, key: str
-    ) -> list[sierra_responses.bibs.FetcherResponseDict]:
+    ) -> list[sierra_responses.BaseSierraResponse]:
         """
         Retrieves bib records by a specific matchpoint (e.g., ISBN, OCLC)
 
@@ -121,8 +105,7 @@ class SierraBibFetcher:
         except (BookopsPlatformError, BookopsSolrError) as exc:
             logger.error(f"{exc.__class__.__name__} while running Sierra queries. ")
             raise errors.OverloadError(str(exc))
-        json_records = self.session._parse_response(response)
-        bibs.extend(self._response_to_domain_dict(json_records))
+        bibs.extend(self.session._parse_response(response))
         return bibs
 
 

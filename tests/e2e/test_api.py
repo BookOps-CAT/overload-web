@@ -58,10 +58,12 @@ class TestApp:
     @pytest.mark.parametrize(
         "collection, record_type",
         [
-            ("branches", "full"),
-            ("research", "full"),
-            ("branches", "order-level"),
-            ("research", "order-level"),
+            ("branches", "acq"),
+            ("branches", "cat"),
+            ("branches", "sel"),
+            ("research", "acq"),
+            ("research", "cat"),
+            ("research", "sel"),
         ],
     )
     def test_post_context_form_nypl(self, collection, record_type):
@@ -82,7 +84,7 @@ class TestApp:
 
     @pytest.mark.parametrize(
         "record_type",
-        ["full", "order-level"],
+        ["acq", "cat", "sel"],
     )
     def test_post_context_form_bpl(self, record_type):
         response = self.client.post(
@@ -103,12 +105,15 @@ class TestApp:
     @pytest.mark.parametrize(
         "library, collection, record_type",
         [
-            ("nypl", "branches", "full"),
-            ("nypl", "branches", "order_level"),
-            ("nypl", "research", "full"),
-            ("nypl", "research", "order_level"),
-            ("bpl", None, "full"),
-            ("bpl", None, "order_level"),
+            ("nypl", "branches", "cat"),
+            ("nypl", "branches", "sel"),
+            ("nypl", "branches", "acq"),
+            ("nypl", "research", "cat"),
+            ("nypl", "research", "sel"),
+            ("nypl", "research", "acq"),
+            ("bpl", None, "cat"),
+            ("bpl", None, "sel"),
+            ("bpl", None, "acq"),
         ],
     )
     def test_process_records_get(self, library, collection, record_type):
@@ -180,12 +185,15 @@ class TestApp:
     @pytest.mark.parametrize(
         "library, collection, record_type",
         [
-            ("nypl", "BL", "full"),
-            ("nypl", "BL", "order_level"),
-            ("nypl", "RL", "full"),
-            ("nypl", "RL", "order_level"),
-            ("bpl", "NONE", "full"),
-            ("bpl", "NONE", "order_level"),
+            ("nypl", "BL", "cat"),
+            ("nypl", "BL", "acq"),
+            ("nypl", "BL", "sel"),
+            ("nypl", "RL", "cat"),
+            ("nypl", "RL", "acq"),
+            ("nypl", "RL", "sel"),
+            ("bpl", "NONE", "cat"),
+            ("bpl", "NONE", "acq"),
+            ("bpl", "NONE", "sel"),
         ],
     )
     def test_api_process_vendor_file_local(self, library, collection, record_type):
@@ -208,12 +216,15 @@ class TestApp:
     @pytest.mark.parametrize(
         "library, collection, record_type",
         [
-            ("nypl", "BL", "full"),
-            ("nypl", "BL", "order_level"),
-            ("nypl", "RL", "full"),
-            ("nypl", "RL", "order_level"),
-            ("bpl", "NONE", "full"),
-            ("bpl", "NONE", "order_level"),
+            ("nypl", "BL", "acq"),
+            ("nypl", "BL", "cat"),
+            ("nypl", "BL", "sel"),
+            ("nypl", "RL", "acq"),
+            ("nypl", "RL", "cat"),
+            ("nypl", "RL", "sel"),
+            ("bpl", "NONE", "acq"),
+            ("bpl", "NONE", "cat"),
+            ("bpl", "NONE", "sel"),
         ],
     )
     def test_api_process_vendor_file_remote(self, library, collection, record_type):

@@ -25,19 +25,23 @@ class BibParser:
 
     @overload
     def parse(
-        self, data: BinaryIO | bytes, record_type: Literal[bibs.RecordType.FULL]
+        self, data: BinaryIO | bytes, record_type: Literal[bibs.RecordType.CATALOGING]
     ) -> list[bibs.DomainBib]: ...  # pragma: no branch
 
     @overload
     def parse(
-        self, data: BinaryIO | bytes, record_type: Literal[bibs.RecordType.ORDER_LEVEL]
+        self, data: BinaryIO | bytes, record_type: Literal[bibs.RecordType.SELECTION]
     ) -> list[bibs.DomainBib]: ...  # pragma: no branch
 
+    @overload
+    def parse(
+        self, data: BinaryIO | bytes, record_type: Literal[bibs.RecordType.ACQUISITIONS]
+    ) -> list[bibs.DomainBib]: ...  # pragma: no branch
     def parse(
         self, data: BinaryIO | bytes, record_type: bibs.RecordType
     ) -> list[bibs.DomainBib]:
         match record_type:
-            case bibs.RecordType.FULL:
+            case bibs.RecordType.CATALOGING:
                 return self._parse_full_records(data=data)
             case _:
                 return self._parse_order_level_records(data=data)

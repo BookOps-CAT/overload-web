@@ -33,14 +33,16 @@ class TestContext:
             bibs.LibrarySystem("foo")
         assert str(exc.value) == "'foo' is not a valid LibrarySystem"
 
-    @pytest.mark.parametrize("value", ["full", "order_level"])
+    @pytest.mark.parametrize("value", ["acq", "cat", "sel"])
     def test_RecordType(self, value):
         record_type = bibs.RecordType(value)
         assert str(record_type) == value
-        assert bibs.RecordType.FULL.value == "full"
-        assert bibs.RecordType.FULL.name == "FULL"
-        assert bibs.RecordType.ORDER_LEVEL.value == "order_level"
-        assert bibs.RecordType.ORDER_LEVEL.name == "ORDER_LEVEL"
+        assert bibs.RecordType.ACQUISITIONS.value == "acq"
+        assert bibs.RecordType.ACQUISITIONS.name == "ACQUISITIONS"
+        assert bibs.RecordType.CATALOGING.value == "cat"
+        assert bibs.RecordType.CATALOGING.name == "CATALOGING"
+        assert bibs.RecordType.SELECTION.value == "sel"
+        assert bibs.RecordType.SELECTION.name == "SELECTION"
 
     def test_RecordType_invalid(self):
         with pytest.raises(ValueError) as exc:

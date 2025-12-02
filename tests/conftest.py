@@ -182,7 +182,11 @@ def mock_session(monkeypatch, mock_sierra_response):
 
 
 @pytest.fixture
-def mock_session_no_response():
+def mock_session_no_response(monkeypatch):
+    def mock_response(*args, **kwargs):
+        return []
+
+    monkeypatch.setattr(sierra.SierraSessionProtocol, "_parse_response", mock_response)
     return FakeSierraSession()
 
 
@@ -380,7 +384,7 @@ def make_domain_bib(stub_bib, stub_constants, library, record_type) -> Callable:
         )
         bib = (
             mapper.map_full_bib(record=record)
-            if str(record_type) == "FULL"
+            if str(record_type) == "CATALOGING"
             else mapper.map_order_bib(record=record)
         )
         return bib

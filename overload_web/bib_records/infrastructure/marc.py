@@ -248,11 +248,20 @@ class BookopsMarcUpdater:
         record.binary_data = bib_rec.as_marc()
         return record
 
-    def update_full_record(self, record: bibs.DomainBib) -> bibs.DomainBib:
+    def update_acquisitions_record(
+        self, record: bibs.DomainBib, template_data: dict[str, Any]
+    ) -> bibs.DomainBib:
+        """Update a MARC record based on its type and template data."""
+        record.apply_order_template(template_data=template_data)
+        record = self.update_order(record=record)
+        record = self.update_bib_data(record=record)
+        return record
+
+    def update_cataloging_record(self, record: bibs.DomainBib) -> bibs.DomainBib:
         """Update a MARC record based on its type and template data."""
         return self.update_bib_data(record=record)
 
-    def update_order_record(
+    def update_selection_record(
         self, record: bibs.DomainBib, template_data: dict[str, Any]
     ) -> bibs.DomainBib:
         """Update a MARC record based on its type and template data."""

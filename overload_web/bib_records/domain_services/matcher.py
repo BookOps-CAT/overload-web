@@ -53,7 +53,10 @@ class BibMatcher:
         self.reviewer = reviewer
 
     def match_bib(
-        self, record: bibs.DomainBib, matchpoints: dict[str, str]
+        self,
+        record: bibs.DomainBib,
+        matchpoints: dict[str, str],
+        record_type: bibs.RecordType,
     ) -> str | None:
         """
         Attempt to find the best-match in Sierra for a given bib record.
@@ -76,22 +79,33 @@ class BibMatcher:
                 continue
             candidates = self.fetcher.get_bibs_by_id(value=value, key=key)
             if candidates:
-                best_match = self.reviewer.review_results(record, results=candidates)
+                best_match = self.reviewer.review_results(
+                    record, results=candidates, record_type=record_type
+                )
                 return best_match
         return record.bib_id
 
     def _match_order(
-        self, record: bibs.DomainBib, matchpoints: dict[str, str]
+        self,
+        record: bibs.DomainBib,
+        matchpoints: dict[str, str],
+        record_type: bibs.RecordType,
     ) -> bibs.DomainBib:
-        bib_id = self.match_bib(record=record, matchpoints=matchpoints)
+        bib_id = self.match_bib(
+            record=record, matchpoints=matchpoints, record_type=record_type
+        )
         record.bib_id = bib_id
         return record
 
-    def _match_full(self, record: bibs.DomainBib) -> bibs.DomainBib:
+    def _match_full(
+        self, record: bibs.DomainBib, record_type: bibs.RecordType
+    ) -> bibs.DomainBib:
         if not record.vendor_info:
             raise OverloadError("Vendor index required for cataloging workflow.")
         bib_id = self.match_bib(
-            record=record, matchpoints=record.vendor_info.matchpoints
+            record=record,
+            matchpoints=record.vendor_info.matchpoints,
+            record_type=record_type,
         )
         record.bib_id = bib_id
         return record
@@ -100,7 +114,7 @@ class BibMatcher:
     def match(
         self,
         records: list[bibs.DomainBib],
-        record_type: Literal[bibs.RecordType.ORDER_LEVEL],
+        record_type: Literal[bibs.RecordType.SELECTION],
         matchpoints: Optional[dict[str, str]] = None,
     ) -> list[bibs.DomainBib]: ...  # pragma: no branch
 
@@ -108,7 +122,15 @@ class BibMatcher:
     def match(
         self,
         records: list[bibs.DomainBib],
-        record_type: Literal[bibs.RecordType.FULL],
+        record_type: Literal[bibs.RecordType.CATALOGING],
+        matchpoints: Optional[dict[str, str]] = None,
+    ) -> list[bibs.DomainBib]: ...  # pragma: no branch
+
+    @overload
+    def match(
+        self,
+        records: list[bibs.DomainBib],
+        record_type: Literal[bibs.RecordType.ACQUISITIONS],
         matchpoints: Optional[dict[str, str]] = None,
     ) -> list[bibs.DomainBib]: ...  # pragma: no branch
 
@@ -135,14 +157,21 @@ class BibMatcher:
         out = []
         for record in records:
             match record_type:
-                case bibs.RecordType.FULL:
-                    rec = self._match_full(record=record)
-                case bibs.RecordType.ORDER_LEVEL if not matchpoints:
+                case bibs.RecordType.CATALOGING:
+                    rec = self._match_full(record=record, record_type=record_type)
+                case bibs.RecordType.SELECTION if not matchpoints:
                     raise OverloadError(
                         "Matchpoints from order template required for selection "
-                        "or acquisition workflow."
+                        "workflow."
+                    )
+                case bibs.RecordType.ACQUISITIONS if not matchpoints:
+                    raise OverloadError(
+                        "Matchpoints from order template required for acquisition "
+                        "workflow."
                     )
                 case _:
-                    rec = self._match_order(record=record, matchpoints=matchpoints)
+                    rec = self._match_order(
+                        record=record, matchpoints=matchpoints, record_type=record_type
+                    )
             out.append(rec)
         return out

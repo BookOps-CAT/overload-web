@@ -2,7 +2,11 @@
   "context_fields": {
     "record_type": {
       "label": "Record Type",
-      "options": { "full": "Full", "order_level": "Order-Level" }
+      "options": {
+        "acq": "Acquisitions",
+        "cat": "Cataloging",
+        "sel": "Selection"
+      }
     },
     "library": {
       "label": "Library System",
