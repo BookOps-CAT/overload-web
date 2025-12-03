@@ -37,6 +37,7 @@ class BibParser:
     def parse(
         self, data: BinaryIO | bytes, record_type: Literal[bibs.RecordType.ACQUISITIONS]
     ) -> list[bibs.DomainBib]: ...  # pragma: no branch
+
     def parse(
         self, data: BinaryIO | bytes, record_type: bibs.RecordType
     ) -> list[bibs.DomainBib]:
