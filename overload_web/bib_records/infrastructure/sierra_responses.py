@@ -96,8 +96,8 @@ class BPLSolrResponse(BaseSierraResponse):
 
     @property
     def branch_call_number(self) -> list[str]:
-        tag_091 = [i for i in self.var_fields if i["marc_tag"] == "099"]
-        call_nos = [" ".join(i["content"] for i in j["subfields"]) for j in tag_091]
+        tag_099 = [i for i in self.var_fields if i["marc_tag"] == "099"]
+        call_nos = [" ".join(i["content"] for i in j["subfields"]) for j in tag_099]
         call_nos.append(self._data.get("call_number", ""))
         return list(set([i for i in call_nos if i]))
 
