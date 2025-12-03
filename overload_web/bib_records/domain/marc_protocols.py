@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 D = TypeVar("D")  # variable for DomainBib type
-F = TypeVar("F", bound=dict)  # variable for FetcherResponseDict type
+F = TypeVar("F")  # variable for BaseSierraResponse type
 
 
 @runtime_checkable

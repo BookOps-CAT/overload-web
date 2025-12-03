@@ -159,19 +159,18 @@ class BibMatcher:
             match record_type:
                 case bibs.RecordType.CATALOGING:
                     rec = self._match_full(record=record, record_type=record_type)
-                case bibs.RecordType.SELECTION if not matchpoints:
-                    raise OverloadError(
-                        "Matchpoints from order template required for selection "
-                        "workflow."
-                    )
-                case bibs.RecordType.ACQUISITIONS if not matchpoints:
-                    raise OverloadError(
-                        "Matchpoints from order template required for acquisition "
-                        "workflow."
-                    )
-                case _:
+                case bibs.RecordType.ACQUISITIONS if matchpoints:
                     rec = self._match_order(
                         record=record, matchpoints=matchpoints, record_type=record_type
+                    )
+                case bibs.RecordType.SELECTION if matchpoints:
+                    rec = self._match_order(
+                        record=record, matchpoints=matchpoints, record_type=record_type
+                    )
+                case _:
+                    raise OverloadError(
+                        "Matchpoints from order template required for acquisition "
+                        "or selection workflow."
                     )
             out.append(rec)
         return out

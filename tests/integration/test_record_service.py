@@ -81,26 +81,26 @@ class TestRecordProcessingMatcher:
             reviewer=reviewer.ReviewedResults(),
         )
 
-    def test_match_full(self, stub_service, stub_full_bib):
+    def test_match_cat(self, stub_service, stub_full_bib):
         matched_bibs = stub_service.match(
             [stub_full_bib], record_type=bibs.RecordType.CATALOGING
         )
         assert len(matched_bibs) == 1
         assert str(matched_bibs[0].bib_id) == "123"
 
-    def test_match_full_no_matches(self, stub_service_no_matches, stub_full_bib):
+    def test_match_cat_no_matches(self, stub_service_no_matches, stub_full_bib):
         matched_bibs = stub_service_no_matches.match(
             [stub_full_bib], record_type=bibs.RecordType.CATALOGING
         )
         assert len(matched_bibs) == 1
         assert matched_bibs[0].bib_id is None
 
-    def test_match_full_no_vendor_index(self, stub_service, stub_order_bib):
+    def test_match_cat_no_vendor_index(self, stub_service, stub_order_bib):
         with pytest.raises(OverloadError) as exc:
             stub_service.match([stub_order_bib], record_type=bibs.RecordType.CATALOGING)
         assert str(exc.value) == "Vendor index required for cataloging workflow."
 
-    def test_match_alternate_tags(self, stub_service, make_full_bib):
+    def test_match_cat_alternate_tags(self, stub_service, make_full_bib):
         dto = make_full_bib(
             {
                 "020": {"code": "a", "value": "9781234567890"},
@@ -111,7 +111,16 @@ class TestRecordProcessingMatcher:
         assert len(matched_bibs) == 1
         assert str(matched_bibs[0].bib_id) == "123"
 
-    def test_match_order_level(self, stub_service, stub_order_bib):
+    def test_match_acq(self, stub_service, stub_order_bib):
+        matched_bibs = stub_service.match(
+            [stub_order_bib],
+            matchpoints={"primary_matchpoint": "isbn"},
+            record_type=bibs.RecordType.ACQUISITIONS,
+        )
+        assert len(matched_bibs) == 1
+        assert matched_bibs[0].bib_id is None
+
+    def test_match_sel(self, stub_service, stub_order_bib):
         matched_bibs = stub_service.match(
             [stub_order_bib],
             matchpoints={"primary_matchpoint": "isbn"},
@@ -120,37 +129,33 @@ class TestRecordProcessingMatcher:
         assert len(matched_bibs) == 1
         assert str(matched_bibs[0].bib_id) == "123"
 
+    @pytest.mark.parametrize(
+        "record_type",
+        [bibs.RecordType.ACQUISITIONS, bibs.RecordType.SELECTION],
+    )
     def test_match_order_level_no_matches(
-        self, stub_service_no_matches, stub_order_bib
+        self, stub_service_no_matches, stub_order_bib, record_type
     ):
         matched_bibs = stub_service_no_matches.match(
             [stub_order_bib],
             matchpoints={"primary_matchpoint": "isbn"},
-            record_type=bibs.RecordType.SELECTION,
+            record_type=record_type,
         )
         assert len(matched_bibs) == 1
         assert matched_bibs[0].bib_id is None
 
-    def test_match_sel_no_matchpoints(self, stub_service, stub_order_bib):
+    @pytest.mark.parametrize(
+        "record_type",
+        [bibs.RecordType.ACQUISITIONS, bibs.RecordType.SELECTION],
+    )
+    def test_match_order_level_no_matchpoints(
+        self, stub_service, stub_order_bib, record_type
+    ):
         with pytest.raises(OverloadError) as exc:
-            stub_service.match(
-                [stub_order_bib],
-                record_type=bibs.RecordType.SELECTION,
-            )
+            stub_service.match([stub_order_bib], record_type=record_type)
         assert (
             str(exc.value)
-            == "Matchpoints from order template required for selection workflow."
-        )
-
-    def test_match_acq_no_matchpoints(self, stub_service, stub_order_bib):
-        with pytest.raises(OverloadError) as exc:
-            stub_service.match(
-                [stub_order_bib],
-                record_type=bibs.RecordType.ACQUISITIONS,
-            )
-        assert (
-            str(exc.value)
-            == "Matchpoints from order template required for acquisition workflow."
+            == "Matchpoints from order template required for acquisition or selection workflow."
         )
 
 
@@ -165,7 +170,7 @@ class TestRecordProcessingAttacher:
             attacher=marc.BookopsMarcUpdater(rules=stub_constants["updater_rules"]),
         )
 
-    def test_attach_full(self, stub_service, stub_full_bib):
+    def test_attach_cat(self, stub_service, stub_full_bib):
         original_bib = Bib(
             copy.deepcopy(stub_full_bib.binary_data), library=str(stub_full_bib.library)
         )
@@ -179,14 +184,14 @@ class TestRecordProcessingAttacher:
         assert len(original_bib.get_fields("907")) == 0
         assert len(updated_bib.get_fields("907")) == 1
 
-    def test_attach_full_no_vendor_index(self, stub_service, stub_order_bib):
+    def test_attach_cat_no_vendor_index(self, stub_service, stub_order_bib):
         with pytest.raises(OverloadError) as exc:
             stub_service.attach(
                 [stub_order_bib], record_type=bibs.RecordType.CATALOGING
             )
         assert str(exc.value) == "Vendor index required for cataloging workflow."
 
-    def test_attach_vendor_updates(self, stub_service, make_full_bib, library):
+    def test_attach_cat_vendor_updates(self, stub_service, make_full_bib, library):
         dto = make_full_bib(
             {
                 "020": {"code": "a", "value": "9781234567890"},
@@ -204,7 +209,7 @@ class TestRecordProcessingAttacher:
             == 2
         )
 
-    def test_attach_order_level(self, stub_service, stub_order_bib, template_data):
+    def test_attach_sel(self, stub_service, stub_order_bib, template_data):
         original_orders = copy.deepcopy(stub_order_bib.orders)
         updated_bibs = stub_service.attach(
             [stub_order_bib],
@@ -242,7 +247,7 @@ class TestRecordProcessingParser:
             )
         )
 
-    def test_parse_full(self, stub_service, stub_full_bib, caplog):
+    def test_parse_cat(self, stub_service, stub_full_bib, caplog):
         records = stub_service.parse(
             stub_full_bib.binary_data, record_type=bibs.RecordType.CATALOGING
         )
@@ -254,9 +259,13 @@ class TestRecordProcessingParser:
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
 
-    def test_parse(self, stub_service, stub_order_bib, caplog):
+    @pytest.mark.parametrize(
+        "record_type",
+        [bibs.RecordType.ACQUISITIONS, bibs.RecordType.SELECTION],
+    )
+    def test_parse_sel_acq(self, stub_service, stub_order_bib, record_type, caplog):
         records = stub_service.parse(
-            stub_order_bib.binary_data, record_type=bibs.RecordType.SELECTION
+            stub_order_bib.binary_data, record_type=record_type
         )
         assert len(records) == 1
         assert str(records[0].library) == str(stub_service.mapper.library)

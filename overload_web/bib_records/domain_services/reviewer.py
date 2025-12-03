@@ -51,7 +51,186 @@ class ReviewedResults:
         self.action = None
 
         self._sort_results()
+        self.target_bib_id = self.input.bib_id
+        if (
+            record_type == bibs.RecordType.CATALOGING
+            and self.input.library == bibs.LibrarySystem.BPL
+        ):
+            self._cataloging_bpl_workflow()
+        elif (
+            record_type == bibs.RecordType.CATALOGING
+            and self.input.collection == bibs.Collection.BRANCH
+        ):
+            self._cataloging_bl_workflow()
+        elif (
+            record_type == bibs.RecordType.CATALOGING
+            and self.input.collection == bibs.Collection.RESEARCH
+        ):
+            self._cataloging_rl_workflow()
+        elif record_type == bibs.RecordType.SELECTION:
+            self._selection_workflow()
+        elif record_type == bibs.RecordType.ACQUISITIONS:
+            self._acquisition_workflow()
         return self.target_bib_id
+
+    def _compare_call_nos(
+        self,
+        input_call_no: str | list[str] | None,
+        result_call_no: str | list[str] | None,
+    ) -> bool:
+        if isinstance(input_call_no, str):
+            input_call_no = [input_call_no]
+        if isinstance(result_call_no, str):
+            result_call_no = [result_call_no]
+        return input_call_no == result_call_no
+
+    def _cataloging_bl_workflow(self):
+        # default action = 'insert'
+        if not self.matched_results:
+            self.call_number_match = True
+        else:
+            self.call_number_match = False
+        for result in self.matched_results:
+            # full record scenario
+            if result.branch_call_number:
+                # check if call number matches
+                call_match = self._compare_call_nos(
+                    result.branch_call_number, self.input.branch_call_number
+                )
+                if call_match:
+                    self.call_number_match = True
+                    self.target_bib_id = result.bib_id
+                    self.target_title = result.title
+                    self.target_call_number = result.branch_call_number
+                    if result.cat_source == "inhouse":
+                        self.action = "attach"
+                    else:
+                        updated = result.update_date > self.input.update_date
+                        if updated:
+                            self.updated_by_vendor = True
+                            self.action = "overlay"
+                        else:
+                            self.action = "attach"
+                    break
+
+        if not self.call_number_match and self.matched_results[-1].branch_call_number:
+            self.target_bib_id = result.bib_id
+            self.target_title = result.title
+            self.target_call_number = result.branch_call_number
+            if result.cat_source == "inhouse":
+                self.action = "attach"
+            else:
+                updated = result.update_date > self.input.update_date
+                if updated:
+                    self.updated_by_vendor = True
+                    self.action = "overlay"
+                else:
+                    self.action = "attach"
+        if not self.call_number_match:
+            self.call_number_match = True
+            self.target_bib_id = self.matched_results[-1].bib_id
+            self.target_title = self.matched_results[-1].title
+            self.action = "overlay"
+
+    def _cataloging_bpl_workflow(self):
+        # default action = 'insert'
+        if not self.matched_results:
+            self.call_number_match = True
+            if self.vendor in ["Midwest DVD", "Midwest Audio", "Midwest CD"]:
+                self.action = "attach"
+        else:
+            self.call_number_match = False
+        for result in self.matched_results:
+            # full record scenario
+            if result.branch_call_number:
+                # check if call number matches
+                call_match = self._compare_call_nos(
+                    result.branch_call_number, self.input.branch_call_number
+                )
+                if call_match:
+                    self.call_number_match = True
+                    self.target_bib_id = result.bib_id
+                    self.target_title = result.title
+                    self.target_call_number = result.branch_call_number
+                    if result.cat_source == "inhouse":
+                        self.action = "attach"
+                    else:
+                        updated = result.update_date > self.input.update_date
+                        if updated:
+                            self.updated_by_vendor = True
+                            self.action = "overlay"
+                        else:
+                            self.action = "attach"
+                    break
+        if not self.call_number_match and self.matched_results[-1].branch_call_number:
+            self.target_bib_id = result.bib_id
+            self.target_title = result.title
+            self.target_call_number = result.branch_call_number
+            if result.cat_source == "inhouse":
+                self.action = "attach"
+            else:
+                updated = result.update_date > self.input.update_date
+                if updated:
+                    self.updated_by_vendor = True
+                    self.action = "overlay"
+                else:
+                    self.action = "attach"
+        if not self.call_number_match:
+            self.call_number_match = True
+            self.target_bib_id = self.matched_results[-1].bib_id
+            self.target_title = self.matched_results[-1].title
+            self.action = "overlay"
+
+    def _cataloging_rl_workflow(self):
+        # default action = 'insert'
+        self.call_number_match = False
+        if not self.matched_results:
+            self.call_number_match = True
+        for result in self.matched_results:
+            # full record scenario
+            if result.research_call_number:
+                # research path, no call_number match checking
+                self.call_number_match = True
+                # set_target_id
+                self.target_bib_id = result.bib_id
+                self.target_title = result.title
+                self.target_call_number = result.research_call_number
+                if result.cat_source == "inhouse":
+                    self.action = "attach"
+                else:
+                    updated = result.update_date > self.input.update_date
+                    if updated:
+                        self.updated_by_vendor = True
+                        self.action = "overlay"
+                    else:
+                        self.action = "attach"
+                break
+        if not self.call_number_match:
+            self.call_number_match = True
+            self.target_bib_id = self.matched_results[-1].bib_id
+            self.target_title = self.matched_results[-1].title
+            self.action = "overlay"
+
+    def _selection_workflow(self):
+        # default action = 'insert'
+        self.action = None
+        self.call_number_match = True
+        if len(self.matched_results) > 0:
+            for result in self.matched_results:
+                if (
+                    result.branch_call_number is not None
+                    or len(result.research_call_number) > 0
+                ):
+                    self.action = "attach"
+                    self.target_bib_id = result.bib_id
+                    break
+            if self.action is None:
+                self.action = "attach"
+                self.target_bib_id = result.bib_id
+
+    def _acquisition_workflow(self):
+        self.call_number_match = True
+        self.action = "insert"
 
     @property
     def duplicate_records(self) -> list[str]:
@@ -93,12 +272,8 @@ class ReviewedResults:
 
     @property
     def target_bib_id(self) -> str | None:
-        bib_id = None
-        if len(self.matched_results) == 1:
-            return self.matched_results[0].bib_id
-        elif len(self.matched_results) == 0:
-            return bib_id
-        for result in self.matched_results:
-            if result.branch_call_number or result.research_call_number:
-                return result.bib_id
-        return bib_id
+        return self._target_bib_id
+
+    @target_bib_id.setter
+    def target_bib_id(self, id: str | None) -> None:
+        self._target_bib_id = id
