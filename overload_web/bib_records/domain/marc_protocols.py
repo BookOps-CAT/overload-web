@@ -29,8 +29,8 @@ from typing import Any, BinaryIO, Protocol, TypeVar, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
-
-D = TypeVar("D")  # variable for DomainBib type
+C = TypeVar("C", contravariant=True)  # variable for contravariant DomainBib type
+D = TypeVar("D")  # variable for invariant DomainBib type
 F = TypeVar("F")  # variable for BaseSierraResponse type
 
 
@@ -100,9 +100,17 @@ class BibUpdater(Protocol[D]):
 
 
 @runtime_checkable
-class ResultsReviewer(Protocol):
+class ResultsReviewer(Protocol[C, F]):
     """Review results of Sierra queries and select best match"""
 
-    def review_results(
-        self, input: D, results: list[F], record_type: Any
+    def review_acq_results(
+        self, input: C, results: list[F]
+    ) -> str | None: ...  # pragma: no branch
+
+    def review_cat_results(
+        self, input: C, results: list[F]
+    ) -> str | None: ...  # pragma: no branch
+
+    def review_sel_results(
+        self, input: C, results: list[F]
     ) -> str | None: ...  # pragma: no branch

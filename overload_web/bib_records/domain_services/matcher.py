@@ -53,11 +53,8 @@ class BibMatcher:
         self.reviewer = reviewer
 
     def match_bib(
-        self,
-        record: bibs.DomainBib,
-        matchpoints: dict[str, str],
-        record_type: bibs.RecordType,
-    ) -> str | None:
+        self, record: bibs.DomainBib, matchpoints: dict[str, str]
+    ) -> list[bibs.BaseSierraResponse]:
         """
         Attempt to find the best-match in Sierra for a given bib record.
 
@@ -79,35 +76,30 @@ class BibMatcher:
                 continue
             candidates = self.fetcher.get_bibs_by_id(value=value, key=key)
             if candidates:
-                best_match = self.reviewer.review_results(
-                    record, results=candidates, record_type=record_type
-                )
-                return best_match
-        return record.bib_id
+                return candidates
+        return []
 
-    def _match_order(
-        self,
-        record: bibs.DomainBib,
-        matchpoints: dict[str, str],
-        record_type: bibs.RecordType,
+    def _match_acq_bib(
+        self, record: bibs.DomainBib, matchpoints: dict[str, str]
     ) -> bibs.DomainBib:
-        bib_id = self.match_bib(
-            record=record, matchpoints=matchpoints, record_type=record_type
-        )
-        record.bib_id = bib_id
+        matches = self.match_bib(record=record, matchpoints=matchpoints)
+        record.bib_id = self.reviewer.review_acq_results(record, results=matches)
         return record
 
-    def _match_full(
-        self, record: bibs.DomainBib, record_type: bibs.RecordType
+    def _match_sel_bib(
+        self, record: bibs.DomainBib, matchpoints: dict[str, str]
     ) -> bibs.DomainBib:
+        matches = self.match_bib(record=record, matchpoints=matchpoints)
+        record.bib_id = self.reviewer.review_sel_results(record, results=matches)
+        return record
+
+    def _match_full(self, record: bibs.DomainBib) -> bibs.DomainBib:
         if not record.vendor_info:
             raise OverloadError("Vendor index required for cataloging workflow.")
-        bib_id = self.match_bib(
-            record=record,
-            matchpoints=record.vendor_info.matchpoints,
-            record_type=record_type,
+        matches = self.match_bib(
+            record=record, matchpoints=record.vendor_info.matchpoints
         )
-        record.bib_id = bib_id
+        record.bib_id = self.reviewer.review_cat_results(record, results=matches)
         return record
 
     @overload
@@ -158,15 +150,11 @@ class BibMatcher:
         for record in records:
             match record_type:
                 case bibs.RecordType.CATALOGING:
-                    rec = self._match_full(record=record, record_type=record_type)
+                    rec = self._match_full(record=record)
                 case bibs.RecordType.ACQUISITIONS if matchpoints:
-                    rec = self._match_order(
-                        record=record, matchpoints=matchpoints, record_type=record_type
-                    )
+                    rec = self._match_acq_bib(record=record, matchpoints=matchpoints)
                 case bibs.RecordType.SELECTION if matchpoints:
-                    rec = self._match_order(
-                        record=record, matchpoints=matchpoints, record_type=record_type
-                    )
+                    rec = self._match_sel_bib(record=record, matchpoints=matchpoints)
                 case _:
                     raise OverloadError(
                         "Matchpoints from order template required for acquisition "

@@ -124,7 +124,7 @@ class FakeSierraSession(sierra.SierraSessionProtocol):
         self.credentials = self._get_credentials()
 
 
-class FakeSierraResponse(sierra_responses.BaseSierraResponse):
+class FakeSierraResponse(sierra_responses.bibs.BaseSierraResponse):
     library = "library"
 
     @property

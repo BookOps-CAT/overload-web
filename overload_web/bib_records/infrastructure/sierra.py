@@ -67,7 +67,7 @@ class SierraBibFetcher:
 
     def get_bibs_by_id(
         self, value: str | int, key: str
-    ) -> list[sierra_responses.BaseSierraResponse]:
+    ) -> list[sierra_responses.bibs.BaseSierraResponse]:
         """
         Retrieves bib records by a specific matchpoint (e.g., ISBN, OCLC)
 
@@ -134,7 +134,7 @@ class SierraSessionProtocol(Protocol):
     ) -> requests.Response: ...  # pragma: no branch
     def _parse_response(
         self, response: requests.Response
-    ) -> list[sierra_responses.BaseSierraResponse]: ...  # pragma: no branch
+    ) -> list[sierra_responses.bibs.BaseSierraResponse]: ...  # pragma: no branch
 
 
 class BPLSolrSession(SolrSession):
@@ -157,7 +157,7 @@ class BPLSolrSession(SolrSession):
 
     def _parse_response(
         self, response: requests.Response
-    ) -> list[sierra_responses.BaseSierraResponse]:
+    ) -> list[sierra_responses.bibs.BaseSierraResponse]:
         logger.info(f"Sierra Session response code: {response.status_code}.")
         json_response = response.json()
         bibs = json_response["response"]["docs"]
@@ -204,7 +204,7 @@ class NYPLPlatformSession(PlatformSession):
 
     def _parse_response(
         self, response: requests.Response
-    ) -> list[sierra_responses.BaseSierraResponse]:
+    ) -> list[sierra_responses.bibs.BaseSierraResponse]:
         logger.info(f"Sierra Session response code: {response.status_code}.")
         json_response = response.json()
         bibs = json_response.get("data", [])

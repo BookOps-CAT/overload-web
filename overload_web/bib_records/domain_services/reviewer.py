@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import logging
+
 from overload_web.bib_records.domain import bibs
-from overload_web.bib_records.infrastructure import sierra_responses
+
+logger = logging.getLogger(__name__)
 
 
-class ReviewedResults:
+class BaseReviewer:
     """
     Compare a `DomainBib` to a list of candidate bibs and select the best match.
 
@@ -17,16 +20,70 @@ class ReviewedResults:
 
     def __init__(self) -> None:
         self.input: bibs.DomainBib
-        self.results: list[sierra_responses.BaseSierraResponse]
+        self.results: list[bibs.BaseSierraResponse]
         self.vendor: str | None
         self.call_number_match: bool
         self.action: str | None = None
 
-        self.matched_results: list[sierra_responses.BaseSierraResponse] = []
-        self.mixed_results: list[sierra_responses.BaseSierraResponse] = []
-        self.other_results: list[sierra_responses.BaseSierraResponse] = []
+        self.matched_results: list[bibs.BaseSierraResponse] = []
+        self.mixed_results: list[bibs.BaseSierraResponse] = []
+        self.other_results: list[bibs.BaseSierraResponse] = []
 
-    def _sort_results(self) -> None:
+    @property
+    def duplicate_records(self) -> list[str]:
+        duplicate_records: list[str] = []
+        if len(self.matched_results) > 1:
+            return [i.bib_id for i in self.matched_results]
+        return duplicate_records
+
+    @property
+    def input_call_no(self) -> str | None:
+        if str(self.input.collection) == "RL":
+            call_no = self.input.research_call_number
+            return call_no[0] if isinstance(call_no, list) else call_no
+        elif str(self.input.collection) == "BL":
+            call_no = self.input.branch_call_number
+            return call_no[0] if isinstance(call_no, list) else call_no
+        elif str(self.input.library) == "BPL":
+            call_no = self.input.branch_call_number
+            return call_no[0] if isinstance(call_no, list) else call_no
+        return None
+
+    @property
+    def resource_id(self) -> str | None:
+        if self.input.bib_id:
+            return str(self.input.bib_id)
+        elif self.input.control_number:
+            return self.input.control_number
+        elif self.input.isbn:
+            return self.input.isbn
+        elif self.input.oclc_number:
+            return (
+                self.input.oclc_number
+                if isinstance(self.input.oclc_number, str)
+                else self.input.oclc_number[0]
+            )
+        elif self.input.upc:
+            return self.input.upc
+        return None
+
+    @property
+    def target_bib_id(self) -> str | None:
+        return self._target_bib_id
+
+    @target_bib_id.setter
+    def target_bib_id(self, id: str | None) -> None:
+        self._target_bib_id = id
+
+
+class ReviewedResults(BaseReviewer):
+    def _sort_results(
+        self, input: bibs.DomainBib, results: list[bibs.BaseSierraResponse]
+    ) -> None:
+        self.input = input
+        self.results = results
+        self.vendor = input.vendor
+
         sorted_results = sorted(self.results, key=lambda i: int(i.bib_id.strip(".b")))
         for result in sorted_results:
             if result.library == "bpl":
@@ -37,41 +94,7 @@ class ReviewedResults:
                 self.matched_results.append(result)
             else:
                 self.other_results.append(result)
-
-    def review_results(
-        self,
-        input: bibs.DomainBib,
-        results: list[sierra_responses.BaseSierraResponse],
-        record_type: bibs.RecordType,
-    ) -> str | None:
-        self.input = input
-        self.results = results
-        self.vendor = input.vendor
-
-        self.action = None
-
-        self._sort_results()
         self.target_bib_id = self.input.bib_id
-        if (
-            record_type == bibs.RecordType.CATALOGING
-            and self.input.library == bibs.LibrarySystem.BPL
-        ):
-            self._cataloging_bpl_workflow()
-        elif (
-            record_type == bibs.RecordType.CATALOGING
-            and self.input.collection == bibs.Collection.BRANCH
-        ):
-            self._cataloging_bl_workflow()
-        elif (
-            record_type == bibs.RecordType.CATALOGING
-            and self.input.collection == bibs.Collection.RESEARCH
-        ):
-            self._cataloging_rl_workflow()
-        elif record_type == bibs.RecordType.SELECTION:
-            self._selection_workflow()
-        elif record_type == bibs.RecordType.ACQUISITIONS:
-            self._acquisition_workflow()
-        return self.target_bib_id
 
     def _compare_call_nos(
         self,
@@ -84,7 +107,52 @@ class ReviewedResults:
             result_call_no = [result_call_no]
         return input_call_no == result_call_no
 
-    def _cataloging_bl_workflow(self):
+    def review_acq_results(
+        self, input: bibs.DomainBib, results: list[bibs.BaseSierraResponse]
+    ) -> str | None:
+        self._sort_results(input=input, results=results)
+        self.call_number_match = True
+        self.action = "insert"
+        return self.target_bib_id
+
+    def review_cat_results(
+        self, input: bibs.DomainBib, results: list[bibs.BaseSierraResponse]
+    ) -> str | None:
+        self._sort_results(input=input, results=results)
+
+        match self.input.library, self.input.collection:
+            case (bibs.LibrarySystem.NYPL, bibs.Collection.BRANCH):
+                self._cataloging_nypl_bl_workflow()
+            case (bibs.LibrarySystem.NYPL, bibs.Collection.RESEARCH):
+                self._cataloging_nypl_rl_workflow()
+            case bibs.LibrarySystem.BPL, _:
+                self._cataloging_bpl_workflow()
+            case _:
+                pass
+        return self.target_bib_id
+
+    def review_sel_results(
+        self, input: bibs.DomainBib, results: list[bibs.BaseSierraResponse]
+    ) -> str | None:
+        self._sort_results(input=input, results=results)
+        # default action = 'insert'
+        self.action = None
+        self.call_number_match = True
+        if len(self.matched_results) > 0:
+            for result in self.matched_results:
+                if (
+                    result.branch_call_number is not None
+                    or len(result.research_call_number) > 0
+                ):
+                    self.action = "attach"
+                    self.target_bib_id = result.bib_id
+                    break
+            if self.action is None:
+                self.action = "attach"
+                self.target_bib_id = result.bib_id
+        return self.target_bib_id
+
+    def _cataloging_nypl_bl_workflow(self):
         # default action = 'insert'
         if not self.matched_results:
             self.call_number_match = True
@@ -181,7 +249,7 @@ class ReviewedResults:
             self.target_title = self.matched_results[-1].title
             self.action = "overlay"
 
-    def _cataloging_rl_workflow(self):
+    def _cataloging_nypl_rl_workflow(self):
         # default action = 'insert'
         self.call_number_match = False
         if not self.matched_results:
@@ -210,70 +278,3 @@ class ReviewedResults:
             self.target_bib_id = self.matched_results[-1].bib_id
             self.target_title = self.matched_results[-1].title
             self.action = "overlay"
-
-    def _selection_workflow(self):
-        # default action = 'insert'
-        self.action = None
-        self.call_number_match = True
-        if len(self.matched_results) > 0:
-            for result in self.matched_results:
-                if (
-                    result.branch_call_number is not None
-                    or len(result.research_call_number) > 0
-                ):
-                    self.action = "attach"
-                    self.target_bib_id = result.bib_id
-                    break
-            if self.action is None:
-                self.action = "attach"
-                self.target_bib_id = result.bib_id
-
-    def _acquisition_workflow(self):
-        self.call_number_match = True
-        self.action = "insert"
-
-    @property
-    def duplicate_records(self) -> list[str]:
-        duplicate_records: list[str] = []
-        if len(self.matched_results) > 1:
-            return [i.bib_id for i in self.matched_results]
-        return duplicate_records
-
-    @property
-    def input_call_no(self) -> str | None:
-        if str(self.input.collection) == "RL":
-            call_no = self.input.research_call_number
-            return call_no[0] if isinstance(call_no, list) else call_no
-        elif str(self.input.collection) == "BL":
-            call_no = self.input.branch_call_number
-            return call_no[0] if isinstance(call_no, list) else call_no
-        elif str(self.input.library) == "BPL":
-            call_no = self.input.branch_call_number
-            return call_no[0] if isinstance(call_no, list) else call_no
-        return None
-
-    @property
-    def resource_id(self) -> str | None:
-        if self.input.bib_id:
-            return str(self.input.bib_id)
-        elif self.input.control_number:
-            return self.input.control_number
-        elif self.input.isbn:
-            return self.input.isbn
-        elif self.input.oclc_number:
-            return (
-                self.input.oclc_number
-                if isinstance(self.input.oclc_number, str)
-                else self.input.oclc_number[0]
-            )
-        elif self.input.upc:
-            return self.input.upc
-        return None
-
-    @property
-    def target_bib_id(self) -> str | None:
-        return self._target_bib_id
-
-    @target_bib_id.setter
-    def target_bib_id(self, id: str | None) -> None:
-        self._target_bib_id = id

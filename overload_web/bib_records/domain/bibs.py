@@ -3,9 +3,81 @@
 from __future__ import annotations
 
 import datetime
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, TypedDict
+
+
+class BaseSierraResponse(ABC):
+    library: str
+
+    def __init__(self, data: dict[str, Any]) -> None:
+        self._data = data
+        self.bib_id: str = data["id"]
+        self.library = self.__class__.library
+        self.title: str = data["title"]
+
+    @property
+    @abstractmethod
+    def barcodes(self) -> list[str]: ...  # pragma: no branch
+
+    @property
+    @abstractmethod
+    def branch_call_number(self) -> list[str]: ...  # pragma: no branch
+
+    @property
+    @abstractmethod
+    def cat_source(self) -> str: ...  # pragma: no branch
+
+    @property
+    @abstractmethod
+    def collection(self) -> str | None: ...  # pragma: no branch
+
+    @property
+    def control_number(self) -> str | None: ...  # pragma: no branch
+
+    @property
+    @abstractmethod
+    def isbn(self) -> list[str]: ...  # pragma: no branch
+
+    @property
+    @abstractmethod
+    def oclc_number(self) -> list[str]: ...  # pragma: no branch
+
+    @property
+    @abstractmethod
+    def research_call_number(self) -> list[str]: ...  # pragma: no branch
+
+    @property
+    @abstractmethod
+    def upc(self) -> list[str]: ...  # pragma: no branch
+
+    @property
+    @abstractmethod
+    def update_date(self) -> str | None: ...  # pragma: no branch
+
+    @property
+    @abstractmethod
+    def var_fields(self) -> list[dict[str, Any]]: ...  # pragma: no branch
+
+    def to_dict(self) -> FetcherResponseDict:
+        return {
+            "title": self.title,
+            "barcodes": self.barcodes,
+            "branch_call_number": self.branch_call_number,
+            "cat_source": self.cat_source,
+            "collection": self.collection,
+            "control_number": self.control_number,
+            "isbn": self.isbn,
+            "oclc_number": self.oclc_number,
+            "research_call_number": self.research_call_number,
+            "upc": self.upc,
+            "update_date": self.update_date,
+            "var_fields": self.var_fields,
+            "library": self.library,
+            "bib_id": self.bib_id,
+        }
 
 
 class Collection(Enum):

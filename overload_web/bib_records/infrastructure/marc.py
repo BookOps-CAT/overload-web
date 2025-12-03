@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class BookopsMarcMapper:
-    """Parses and serializes MARC records based on domain objects."""
+    """Parses MARC records based on domain objects."""
 
     def __init__(self, library: str, rules: dict[str, Any]) -> None:
         """

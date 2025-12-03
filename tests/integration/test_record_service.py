@@ -5,7 +5,12 @@ import pytest
 from bookops_marc import Bib
 
 from overload_web.bib_records.domain import bibs, marc_protocols
-from overload_web.bib_records.domain_services import attacher, matcher, parser, reviewer
+from overload_web.bib_records.domain_services import (
+    matcher,
+    parser,
+    reviewer,
+    serializer,
+)
 from overload_web.bib_records.infrastructure import marc, sierra, sierra_responses
 from overload_web.errors import OverloadError
 
@@ -163,19 +168,19 @@ class TestRecordProcessingMatcher:
     "library, collection",
     [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
 )
-class TestRecordProcessingAttacher:
+class TestRecordProcessingSerializer:
     @pytest.fixture
     def stub_service(self, library, stub_constants):
-        return attacher.BibAttacher(
-            attacher=marc.BookopsMarcUpdater(rules=stub_constants["updater_rules"]),
+        return serializer.BibSerializer(
+            serializer=marc.BookopsMarcUpdater(rules=stub_constants["updater_rules"]),
         )
 
-    def test_attach_cat(self, stub_service, stub_full_bib):
+    def test_update_cat(self, stub_service, stub_full_bib):
         original_bib = Bib(
             copy.deepcopy(stub_full_bib.binary_data), library=str(stub_full_bib.library)
         )
         stub_full_bib.bib_id = "12345"
-        updated_bibs = stub_service.attach(
+        updated_bibs = stub_service.update(
             [stub_full_bib], record_type=bibs.RecordType.CATALOGING
         )
         updated_bib = Bib(
@@ -184,14 +189,14 @@ class TestRecordProcessingAttacher:
         assert len(original_bib.get_fields("907")) == 0
         assert len(updated_bib.get_fields("907")) == 1
 
-    def test_attach_cat_no_vendor_index(self, stub_service, stub_order_bib):
+    def test_update_cat_no_vendor_index(self, stub_service, stub_order_bib):
         with pytest.raises(OverloadError) as exc:
-            stub_service.attach(
+            stub_service.update(
                 [stub_order_bib], record_type=bibs.RecordType.CATALOGING
             )
         assert str(exc.value) == "Vendor index required for cataloging workflow."
 
-    def test_attach_cat_vendor_updates(self, stub_service, make_full_bib, library):
+    def test_update_cat_vendor_updates(self, stub_service, make_full_bib, library):
         dto = make_full_bib(
             {
                 "020": {"code": "a", "value": "9781234567890"},
@@ -200,7 +205,7 @@ class TestRecordProcessingAttacher:
             },
         )
         original_bib = copy.deepcopy(Bib(dto.binary_data, library=library))
-        updated_bibs = stub_service.attach(
+        updated_bibs = stub_service.update(
             [dto], record_type=bibs.RecordType.CATALOGING
         )
         assert len(original_bib.get_fields("949")) == 1
@@ -209,9 +214,19 @@ class TestRecordProcessingAttacher:
             == 2
         )
 
-    def test_attach_sel(self, stub_service, stub_order_bib, template_data):
+    def test_update_acq(self, stub_service, stub_order_bib, template_data):
         original_orders = copy.deepcopy(stub_order_bib.orders)
-        updated_bibs = stub_service.attach(
+        updated_bibs = stub_service.update(
+            [stub_order_bib],
+            template_data=template_data,
+            record_type=bibs.RecordType.ACQUISITIONS,
+        )
+        assert [i.order_code_1 for i in original_orders] == ["j"]
+        assert [i.order_code_1 for i in updated_bibs[0].orders] == ["b"]
+
+    def test_update_sel(self, stub_service, stub_order_bib, template_data):
+        original_orders = copy.deepcopy(stub_order_bib.orders)
+        updated_bibs = stub_service.update(
             [stub_order_bib],
             template_data=template_data,
             record_type=bibs.RecordType.SELECTION,
@@ -223,15 +238,21 @@ class TestRecordProcessingAttacher:
         "record_type",
         [bibs.RecordType.ACQUISITIONS, bibs.RecordType.SELECTION],
     )
-    def test_attach_acq_sel_no_template(
+    def test_update_acq_sel_no_template(
         self, stub_service, stub_order_bib, record_type
     ):
         with pytest.raises(OverloadError) as exc:
-            stub_service.attach([stub_order_bib], record_type=record_type)
+            stub_service.update([stub_order_bib], record_type=record_type)
         assert (
             str(exc.value)
             == "Order template required for acquisition or selection workflow."
         )
+
+    def test_serialize(self, stub_order_bib, stub_service, caplog):
+        marc_binary = stub_service.serialize(records=[stub_order_bib])
+        assert marc_binary.read()[0:2] == b"00"
+        assert len(caplog.records) == 1
+        assert "Writing MARC binary for record: " in caplog.records[0].msg
 
 
 @pytest.mark.parametrize(
@@ -274,9 +295,3 @@ class TestRecordProcessingParser:
         assert records[0].barcodes == ["333331234567890"]
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
-
-    def test_serialize(self, stub_order_bib, stub_service, caplog):
-        marc_binary = stub_service.serialize(records=[stub_order_bib])
-        assert marc_binary.read()[0:2] == b"00"
-        assert len(caplog.records) == 1
-        assert "Writing MARC binary for record: " in caplog.records[0].msg
