@@ -312,6 +312,15 @@ def stub_bib(library, collection) -> Bib:
         )
     bib.add_field(
         Field(
+            tag="091",
+            indicators=Indicators(" ", " "),
+            subfields=[
+                Subfield(code="a", value="Foo"),
+            ],
+        )
+    )
+    bib.add_field(
+        Field(
             tag="949",
             indicators=Indicators(" ", "1"),
             subfields=[
@@ -363,33 +372,6 @@ def stub_bib(library, collection) -> Bib:
         )
     )
     return bib
-
-
-@pytest.fixture
-def make_domain_bib(stub_bib, stub_constants, library, record_type) -> Callable:
-    def _make_dto(data: dict[str, dict[str, str]]):
-        record = copy.deepcopy(stub_bib)
-        for k, v in data.items():
-            record.add_field(
-                Field(
-                    tag=k,
-                    indicators=Indicators(" ", " "),
-                    subfields=[
-                        Subfield(code=v["code"], value=v["value"]),
-                    ],
-                )
-            )
-        mapper = marc.BookopsMarcMapper(
-            rules=stub_constants["mapper_rules"], library=library
-        )
-        bib = (
-            mapper.map_full_bib(record=record)
-            if str(record_type) == "CATALOGING"
-            else mapper.map_order_bib(record=record)
-        )
-        return bib
-
-    return _make_dto
 
 
 @pytest.fixture
