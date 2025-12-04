@@ -6,7 +6,7 @@ from typing import Annotated, Generator
 from fastapi import Depends, Form
 
 from overload_web.application import record_service
-from overload_web.bib_records.infrastructure import marc, sierra
+from overload_web.bib_records.infrastructure import marc, sierra, sierra_reviewer
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +25,7 @@ def record_processing_service(
 ) -> Generator[record_service.RecordProcessingService, None, None]:
     yield record_service.RecordProcessingService(
         collection=collection,
+        attacher=sierra_reviewer.SierraResponseReviewer(),
         bib_fetcher=sierra.SierraBibFetcher(library),
         mapper=marc.BookopsMarcMapper(rules=constants["mapper_rules"], library=library),
         updater=marc.BookopsMarcUpdater(rules=constants["updater_rules"]),

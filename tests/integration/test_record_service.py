@@ -8,10 +8,14 @@ from overload_web.bib_records.domain import bibs, marc_protocols
 from overload_web.bib_records.domain_services import (
     matcher,
     parser,
-    reviewer,
     serializer,
 )
-from overload_web.bib_records.infrastructure import marc, sierra, sierra_responses
+from overload_web.bib_records.infrastructure import (
+    marc,
+    sierra,
+    sierra_responses,
+    sierra_reviewer,
+)
 from overload_web.errors import OverloadError
 
 
@@ -69,7 +73,7 @@ class TestRecordProcessingMatcher:
         )
         return matcher.BibMatcher(
             fetcher=sierra.SierraBibFetcher(library),
-            reviewer=reviewer.ReviewedResults(),
+            reviewer=sierra_reviewer.SierraResponseReviewer(),
         )
 
     @pytest.fixture
@@ -83,7 +87,7 @@ class TestRecordProcessingMatcher:
         )
         return matcher.BibMatcher(
             fetcher=sierra.SierraBibFetcher(library),
-            reviewer=reviewer.ReviewedResults(),
+            reviewer=sierra_reviewer.SierraResponseReviewer(),
         )
 
     def test_match_cat(self, stub_service, stub_full_bib):

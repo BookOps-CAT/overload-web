@@ -76,7 +76,7 @@ class BaseReviewer:
         self._target_bib_id = id
 
 
-class ReviewedResults(BaseReviewer):
+class SierraResponseReviewer(BaseReviewer):
     def _sort_results(
         self, input: bibs.DomainBib, results: list[bibs.BaseSierraResponse]
     ) -> None:
