@@ -4,7 +4,7 @@ import pytest
 import yaml
 
 from overload_web import errors
-from overload_web.bib_records.infrastructure.sierra import sierra, sierra_responses
+from overload_web.bib_records.infrastructure.sierra import clients, responses
 
 
 @pytest.fixture
@@ -21,12 +21,12 @@ def live_creds() -> None:
 @pytest.mark.usefixtures("live_creds")
 class TestLiveSierraSession:
     def test_BPLSolrSession_live(self):
-        with sierra.BPLSolrSession() as session:
+        with clients.BPLSolrSession() as session:
             response = session._get_bibs_by_isbn("9781338299151")
             matched_bibs = session._parse_response(response=response)
             assert isinstance(matched_bibs, list)
             assert len(matched_bibs) == 2
-            assert isinstance(matched_bibs[0], sierra_responses.BPLSolrResponse)
+            assert isinstance(matched_bibs[0], responses.BPLSolrResponse)
             assert sorted(list(response.json()["response"]["docs"][0].keys())) == [
                 "_version_",
                 "additional_contributor",
@@ -86,12 +86,12 @@ class TestLiveSierraSession:
             assert matched_bibs[0].title is not None
 
     def test_NYPLPlatformSession_live(self):
-        with sierra.NYPLPlatformSession() as session:
+        with clients.NYPLPlatformSession() as session:
             response = session._get_bibs_by_isbn("9781338299151")
             matched_bibs = session._parse_response(response=response)
             assert isinstance(matched_bibs, list)
             assert len(matched_bibs) == 1
-            assert isinstance(matched_bibs[0], sierra_responses.NYPLPlatformResponse)
+            assert isinstance(matched_bibs[0], responses.NYPLPlatformResponse)
             assert sorted(list(response.json()["data"][0].keys())) == [
                 "author",
                 "bibLevel",
@@ -121,7 +121,7 @@ class TestLiveSierraSession:
 
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_SierraBibFetcher_live(self, library):
-        fetcher = sierra.SierraBibFetcher(library=library)
+        fetcher = clients.SierraBibFetcher(library=library)
         bibs = fetcher.get_bibs_by_id(value="9781338299151", key="isbn")
         assert isinstance(bibs, list)
         assert sorted(list(bibs[0].keys())) == [
@@ -146,20 +146,20 @@ class TestLiveSierraSession:
 class TestSierraSessions:
     @pytest.mark.parametrize(
         "library,session_type",
-        [("bpl", sierra.BPLSolrSession), ("nypl", sierra.NYPLPlatformSession)],
+        [("bpl", clients.BPLSolrSession), ("nypl", clients.NYPLPlatformSession)],
     )
     @pytest.mark.parametrize("matchpoint", ["bib_id", "upc", "isbn", "oclc_number"])
     def test_get_bibs_by_id(
         self, library, session_type, matchpoint, mock_sierra_response
     ):
-        fetcher = sierra.SierraBibFetcher(library=library)
+        fetcher = clients.SierraBibFetcher(library=library)
         bibs = fetcher.get_bibs_by_id(value="123456789", key=matchpoint)
         assert bibs[0].bib_id == "123456789"
         assert isinstance(fetcher.session, session_type)
 
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_get_bibs_by_id_issn(self, library, mock_sierra_response, caplog):
-        fetcher = sierra.SierraBibFetcher(library=library)
+        fetcher = clients.SierraBibFetcher(library=library)
         with pytest.raises(NotImplementedError) as exc:
             fetcher.get_bibs_by_id(value="123456789", key="issn")
         assert "Search by ISSN not implemented" in str(exc.value)
@@ -167,7 +167,7 @@ class TestSierraSessions:
 
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_get_bibs_by_id_no_response(self, library, mock_sierra_no_response):
-        fetcher = sierra.SierraBibFetcher(library=library)
+        fetcher = clients.SierraBibFetcher(library=library)
         bibs = fetcher.get_bibs_by_id(value="123456789", key="isbn")
         assert bibs == []
 
@@ -179,7 +179,7 @@ class TestSierraSessions:
     def test_get_bibs_by_id_logging(
         self, library, session_type, matchpoint, mock_sierra_response, caplog
     ):
-        fetcher = sierra.SierraBibFetcher(library=library)
+        fetcher = clients.SierraBibFetcher(library=library)
         fetcher.get_bibs_by_id(value="123456789", key=matchpoint)
         assert len(caplog.records) == 2
         assert (
@@ -193,7 +193,7 @@ class TestSierraSessions:
         [("bpl", "BookopsSolrError"), ("nypl", "BookopsPlatformError")],
     )
     def test_get_bibs_by_id_error(self, library, mock_sierra_error, caplog, error_type):
-        fetcher = sierra.SierraBibFetcher(library=library)
+        fetcher = clients.SierraBibFetcher(library=library)
         with pytest.raises(errors.OverloadError) as exc:
             fetcher.get_bibs_by_id(value="123456789", key="isbn")
         assert "Connection error: " in str(exc.value)
@@ -202,7 +202,7 @@ class TestSierraSessions:
     @pytest.mark.parametrize("library", ["nypl"])
     def test_get_bibs_by_id_nypl_auth_error(self, library, mock_sierra_nypl_auth_error):
         with pytest.raises(errors.OverloadError) as exc:
-            sierra.SierraBibFetcher(library=library)
+            clients.SierraBibFetcher(library=library)
         assert "Trouble connecting: " in str(exc.value)
 
 
@@ -245,7 +245,7 @@ class TestSierraResponses:
             "updatedDate": "2020-01-01T00:00:01",
             **self.BASE_RESPONSE,
         }
-        response = sierra_responses.NYPLPlatformResponse(data)
+        response = responses.NYPLPlatformResponse(data)
         assert response.cat_source == "inhouse"
         assert response.collection == "BL"
 
@@ -264,7 +264,7 @@ class TestSierraResponses:
             ],
             **self.BASE_RESPONSE,
         }
-        response = sierra_responses.NYPLPlatformResponse(data)
+        response = responses.NYPLPlatformResponse(data)
         assert response.cat_source == "vendor"
         assert response.collection == "RL"
 
@@ -282,12 +282,12 @@ class TestSierraResponses:
             ],
             **self.BASE_RESPONSE,
         }
-        response = sierra_responses.NYPLPlatformResponse(data)
+        response = responses.NYPLPlatformResponse(data)
         assert response.cat_source == "vendor"
         assert response.collection == "MIXED"
 
     def test_nypl_response_no_collection(self):
-        response = sierra_responses.NYPLPlatformResponse(self.BASE_RESPONSE)
+        response = responses.NYPLPlatformResponse(self.BASE_RESPONSE)
         assert response.collection is None
 
     @pytest.mark.parametrize(
@@ -297,7 +297,7 @@ class TestSierraResponses:
     def test_nypl_response_call_number_check(self, field, collection):
         field["subfields"] = [{"tag": "a", "content": "Foo"}]
         data = {"varFields": [field], **self.BASE_RESPONSE}
-        response = sierra_responses.NYPLPlatformResponse(data)
+        response = responses.NYPLPlatformResponse(data)
         assert response.collection == collection
 
     def test_nypl_response_call_number_mixed(self):
@@ -312,7 +312,7 @@ class TestSierraResponses:
             ],
             **self.BASE_RESPONSE,
         }
-        response = sierra_responses.NYPLPlatformResponse(data)
+        response = responses.NYPLPlatformResponse(data)
         assert response.collection == "MIXED"
 
     def test_bpl_response(self):
@@ -333,7 +333,7 @@ class TestSierraResponses:
             "call_number": "FIC BAR",
             **self.BASE_RESPONSE,
         }
-        response = sierra_responses.BPLSolrResponse(data=data)
+        response = responses.BPLSolrResponse(data=data)
         assert response.barcodes == ["333331234567890"]
         assert response.branch_call_number == ["FIC BAR"]
         assert response.cat_source == "inhouse"
@@ -355,7 +355,7 @@ class TestSierraResponses:
             "call_number": "FIC BAR",
             **self.BASE_RESPONSE,
         }
-        response = sierra_responses.BPLSolrResponse(data=data)
+        response = responses.BPLSolrResponse(data=data)
         assert response.barcodes == []
         assert response.branch_call_number == ["FIC BAR"]
         assert response.cat_source == "vendor"

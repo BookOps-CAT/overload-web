@@ -11,7 +11,7 @@ from overload_web.bib_records.domain_services import (
     serializer,
 )
 from overload_web.bib_records.infrastructure.marc import marc
-from overload_web.bib_records.infrastructure.sierra import sierra, sierra_responses
+from overload_web.bib_records.infrastructure.sierra import clients, responses
 from overload_web.errors import OverloadError
 
 
@@ -32,13 +32,13 @@ class FakeBibFetcher(StubFetcher):
             with open(file, "r", encoding="utf-8") as fh:
                 bibs = json.loads(fh.read())
             data = bibs["data"]
-            return [sierra_responses.NYPLPlatformResponse(data=i) for i in data]
+            return [responses.NYPLPlatformResponse(data=i) for i in data]
         else:
             file = f"tests/data/{str(self.library)}.json"
             with open(file, "r", encoding="utf-8") as fh:
                 bibs = json.loads(fh.read())
             data = bibs["response"]["docs"]
-            return [sierra_responses.BPLSolrResponse(data=i) for i in data]
+            return [responses.BPLSolrResponse(data=i) for i in data]
 
 
 @pytest.fixture
@@ -148,10 +148,10 @@ class TestRecordProcessingMatcher:
             return FakeBibFetcher(library, collection)
 
         monkeypatch.setattr(
-            "overload_web.bib_records.infrastructure.sierra.sierra.SierraBibFetcher",
+            "overload_web.bib_records.infrastructure.sierra.clients.SierraBibFetcher",
             fake_fetcher,
         )
-        return matcher.BibMatcher(fetcher=sierra.SierraBibFetcher(library))
+        return matcher.BibMatcher(fetcher=clients.SierraBibFetcher(library))
 
     @pytest.fixture
     def stub_service_no_matches(self, monkeypatch, library):
@@ -159,10 +159,10 @@ class TestRecordProcessingMatcher:
             return StubFetcher()
 
         monkeypatch.setattr(
-            "overload_web.bib_records.infrastructure.sierra.sierra.SierraBibFetcher",
+            "overload_web.bib_records.infrastructure.sierra.clients.SierraBibFetcher",
             fake_fetcher,
         )
-        return matcher.BibMatcher(fetcher=sierra.SierraBibFetcher(library))
+        return matcher.BibMatcher(fetcher=clients.SierraBibFetcher(library))
 
     def test_match_full(self, stub_service, stub_full_bib):
         matched_bibs = stub_service.match(

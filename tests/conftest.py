@@ -13,7 +13,7 @@ from pymarc import Field, Indicators, Subfield
 from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.bib_records.infrastructure.marc import marc
-from overload_web.bib_records.infrastructure.sierra import sierra, sierra_responses
+from overload_web.bib_records.infrastructure.sierra import clients, responses
 from overload_web.order_templates.infrastructure import tables
 
 
@@ -120,12 +120,12 @@ def mock_sierra_error(monkeypatch, mock_sierra_response):
     monkeypatch.setattr("requests.Session.get", mock_nypl_error)
 
 
-class FakeSierraSession(sierra.SierraSessionProtocol):
+class FakeSierraSession(clients.SierraSessionProtocol):
     def __init__(self) -> None:
         self.credentials = self._get_credentials()
 
 
-class FakeSierraResponse(sierra_responses.bibs.BaseSierraResponse):
+class FakeSierraResponse(responses.bibs.BaseSierraResponse):
     library = "library"
 
     @property
@@ -178,7 +178,7 @@ def mock_session(monkeypatch, mock_sierra_response):
     def mock_response(*args, **kwargs):
         return [FakeSierraResponse({"id": "123456789", "title": "foo"})]
 
-    monkeypatch.setattr(sierra.SierraSessionProtocol, "_parse_response", mock_response)
+    monkeypatch.setattr(clients.SierraSessionProtocol, "_parse_response", mock_response)
     return FakeSierraSession()
 
 
@@ -187,7 +187,7 @@ def mock_session_no_response(monkeypatch):
     def mock_response(*args, **kwargs):
         return []
 
-    monkeypatch.setattr(sierra.SierraSessionProtocol, "_parse_response", mock_response)
+    monkeypatch.setattr(clients.SierraSessionProtocol, "_parse_response", mock_response)
     return FakeSierraSession()
 
 
