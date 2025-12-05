@@ -12,7 +12,8 @@ from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.bib_records.infrastructure import marc, sierra, sierra_responses
+from overload_web.bib_records.infrastructure.marc import marc
+from overload_web.bib_records.infrastructure.sierra import sierra, sierra_responses
 from overload_web.order_templates.infrastructure import tables
 
 

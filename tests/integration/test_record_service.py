@@ -10,7 +10,8 @@ from overload_web.bib_records.domain_services import (
     parser,
     serializer,
 )
-from overload_web.bib_records.infrastructure import marc, sierra, sierra_responses
+from overload_web.bib_records.infrastructure.marc import marc
+from overload_web.bib_records.infrastructure.sierra import sierra, sierra_responses
 from overload_web.errors import OverloadError
 
 
@@ -147,7 +148,7 @@ class TestRecordProcessingMatcher:
             return FakeBibFetcher(library, collection)
 
         monkeypatch.setattr(
-            "overload_web.bib_records.infrastructure.sierra.SierraBibFetcher",
+            "overload_web.bib_records.infrastructure.sierra.sierra.SierraBibFetcher",
             fake_fetcher,
         )
         return matcher.BibMatcher(fetcher=sierra.SierraBibFetcher(library))
@@ -158,7 +159,7 @@ class TestRecordProcessingMatcher:
             return StubFetcher()
 
         monkeypatch.setattr(
-            "overload_web.bib_records.infrastructure.sierra.SierraBibFetcher",
+            "overload_web.bib_records.infrastructure.sierra.sierra.SierraBibFetcher",
             fake_fetcher,
         )
         return matcher.BibMatcher(fetcher=sierra.SierraBibFetcher(library))

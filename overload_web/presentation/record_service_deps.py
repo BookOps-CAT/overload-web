@@ -6,7 +6,8 @@ from typing import Annotated, Generator
 from fastapi import Depends, Form
 
 from overload_web.application import record_service
-from overload_web.bib_records.infrastructure import marc, sierra, sierra_reviewer
+from overload_web.bib_records.infrastructure.marc import marc
+from overload_web.bib_records.infrastructure.sierra import sierra, sierra_reviewer
 
 logger = logging.getLogger(__name__)
 

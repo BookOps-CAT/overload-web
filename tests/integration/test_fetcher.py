@@ -1,6 +1,6 @@
 import pytest
 
-from overload_web.bib_records.infrastructure import sierra
+from overload_web.bib_records.infrastructure.sierra import sierra
 
 
 class TestSierraBibFetcher:

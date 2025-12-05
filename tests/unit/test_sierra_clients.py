@@ -4,7 +4,7 @@ import pytest
 import yaml
 
 from overload_web import errors
-from overload_web.bib_records.infrastructure import sierra, sierra_responses
+from overload_web.bib_records.infrastructure.sierra import sierra, sierra_responses
 
 
 @pytest.fixture
