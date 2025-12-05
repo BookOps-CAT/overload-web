@@ -12,7 +12,7 @@ from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.bib_records.infrastructure.marc import marc
+from overload_web.bib_records.infrastructure.marc import mapper
 from overload_web.bib_records.infrastructure.sierra import clients, responses
 from overload_web.order_templates.infrastructure import tables
 
@@ -399,12 +399,12 @@ def make_full_bib(stub_bib, stub_constants, library) -> Callable:
                     ],
                 )
             )
-        mapper = marc.BookopsMarcMapper(
+        marc_mapper = mapper.BookopsMarcMapper(
             rules=stub_constants["mapper_rules"], library=library
         )
-        out: dict[str, Any] = mapper._map_data(record=record)
-        out["vendor_info"] = mapper._identify_vendor(record=record)
-        bib = marc.bibs.DomainBib(**out)
+        out: dict[str, Any] = marc_mapper._map_data(record=record)
+        out["vendor_info"] = marc_mapper._identify_vendor(record=record)
+        bib = mapper.bibs.DomainBib(**out)
         return bib
 
     return _make_dto
@@ -424,11 +424,11 @@ def make_order_bib(stub_bib, stub_constants, library) -> Callable:
                     ],
                 )
             )
-        mapper = marc.BookopsMarcMapper(
+        marc_mapper = mapper.BookopsMarcMapper(
             rules=stub_constants["mapper_rules"], library=library
         )
-        out: dict[str, Any] = mapper._map_data(record=record)
-        bib = marc.bibs.DomainBib(**out)
+        out: dict[str, Any] = marc_mapper._map_data(record=record)
+        bib = mapper.bibs.DomainBib(**out)
         return bib
 
     return _make_dto

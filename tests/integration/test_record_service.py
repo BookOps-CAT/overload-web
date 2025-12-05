@@ -10,7 +10,7 @@ from overload_web.bib_records.domain_services import (
     parser,
     serializer,
 )
-from overload_web.bib_records.infrastructure.marc import marc
+from overload_web.bib_records.infrastructure.marc import mapper, updater
 from overload_web.bib_records.infrastructure.sierra import clients, responses
 from overload_web.errors import OverloadError
 
@@ -240,7 +240,9 @@ class TestRecordProcessingSerializer:
     @pytest.fixture
     def stub_service(self, library, stub_constants):
         return serializer.BibSerializer(
-            serializer=marc.BookopsMarcUpdater(rules=stub_constants["updater_rules"]),
+            serializer=updater.BookopsMarcUpdater(
+                rules=stub_constants["updater_rules"]
+            ),
         )
 
     def test_update_cat(self, stub_service, stub_full_bib):
@@ -331,7 +333,7 @@ class TestRecordProcessingParser:
     @pytest.fixture
     def stub_service(self, library, stub_constants):
         return parser.BibParser(
-            mapper=marc.BookopsMarcMapper(
+            mapper=mapper.BookopsMarcMapper(
                 rules=stub_constants["mapper_rules"], library=library
             )
         )
