@@ -6,7 +6,7 @@ import datetime
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, TypedDict
+from typing import Any
 
 
 class BaseSierraResponse(ABC):
@@ -55,29 +55,15 @@ class BaseSierraResponse(ABC):
 
     @property
     @abstractmethod
-    def update_date(self) -> str | None: ...  # pragma: no branch
+    def update_date(self) -> str: ...  # pragma: no branch
+
+    @property
+    def update_datetime(self) -> datetime.datetime:
+        return datetime.datetime.fromisoformat(self.update_date.strip("Z"))
 
     @property
     @abstractmethod
     def var_fields(self) -> list[dict[str, Any]]: ...  # pragma: no branch
-
-    def to_dict(self) -> FetcherResponseDict:
-        return {
-            "title": self.title,
-            "barcodes": self.barcodes,
-            "branch_call_number": self.branch_call_number,
-            "cat_source": self.cat_source,
-            "collection": self.collection,
-            "control_number": self.control_number,
-            "isbn": self.isbn,
-            "oclc_number": self.oclc_number,
-            "research_call_number": self.research_call_number,
-            "upc": self.upc,
-            "update_date": self.update_date,
-            "var_fields": self.var_fields,
-            "library": self.library,
-            "bib_id": self.bib_id,
-        }
 
 
 class Collection(Enum):
@@ -117,8 +103,10 @@ class DomainBib:
 
     def __init__(
         self,
-        library: LibrarySystem | str,
         binary_data: bytes,
+        library: LibrarySystem | str,
+        title: str,
+        update_date: str,
         barcodes: list[str] = [],
         bib_id: str | None = None,
         branch_call_number: str | list[str] | None = None,
@@ -128,14 +116,13 @@ class DomainBib:
         oclc_number: str | list[str] | None = None,
         orders: list[Order] = [],
         research_call_number: str | list[str] | None = None,
-        title: str | None = None,
         upc: str | None = None,
-        update_date: datetime.datetime | str | None = None,
         vendor: str | None = None,
         vendor_info: VendorInfo | None = None,
     ) -> None:
         self.barcodes = barcodes
         self.bib_id = bib_id
+        self.binary_data = binary_data
         self.branch_call_number = branch_call_number
         self.collection = (
             Collection(str(collection).upper())
@@ -152,8 +139,11 @@ class DomainBib:
         self.upc = upc
         self.update_date = update_date
         self.vendor = vendor
-        self.binary_data = binary_data
         self.vendor_info = vendor_info
+
+    @property
+    def update_datetime(self) -> datetime.datetime:
+        return datetime.datetime.fromisoformat(self.update_date.strip("Z"))
 
     def apply_order_template(self, template_data: dict[str, Any]) -> None:
         """
@@ -179,6 +169,12 @@ class LibrarySystem(Enum):
         return self.value
 
 
+class MatcherResponse:
+    def __init__(self, bib: DomainBib, matches: list[BaseSierraResponse]) -> None:
+        self.bib = bib
+        self.matches = matches
+
+
 class Order:
     """A domain model representing a Sierra order."""
 
@@ -199,7 +195,7 @@ class Order:
         order_code_2: str | None,
         order_code_3: str | None,
         order_code_4: str | None,
-        order_id: OrderId | str | None,
+        order_id: str | None,
         order_type: str | None,
         price: str | int | None,
         selector_note: str | None,
@@ -224,7 +220,7 @@ class Order:
         self.order_code_2 = order_code_2
         self.order_code_3 = order_code_3
         self.order_code_4 = order_code_4
-        self.order_id = OrderId(order_id) if isinstance(order_id, str) else order_id
+        self.order_id = order_id
         self.order_type = order_type
         self.price = price
         self.selector_note = selector_note
@@ -247,7 +243,7 @@ class Order:
 
     def map_to_marc(
         self, rules: dict[str, dict[str, str]]
-    ) -> dict[str, dict[str, str | int | OrderId | list[str] | None]]:
+    ) -> dict[str, dict[str, str | int | list[str] | None]]:
         """
         Map order data to MARC using a set of mapping rules
 
@@ -265,24 +261,6 @@ class Order:
                 tag_dict[k] = getattr(self, v)
             out[key] = tag_dict
         return out
-
-
-@dataclass(frozen=True)
-class OrderId:
-    """A dataclass to define a OrderId as an entity"""
-
-    value: str
-
-    def __post_init__(self):
-        """Validate that the order ID is a string"""
-        if not self.value or not isinstance(self.value, str):
-            raise ValueError("OrderId must be a non-empty string.")
-
-    def __str__(self):
-        return self.value
-
-    def __repr__(self):
-        return f"OrderId(value={self.value!r})"
 
 
 class RecordType(Enum):
@@ -303,22 +281,3 @@ class VendorInfo:
     bib_fields: list[dict[str, str]]
     matchpoints: dict[str, str]
     name: str
-
-
-class FetcherResponseDict(TypedDict):
-    """Defines the dict returned by `BibFetcher.get_bibs_by_id` method"""
-
-    barcodes: list[str]
-    bib_id: str
-    branch_call_number: list[str]
-    cat_source: str
-    collection: str | None
-    control_number: str | None
-    isbn: list[str]
-    library: str
-    oclc_number: list[str]
-    research_call_number: list[str]
-    title: str
-    upc: list[str]
-    update_date: str | None
-    var_fields: list[dict[str, Any]]

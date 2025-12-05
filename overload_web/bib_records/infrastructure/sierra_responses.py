@@ -86,8 +86,8 @@ class BPLSolrResponse(bibs.BaseSierraResponse):
         return list(set([i for i in upcs if i]))
 
     @property
-    def update_date(self) -> str | None:
-        return self._data.get("ss_marc_tag_005")
+    def update_date(self) -> str:
+        return self._data["ss_marc_tag_005"]
 
     @property
     def var_fields(self) -> list[dict[str, Any]]:
@@ -202,8 +202,8 @@ class NYPLPlatformResponse(bibs.BaseSierraResponse):
         return list(set([i for i in upcs if i]))
 
     @property
-    def update_date(self) -> str | None:
-        return self._data.get("updatedDate")
+    def update_date(self) -> str:
+        return self._data["updatedDate"]
 
     @property
     def var_fields(self) -> list[dict[str, Any]]:

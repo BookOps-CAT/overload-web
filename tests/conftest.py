@@ -164,8 +164,8 @@ class FakeSierraResponse(sierra_responses.bibs.BaseSierraResponse):
         return [self._data["id"]]
 
     @property
-    def update_date(self) -> str | None:
-        return None
+    def update_date(self) -> str:
+        return "2025-01-01T00:00:00"
 
     @property
     def var_fields(self) -> list[dict[str, Any]]:
@@ -291,6 +291,7 @@ def stub_bib(library, collection) -> Bib:
     bib = Bib()
     bib.leader = "00000cam  2200517 i 4500"
     bib.library = library
+    bib.add_field(Field(tag="005", data="20000101000000.0"))
     if library == "bpl":
         bib.add_field(
             Field(
@@ -400,7 +401,9 @@ def make_full_bib(stub_bib, stub_constants, library) -> Callable:
         mapper = marc.BookopsMarcMapper(
             rules=stub_constants["mapper_rules"], library=library
         )
-        bib = mapper.map_full_bib(record=record)
+        out: dict[str, Any] = mapper._map_data(record=record)
+        out["vendor_info"] = mapper._identify_vendor(record=record)
+        bib = marc.bibs.DomainBib(**out)
         return bib
 
     return _make_dto
@@ -423,7 +426,8 @@ def make_order_bib(stub_bib, stub_constants, library) -> Callable:
         mapper = marc.BookopsMarcMapper(
             rules=stub_constants["mapper_rules"], library=library
         )
-        bib = mapper.map_order_bib(record=record)
+        out: dict[str, Any] = mapper._map_data(record=record)
+        bib = marc.bibs.DomainBib(**out)
         return bib
 
     return _make_dto

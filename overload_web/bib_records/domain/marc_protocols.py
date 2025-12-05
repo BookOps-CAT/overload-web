@@ -114,3 +114,7 @@ class ResultsReviewer(Protocol[C, F]):
     def review_sel_results(
         self, input: C, results: list[F]
     ) -> str | None: ...  # pragma: no branch
+
+    def review_results(
+        self, input: C, results: list[F], record_type: Any
+    ) -> str | None: ...  # pragma: no branch

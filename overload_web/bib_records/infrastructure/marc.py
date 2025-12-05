@@ -114,36 +114,6 @@ class BookopsMarcMapper:
         out["binary_data"] = record.as_marc()
         return out
 
-    def map_order_bib(self, record: Bib) -> bibs.DomainBib:
-        """
-        Factory method used to build a `DomainBib` from a `bookops_marc.Bib` object
-        for an order-level record.
-
-        Args:
-            record: MARC record represented as a `bookops_marc.Bib` object.
-
-        Returns:
-            a `bibs.DomainBib` object
-        """
-        out: dict[str, Any] = self._map_data(record=record)
-        return bibs.DomainBib(**out)
-
-    def map_full_bib(self, record: Bib) -> bibs.DomainBib:
-        """
-        Factory method used to build a `DomainBib` from a `bookops_marc.Bib` object
-        for a full MARC record.
-
-        Args:
-            record: MARC record represented as a `bookops_marc.Bib` object.
-
-        Returns:
-            a `bibs.DomainBib` object
-        """
-        out: dict[str, Any] = {}
-        out["vendor_info"] = self._identify_vendor(record=record)
-        out.update(self._map_data(record=record))
-        return bibs.DomainBib(**out)
-
     def map_full_bibs(self, data: BinaryIO | bytes) -> list[bibs.DomainBib]:
         """
         Factory method used to build `DomainBib` objects for full MARC records
@@ -158,7 +128,10 @@ class BookopsMarcMapper:
         reader = SierraBibReader(data, library=self.library)
         parsed_recs = []
         for record in reader:
-            out = self.map_full_bib(record=record)
+            bib_dict: dict[str, Any] = {}
+            bib_dict["vendor_info"] = self._identify_vendor(record=record)
+            bib_dict.update(self._map_data(record=record))
+            out = bibs.DomainBib(**bib_dict)
             logger.info(f"Vendor record parsed: {out}")
             parsed_recs.append(out)
         return parsed_recs
@@ -177,11 +150,10 @@ class BookopsMarcMapper:
         reader = SierraBibReader(data, library=self.library)
         parsed_recs = []
         for record in reader:
-            out: dict[str, Any] = {}
-            out["vendor_info"] = self._identify_vendor(record=record)
-            out.update(self._map_data(record=record))
+            bib_dict: dict[str, Any] = self._map_data(record=record)
+            out = bibs.DomainBib(**bib_dict)
             logger.info(f"Vendor record parsed: {out}")
-            parsed_recs.append(bibs.DomainBib(**out))
+            parsed_recs.append(out)
         return parsed_recs
 
 

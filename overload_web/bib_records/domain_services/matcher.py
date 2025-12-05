@@ -37,20 +37,14 @@ class BibMatcher:
     were found.
     """
 
-    def __init__(
-        self,
-        fetcher: marc_protocols.BibFetcher,
-        reviewer: marc_protocols.ResultsReviewer,
-    ) -> None:
+    def __init__(self, fetcher: marc_protocols.BibFetcher) -> None:
         """
         Initialize the match service with a fetcher.
 
         Args:
             fetcher: An injected `BibFetcher` that provides candidate bibs.
-            reviewer: An injected `ResultsReviewer` that reviews candidate bibs.
         """
         self.fetcher = fetcher
-        self.reviewer = reviewer
 
     def match_bib(
         self, record: bibs.DomainBib, matchpoints: dict[str, str]
@@ -79,28 +73,20 @@ class BibMatcher:
                 return candidates
         return []
 
-    def _match_acq_bib(
-        self, record: bibs.DomainBib, matchpoints: dict[str, str]
-    ) -> bibs.DomainBib:
-        matches = self.match_bib(record=record, matchpoints=matchpoints)
-        record.bib_id = self.reviewer.review_acq_results(record, results=matches)
-        return record
-
-    def _match_sel_bib(
-        self, record: bibs.DomainBib, matchpoints: dict[str, str]
-    ) -> bibs.DomainBib:
-        matches = self.match_bib(record=record, matchpoints=matchpoints)
-        record.bib_id = self.reviewer.review_sel_results(record, results=matches)
-        return record
-
-    def _match_full(self, record: bibs.DomainBib) -> bibs.DomainBib:
+    def _match_full_bib(self, record: bibs.DomainBib) -> list[bibs.BaseSierraResponse]:
         if not record.vendor_info:
             raise OverloadError("Vendor index required for cataloging workflow.")
-        matches = self.match_bib(
-            record=record, matchpoints=record.vendor_info.matchpoints
-        )
-        record.bib_id = self.reviewer.review_cat_results(record, results=matches)
-        return record
+        return self.match_bib(record=record, matchpoints=record.vendor_info.matchpoints)
+
+    def _match_order_bib(
+        self, record: bibs.DomainBib, matchpoints: Optional[dict[str, str]] = None
+    ) -> list[bibs.BaseSierraResponse]:
+        if not matchpoints:
+            raise OverloadError(
+                "Matchpoints from order template required for acquisition "
+                "or selection workflow."
+            )
+        return self.match_bib(record=record, matchpoints=matchpoints)
 
     @overload
     def match(
@@ -108,7 +94,7 @@ class BibMatcher:
         records: list[bibs.DomainBib],
         record_type: Literal[bibs.RecordType.SELECTION],
         matchpoints: Optional[dict[str, str]] = None,
-    ) -> list[bibs.DomainBib]: ...  # pragma: no branch
+    ) -> list[bibs.MatcherResponse]: ...  # pragma: no branch
 
     @overload
     def match(
@@ -116,7 +102,7 @@ class BibMatcher:
         records: list[bibs.DomainBib],
         record_type: Literal[bibs.RecordType.CATALOGING],
         matchpoints: Optional[dict[str, str]] = None,
-    ) -> list[bibs.DomainBib]: ...  # pragma: no branch
+    ) -> list[bibs.MatcherResponse]: ...  # pragma: no branch
 
     @overload
     def match(
@@ -124,14 +110,14 @@ class BibMatcher:
         records: list[bibs.DomainBib],
         record_type: Literal[bibs.RecordType.ACQUISITIONS],
         matchpoints: Optional[dict[str, str]] = None,
-    ) -> list[bibs.DomainBib]: ...  # pragma: no branch
+    ) -> list[bibs.MatcherResponse]: ...  # pragma: no branch
 
     def match(
         self,
         records: list[bibs.DomainBib],
         record_type: bibs.RecordType,
         matchpoints: Optional[dict[str, str]] = None,
-    ) -> list[bibs.DomainBib]:
+    ) -> list[bibs.MatcherResponse]:
         """
         Match bibliographic records.
 
@@ -150,15 +136,10 @@ class BibMatcher:
         for record in records:
             match record_type:
                 case bibs.RecordType.CATALOGING:
-                    rec = self._match_full(record=record)
-                case bibs.RecordType.ACQUISITIONS if matchpoints:
-                    rec = self._match_acq_bib(record=record, matchpoints=matchpoints)
-                case bibs.RecordType.SELECTION if matchpoints:
-                    rec = self._match_sel_bib(record=record, matchpoints=matchpoints)
+                    matches = self._match_full_bib(record=record)
                 case _:
-                    raise OverloadError(
-                        "Matchpoints from order template required for acquisition "
-                        "or selection workflow."
+                    matches = self._match_order_bib(
+                        record=record, matchpoints=matchpoints
                     )
-            out.append(rec)
+            out.append(bibs.MatcherResponse(bib=record, matches=matches))
         return out

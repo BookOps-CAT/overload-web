@@ -18,7 +18,12 @@ import logging
 from typing import Any, BinaryIO, Optional
 
 from overload_web.bib_records.domain import bibs, marc_protocols
-from overload_web.bib_records.domain_services import matcher, parser, serializer
+from overload_web.bib_records.domain_services import (
+    attacher,
+    matcher,
+    parser,
+    serializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +34,7 @@ class RecordProcessingService:
     def __init__(
         self,
         collection: str,
-        attacher: marc_protocols.ResultsReviewer,
+        reviewer: marc_protocols.ResultsReviewer,
         bib_fetcher: marc_protocols.BibFetcher,
         mapper: marc_protocols.BibMapper,
         updater: marc_protocols.BibUpdater,
@@ -50,7 +55,8 @@ class RecordProcessingService:
                 A `marc_protocols.BibUpdater` object
         """
         self.collection = collection
-        self.matcher = matcher.BibMatcher(fetcher=bib_fetcher, reviewer=attacher)
+        self.attacher = attacher.BibAttacher(reviewer=reviewer)
+        self.matcher = matcher.BibMatcher(fetcher=bib_fetcher)
         self.parser = parser.BibParser(mapper=mapper)
         self.serializer = serializer.BibSerializer(serializer=updater)
 
@@ -88,8 +94,11 @@ class RecordProcessingService:
             matchpoints=matchpoints,
             record_type=record_type.value,
         )
+        attached_records = self.attacher.attach(
+            responses=matched_records, record_type=record_type.value
+        )
         updated_records = self.serializer.update(
-            records=matched_records,
+            records=attached_records,
             template_data=template_data,
             record_type=record_type.value,
         )

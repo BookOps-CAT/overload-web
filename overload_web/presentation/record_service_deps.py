@@ -25,7 +25,7 @@ def record_processing_service(
 ) -> Generator[record_service.RecordProcessingService, None, None]:
     yield record_service.RecordProcessingService(
         collection=collection,
-        attacher=sierra_reviewer.SierraResponseReviewer(),
+        reviewer=sierra_reviewer.SierraResponseReviewer(),
         bib_fetcher=sierra.SierraBibFetcher(library),
         mapper=marc.BookopsMarcMapper(rules=constants["mapper_rules"], library=library),
         updater=marc.BookopsMarcUpdater(rules=constants["updater_rules"]),
