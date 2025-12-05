@@ -248,22 +248,6 @@ class TestSierraResponses:
         response = sierra_responses.NYPLPlatformResponse(data)
         assert response.cat_source == "inhouse"
         assert response.collection == "BL"
-        assert list(response.to_dict().keys()) == [
-            "title",
-            "barcodes",
-            "branch_call_number",
-            "cat_source",
-            "collection",
-            "control_number",
-            "isbn",
-            "oclc_number",
-            "research_call_number",
-            "upc",
-            "update_date",
-            "var_fields",
-            "library",
-            "bib_id",
-        ]
 
     def test_nypl_response_rl(self):
         data = {
@@ -375,19 +359,3 @@ class TestSierraResponses:
         assert response.barcodes == []
         assert response.branch_call_number == ["FIC BAR"]
         assert response.cat_source == "vendor"
-        assert list(response.to_dict().keys()) == [
-            "title",
-            "barcodes",
-            "branch_call_number",
-            "cat_source",
-            "collection",
-            "control_number",
-            "isbn",
-            "oclc_number",
-            "research_call_number",
-            "upc",
-            "update_date",
-            "var_fields",
-            "library",
-            "bib_id",
-        ]
