@@ -330,36 +330,29 @@ class TestRecordProcessingSerializer:
     [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
 )
 class TestRecordProcessingParser:
-    @pytest.fixture
-    def stub_service(self, library, stub_constants):
-        return parser.BibParser(
-            mapper=mapper.BookopsMarcMapper(
+    def test_parse_full(self, stub_constants, library, stub_full_bib, caplog):
+        stub_service = parser.BibParser(
+            mapper.BookopsMarcFullBibMapper(
                 rules=stub_constants["mapper_rules"], library=library
             )
         )
-
-    def test_parse_cat(self, stub_service, stub_full_bib, caplog):
-        records = stub_service.parse(
-            stub_full_bib.binary_data, record_type=bibs.RecordType.CATALOGING
-        )
+        records = stub_service.parse(stub_full_bib.binary_data)
         assert len(records) == 1
         assert str(records[0].library) == str(stub_service.mapper.library)
         assert records[0].isbn == "9781234567890"
-        assert str(records[0].library) == str(stub_service.mapper.library)
         assert records[0].barcodes == ["333331234567890"]
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
 
-    @pytest.mark.parametrize(
-        "record_type",
-        [bibs.RecordType.ACQUISITIONS, bibs.RecordType.SELECTION],
-    )
-    def test_parse_sel_acq(
-        self, stub_service, stub_order_bib, record_type, caplog, collection
+    def test_parse_order_level(
+        self, stub_constants, library, stub_order_bib, collection, caplog
     ):
-        records = stub_service.parse(
-            stub_order_bib.binary_data, record_type=record_type
+        stub_service = stub_service = parser.BibParser(
+            mapper.BookopsMarcOrderBibMapper(
+                rules=stub_constants["mapper_rules"], library=library
+            )
         )
+        records = stub_service.parse(stub_order_bib.binary_data)
         assert len(records) == 1
         assert str(records[0].library) == str(stub_service.mapper.library)
         assert records[0].isbn == "9781234567890"

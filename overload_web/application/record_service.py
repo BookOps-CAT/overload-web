@@ -88,7 +88,7 @@ class RecordProcessingService:
             if isinstance(record_type, str)
             else record_type
         )
-        parsed_records = self.parser.parse(data=data, record_type=record_type.value)
+        parsed_records = self.parser.parse(data=data)
         matched_records = self.matcher.match(
             records=parsed_records,
             matchpoints=matchpoints,

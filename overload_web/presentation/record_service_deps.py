@@ -22,14 +22,13 @@ def load_constants() -> dict[str, dict[str, str | dict[str, str]]]:
 def record_processing_service(
     library: Annotated[str, Form(...)],
     collection: Annotated[str, Form(...)],
+    record_type: Annotated[str, Form(...)],
     constants: Annotated[dict[str, dict], Depends(load_constants)],
 ) -> Generator[record_service.RecordProcessingService, None, None]:
     yield record_service.RecordProcessingService(
         collection=collection,
         reviewer=reviewer.SierraResponseReviewer(),
         bib_fetcher=clients.FetcherFactory().make(library),
-        mapper=mapper.BookopsMarcMapper(
-            rules=constants["mapper_rules"], library=library
-        ),
+        mapper=mapper.MapperFactory().make(record_type=record_type, library=library),
         updater=updater.BookopsMarcUpdater(rules=constants["updater_rules"]),
     )

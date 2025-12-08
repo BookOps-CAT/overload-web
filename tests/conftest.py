@@ -399,7 +399,7 @@ def make_full_bib(stub_bib, stub_constants, library) -> Callable:
                     ],
                 )
             )
-        marc_mapper = mapper.BookopsMarcMapper(
+        marc_mapper = mapper.BookopsMarcFullBibMapper(
             rules=stub_constants["mapper_rules"], library=library
         )
         out: dict[str, Any] = marc_mapper._map_data(record=record)
@@ -424,7 +424,7 @@ def make_order_bib(stub_bib, stub_constants, library) -> Callable:
                     ],
                 )
             )
-        marc_mapper = mapper.BookopsMarcMapper(
+        marc_mapper = mapper.BookopsMarcOrderBibMapper(
             rules=stub_constants["mapper_rules"], library=library
         )
         out: dict[str, Any] = marc_mapper._map_data(record=record)

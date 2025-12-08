@@ -2,17 +2,32 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any, BinaryIO
 
 from bookops_marc import Bib, SierraBibReader
 
-from overload_web.bib_records.domain import bibs
+from overload_web.bib_records.domain import bibs, marc_protocols
 
 logger = logging.getLogger(__name__)
 
 
-class BookopsMarcMapper:
+class MapperFactory:
+    def make(self, library: str, record_type: str) -> marc_protocols.BibMapper:
+        with open("overload_web/vendor_specs.json", "r", encoding="utf-8") as fh:
+            constants = json.load(fh)
+        if record_type in ["acq", "sel"]:
+            return BookopsMarcOrderBibMapper(
+                library=library, rules=constants["mapper_rules"]
+            )
+        else:
+            return BookopsMarcFullBibMapper(
+                library=library, rules=constants["mapper_rules"]
+            )
+
+
+class BookopsMarcBaseMapper:
     """Parses MARC records based on domain objects."""
 
     def __init__(self, library: str, rules: dict[str, Any]) -> None:
@@ -56,30 +71,6 @@ class BookopsMarcMapper:
                 bib_dict[tag] = {"code": data["code"], "value": field.get(data["code"])}
         return bib_dict
 
-    def _identify_vendor(self, record: Bib) -> bibs.VendorInfo:
-        """Determine the vendor who provided a `bookops_marc.Bib` record."""
-        vendor_rules = self.rules["vendors"][record.library.casefold()]
-        for vendor, info in vendor_rules.items():
-            fields = info.get("bib_fields", [])
-            matchpoints = info.get("matchpoints", {})
-            tags = info["vendor_tags"].get("primary", {})
-            tag_match = self._get_marc_tag_from_bib(record=record, tags=tags)
-            if tag_match and tag_match == tags:
-                return bibs.VendorInfo(
-                    name=vendor, bib_fields=fields, matchpoints=matchpoints
-                )
-            alt_tags = info["vendor_tags"].get("alternate", {})
-            alt_match = self._get_marc_tag_from_bib(record=record, tags=alt_tags)
-            if alt_match and alt_match == alt_tags:
-                return bibs.VendorInfo(
-                    name=vendor, bib_fields=fields, matchpoints=matchpoints
-                )
-        return bibs.VendorInfo(
-            name="UNKNOWN",
-            bib_fields=vendor_rules["UNKNOWN"]["bib_fields"],
-            matchpoints=vendor_rules["UNKNOWN"]["matchpoints"],
-        )
-
     def _map_data(self, record: Bib) -> dict[str, Any]:
         """
         Factory method used to build a `DomainBib` from a `bookops_marc.Bib` object.
@@ -113,7 +104,33 @@ class BookopsMarcMapper:
         out["binary_data"] = record.as_marc()
         return out
 
-    def map_full_bibs(self, data: BinaryIO | bytes) -> list[bibs.DomainBib]:
+
+class BookopsMarcFullBibMapper(BookopsMarcBaseMapper):
+    def _identify_vendor(self, record: Bib) -> bibs.VendorInfo:
+        """Determine the vendor who provided a `bookops_marc.Bib` record."""
+        vendor_rules = self.rules["vendors"][record.library.casefold()]
+        for vendor, info in vendor_rules.items():
+            fields = info.get("bib_fields", [])
+            matchpoints = info.get("matchpoints", {})
+            tags = info["vendor_tags"].get("primary", {})
+            tag_match = self._get_marc_tag_from_bib(record=record, tags=tags)
+            if tag_match and tag_match == tags:
+                return bibs.VendorInfo(
+                    name=vendor, bib_fields=fields, matchpoints=matchpoints
+                )
+            alt_tags = info["vendor_tags"].get("alternate", {})
+            alt_match = self._get_marc_tag_from_bib(record=record, tags=alt_tags)
+            if alt_match and alt_match == alt_tags:
+                return bibs.VendorInfo(
+                    name=vendor, bib_fields=fields, matchpoints=matchpoints
+                )
+        return bibs.VendorInfo(
+            name="UNKNOWN",
+            bib_fields=vendor_rules["UNKNOWN"]["bib_fields"],
+            matchpoints=vendor_rules["UNKNOWN"]["matchpoints"],
+        )
+
+    def map_bibs(self, data: BinaryIO | bytes) -> list[bibs.DomainBib]:
         """
         Factory method used to build `DomainBib` objects for full MARC records
         from binary data via `bookops_marc.Bib` objects.
@@ -135,7 +152,11 @@ class BookopsMarcMapper:
             parsed_recs.append(out)
         return parsed_recs
 
-    def map_order_bibs(self, data: BinaryIO | bytes) -> list[bibs.DomainBib]:
+
+class BookopsMarcOrderBibMapper(BookopsMarcBaseMapper):
+    """Parses order-level MARC records based on domain objects."""
+
+    def map_bibs(self, data: BinaryIO | bytes) -> list[bibs.DomainBib]:
         """
         Factory method used to build `DomainBib` objects for order-level
         MARC records from binary data via `bookops_marc.Bib` objects.

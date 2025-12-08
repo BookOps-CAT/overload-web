@@ -67,11 +67,7 @@ class BibMapper(Protocol[D]):
 
     rules: dict[str, Any]
 
-    def map_full_bibs(self, data: bytes | BinaryIO) -> list[D]: ...  # pragma: no branch
-
-    def map_order_bibs(
-        self, data: bytes | BinaryIO
-    ) -> list[D]: ...  # pragma: no branch
+    def map_bibs(self, data: bytes | BinaryIO) -> list[D]: ...  # pragma: no branch
 
 
 @runtime_checkable
