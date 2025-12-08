@@ -27,7 +27,7 @@ def record_processing_service(
     yield record_service.RecordProcessingService(
         collection=collection,
         reviewer=reviewer.SierraResponseReviewer(),
-        bib_fetcher=clients.SierraBibFetcher(library),
+        bib_fetcher=clients.FetcherFactory().make(library),
         mapper=mapper.BookopsMarcMapper(
             rules=constants["mapper_rules"], library=library
         ),

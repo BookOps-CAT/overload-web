@@ -121,7 +121,7 @@ class TestLiveSierraSession:
 
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_SierraBibFetcher_live(self, library):
-        fetcher = clients.SierraBibFetcher(library=library)
+        fetcher = clients.FetcherFactory().make(library=library)
         bibs = fetcher.get_bibs_by_id(value="9781338299151", key="isbn")
         assert isinstance(bibs, list)
         assert sorted(list(bibs[0].keys())) == [
@@ -152,14 +152,14 @@ class TestSierraSessions:
     def test_get_bibs_by_id(
         self, library, session_type, matchpoint, mock_sierra_response
     ):
-        fetcher = clients.SierraBibFetcher(library=library)
+        fetcher = clients.FetcherFactory().make(library=library)
         bibs = fetcher.get_bibs_by_id(value="123456789", key=matchpoint)
         assert bibs[0].bib_id == "123456789"
         assert isinstance(fetcher.session, session_type)
 
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_get_bibs_by_id_issn(self, library, mock_sierra_response, caplog):
-        fetcher = clients.SierraBibFetcher(library=library)
+        fetcher = clients.FetcherFactory().make(library=library)
         with pytest.raises(NotImplementedError) as exc:
             fetcher.get_bibs_by_id(value="123456789", key="issn")
         assert "Search by ISSN not implemented" in str(exc.value)
@@ -167,7 +167,7 @@ class TestSierraSessions:
 
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_get_bibs_by_id_no_response(self, library, mock_sierra_no_response):
-        fetcher = clients.SierraBibFetcher(library=library)
+        fetcher = clients.FetcherFactory().make(library=library)
         bibs = fetcher.get_bibs_by_id(value="123456789", key="isbn")
         assert bibs == []
 
@@ -179,7 +179,7 @@ class TestSierraSessions:
     def test_get_bibs_by_id_logging(
         self, library, session_type, matchpoint, mock_sierra_response, caplog
     ):
-        fetcher = clients.SierraBibFetcher(library=library)
+        fetcher = clients.FetcherFactory().make(library=library)
         fetcher.get_bibs_by_id(value="123456789", key=matchpoint)
         assert len(caplog.records) == 2
         assert (
@@ -193,7 +193,7 @@ class TestSierraSessions:
         [("bpl", "BookopsSolrError"), ("nypl", "BookopsPlatformError")],
     )
     def test_get_bibs_by_id_error(self, library, mock_sierra_error, caplog, error_type):
-        fetcher = clients.SierraBibFetcher(library=library)
+        fetcher = clients.FetcherFactory().make(library=library)
         with pytest.raises(errors.OverloadError) as exc:
             fetcher.get_bibs_by_id(value="123456789", key="isbn")
         assert "Connection error: " in str(exc.value)
@@ -202,7 +202,7 @@ class TestSierraSessions:
     @pytest.mark.parametrize("library", ["nypl"])
     def test_get_bibs_by_id_nypl_auth_error(self, library, mock_sierra_nypl_auth_error):
         with pytest.raises(errors.OverloadError) as exc:
-            clients.SierraBibFetcher(library=library)
+            clients.FetcherFactory().make(library=library)
         assert "Trouble connecting: " in str(exc.value)
 
 

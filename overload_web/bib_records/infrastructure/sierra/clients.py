@@ -38,6 +38,24 @@ logger = logging.getLogger(__name__)
 AGENT = f"{__title__}/{__version__}"
 
 
+class FetcherFactory:
+    """Create a SierraBibFetcher object"""
+
+    def make(self, library: str) -> SierraBibFetcher:
+        client: SierraSessionProtocol
+        if library not in ["bpl", "nypl"]:
+            raise ValueError("Invalid library. Must be 'bpl' or 'nypl'")
+        elif library == "bpl":
+            client = BPLSolrSession()
+        else:
+            try:
+                client = NYPLPlatformSession()
+            except BookopsPlatformError as exc:
+                logger.error(f"Trouble connecting: {str(exc)}")
+                raise errors.OverloadError(str(exc))
+        return SierraBibFetcher(client)
+
+
 class SierraBibFetcher:
     """
     Fetches bibliographic records from Sierra and converts them into domain-level
@@ -46,24 +64,10 @@ class SierraBibFetcher:
 
     Args:
         session: a session instance implementing the Sierra protocol.
-        library: the library system whose Sierra instance should be queried.
     """
 
-    def __init__(self, library: str, session: SierraSessionProtocol | None = None):
-        self.library = library
-        self.session = self._get_session_for_library() if session is None else session
-
-    def _get_session_for_library(self) -> SierraSessionProtocol:
-        if self.library not in ["bpl", "nypl"]:
-            raise ValueError("Invalid library. Must be 'bpl' or 'nypl'")
-        elif self.library == "bpl":
-            return BPLSolrSession()
-        else:
-            try:
-                return NYPLPlatformSession()
-            except BookopsPlatformError as exc:
-                logger.error(f"Trouble connecting: {str(exc)}")
-                raise errors.OverloadError(str(exc))
+    def __init__(self, session: SierraSessionProtocol):
+        self.session = session
 
     def get_bibs_by_id(
         self, value: str | int, key: str
