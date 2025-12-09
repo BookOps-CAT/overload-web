@@ -31,4 +31,5 @@ def record_processing_service(
         bib_fetcher=clients.FetcherFactory().make(library),
         mapper=mapper.MapperFactory().make(record_type=record_type, library=library),
         bib_updater=update_strategy.MarcUpdaterFactory().make(record_type=record_type),
+        matcher_strategy=clients.MatchStrategyFactory().make(record_type=record_type),
     )

@@ -22,13 +22,14 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Protocol, runtime_checkable
+from typing import Optional, Protocol, runtime_checkable
 
 import requests
 from bookops_bpl_solr import BookopsSolrError, SolrSession
 from bookops_nypl_platform import BookopsPlatformError, PlatformSession, PlatformToken
 
 from overload_web import errors
+from overload_web.bib_records.domain import marc_protocols
 from overload_web.bib_records.infrastructure.sierra import responses
 
 from .... import __title__, __version__
@@ -54,6 +55,90 @@ class FetcherFactory:
                 logger.error(f"Trouble connecting: {str(exc)}")
                 raise errors.OverloadError(str(exc))
         return SierraBibFetcher(client)
+
+
+class MatchStrategyFactory:
+    """Create a SierraBibFetcher object"""
+
+    def make(self, record_type: str) -> marc_protocols.BibMatcherStrategy:
+        if record_type in ["acq", "sel"]:
+            return OrderBibMatchStrategy()
+        else:
+            return FullBibMatchStrategy()
+
+
+class FullBibMatchStrategy:
+    def match_bib(
+        self,
+        record: responses.bibs.DomainBib,
+        fetcher: SierraBibFetcher,
+        *args,
+        **kwargs,
+    ) -> list[responses.bibs.BaseSierraResponse]:
+        """
+        Find all matches in Sierra for a given bib record.
+
+        The method queries the fetcher obj for candidates using each matchpoint.
+        The first non-empty match that returns candidates is used for comparison.
+
+        Args:
+            record:
+                The bibliographic record to match against Sierra represented as a
+                `bibs.DomainBib` object.
+            fetcher:
+                a `BibFetcher` object to be used for query
+        Returns:
+            a list of the record's matches as `BaseSierraResponse` objects
+        """
+        if not record.vendor_info:
+            raise errors.OverloadError("Vendor index required for cataloging workflow.")
+        for priority, key in record.vendor_info.matchpoints.items():
+            value = getattr(record, key, None)
+            if not value:
+                continue
+            candidates = fetcher.get_bibs_by_id(value=value, key=key)
+            if candidates:
+                return candidates
+        return []
+
+
+class OrderBibMatchStrategy:
+    def match_bib(
+        self,
+        record: responses.bibs.DomainBib,
+        fetcher: SierraBibFetcher,
+        matchpoints: Optional[dict[str, str]] = None,
+    ) -> list[responses.bibs.BaseSierraResponse]:
+        """
+        Find all matches in Sierra for a given bib record.
+
+        The method queries the fetcher obj for candidates using each matchpoint.
+        The first non-empty match that returns candidates is used for comparison.
+
+        Args:
+            record:
+                The bibliographic record to match against Sierra represented as a
+                `bibs.DomainBib` object.
+            fetcher:
+                a `BibFetcher` object to be used for query
+            matchpoints:
+                a dictionary containing matchpoints
+        Returns:
+            a list of the record's matches as `BaseSierraResponse` objects
+        """
+        if not matchpoints:
+            raise errors.OverloadError(
+                "Matchpoints from order template required for acquisition "
+                "or selection workflow."
+            )
+        for priority, key in matchpoints.items():
+            value = getattr(record, key, None)
+            if not value:
+                continue
+            candidates = fetcher.get_bibs_by_id(value=value, key=key)
+            if candidates:
+                return candidates
+        return []
 
 
 class SierraBibFetcher:

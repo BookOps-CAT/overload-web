@@ -17,7 +17,7 @@ Classes:
 import logging
 from typing import Any, BinaryIO, Optional
 
-from overload_web.bib_records.domain import bibs, marc_protocols
+from overload_web.bib_records.domain import marc_protocols
 from overload_web.bib_records.domain_services import (
     attacher,
     matcher,
@@ -36,6 +36,7 @@ class RecordProcessingService:
         self,
         bib_fetcher: marc_protocols.BibFetcher,
         mapper: marc_protocols.BibMapper,
+        matcher_strategy: marc_protocols.BibMatcherStrategy,
         reviewer: marc_protocols.ResultsReviewer,
         bib_updater: marc_protocols.BibUpdateStrategy,
     ):
@@ -53,7 +54,9 @@ class RecordProcessingService:
                 A `marc_protocols.BibUpdateStrategy` object
         """
         self.attacher = attacher.BibAttacher(reviewer=reviewer)
-        self.matcher = matcher.BibMatcher(fetcher=bib_fetcher)
+        self.matcher = matcher.BibMatcher(
+            fetcher=bib_fetcher, strategy=matcher_strategy
+        )
         self.parser = parser.BibParser(mapper=mapper)
         self.updater = updater.BibRecordUpdater(strategy=bib_updater)
         self.serializer = serializer.BibSerializer()
@@ -61,7 +64,6 @@ class RecordProcessingService:
     def process_vendor_file(
         self,
         data: BinaryIO | bytes,
-        record_type: bibs.RecordType,
         template_data: Optional[dict[str, Any]] = None,
         matchpoints: Optional[dict[str, str]] = None,
     ) -> BinaryIO:
@@ -75,22 +77,13 @@ class RecordProcessingService:
                 A dictionary containing matchpoints to be used in matching records.
             template_data:
                 Order template data as a dictionary.
-            record_type:
-                The type of record as an Literal value from bibs.RecordType.
 
         Returns:
             MARC data as a `BinaryIO` object
         """
-        record_type = (
-            bibs.RecordType(record_type)
-            if isinstance(record_type, str)
-            else record_type
-        )
         parsed_records = self.parser.parse(data=data)
         matched_records = self.matcher.match(
-            records=parsed_records,
-            matchpoints=matchpoints,
-            record_type=record_type.value,
+            records=parsed_records, matchpoints=matchpoints
         )
         attached_records = self.attacher.attach(responses=matched_records)
         updated_records = self.updater.update(

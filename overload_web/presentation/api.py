@@ -234,7 +234,6 @@ def process_vendor_file(
             data=file.content,
             template_data=order_template.model_dump(),
             matchpoints=matchpoints.model_dump(),
-            record_type=record_type,
         )
         out_files.append({"file_name": file.file_name, "binary_content": output})
     return request.app.state.templates.TemplateResponse(

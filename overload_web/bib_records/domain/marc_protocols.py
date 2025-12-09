@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 C = TypeVar("C", contravariant=True)  # variable for contravariant DomainBib type
 D = TypeVar("D")  # variable for invariant DomainBib type
 F = TypeVar("F")  # variable for BaseSierraResponse type
+M = TypeVar("M", covariant=True)  # variable for MatcherResponse type
 
 
 @runtime_checkable
@@ -92,3 +93,10 @@ class ResultsReviewer(Protocol[C, F]):
     def review_results(
         self, input: C, results: list[F]
     ) -> str | None: ...  # pragma: no branch
+
+
+@runtime_checkable
+class BibMatcherStrategy(Protocol[F]):
+    def match_bib(
+        fetcher: BibFetcher, *args, **kwargs
+    ) -> list[F]: ...  # pragma: no branch
