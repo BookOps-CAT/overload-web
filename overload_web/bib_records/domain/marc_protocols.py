@@ -71,28 +71,18 @@ class BibMapper(Protocol[D]):
 
 
 @runtime_checkable
-class BibUpdater(Protocol[D]):
+class BibUpdateStrategy(Protocol[D]):
     """
     Update MARC records with appropriate fields during last stage of record processing.
     """
 
     rules: dict[str, dict[str, str]]
 
-    def update_acquisitions_record(
-        self, record: D, template_data: dict[str, Any]
+    def update_bib(
+        self, records: list[D], *args, **kwargs
     ) -> D: ...  # pragma: no branch
 
-    """Update an order-level MARC record for acquisitions department."""
-
-    def update_cataloging_record(self, record: D) -> D: ...  # pragma: no branch
-
-    """Update a Full MARC record for cataloging department."""
-
-    def update_selection_record(
-        self, record: D, template_data: dict[str, Any]
-    ) -> D: ...  # pragma: no branch
-
-    """Update an order-level MARC record for selection department."""
+    """Update an MARC record with appropriate fields."""
 
 
 @runtime_checkable

@@ -23,6 +23,7 @@ from overload_web.bib_records.domain_services import (
     matcher,
     parser,
     serializer,
+    updater,
 )
 
 logger = logging.getLogger(__name__)
@@ -36,7 +37,7 @@ class RecordProcessingService:
         bib_fetcher: marc_protocols.BibFetcher,
         mapper: marc_protocols.BibMapper,
         reviewer: marc_protocols.ResultsReviewer,
-        updater: marc_protocols.BibUpdater,
+        bib_updater: marc_protocols.BibUpdateStrategy,
     ):
         """
         Initialize `RecordProcessingService`.
@@ -48,13 +49,14 @@ class RecordProcessingService:
                 A `marc_protocols.BibMapper` object
             reviewer:
                 A `marc_protocols.ResultsReviewer` object
-            updater:
-                A `marc_protocols.BibUpdater` object
+            bib_updater:
+                A `marc_protocols.BibUpdateStrategy` object
         """
         self.attacher = attacher.BibAttacher(reviewer=reviewer)
         self.matcher = matcher.BibMatcher(fetcher=bib_fetcher)
         self.parser = parser.BibParser(mapper=mapper)
-        self.serializer = serializer.BibSerializer(serializer=updater)
+        self.updater = updater.BibRecordUpdater(strategy=bib_updater)
+        self.serializer = serializer.BibSerializer()
 
     def process_vendor_file(
         self,
@@ -91,10 +93,8 @@ class RecordProcessingService:
             record_type=record_type.value,
         )
         attached_records = self.attacher.attach(responses=matched_records)
-        updated_records = self.serializer.update(
-            records=attached_records,
-            template_data=template_data,
-            record_type=record_type.value,
+        updated_records = self.updater.update(
+            records=attached_records, template_data=template_data
         )
         output = self.serializer.serialize(updated_records)
         return output

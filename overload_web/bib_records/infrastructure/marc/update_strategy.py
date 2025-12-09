@@ -2,15 +2,30 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any
 
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.bib_records.domain import bibs
+from overload_web.bib_records.domain import bibs, marc_protocols
+from overload_web.errors import OverloadError
 
 logger = logging.getLogger(__name__)
+
+
+class MarcUpdaterFactory:
+    def make(self, record_type: str) -> marc_protocols.BibUpdateStrategy:
+        with open("overload_web/vendor_specs.json", "r", encoding="utf-8") as fh:
+            constants = json.load(fh)
+        rules = constants["updater_rules"]
+        if record_type == "acq":
+            return AcquisitionsUpdateStrategy(rules=rules)
+        elif record_type == "cat":
+            return CatalogingUpdateStrategy(rules=rules)
+        else:
+            return SelectionUpdateStrategy(rules=rules)
 
 
 class BookopsMarcUpdater:
@@ -82,7 +97,6 @@ class BookopsMarcUpdater:
         """Update a MARC record based on its type and template data."""
         record.apply_order_template(template_data=template_data)
         record = self.update_order(record=record)
-        record = self.update_bib_data(record=record)
         return record
 
     def update_cataloging_record(self, record: bibs.DomainBib) -> bibs.DomainBib:
@@ -97,3 +111,84 @@ class BookopsMarcUpdater:
         record = self.update_order(record=record)
         record = self.update_bib_data(record=record)
         return record
+
+
+class AcquisitionsUpdateStrategy(BookopsMarcUpdater):
+    def update_bib(
+        self, records: list[bibs.DomainBib], template_data: dict[str, Any]
+    ) -> list[bibs.DomainBib]:
+        """
+        Update bibliographic records.
+
+        Args:
+            records:
+                A list of parsed bibliographic records as `bibs.DomainBib` objects.
+            template_data:
+                A dictionary containing template data to be used in updating records.
+
+        Returns:
+            A list of updated records as `bibs.DomainBib` objects
+        """
+        out = []
+        for record in records:
+            if not template_data:
+                raise OverloadError(
+                    "Order template required for acquisition or selection workflow."
+                )
+            rec = self.update_acquisitions_record(
+                record=record, template_data=template_data
+            )
+            out.append(rec)
+        return out
+
+
+class CatalogingUpdateStrategy(BookopsMarcUpdater):
+    def update_bib(
+        self, records: list[bibs.DomainBib], *args, **kwargs
+    ) -> list[bibs.DomainBib]:
+        """
+        Update bibliographic records.
+
+        Args:
+            records:
+                A list of parsed bibliographic records as `bibs.DomainBib` objects.
+
+        Returns:
+            A list of updated records as `bibs.DomainBib` objects
+        """
+        out = []
+        for record in records:
+            if not record.vendor_info:
+                raise OverloadError("Vendor index required for cataloging workflow.")
+            rec = self.update_cataloging_record(record=record)
+            out.append(rec)
+        return out
+
+
+class SelectionUpdateStrategy(BookopsMarcUpdater):
+    def update_bib(
+        self, records: list[bibs.DomainBib], template_data: dict[str, Any]
+    ) -> list[bibs.DomainBib]:
+        """
+        Update bibliographic records.
+
+        Args:
+            records:
+                A list of parsed bibliographic records as `bibs.DomainBib` objects.
+            template_data:
+                A dictionary containing template data to be used in updating records.
+
+        Returns:
+            A list of updated records as `bibs.DomainBib` objects
+        """
+        out = []
+        for record in records:
+            if not template_data:
+                raise OverloadError(
+                    "Order template required for acquisition or selection workflow."
+                )
+            rec = self.update_selection_record(
+                record=record, template_data=template_data
+            )
+            out.append(rec)
+        return out
