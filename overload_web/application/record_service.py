@@ -33,28 +33,24 @@ class RecordProcessingService:
 
     def __init__(
         self,
-        collection: str,
-        reviewer: marc_protocols.ResultsReviewer,
         bib_fetcher: marc_protocols.BibFetcher,
         mapper: marc_protocols.BibMapper,
+        reviewer: marc_protocols.ResultsReviewer,
         updater: marc_protocols.BibUpdater,
     ):
         """
         Initialize `RecordProcessingService`.
 
         Args:
-            attacher:
-                A `marc_protocols.ResultsReviewer` object
             bib_fetcher:
                 A `marc_protocols.BibFetcher` object
-            collection:
-                The collection whose records are to be processed as a str.
             mapper:
                 A `marc_protocols.BibMapper` object
+            reviewer:
+                A `marc_protocols.ResultsReviewer` object
             updater:
                 A `marc_protocols.BibUpdater` object
         """
-        self.collection = collection
         self.attacher = attacher.BibAttacher(reviewer=reviewer)
         self.matcher = matcher.BibMatcher(fetcher=bib_fetcher)
         self.parser = parser.BibParser(mapper=mapper)
@@ -94,9 +90,7 @@ class RecordProcessingService:
             matchpoints=matchpoints,
             record_type=record_type.value,
         )
-        attached_records = self.attacher.attach(
-            responses=matched_records, record_type=record_type.value
-        )
+        attached_records = self.attacher.attach(responses=matched_records)
         updated_records = self.serializer.update(
             records=attached_records,
             template_data=template_data,

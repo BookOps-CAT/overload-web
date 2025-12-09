@@ -26,8 +26,9 @@ def record_processing_service(
     constants: Annotated[dict[str, dict], Depends(load_constants)],
 ) -> Generator[record_service.RecordProcessingService, None, None]:
     yield record_service.RecordProcessingService(
-        collection=collection,
-        reviewer=reviewer.SierraResponseReviewer(),
+        reviewer=reviewer.ReviewerFactory().make(
+            library=library, record_type=record_type, collection=collection
+        ),
         bib_fetcher=clients.FetcherFactory().make(library),
         mapper=mapper.MapperFactory().make(record_type=record_type, library=library),
         updater=updater.BookopsMarcUpdater(rules=constants["updater_rules"]),

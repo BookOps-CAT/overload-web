@@ -99,18 +99,6 @@ class BibUpdater(Protocol[D]):
 class ResultsReviewer(Protocol[C, F]):
     """Review results of Sierra queries and select best match"""
 
-    def review_acq_results(
-        self, input: C, results: list[F]
-    ) -> str | None: ...  # pragma: no branch
-
-    def review_cat_results(
-        self, input: C, results: list[F]
-    ) -> str | None: ...  # pragma: no branch
-
-    def review_sel_results(
-        self, input: C, results: list[F]
-    ) -> str | None: ...  # pragma: no branch
-
     def review_results(
-        self, input: C, results: list[F], record_type: Any
+        self, input: C, results: list[F]
     ) -> str | None: ...  # pragma: no branch
