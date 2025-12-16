@@ -35,10 +35,10 @@ class RecordProcessingService:
     def __init__(
         self,
         bib_fetcher: marc_protocols.BibFetcher,
-        mapper: marc_protocols.BibMapper,
+        mapper_strategy: marc_protocols.BibMapper,
         matcher_strategy: marc_protocols.BibMatcherStrategy,
-        reviewer: marc_protocols.ResultsReviewer,
-        bib_updater: marc_protocols.BibUpdateStrategy,
+        review_strategy: marc_protocols.ResultsReviewer,
+        update_strategy: marc_protocols.BibUpdateStrategy,
     ):
         """
         Initialize `RecordProcessingService`.
@@ -46,19 +46,21 @@ class RecordProcessingService:
         Args:
             bib_fetcher:
                 A `marc_protocols.BibFetcher` object
-            mapper:
+            mapper_strategy:
                 A `marc_protocols.BibMapper` object
-            reviewer:
+            matcher_strategy:
+                A `marc_protocols.BibMatcherStrategy` object
+            review_strategy:
                 A `marc_protocols.ResultsReviewer` object
-            bib_updater:
+            update_strategy:
                 A `marc_protocols.BibUpdateStrategy` object
         """
-        self.attacher = attacher.BibAttacher(reviewer=reviewer)
+        self.attacher = attacher.BibAttacher(reviewer=review_strategy)
         self.matcher = matcher.BibMatcher(
             fetcher=bib_fetcher, strategy=matcher_strategy
         )
-        self.parser = parser.BibParser(mapper=mapper)
-        self.updater = updater.BibRecordUpdater(strategy=bib_updater)
+        self.parser = parser.BibParser(mapper=mapper_strategy)
+        self.updater = updater.BibRecordUpdater(strategy=update_strategy)
         self.serializer = serializer.BibSerializer()
 
     def process_vendor_file(

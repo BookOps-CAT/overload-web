@@ -25,11 +25,15 @@ def record_processing_service(
     record_type: Annotated[str, Form(...)],
 ) -> Generator[record_service.RecordProcessingService, None, None]:
     yield record_service.RecordProcessingService(
-        reviewer=reviewer.ReviewerFactory().make(
+        review_strategy=reviewer.ReviewerFactory().make(
             library=library, record_type=record_type, collection=collection
         ),
         bib_fetcher=clients.FetcherFactory().make(library),
-        mapper=mapper.MapperFactory().make(record_type=record_type, library=library),
-        bib_updater=update_strategy.MarcUpdaterFactory().make(record_type=record_type),
+        mapper_strategy=mapper.MapperFactory().make(
+            record_type=record_type, library=library
+        ),
+        update_strategy=update_strategy.MarcUpdaterFactory().make(
+            record_type=record_type
+        ),
         matcher_strategy=clients.MatchStrategyFactory().make(record_type=record_type),
     )
