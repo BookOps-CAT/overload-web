@@ -142,7 +142,11 @@ class TestMatcher:
         self, stub_order_record_service_no_matches, stub_order_bib
     ):
         matched_bibs = stub_order_record_service_no_matches.match(
-            [stub_order_bib], matchpoints={"primary_matchpoint": "isbn"}
+            [stub_order_bib],
+            matchpoints={
+                "primary_matchpoint": "oclc_number",
+                "secondary_matchpoint": "isbn",
+            },
         )
         assert len(matched_bibs[0].matches) == 0
 
