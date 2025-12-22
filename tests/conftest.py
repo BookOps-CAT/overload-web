@@ -35,7 +35,6 @@ def fake_creds(monkeypatch):
     monkeypatch.setenv("NYPL_PLATFORM_OAUTH", "test")
     monkeypatch.setenv("NYPL_PLATFORM_AGENT", "test")
     monkeypatch.setenv("NYPL_PLATFORM_TARGET", "dev")
-    monkeypatch.setenv("LOGGLY_TOKEN", "foo")
     monkeypatch.setenv("FOO_USER", "foo")
     monkeypatch.setenv("FOO_PASSWORD", "bar")
     monkeypatch.setenv("FOO_HOST", "sftp.baz.com")
