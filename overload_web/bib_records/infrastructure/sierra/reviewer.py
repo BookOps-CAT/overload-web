@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 
 from overload_web.bib_records.domain import bibs, marc_protocols
-from overload_web.errors import OverloadError
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +23,7 @@ class ReviewerFactory:
             case "sel", _, _:
                 return SelectionReviewer()
             case _:
-                raise OverloadError(
-                    "Invalid library/record_type/collection combination"
-                )
+                raise ValueError("Invalid library/record_type/collection combination")
 
 
 class BaseReviewer:

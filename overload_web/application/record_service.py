@@ -17,7 +17,6 @@ Classes:
 import logging
 from typing import Any, BinaryIO, Optional
 
-from overload_web.bib_records.domain import marc_protocols
 from overload_web.bib_records.domain_services import (
     attacher,
     matcher,
@@ -34,11 +33,11 @@ class RecordProcessingService:
 
     def __init__(
         self,
-        bib_fetcher: marc_protocols.BibFetcher,
-        mapper_strategy: marc_protocols.BibMapper,
-        matcher_strategy: marc_protocols.BibMatcherStrategy,
-        review_strategy: marc_protocols.ResultsReviewer,
-        update_strategy: marc_protocols.BibUpdateStrategy,
+        bib_fetcher: attacher.marc_protocols.BibFetcher,
+        mapper_strategy: parser.marc_protocols.BibMapper,
+        matcher_strategy: matcher.marc_protocols.BibMatcherStrategy,
+        review_strategy: attacher.marc_protocols.ResultsReviewer,
+        update_strategy: updater.marc_protocols.BibUpdateStrategy,
     ):
         """
         Initialize `RecordProcessingService`.

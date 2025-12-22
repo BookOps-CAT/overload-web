@@ -34,6 +34,13 @@ class FakeBibFetcher(StubFetcher):
             data = bibs["response"]["docs"]
             return [responses.BPLSolrResponse(data=i) for i in data]
 
+@pytest.fixture
+def stub_sierra_response(make_order_bib, library, collection):
+    dto = make_order_bib({"020": {"code": "a", "value": "9781234567890"}})
+    responses = FakeBibFetcher(
+        library=library, collection=collection
+    ).get_bibs_by_id(key="isbn", value="9781234567890")
+    return bibs.MatcherResponse(bib=dto, matches=responses)
 
 @pytest.mark.parametrize(
     "library, collection",
@@ -87,3 +94,10 @@ class TestAttacher:
         )
         attached_bibs = stub_service.attach([stub_order_response])
         assert attached_bibs[0].bib_id == "123"
+
+    def test_reviewer_factory(self, library, collection):
+        with pytest.raises(ValueError) as exc:
+            reviewer.ReviewerFactory().make(
+                record_type="foo", collection=collection, library=library
+            )
+        assert str(exc.value) == "Invalid library/record_type/collection combination"
