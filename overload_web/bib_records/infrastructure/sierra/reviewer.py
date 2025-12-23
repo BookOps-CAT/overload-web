@@ -57,16 +57,16 @@ class BaseReviewer:
 
     @property
     def input_call_no(self) -> str | None:
+        call_no = None
         if str(self.input.collection) == "RL":
             call_no = self.input.research_call_number
-            return call_no[0] if isinstance(call_no, list) else call_no
         elif str(self.input.collection) == "BL":
             call_no = self.input.branch_call_number
-            return call_no[0] if isinstance(call_no, list) else call_no
-        elif str(self.input.library) == "BPL":
+        elif str(self.input.library) == "bpl":
             call_no = self.input.branch_call_number
-            return call_no[0] if isinstance(call_no, list) else call_no
-        return None
+        if isinstance(call_no, list):
+            return call_no[0]
+        return call_no
 
     @property
     def resource_id(self) -> str | None:
@@ -180,7 +180,7 @@ class NYPLResearchReviewer(BaseReviewer):
                 if result.cat_source == "inhouse":
                     self.action = "attach"
                 else:
-                    updated = result.update_date > self.input.update_date
+                    updated = result.update_datetime > self.input.update_datetime
                     if updated:
                         self.updated_by_vendor = True
                         self.action = "overlay"
@@ -221,7 +221,7 @@ class NYPLBranchReviewer(BaseReviewer):
                     if result.cat_source == "inhouse":
                         self.action = "attach"
                     else:
-                        updated = result.update_date > self.input.update_date
+                        updated = result.update_datetime > self.input.update_datetime
                         if updated:
                             self.updated_by_vendor = True
                             self.action = "overlay"
@@ -236,7 +236,7 @@ class NYPLBranchReviewer(BaseReviewer):
             if result.cat_source == "inhouse":
                 self.action = "attach"
             else:
-                updated = result.update_date > self.input.update_date
+                updated = result.update_datetime > self.input.update_datetime
                 if updated:
                     self.updated_by_vendor = True
                     self.action = "overlay"
@@ -277,7 +277,7 @@ class BPLReviewer(BaseReviewer):
                     if result.cat_source == "inhouse":
                         self.action = "attach"
                     else:
-                        updated = result.update_date > self.input.update_date
+                        updated = result.update_datetime > self.input.update_datetime
                         if updated:
                             self.updated_by_vendor = True
                             self.action = "overlay"
@@ -291,7 +291,7 @@ class BPLReviewer(BaseReviewer):
             if result.cat_source == "inhouse":
                 self.action = "attach"
             else:
-                updated = result.update_date > self.input.update_date
+                updated = result.update_datetime > self.input.update_datetime
                 if updated:
                     self.updated_by_vendor = True
                     self.action = "overlay"
