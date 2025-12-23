@@ -329,6 +329,15 @@ def stub_bib(library, collection) -> Bib:
         )
         bib.add_field(
             Field(
+                tag="852",
+                indicators=Indicators("8", " "),
+                subfields=[
+                    Subfield(code="a", value="Foo"),
+                ],
+            )
+        )
+        bib.add_field(
+            Field(
                 tag="910",
                 indicators=Indicators(" ", " "),
                 subfields=[Subfield(code="a", value=str(collection))],
@@ -443,3 +452,15 @@ def stub_constants():
     with open("overload_web/vendor_specs.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     return constants
+
+
+@pytest.fixture
+def stub_full_bib(make_full_bib):
+    dto = make_full_bib({"020": {"code": "a", "value": "9781234567890"}})
+    return dto
+
+
+@pytest.fixture
+def stub_order_bib(make_order_bib):
+    dto = make_order_bib({"020": {"code": "a", "value": "9781234567890"}})
+    return dto

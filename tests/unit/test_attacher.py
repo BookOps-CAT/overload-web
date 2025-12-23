@@ -34,13 +34,13 @@ class FakeBibFetcher(StubFetcher):
             data = bibs["response"]["docs"]
             return [responses.BPLSolrResponse(data=i) for i in data]
 
-@pytest.fixture
-def stub_sierra_response(make_order_bib, library, collection):
-    dto = make_order_bib({"020": {"code": "a", "value": "9781234567890"}})
-    responses = FakeBibFetcher(
-        library=library, collection=collection
-    ).get_bibs_by_id(key="isbn", value="9781234567890")
-    return bibs.MatcherResponse(bib=dto, matches=responses)
+
+def stub_sierra_response(stub_order_bib, library, collection):
+    responses = FakeBibFetcher(library=library, collection=collection).get_bibs_by_id(
+        key="isbn", value="9781234567890"
+    )
+    return bibs.MatcherResponse(bib=stub_order_bib, matches=responses)
+
 
 @pytest.mark.parametrize(
     "library, collection",
@@ -52,20 +52,18 @@ def stub_sierra_response(make_order_bib, library, collection):
 )
 class TestAttacher:
     @pytest.fixture
-    def stub_full_response(self, make_full_bib, library, collection):
-        dto = make_full_bib({"020": {"code": "a", "value": "9781234567890"}})
+    def stub_full_response(self, stub_full_bib, library, collection):
         responses = FakeBibFetcher(
             library=library, collection=collection
         ).get_bibs_by_id(key="isbn", value="9781234567890")
-        return bibs.MatcherResponse(bib=dto, matches=responses)
+        return bibs.MatcherResponse(bib=stub_full_bib, matches=responses)
 
     @pytest.fixture
-    def stub_order_response(self, make_order_bib, library, collection):
-        dto = make_order_bib({"020": {"code": "a", "value": "9781234567890"}})
+    def stub_order_response(self, stub_order_bib, library, collection):
         responses = FakeBibFetcher(
             library=library, collection=collection
         ).get_bibs_by_id(key="isbn", value="9781234567890")
-        return bibs.MatcherResponse(bib=dto, matches=responses)
+        return bibs.MatcherResponse(bib=stub_order_bib, matches=responses)
 
     def test_attach_acq(self, library, collection, stub_order_response):
         stub_service = attacher.BibAttacher(

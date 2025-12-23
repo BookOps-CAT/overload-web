@@ -4,18 +4,6 @@ from overload_web.bib_records.domain_services import parser, serializer
 from overload_web.bib_records.infrastructure.marc import mapper
 
 
-@pytest.fixture
-def stub_full_bib(make_full_bib):
-    dto = make_full_bib({"020": {"code": "a", "value": "9781234567890"}})
-    return dto
-
-
-@pytest.fixture
-def stub_order_bib(make_order_bib):
-    dto = make_order_bib({"020": {"code": "a", "value": "9781234567890"}})
-    return dto
-
-
 @pytest.mark.parametrize(
     "library, collection",
     [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
