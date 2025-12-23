@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import json
 import logging
 from typing import Any
@@ -88,6 +89,10 @@ class BPLSolrResponse(bibs.BaseSierraResponse):
     @property
     def update_date(self) -> str:
         return self._data["ss_marc_tag_005"]
+
+    @property
+    def update_datetime(self) -> datetime.datetime:
+        return datetime.datetime.strptime(self.update_date, "%Y%m%d%H%M%S.%f")
 
     @property
     def var_fields(self) -> list[dict[str, Any]]:
@@ -204,6 +209,10 @@ class NYPLPlatformResponse(bibs.BaseSierraResponse):
     @property
     def update_date(self) -> str:
         return self._data["updatedDate"]
+
+    @property
+    def update_datetime(self) -> datetime.datetime:
+        return datetime.datetime.strptime(self.update_date, "%Y-%m-%dT%H:%M:%S")
 
     @property
     def var_fields(self) -> list[dict[str, Any]]:

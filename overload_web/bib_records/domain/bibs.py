@@ -58,8 +58,8 @@ class BaseSierraResponse(ABC):
     def update_date(self) -> str: ...  # pragma: no branch
 
     @property
-    def update_datetime(self) -> datetime.datetime:
-        return datetime.datetime.fromisoformat(self.update_date.strip("Z"))
+    @abstractmethod
+    def update_datetime(self) -> datetime.datetime: ...  # pragma: no branch
 
     @property
     @abstractmethod
@@ -143,7 +143,7 @@ class DomainBib:
 
     @property
     def update_datetime(self) -> datetime.datetime:
-        return datetime.datetime.fromisoformat(self.update_date.strip("Z"))
+        return datetime.datetime.strptime(self.update_date, "%Y%m%d%H%M%S.%f")
 
     def apply_order_template(self, template_data: dict[str, Any]) -> None:
         """

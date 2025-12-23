@@ -1,4 +1,5 @@
 import copy
+import datetime
 import io
 import json
 import logging
@@ -166,6 +167,10 @@ class FakeSierraResponse(responses.bibs.BaseSierraResponse):
     @property
     def update_date(self) -> str:
         return "2025-01-01T00:00:00"
+
+    @property
+    def update_datetime(self) -> datetime.datetime:
+        return datetime.datetime(2025, 1, 1, 0, 0, 0)
 
     @property
     def var_fields(self) -> list[dict[str, Any]]:
