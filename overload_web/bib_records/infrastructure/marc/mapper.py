@@ -87,7 +87,9 @@ class BookopsMarcBaseMapper:
         out["oclc_number"] = list(record.oclc_nos.values())
         for k, v in self.rules["bib"].items():
             if isinstance(v, dict):
-                out[k] = str(record.get(v["tag"]))
+                field = record.get(v["tag"])
+                if field is not None:
+                    out[k] = str(field.data)
             else:
                 out[k] = getattr(record, v)
         out["orders"] = []
