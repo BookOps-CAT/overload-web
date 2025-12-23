@@ -64,11 +64,14 @@ class BookopsMarcBaseMapper:
         """
         bib_dict: dict = {}
         for tag, data in tags.items():
-            field = record.get(tag)
-            if not field:
+            fields = record.get_fields(tag)
+            if not fields:
                 continue
-            else:
-                bib_dict[tag] = {"code": data["code"], "value": field.get(data["code"])}
+            values = [i.get(data["code"]) for i in fields]
+            for value in values:
+                if value != data["value"]:
+                    continue
+                bib_dict[tag] = {"code": data["code"], "value": value}
         return bib_dict
 
     def _map_data(self, record: Bib) -> dict[str, Any]:

@@ -24,11 +24,14 @@ class BPLSolrResponse(bibs.BaseSierraResponse):
         return [i.get("barcode") for i in items if i and i.get("barcode")]
 
     @property
-    def branch_call_number(self) -> list[str]:
+    def branch_call_number(self) -> str | None:
         tag_099 = [i for i in self.var_fields if i["marc_tag"] == "099"]
         call_nos = [" ".join(i["content"] for i in j["subfields"]) for j in tag_099]
         call_nos.append(self._data.get("call_number", ""))
-        return list(set([i for i in call_nos if i]))
+        all_call_nos = list(set([i for i in call_nos if i]))
+        if all_call_nos:
+            return all_call_nos[0]
+        return None
 
     @property
     def cat_source(self) -> str:
@@ -120,9 +123,12 @@ class NYPLPlatformResponse(bibs.BaseSierraResponse):
         return []
 
     @property
-    def branch_call_number(self) -> list[str]:
+    def branch_call_number(self) -> str | None:
         tag_091 = [i for i in self.var_fields if i["marcTag"] == "091"]
-        return [" ".join(i["content"] for i in j["subfields"]) for j in tag_091]
+        call_no = [" ".join(i["content"] for i in j["subfields"]) for j in tag_091]
+        if call_no:
+            return call_no[0]
+        return None
 
     @property
     def cat_source(self) -> str:

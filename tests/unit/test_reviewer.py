@@ -12,7 +12,7 @@ BPL_DATA = {
     "sm_item_data": ['{"barcode": "33333123456789"}'],
     "ss_marc_tag_001": "ocn123456789",
     "ss_marc_tag_003": "OCoLC",
-    "ss_marc_tag_005": "20200101010000.0",
+    "ss_marc_tag_005": "20000101010000.0",
     "title": "Record 1",
 }
 NYPL_DATA = {
@@ -20,7 +20,7 @@ NYPL_DATA = {
     "controlNumber": "ocn123456789",
     "standardNumbers": ["9781234567890"],
     "title": "Record 1",
-    "updatedDate": "2020-01-01T01:00:00",
+    "updatedDate": "2000-01-01T01:00:00",
     "varFields": [
         {"marcTag": "091", "subfields": [{"content": "Foo", "tag": "a"}]},
         {
@@ -37,71 +37,8 @@ NYPL_DATA = {
 @pytest.fixture
 def new_domain_bib(make_full_bib, library):
     bib = make_full_bib({"020": {"code": "a", "value": "9781234567890"}})
-    bib.update_date = "20250101010000.0"
+    bib.update_date = "20200101010000.0"
     return bib
-
-
-class TestResponses:
-    def test_bpl_response_from_dict(self):
-        response = responses.BPLSolrResponse(data=BPL_DATA)
-        assert response.bib_id == "12345"
-        assert response.barcodes == ["33333123456789"]
-        assert response.branch_call_number == ["Foo"]
-        assert response.cat_source == "inhouse"
-        assert response.collection is None
-        assert response.control_number == "ocn123456789"
-        assert response.isbn == ["9781234567890"]
-        assert response.oclc_number == ["ocn123456789"]
-        assert response.research_call_number == []
-        assert response.upc == []
-        assert response.update_date == "20200101010000.0"
-        assert response.update_datetime == datetime.datetime(2020, 1, 1, 1, 0, 0, 0)
-        assert response.var_fields == []
-
-    def test_nypl_rl_response_from_dict(self):
-        NYPL_DATA["varFields"].append(
-            {"marcTag": "910", "subfields": [{"content": "RL", "tag": "a"}]}
-        )
-        response = responses.NYPLPlatformResponse(data=NYPL_DATA)
-        assert response.bib_id == "12345"
-        assert response.barcodes == []
-        assert response.branch_call_number == ["Foo"]
-        assert response.cat_source == "inhouse"
-        assert response.control_number == "ocn123456789"
-        assert response.isbn == ["9781234567890"]
-        assert response.oclc_number == ["ocn123456789"]
-        assert response.research_call_number == ["Foo"]
-        assert response.upc == []
-        assert response.update_date == "2020-01-01T01:00:00"
-        assert response.update_datetime == datetime.datetime(2020, 1, 1, 1, 0, 0, 0)
-        assert len(response.var_fields) == 4
-
-
-@pytest.fixture
-def nypl_bl_response():
-    NYPL_DATA["varFields"] = [
-        i for i in NYPL_DATA["varFields"] if i["marcTag"] != "910"
-    ]
-    NYPL_DATA["varFields"].append(
-        {"marcTag": "910", "subfields": [{"content": "BL", "tag": "a"}]}
-    )
-    return responses.NYPLPlatformResponse(data=NYPL_DATA)
-
-
-@pytest.fixture
-def nypl_rl_response():
-    NYPL_DATA["varFields"] = [
-        i for i in NYPL_DATA["varFields"] if i["marcTag"] != "910"
-    ]
-    NYPL_DATA["varFields"].append(
-        {"marcTag": "910", "subfields": [{"content": "RL", "tag": "a"}]}
-    )
-    return responses.NYPLPlatformResponse(data=NYPL_DATA)
-
-
-@pytest.fixture
-def bpl_response():
-    return responses.BPLSolrResponse(data=BPL_DATA)
 
 
 @pytest.fixture
@@ -124,10 +61,8 @@ def sierra_response(library, collection):
 
 
 class TestBaseReviewer:
-    @pytest.mark.parametrize(
-        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
-    )
-    def test_review_results(self, sierra_response, new_domain_bib):
+    @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
+    def test_review_results_bpl(self, sierra_response, new_domain_bib):
         new_domain_bib.isbn = None
         review = reviewer.BaseReviewer()
         review._sort_results(new_domain_bib, results=[sierra_response, sierra_response])
@@ -135,6 +70,46 @@ class TestBaseReviewer:
         assert review.duplicate_records == ["12345", "12345"]
         assert review.input_call_no == "Foo"
         assert review.resource_id is None
+        assert sierra_response.bib_id == "12345"
+        assert sierra_response.barcodes == ["33333123456789"]
+        assert sierra_response.branch_call_number == "Foo"
+        assert sierra_response.cat_source == "inhouse"
+        assert sierra_response.collection is None
+        assert sierra_response.control_number == "ocn123456789"
+        assert sierra_response.isbn == ["9781234567890"]
+        assert sierra_response.oclc_number == ["ocn123456789"]
+        assert sierra_response.research_call_number == []
+        assert sierra_response.upc == []
+        assert sierra_response.update_date == "20000101010000.0"
+        assert sierra_response.update_datetime == datetime.datetime(
+            2000, 1, 1, 1, 0, 0, 0
+        )
+        assert sierra_response.var_fields == []
+
+    @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
+    def test_review_results_nypl(self, sierra_response, new_domain_bib, collection):
+        new_domain_bib.isbn = None
+        review = reviewer.BaseReviewer()
+        review._sort_results(new_domain_bib, results=[sierra_response, sierra_response])
+        assert new_domain_bib.bib_id is None
+        assert review.duplicate_records == ["12345", "12345"]
+        assert review.input_call_no == "Foo"
+        assert review.resource_id is None
+        assert sierra_response.bib_id == "12345"
+        assert sierra_response.barcodes == []
+        assert sierra_response.branch_call_number == "Foo"
+        assert sierra_response.cat_source == "inhouse"
+        assert sierra_response.collection == collection
+        assert sierra_response.control_number == "ocn123456789"
+        assert sierra_response.isbn == ["9781234567890"]
+        assert sierra_response.oclc_number == ["ocn123456789"]
+        assert sierra_response.research_call_number == ["Foo"]
+        assert sierra_response.upc == []
+        assert sierra_response.update_date == "2000-01-01T01:00:00"
+        assert sierra_response.update_datetime == datetime.datetime(
+            2000, 1, 1, 1, 0, 0, 0
+        )
+        assert len(sierra_response.var_fields) == 4
 
     @pytest.mark.parametrize(
         "library, collection", [("bpl", "NONE"), ("nypl", "BL"), ("nypl", "RL")]
@@ -155,6 +130,28 @@ class TestBaseReviewer:
         review._sort_results(new_domain_bib, results=[])
         assert review.resource_id == "987654321"
 
+    @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
+    def test_review_results_mixed(self, new_domain_bib):
+        data = {k: v for k, v in NYPL_DATA.items()}
+        data["varFields"].append(
+            {"marcTag": "910", "subfields": [{"content": "BL", "tag": "a"}]}
+        )
+        data["varFields"].append(
+            {"marcTag": "910", "subfields": [{"content": "RL", "tag": "a"}]}
+        )
+        response = responses.NYPLPlatformResponse(data=data)
+        review = reviewer.BaseReviewer()
+        review._sort_results(new_domain_bib, results=[response])
+        assert len(review.mixed_results) == 1
+
+    @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
+    def test_review_results_unmatched(self, new_domain_bib, sierra_response):
+        new_domain_bib.collection = "NONE"
+        review = reviewer.BaseReviewer()
+        review._sort_results(new_domain_bib, results=[sierra_response])
+        assert len(review.other_results) == 1
+        assert len(review.matched_results) == 0
+
 
 class TestSelectionReviewer:
     @pytest.mark.parametrize(
@@ -169,6 +166,30 @@ class TestSelectionReviewer:
         assert review.input_call_no == "Foo"
         assert review.resource_id == "9781234567890"
 
+    @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
+    def test_review_results_no_call_no(self, new_domain_bib, collection):
+        resp_data = {k: v for k, v in NYPL_DATA.items() if k != "varFields"}
+        resp_data["varFields"] = [
+            {
+                "marcTag": "910",
+                "subfields": [{"content": collection, "tag": "a"}],
+            }
+        ]
+        response = responses.NYPLPlatformResponse(data=resp_data)
+        review = reviewer.SelectionReviewer()
+        result = review.review_results(new_domain_bib, results=[response])
+        assert new_domain_bib.bib_id is None
+        assert response.bib_id == "12345"
+        assert response.branch_call_number is None
+        assert response.research_call_number == []
+        assert len(review.matched_results) > 0
+        assert result == "12345"
+        assert review.duplicate_records == []
+        assert review.input_call_no == "Foo"
+        assert len(review.results) == 1
+        assert review.results[0].branch_call_number is None
+        assert review.results[0].research_call_number == []
+
 
 class TestAcquisitionsReviewer:
     @pytest.mark.parametrize(
@@ -180,8 +201,6 @@ class TestAcquisitionsReviewer:
         assert new_domain_bib.bib_id is None
         assert result is None
         assert review.duplicate_records == []
-        assert review.input_call_no == "Foo"
-        assert review.resource_id == "9781234567890"
 
 
 class TestNYPLBranchReviewer:
@@ -193,14 +212,83 @@ class TestNYPLBranchReviewer:
         assert result == "12345"
         assert review.duplicate_records == []
         assert review.input_call_no == "Foo"
-        assert review.resource_id == "9781234567890"
 
     @pytest.mark.parametrize("library, collection", [("nypl", "BL")])
-    def test_review_results_no_matches(self, new_domain_bib):
+    def test_review_results_no_results(self, new_domain_bib):
         review = reviewer.NYPLBranchReviewer()
         result = review.review_results(new_domain_bib, results=[])
         assert new_domain_bib.bib_id is None
         assert result is None
+
+    @pytest.mark.parametrize("library, collection", [("nypl", "BL")])
+    def test_review_results_vendor_record(self, new_domain_bib):
+        data = {k: v for k, v in NYPL_DATA.items()}
+        data["varFields"] = [i for i in NYPL_DATA["varFields"] if i["marcTag"] != "901"]
+        response = responses.NYPLPlatformResponse(data)
+        review = reviewer.NYPLBranchReviewer()
+        result = review.review_results(new_domain_bib, results=[response])
+        assert result == "12345"
+        assert response.update_datetime < new_domain_bib.update_datetime
+
+    @pytest.mark.parametrize("library, collection", [("nypl", "BL")])
+    def test_review_results_no_call_no_match_inhouse(self, new_domain_bib):
+        data = {
+            "id": "23456",
+            "title": "Record 2",
+            "updatedDate": "2020-01-01T01:00:00",
+            "varFields": [
+                {"marcTag": "091", "subfields": [{"content": "Bar", "tag": "a"}]},
+                {"marcTag": "901", "subfields": [{"content": "CAT", "tag": "b"}]},
+            ],
+        }
+        response = responses.NYPLPlatformResponse(data)
+        review = reviewer.NYPLBranchReviewer()
+        result = review.review_results(new_domain_bib, results=[response])
+        assert result == "23456"
+        assert response.cat_source == "inhouse"
+        assert review.action == "attach"
+
+    @pytest.mark.parametrize("library, collection", [("nypl", "BL")])
+    @pytest.mark.parametrize(
+        "date, action",
+        [("2025-01-01T01:00:00", "overlay"), ("2020-01-01T01:00:00", "attach")],
+    )
+    def test_review_results_no_call_no_match_vendor(self, new_domain_bib, date, action):
+        data = {
+            "id": "34567",
+            "title": "Record 3",
+            "updatedDate": date,
+            "varFields": [
+                {"marcTag": "091", "subfields": [{"content": "Baz", "tag": "a"}]},
+                {"marcTag": "910", "subfields": [{"content": "BL", "tag": "a"}]},
+            ],
+        }
+        response = responses.NYPLPlatformResponse(data)
+        review = reviewer.NYPLBranchReviewer()
+        result = review.review_results(new_domain_bib, results=[response])
+        assert result == "34567"
+        assert response.cat_source == "vendor"
+        assert response.branch_call_number is not None
+        assert review.call_number_match is False
+        assert review.action == action
+
+    @pytest.mark.parametrize("library, collection", [("nypl", "BL")])
+    def test_review_results_no_call_no(self, new_domain_bib):
+        data = {
+            "id": "34567",
+            "title": "Record 3",
+            "updatedDate": "2020-01-01T01:00:00",
+            "varFields": [
+                {"marcTag": "910", "subfields": [{"content": "BL", "tag": "a"}]}
+            ],
+        }
+        response = responses.NYPLPlatformResponse(data)
+        review = reviewer.NYPLBranchReviewer()
+        result = review.review_results(new_domain_bib, results=[response])
+        assert result == "34567"
+        assert response.branch_call_number is None
+        assert review.call_number_match is False
+        assert review.action == "overlay"
 
 
 class TestNYPLResearchReviewer:
@@ -212,14 +300,60 @@ class TestNYPLResearchReviewer:
         assert result == "12345"
         assert review.duplicate_records == []
         assert review.input_call_no == "Foo"
-        assert review.resource_id == "9781234567890"
 
     @pytest.mark.parametrize("library, collection", [("nypl", "RL")])
-    def test_review_results_no_matches(self, new_domain_bib):
+    def test_review_results_no_results(self, new_domain_bib):
         review = reviewer.NYPLResearchReviewer()
         result = review.review_results(new_domain_bib, results=[])
         assert new_domain_bib.bib_id is None
         assert result is None
+
+    @pytest.mark.parametrize("library, collection", [("nypl", "RL")])
+    @pytest.mark.parametrize(
+        "date, action",
+        [("2025-01-01T01:00:00", "overlay"), ("2020-01-01T01:00:00", "attach")],
+    )
+    def test_review_results_vendor_record(self, new_domain_bib, date, action):
+        data = {
+            "id": "34567",
+            "title": "Record 3",
+            "updatedDate": date,
+            "varFields": [
+                {
+                    "marcTag": "852",
+                    "ind1": "8",
+                    "ind2": " ",
+                    "subfields": [{"content": "Bar", "tag": "a"}],
+                },
+                {"marcTag": "910", "subfields": [{"content": "RL", "tag": "a"}]},
+            ],
+        }
+        response = responses.NYPLPlatformResponse(data)
+        review = reviewer.NYPLResearchReviewer()
+        result = review.review_results(new_domain_bib, results=[response])
+        assert result == "34567"
+        assert response.cat_source == "vendor"
+        assert len(response.research_call_number) > 0
+        assert review.call_number_match is True
+        assert review.action == action
+
+    @pytest.mark.parametrize("library, collection", [("nypl", "RL")])
+    def test_review_results_no_call_no(self, new_domain_bib):
+        data = {
+            "id": "34567",
+            "title": "Record 3",
+            "updatedDate": "2020-01-01T01:00:00",
+            "varFields": [
+                {"marcTag": "910", "subfields": [{"content": "RL", "tag": "a"}]}
+            ],
+        }
+        response = responses.NYPLPlatformResponse(data)
+        review = reviewer.NYPLResearchReviewer()
+        result = review.review_results(new_domain_bib, results=[response])
+        assert result == "34567"
+        assert response.research_call_number == []
+        assert review.call_number_match is False
+        assert review.action == "overlay"
 
 
 class TestBPLReviewer:
@@ -231,11 +365,86 @@ class TestBPLReviewer:
         assert result == "12345"
         assert review.duplicate_records == []
         assert review.input_call_no == "Foo"
-        assert review.resource_id == "9781234567890"
 
     @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
-    def test_review_results_no_matches(self, new_domain_bib):
+    def test_review_results_no_results(self, new_domain_bib):
         review = reviewer.BPLReviewer()
         result = review.review_results(new_domain_bib, results=[])
         assert new_domain_bib.bib_id is None
         assert result is None
+
+    @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
+    def test_review_results_no_results_midwest(self, make_full_bib):
+        domain_bib = make_full_bib(
+            {
+                "037": {"code": "b", "value": "Midwest"},
+                "099": {"code": "a", "value": "DVD"},
+            }
+        )
+        review = reviewer.BPLReviewer()
+        result = review.review_results(domain_bib, results=[])
+        assert domain_bib.bib_id is None
+        assert result is None
+
+    @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
+    @pytest.mark.parametrize(
+        "date, action",
+        [("20250101010000.0", "overlay"), ("20200101010000.0", "attach")],
+    )
+    def test_review_results_vendor_record(self, new_domain_bib, date, action):
+        data = {
+            "id": "12345",
+            "title": "Record 2",
+            "ss_marc_tag_005": date,
+            "call_number": "Foo",
+        }
+        response = responses.BPLSolrResponse(data)
+        review = reviewer.BPLReviewer()
+        result = review.review_results(new_domain_bib, results=[response])
+        assert result == "12345"
+        assert review.action == action
+
+    @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
+    def test_review_results_no_call_no_match_inhouse(self, new_domain_bib):
+        data = {
+            "id": "23456",
+            "title": "Record 2",
+            "ss_marc_tag_005": "20200101010000.0",
+            "ss_marc_tag_001": "ocn123456789",
+            "ss_marc_tag_003": "OCoLC",
+            "call_number": "Bar",
+        }
+        response = responses.BPLSolrResponse(data)
+        review = reviewer.BPLReviewer()
+        result = review.review_results(new_domain_bib, results=[response])
+        assert result == "23456"
+        assert response.cat_source == "inhouse"
+        assert review.action == "attach"
+
+    @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
+    @pytest.mark.parametrize(
+        "date, action",
+        [("20250101010000.0", "overlay"), ("20200101010000.0", "attach")],
+    )
+    def test_review_results_no_call_no_match_vendor(self, new_domain_bib, date, action):
+        data = {
+            "id": "34567",
+            "title": "Record 3",
+            "ss_marc_tag_005": date,
+            "call_number": "Baz",
+        }
+        response = responses.BPLSolrResponse(data)
+        review = reviewer.BPLReviewer()
+        result = review.review_results(new_domain_bib, results=[response])
+        assert result == "34567"
+        assert response.cat_source == "vendor"
+        assert review.action == action
+
+    @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
+    def test_review_results_no_call_no(self, new_domain_bib):
+        data = {"id": "34567", "title": "Record 3"}
+        response = responses.BPLSolrResponse(data)
+        review = reviewer.BPLReviewer()
+        result = review.review_results(new_domain_bib, results=[response])
+        assert result == "34567"
+        assert review.action == "overlay"

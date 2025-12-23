@@ -318,24 +318,26 @@ def stub_bib(library, collection) -> Bib:
             )
         )
     else:
-        bib.add_field(
-            Field(
-                tag="091",
-                indicators=Indicators(" ", " "),
-                subfields=[
-                    Subfield(code="a", value="Foo"),
-                ],
+        if collection == "BL":
+            bib.add_field(
+                Field(
+                    tag="091",
+                    indicators=Indicators(" ", " "),
+                    subfields=[
+                        Subfield(code="a", value="Foo"),
+                    ],
+                )
             )
-        )
-        bib.add_field(
-            Field(
-                tag="852",
-                indicators=Indicators("8", " "),
-                subfields=[
-                    Subfield(code="a", value="Foo"),
-                ],
+        else:
+            bib.add_field(
+                Field(
+                    tag="852",
+                    indicators=Indicators("8", " "),
+                    subfields=[
+                        Subfield(code="a", value="Foo"),
+                    ],
+                )
             )
-        )
         bib.add_field(
             Field(
                 tag="910",

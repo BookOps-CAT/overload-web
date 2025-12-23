@@ -165,9 +165,10 @@ class NYPLResearchReviewer(BaseReviewer):
     ) -> str | None:
         self._sort_results(input=input, results=results)
         # default action = 'insert'
-        self.call_number_match = False
-        if not self.matched_results:
+        if len(self.matched_results) == 0:
             self.call_number_match = True
+        else:
+            self.call_number_match = False
         for result in self.matched_results:
             # full record scenario
             if result.research_call_number:
@@ -188,7 +189,6 @@ class NYPLResearchReviewer(BaseReviewer):
                         self.action = "attach"
                 break
         if not self.call_number_match:
-            self.call_number_match = True
             self.target_bib_id = self.matched_results[-1].bib_id
             self.target_title = self.matched_results[-1].title
             self.action = "overlay"
@@ -202,7 +202,7 @@ class NYPLBranchReviewer(BaseReviewer):
     ) -> str | None:
         self._sort_results(input=input, results=results)
         # default action = 'insert'
-        if not self.matched_results:
+        if len(self.matched_results) == 0:
             self.call_number_match = True
         else:
             self.call_number_match = False
@@ -211,7 +211,8 @@ class NYPLBranchReviewer(BaseReviewer):
             if result.branch_call_number:
                 # check if call number matches
                 call_match = self._compare_call_nos(
-                    result.branch_call_number, self.input.branch_call_number
+                    input_call_no=self.input.branch_call_number,
+                    result_call_no=result.branch_call_number,
                 )
                 if call_match:
                     self.call_number_match = True
@@ -228,11 +229,12 @@ class NYPLBranchReviewer(BaseReviewer):
                         else:
                             self.action = "attach"
                     break
-
-        if not self.call_number_match and self.matched_results[-1].branch_call_number:
+        if self.call_number_match:
+            return self.target_bib_id
+        if self.matched_results[-1].branch_call_number is not None:
             self.target_bib_id = result.bib_id
             self.target_title = result.title
-            self.target_call_number = result.branch_call_number
+            self.target_call_number = self.matched_results[-1].branch_call_number
             if result.cat_source == "inhouse":
                 self.action = "attach"
             else:
@@ -242,8 +244,7 @@ class NYPLBranchReviewer(BaseReviewer):
                     self.action = "overlay"
                 else:
                     self.action = "attach"
-        if not self.call_number_match:
-            self.call_number_match = True
+        else:
             self.target_bib_id = self.matched_results[-1].bib_id
             self.target_title = self.matched_results[-1].title
             self.action = "overlay"
@@ -256,7 +257,7 @@ class BPLReviewer(BaseReviewer):
     ) -> str | None:
         self._sort_results(input=input, results=results)
         # default action = 'insert'
-        if not self.matched_results:
+        if len(self.matched_results) == 0:
             self.call_number_match = True
             if self.vendor in ["Midwest DVD", "Midwest Audio", "Midwest CD"]:
                 self.action = "attach"
@@ -267,7 +268,8 @@ class BPLReviewer(BaseReviewer):
             if result.branch_call_number:
                 # check if call number matches
                 call_match = self._compare_call_nos(
-                    result.branch_call_number, self.input.branch_call_number
+                    input_call_no=self.input.branch_call_number,
+                    result_call_no=result.branch_call_number,
                 )
                 if call_match:
                     self.call_number_match = True
@@ -284,10 +286,12 @@ class BPLReviewer(BaseReviewer):
                         else:
                             self.action = "attach"
                     break
-        if not self.call_number_match and self.matched_results[-1].branch_call_number:
+        if self.call_number_match:
+            return self.target_bib_id
+        if self.matched_results[-1].branch_call_number is not None:
             self.target_bib_id = result.bib_id
             self.target_title = result.title
-            self.target_call_number = result.branch_call_number
+            self.target_call_number = self.matched_results[-1].branch_call_number
             if result.cat_source == "inhouse":
                 self.action = "attach"
             else:
@@ -297,8 +301,7 @@ class BPLReviewer(BaseReviewer):
                     self.action = "overlay"
                 else:
                     self.action = "attach"
-        if not self.call_number_match:
-            self.call_number_match = True
+        else:
             self.target_bib_id = self.matched_results[-1].bib_id
             self.target_title = self.matched_results[-1].title
             self.action = "overlay"

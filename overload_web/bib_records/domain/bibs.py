@@ -24,7 +24,7 @@ class BaseSierraResponse(ABC):
 
     @property
     @abstractmethod
-    def branch_call_number(self) -> list[str]: ...  # pragma: no branch
+    def branch_call_number(self) -> str | None: ...  # pragma: no branch
 
     @property
     @abstractmethod
@@ -138,8 +138,8 @@ class DomainBib:
         self.title = title
         self.upc = upc
         self.update_date = update_date
-        self.vendor = vendor
         self.vendor_info = vendor_info
+        self.vendor = vendor if not vendor_info else vendor_info.name
 
     @property
     def update_datetime(self) -> datetime.datetime:

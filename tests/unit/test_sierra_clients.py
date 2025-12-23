@@ -335,7 +335,7 @@ class TestSierraResponses:
         }
         response = responses.BPLSolrResponse(data=data)
         assert response.barcodes == ["333331234567890"]
-        assert response.branch_call_number == ["FIC BAR"]
+        assert response.branch_call_number == "FIC BAR"
         assert response.cat_source == "inhouse"
         assert len(response.var_fields) == 5
 
@@ -357,5 +357,5 @@ class TestSierraResponses:
         }
         response = responses.BPLSolrResponse(data=data)
         assert response.barcodes == []
-        assert response.branch_call_number == ["FIC BAR"]
+        assert response.branch_call_number == "FIC BAR"
         assert response.cat_source == "vendor"
