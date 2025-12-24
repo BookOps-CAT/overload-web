@@ -2,11 +2,8 @@ import json
 
 import pytest
 
-from overload_web.bib_records.domain import bibs, marc_protocols
-from overload_web.bib_records.domain_services import (
-    attacher,
-)
-from overload_web.bib_records.infrastructure.sierra import responses, reviewer
+from overload_web.bib_records.domain import bib_services, bibs, marc_protocols
+from overload_web.bib_records.infrastructure import response_reviewer, sierra_responses
 
 
 class StubFetcher(marc_protocols.BibFetcher):
@@ -26,13 +23,13 @@ class FakeBibFetcher(StubFetcher):
             with open(file, "r", encoding="utf-8") as fh:
                 bibs = json.loads(fh.read())
             data = bibs["data"]
-            return [responses.NYPLPlatformResponse(data=i) for i in data]
+            return [sierra_responses.NYPLPlatformResponse(data=i) for i in data]
         else:
             file = f"tests/data/{str(self.library)}.json"
             with open(file, "r", encoding="utf-8") as fh:
                 bibs = json.loads(fh.read())
             data = bibs["response"]["docs"]
-            return [responses.BPLSolrResponse(data=i) for i in data]
+            return [sierra_responses.BPLSolrResponse(data=i) for i in data]
 
 
 def stub_sierra_response(stub_order_bib, library, collection):
@@ -66,8 +63,8 @@ class TestAttacher:
         return bibs.MatcherResponse(bib=stub_order_bib, matches=responses)
 
     def test_attach_acq(self, library, collection, stub_order_response):
-        stub_service = attacher.BibAttacher(
-            reviewer=reviewer.ReviewerFactory().make(
+        stub_service = bib_services.BibAttacher(
+            reviewer=response_reviewer.ReviewerFactory().make(
                 record_type="acq", collection=collection, library=library
             )
         )
@@ -76,8 +73,8 @@ class TestAttacher:
         assert stub_order_response.bib.bib_id is None
 
     def test_attach_cat(self, library, collection, stub_full_response):
-        stub_service = attacher.BibAttacher(
-            reviewer=reviewer.ReviewerFactory().make(
+        stub_service = bib_services.BibAttacher(
+            reviewer=response_reviewer.ReviewerFactory().make(
                 record_type="cat", collection=collection, library=library
             )
         )
@@ -85,8 +82,8 @@ class TestAttacher:
         assert attached_bibs[0].bib_id == "123"
 
     def test_attach_sel(self, library, collection, stub_order_response):
-        stub_service = attacher.BibAttacher(
-            reviewer=reviewer.ReviewerFactory().make(
+        stub_service = bib_services.BibAttacher(
+            reviewer=response_reviewer.ReviewerFactory().make(
                 record_type="sel", collection=collection, library=library
             )
         )
@@ -95,7 +92,7 @@ class TestAttacher:
 
     def test_reviewer_factory(self, library, collection):
         with pytest.raises(ValueError) as exc:
-            reviewer.ReviewerFactory().make(
+            response_reviewer.ReviewerFactory().make(
                 record_type="foo", collection=collection, library=library
             )
         assert str(exc.value) == "Invalid library/record_type/collection combination"

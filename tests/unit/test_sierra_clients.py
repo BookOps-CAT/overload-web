@@ -3,7 +3,7 @@ import os
 import pytest
 import yaml
 
-from overload_web.bib_records.infrastructure.sierra import clients, responses
+from overload_web.bib_records.infrastructure import clients, sierra_responses
 
 
 @pytest.fixture
@@ -25,7 +25,7 @@ class TestLiveSierraSession:
             matched_bibs = session._parse_response(response=response)
             assert isinstance(matched_bibs, list)
             assert len(matched_bibs) == 2
-            assert isinstance(matched_bibs[0], responses.BPLSolrResponse)
+            assert isinstance(matched_bibs[0], sierra_responses.BPLSolrResponse)
             assert sorted(list(response.json()["response"]["docs"][0].keys())) == [
                 "_version_",
                 "additional_contributor",
@@ -90,7 +90,7 @@ class TestLiveSierraSession:
             matched_bibs = session._parse_response(response=response)
             assert isinstance(matched_bibs, list)
             assert len(matched_bibs) == 1
-            assert isinstance(matched_bibs[0], responses.NYPLPlatformResponse)
+            assert isinstance(matched_bibs[0], sierra_responses.NYPLPlatformResponse)
             assert sorted(list(response.json()["data"][0].keys())) == [
                 "author",
                 "bibLevel",
@@ -244,7 +244,7 @@ class TestSierraResponses:
             "updatedDate": "2020-01-01T00:00:01",
             **self.BASE_RESPONSE,
         }
-        response = responses.NYPLPlatformResponse(data)
+        response = sierra_responses.NYPLPlatformResponse(data)
         assert response.cat_source == "inhouse"
         assert response.collection == "BL"
 
@@ -263,7 +263,7 @@ class TestSierraResponses:
             ],
             **self.BASE_RESPONSE,
         }
-        response = responses.NYPLPlatformResponse(data)
+        response = sierra_responses.NYPLPlatformResponse(data)
         assert response.cat_source == "vendor"
         assert response.collection == "RL"
 
@@ -281,12 +281,12 @@ class TestSierraResponses:
             ],
             **self.BASE_RESPONSE,
         }
-        response = responses.NYPLPlatformResponse(data)
+        response = sierra_responses.NYPLPlatformResponse(data)
         assert response.cat_source == "vendor"
         assert response.collection == "MIXED"
 
     def test_nypl_response_no_collection(self):
-        response = responses.NYPLPlatformResponse(self.BASE_RESPONSE)
+        response = sierra_responses.NYPLPlatformResponse(self.BASE_RESPONSE)
         assert response.collection is None
 
     @pytest.mark.parametrize(
@@ -296,7 +296,7 @@ class TestSierraResponses:
     def test_nypl_response_call_number_check(self, field, collection):
         field["subfields"] = [{"tag": "a", "content": "Foo"}]
         data = {"varFields": [field], **self.BASE_RESPONSE}
-        response = responses.NYPLPlatformResponse(data)
+        response = sierra_responses.NYPLPlatformResponse(data)
         assert response.collection == collection
 
     def test_nypl_response_call_number_mixed(self):
@@ -311,7 +311,7 @@ class TestSierraResponses:
             ],
             **self.BASE_RESPONSE,
         }
-        response = responses.NYPLPlatformResponse(data)
+        response = sierra_responses.NYPLPlatformResponse(data)
         assert response.collection == "MIXED"
 
     def test_bpl_response(self):
@@ -332,7 +332,7 @@ class TestSierraResponses:
             "call_number": "FIC BAR",
             **self.BASE_RESPONSE,
         }
-        response = responses.BPLSolrResponse(data=data)
+        response = sierra_responses.BPLSolrResponse(data=data)
         assert response.barcodes == ["333331234567890"]
         assert response.branch_call_number == "FIC BAR"
         assert response.cat_source == "inhouse"
@@ -354,7 +354,7 @@ class TestSierraResponses:
             "call_number": "FIC BAR",
             **self.BASE_RESPONSE,
         }
-        response = responses.BPLSolrResponse(data=data)
+        response = sierra_responses.BPLSolrResponse(data=data)
         assert response.barcodes == []
         assert response.branch_call_number == "FIC BAR"
         assert response.cat_source == "vendor"

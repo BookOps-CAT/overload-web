@@ -98,5 +98,5 @@ class ResultsReviewer(Protocol[C, F]):
 @runtime_checkable
 class BibMatcherStrategy(Protocol[F]):
     def match_bib(
-        fetcher: BibFetcher, *args, **kwargs
+        record: D, fetcher: BibFetcher, *args, **kwargs
     ) -> list[F]: ...  # pragma: no branch

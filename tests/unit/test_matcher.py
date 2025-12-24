@@ -2,9 +2,8 @@ import json
 
 import pytest
 
-from overload_web.bib_records.domain import marc_protocols
-from overload_web.bib_records.domain_services import matcher
-from overload_web.bib_records.infrastructure.sierra import clients, responses
+from overload_web.bib_records.domain import bib_services, marc_protocols
+from overload_web.bib_records.infrastructure import clients, sierra_responses
 from overload_web.errors import OverloadError
 
 
@@ -25,13 +24,13 @@ class FakeBibFetcher(StubFetcher):
             with open(file, "r", encoding="utf-8") as fh:
                 bibs = json.loads(fh.read())
             data = bibs["data"]
-            return [responses.NYPLPlatformResponse(data=i) for i in data]
+            return [sierra_responses.NYPLPlatformResponse(data=i) for i in data]
         else:
             file = f"tests/data/{str(self.library)}.json"
             with open(file, "r", encoding="utf-8") as fh:
                 bibs = json.loads(fh.read())
             data = bibs["response"]["docs"]
-            return [responses.BPLSolrResponse(data=i) for i in data]
+            return [sierra_responses.BPLSolrResponse(data=i) for i in data]
 
 
 @pytest.mark.parametrize(
@@ -45,10 +44,10 @@ class TestMatcher:
             return FakeBibFetcher(library, collection)
 
         monkeypatch.setattr(
-            "overload_web.bib_records.infrastructure.sierra.clients.SierraBibFetcher",
+            "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
             fake_fetcher,
         )
-        return matcher.BibMatcher(
+        return bib_services.BibMatcher(
             fetcher=clients.SierraBibFetcher(library),
             strategy=clients.MatchStrategyFactory().make("cat"),
         )
@@ -59,10 +58,10 @@ class TestMatcher:
             return FakeBibFetcher(library, collection)
 
         monkeypatch.setattr(
-            "overload_web.bib_records.infrastructure.sierra.clients.SierraBibFetcher",
+            "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
             fake_fetcher,
         )
-        return matcher.BibMatcher(
+        return bib_services.BibMatcher(
             fetcher=clients.SierraBibFetcher(library),
             strategy=clients.MatchStrategyFactory().make("acq"),
         )
@@ -73,10 +72,10 @@ class TestMatcher:
             return StubFetcher()
 
         monkeypatch.setattr(
-            "overload_web.bib_records.infrastructure.sierra.clients.SierraBibFetcher",
+            "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
             fake_fetcher,
         )
-        return matcher.BibMatcher(
+        return bib_services.BibMatcher(
             fetcher=clients.SierraBibFetcher(library),
             strategy=clients.MatchStrategyFactory().make("cat"),
         )
@@ -87,10 +86,10 @@ class TestMatcher:
             return StubFetcher()
 
         monkeypatch.setattr(
-            "overload_web.bib_records.infrastructure.sierra.clients.SierraBibFetcher",
+            "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
             fake_fetcher,
         )
-        return matcher.BibMatcher(
+        return bib_services.BibMatcher(
             fetcher=clients.SierraBibFetcher(library),
             strategy=clients.MatchStrategyFactory().make("acq"),
         )

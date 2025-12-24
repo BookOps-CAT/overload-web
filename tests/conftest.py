@@ -13,8 +13,11 @@ from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.bib_records.infrastructure.marc import mapper
-from overload_web.bib_records.infrastructure.sierra import clients, responses
+from overload_web.bib_records.infrastructure import (
+    clients,
+    marc_mapper,
+    sierra_responses,
+)
 from overload_web.order_templates.infrastructure import tables
 
 
@@ -125,7 +128,7 @@ class FakeSierraSession(clients.SierraSessionProtocol):
         self.credentials = self._get_credentials()
 
 
-class FakeSierraResponse(responses.bibs.BaseSierraResponse):
+class FakeSierraResponse(sierra_responses.bibs.BaseSierraResponse):
     library = "library"
 
     @property
@@ -133,8 +136,8 @@ class FakeSierraResponse(responses.bibs.BaseSierraResponse):
         return ["333331234567890"]
 
     @property
-    def branch_call_number(self) -> list[str]:
-        return ["FIC"]
+    def branch_call_number(self) -> str | None:
+        return "FIC"
 
     @property
     def cat_source(self) -> str:
@@ -414,12 +417,12 @@ def make_full_bib(stub_bib, stub_constants, library) -> Callable:
                     ],
                 )
             )
-        marc_mapper = mapper.BookopsMarcFullBibMapper(
+        mapper = marc_mapper.BookopsMarcFullBibMapper(
             rules=stub_constants["mapper_rules"], library=library
         )
-        out: dict[str, Any] = marc_mapper._map_data(record=record)
-        out["vendor_info"] = marc_mapper._identify_vendor(record=record)
-        bib = mapper.bibs.DomainBib(**out)
+        out: dict[str, Any] = mapper._map_data(record=record)
+        out["vendor_info"] = mapper._identify_vendor(record=record)
+        bib = marc_mapper.bibs.DomainBib(**out)
         return bib
 
     return _make_dto
@@ -439,11 +442,11 @@ def make_order_bib(stub_bib, stub_constants, library) -> Callable:
                     ],
                 )
             )
-        marc_mapper = mapper.BookopsMarcOrderBibMapper(
+        mapper = marc_mapper.BookopsMarcOrderBibMapper(
             rules=stub_constants["mapper_rules"], library=library
         )
-        out: dict[str, Any] = marc_mapper._map_data(record=record)
-        bib = mapper.bibs.DomainBib(**out)
+        out: dict[str, Any] = mapper._map_data(record=record)
+        bib = marc_mapper.bibs.DomainBib(**out)
         return bib
 
     return _make_dto

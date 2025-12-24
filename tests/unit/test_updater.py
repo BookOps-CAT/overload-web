@@ -3,8 +3,8 @@ import copy
 import pytest
 from bookops_marc import Bib
 
-from overload_web.bib_records.domain_services import updater
-from overload_web.bib_records.infrastructure.marc import update_strategy
+from overload_web.bib_records.domain import bib_services
+from overload_web.bib_records.infrastructure import marc_update_strategy
 from overload_web.errors import OverloadError
 
 
@@ -18,8 +18,8 @@ class TestUpdater:
             copy.deepcopy(stub_full_bib.binary_data), library=str(stub_full_bib.library)
         )
         stub_full_bib.bib_id = "12345"
-        stub_service = updater.BibRecordUpdater(
-            strategy=update_strategy.MarcUpdaterFactory().make(record_type="cat")
+        stub_service = bib_services.BibRecordUpdater(
+            strategy=marc_update_strategy.MarcUpdaterFactory().make(record_type="cat")
         )
         updated_bibs = stub_service.update([stub_full_bib])
         updated_bib = Bib(
@@ -29,8 +29,8 @@ class TestUpdater:
         assert len(updated_bib.get_fields("907")) == 1
 
     def test_update_cat_no_vendor_index(self, stub_order_bib):
-        stub_service = updater.BibRecordUpdater(
-            strategy=update_strategy.MarcUpdaterFactory().make(record_type="cat")
+        stub_service = bib_services.BibRecordUpdater(
+            strategy=marc_update_strategy.MarcUpdaterFactory().make(record_type="cat")
         )
         with pytest.raises(OverloadError) as exc:
             stub_service.update([stub_order_bib])
@@ -45,8 +45,8 @@ class TestUpdater:
             },
         )
         original_bib = copy.deepcopy(Bib(dto.binary_data, library=library))
-        stub_service = updater.BibRecordUpdater(
-            strategy=update_strategy.MarcUpdaterFactory().make(record_type="cat")
+        stub_service = bib_services.BibRecordUpdater(
+            strategy=marc_update_strategy.MarcUpdaterFactory().make(record_type="cat")
         )
         updated_bibs = stub_service.update([dto])
         assert len(original_bib.get_fields("949")) == 1
@@ -57,8 +57,8 @@ class TestUpdater:
 
     def test_update_acq(self, stub_order_bib, template_data):
         original_orders = copy.deepcopy(stub_order_bib.orders)
-        stub_service = updater.BibRecordUpdater(
-            strategy=update_strategy.MarcUpdaterFactory().make(record_type="acq")
+        stub_service = bib_services.BibRecordUpdater(
+            strategy=marc_update_strategy.MarcUpdaterFactory().make(record_type="acq")
         )
         updated_bibs = stub_service.update(
             [stub_order_bib], template_data=template_data
@@ -68,8 +68,8 @@ class TestUpdater:
 
     def test_update_sel(self, stub_order_bib, template_data):
         original_orders = copy.deepcopy(stub_order_bib.orders)
-        stub_service = updater.BibRecordUpdater(
-            strategy=update_strategy.MarcUpdaterFactory().make(record_type="sel")
+        stub_service = bib_services.BibRecordUpdater(
+            strategy=marc_update_strategy.MarcUpdaterFactory().make(record_type="sel")
         )
         updated_bibs = stub_service.update(
             [stub_order_bib], template_data=template_data
@@ -82,8 +82,10 @@ class TestUpdater:
         ["acq", "sel"],
     )
     def test_update_acq_sel_no_template(self, stub_order_bib, record_type):
-        stub_service = updater.BibRecordUpdater(
-            strategy=update_strategy.MarcUpdaterFactory().make(record_type=record_type)
+        stub_service = bib_services.BibRecordUpdater(
+            strategy=marc_update_strategy.MarcUpdaterFactory().make(
+                record_type=record_type
+            )
         )
         with pytest.raises(OverloadError) as exc:
             stub_service.update([stub_order_bib])

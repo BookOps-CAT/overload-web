@@ -17,13 +17,7 @@ Classes:
 import logging
 from typing import Any, BinaryIO, Optional
 
-from overload_web.bib_records.domain_services import (
-    attacher,
-    matcher,
-    parser,
-    serializer,
-    updater,
-)
+from overload_web.bib_records.domain import bib_services
 
 logger = logging.getLogger(__name__)
 
@@ -33,11 +27,11 @@ class RecordProcessingService:
 
     def __init__(
         self,
-        bib_fetcher: attacher.marc_protocols.BibFetcher,
-        mapper_strategy: parser.marc_protocols.BibMapper,
-        matcher_strategy: matcher.marc_protocols.BibMatcherStrategy,
-        review_strategy: attacher.marc_protocols.ResultsReviewer,
-        update_strategy: updater.marc_protocols.BibUpdateStrategy,
+        bib_fetcher: bib_services.marc_protocols.BibFetcher,
+        mapper_strategy: bib_services.marc_protocols.BibMapper,
+        matcher_strategy: bib_services.marc_protocols.BibMatcherStrategy,
+        review_strategy: bib_services.marc_protocols.ResultsReviewer,
+        update_strategy: bib_services.marc_protocols.BibUpdateStrategy,
     ):
         """
         Initialize `RecordProcessingService`.
@@ -54,13 +48,13 @@ class RecordProcessingService:
             update_strategy:
                 A `marc_protocols.BibUpdateStrategy` object
         """
-        self.attacher = attacher.BibAttacher(reviewer=review_strategy)
-        self.matcher = matcher.BibMatcher(
+        self.attacher = bib_services.BibAttacher(reviewer=review_strategy)
+        self.matcher = bib_services.BibMatcher(
             fetcher=bib_fetcher, strategy=matcher_strategy
         )
-        self.parser = parser.BibParser(mapper=mapper_strategy)
-        self.updater = updater.BibRecordUpdater(strategy=update_strategy)
-        self.serializer = serializer.BibSerializer()
+        self.parser = bib_services.BibParser(mapper=mapper_strategy)
+        self.updater = bib_services.BibRecordUpdater(strategy=update_strategy)
+        self.serializer = bib_services.BibSerializer()
 
     def process_vendor_file(
         self,

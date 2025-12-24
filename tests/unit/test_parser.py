@@ -1,7 +1,7 @@
 import pytest
 
-from overload_web.bib_records.domain_services import parser, serializer
-from overload_web.bib_records.infrastructure.marc import mapper
+from overload_web.bib_records.domain import bib_services
+from overload_web.bib_records.infrastructure import marc_mapper
 
 
 @pytest.mark.parametrize(
@@ -10,8 +10,8 @@ from overload_web.bib_records.infrastructure.marc import mapper
 )
 class TestParser:
     def test_parse_full(self, stub_constants, library, stub_full_bib, caplog):
-        stub_service = parser.BibParser(
-            mapper.BookopsMarcFullBibMapper(
+        stub_service = bib_services.BibParser(
+            marc_mapper.BookopsMarcFullBibMapper(
                 rules=stub_constants["mapper_rules"], library=library
             )
         )
@@ -26,8 +26,8 @@ class TestParser:
     def test_parse_order_level(
         self, stub_constants, library, stub_order_bib, collection, caplog
     ):
-        stub_service = stub_service = parser.BibParser(
-            mapper.BookopsMarcOrderBibMapper(
+        stub_service = stub_service = bib_services.BibParser(
+            marc_mapper.BookopsMarcOrderBibMapper(
                 rules=stub_constants["mapper_rules"], library=library
             )
         )
@@ -47,7 +47,7 @@ class TestParser:
 )
 class TestRecordProcessingSerializer:
     def test_serialize(self, stub_order_bib, caplog):
-        stub_service = serializer.BibSerializer()
+        stub_service = bib_services.BibSerializer()
         marc_binary = stub_service.serialize(records=[stub_order_bib])
         assert marc_binary.read()[0:2] == b"00"
         assert len(caplog.records) == 1
