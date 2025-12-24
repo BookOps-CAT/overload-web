@@ -3,7 +3,7 @@ import os
 from typing import Annotated, Any, Generator
 
 from fastapi import Depends
-from sqlmodel import Session, create_engine
+from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.application import template_service
 from overload_web.order_templates.infrastructure import repository
@@ -24,6 +24,10 @@ def get_postgres_uri() -> str:
 
 
 engine = create_engine(get_postgres_uri())
+
+
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
 
 
 def get_session() -> Generator[Session, None, None]:

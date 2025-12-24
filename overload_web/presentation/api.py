@@ -14,7 +14,6 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from overload_web.presentation import (
-    deps,
     dto,
     file_service_dep,
     record_service_deps,
@@ -27,7 +26,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: APIRouter) -> AsyncGenerator[None, None]:
     logger.info("Starting up Overload...")
-    deps.create_db_and_tables()
+    template_service_dep.create_db_and_tables()
     yield
     logger.info("Shutting down Overload...")
 
@@ -40,7 +39,7 @@ TemplateService = Annotated[Any, Depends(template_service_dep.template_handler)]
 @api_router.post("/template", response_class=HTMLResponse)
 def create_template(
     request: Request,
-    template: Annotated[Any, Depends(deps.from_form(dto.TemplateCreateModel))],
+    template: Annotated[Any, Depends(dto.from_form(dto.TemplateCreateModel))],
     service: TemplateService,
 ) -> HTMLResponse:
     """
@@ -115,7 +114,7 @@ def get_template_list(
 def update_template(
     request: Request,
     template_id: Annotated[str, Form(...)],
-    template_patch: Annotated[Any, Depends(deps.from_form(dto.TemplatePatchModel))],
+    template_patch: Annotated[Any, Depends(dto.from_form(dto.TemplatePatchModel))],
     service: TemplateService,
 ) -> HTMLResponse:
     """
@@ -204,8 +203,8 @@ def process_vendor_file(
     files: Annotated[
         list[dto.VendorFileModel], Depends(file_service_dep.normalize_files)
     ],
-    order_template: Annotated[Any, Depends(deps.from_form(dto.TemplateDataModel))],
-    matchpoints: Annotated[Any, Depends(deps.from_form(dto.MatchpointSchema))],
+    order_template: Annotated[Any, Depends(dto.from_form(dto.TemplateDataModel))],
+    matchpoints: Annotated[Any, Depends(dto.from_form(dto.MatchpointSchema))],
     record_type: Annotated[str, Form(...)],
 ) -> HTMLResponse:
     """

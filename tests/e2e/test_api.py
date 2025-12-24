@@ -4,7 +4,7 @@ from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.main import app
 from overload_web.order_templates.infrastructure import tables
-from overload_web.presentation import deps, template_service_dep
+from overload_web.presentation import template_service_dep
 
 
 def stub_sql_session():
@@ -18,7 +18,7 @@ def stub_sql_session():
 
 
 def test_api_startup(monkeypatch):
-    monkeypatch.setattr(deps, "create_db_and_tables", stub_sql_session)
+    monkeypatch.setattr(template_service_dep, "create_db_and_tables", stub_sql_session)
 
     with TestClient(app) as client:
         response = client.get("/")
@@ -26,7 +26,7 @@ def test_api_startup(monkeypatch):
 
 
 def test_deps():
-    deps.create_db_and_tables()
+    template_service_dep.create_db_and_tables()
     session = template_service_dep.get_session()
     assert isinstance(next(session), Session)
 
