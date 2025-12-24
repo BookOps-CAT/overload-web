@@ -43,6 +43,8 @@ class BookopsMarcBaseMapper:
         Args:
             library:
                 the library system to whom the records belong.
+            record_type:
+                the workflow being used to parse records (ie. 'acq', 'cat', or 'sel').
             rules:
                 A dictionary containing vendor identification rules, and rules to use
                 when mapping MARC records, to domain objects. Parsed from `mapper_rules`
@@ -155,9 +157,8 @@ class BookopsMarcFullBibMapper(BookopsMarcBaseMapper):
         reader = SierraBibReader(data, library=self.library)
         parsed_recs = []
         for record in reader:
-            bib_dict: dict[str, Any] = {}
+            bib_dict: dict[str, Any] = self._map_data(record=record)
             bib_dict["vendor_info"] = self._identify_vendor(record=record)
-            bib_dict.update(self._map_data(record=record))
             out = bibs.DomainBib(**bib_dict)
             logger.info(f"Vendor record parsed: {out}")
             parsed_recs.append(out)
