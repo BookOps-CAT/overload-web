@@ -25,7 +25,7 @@ Protocols:
 from __future__ import annotations
 
 import logging
-from typing import Any, BinaryIO, Protocol, TypeVar, runtime_checkable
+from typing import Any, BinaryIO, Iterator, Protocol, TypeVar, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
@@ -63,12 +63,16 @@ class BibFetcher(Protocol[F]):
 
 
 @runtime_checkable
-class BibMapper(Protocol[D]):
+class BibMapper(Protocol[C]):
     """Map object to `DomainBib` based on rules"""
 
     rules: dict[str, Any]
 
-    def map_bibs(self, data: bytes | BinaryIO) -> list[D]: ...  # pragma: no branch
+    def get_reader(self, data: bytes | BinaryIO) -> Iterator: ...  # pragma: no branch
+
+    def identify_vendor(self, record: C) -> dict[str, Any]: ...  # pragma: no branch
+
+    def map_data(self, record: C) -> dict[str, Any]: ...  # pragma: no branch
 
 
 @runtime_checkable

@@ -173,7 +173,28 @@ class BibParser:
         self.mapper = mapper
 
     def parse(self, data: BinaryIO | bytes) -> list[bibs.DomainBib]:
-        return self.mapper.map_bibs(data)
+        """
+        Method used to build `DomainBib` objects for MARC records
+
+        Args:
+            data: MARC data represented in binary format
+
+        Returns:
+            a list of `bibs.DomainBib` objects mapped using `BibMapper``
+        """
+        parsed: list[bibs.DomainBib] = []
+
+        reader = self.mapper.get_reader(data)
+        for record in reader:
+            bib_dict = self.mapper.map_data(record)
+
+            if bib_dict.get("record_type") == "cat":
+                vendor_info = self.mapper.identify_vendor(record)
+                bib_dict["vendor_info"] = bibs.VendorInfo(**vendor_info)
+            logger.info(f"Vendor record parsed: {bib_dict}")
+            parsed.append(bibs.DomainBib(**bib_dict))
+
+        return parsed
 
 
 class BibSerializer:
