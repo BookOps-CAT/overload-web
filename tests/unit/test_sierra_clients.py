@@ -3,7 +3,6 @@ import os
 import pytest
 import yaml
 
-from overload_web import errors
 from overload_web.bib_records.infrastructure.sierra import clients, responses
 
 
@@ -190,18 +189,18 @@ class TestSierraSessions:
 
     @pytest.mark.parametrize(
         "library,error_type",
-        [("bpl", "BookopsSolrError"), ("nypl", "BookopsPlatformError")],
+        [("bpl", clients.BookopsSolrError), ("nypl", clients.BookopsPlatformError)],
     )
     def test_get_bibs_by_id_error(self, library, mock_sierra_error, caplog, error_type):
         fetcher = clients.FetcherFactory().make(library=library)
-        with pytest.raises(errors.OverloadError) as exc:
+        with pytest.raises(error_type) as exc:
             fetcher.get_bibs_by_id(value="123456789", key="isbn")
         assert "Connection error: " in str(exc.value)
-        assert f"{error_type} while running Sierra queries." in caplog.text
+        assert f"{error_type.__name__} while running Sierra queries." in caplog.text
 
     @pytest.mark.parametrize("library", ["nypl"])
     def test_get_bibs_by_id_nypl_auth_error(self, library, mock_sierra_nypl_auth_error):
-        with pytest.raises(errors.OverloadError) as exc:
+        with pytest.raises(clients.BookopsPlatformError) as exc:
             clients.FetcherFactory().make(library=library)
         assert "Trouble connecting: " in str(exc.value)
 
