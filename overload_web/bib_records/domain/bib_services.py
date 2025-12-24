@@ -102,13 +102,10 @@ class BibMatcher:
             or if no matchpoints were passed to the `BibMatcher.match()` method but
             the record is to be processed using the acquisitions or selection workflow.
         """
-        print(record.record_type)
         if record.record_type.value == "cat":
             if record.vendor_info is None:
                 raise OverloadError("Vendor index required for cataloging workflow.")
-            print(record.vendor_info.matchpoints)
             return record.vendor_info.matchpoints
-        print(matchpoints)
         if not matchpoints:
             raise OverloadError(
                 "Matchpoints from order template required for acquisition "
