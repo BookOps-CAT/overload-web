@@ -53,7 +53,7 @@ class FetcherFactory:
                 client = NYPLPlatformSession()
             except BookopsPlatformError as exc:
                 logger.error(f"Trouble connecting: {str(exc)}")
-                raise errors.OverloadError(str(exc))
+                raise
         return SierraBibFetcher(client)
 
 
@@ -193,7 +193,7 @@ class SierraBibFetcher:
             response = match_methods[key](value)
         except (BookopsPlatformError, BookopsSolrError) as exc:
             logger.error(f"{exc.__class__.__name__} while running Sierra queries. ")
-            raise errors.OverloadError(str(exc))
+            raise
         bibs.extend(self.session._parse_response(response))
         return bibs
 
