@@ -418,7 +418,7 @@ def make_full_bib(stub_bib, stub_constants, library) -> Callable:
                 )
             )
         mapper = marc_mapper.BookopsMarcFullBibMapper(
-            rules=stub_constants["mapper_rules"], library=library
+            rules=stub_constants["mapper_rules"], library=library, record_type="cat"
         )
         out: dict[str, Any] = mapper._map_data(record=record)
         out["vendor_info"] = mapper._identify_vendor(record=record)
@@ -443,7 +443,7 @@ def make_order_bib(stub_bib, stub_constants, library) -> Callable:
                 )
             )
         mapper = marc_mapper.BookopsMarcOrderBibMapper(
-            rules=stub_constants["mapper_rules"], library=library
+            rules=stub_constants["mapper_rules"], library=library, record_type="acq"
         )
         out: dict[str, Any] = mapper._map_data(record=record)
         bib = marc_mapper.bibs.DomainBib(**out)

@@ -30,5 +30,4 @@ def record_processing_service(
         update_strategy=marc_update_strategy.MarcUpdaterFactory().make(
             record_type=record_type
         ),
-        matcher_strategy=clients.MatchStrategyFactory().make(record_type=record_type),
     )

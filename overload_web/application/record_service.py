@@ -29,7 +29,6 @@ class RecordProcessingService:
         self,
         bib_fetcher: bib_services.marc_protocols.BibFetcher,
         mapper_strategy: bib_services.marc_protocols.BibMapper,
-        matcher_strategy: bib_services.marc_protocols.BibMatcherStrategy,
         review_strategy: bib_services.marc_protocols.ResultsReviewer,
         update_strategy: bib_services.marc_protocols.BibUpdateStrategy,
     ):
@@ -41,17 +40,13 @@ class RecordProcessingService:
                 A `marc_protocols.BibFetcher` object
             mapper_strategy:
                 A `marc_protocols.BibMapper` object
-            matcher_strategy:
-                A `marc_protocols.BibMatcherStrategy` object
             review_strategy:
                 A `marc_protocols.ResultsReviewer` object
             update_strategy:
                 A `marc_protocols.BibUpdateStrategy` object
         """
         self.attacher = bib_services.BibAttacher(reviewer=review_strategy)
-        self.matcher = bib_services.BibMatcher(
-            fetcher=bib_fetcher, strategy=matcher_strategy
-        )
+        self.matcher = bib_services.BibMatcher(fetcher=bib_fetcher)
         self.parser = bib_services.BibParser(mapper=mapper_strategy)
         self.updater = bib_services.BibRecordUpdater(strategy=update_strategy)
         self.serializer = bib_services.BibSerializer()

@@ -19,18 +19,22 @@ class MapperFactory:
             constants = json.load(fh)
         if record_type in ["acq", "sel"]:
             return BookopsMarcOrderBibMapper(
-                library=library, rules=constants["mapper_rules"]
+                library=library,
+                record_type=record_type,
+                rules=constants["mapper_rules"],
             )
         else:
             return BookopsMarcFullBibMapper(
-                library=library, rules=constants["mapper_rules"]
+                library=library,
+                record_type=record_type,
+                rules=constants["mapper_rules"],
             )
 
 
 class BookopsMarcBaseMapper:
     """Parses MARC records based on domain objects."""
 
-    def __init__(self, library: str, rules: dict[str, Any]) -> None:
+    def __init__(self, library: str, record_type: str, rules: dict[str, Any]) -> None:
         """
         Initialize `BookopsMarcParser` using a set of marc mapping rules.
 
@@ -45,6 +49,7 @@ class BookopsMarcBaseMapper:
                 in `/overload_web/vendor_specs.json`.
         """
         self.library = library
+        self.record_type = record_type
         self.rules = rules
 
     def _get_marc_tag_from_bib(
@@ -107,6 +112,7 @@ class BookopsMarcBaseMapper:
                         order_dict[attr] = field.get(code) if field else None
             out["orders"].append(bibs.Order(**order_dict))
         out["binary_data"] = record.as_marc()
+        out["record_type"] = self.record_type
         return out
 
 

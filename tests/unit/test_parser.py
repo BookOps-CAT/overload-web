@@ -12,7 +12,7 @@ class TestParser:
     def test_parse_full(self, stub_constants, library, stub_full_bib, caplog):
         stub_service = bib_services.BibParser(
             marc_mapper.BookopsMarcFullBibMapper(
-                rules=stub_constants["mapper_rules"], library=library
+                rules=stub_constants["mapper_rules"], library=library, record_type="cat"
             )
         )
         records = stub_service.parse(stub_full_bib.binary_data)
@@ -28,7 +28,7 @@ class TestParser:
     ):
         stub_service = stub_service = bib_services.BibParser(
             marc_mapper.BookopsMarcOrderBibMapper(
-                rules=stub_constants["mapper_rules"], library=library
+                rules=stub_constants["mapper_rules"], library=library, record_type="sel"
             )
         )
         records = stub_service.parse(stub_order_bib.binary_data)

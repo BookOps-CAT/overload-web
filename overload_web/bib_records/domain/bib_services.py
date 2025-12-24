@@ -40,6 +40,7 @@ import logging
 from typing import Any, BinaryIO, Optional
 
 from overload_web.bib_records.domain import bibs, marc_protocols
+from overload_web.errors import OverloadError
 
 logger = logging.getLogger(__name__)
 
@@ -71,22 +72,76 @@ class BibMatcher:
     were found.
     """
 
-    def __init__(
-        self,
-        fetcher: marc_protocols.BibFetcher,
-        strategy: marc_protocols.BibMatcherStrategy,
-    ) -> None:
+    def __init__(self, fetcher: marc_protocols.BibFetcher) -> None:
         """
         Initialize the match service with a fetcher.
 
         Args:
-            fetcher:
-                An injected `BibFetcher` that provides candidate bibs.
-            strategy:
-                An injected `BibMatcherStrategy` that provides strategy for matching.
+            fetcher: An injected `BibFetcher` that retrieves candidate bibs.
         """
         self.fetcher = fetcher
-        self.strategy = strategy
+
+    def _get_matchpoints(
+        self, record: bibs.DomainBib, matchpoints: dict[str, str] | None
+    ) -> dict[str, str]:
+        """
+        Get matchpoints to be used in query based on type of record.
+
+        Args:
+            record:
+                The bibliographic record that will be matched against Sierra
+                represented as a `bibs.DomainBib` object.
+            matchpoints:
+                an optional dictionary containing matchpoints
+        Returns:
+            a dictionary containing the matchpoints to be used when matching the
+            bib record.
+        Raises:
+            OverloadError: if the record is to be processed using the cataloging
+            workflow and the record does not contain a `VendorInfo` obj with matchpoints
+            or if no matchpoints were passed to the `BibMatcher.match()` method but
+            the record is to be processed using the acquisitions or selection workflow.
+        """
+        print(record.record_type)
+        if record.record_type.value == "cat":
+            if record.vendor_info is None:
+                raise OverloadError("Vendor index required for cataloging workflow.")
+            print(record.vendor_info.matchpoints)
+            return record.vendor_info.matchpoints
+        print(matchpoints)
+        if not matchpoints:
+            raise OverloadError(
+                "Matchpoints from order template required for acquisition "
+                "or selection workflow."
+            )
+        return matchpoints
+
+    def _match_bib(
+        self, record: bibs.DomainBib, matchpoints: dict[str, str]
+    ) -> list[bibs.BaseSierraResponse]:
+        """
+        Find all matches in Sierra for a given bib record.
+
+        The method queries the fetcher obj for candidates using each matchpoint.
+        The first non-empty match that returns candidates is used for comparison.
+
+        Args:
+            record:
+                The bibliographic record to match against Sierra represented as a
+                `bibs.DomainBib` object.
+            matchpoints:
+                a dictionary containing matchpoints
+        Returns:
+            a list of the record's matches as `BaseSierraResponse` objects
+        """
+        for priority, key in matchpoints.items():
+            value = getattr(record, key, None)
+            if not value:
+                continue
+            candidates = self.fetcher.get_bibs_by_id(value=value, key=key)
+            if candidates:
+                return candidates
+        return []
 
     def match(
         self,
@@ -108,8 +163,9 @@ class BibMatcher:
         """
         out = []
         for record in records:
-            matches: list[bibs.BaseSierraResponse] = self.strategy.match_bib(
-                record=record, fetcher=self.fetcher, matchpoints=matchpoints
+            matchpoints = self._get_matchpoints(record=record, matchpoints=matchpoints)
+            matches: list[bibs.BaseSierraResponse] = self._match_bib(
+                record=record, matchpoints=matchpoints
             )
             out.append(bibs.MatcherResponse(bib=record, matches=matches))
         return out

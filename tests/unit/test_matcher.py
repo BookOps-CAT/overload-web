@@ -39,7 +39,7 @@ class FakeBibFetcher(StubFetcher):
 )
 class TestMatcher:
     @pytest.fixture
-    def stub_full_record_service(self, monkeypatch, library, collection):
+    def stub_service(self, monkeypatch, library, collection):
         def fake_fetcher(*args, **kwargs):
             return FakeBibFetcher(library, collection)
 
@@ -47,27 +47,10 @@ class TestMatcher:
             "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
             fake_fetcher,
         )
-        return bib_services.BibMatcher(
-            fetcher=clients.SierraBibFetcher(library),
-            strategy=clients.MatchStrategyFactory().make("cat"),
-        )
+        return bib_services.BibMatcher(fetcher=clients.SierraBibFetcher(library))
 
     @pytest.fixture
-    def stub_order_record_service(self, monkeypatch, library, collection):
-        def fake_fetcher(*args, **kwargs):
-            return FakeBibFetcher(library, collection)
-
-        monkeypatch.setattr(
-            "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
-            fake_fetcher,
-        )
-        return bib_services.BibMatcher(
-            fetcher=clients.SierraBibFetcher(library),
-            strategy=clients.MatchStrategyFactory().make("acq"),
-        )
-
-    @pytest.fixture
-    def stub_full_record_service_no_matches(self, monkeypatch, library):
+    def stub_service_no_matches(self, monkeypatch, library):
         def fake_fetcher(*args, **kwargs):
             return StubFetcher()
 
@@ -75,60 +58,43 @@ class TestMatcher:
             "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
             fake_fetcher,
         )
-        return bib_services.BibMatcher(
-            fetcher=clients.SierraBibFetcher(library),
-            strategy=clients.MatchStrategyFactory().make("cat"),
-        )
+        return bib_services.BibMatcher(fetcher=clients.SierraBibFetcher(library))
 
-    @pytest.fixture
-    def stub_order_record_service_no_matches(self, monkeypatch, library):
-        def fake_fetcher(*args, **kwargs):
-            return StubFetcher()
-
-        monkeypatch.setattr(
-            "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
-            fake_fetcher,
-        )
-        return bib_services.BibMatcher(
-            fetcher=clients.SierraBibFetcher(library),
-            strategy=clients.MatchStrategyFactory().make("acq"),
-        )
-
-    def test_match_full(self, stub_full_record_service, stub_full_bib):
-        matched_bibs = stub_full_record_service.match([stub_full_bib])
+    def test_match_full(self, stub_service, stub_full_bib):
+        matched_bibs = stub_service.match([stub_full_bib])
         assert len(matched_bibs[0].matches) == 4
 
-    def test_match_full_no_matches(
-        self, stub_full_record_service_no_matches, stub_full_bib
-    ):
-        matched_bibs = stub_full_record_service_no_matches.match([stub_full_bib])
+    def test_match_full_no_matches(self, stub_service_no_matches, stub_full_bib):
+        matched_bibs = stub_service_no_matches.match([stub_full_bib])
         assert len(matched_bibs[0].matches) == 0
 
-    def test_match_full_no_vendor_index(self, stub_full_record_service, stub_order_bib):
+    def test_match_full_no_vendor_index(self, stub_service, stub_order_bib):
+        setattr(stub_order_bib, "record_type", bib_services.bibs.RecordType("cat"))
+        assert stub_order_bib.vendor_info is None
         with pytest.raises(OverloadError) as exc:
-            stub_full_record_service.match([stub_order_bib])
+            stub_service.match([stub_order_bib])
         assert str(exc.value) == "Vendor index required for cataloging workflow."
 
-    def test_match_full_alternate_tags(self, stub_full_record_service, make_full_bib):
+    def test_match_full_alternate_tags(self, stub_service, make_full_bib):
         dto = make_full_bib(
             {
                 "020": {"code": "a", "value": "9781234567890"},
                 "947": {"code": "a", "value": "B&amp;T SERIES"},
             },
         )
-        matched_bibs = stub_full_record_service.match([dto])
+        matched_bibs = stub_service.match([dto])
         assert len(matched_bibs[0].matches) == 4
 
-    def test_match_order_level(self, stub_order_record_service, stub_order_bib):
-        matched_bibs = stub_order_record_service.match(
+    def test_match_order_level(self, stub_service, stub_order_bib):
+        matched_bibs = stub_service.match(
             [stub_order_bib], matchpoints={"primary_matchpoint": "isbn"}
         )
         assert len(matched_bibs[0].matches) == 4
 
     def test_match_order_level_no_matches(
-        self, stub_order_record_service_no_matches, stub_order_bib
+        self, stub_service_no_matches, stub_order_bib
     ):
-        matched_bibs = stub_order_record_service_no_matches.match(
+        matched_bibs = stub_service_no_matches.match(
             [stub_order_bib],
             matchpoints={
                 "primary_matchpoint": "oclc_number",
@@ -137,11 +103,9 @@ class TestMatcher:
         )
         assert len(matched_bibs[0].matches) == 0
 
-    def test_match_order_level_no_matchpoints(
-        self, stub_order_record_service, stub_order_bib
-    ):
+    def test_match_order_level_no_matchpoints(self, stub_service, stub_order_bib):
         with pytest.raises(OverloadError) as exc:
-            stub_order_record_service.match([stub_order_bib])
+            stub_service.match([stub_order_bib])
         assert (
             str(exc.value)
             == "Matchpoints from order template required for acquisition or selection workflow."

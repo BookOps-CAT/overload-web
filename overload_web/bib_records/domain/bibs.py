@@ -104,13 +104,14 @@ class DomainBib:
     def __init__(
         self,
         binary_data: bytes,
+        collection: Collection | str | None,
         library: LibrarySystem | str,
         title: str,
+        record_type: RecordType | str,
         update_date: str,
         barcodes: list[str] = [],
         bib_id: str | None = None,
         branch_call_number: str | list[str] | None = None,
-        collection: Collection | str | None = None,
         control_number: str | None = None,
         isbn: str | None = None,
         oclc_number: str | list[str] | None = None,
@@ -135,6 +136,9 @@ class DomainBib:
         self.oclc_number = oclc_number
         self.orders = orders
         self.research_call_number = research_call_number
+        self.record_type = (
+            RecordType(record_type) if isinstance(record_type, str) else record_type
+        )
         self.title = title
         self.upc = upc
         self.update_date = update_date
