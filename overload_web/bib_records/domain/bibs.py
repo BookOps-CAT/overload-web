@@ -110,7 +110,7 @@ class DomainBib:
         record_type: RecordType | str,
         barcodes: list[str] = [],
         bib_id: str | None = None,
-        branch_call_number: str | list[str] | None = None,
+        branch_call_number: str | None = None,
         control_number: str | None = None,
         isbn: str | None = None,
         oclc_number: str | list[str] | None = None,

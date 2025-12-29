@@ -65,7 +65,7 @@ class TestBaseReviewer:
     def test_review_results_bpl(self, sierra_response, new_domain_bib):
         new_domain_bib.isbn = None
         review = response_reviewer.BaseReviewer()
-        review._sort_results(new_domain_bib, results=[sierra_response, sierra_response])
+        review.sort_results(new_domain_bib, results=[sierra_response, sierra_response])
         assert new_domain_bib.bib_id is None
         assert review.duplicate_records == ["12345", "12345"]
         assert review.input_call_no == "Foo"
@@ -92,7 +92,7 @@ class TestBaseReviewer:
     def test_review_results_nypl(self, sierra_response, new_domain_bib, collection):
         new_domain_bib.isbn = None
         review = response_reviewer.BaseReviewer()
-        review._sort_results(new_domain_bib, results=[sierra_response, sierra_response])
+        review.sort_results(new_domain_bib, results=[sierra_response, sierra_response])
         assert new_domain_bib.bib_id is None
         assert review.duplicate_records == ["12345", "12345"]
         assert review.input_call_no == "Foo"
@@ -118,7 +118,7 @@ class TestBaseReviewer:
     )
     def test_review_results_no_results(self, new_domain_bib):
         review = response_reviewer.BaseReviewer()
-        review._sort_results(new_domain_bib, results=[])
+        review.sort_results(new_domain_bib, results=[])
         assert review.duplicate_records == []
 
     @pytest.mark.parametrize(
@@ -129,7 +129,7 @@ class TestBaseReviewer:
         new_domain_bib.isbn = None
         setattr(new_domain_bib, key, "987654321")
         review = response_reviewer.BaseReviewer()
-        review._sort_results(new_domain_bib, results=[])
+        review.sort_results(new_domain_bib, results=[])
         assert review.resource_id == "987654321"
 
     @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
@@ -143,14 +143,14 @@ class TestBaseReviewer:
         )
         response = sierra_responses.NYPLPlatformResponse(data=data)
         review = response_reviewer.BaseReviewer()
-        review._sort_results(new_domain_bib, results=[response])
+        review.sort_results(new_domain_bib, results=[response])
         assert len(review.mixed_results) == 1
 
     @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
     def test_review_results_unmatched(self, new_domain_bib, sierra_response):
         new_domain_bib.collection = "NONE"
         review = response_reviewer.BaseReviewer()
-        review._sort_results(new_domain_bib, results=[sierra_response])
+        review.sort_results(new_domain_bib, results=[sierra_response])
         assert len(review.other_results) == 1
         assert len(review.matched_results) == 0
 
@@ -425,7 +425,6 @@ class TestBPLReviewer:
             "ss_marc_tag_001": "ocn123456789",
             "ss_marc_tag_003": "OCoLC",
             "call_number": "Bar",
-            "sm_bib_varfields": ["099 || {{a}} Foo"],
         }
         response = sierra_responses.BPLSolrResponse(data)
         review = response_reviewer.BPLReviewer()

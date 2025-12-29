@@ -102,7 +102,7 @@ class BibMatcher:
             or if no matchpoints were passed to the `BibMatcher.match()` method but
             the record is to be processed using the acquisitions or selection workflow.
         """
-        if record.record_type.value == "cat":
+        if str(record.record_type) == "cat":
             if record.vendor_info is None:
                 raise OverloadError("Vendor index required for cataloging workflow.")
             return record.vendor_info.matchpoints
