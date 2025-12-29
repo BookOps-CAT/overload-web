@@ -75,13 +75,8 @@ class TestMatcher:
             stub_service.match([stub_order_bib])
         assert str(exc.value) == "Vendor index required for cataloging workflow."
 
-    def test_match_full_alternate_tags(self, stub_service, make_full_bib):
-        dto = make_full_bib(
-            {
-                "020": {"code": "a", "value": "9781234567890"},
-                "947": {"code": "a", "value": "B&amp;T SERIES"},
-            },
-        )
+    def test_match_full_alternate_tags(self, stub_service, make_domain_bib):
+        dto = make_domain_bib({"947": {"code": "a", "value": "B&amp;T SERIES"}}, "cat")
         matched_bibs = stub_service.match([dto])
         assert len(matched_bibs[0].matches) == 4
 

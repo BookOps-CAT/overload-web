@@ -58,11 +58,9 @@ class BaseReviewer:
     @property
     def input_call_no(self) -> str | None:
         call_no = None
-        if str(self.input.collection) == "RL":
+        if str(self.input.library) == "nypl" and str(self.input.collection) == "RL":
             call_no = self.input.research_call_number
-        elif str(self.input.collection) == "BL":
-            call_no = self.input.branch_call_number
-        elif str(self.input.library) == "bpl":
+        else:
             call_no = self.input.branch_call_number
         if isinstance(call_no, list):
             return call_no[0]

@@ -8,7 +8,7 @@ BPL_DATA = {
     "call_number": "Foo",
     "id": "12345",
     "isbn": ["9781234567890"],
-    "sm_bib_varfields": [],
+    "sm_bib_varfields": ["099 || {{a}} Foo"],
     "sm_item_data": ['{"barcode": "33333123456789"}'],
     "ss_marc_tag_001": "ocn123456789",
     "ss_marc_tag_003": "OCoLC",
@@ -35,8 +35,8 @@ NYPL_DATA = {
 
 
 @pytest.fixture
-def new_domain_bib(make_full_bib, library):
-    bib = make_full_bib({"020": {"code": "a", "value": "9781234567890"}})
+def new_domain_bib(make_domain_bib, library):
+    bib = make_domain_bib({}, "cat")
     bib.update_date = "20200101010000.0"
     return bib
 
@@ -84,7 +84,9 @@ class TestBaseReviewer:
         assert sierra_response.update_datetime == datetime.datetime(
             2000, 1, 1, 1, 0, 0, 0
         )
-        assert sierra_response.var_fields == []
+        assert sierra_response.var_fields == [
+            {"marc_tag": "099", "subfields": [{"tag": "a", "content": "Foo"}]}
+        ]
 
     @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
     def test_review_results_nypl(self, sierra_response, new_domain_bib, collection):
@@ -189,6 +191,15 @@ class TestSelectionReviewer:
         assert len(review.results) == 1
         assert review.results[0].branch_call_number is None
         assert review.results[0].research_call_number == []
+
+    @pytest.mark.parametrize(
+        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
+    )
+    def test_review_results_no_results(self, new_domain_bib):
+        review = response_reviewer.SelectionReviewer()
+        result = review.review_results(new_domain_bib, results=[])
+        assert new_domain_bib.bib_id is None
+        assert result is None
 
 
 class TestAcquisitionsReviewer:
@@ -374,12 +385,13 @@ class TestBPLReviewer:
         assert result is None
 
     @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
-    def test_review_results_no_results_midwest(self, make_full_bib):
-        domain_bib = make_full_bib(
+    def test_review_results_no_results_midwest(self, make_domain_bib):
+        domain_bib = make_domain_bib(
             {
                 "037": {"code": "b", "value": "Midwest"},
                 "099": {"code": "a", "value": "DVD"},
-            }
+            },
+            "cat",
         )
         review = response_reviewer.BPLReviewer()
         result = review.review_results(domain_bib, results=[])
@@ -413,6 +425,7 @@ class TestBPLReviewer:
             "ss_marc_tag_001": "ocn123456789",
             "ss_marc_tag_003": "OCoLC",
             "call_number": "Bar",
+            "sm_bib_varfields": ["099 || {{a}} Foo"],
         }
         response = sierra_responses.BPLSolrResponse(data)
         review = response_reviewer.BPLReviewer()

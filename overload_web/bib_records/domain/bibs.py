@@ -108,7 +108,6 @@ class DomainBib:
         library: LibrarySystem | str,
         title: str,
         record_type: RecordType | str,
-        update_date: str,
         barcodes: list[str] = [],
         bib_id: str | None = None,
         branch_call_number: str | list[str] | None = None,
@@ -118,6 +117,7 @@ class DomainBib:
         orders: list[Order] = [],
         research_call_number: str | list[str] | None = None,
         upc: str | None = None,
+        update_date: str | None = None,
         vendor: str | None = None,
         vendor_info: VendorInfo | None = None,
     ) -> None:
@@ -146,8 +146,10 @@ class DomainBib:
         self.vendor = vendor if not vendor_info else vendor_info.name
 
     @property
-    def update_datetime(self) -> datetime.datetime:
-        return datetime.datetime.strptime(self.update_date, "%Y%m%d%H%M%S.%f")
+    def update_datetime(self) -> datetime.datetime | None:
+        if self.update_date:
+            return datetime.datetime.strptime(self.update_date, "%Y%m%d%H%M%S.%f")
+        return None
 
     def apply_order_template(self, template_data: dict[str, Any]) -> None:
         """

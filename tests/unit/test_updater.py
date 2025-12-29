@@ -36,13 +36,13 @@ class TestUpdater:
             stub_service.update([stub_order_bib])
         assert str(exc.value) == "Vendor index required for cataloging workflow."
 
-    def test_update_cat_vendor_updates(self, make_full_bib, library):
-        dto = make_full_bib(
+    def test_update_cat_vendor_updates(self, make_domain_bib, library):
+        dto = make_domain_bib(
             {
-                "020": {"code": "a", "value": "9781234567890"},
                 "901": {"code": "a", "value": "INGRAM"},
                 "947": {"code": "a", "value": "INGRAM"},
             },
+            "cat",
         )
         original_bib = copy.deepcopy(Bib(dto.binary_data, library=library))
         stub_service = bib_services.BibRecordUpdater(

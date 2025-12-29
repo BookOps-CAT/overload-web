@@ -300,6 +300,13 @@ def stub_bib(library, collection) -> Bib:
     bib.leader = "00000cam  2200517 i 4500"
     bib.library = library
     bib.add_field(Field(tag="005", data="20000101000000.0"))
+    bib.add_field(
+        Field(
+            tag="020",
+            indicators=Indicators(" ", " "),
+            subfields=[Subfield(code="a", value="9781234567890")],
+        )
+    )
     if library == "bpl":
         bib.add_field(
             Field(
@@ -404,8 +411,8 @@ def stub_bib(library, collection) -> Bib:
 
 
 @pytest.fixture
-def make_full_bib(stub_bib, stub_constants, library) -> Callable:
-    def _make_dto(data: dict[str, dict[str, str]]):
+def make_domain_bib(stub_bib, stub_constants, library) -> Callable:
+    def _make_dto(data: dict[str, dict[str, str]], record_type: str):
         record = copy.deepcopy(stub_bib)
         for k, v in data.items():
             record.add_field(
@@ -418,36 +425,15 @@ def make_full_bib(stub_bib, stub_constants, library) -> Callable:
                 )
             )
         mapper = marc_mapper.BookopsMarcMapper(
-            rules=stub_constants["mapper_rules"], library=library, record_type="cat"
+            rules=stub_constants["mapper_rules"],
+            library=library,
+            record_type=record_type,
         )
         out: dict[str, Any] = mapper.map_data(record=record)
-        out["vendor_info"] = marc_mapper.bibs.VendorInfo(
-            **mapper.identify_vendor(record=record)
-        )
-        bib = marc_mapper.bibs.DomainBib(**out)
-        return bib
-
-    return _make_dto
-
-
-@pytest.fixture
-def make_order_bib(stub_bib, stub_constants, library) -> Callable:
-    def _make_dto(data: dict[str, dict[str, str]]):
-        record = copy.deepcopy(stub_bib)
-        for k, v in data.items():
-            record.add_field(
-                Field(
-                    tag=k,
-                    indicators=Indicators(" ", " "),
-                    subfields=[
-                        Subfield(code=v["code"], value=v["value"]),
-                    ],
-                )
+        if record_type == "cat":
+            out["vendor_info"] = marc_mapper.bibs.VendorInfo(
+                **mapper.identify_vendor(record=record)
             )
-        mapper = marc_mapper.BookopsMarcMapper(
-            rules=stub_constants["mapper_rules"], library=library, record_type="acq"
-        )
-        out: dict[str, Any] = mapper.map_data(record=record)
         bib = marc_mapper.bibs.DomainBib(**out)
         return bib
 
@@ -462,12 +448,12 @@ def stub_constants():
 
 
 @pytest.fixture
-def stub_full_bib(make_full_bib):
-    dto = make_full_bib({"020": {"code": "a", "value": "9781234567890"}})
+def stub_full_bib(make_domain_bib):
+    dto = make_domain_bib({}, "cat")
     return dto
 
 
 @pytest.fixture
-def stub_order_bib(make_order_bib):
-    dto = make_order_bib({"020": {"code": "a", "value": "9781234567890"}})
+def stub_order_bib(make_domain_bib):
+    dto = make_domain_bib({}, "acq")
     return dto
