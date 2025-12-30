@@ -42,7 +42,7 @@ class RecordProcessingService:
                 A `marc_protocols.BibMapper` object
             review_strategy:
                 A `marc_protocols.ResultsReviewer` object
-            update_strategy:
+            bib_updater:
                 A `marc_protocols.BibUpdater` object
         """
         self.reviewer = bib_services.BibReviewer(reviewer=review_strategy)
