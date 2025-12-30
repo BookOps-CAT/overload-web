@@ -2,26 +2,14 @@
 
 from __future__ import annotations
 
-import json
 import logging
 from typing import Any, BinaryIO
 
 from bookops_marc import Bib, SierraBibReader
 
-from overload_web.bib_records.domain import bibs, marc_protocols
+from overload_web.bib_records.domain import bibs
 
 logger = logging.getLogger(__name__)
-
-
-class MapperFactory:
-    def make(self, library: str, record_type: str) -> marc_protocols.BibMapper:
-        with open("overload_web/vendor_specs.json", "r", encoding="utf-8") as fh:
-            constants = json.load(fh)
-        return BookopsMarcMapper(
-            library=library,
-            record_type=record_type,
-            rules=constants["mapper_rules"],
-        )
 
 
 class BookopsMarcMapper:

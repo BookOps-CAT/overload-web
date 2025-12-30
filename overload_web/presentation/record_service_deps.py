@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Annotated, Generator
 
@@ -19,15 +20,15 @@ def record_processing_service(
     collection: Annotated[str, Form(...)],
     record_type: Annotated[str, Form(...)],
 ) -> Generator[record_service.RecordProcessingService, None, None]:
+    with open("overload_web/vendor_specs.json", "r", encoding="utf-8") as fh:
+        constants = json.load(fh)
     yield record_service.RecordProcessingService(
         review_strategy=response_reviewer.ReviewerFactory().make(
             library=library, record_type=record_type, collection=collection
         ),
         bib_fetcher=clients.FetcherFactory().make(library),
-        mapper_strategy=marc_mapper.MapperFactory().make(
-            record_type=record_type, library=library
+        bib_mapper=marc_mapper.BookopsMarcMapper(
+            record_type=record_type, library=library, rules=constants["mapper_rules"]
         ),
-        update_strategy=marc_update_strategy.MarcUpdaterFactory().make(
-            record_type=record_type
-        ),
+        update_strategy=marc_update_strategy.BookopsMarcUpdater(rules=constants),
     )

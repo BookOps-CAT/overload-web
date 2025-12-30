@@ -45,11 +45,13 @@ from overload_web.errors import OverloadError
 logger = logging.getLogger(__name__)
 
 
-class BibAttacher:
+class BibReviewer:
     def __init__(self, reviewer: marc_protocols.ResultsReviewer) -> None:
         self.reviewer = reviewer
 
-    def attach(self, responses: list[bibs.MatcherResponse]) -> list[bibs.DomainBib]:
+    def review_and_attach(
+        self, responses: list[bibs.MatcherResponse]
+    ) -> list[bibs.DomainBib]:
         out = []
         for response in responses:
             bib_id = self.reviewer.review_results(
@@ -235,6 +237,20 @@ class BibRecordUpdater:
         """
         self.strategy = strategy
 
+    def _get_template(
+        self, record: bibs.DomainBib, template_data: dict[str, Any] | None
+    ) -> dict[str, Any] | None:
+        if str(record.record_type) == "cat":
+            if record.vendor_info is None:
+                raise OverloadError("Vendor index required for cataloging workflow.")
+            return None
+        else:
+            if not template_data:
+                raise OverloadError(
+                    "Order template required for acquisition or selection workflow."
+                )
+            return template_data
+
     def update(
         self,
         records: list[bibs.DomainBib],
@@ -252,5 +268,9 @@ class BibRecordUpdater:
         Returns:
             A list of updated records as `bibs.DomainBib` objects
         """
-        out = self.strategy.update_bib(records=records, template_data=template_data)
+        out = []
+        for record in records:
+            template = self._get_template(record=record, template_data=template_data)
+            rec = self.strategy.update_bib(record=record, template_data=template)
+            out.append(rec)
         return out

@@ -28,7 +28,7 @@ class RecordProcessingService:
     def __init__(
         self,
         bib_fetcher: bib_services.marc_protocols.BibFetcher,
-        mapper_strategy: bib_services.marc_protocols.BibMapper,
+        bib_mapper: bib_services.marc_protocols.BibMapper,
         review_strategy: bib_services.marc_protocols.ResultsReviewer,
         update_strategy: bib_services.marc_protocols.BibUpdateStrategy,
     ):
@@ -38,16 +38,16 @@ class RecordProcessingService:
         Args:
             bib_fetcher:
                 A `marc_protocols.BibFetcher` object
-            mapper_strategy:
+            bib_mapper:
                 A `marc_protocols.BibMapper` object
             review_strategy:
                 A `marc_protocols.ResultsReviewer` object
             update_strategy:
                 A `marc_protocols.BibUpdateStrategy` object
         """
-        self.attacher = bib_services.BibAttacher(reviewer=review_strategy)
+        self.reviewer = bib_services.BibReviewer(reviewer=review_strategy)
         self.matcher = bib_services.BibMatcher(fetcher=bib_fetcher)
-        self.parser = bib_services.BibParser(mapper=mapper_strategy)
+        self.parser = bib_services.BibParser(mapper=bib_mapper)
         self.updater = bib_services.BibRecordUpdater(strategy=update_strategy)
         self.serializer = bib_services.BibSerializer()
 
@@ -75,7 +75,7 @@ class RecordProcessingService:
         matched_records = self.matcher.match(
             records=parsed_records, matchpoints=matchpoints
         )
-        attached_records = self.attacher.attach(responses=matched_records)
+        attached_records = self.reviewer.review_and_attach(responses=matched_records)
         updated_records = self.updater.update(
             records=attached_records, template_data=template_data
         )
