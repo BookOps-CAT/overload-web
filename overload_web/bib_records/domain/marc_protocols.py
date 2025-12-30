@@ -32,7 +32,6 @@ logger = logging.getLogger(__name__)
 C = TypeVar("C", contravariant=True)  # variable for contravariant DomainBib type
 D = TypeVar("D")  # variable for invariant DomainBib type
 F = TypeVar("F")  # variable for BaseSierraResponse type
-M = TypeVar("M", covariant=True)  # variable for MatcherResponse type
 
 
 @runtime_checkable
@@ -83,11 +82,9 @@ class BibUpdateStrategy(Protocol[D]):
 
     rules: dict[str, dict[str, str]]
 
-    def update_bib(
-        self, records: list[D], *args, **kwargs
-    ) -> D: ...  # pragma: no branch
+    def update_bib(self, record: D, *args, **kwargs) -> D: ...  # pragma: no branch
 
-    """Update an MARC record with appropriate fields."""
+    """Update a MARC record with appropriate fields."""
 
 
 @runtime_checkable
@@ -97,10 +94,3 @@ class ResultsReviewer(Protocol[C, F]):
     def review_results(
         self, input: C, results: list[F]
     ) -> str | None: ...  # pragma: no branch
-
-
-@runtime_checkable
-class BibMatcherStrategy(Protocol[F]):
-    def match_bib(
-        record: D, fetcher: BibFetcher, *args, **kwargs
-    ) -> list[F]: ...  # pragma: no branch
