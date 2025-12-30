@@ -8,7 +8,7 @@ from overload_web.application import record_service
 from overload_web.bib_records.infrastructure import (
     clients,
     marc_mapper,
-    marc_update_strategy,
+    marc_updater,
     response_reviewer,
 )
 
@@ -30,7 +30,7 @@ def record_processing_service(
         bib_mapper=marc_mapper.BookopsMarcMapper(
             record_type=record_type, library=library, rules=constants["mapper_rules"]
         ),
-        update_strategy=marc_update_strategy.BookopsMarcUpdater(
+        bib_updater=marc_updater.BookopsMarcUpdater(
             rules=constants, record_type=record_type
         ),
     )

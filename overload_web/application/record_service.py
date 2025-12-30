@@ -30,7 +30,7 @@ class RecordProcessingService:
         bib_fetcher: bib_services.marc_protocols.BibFetcher,
         bib_mapper: bib_services.marc_protocols.BibMapper,
         review_strategy: bib_services.marc_protocols.ResultsReviewer,
-        update_strategy: bib_services.marc_protocols.BibUpdateStrategy,
+        bib_updater: bib_services.marc_protocols.BibUpdater,
     ):
         """
         Initialize `RecordProcessingService`.
@@ -43,12 +43,12 @@ class RecordProcessingService:
             review_strategy:
                 A `marc_protocols.ResultsReviewer` object
             update_strategy:
-                A `marc_protocols.BibUpdateStrategy` object
+                A `marc_protocols.BibUpdater` object
         """
         self.reviewer = bib_services.BibReviewer(reviewer=review_strategy)
         self.matcher = bib_services.BibMatcher(fetcher=bib_fetcher)
         self.parser = bib_services.BibParser(mapper=bib_mapper)
-        self.serializer = bib_services.BibSerializer(strategy=update_strategy)
+        self.serializer = bib_services.BibSerializer(updater=bib_updater)
 
     def process_vendor_file(
         self,

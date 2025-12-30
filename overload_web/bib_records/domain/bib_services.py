@@ -27,10 +27,8 @@ Classes:
     a domain object.
 
 `BibSerializer`
-    a domain service that outputs `DomainBib` objects to binary data.
-
-`BibRecordUpdater`
-    a domain service that updates records using an injected `BibUpdateStrategy`.
+    a domain service that updates records using an injected `BibUpdater`
+    and outputs `DomainBib` objects to binary data.
 """
 
 from __future__ import annotations
@@ -206,21 +204,21 @@ class BibSerializer:
     Domain service for updating a bib record based on its record type.
 
     The service updates the `DomainBib` instance with the matched bib ID
-    and then updates the record using an injected `BibUpdateStrategy` object.
+    and then updates the record using an injected `BibUpdater` object.
     """
 
-    def __init__(self, strategy: marc_protocols.BibUpdateStrategy) -> None:
+    def __init__(self, updater: marc_protocols.BibUpdater) -> None:
         """
         Initialize the serializer service with an updater.
 
         Args:
-            strategy: An injected `BibUpdateStrategy` that updates bib records.
+            updater: An injected `BibUpdater` that updates bib records.
         """
-        self.strategy = strategy
+        self.updater = updater
 
     def _get_template(self, template_data: dict[str, Any] | None) -> dict[str, Any]:
         if not template_data:
-            if self.strategy.record_type in ["acq", "sel"]:
+            if self.updater.record_type in ["acq", "sel"]:
                 raise OverloadError(
                     "Order template required for acquisition or selection workflow."
                 )
@@ -237,25 +235,25 @@ class BibSerializer:
     ) -> bibs.DomainBib:
         match str(record.record_type), str(record.library):
             case "acq", "bpl":
-                return self.strategy.update_bpl_acquisitions_record(
+                return self.updater.update_bpl_acquisitions_record(
                     record=record, template_data=template_data
                 )
             case "acq", "nypl":
-                return self.strategy.update_nypl_acquisitions_record(
+                return self.updater.update_nypl_acquisitions_record(
                     record=record, template_data=template_data
                 )
             case "cat", "bpl":
                 self._get_vendor_index(record=record)
-                return self.strategy.update_bpl_cataloging_record(record=record)
+                return self.updater.update_bpl_cataloging_record(record=record)
             case "cat", "nypl":
                 self._get_vendor_index(record=record)
-                return self.strategy.update_nypl_cataloging_record(record=record)
+                return self.updater.update_nypl_cataloging_record(record=record)
             case "sel", "bpl":
-                return self.strategy.update_bpl_selection_record(
+                return self.updater.update_bpl_selection_record(
                     record=record, template_data=template_data
                 )
             case "sel", "nypl":
-                return self.strategy.update_nypl_selection_record(
+                return self.updater.update_nypl_selection_record(
                     record=record, template_data=template_data
                 )
             case _:

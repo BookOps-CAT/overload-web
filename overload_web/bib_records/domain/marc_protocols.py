@@ -75,7 +75,7 @@ class BibMapper(Protocol[C]):
 
 
 @runtime_checkable
-class BibUpdateStrategy(Protocol[D]):
+class BibUpdater(Protocol[D]):
     """
     Update MARC records with appropriate fields during last stage of record processing.
     """

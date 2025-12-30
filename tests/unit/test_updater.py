@@ -4,7 +4,7 @@ import pytest
 from bookops_marc import Bib
 
 from overload_web.bib_records.domain import bib_services
-from overload_web.bib_records.infrastructure import marc_update_strategy
+from overload_web.bib_records.infrastructure import marc_updater
 from overload_web.errors import OverloadError
 
 
@@ -16,7 +16,7 @@ class TestUpdater:
         )
         stub_full_bib.bib_id = "12345"
         stub_service = bib_services.BibSerializer(
-            strategy=marc_update_strategy.BookopsMarcUpdater(
+            updater=marc_updater.BookopsMarcUpdater(
                 rules=stub_constants, record_type="cat"
             )
         )
@@ -34,7 +34,7 @@ class TestUpdater:
         )
         stub_full_bib.bib_id = "12345"
         stub_service = bib_services.BibSerializer(
-            strategy=marc_update_strategy.BookopsMarcUpdater(
+            updater=marc_updater.BookopsMarcUpdater(
                 rules=stub_constants, record_type="cat"
             )
         )
@@ -51,7 +51,7 @@ class TestUpdater:
     def test_update_cat_no_vendor_index(self, stub_order_bib, stub_constants):
         setattr(stub_order_bib, "record_type", bib_services.bibs.RecordType("cat"))
         stub_service = bib_services.BibSerializer(
-            strategy=marc_update_strategy.BookopsMarcUpdater(
+            updater=marc_updater.BookopsMarcUpdater(
                 rules=stub_constants, record_type="cat"
             )
         )
@@ -72,7 +72,7 @@ class TestUpdater:
         )
         original_bib = copy.deepcopy(Bib(dto.binary_data, library=library))
         stub_service = bib_services.BibSerializer(
-            strategy=marc_update_strategy.BookopsMarcUpdater(
+            updater=marc_updater.BookopsMarcUpdater(
                 rules=stub_constants, record_type="cat"
             )
         )
@@ -89,7 +89,7 @@ class TestUpdater:
     def test_update_acq(self, stub_order_bib, template_data, stub_constants):
         original_orders = copy.deepcopy(stub_order_bib.orders)
         stub_service = bib_services.BibSerializer(
-            strategy=marc_update_strategy.BookopsMarcUpdater(
+            updater=marc_updater.BookopsMarcUpdater(
                 rules=stub_constants, record_type="acq"
             )
         )
@@ -105,7 +105,7 @@ class TestUpdater:
     def test_update_sel(self, stub_order_bib, template_data, stub_constants):
         original_orders = copy.deepcopy(stub_order_bib.orders)
         stub_service = bib_services.BibSerializer(
-            strategy=marc_update_strategy.BookopsMarcUpdater(
+            updater=marc_updater.BookopsMarcUpdater(
                 rules=stub_constants, record_type="sel"
             )
         )
@@ -126,7 +126,7 @@ class TestUpdater:
             stub_order_bib, "record_type", bib_services.bibs.RecordType(record_type)
         )
         stub_service = bib_services.BibSerializer(
-            strategy=marc_update_strategy.BookopsMarcUpdater(
+            updater=marc_updater.BookopsMarcUpdater(
                 rules=stub_constants, record_type=record_type
             )
         )
@@ -145,7 +145,7 @@ class TestUpdater:
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
     def test_serialize(self, stub_order_bib, caplog, stub_constants, record_type):
         stub_service = bib_services.BibSerializer(
-            strategy=marc_update_strategy.BookopsMarcUpdater(
+            updater=marc_updater.BookopsMarcUpdater(
                 rules=stub_constants, record_type=record_type
             )
         )
