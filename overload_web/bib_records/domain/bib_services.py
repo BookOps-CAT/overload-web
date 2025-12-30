@@ -202,25 +202,6 @@ class BibParser:
 class BibSerializer:
     """Domain service for writing a `DomainBib` to MARC binary."""
 
-    def serialize(self, records: list[bibs.DomainBib]) -> BinaryIO:
-        """
-        Serialize a list of `bibs.DomainBib` objects into a binary MARC stream.
-
-        Args:
-            records: a list of records as `bibs.DomainBib` objects
-
-        Returns:
-            MARC binary as an an in-memory file stream.
-        """
-        io_data = io.BytesIO()
-        for record in records:
-            logger.info(f"Writing MARC binary for record: {record.__dict__}")
-            io_data.write(record.binary_data)
-        io_data.seek(0)
-        return io_data
-
-
-class BibRecordUpdater:
     """
     Domain service for updating a bib record based on its record type.
 
@@ -237,19 +218,48 @@ class BibRecordUpdater:
         """
         self.strategy = strategy
 
-    def _get_template(
-        self, record: bibs.DomainBib, template_data: dict[str, Any] | None
-    ) -> dict[str, Any] | None:
-        if str(record.record_type) == "cat":
-            if record.vendor_info is None:
-                raise OverloadError("Vendor index required for cataloging workflow.")
-            return None
-        else:
-            if not template_data:
+    def _get_template(self, template_data: dict[str, Any] | None) -> dict[str, Any]:
+        if not template_data:
+            if self.strategy.record_type in ["acq", "sel"]:
                 raise OverloadError(
                     "Order template required for acquisition or selection workflow."
                 )
-            return template_data
+            else:
+                return {}
+        return template_data
+
+    def _get_vendor_index(self, record: bibs.DomainBib) -> None:
+        if record.vendor_info is None:
+            raise OverloadError("Vendor index required for cataloging workflow.")
+
+    def _update_record(
+        self, record: bibs.DomainBib, template_data: dict[str, Any]
+    ) -> bibs.DomainBib:
+        match str(record.record_type), str(record.library):
+            case "acq", "bpl":
+                return self.strategy.update_bpl_acquisitions_record(
+                    record=record, template_data=template_data
+                )
+            case "acq", "nypl":
+                return self.strategy.update_nypl_acquisitions_record(
+                    record=record, template_data=template_data
+                )
+            case "cat", "bpl":
+                self._get_vendor_index(record=record)
+                return self.strategy.update_bpl_cataloging_record(record=record)
+            case "cat", "nypl":
+                self._get_vendor_index(record=record)
+                return self.strategy.update_nypl_cataloging_record(record=record)
+            case "sel", "bpl":
+                return self.strategy.update_bpl_selection_record(
+                    record=record, template_data=template_data
+                )
+            case "sel", "nypl":
+                return self.strategy.update_nypl_selection_record(
+                    record=record, template_data=template_data
+                )
+            case _:
+                raise OverloadError("invalid record type")
 
     def update(
         self,
@@ -269,8 +279,26 @@ class BibRecordUpdater:
             A list of updated records as `bibs.DomainBib` objects
         """
         out = []
+        template_data = self._get_template(template_data=template_data)
         for record in records:
-            template = self._get_template(record=record, template_data=template_data)
-            rec = self.strategy.update_bib(record=record, template_data=template)
+            rec = self._update_record(record=record, template_data=template_data)
             out.append(rec)
         return out
+
+    def serialize(self, records: list[bibs.DomainBib]) -> BinaryIO:
+        """
+        Update bibliographic records and serialize into a binary MARC stream.
+
+        Args:
+            records:
+                A list of parsed bibliographic records as `bibs.DomainBib` objects.
+
+        Returns:
+            MARC binary as an an in-memory file stream.
+        """
+        io_data = io.BytesIO()
+        for record in records:
+            logger.info(f"Writing MARC binary for record: {record.__dict__}")
+            io_data.write(record.binary_data)
+        io_data.seek(0)
+        return io_data

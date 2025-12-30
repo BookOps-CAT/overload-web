@@ -30,5 +30,7 @@ def record_processing_service(
         bib_mapper=marc_mapper.BookopsMarcMapper(
             record_type=record_type, library=library, rules=constants["mapper_rules"]
         ),
-        update_strategy=marc_update_strategy.BookopsMarcUpdater(rules=constants),
+        update_strategy=marc_update_strategy.BookopsMarcUpdater(
+            rules=constants, record_type=record_type
+        ),
     )

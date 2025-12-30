@@ -56,16 +56,3 @@ class TestParser:
         assert records[0].update_datetime is None
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
-
-
-@pytest.mark.parametrize(
-    "library, collection",
-    [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
-)
-class TestRecordProcessingSerializer:
-    def test_serialize(self, stub_order_bib, caplog):
-        stub_service = bib_services.BibSerializer()
-        marc_binary = stub_service.serialize(records=[stub_order_bib])
-        assert marc_binary.read()[0:2] == b"00"
-        assert len(caplog.records) == 1
-        assert "Writing MARC binary for record: " in caplog.records[0].msg

@@ -48,8 +48,7 @@ class RecordProcessingService:
         self.reviewer = bib_services.BibReviewer(reviewer=review_strategy)
         self.matcher = bib_services.BibMatcher(fetcher=bib_fetcher)
         self.parser = bib_services.BibParser(mapper=bib_mapper)
-        self.updater = bib_services.BibRecordUpdater(strategy=update_strategy)
-        self.serializer = bib_services.BibSerializer()
+        self.serializer = bib_services.BibSerializer(strategy=update_strategy)
 
     def process_vendor_file(
         self,
@@ -76,7 +75,7 @@ class RecordProcessingService:
             records=parsed_records, matchpoints=matchpoints
         )
         attached_records = self.reviewer.review_and_attach(responses=matched_records)
-        updated_records = self.updater.update(
+        updated_records = self.serializer.update(
             records=attached_records, template_data=template_data
         )
         output = self.serializer.serialize(updated_records)

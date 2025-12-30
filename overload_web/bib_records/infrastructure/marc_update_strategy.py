@@ -9,7 +9,6 @@ from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
 from overload_web.bib_records.domain import bibs
-from overload_web.errors import OverloadError
 
 logger = logging.getLogger(__name__)
 
@@ -17,18 +16,21 @@ logger = logging.getLogger(__name__)
 class BookopsMarcUpdater:
     """Update MARC records based on attributes of domain objects."""
 
-    def __init__(self, rules: dict[str, Any]) -> None:
+    def __init__(self, record_type: str, rules: dict[str, Any]) -> None:
         """
         Initialize a `BookopsMarcUpdater` using a specific set of marc mapping rules.
 
         This class is a concrete implementation of the `MarcUpdater` protocol.
 
         Args:
+            record_type:
+                the workflow to use to update the records (ie. 'acq', 'cat' or 'sel')
             rules:
                 A dictionary containing set of rules to use when mapping `Order`
                 objects to MARC records. These rules map attributes of an `Order` to
                 MARC fields and subfields.
         """
+        self.record_type = record_type
         self.rules = rules
 
     def _create_bib_id_field(self, bib_id: str, library: str) -> Field:
@@ -56,7 +58,7 @@ class BookopsMarcUpdater:
             )
         return None
 
-    def bib_patches(self, record: Bib) -> Field:
+    def update_bt_series_call_no(self, record: Bib) -> Field:
         new_callno_subfields = []
         pos = 0
         callno = record.get_fields("091")[0].value()
@@ -99,8 +101,6 @@ class BookopsMarcUpdater:
             indicators=Indicators(" ", " "),
             subfields=new_callno_subfields,
         )
-
-        # verify nothing has been lost
         if callno != field.value():
             raise ValueError(
                 "Constructed call # does not match original."
@@ -108,9 +108,7 @@ class BookopsMarcUpdater:
             )
         return field
 
-    def set_nypl_sierra_bib_default_location(
-        self, collection: str, bib: Bib
-    ) -> Field | None:
+    def set_nypl_default_location(self, collection: str, bib: Bib) -> Field | None:
         """
         adds a 949 MARC tag command for setting bibliographic location
         args:
@@ -126,12 +124,9 @@ class BookopsMarcUpdater:
 
         # determine if 949 already preset
         for field in bib.get_fields("949", []):
-            if (
-                field.indicator1 == " "
-                and field.indicator2 == " "
-                and "a" in field
-                and field["a"][0] == "*"
-            ):
+            if field.indicators == Indicators(" ", " ") and field.get(
+                "a", ""
+            ).startswith("*"):
                 command = field["a"].strip()
                 if "bn=" in command:
                     return field
@@ -152,7 +147,9 @@ class BookopsMarcUpdater:
 
     def check_command_tag(self, bib_rec: Bib) -> bool:
         for field in bib_rec.get_fields("949"):
-            if field.indicators == [" ", " "] and "a" in field and field["a"][0] == "*":
+            if field.indicators == Indicators(" ", " ") and field.get(
+                "a", ""
+            ).startswith("*"):
                 return True
         return False
 
@@ -164,41 +161,35 @@ class BookopsMarcUpdater:
         )
         return field
 
-    def update_record_data(
-        self, bib_rec: Bib, bib_id: str | None, vendor: str | None
-    ) -> Bib:
-        """Update the bib_id and add MARC fields to a `bibs.DomainBib` object."""
-        fields: list[Field | None] = []
+    def update_bib(self, bib_rec: Bib, bib_id: str | None) -> Bib:
         if bib_id:
             bib_id_field = self._create_bib_id_field(bib_id, library=bib_rec.library)
             bib_rec.remove_fields(bib_id_field.tag)
-            fields.append(bib_id_field)
-        if bib_rec.library == "nypl":
-            if "001" in bib_rec:
-                bib_rec.remove_fields("001")
-                control_no_field = Field(
-                    tag="001", data=str(bib_rec["001"]).lstrip("ocmn")
-                )
-                bib_rec.add_ordered_field(control_no_field)
-            bib_rec.remove_fields("910")
-            field_910 = self._create_910_field(bib_rec.collection)
-            fields.append(field_910)
-        if (
-            bib_rec.library == "nypl"
-            and bib_rec.collection == "BL"
-            and vendor == "BT SERIES"
-            and "091" in bib_rec
-        ):
-            bib_rec.remove_fields("091")
-            new_call_no = self.bib_patches(bib_rec)
+            bib_rec.add_ordered_field(bib_id_field)
+        bib_rec.leader = bib_rec.leader[:9] + "a" + bib_rec.leader[10:]
+        return bib_rec
+
+    def update_nypl_record_data(self, bib_rec: Bib, vendor: str | None) -> Bib:
+        fields = []
+        field_910 = self._create_910_field(bib_rec.collection)
+        bib_rec.remove_fields("910")
+        fields.append(field_910)
+        if "001" in bib_rec:
+            control_no_field = Field(tag="001", data=str(bib_rec["001"]).lstrip("ocmn"))
+            bib_rec.remove_fields(control_no_field.tag)
+            bib_rec.add_ordered_field(control_no_field)
+        if bib_rec.collection == "BL" and vendor == "BT SERIES" and "091" in bib_rec:
+            new_call_no = self.update_bt_series_call_no(bib_rec)
+            bib_rec.remove_fields(new_call_no.tag)
             fields.append(new_call_no)
         for field in fields:
             if field:
                 bib_rec.add_ordered_field(field)
         return bib_rec
 
-    def update_bib_data(self, bib_rec: Bib, bib_fields: list) -> Bib:
-        """Add MARC fields for a vendor record to a `bibs.DomainBib` object."""
+    def add_vendor_bib_fields(
+        self, bib_rec: Bib, bib_fields: list[dict[str, Any]]
+    ) -> Bib:
         for field in bib_fields:
             bib_rec.add_ordered_field(
                 Field(
@@ -211,8 +202,11 @@ class BookopsMarcUpdater:
             )
         return bib_rec
 
-    def update_order(self, record: bibs.DomainBib, bib_rec: Bib) -> Bib:
-        """Update the MARC order fields within a `bibs.DomainBib` object."""
+    def update_order(
+        self, record: bibs.DomainBib, template_data: dict[str, Any]
+    ) -> Bib:
+        bib_rec = Bib(record.binary_data, library=str(record.library))  # type: ignore
+        record.apply_order_template(template_data=template_data)
         for order in record.orders:
             order_data = order.map_to_marc(rules=self.rules["updater_rules"])
             for tag in order_data.keys():
@@ -229,64 +223,85 @@ class BookopsMarcUpdater:
                 )
         return bib_rec
 
+    def output_record(sewlf, bib_rec: Bib, record: bibs.DomainBib) -> bibs.DomainBib:
+        record.binary_data = bib_rec.as_marc()
+        return record
+
     def update_acquisitions_record(
         self, record: bibs.DomainBib, template_data: dict[str, Any]
+    ) -> Bib:
+        bib_rec = self.update_order(record=record, template_data=template_data)
+        bib_rec = self.update_bib(bib_rec=bib_rec, bib_id=record.bib_id)
+        return bib_rec
+
+    def update_bpl_acquisitions_record(
+        self, record: bibs.DomainBib, template_data: dict[str, Any]
     ) -> bibs.DomainBib:
-        """Update a MARC record based on its type and template data."""
-        bib_rec = Bib(record.binary_data, library=str(record.library))  # type: ignore
-        record.apply_order_template(template_data=template_data)
-        bib_rec = self.update_order(record=record, bib_rec=bib_rec)
-        bib_rec = self.update_record_data(
-            bib_rec=bib_rec, bib_id=record.bib_id, vendor=template_data.get("vendor")
+        bib_rec = self.update_acquisitions_record(
+            record=record, template_data=template_data
         )
         record.binary_data = bib_rec.as_marc()
         return record
 
-    def update_cataloging_record(self, record: bibs.DomainBib) -> bibs.DomainBib:
-        """Update a MARC record based on its type and template data."""
+    def update_nypl_acquisitions_record(
+        self, record: bibs.DomainBib, template_data: dict[str, Any]
+    ) -> bibs.DomainBib:
+        bib_rec = self.update_acquisitions_record(
+            record=record, template_data=template_data
+        )
+        bib_rec = self.update_nypl_record_data(
+            bib_rec=bib_rec, vendor=template_data.get("vendor")
+        )
+        record.binary_data = bib_rec.as_marc()
+        return record
+
+    def update_cataloging_record(self, record: bibs.DomainBib) -> Bib:
         bib_fields = getattr(record.vendor_info, "bib_fields", [])
         bib_rec = Bib(record.binary_data, library=str(record.library))  # type: ignore
-        bib_rec = self.update_bib_data(bib_rec=bib_rec, bib_fields=bib_fields)
-        bib_rec = self.update_record_data(
-            bib_rec=bib_rec, bib_id=record.bib_id, vendor=record.vendor
-        )
+        bib_rec = self.add_vendor_bib_fields(bib_rec=bib_rec, bib_fields=bib_fields)
+        bib_rec = self.update_bib(bib_rec=bib_rec, bib_id=record.bib_id)
+        return bib_rec
+
+    def update_bpl_cataloging_record(self, record: bibs.DomainBib) -> bibs.DomainBib:
+        bib_rec = self.update_cataloging_record(record=record)
+        record.binary_data = bib_rec.as_marc()
+        return record
+
+    def update_nypl_cataloging_record(self, record: bibs.DomainBib) -> bibs.DomainBib:
+        bib_rec = self.update_cataloging_record(record=record)
+        bib_rec = self.update_nypl_record_data(bib_rec=bib_rec, vendor=record.vendor)
         record.binary_data = bib_rec.as_marc()
         return record
 
     def update_selection_record(
         self, record: bibs.DomainBib, template_data: dict[str, Any]
-    ) -> bibs.DomainBib:
-        """Update a MARC record based on its type and template data."""
-        bib_rec = Bib(record.binary_data, library=str(record.library))  # type: ignore
-        record.apply_order_template(template_data=template_data)
-        bib_rec = self.update_order(record=record, bib_rec=bib_rec)
-        bib_rec = self.update_record_data(
-            bib_rec=bib_rec, bib_id=record.bib_id, vendor=template_data.get("vendor")
-        )
+    ) -> Bib:
+        bib_rec = self.update_order(record=record, template_data=template_data)
         if "format" in template_data and not self.check_command_tag(bib_rec=bib_rec):
             bib_rec.add_ordered_field(self.db_template_to_949(template_data["format"]))
-        if str(record.library) == "nypl":
-            bib_rec.add_ordered_field(
-                self.set_nypl_sierra_bib_default_location(
-                    str(record.collection), bib_rec
-                )
+        bib_rec = self.update_bib(bib_rec=bib_rec, bib_id=record.bib_id)
+        return bib_rec
+
+    def update_nypl_selection_record(
+        self, record: bibs.DomainBib, template_data: dict[str, Any]
+    ) -> bibs.DomainBib:
+        bib_rec = self.update_selection_record(
+            record=record, template_data=template_data
+        )
+        bib_rec = self.update_nypl_record_data(bib_rec=bib_rec, vendor=record.vendor)
+        bib_rec.add_ordered_field(
+            self.set_nypl_default_location(
+                bib=bib_rec, collection=str(record.collection)
             )
+        )
         record.binary_data = bib_rec.as_marc()
         return record
 
-    def update_bib(
+    def update_bpl_selection_record(
         self, record: bibs.DomainBib, template_data: dict[str, Any]
     ) -> bibs.DomainBib:
-        match str(record.record_type):
-            case "cat":
-                return self.update_cataloging_record(record=record)
-            case "acq":
-                return self.update_acquisitions_record(
-                    record=record, template_data=template_data
-                )
-            case "sel":
-                return self.update_selection_record(
-                    record=record, template_data=template_data
-                )
-            case _:
-                raise OverloadError("invalid record type")
+        bib_rec = self.update_selection_record(
+            record=record, template_data=template_data
+        )
+        record.binary_data = bib_rec.as_marc()
+        return record

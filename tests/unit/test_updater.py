@@ -15,8 +15,10 @@ class TestUpdater:
             copy.deepcopy(stub_full_bib.binary_data), library=str(stub_full_bib.library)
         )
         stub_full_bib.bib_id = "12345"
-        stub_service = bib_services.BibRecordUpdater(
-            strategy=marc_update_strategy.BookopsMarcUpdater(rules=stub_constants)
+        stub_service = bib_services.BibSerializer(
+            strategy=marc_update_strategy.BookopsMarcUpdater(
+                rules=stub_constants, record_type="cat"
+            )
         )
         updated_bibs = stub_service.update([stub_full_bib])
         updated_bib = Bib(
@@ -31,8 +33,10 @@ class TestUpdater:
             copy.deepcopy(stub_full_bib.binary_data), library=str(stub_full_bib.library)
         )
         stub_full_bib.bib_id = "12345"
-        stub_service = bib_services.BibRecordUpdater(
-            strategy=marc_update_strategy.BookopsMarcUpdater(rules=stub_constants)
+        stub_service = bib_services.BibSerializer(
+            strategy=marc_update_strategy.BookopsMarcUpdater(
+                rules=stub_constants, record_type="cat"
+            )
         )
         updated_bibs = stub_service.update([stub_full_bib])
         updated_bib = Bib(
@@ -46,8 +50,10 @@ class TestUpdater:
     )
     def test_update_cat_no_vendor_index(self, stub_order_bib, stub_constants):
         setattr(stub_order_bib, "record_type", bib_services.bibs.RecordType("cat"))
-        stub_service = bib_services.BibRecordUpdater(
-            strategy=marc_update_strategy.BookopsMarcUpdater(rules=stub_constants)
+        stub_service = bib_services.BibSerializer(
+            strategy=marc_update_strategy.BookopsMarcUpdater(
+                rules=stub_constants, record_type="cat"
+            )
         )
         with pytest.raises(OverloadError) as exc:
             stub_service.update([stub_order_bib])
@@ -65,8 +71,10 @@ class TestUpdater:
             "cat",
         )
         original_bib = copy.deepcopy(Bib(dto.binary_data, library=library))
-        stub_service = bib_services.BibRecordUpdater(
-            strategy=marc_update_strategy.BookopsMarcUpdater(rules=stub_constants)
+        stub_service = bib_services.BibSerializer(
+            strategy=marc_update_strategy.BookopsMarcUpdater(
+                rules=stub_constants, record_type="cat"
+            )
         )
         updated_bibs = stub_service.update([dto])
         assert len(original_bib.get_fields("949")) == 1
@@ -80,8 +88,10 @@ class TestUpdater:
     )
     def test_update_acq(self, stub_order_bib, template_data, stub_constants):
         original_orders = copy.deepcopy(stub_order_bib.orders)
-        stub_service = bib_services.BibRecordUpdater(
-            strategy=marc_update_strategy.BookopsMarcUpdater(rules=stub_constants)
+        stub_service = bib_services.BibSerializer(
+            strategy=marc_update_strategy.BookopsMarcUpdater(
+                rules=stub_constants, record_type="acq"
+            )
         )
         updated_bibs = stub_service.update(
             [stub_order_bib], template_data=template_data
@@ -94,8 +104,10 @@ class TestUpdater:
     )
     def test_update_sel(self, stub_order_bib, template_data, stub_constants):
         original_orders = copy.deepcopy(stub_order_bib.orders)
-        stub_service = bib_services.BibRecordUpdater(
-            strategy=marc_update_strategy.BookopsMarcUpdater(rules=stub_constants)
+        stub_service = bib_services.BibSerializer(
+            strategy=marc_update_strategy.BookopsMarcUpdater(
+                rules=stub_constants, record_type="sel"
+            )
         )
         updated_bibs = stub_service.update(
             [stub_order_bib], template_data=template_data
@@ -113,8 +125,10 @@ class TestUpdater:
         setattr(
             stub_order_bib, "record_type", bib_services.bibs.RecordType(record_type)
         )
-        stub_service = bib_services.BibRecordUpdater(
-            strategy=marc_update_strategy.BookopsMarcUpdater(rules=stub_constants)
+        stub_service = bib_services.BibSerializer(
+            strategy=marc_update_strategy.BookopsMarcUpdater(
+                rules=stub_constants, record_type=record_type
+            )
         )
 
         with pytest.raises(OverloadError) as exc:
@@ -123,3 +137,19 @@ class TestUpdater:
             str(exc.value)
             == "Order template required for acquisition or selection workflow."
         )
+
+    @pytest.mark.parametrize(
+        "library, collection",
+        [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
+    )
+    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
+    def test_serialize(self, stub_order_bib, caplog, stub_constants, record_type):
+        stub_service = bib_services.BibSerializer(
+            strategy=marc_update_strategy.BookopsMarcUpdater(
+                rules=stub_constants, record_type=record_type
+            )
+        )
+        marc_binary = stub_service.serialize(records=[stub_order_bib])
+        assert marc_binary.read()[0:2] == b"00"
+        assert len(caplog.records) == 1
+        assert "Writing MARC binary for record: " in caplog.records[0].msg
