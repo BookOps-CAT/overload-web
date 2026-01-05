@@ -164,13 +164,6 @@ class DomainBib:
         for order in self.orders:
             order.apply_template(template_data=template_data)
 
-    def attach_vendor_info(self, vendor_info: VendorInfo) -> None:
-        if self.vendor_info is not None:
-            raise ValueError("Vendor info already attached.")
-        elif not vendor_info:
-            raise ValueError("Missing input value to update vendor_info attribute")
-        self.vendor_info = vendor_info
-
 
 class LibrarySystem(Enum):
     """Includes valid values for library system"""

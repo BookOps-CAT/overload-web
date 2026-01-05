@@ -62,13 +62,6 @@ class FakeBibFetcher(StubFetcher):
             return [sierra_responses.BPLSolrResponse(data=i) for i in data]
 
 
-def stub_sierra_response(stub_order_bib, library, collection):
-    responses = FakeBibFetcher(library=library, collection=collection).get_bibs_by_id(
-        key="isbn", value="9781234567890"
-    )
-    return bibs.MatcherResponse(bib=stub_order_bib, matches=responses)
-
-
 @pytest.fixture
 def new_domain_bib(make_domain_bib, library):
     bib = make_domain_bib({}, "cat")
@@ -105,45 +98,52 @@ def sierra_response(library, collection):
 )
 class TestReviewer:
     @pytest.fixture
-    def stub_full_response(self, stub_full_bib, library, collection):
+    def stub_cat_response(self, stub_cat_bib, library, collection):
         responses = FakeBibFetcher(
             library=library, collection=collection
         ).get_bibs_by_id(key="isbn", value="9781234567890")
-        return bibs.MatcherResponse(bib=stub_full_bib, matches=responses)
+        return bibs.MatcherResponse(bib=stub_cat_bib, matches=responses)
 
     @pytest.fixture
-    def stub_order_response(self, stub_order_bib, library, collection):
+    def stub_acq_response(self, stub_acq_bib, library, collection):
         responses = FakeBibFetcher(
             library=library, collection=collection
         ).get_bibs_by_id(key="isbn", value="9781234567890")
-        return bibs.MatcherResponse(bib=stub_order_bib, matches=responses)
+        return bibs.MatcherResponse(bib=stub_acq_bib, matches=responses)
 
-    def test_attach_acq(self, library, collection, stub_order_response):
+    @pytest.fixture
+    def stub_sel_response(self, stub_sel_bib, library, collection):
+        responses = FakeBibFetcher(
+            library=library, collection=collection
+        ).get_bibs_by_id(key="isbn", value="9781234567890")
+        return bibs.MatcherResponse(bib=stub_sel_bib, matches=responses)
+
+    def test_attach_acq(self, library, collection, stub_acq_response):
         stub_service = bib_services.BibReviewer(
             reviewer=response_reviewer.ReviewerFactory().make(
                 record_type="acq", collection=collection, library=library
             )
         )
-        attached_bibs = stub_service.review_and_attach([stub_order_response])
+        attached_bibs = stub_service.review_and_attach([stub_acq_response])
         assert attached_bibs[0].bib_id is None
-        assert stub_order_response.bib.bib_id is None
+        assert stub_acq_response.bib.bib_id is None
 
-    def test_attach_cat(self, library, collection, stub_full_response):
+    def test_attach_cat(self, library, collection, stub_cat_response):
         stub_service = bib_services.BibReviewer(
             reviewer=response_reviewer.ReviewerFactory().make(
                 record_type="cat", collection=collection, library=library
             )
         )
-        attached_bibs = stub_service.review_and_attach([stub_full_response])
+        attached_bibs = stub_service.review_and_attach([stub_cat_response])
         assert attached_bibs[0].bib_id == "123"
 
-    def test_attach_sel(self, library, collection, stub_order_response):
+    def test_attach_sel(self, library, collection, stub_sel_response):
         stub_service = bib_services.BibReviewer(
             reviewer=response_reviewer.ReviewerFactory().make(
                 record_type="sel", collection=collection, library=library
             )
         )
-        attached_bibs = stub_service.review_and_attach([stub_order_response])
+        attached_bibs = stub_service.review_and_attach([stub_sel_response])
         assert attached_bibs[0].bib_id == "123"
 
     def test_reviewer_factory(self, library, collection):

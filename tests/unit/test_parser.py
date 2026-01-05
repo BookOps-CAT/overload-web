@@ -44,7 +44,7 @@ class TestParser:
 
     def test_parse_no_005(self, stub_constants, library, stub_bib, collection, caplog):
         stub_bib.remove_fields("005")
-        stub_service = stub_service = bib_services.BibParser(
+        stub_service = stub_service = bib_services.OrderLevelBibParser(
             marc_mapper.BookopsMarcMapper(
                 rules=stub_constants["mapper_rules"], library=library, record_type="sel"
             )

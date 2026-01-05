@@ -448,12 +448,18 @@ def stub_constants():
 
 
 @pytest.fixture
-def stub_full_bib(make_domain_bib):
+def stub_cat_bib(make_domain_bib):
     dto = make_domain_bib({}, "cat")
     return dto
 
 
 @pytest.fixture
-def stub_order_bib(make_domain_bib):
+def stub_acq_bib(make_domain_bib):
     dto = make_domain_bib({}, "acq")
+    return dto
+
+
+@pytest.fixture
+def stub_sel_bib(make_domain_bib):
+    dto = make_domain_bib({}, "sel")
     return dto

@@ -37,7 +37,7 @@ import io
 import itertools
 import logging
 from abc import ABC
-from typing import Any, BinaryIO, Optional
+from typing import Any, BinaryIO
 
 from overload_web.bib_records.domain import bibs, marc_protocols
 from overload_web.errors import OverloadError
@@ -59,114 +59,6 @@ class BibReviewer:
             )
             response.bib.bib_id = bib_id
             out.append(response.bib)
-        return out
-
-
-class BibMatcher:
-    """
-    Domain service for finding the best match for a bib record.
-
-    This service compares a `DomainBib` instance against external candidates using
-    specified matchpoints (e.g., ISBN, OCLC number, UPC). The services queries Sierra
-    using an injected `BibFetcher` object and if any results are returned they are
-    passed to the `ReviewedResults` class to selects the best match for the given
-    record. The service returns the bib ID of the best match or `None` if no candidates
-    were found.
-    """
-
-    def __init__(self, fetcher: marc_protocols.BibFetcher) -> None:
-        """
-        Initialize the match service with a fetcher.
-
-        Args:
-            fetcher: An injected `BibFetcher` that retrieves candidate bibs.
-        """
-        self.fetcher = fetcher
-
-    def _get_matchpoints(
-        self, record: bibs.DomainBib, matchpoints: dict[str, str] | None
-    ) -> dict[str, str]:
-        """
-        Get matchpoints to be used in query based on type of record.
-
-        Args:
-            record:
-                The bibliographic record that will be matched against Sierra
-                represented as a `bibs.DomainBib` object.
-            matchpoints:
-                an optional dictionary containing matchpoints
-        Returns:
-            a dictionary containing the matchpoints to be used when matching the
-            bib record.
-        Raises:
-            OverloadError: if the record is to be processed using the cataloging
-            workflow and the record does not contain a `VendorInfo` obj with matchpoints
-            or if no matchpoints were passed to the `BibMatcher.match()` method but
-            the record is to be processed using the acquisitions or selection workflow.
-        """
-        if str(record.record_type) == "cat":
-            if record.vendor_info is None:
-                raise OverloadError("Vendor index required for cataloging workflow.")
-            return record.vendor_info.matchpoints
-        if not matchpoints:
-            raise OverloadError(
-                "Matchpoints from order template required for acquisition "
-                "or selection workflow."
-            )
-        return matchpoints
-
-    def _match_bib(
-        self, record: bibs.DomainBib, matchpoints: dict[str, str]
-    ) -> list[bibs.BaseSierraResponse]:
-        """
-        Find all matches in Sierra for a given bib record.
-
-        The method queries the fetcher obj for candidates using each matchpoint.
-        The first non-empty match that returns candidates is used for comparison.
-
-        Args:
-            record:
-                The bibliographic record to match against Sierra represented as a
-                `bibs.DomainBib` object.
-            matchpoints:
-                a dictionary containing matchpoints
-        Returns:
-            a list of the record's matches as `BaseSierraResponse` objects
-        """
-        for priority, key in matchpoints.items():
-            value = getattr(record, key, None)
-            if not value:
-                continue
-            candidates = self.fetcher.get_bibs_by_id(value=value, key=key)
-            if candidates:
-                return candidates
-        return []
-
-    def match(
-        self,
-        records: list[bibs.DomainBib],
-        matchpoints: Optional[dict[str, str]] = None,
-    ) -> list[bibs.MatcherResponse]:
-        """
-        Match bibliographic records.
-
-        Args:
-            records:
-                A list of parsed bibliographic records as `bibs.DomainBib` objects.
-            matchpoints:
-                A dictionary containing matchpoints to be used in matching records.
-
-        Returns:
-            A list of `MatcherResponse` objects containing a processed record as a
-            `bibs.DomainBib` object and its associated matches as `BaseSierraResponse`
-        """
-        out = []
-        for record in records:
-            matchpoints = self._get_matchpoints(record=record, matchpoints=matchpoints)
-            matches: list[bibs.BaseSierraResponse] = self._match_bib(
-                record=record, matchpoints=matchpoints
-            )
-            out.append(bibs.MatcherResponse(bib=record, matches=matches))
         return out
 
 
@@ -273,39 +165,6 @@ class FullLevelBibMatcher(BaseBibMatcher):
         return out
 
 
-class BibParser:
-    def __init__(self, mapper: marc_protocols.BibMapper) -> None:
-        self.mapper = mapper
-
-    def parse(self, data: BinaryIO | bytes) -> list[bibs.DomainBib]:
-        """
-        Method used to build `DomainBib` objects for MARC records
-
-        Args:
-            data: MARC data represented in binary format
-
-        Returns:
-            a list of `bibs.DomainBib` objects mapped using `BibMapper``
-        """
-        parsed: list[bibs.DomainBib] = []
-
-        reader = self.mapper.get_reader(data)
-        for record in reader:
-            bib_dict = self.mapper.map_data(record)
-
-            if bib_dict.get("record_type") == "cat":
-                vendor_info = self.mapper.identify_vendor(record)
-                bib_dict["vendor_info"] = bibs.VendorInfo(**vendor_info)
-            logger.info(f"Vendor record parsed: {bib_dict}")
-            parsed.append(bibs.DomainBib(**bib_dict))
-
-        return parsed
-
-    def get_barcodes(self, bibs: list[bibs.DomainBib]) -> list[str]:
-        barcodes = [i.barcodes for i in bibs]
-        return list(itertools.chain.from_iterable(barcodes))
-
-
 class BaseBibParser(ABC):
     def __init__(self, mapper: marc_protocols.BibMapper) -> None:
         self.mapper = mapper
@@ -363,7 +222,7 @@ class OrderLevelBibParser(BaseBibParser):
         return parsed
 
 
-class BibSerializer:
+class BaseBibSerializer(ABC):
     """Domain service for writing a `DomainBib` to MARC binary."""
 
     """
@@ -382,21 +241,7 @@ class BibSerializer:
         """
         self.updater = updater
 
-    def _get_template(self, template_data: dict[str, Any] | None) -> dict[str, Any]:
-        if not template_data:
-            if self.updater.record_type in ["acq", "sel"]:
-                raise OverloadError(
-                    "Order template required for acquisition or selection workflow."
-                )
-            else:
-                return {}
-        return template_data
-
-    def _get_vendor_index(self, record: bibs.DomainBib) -> None:
-        if record.vendor_info is None:
-            raise OverloadError("Vendor index required for cataloging workflow.")
-
-    def _update_record(
+    def _update_order_record(
         self, record: bibs.DomainBib, template_data: dict[str, Any]
     ) -> bibs.DomainBib:
         match str(record.record_type), str(record.library):
@@ -408,46 +253,21 @@ class BibSerializer:
                 return self.updater.update_nypl_acquisitions_record(
                     record=record, template_data=template_data
                 )
-            case "cat", "bpl":
-                self._get_vendor_index(record=record)
-                return self.updater.update_bpl_cataloging_record(record=record)
-            case "cat", "nypl":
-                self._get_vendor_index(record=record)
-                return self.updater.update_nypl_cataloging_record(record=record)
             case "sel", "bpl":
                 return self.updater.update_bpl_selection_record(
                     record=record, template_data=template_data
                 )
-            case "sel", "nypl":
+            case _:
                 return self.updater.update_nypl_selection_record(
                     record=record, template_data=template_data
                 )
+
+    def _update_full_record(self, record: bibs.DomainBib) -> bibs.DomainBib:
+        match str(record.library):
+            case "bpl":
+                return self.updater.update_bpl_cataloging_record(record=record)
             case _:
-                raise OverloadError("invalid record type")
-
-    def update(
-        self,
-        records: list[bibs.DomainBib],
-        template_data: Optional[dict[str, Any]] = None,
-    ) -> list[bibs.DomainBib]:
-        """
-        Update bibliographic records.
-
-        Args:
-            records:
-                A list of parsed bibliographic records as `bibs.DomainBib` objects.
-            template_data:
-                A dictionary containing template data to be used in updating records.
-
-        Returns:
-            A list of updated records as `bibs.DomainBib` objects
-        """
-        out = []
-        template_data = self._get_template(template_data=template_data)
-        for record in records:
-            rec = self._update_record(record=record, template_data=template_data)
-            out.append(rec)
-        return out
+                return self.updater.update_nypl_cataloging_record(record=record)
 
     def serialize(self, records: list[bibs.DomainBib]) -> BinaryIO:
         """
@@ -466,3 +286,45 @@ class BibSerializer:
             io_data.write(record.binary_data)
         io_data.seek(0)
         return io_data
+
+
+class OrderLevelBibSerializer(BaseBibSerializer):
+    def update(
+        self, records: list[bibs.DomainBib], template_data: dict[str, Any]
+    ) -> list[bibs.DomainBib]:
+        """
+        Update order-level bibliographic records.
+
+        Args:
+            records:
+                A list of parsed bibliographic records as `bibs.DomainBib` objects.
+            template_data:
+                A dictionary containing template data to be used in updating records.
+
+        Returns:
+            A list of updated records as `bibs.DomainBib` objects
+        """
+        out = []
+        for record in records:
+            rec = self._update_order_record(record=record, template_data=template_data)
+            out.append(rec)
+        return out
+
+
+class FullLevelBibSerializer(BaseBibSerializer):
+    def update(self, records: list[bibs.DomainBib]) -> list[bibs.DomainBib]:
+        """
+        Update order-level bibliographic records.
+
+        Args:
+            records:
+                A list of parsed bibliographic records as `bibs.DomainBib` objects.
+
+        Returns:
+            A list of updated records as `bibs.DomainBib` objects
+        """
+        out = []
+        for record in records:
+            rec = self._update_full_record(record=record)
+            out.append(rec)
+        return out

@@ -208,12 +208,13 @@ def process_vendor_file(
     record_type: Annotated[str, Form(...)],
 ) -> HTMLResponse:
     """
-    Process one or more MARC files using the `RecordProcessingService`.
+    Process one or more MARC files using the `OrderRecordProcessingService`
+    of `FullRecordProcessingService`.
 
     Args:
         service:
-            the `RecordProcessingService` created using library, collection,
-            and record_type
+            the `OrderRecordProcessingService` or `FullRecordProcessingService`
+            created using library, collection, and record_type
         files:
             a list of vendor files from a local upload or a vendor's SFTP
         order_template:
@@ -228,13 +229,18 @@ def process_vendor_file(
 
     """
     out_files = []
-    for file in files:
-        output = service.process_vendor_file(
-            data=file.content,
-            template_data=order_template.model_dump(),
-            matchpoints=matchpoints.model_dump(),
-        )
-        out_files.append({"file_name": file.file_name, "binary_content": output})
+    if record_type == "cat":
+        for file in files:
+            output = service.process_vendor_file(data=file.content)
+            out_files.append({"file_name": file.file_name, "binary_content": output})
+    else:
+        for file in files:
+            output = service.process_vendor_file(
+                data=file.content,
+                template_data=order_template.model_dump(),
+                matchpoints=matchpoints.model_dump(),
+            )
+            out_files.append({"file_name": file.file_name, "binary_content": output})
     return request.app.state.templates.TemplateResponse(
         request=request, name="partials/pvf_results.html", context={"files": out_files}
     )
