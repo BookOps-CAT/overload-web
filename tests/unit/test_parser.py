@@ -10,16 +10,16 @@ from overload_web.bib_records.infrastructure import marc_mapper
 )
 class TestParser:
     def test_parse_full(self, stub_constants, library, stub_bib, caplog):
-        stub_service = bib_services.BibParser(
+        stub_service = bib_services.FullLevelBibParser(
             marc_mapper.BookopsMarcMapper(
                 rules=stub_constants["mapper_rules"], library=library, record_type="cat"
             )
         )
-        records = stub_service.parse(stub_bib.as_marc())
+        records, barcodes = stub_service.parse(stub_bib.as_marc())
         assert len(records) == 1
         assert str(records[0].library) == str(stub_service.mapper.library)
         assert records[0].isbn == "9781234567890"
-        assert records[0].barcodes == ["333331234567890"]
+        assert barcodes == ["333331234567890"]
         assert records[0].vendor_info is not None
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
@@ -27,7 +27,7 @@ class TestParser:
     def test_parse_order_level(
         self, stub_constants, library, stub_bib, collection, caplog
     ):
-        stub_service = stub_service = bib_services.BibParser(
+        stub_service = stub_service = bib_services.OrderLevelBibParser(
             marc_mapper.BookopsMarcMapper(
                 rules=stub_constants["mapper_rules"], library=library, record_type="acq"
             )
