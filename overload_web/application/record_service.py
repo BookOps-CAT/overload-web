@@ -9,20 +9,24 @@ a concrete implementation of the `BibFetcher` domain protocol.
 
 Classes:
 
-`RecordProcessingService`
-    An application service for processing MARC records. This service can be used
-    to process both full and order-level MARC records.
+`FullRecordProcessingService`
+    An application service for processing full-level MARC records. This service can be
+    used to process MARC records following the cataloging workflow.
+
+`OrderRecordProcessingService`
+    An application service for processing order-level MARC records. This service can be
+    used to process records following the acquisitions or selection workflows.
 """
 
 import logging
-from typing import Any, BinaryIO, Optional
+from typing import Any, BinaryIO
 
 from overload_web.bib_records.domain import bib_services
 
 logger = logging.getLogger(__name__)
 
 
-class RecordProcessingService:
+class FullRecordProcessingService:
     """Handles MARC record parsing, matching, and serialization."""
 
     def __init__(
@@ -33,7 +37,7 @@ class RecordProcessingService:
         bib_updater: bib_services.marc_protocols.BibUpdater,
     ):
         """
-        Initialize `RecordProcessingService`.
+        Initialize `FullRecordProcessingService`.
 
         Args:
             bib_fetcher:
@@ -46,15 +50,61 @@ class RecordProcessingService:
                 A `marc_protocols.BibUpdater` object
         """
         self.reviewer = bib_services.BibReviewer(reviewer=review_strategy)
-        self.matcher = bib_services.BibMatcher(fetcher=bib_fetcher)
-        self.parser = bib_services.BibParser(mapper=bib_mapper)
-        self.serializer = bib_services.BibSerializer(updater=bib_updater)
+        self.matcher = bib_services.FullLevelBibMatcher(fetcher=bib_fetcher)
+        self.parser = bib_services.FullLevelBibParser(mapper=bib_mapper)
+        self.serializer = bib_services.FullLevelBibSerializer(updater=bib_updater)
+
+    def process_vendor_file(self, data: BinaryIO | bytes) -> BinaryIO:
+        """
+        Parse MARC records, match them against Sierra, update the records with required
+        fields and write them to MARC binary.
+
+        Args:
+            data: Binary MARC data as a `BinaryIO` or `bytes` object.
+        Returns:
+            MARC data as a `BinaryIO` object
+        """
+        parsed_records, barcodes = self.parser.parse(data=data)
+        matched_records = self.matcher.match(records=parsed_records)
+        attached_records = self.reviewer.review_and_attach(responses=matched_records)
+        updated_records = self.serializer.update(records=attached_records)
+        output = self.serializer.serialize(updated_records)
+        return output
+
+
+class OrderRecordProcessingService:
+    """Handles MARC record parsing, matching, and serialization."""
+
+    def __init__(
+        self,
+        bib_fetcher: bib_services.marc_protocols.BibFetcher,
+        bib_mapper: bib_services.marc_protocols.BibMapper,
+        review_strategy: bib_services.marc_protocols.ResultsReviewer,
+        bib_updater: bib_services.marc_protocols.BibUpdater,
+    ):
+        """
+        Initialize `OrderRecordProcessingService`.
+
+        Args:
+            bib_fetcher:
+                A `marc_protocols.BibFetcher` object
+            bib_mapper:
+                A `marc_protocols.BibMapper` object
+            review_strategy:
+                A `marc_protocols.ResultsReviewer` object
+            bib_updater:
+                A `marc_protocols.BibUpdater` object
+        """
+        self.reviewer = bib_services.BibReviewer(reviewer=review_strategy)
+        self.matcher = bib_services.OrderLevelBibMatcher(fetcher=bib_fetcher)
+        self.parser = bib_services.OrderLevelBibParser(mapper=bib_mapper)
+        self.serializer = bib_services.OrderLevelBibSerializer(updater=bib_updater)
 
     def process_vendor_file(
         self,
         data: BinaryIO | bytes,
-        template_data: Optional[dict[str, Any]] = None,
-        matchpoints: Optional[dict[str, str]] = None,
+        template_data: dict[str, Any],
+        matchpoints: dict[str, str],
     ) -> BinaryIO:
         """
         Parse MARC records, match them against Sierra, update the records with required

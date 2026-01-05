@@ -199,7 +199,12 @@ def write_remote_file(
 @api_router.post("/process-vendor-file", response_class=HTMLResponse)
 def process_vendor_file(
     request: Request,
-    service: Annotated[Any, Depends(record_service_deps.record_processing_service)],
+    full_record_service: Annotated[
+        Any, Depends(record_service_deps.full_level_processing_service)
+    ],
+    order_record_service: Annotated[
+        Any, Depends(record_service_deps.order_level_processing_service)
+    ],
     files: Annotated[
         list[dto.VendorFileModel], Depends(file_service_dep.normalize_files)
     ],
@@ -212,9 +217,12 @@ def process_vendor_file(
     of `FullRecordProcessingService`.
 
     Args:
-        service:
-            the `OrderRecordProcessingService` or `FullRecordProcessingService`
-            created using library, collection, and record_type
+        full_record_service:
+            the `FullRecordProcessingService` created using library, collection,
+            and record_type
+        order_record_service:
+            the `OrderRecordProcessingService` created using library, collection,
+            and record_type
         files:
             a list of vendor files from a local upload or a vendor's SFTP
         order_template:
@@ -231,11 +239,11 @@ def process_vendor_file(
     out_files = []
     if record_type == "cat":
         for file in files:
-            output = service.process_vendor_file(data=file.content)
+            output = full_record_service.process_vendor_file(data=file.content)
             out_files.append({"file_name": file.file_name, "binary_content": output})
     else:
         for file in files:
-            output = service.process_vendor_file(
+            output = order_record_service.process_vendor_file(
                 data=file.content,
                 template_data=order_template.model_dump(),
                 matchpoints=matchpoints.model_dump(),

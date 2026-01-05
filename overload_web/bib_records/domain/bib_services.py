@@ -37,7 +37,7 @@ import io
 import itertools
 import logging
 from abc import ABC
-from typing import Any, BinaryIO
+from typing import Any, BinaryIO, Callable
 
 from overload_web.bib_records.domain import bibs, marc_protocols
 from overload_web.errors import OverloadError
@@ -240,34 +240,26 @@ class BaseBibSerializer(ABC):
             updater: An injected `BibUpdater` that updates bib records.
         """
         self.updater = updater
+        self._order_strategies: dict[tuple[str, str], Callable[..., bibs.DomainBib]] = {
+            ("acq", "bpl"): updater.update_bpl_acquisitions_record,
+            ("acq", "nypl"): updater.update_nypl_acquisitions_record,
+            ("sel", "bpl"): updater.update_bpl_selection_record,
+            ("sel", "nypl"): updater.update_nypl_selection_record,
+        }
+        self._full_strategies: dict[str, Callable[..., bibs.DomainBib]] = {
+            "bpl": updater.update_bpl_cataloging_record,
+            "nypl": updater.update_nypl_cataloging_record,
+        }
 
     def _update_order_record(
         self, record: bibs.DomainBib, template_data: dict[str, Any]
     ) -> bibs.DomainBib:
-        match str(record.record_type), str(record.library):
-            case "acq", "bpl":
-                return self.updater.update_bpl_acquisitions_record(
-                    record=record, template_data=template_data
-                )
-            case "acq", "nypl":
-                return self.updater.update_nypl_acquisitions_record(
-                    record=record, template_data=template_data
-                )
-            case "sel", "bpl":
-                return self.updater.update_bpl_selection_record(
-                    record=record, template_data=template_data
-                )
-            case _:
-                return self.updater.update_nypl_selection_record(
-                    record=record, template_data=template_data
-                )
+        func = self._order_strategies[(str(record.record_type), str(record.library))]
+        return func(record=record, template_data=template_data)
 
     def _update_full_record(self, record: bibs.DomainBib) -> bibs.DomainBib:
-        match str(record.library):
-            case "bpl":
-                return self.updater.update_bpl_cataloging_record(record=record)
-            case _:
-                return self.updater.update_nypl_cataloging_record(record=record)
+        func = self._full_strategies[(str(record.library))]
+        return func(record=record)
 
     def serialize(self, records: list[bibs.DomainBib]) -> BinaryIO:
         """
