@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from overload_web.bib_records.domain import bib_services, bibs, marc_protocols
+from overload_web.bib_records.domain import bibs, marc_protocols, reviewer_service
 from overload_web.bib_records.infrastructure import response_reviewer, sierra_responses
 
 BPL_DATA = {
@@ -119,7 +119,7 @@ class TestReviewer:
         return bibs.MatcherResponse(bib=stub_sel_bib, matches=responses)
 
     def test_attach_acq(self, library, collection, stub_acq_response):
-        stub_service = bib_services.BibReviewer(
+        stub_service = reviewer_service.BibReviewer(
             reviewer=response_reviewer.ReviewerFactory().make(
                 record_type="acq", collection=collection, library=library
             )
@@ -129,7 +129,7 @@ class TestReviewer:
         assert stub_acq_response.bib.bib_id is None
 
     def test_attach_cat(self, library, collection, stub_cat_response):
-        stub_service = bib_services.BibReviewer(
+        stub_service = reviewer_service.BibReviewer(
             reviewer=response_reviewer.ReviewerFactory().make(
                 record_type="cat", collection=collection, library=library
             )
@@ -138,7 +138,7 @@ class TestReviewer:
         assert attached_bibs[0].bib_id == "123"
 
     def test_attach_sel(self, library, collection, stub_sel_response):
-        stub_service = bib_services.BibReviewer(
+        stub_service = reviewer_service.BibReviewer(
             reviewer=response_reviewer.ReviewerFactory().make(
                 record_type="sel", collection=collection, library=library
             )

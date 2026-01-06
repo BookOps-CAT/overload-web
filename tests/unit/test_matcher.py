@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from overload_web.bib_records.domain import bib_services, marc_protocols
+from overload_web.bib_records.domain import marc_protocols, matcher_service
 from overload_web.bib_records.infrastructure import clients, sierra_responses
 from overload_web.errors import OverloadError
 
@@ -47,7 +47,7 @@ class TestOrderLevelMatcher:
             "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
             fake_fetcher,
         )
-        return bib_services.OrderLevelBibMatcher(
+        return matcher_service.OrderLevelBibMatcher(
             fetcher=clients.SierraBibFetcher(library)
         )
 
@@ -60,7 +60,7 @@ class TestOrderLevelMatcher:
             "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
             fake_fetcher,
         )
-        return bib_services.OrderLevelBibMatcher(
+        return matcher_service.OrderLevelBibMatcher(
             fetcher=clients.SierraBibFetcher(library)
         )
 
@@ -103,7 +103,7 @@ class TestFullMatcher:
             "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
             fake_fetcher,
         )
-        return bib_services.FullLevelBibMatcher(
+        return matcher_service.FullLevelBibMatcher(
             fetcher=clients.SierraBibFetcher(library)
         )
 
@@ -116,7 +116,7 @@ class TestFullMatcher:
             "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
             fake_fetcher,
         )
-        return bib_services.FullLevelBibMatcher(
+        return matcher_service.FullLevelBibMatcher(
             fetcher=clients.SierraBibFetcher(library)
         )
 
@@ -129,7 +129,7 @@ class TestFullMatcher:
         assert len(matched_bibs[0].matches) == 0
 
     def test_match_full_no_vendor_index(self, stub_service, stub_acq_bib):
-        setattr(stub_acq_bib, "record_type", bib_services.bibs.RecordType("cat"))
+        setattr(stub_acq_bib, "record_type", matcher_service.bibs.RecordType("cat"))
         assert stub_acq_bib.vendor_info is None
         with pytest.raises(OverloadError) as exc:
             stub_service.match([stub_acq_bib])

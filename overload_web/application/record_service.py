@@ -21,7 +21,13 @@ Classes:
 import logging
 from typing import Any, BinaryIO
 
-from overload_web.bib_records.domain import bib_services
+from overload_web.bib_records.domain import (
+    marc_protocols,
+    matcher_service,
+    parser_service,
+    reviewer_service,
+    updater_service,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +37,10 @@ class FullRecordProcessingService:
 
     def __init__(
         self,
-        bib_fetcher: bib_services.marc_protocols.BibFetcher,
-        bib_mapper: bib_services.marc_protocols.BibMapper,
-        review_strategy: bib_services.marc_protocols.ResultsReviewer,
-        context_handler: bib_services.marc_protocols.MarcContextHandler,
+        bib_fetcher: marc_protocols.BibFetcher,
+        bib_mapper: marc_protocols.BibMapper,
+        review_strategy: marc_protocols.ResultsReviewer,
+        context_handler: marc_protocols.MarcContextHandler,
     ):
         """
         Initialize `FullRecordProcessingService`.
@@ -49,10 +55,10 @@ class FullRecordProcessingService:
             bib_updater:
                 A `marc_protocols.BibUpdater` object
         """
-        self.reviewer = bib_services.BibReviewer(reviewer=review_strategy)
-        self.matcher = bib_services.FullLevelBibMatcher(fetcher=bib_fetcher)
-        self.parser = bib_services.FullLevelBibParser(mapper=bib_mapper)
-        self.serializer = bib_services.FullLevelBibUpdater(
+        self.reviewer = reviewer_service.BibReviewer(reviewer=review_strategy)
+        self.matcher = matcher_service.FullLevelBibMatcher(fetcher=bib_fetcher)
+        self.parser = parser_service.FullLevelBibParser(mapper=bib_mapper)
+        self.serializer = updater_service.FullLevelBibUpdater(
             context_handler=context_handler
         )
 
@@ -79,11 +85,11 @@ class OrderRecordProcessingService:
 
     def __init__(
         self,
-        bib_fetcher: bib_services.marc_protocols.BibFetcher,
-        bib_mapper: bib_services.marc_protocols.BibMapper,
-        review_strategy: bib_services.marc_protocols.ResultsReviewer,
+        bib_fetcher: marc_protocols.BibFetcher,
+        bib_mapper: marc_protocols.BibMapper,
+        review_strategy: marc_protocols.ResultsReviewer,
         rules: dict[str, dict[str, str]],
-        context_handler: bib_services.marc_protocols.MarcContextHandler,
+        context_handler: marc_protocols.MarcContextHandler,
     ):
         """
         Initialize `OrderRecordProcessingService`.
@@ -98,10 +104,10 @@ class OrderRecordProcessingService:
             bib_updater:
                 A `marc_protocols.BibUpdater` object
         """
-        self.reviewer = bib_services.BibReviewer(reviewer=review_strategy)
-        self.matcher = bib_services.OrderLevelBibMatcher(fetcher=bib_fetcher)
-        self.parser = bib_services.OrderLevelBibParser(mapper=bib_mapper)
-        self.serializer = bib_services.OrderLevelBibUpdater(
+        self.reviewer = reviewer_service.BibReviewer(reviewer=review_strategy)
+        self.matcher = matcher_service.OrderLevelBibMatcher(fetcher=bib_fetcher)
+        self.parser = parser_service.OrderLevelBibParser(mapper=bib_mapper)
+        self.serializer = updater_service.OrderLevelBibUpdater(
             rules=rules, context_handler=context_handler
         )
 

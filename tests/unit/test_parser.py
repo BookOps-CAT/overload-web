@@ -1,6 +1,6 @@
 import pytest
 
-from overload_web.bib_records.domain import bib_services
+from overload_web.bib_records.domain import parser_service
 from overload_web.bib_records.infrastructure import marc_mapper
 
 
@@ -10,7 +10,7 @@ from overload_web.bib_records.infrastructure import marc_mapper
 )
 class TestParser:
     def test_parse_full(self, stub_constants, library, stub_bib, caplog):
-        stub_service = bib_services.FullLevelBibParser(
+        stub_service = parser_service.FullLevelBibParser(
             marc_mapper.BookopsMarcMapper(
                 rules=stub_constants["mapper_rules"], library=library, record_type="cat"
             )
@@ -27,7 +27,7 @@ class TestParser:
     def test_parse_order_level(
         self, stub_constants, library, stub_bib, collection, caplog
     ):
-        stub_service = stub_service = bib_services.OrderLevelBibParser(
+        stub_service = stub_service = parser_service.OrderLevelBibParser(
             marc_mapper.BookopsMarcMapper(
                 rules=stub_constants["mapper_rules"], library=library, record_type="acq"
             )
@@ -44,7 +44,7 @@ class TestParser:
 
     def test_parse_no_005(self, stub_constants, library, stub_bib, collection, caplog):
         stub_bib.remove_fields("005")
-        stub_service = stub_service = bib_services.OrderLevelBibParser(
+        stub_service = stub_service = parser_service.OrderLevelBibParser(
             marc_mapper.BookopsMarcMapper(
                 rules=stub_constants["mapper_rules"], library=library, record_type="sel"
             )
