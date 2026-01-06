@@ -93,21 +93,8 @@ class BookopsMarcFieldFactory:
             )
         return field
 
-    def set_nypl_default_location(
-        self, collection: str, bib: Bib, rules: dict[str, Any]
-    ) -> Field | None:
-        """
-        adds a 949 MARC tag command for setting bibliographic location
-        args:
-            bib: pymarc.record.Record
-        returns:
-            bib: pymarc.record.Record, with added command "bn=" to
-                the "949  $a" field, the field is created if missing
-        """
-        default_loc = rules["default_locations"]["options"][collection]
-
-        # determine if 949 already preset
-        for field in bib.get_fields("949", []):
+    def set_nypl_default_location(self, bib_rec: Bib, default_loc: str) -> Field | None:
+        for field in bib_rec.get_fields("949", []):
             if field.indicators == Indicators(" ", " ") and field.get(
                 "a", ""
             ).startswith("*"):
@@ -179,6 +166,17 @@ class BPLStrategy:
             bib_rec.remove_fields(bib_id_field.tag)
             bib_rec.add_ordered_field(bib_id_field)
         self.field_factory.update_leader(bib_rec=bib_rec)
+
+
+class NYPLSelectionStrategy:
+    def __init__(self, field_factory: BookopsMarcFieldFactory, rules: dict[str, Any]):
+        self.field_factory = field_factory
+        self.rules = rules
+
+    def apply_updates(self, bib_rec: Bib) -> None:
+        self.field_factory.set_nypl_default_location(
+            default_loc=self.rules[str(bib_rec.collection)], bib_rec=bib_rec
+        )
 
 
 class OrderLevelStrategy:
@@ -279,6 +277,10 @@ class BookopsMarcUpdater:
         self.order_record_strategy = OrderLevelStrategy(
             self.field_factory, rules=self.rules["updater_rules"]
         )
+        self.nypl_sel_strategy = NYPLSelectionStrategy(
+            field_factory=self.field_factory,
+            rules=self.rules["default_locations"]["options"],
+        )
 
     def update_record(
         self, record: bibs.DomainBib, template_data: dict[str, Any]
@@ -335,5 +337,7 @@ class BookopsMarcUpdater:
         library_strategy.apply_library_updates(
             bib_rec, bib_id=record.bib_id, vendor=template_data.get("vendor")
         )
+        if str(record.library) == "nypl":
+            self.nypl_sel_strategy.apply_updates(bib_rec=bib_rec)
         record.binary_data = bib_rec.as_marc()
         return record
