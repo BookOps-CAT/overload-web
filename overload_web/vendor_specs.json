@@ -527,11 +527,11 @@
     }
   },
   "default_locations": {
-    "label": "Default Location",
-    "options": {
+    "nypl": {
       "BL": "zzzzz",
       "RL": "xxx"
-    }
+    },
+    "bpl": {}
   },
   "nypl_branches": {
     "label": "NYPL Branches",

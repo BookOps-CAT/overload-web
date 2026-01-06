@@ -34,7 +34,7 @@ class FullRecordProcessingService:
         bib_fetcher: bib_services.marc_protocols.BibFetcher,
         bib_mapper: bib_services.marc_protocols.BibMapper,
         review_strategy: bib_services.marc_protocols.ResultsReviewer,
-        bib_updater: bib_services.marc_protocols.BibUpdater,
+        context_handler: bib_services.marc_protocols.MarcContextHandler,
     ):
         """
         Initialize `FullRecordProcessingService`.
@@ -52,7 +52,9 @@ class FullRecordProcessingService:
         self.reviewer = bib_services.BibReviewer(reviewer=review_strategy)
         self.matcher = bib_services.FullLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = bib_services.FullLevelBibParser(mapper=bib_mapper)
-        self.serializer = bib_services.FullLevelBibSerializer(updater=bib_updater)
+        self.serializer = bib_services.FullLevelBibUpdater(
+            context_handler=context_handler
+        )
 
     def process_vendor_file(self, data: BinaryIO | bytes) -> BinaryIO:
         """
@@ -80,7 +82,8 @@ class OrderRecordProcessingService:
         bib_fetcher: bib_services.marc_protocols.BibFetcher,
         bib_mapper: bib_services.marc_protocols.BibMapper,
         review_strategy: bib_services.marc_protocols.ResultsReviewer,
-        bib_updater: bib_services.marc_protocols.BibUpdater,
+        rules: dict[str, dict[str, str]],
+        context_handler: bib_services.marc_protocols.MarcContextHandler,
     ):
         """
         Initialize `OrderRecordProcessingService`.
@@ -98,7 +101,9 @@ class OrderRecordProcessingService:
         self.reviewer = bib_services.BibReviewer(reviewer=review_strategy)
         self.matcher = bib_services.OrderLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = bib_services.OrderLevelBibParser(mapper=bib_mapper)
-        self.serializer = bib_services.OrderLevelBibSerializer(updater=bib_updater)
+        self.serializer = bib_services.OrderLevelBibUpdater(
+            rules=rules, context_handler=context_handler
+        )
 
     def process_vendor_file(
         self,

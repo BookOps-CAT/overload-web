@@ -37,7 +37,7 @@ import io
 import itertools
 import logging
 from abc import ABC
-from typing import Any, BinaryIO, Callable
+from typing import Any, BinaryIO
 
 from overload_web.bib_records.domain import bibs, marc_protocols
 from overload_web.errors import OverloadError
@@ -222,55 +222,36 @@ class OrderLevelBibParser(BaseBibParser):
         return parsed
 
 
-class BaseBibSerializer(ABC):
-    """Domain service for writing a `DomainBib` to MARC binary."""
-
-    """
-    Domain service for updating a bib record based on its record type.
-
-    The service updates the `DomainBib` instance with the matched bib ID
-    and then updates the record using an injected `BibUpdater` object.
-    """
-
-    def __init__(self, updater: marc_protocols.BibUpdater) -> None:
-        """
-        Initialize the serializer service with an updater.
-
-        Args:
-            updater: An injected `BibUpdater` that updates bib records.
-        """
-        self.updater = updater
-        self._order_strategies: dict[str, Callable[..., bibs.DomainBib]] = {
-            "acq": updater.update_acquisitions_record,
-            "sel": updater.update_selection_record,
-        }
+class OrderLevelBibUpdater:
+    def __init__(
+        self,
+        rules: dict[str, dict[str, str]],
+        context_handler: marc_protocols.MarcContextHandler,
+    ) -> None:
+        self.rules = rules
+        self.context_handler = context_handler
 
     def _update_order_record(
         self, record: bibs.DomainBib, template_data: dict[str, Any]
     ) -> bibs.DomainBib:
-        func = self._order_strategies[str(record.record_type)]
-        return func(record=record, template_data=template_data)
+        ctx = self.context_handler.create_order_marc_ctx(
+            record=record, template_data=template_data, rules=self.rules
+        )
+        pipeline = self.context_handler.order_pipelines[str(record.record_type)]
+        for step in pipeline:
+            step.apply(ctx)
+        library_ctx = self.context_handler.create_library_ctx(
+            bib_rec=ctx.bib_rec,
+            bib_id=record.bib_id,
+            vendor=template_data.get("vendor"),
+        )
+        policies = self.context_handler.library_pipelines[str(record.library)]
+        for policy in policies:
+            policy.apply(library_ctx)
 
-    def serialize(self, records: list[bibs.DomainBib]) -> BinaryIO:
-        """
-        Update bibliographic records and serialize into a binary MARC stream.
+        record.binary_data = ctx.bib_rec.as_marc()
+        return record
 
-        Args:
-            records:
-                A list of parsed bibliographic records as `bibs.DomainBib` objects.
-
-        Returns:
-            MARC binary as an an in-memory file stream.
-        """
-        io_data = io.BytesIO()
-        for record in records:
-            logger.info(f"Writing MARC binary for record: {record.__dict__}")
-            io_data.write(record.binary_data)
-        io_data.seek(0)
-        return io_data
-
-
-class OrderLevelBibSerializer(BaseBibSerializer):
     def update(
         self, records: list[bibs.DomainBib], template_data: dict[str, Any]
     ) -> list[bibs.DomainBib]:
@@ -292,8 +273,43 @@ class OrderLevelBibSerializer(BaseBibSerializer):
             out.append(rec)
         return out
 
+    def serialize(self, records: list[bibs.DomainBib]) -> BinaryIO:
+        """
+        Update bibliographic records and serialize into a binary MARC stream.
 
-class FullLevelBibSerializer(BaseBibSerializer):
+        Args:
+            records:
+                A list of parsed bibliographic records as `bibs.DomainBib` objects.
+
+        Returns:
+            MARC binary as an an in-memory file stream.
+        """
+        io_data = io.BytesIO()
+        for record in records:
+            logger.info(f"Writing MARC binary for record: {record.__dict__}")
+            io_data.write(record.binary_data)
+        io_data.seek(0)
+        return io_data
+
+
+class FullLevelBibUpdater:
+    def __init__(self, context_handler: marc_protocols.MarcContextHandler) -> None:
+        self.context_handler = context_handler
+
+    def _update_full_record(self, record: bibs.DomainBib) -> bibs.DomainBib:
+        ctx = self.context_handler.create_full_marc_ctx(record=record)
+        pipeline = self.context_handler.full_record_pipelines[str(record.record_type)]
+        for step in pipeline:
+            step.apply(ctx)
+        library_ctx = self.context_handler.create_library_ctx(
+            bib_rec=ctx.bib_rec, bib_id=record.bib_id, vendor=record.vendor
+        )
+        policies = self.context_handler.library_pipelines[str(record.library)]
+        for policy in policies:
+            policy.apply(library_ctx)
+        record.binary_data = ctx.bib_rec.as_marc()
+        return record
+
     def update(self, records: list[bibs.DomainBib]) -> list[bibs.DomainBib]:
         """
         Update order-level bibliographic records.
@@ -307,6 +323,24 @@ class FullLevelBibSerializer(BaseBibSerializer):
         """
         out = []
         for record in records:
-            rec = self.updater.update_cataloging_record(record=record)
+            rec = self._update_full_record(record=record)
             out.append(rec)
         return out
+
+    def serialize(self, records: list[bibs.DomainBib]) -> BinaryIO:
+        """
+        Update bibliographic records and serialize into a binary MARC stream.
+
+        Args:
+            records:
+                A list of parsed bibliographic records as `bibs.DomainBib` objects.
+
+        Returns:
+            MARC binary as an an in-memory file stream.
+        """
+        io_data = io.BytesIO()
+        for record in records:
+            logger.info(f"Writing MARC binary for record: {record.__dict__}")
+            io_data.write(record.binary_data)
+        io_data.seek(0)
+        return io_data

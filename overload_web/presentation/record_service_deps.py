@@ -47,32 +47,26 @@ def get_mapper(
     )
 
 
-def get_updater(
-    constants: Annotated[dict[str, Any], Depends(get_constants)],
-) -> Generator[marc_updater.BookopsMarcUpdater, None, None]:
-    yield marc_updater.BookopsMarcUpdater(rules=constants)
-
-
 def order_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
     mapper: Annotated[marc_mapper.BookopsMarcMapper, Depends(get_mapper)],
-    updater: Annotated[marc_updater.BookopsMarcUpdater, Depends(get_updater)],
     reviewer: Annotated[
         response_reviewer.marc_protocols.ResultsReviewer, Depends(get_reviewer)
     ],
+    constants: Annotated[dict[str, Any], Depends(get_constants)],
 ) -> Generator[record_service.OrderRecordProcessingService, None, None]:
     yield record_service.OrderRecordProcessingService(
         bib_fetcher=fetcher,
         bib_mapper=mapper,
-        bib_updater=updater,
         review_strategy=reviewer,
+        rules=constants,
+        context_handler=marc_updater.BookopsMarcContextHandler(),
     )
 
 
 def full_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
     mapper: Annotated[marc_mapper.BookopsMarcMapper, Depends(get_mapper)],
-    updater: Annotated[marc_updater.BookopsMarcUpdater, Depends(get_updater)],
     reviewer: Annotated[
         response_reviewer.marc_protocols.ResultsReviewer, Depends(get_reviewer)
     ],
@@ -80,6 +74,6 @@ def full_level_processing_service(
     yield record_service.FullRecordProcessingService(
         bib_fetcher=fetcher,
         bib_mapper=mapper,
-        bib_updater=updater,
         review_strategy=reviewer,
+        context_handler=marc_updater.BookopsMarcContextHandler(),
     )

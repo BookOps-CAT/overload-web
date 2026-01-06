@@ -82,13 +82,9 @@ class BibUpdater(Protocol[D]):
 
     rules: dict[str, dict[str, str]]
 
-    def update_acquisitions_record(
-        self, record: D, template_data: dict[str, Any]
-    ) -> D: ...  # pragma: no branch
+    def update_full_record(self, record: D) -> D: ...  # pragma: no branch
 
-    def update_cataloging_record(self, record: D) -> D: ...  # pragma: no branch
-
-    def update_selection_record(
+    def update_order_record(
         self, record: D, template_data: dict[str, Any]
     ) -> D: ...  # pragma: no branch
 
@@ -100,3 +96,23 @@ class ResultsReviewer(Protocol[C, F]):
     def review_results(
         self, input: C, results: list[F]
     ) -> str | None: ...  # pragma: no branch
+
+
+@runtime_checkable
+class MarcContextHandler(Protocol[C]):
+    full_record_pipelines: dict[str, Any]
+    order_pipelines: dict[str, Any]
+    library_pipelines: dict[str, Any]
+
+    def create_order_marc_ctx(
+        self,
+        record: C,
+        template_data: dict[str, Any],
+        rules: dict[str, Any],
+    ) -> Any: ...  # pragma: no branch
+
+    def create_library_ctx(
+        self, bib_id: str | None, bib_rec: C, vendor: str | None
+    ) -> Any: ...  # pragma: no branch
+
+    def create_full_marc_ctx(self, record: C) -> Any: ...  # pragma: no branch
