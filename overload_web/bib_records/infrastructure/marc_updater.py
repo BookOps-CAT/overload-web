@@ -103,7 +103,7 @@ class BookopsMarcUpdater:
         )
         if callno != field.value():
             raise ValueError(
-                "Constructed call # does not match original."
+                "Constructed call number does not match original."
                 f"New={callno}, Original={field.value()}"
             )
         return field
