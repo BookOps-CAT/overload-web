@@ -15,9 +15,7 @@ class TestUpdater:
         )
         stub_cat_bib.bib_id = "12345"
         stub_service = bib_services.FullLevelBibSerializer(
-            updater=marc_updater.BookopsMarcUpdater(
-                rules=stub_constants, record_type="cat"
-            )
+            updater=marc_updater.BookopsMarcUpdater(rules=stub_constants)
         )
         updated_bibs = stub_service.update([stub_cat_bib])
         updated_bib = Bib(
@@ -33,9 +31,7 @@ class TestUpdater:
         )
         stub_cat_bib.bib_id = "12345"
         stub_service = bib_services.FullLevelBibSerializer(
-            updater=marc_updater.BookopsMarcUpdater(
-                rules=stub_constants, record_type="cat"
-            )
+            updater=marc_updater.BookopsMarcUpdater(rules=stub_constants)
         )
         updated_bibs = stub_service.update([stub_cat_bib])
         updated_bib = Bib(
@@ -57,9 +53,7 @@ class TestUpdater:
         )
         original_bib = copy.deepcopy(Bib(dto.binary_data, library=library))
         stub_service = bib_services.FullLevelBibSerializer(
-            updater=marc_updater.BookopsMarcUpdater(
-                rules=stub_constants, record_type="cat"
-            )
+            updater=marc_updater.BookopsMarcUpdater(rules=stub_constants)
         )
         updated_bibs = stub_service.update([dto])
         assert len(original_bib.get_fields("949")) == 1
@@ -73,10 +67,9 @@ class TestUpdater:
     )
     def test_update_acq(self, stub_acq_bib, template_data, stub_constants):
         original_orders = copy.deepcopy(stub_acq_bib.orders)
+        assert str(stub_acq_bib.record_type) == "acq"
         stub_service = bib_services.OrderLevelBibSerializer(
-            updater=marc_updater.BookopsMarcUpdater(
-                rules=stub_constants, record_type="acq"
-            )
+            updater=marc_updater.BookopsMarcUpdater(rules=stub_constants)
         )
         updated_bibs = stub_service.update([stub_acq_bib], template_data=template_data)
         assert [i.order_code_1 for i in original_orders] == ["j"]
@@ -89,9 +82,7 @@ class TestUpdater:
         original_orders = copy.deepcopy(stub_sel_bib.orders)
         assert str(stub_sel_bib.record_type) == "sel"
         stub_service = bib_services.OrderLevelBibSerializer(
-            updater=marc_updater.BookopsMarcUpdater(
-                rules=stub_constants, record_type="sel"
-            )
+            updater=marc_updater.BookopsMarcUpdater(rules=stub_constants)
         )
         updated_bibs = stub_service.update([stub_sel_bib], template_data=template_data)
         assert [i.order_code_1 for i in original_orders] == ["j"]
@@ -101,28 +92,9 @@ class TestUpdater:
         "library, collection",
         [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
     )
-    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_serialize_full(self, stub_acq_bib, caplog, stub_constants, record_type):
+    def test_serialize(self, stub_acq_bib, caplog, stub_constants):
         stub_service = bib_services.FullLevelBibSerializer(
-            updater=marc_updater.BookopsMarcUpdater(
-                rules=stub_constants, record_type=record_type
-            )
-        )
-        marc_binary = stub_service.serialize(records=[stub_acq_bib])
-        assert marc_binary.read()[0:2] == b"00"
-        assert len(caplog.records) == 1
-        assert "Writing MARC binary for record: " in caplog.records[0].msg
-
-    @pytest.mark.parametrize(
-        "library, collection",
-        [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
-    )
-    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_serialize_order(self, stub_acq_bib, caplog, stub_constants, record_type):
-        stub_service = bib_services.OrderLevelBibSerializer(
-            updater=marc_updater.BookopsMarcUpdater(
-                rules=stub_constants, record_type=record_type
-            )
+            updater=marc_updater.BookopsMarcUpdater(rules=stub_constants)
         )
         marc_binary = stub_service.serialize(records=[stub_acq_bib])
         assert marc_binary.read()[0:2] == b"00"

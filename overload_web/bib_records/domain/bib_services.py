@@ -240,26 +240,16 @@ class BaseBibSerializer(ABC):
             updater: An injected `BibUpdater` that updates bib records.
         """
         self.updater = updater
-        self._order_strategies: dict[tuple[str, str], Callable[..., bibs.DomainBib]] = {
-            ("acq", "bpl"): updater.update_bpl_acquisitions_record,
-            ("acq", "nypl"): updater.update_nypl_acquisitions_record,
-            ("sel", "bpl"): updater.update_bpl_selection_record,
-            ("sel", "nypl"): updater.update_nypl_selection_record,
-        }
-        self._full_strategies: dict[str, Callable[..., bibs.DomainBib]] = {
-            "bpl": updater.update_bpl_cataloging_record,
-            "nypl": updater.update_nypl_cataloging_record,
+        self._order_strategies: dict[str, Callable[..., bibs.DomainBib]] = {
+            "acq": updater.update_acquisitions_record,
+            "sel": updater.update_selection_record,
         }
 
     def _update_order_record(
         self, record: bibs.DomainBib, template_data: dict[str, Any]
     ) -> bibs.DomainBib:
-        func = self._order_strategies[(str(record.record_type), str(record.library))]
+        func = self._order_strategies[str(record.record_type)]
         return func(record=record, template_data=template_data)
-
-    def _update_full_record(self, record: bibs.DomainBib) -> bibs.DomainBib:
-        func = self._full_strategies[(str(record.library))]
-        return func(record=record)
 
     def serialize(self, records: list[bibs.DomainBib]) -> BinaryIO:
         """
@@ -317,6 +307,6 @@ class FullLevelBibSerializer(BaseBibSerializer):
         """
         out = []
         for record in records:
-            rec = self._update_full_record(record=record)
+            rec = self.updater.update_cataloging_record(record=record)
             out.append(rec)
         return out

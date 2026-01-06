@@ -49,9 +49,8 @@ def get_mapper(
 
 def get_updater(
     constants: Annotated[dict[str, Any], Depends(get_constants)],
-    record_type: Annotated[str, Form(...)],
 ) -> Generator[marc_updater.BookopsMarcUpdater, None, None]:
-    yield marc_updater.BookopsMarcUpdater(rules=constants, record_type=record_type)
+    yield marc_updater.BookopsMarcUpdater(rules=constants)
 
 
 def order_level_processing_service(

@@ -529,8 +529,8 @@
   "default_locations": {
     "label": "Default Location",
     "options": {
-      "branches": "zzzzz",
-      "research": "xxx"
+      "BL": "zzzzz",
+      "RL": "xxx"
     }
   },
   "nypl_branches": {

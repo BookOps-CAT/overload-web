@@ -80,26 +80,15 @@ class BibUpdater(Protocol[D]):
     Update MARC records with appropriate fields during last stage of record processing.
     """
 
-    record_type: str
     rules: dict[str, dict[str, str]]
 
-    def update_bpl_acquisitions_record(
+    def update_acquisitions_record(
         self, record: D, template_data: dict[str, Any]
     ) -> D: ...  # pragma: no branch
 
-    def update_nypl_acquisitions_record(
-        self, record: D, template_data: dict[str, Any]
-    ) -> D: ...  # pragma: no branch
+    def update_cataloging_record(self, record: D) -> D: ...  # pragma: no branch
 
-    def update_bpl_cataloging_record(self, record: D) -> D: ...  # pragma: no branch
-
-    def update_nypl_cataloging_record(self, record: D) -> D: ...  # pragma: no branch
-
-    def update_nypl_selection_record(
-        self, record: D, template_data: dict[str, Any]
-    ) -> D: ...  # pragma: no branch
-
-    def update_bpl_selection_record(
+    def update_selection_record(
         self, record: D, template_data: dict[str, Any]
     ) -> D: ...  # pragma: no branch
 
