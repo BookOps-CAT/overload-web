@@ -8,13 +8,16 @@ from overload_web.bib_records.infrastructure import marc_mapper
     "library, collection",
     [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
 )
-class Testparse:
-    def test_parse_full(self, stub_constants, library, stub_bib, caplog):
-        stub_service = parse.FullLevelBibParser(
-            marc_mapper.BookopsMarcMapper(
-                rules=stub_constants["mapper_rules"], library=library, record_type="cat"
-            )
+@pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
+class TestParser:
+    @pytest.fixture
+    def stub_mapper(self, record_type, library, stub_mapper_rules):
+        return marc_mapper.BookopsMarcMapper(
+            rules=stub_mapper_rules, library=library, record_type=record_type
         )
+
+    def test_parse_full(self, stub_mapper, stub_bib, caplog):
+        stub_service = parse.FullLevelBibParser(mapper=stub_mapper)
         records, barcodes = stub_service.parse(stub_bib.as_marc())
         assert len(records) == 1
         assert str(records[0].library) == str(stub_service.mapper.library)
@@ -24,14 +27,8 @@ class Testparse:
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
 
-    def test_parse_order_level(
-        self, stub_constants, library, stub_bib, collection, caplog
-    ):
-        stub_service = stub_service = parse.OrderLevelBibParser(
-            marc_mapper.BookopsMarcMapper(
-                rules=stub_constants["mapper_rules"], library=library, record_type="acq"
-            )
-        )
+    def test_parse_order_level(self, stub_mapper, stub_bib, collection, caplog):
+        stub_service = parse.OrderLevelBibParser(mapper=stub_mapper)
         records = stub_service.parse(stub_bib.as_marc())
         assert len(records) == 1
         assert str(records[0].library) == str(stub_service.mapper.library)
@@ -42,13 +39,9 @@ class Testparse:
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
 
-    def test_parse_no_005(self, stub_constants, library, stub_bib, collection, caplog):
+    def test_parse_no_005(self, stub_mapper, stub_bib, caplog):
         stub_bib.remove_fields("005")
-        stub_service = stub_service = parse.OrderLevelBibParser(
-            marc_mapper.BookopsMarcMapper(
-                rules=stub_constants["mapper_rules"], library=library, record_type="sel"
-            )
-        )
+        stub_service = parse.OrderLevelBibParser(mapper=stub_mapper)
         records = stub_service.parse(stub_bib.as_marc())
         assert len(records) == 1
         assert records[0].vendor_info is None

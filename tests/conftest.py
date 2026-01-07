@@ -411,7 +411,7 @@ def stub_bib(library, collection) -> Bib:
 
 
 @pytest.fixture
-def make_domain_bib(stub_bib, stub_constants, library) -> Callable:
+def make_domain_bib(stub_bib, stub_mapper_rules, library) -> Callable:
     def _make_dto(data: dict[str, dict[str, str]], record_type: str):
         record = copy.deepcopy(stub_bib)
         for k, v in data.items():
@@ -425,7 +425,7 @@ def make_domain_bib(stub_bib, stub_constants, library) -> Callable:
                 )
             )
         mapper = marc_mapper.BookopsMarcMapper(
-            rules=stub_constants["mapper_rules"],
+            rules=stub_mapper_rules,
             library=library,
             record_type=record_type,
         )
@@ -440,11 +440,16 @@ def make_domain_bib(stub_bib, stub_constants, library) -> Callable:
     return _make_dto
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def stub_constants():
     with open("overload_web/vendor_specs.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     return constants
+
+
+@pytest.fixture
+def stub_mapper_rules(stub_constants):
+    return stub_constants["mapper_rules"]
 
 
 @pytest.fixture
