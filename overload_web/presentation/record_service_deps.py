@@ -55,7 +55,7 @@ def order_level_processing_service(
         bib_mapper=mapper,
         review_strategy=reviewer,
         rules=constants,
-        context_handler=marc_updater.BookopsMarcContextHandler(),
+        update_handler=marc_updater.BookopsMarcUpdateHandler(),
     )
 
 
@@ -70,5 +70,5 @@ def full_level_processing_service(
         bib_fetcher=fetcher,
         bib_mapper=mapper,
         review_strategy=reviewer,
-        context_handler=marc_updater.BookopsMarcContextHandler(),
+        update_handler=marc_updater.BookopsMarcUpdateHandler(),
     )

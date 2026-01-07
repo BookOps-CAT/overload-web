@@ -99,16 +99,13 @@ class BibReviewStrategy(Protocol[C, F]):
 
 
 @runtime_checkable
-class MarcContextHandler(Protocol[C]):
+class MarcUpdateHandler(Protocol[C]):
     full_record_pipelines: dict[str, Any]
     order_pipelines: dict[str, Any]
     library_pipelines: dict[str, Any]
 
     def create_order_marc_ctx(
-        self,
-        record: C,
-        template_data: dict[str, Any],
-        rules: dict[str, Any],
+        self, record: C, rules: dict[str, Any], template_data: dict[str, Any]
     ) -> Any: ...  # pragma: no branch
 
     def create_library_ctx(

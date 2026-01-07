@@ -13,28 +13,26 @@ logger = logging.getLogger(__name__)
 
 class OrderLevelBibUpdater:
     def __init__(
-        self,
-        rules: dict[str, dict[str, str]],
-        context_handler: marc_protocols.MarcContextHandler,
+        self, rules: dict[str, Any], update_handler: marc_protocols.MarcUpdateHandler
     ) -> None:
         self.rules = rules
-        self.context_handler = context_handler
+        self.update_handler = update_handler
 
     def _update_order_record(
         self, record: bibs.DomainBib, template_data: dict[str, Any]
     ) -> bibs.DomainBib:
-        ctx = self.context_handler.create_order_marc_ctx(
+        ctx = self.update_handler.create_order_marc_ctx(
             record=record, template_data=template_data, rules=self.rules
         )
-        pipeline = self.context_handler.order_pipelines[str(record.record_type)]
+        pipeline = self.update_handler.order_pipelines[str(record.record_type)]
         for step in pipeline:
             step.apply(ctx)
-        library_ctx = self.context_handler.create_library_ctx(
+        library_ctx = self.update_handler.create_library_ctx(
             bib_rec=ctx.bib_rec,
             bib_id=record.bib_id,
             vendor=template_data.get("vendor"),
         )
-        policies = self.context_handler.library_pipelines[str(record.library)]
+        policies = self.update_handler.library_pipelines[str(record.library)]
         for policy in policies:
             policy.apply(library_ctx)
 
@@ -82,18 +80,18 @@ class OrderLevelBibUpdater:
 
 
 class FullLevelBibUpdater:
-    def __init__(self, context_handler: marc_protocols.MarcContextHandler) -> None:
-        self.context_handler = context_handler
+    def __init__(self, update_handler: marc_protocols.MarcUpdateHandler) -> None:
+        self.update_handler = update_handler
 
     def _update_full_record(self, record: bibs.DomainBib) -> bibs.DomainBib:
-        ctx = self.context_handler.create_full_marc_ctx(record=record)
-        pipeline = self.context_handler.full_record_pipelines[str(record.record_type)]
+        ctx = self.update_handler.create_full_marc_ctx(record=record)
+        pipeline = self.update_handler.full_record_pipelines[str(record.record_type)]
         for step in pipeline:
             step.apply(ctx)
-        library_ctx = self.context_handler.create_library_ctx(
+        library_ctx = self.update_handler.create_library_ctx(
             bib_rec=ctx.bib_rec, bib_id=record.bib_id, vendor=record.vendor
         )
-        policies = self.context_handler.library_pipelines[str(record.library)]
+        policies = self.update_handler.library_pipelines[str(record.library)]
         for policy in policies:
             policy.apply(library_ctx)
         record.binary_data = ctx.bib_rec.as_marc()

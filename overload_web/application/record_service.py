@@ -57,7 +57,7 @@ class FullRecordProcessingService:
         bib_fetcher: marc_protocols.BibFetcher,
         bib_mapper: marc_protocols.BibMapper,
         review_strategy: marc_protocols.BibReviewStrategy,
-        context_handler: marc_protocols.MarcContextHandler,
+        update_handler: marc_protocols.MarcUpdateHandler,
     ):
         """
         Initialize `FullRecordProcessingService`.
@@ -69,14 +69,14 @@ class FullRecordProcessingService:
                 A `marc_protocols.BibMapper` object
             review_strategy:
                 A `marc_protocols.BibReviewStrategy` object
-            bib_updater:
+            update_handler:
                 A `marc_protocols.BibUpdater` object
         """
         self.reviewer = reviewer_service.BibReviewer(strategy=review_strategy)
         self.matcher = matcher_service.FullLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = parser_service.FullLevelBibParser(mapper=bib_mapper)
         self.serializer = updater_service.FullLevelBibUpdater(
-            context_handler=context_handler
+            update_handler=update_handler
         )
 
     def process_vendor_file(self, data: BinaryIO | bytes) -> BinaryIO:
@@ -105,8 +105,8 @@ class OrderRecordProcessingService:
         bib_fetcher: marc_protocols.BibFetcher,
         bib_mapper: marc_protocols.BibMapper,
         review_strategy: marc_protocols.BibReviewStrategy,
-        rules: dict[str, dict[str, str]],
-        context_handler: marc_protocols.MarcContextHandler,
+        rules: dict[str, Any],
+        update_handler: marc_protocols.MarcUpdateHandler,
     ):
         """
         Initialize `OrderRecordProcessingService`.
@@ -118,21 +118,23 @@ class OrderRecordProcessingService:
                 A `marc_protocols.BibMapper` object
             review_strategy:
                 A `marc_protocols.BibReviewStrategy` object
-            bib_updater:
+            rules:
+                A set of rules to be used by the `BibUpdater` as a dict
+            update_handler:
                 A `marc_protocols.BibUpdater` object
         """
         self.reviewer = reviewer_service.BibReviewer(strategy=review_strategy)
         self.matcher = matcher_service.OrderLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = parser_service.OrderLevelBibParser(mapper=bib_mapper)
         self.serializer = updater_service.OrderLevelBibUpdater(
-            rules=rules, context_handler=context_handler
+            rules=rules, update_handler=update_handler
         )
 
     def process_vendor_file(
         self,
         data: BinaryIO | bytes,
-        template_data: dict[str, Any],
         matchpoints: dict[str, str],
+        template_data: dict[str, Any],
     ) -> BinaryIO:
         """
         Parse MARC records, match them against Sierra, update the records with required

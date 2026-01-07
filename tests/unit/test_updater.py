@@ -8,7 +8,7 @@ from overload_web.bib_records.infrastructure import marc_updater
 
 
 class TestUpdater:
-    context_handler = marc_updater.BookopsMarcContextHandler()
+    update_handler = marc_updater.BookopsMarcUpdateHandler()
 
     @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
     def test_update_cat_bpl(self, stub_cat_bib):
@@ -17,7 +17,7 @@ class TestUpdater:
         )
         stub_cat_bib.bib_id = "12345"
         stub_service = updater_service.FullLevelBibUpdater(
-            context_handler=self.context_handler,
+            update_handler=self.update_handler,
         )
         updated_bibs = stub_service.update([stub_cat_bib])
         updated_bib = Bib(
@@ -33,7 +33,7 @@ class TestUpdater:
         )
         stub_cat_bib.bib_id = "12345"
         stub_service = updater_service.FullLevelBibUpdater(
-            context_handler=self.context_handler,
+            update_handler=self.update_handler,
         )
         updated_bibs = stub_service.update([stub_cat_bib])
         updated_bib = Bib(
@@ -55,7 +55,7 @@ class TestUpdater:
         )
         original_bib = copy.deepcopy(Bib(dto.binary_data, library=library))
         stub_service = updater_service.FullLevelBibUpdater(
-            context_handler=self.context_handler,
+            update_handler=self.update_handler,
         )
         updated_bibs = stub_service.update([dto])
         assert len(original_bib.get_fields("949")) == 1
@@ -72,7 +72,7 @@ class TestUpdater:
         assert str(stub_acq_bib.record_type) == "acq"
         stub_service = updater_service.OrderLevelBibUpdater(
             rules=stub_constants,
-            context_handler=self.context_handler,
+            update_handler=self.update_handler,
         )
         updated_bibs = stub_service.update([stub_acq_bib], template_data=template_data)
         assert [i.order_code_1 for i in original_orders] == ["j"]
@@ -85,7 +85,7 @@ class TestUpdater:
         original_orders = copy.deepcopy(stub_sel_bib.orders)
         assert str(stub_sel_bib.record_type) == "sel"
         stub_service = updater_service.OrderLevelBibUpdater(
-            rules=stub_constants, context_handler=self.context_handler
+            rules=stub_constants, update_handler=self.update_handler
         )
         updated_bibs = stub_service.update([stub_sel_bib], template_data=template_data)
         assert [i.order_code_1 for i in original_orders] == ["j"]
@@ -98,7 +98,7 @@ class TestUpdater:
     def test_serialize_order(self, stub_acq_bib, caplog, stub_constants):
         stub_service = updater_service.OrderLevelBibUpdater(
             rules=stub_constants,
-            context_handler=self.context_handler,
+            update_handler=self.update_handler,
         )
         marc_binary = stub_service.serialize(records=[stub_acq_bib])
         assert marc_binary.read()[0:2] == b"00"
@@ -111,7 +111,7 @@ class TestUpdater:
     )
     def test_serialize_full(self, stub_cat_bib, caplog):
         stub_service = updater_service.FullLevelBibUpdater(
-            context_handler=self.context_handler
+            update_handler=self.update_handler
         )
         marc_binary = stub_service.serialize(records=[stub_cat_bib])
         assert marc_binary.read()[0:2] == b"00"

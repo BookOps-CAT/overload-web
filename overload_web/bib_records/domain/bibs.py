@@ -304,3 +304,21 @@ class VendorInfo:
     bib_fields: list[dict[str, str]]
     matchpoints: dict[str, str]
     name: str
+
+
+@dataclass(frozen=True)
+class ProcessFullRecordCommand:
+    collection: Collection
+    library: LibrarySystem
+    record_type: RecordType
+    files: list
+    template_data: dict[str, Any]
+    matchpoints: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class ProcessOrderRecordCommand:
+    collection: Collection
+    library: LibrarySystem
+    record_type: RecordType
+    files: list
