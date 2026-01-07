@@ -40,15 +40,15 @@ class LibraryContext:
 
 
 class OrderUpdateStep(Protocol):
-    def apply(self, ctx: OrderMarcContext) -> None: ...
+    def apply(self, ctx: OrderMarcContext) -> None: ...  # pragma: no branch
 
 
 class LibraryUpdateStep(Protocol):
-    def apply(self, ctx: LibraryContext) -> None: ...
+    def apply(self, ctx: LibraryContext) -> None: ...  # pragma: no branch
 
 
 class FullRecordUpdateStep(Protocol):
-    def apply(self, ctx: MarcContext) -> None: ...
+    def apply(self, ctx: MarcContext) -> None: ...  # pragma: no branch
 
 
 class ApplyOrderTemplate:
@@ -128,15 +128,15 @@ class SetDefaultLocation:
 
 
 class Remove910Field:
-    def apply(self, ctx: LibraryContext):
+    def apply(self, ctx: LibraryContext) -> None:
         ctx.bib_rec.remove_fields("910")
 
 
 class AddBibId:
-    def __init__(self, tag: str):
+    def __init__(self, tag: str) -> None:
         self.tag = tag
 
-    def apply(self, ctx: LibraryContext):
+    def apply(self, ctx: LibraryContext) -> None:
         if ctx.bib_id:
             ctx.bib_rec.remove_fields(self.tag)
             ctx.bib_rec.add_ordered_field(
@@ -149,12 +149,12 @@ class AddBibId:
 
 
 class UpdateLeader:
-    def apply(self, ctx: LibraryContext):
+    def apply(self, ctx: LibraryContext) -> None:
         ctx.bib_rec.leader = ctx.bib_rec.leader[:9] + "a" + ctx.bib_rec.leader[10:]
 
 
 class UpdateBtSeriesCallNo:
-    def apply(self, ctx: LibraryContext):
+    def apply(self, ctx: LibraryContext) -> None:
         if not (
             ctx.bib_rec.collection == "BL"
             and ctx.vendor == "BT SERIES"
