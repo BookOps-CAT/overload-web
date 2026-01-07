@@ -22,12 +22,12 @@ def get_fetcher(
     yield clients.FetcherFactory().make(library)
 
 
-def get_reviewer(
+def get_match_policy(
     library: Annotated[str, Form(...)],
     collection: Annotated[str, Form(...)],
     record_type: Annotated[str, Form(...)],
-) -> Generator[record_service.marc_protocols.BibReviewStrategy, None, None]:
-    yield record_service.ReviewStrategyFactory().make(
+) -> Generator[record_service.marc_protocols.BibMatchPolicy, None, None]:
+    yield record_service.MatchPolicyFactory().make(
         library=library, record_type=record_type, collection=collection
     )
 
@@ -46,14 +46,14 @@ def order_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
     mapper: Annotated[marc_mapper.BookopsMarcMapper, Depends(get_mapper)],
     reviewer: Annotated[
-        record_service.marc_protocols.BibReviewStrategy, Depends(get_reviewer)
+        record_service.marc_protocols.BibMatchPolicy, Depends(get_match_policy)
     ],
     constants: Annotated[dict[str, Any], Depends(get_constants)],
 ) -> Generator[record_service.OrderRecordProcessingService, None, None]:
     yield record_service.OrderRecordProcessingService(
         bib_fetcher=fetcher,
         bib_mapper=mapper,
-        review_strategy=reviewer,
+        match_policy=reviewer,
         rules=constants,
         update_handler=marc_updater.BookopsMarcUpdateHandler(),
     )
@@ -63,12 +63,12 @@ def full_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
     mapper: Annotated[marc_mapper.BookopsMarcMapper, Depends(get_mapper)],
     reviewer: Annotated[
-        record_service.marc_protocols.BibReviewStrategy, Depends(get_reviewer)
+        record_service.marc_protocols.BibMatchPolicy, Depends(get_match_policy)
     ],
 ) -> Generator[record_service.FullRecordProcessingService, None, None]:
     yield record_service.FullRecordProcessingService(
         bib_fetcher=fetcher,
         bib_mapper=mapper,
-        review_strategy=reviewer,
+        match_policy=reviewer,
         update_handler=marc_updater.BookopsMarcUpdateHandler(),
     )

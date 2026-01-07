@@ -3,7 +3,7 @@ import copy
 import pytest
 from bookops_marc import Bib
 
-from overload_web.bib_records.domain import updater_service
+from overload_web.bib_records.domain_services import update
 from overload_web.bib_records.infrastructure import marc_updater
 
 
@@ -16,7 +16,7 @@ class TestUpdater:
             copy.deepcopy(stub_cat_bib.binary_data), library=str(stub_cat_bib.library)
         )
         stub_cat_bib.bib_id = "12345"
-        stub_service = updater_service.FullLevelBibUpdater(
+        stub_service = update.FullLevelBibUpdater(
             update_handler=self.update_handler,
         )
         updated_bibs = stub_service.update([stub_cat_bib])
@@ -32,7 +32,7 @@ class TestUpdater:
             copy.deepcopy(stub_cat_bib.binary_data), library=str(stub_cat_bib.library)
         )
         stub_cat_bib.bib_id = "12345"
-        stub_service = updater_service.FullLevelBibUpdater(
+        stub_service = update.FullLevelBibUpdater(
             update_handler=self.update_handler,
         )
         updated_bibs = stub_service.update([stub_cat_bib])
@@ -54,7 +54,7 @@ class TestUpdater:
             "cat",
         )
         original_bib = copy.deepcopy(Bib(dto.binary_data, library=library))
-        stub_service = updater_service.FullLevelBibUpdater(
+        stub_service = update.FullLevelBibUpdater(
             update_handler=self.update_handler,
         )
         updated_bibs = stub_service.update([dto])
@@ -70,7 +70,7 @@ class TestUpdater:
     def test_update_acq(self, stub_acq_bib, template_data, stub_constants):
         original_orders = copy.deepcopy(stub_acq_bib.orders)
         assert str(stub_acq_bib.record_type) == "acq"
-        stub_service = updater_service.OrderLevelBibUpdater(
+        stub_service = update.OrderLevelBibUpdater(
             rules=stub_constants,
             update_handler=self.update_handler,
         )
@@ -84,7 +84,7 @@ class TestUpdater:
     def test_update_sel(self, stub_sel_bib, template_data, stub_constants):
         original_orders = copy.deepcopy(stub_sel_bib.orders)
         assert str(stub_sel_bib.record_type) == "sel"
-        stub_service = updater_service.OrderLevelBibUpdater(
+        stub_service = update.OrderLevelBibUpdater(
             rules=stub_constants, update_handler=self.update_handler
         )
         updated_bibs = stub_service.update([stub_sel_bib], template_data=template_data)
@@ -96,7 +96,7 @@ class TestUpdater:
         [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
     )
     def test_serialize_order(self, stub_acq_bib, caplog, stub_constants):
-        stub_service = updater_service.OrderLevelBibUpdater(
+        stub_service = update.OrderLevelBibUpdater(
             rules=stub_constants,
             update_handler=self.update_handler,
         )
@@ -110,9 +110,7 @@ class TestUpdater:
         [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
     )
     def test_serialize_full(self, stub_cat_bib, caplog):
-        stub_service = updater_service.FullLevelBibUpdater(
-            update_handler=self.update_handler
-        )
+        stub_service = update.FullLevelBibUpdater(update_handler=self.update_handler)
         marc_binary = stub_service.serialize(records=[stub_cat_bib])
         assert marc_binary.read()[0:2] == b"00"
         assert len(caplog.records) == 1

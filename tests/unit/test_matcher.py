@@ -2,8 +2,12 @@ import json
 
 import pytest
 
-from overload_web.bib_records.domain import marc_protocols, matcher_service
-from overload_web.bib_records.infrastructure import clients, sierra_responses
+from overload_web.bib_records.domain_models import (
+    marc_protocols,
+    sierra_responses,
+)
+from overload_web.bib_records.domain_services import match
+from overload_web.bib_records.infrastructure import clients
 from overload_web.errors import OverloadError
 
 
@@ -47,9 +51,7 @@ class TestOrderLevelMatcher:
             "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
             fake_fetcher,
         )
-        return matcher_service.OrderLevelBibMatcher(
-            fetcher=clients.SierraBibFetcher(library)
-        )
+        return match.OrderLevelBibMatcher(fetcher=clients.SierraBibFetcher(library))
 
     @pytest.fixture
     def stub_service_no_matches(self, monkeypatch, library):
@@ -60,9 +62,7 @@ class TestOrderLevelMatcher:
             "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
             fake_fetcher,
         )
-        return matcher_service.OrderLevelBibMatcher(
-            fetcher=clients.SierraBibFetcher(library)
-        )
+        return match.OrderLevelBibMatcher(fetcher=clients.SierraBibFetcher(library))
 
     def test_match_order_level(self, stub_service, stub_acq_bib):
         matched_bibs = stub_service.match(
@@ -103,9 +103,7 @@ class TestFullMatcher:
             "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
             fake_fetcher,
         )
-        return matcher_service.FullLevelBibMatcher(
-            fetcher=clients.SierraBibFetcher(library)
-        )
+        return match.FullLevelBibMatcher(fetcher=clients.SierraBibFetcher(library))
 
     @pytest.fixture
     def stub_service_no_matches(self, monkeypatch, library):
@@ -116,9 +114,7 @@ class TestFullMatcher:
             "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
             fake_fetcher,
         )
-        return matcher_service.FullLevelBibMatcher(
-            fetcher=clients.SierraBibFetcher(library)
-        )
+        return match.FullLevelBibMatcher(fetcher=clients.SierraBibFetcher(library))
 
     def test_match_full(self, stub_service, stub_cat_bib):
         matched_bibs = stub_service.match([stub_cat_bib])
@@ -129,7 +125,7 @@ class TestFullMatcher:
         assert len(matched_bibs[0].matches) == 0
 
     def test_match_full_no_vendor_index(self, stub_service, stub_acq_bib):
-        setattr(stub_acq_bib, "record_type", matcher_service.bibs.RecordType("cat"))
+        setattr(stub_acq_bib, "record_type", match.bibs.RecordType("cat"))
         assert stub_acq_bib.vendor_info is None
         with pytest.raises(OverloadError) as exc:
             stub_service.match([stub_acq_bib])

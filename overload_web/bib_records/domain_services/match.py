@@ -10,7 +10,11 @@ from __future__ import annotations
 import logging
 from abc import ABC
 
-from overload_web.bib_records.domain import bibs, marc_protocols
+from overload_web.bib_records.domain_models import (
+    bibs,
+    marc_protocols,
+    sierra_responses,
+)
 from overload_web.errors import OverloadError
 
 logger = logging.getLogger(__name__)
@@ -39,7 +43,7 @@ class BaseBibMatcher(ABC):
 
     def _match_bib(
         self, record: bibs.DomainBib, matchpoints: dict[str, str]
-    ) -> list[bibs.BaseSierraResponse]:
+    ) -> list[sierra_responses.BaseSierraResponse]:
         """
         Find all matches in Sierra for a given bib record.
 
@@ -68,7 +72,7 @@ class BaseBibMatcher(ABC):
 class OrderLevelBibMatcher(BaseBibMatcher):
     def match(
         self, records: list[bibs.DomainBib], matchpoints: dict[str, str]
-    ) -> list[bibs.MatcherResponse]:
+    ) -> list[sierra_responses.MatcherResponse]:
         """
         Match order-level bibliographic records.
 
@@ -84,15 +88,17 @@ class OrderLevelBibMatcher(BaseBibMatcher):
         """
         out = []
         for record in records:
-            matches: list[bibs.BaseSierraResponse] = self._match_bib(
+            matches: list[sierra_responses.BaseSierraResponse] = self._match_bib(
                 record=record, matchpoints=matchpoints
             )
-            out.append(bibs.MatcherResponse(bib=record, matches=matches))
+            out.append(sierra_responses.MatcherResponse(bib=record, matches=matches))
         return out
 
 
 class FullLevelBibMatcher(BaseBibMatcher):
-    def match(self, records: list[bibs.DomainBib]) -> list[bibs.MatcherResponse]:
+    def match(
+        self, records: list[bibs.DomainBib]
+    ) -> list[sierra_responses.MatcherResponse]:
         """
         Match full-level bibliographic records.
 
@@ -112,8 +118,8 @@ class FullLevelBibMatcher(BaseBibMatcher):
         for record in records:
             if record.vendor_info is None:
                 raise OverloadError("Vendor index required for cataloging workflow.")
-            matches: list[bibs.BaseSierraResponse] = self._match_bib(
+            matches: list[sierra_responses.BaseSierraResponse] = self._match_bib(
                 record=record, matchpoints=record.vendor_info.matchpoints
             )
-            out.append(bibs.MatcherResponse(bib=record, matches=matches))
+            out.append(sierra_responses.MatcherResponse(bib=record, matches=matches))
         return out

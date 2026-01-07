@@ -6,7 +6,7 @@ import io
 import logging
 from typing import Any, BinaryIO
 
-from overload_web.bib_records.domain import bibs, marc_protocols
+from overload_web.bib_records.domain_models import bibs, marc_protocols
 
 logger = logging.getLogger(__name__)
 

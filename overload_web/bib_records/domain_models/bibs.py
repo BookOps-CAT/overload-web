@@ -3,67 +3,9 @@
 from __future__ import annotations
 
 import datetime
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
-
-
-class BaseSierraResponse(ABC):
-    library: str
-
-    def __init__(self, data: dict[str, Any]) -> None:
-        self._data = data
-        self.bib_id: str = data["id"]
-        self.library = self.__class__.library
-        self.title: str = data["title"]
-
-    @property
-    @abstractmethod
-    def barcodes(self) -> list[str]: ...  # pragma: no branch
-
-    @property
-    @abstractmethod
-    def branch_call_number(self) -> str | None: ...  # pragma: no branch
-
-    @property
-    @abstractmethod
-    def cat_source(self) -> str: ...  # pragma: no branch
-
-    @property
-    @abstractmethod
-    def collection(self) -> str | None: ...  # pragma: no branch
-
-    @property
-    def control_number(self) -> str | None: ...  # pragma: no branch
-
-    @property
-    @abstractmethod
-    def isbn(self) -> list[str]: ...  # pragma: no branch
-
-    @property
-    @abstractmethod
-    def oclc_number(self) -> list[str]: ...  # pragma: no branch
-
-    @property
-    @abstractmethod
-    def research_call_number(self) -> list[str]: ...  # pragma: no branch
-
-    @property
-    @abstractmethod
-    def upc(self) -> list[str]: ...  # pragma: no branch
-
-    @property
-    @abstractmethod
-    def update_date(self) -> str: ...  # pragma: no branch
-
-    @property
-    @abstractmethod
-    def update_datetime(self) -> datetime.datetime: ...  # pragma: no branch
-
-    @property
-    @abstractmethod
-    def var_fields(self) -> list[dict[str, Any]]: ...  # pragma: no branch
 
 
 class Collection(Enum):
@@ -185,17 +127,6 @@ class LibrarySystem(Enum):
 
     def __str__(self):
         return self.value
-
-
-class MatcherResponse:
-    def __init__(self, bib: DomainBib, matches: list[BaseSierraResponse]) -> None:
-        self.bib = bib
-        self.matches = matches
-
-    def apply_matched_bib_id(self, bib_id: str | None) -> None:
-        """Apply the bib ID from a match to the `MatcherResponse` object's `bib`."""
-        if bib_id:
-            self.bib.update_bib_id(bib_id)
 
 
 class Order:

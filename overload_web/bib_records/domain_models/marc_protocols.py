@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 C = TypeVar("C", contravariant=True)  # variable for contravariant DomainBib type
 D = TypeVar("D")  # variable for invariant DomainBib type
 F = TypeVar("F")  # variable for BaseSierraResponse type
+M = TypeVar("M", covariant=True)  # variable for MatchResolution type
 
 
 @runtime_checkable
@@ -90,12 +91,10 @@ class BibUpdater(Protocol[D]):
 
 
 @runtime_checkable
-class BibReviewStrategy(Protocol[C, F]):
+class BibMatchPolicy(Protocol[C, F, M]):
     """Review results of Sierra queries and select best match"""
 
-    def review_results(
-        self, input: C, results: list[F]
-    ) -> str | None: ...  # pragma: no branch
+    def resolve(self, incoming: C, candidates: list[F]) -> M: ...  # pragma: no branch
 
 
 @runtime_checkable
