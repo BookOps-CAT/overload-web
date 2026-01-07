@@ -32,6 +32,23 @@ from overload_web.bib_records.domain import (
 logger = logging.getLogger(__name__)
 
 
+class ReviewStrategyFactory:
+    def make(
+        self, library: str, record_type: str, collection: str
+    ) -> marc_protocols.BibReviewStrategy:
+        match record_type, library, collection:
+            case "cat", "nypl", "BL":
+                return reviewer_service.NYPLCatBranchReviewStrategy()
+            case "cat", "nypl", "RL":
+                return reviewer_service.NYPLCatResearchReviewStrategy()
+            case "cat", "bpl", _:
+                return reviewer_service.BPLCatReviewStrategy()
+            case "sel", _, _:
+                return reviewer_service.SelectionReviewStrategy()
+            case _:
+                return reviewer_service.AcquisitionsReviewStrategy()
+
+
 class FullRecordProcessingService:
     """Handles MARC record parsing, matching, and serialization."""
 

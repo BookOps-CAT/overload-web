@@ -5,12 +5,7 @@ from typing import Annotated, Any, Generator
 from fastapi import Depends, Form
 
 from overload_web.application import record_service
-from overload_web.bib_records.infrastructure import (
-    clients,
-    marc_mapper,
-    marc_updater,
-    response_reviewer,
-)
+from overload_web.bib_records.infrastructure import clients, marc_mapper, marc_updater
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +26,8 @@ def get_reviewer(
     library: Annotated[str, Form(...)],
     collection: Annotated[str, Form(...)],
     record_type: Annotated[str, Form(...)],
-) -> Generator[response_reviewer.marc_protocols.BibReviewStrategy, None, None]:
-    yield response_reviewer.ReviewStrategyFactory().make(
+) -> Generator[record_service.marc_protocols.BibReviewStrategy, None, None]:
+    yield record_service.ReviewStrategyFactory().make(
         library=library, record_type=record_type, collection=collection
     )
 
@@ -51,7 +46,7 @@ def order_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
     mapper: Annotated[marc_mapper.BookopsMarcMapper, Depends(get_mapper)],
     reviewer: Annotated[
-        response_reviewer.marc_protocols.BibReviewStrategy, Depends(get_reviewer)
+        record_service.marc_protocols.BibReviewStrategy, Depends(get_reviewer)
     ],
     constants: Annotated[dict[str, Any], Depends(get_constants)],
 ) -> Generator[record_service.OrderRecordProcessingService, None, None]:
@@ -68,7 +63,7 @@ def full_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
     mapper: Annotated[marc_mapper.BookopsMarcMapper, Depends(get_mapper)],
     reviewer: Annotated[
-        response_reviewer.marc_protocols.BibReviewStrategy, Depends(get_reviewer)
+        record_service.marc_protocols.BibReviewStrategy, Depends(get_reviewer)
     ],
 ) -> Generator[record_service.FullRecordProcessingService, None, None]:
     yield record_service.FullRecordProcessingService(

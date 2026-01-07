@@ -164,6 +164,18 @@ class DomainBib:
         for order in self.orders:
             order.apply_template(template_data=template_data)
 
+    def update_bib_id(self, bib_id: str) -> None:
+        """
+        Update a DomainBib object's bib_id.
+
+        Args:
+            bib_id: sierra bib ID.
+
+        Returns:
+            None
+        """
+        self.bib_id = bib_id
+
 
 class LibrarySystem(Enum):
     """Includes valid values for library system"""
@@ -179,6 +191,11 @@ class MatcherResponse:
     def __init__(self, bib: DomainBib, matches: list[BaseSierraResponse]) -> None:
         self.bib = bib
         self.matches = matches
+
+    def apply_matched_bib_id(self, bib_id: str | None) -> None:
+        """Apply the bib ID from a match to the `MatcherResponse` object's `bib`."""
+        if bib_id:
+            self.bib.update_bib_id(bib_id)
 
 
 class Order:
