@@ -32,7 +32,7 @@ def get_reviewer(
     collection: Annotated[str, Form(...)],
     record_type: Annotated[str, Form(...)],
 ) -> Generator[response_reviewer.marc_protocols.ResultsReviewer, None, None]:
-    yield response_reviewer.ReviewerFactory().make(
+    yield response_reviewer.ReviewStrategyFactory().make(
         library=library, record_type=record_type, collection=collection
     )
 

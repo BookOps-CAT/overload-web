@@ -55,7 +55,7 @@ class FullRecordProcessingService:
             bib_updater:
                 A `marc_protocols.BibUpdater` object
         """
-        self.reviewer = reviewer_service.BibReviewer(reviewer=review_strategy)
+        self.reviewer = reviewer_service.BibReviewer(strategy=review_strategy)
         self.matcher = matcher_service.FullLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = parser_service.FullLevelBibParser(mapper=bib_mapper)
         self.serializer = updater_service.FullLevelBibUpdater(
@@ -104,7 +104,7 @@ class OrderRecordProcessingService:
             bib_updater:
                 A `marc_protocols.BibUpdater` object
         """
-        self.reviewer = reviewer_service.BibReviewer(reviewer=review_strategy)
+        self.reviewer = reviewer_service.BibReviewer(strategy=review_strategy)
         self.matcher = matcher_service.OrderLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = parser_service.OrderLevelBibParser(mapper=bib_mapper)
         self.serializer = updater_service.OrderLevelBibUpdater(

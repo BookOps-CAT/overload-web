@@ -7,26 +7,26 @@ from overload_web.bib_records.domain import bibs, marc_protocols
 logger = logging.getLogger(__name__)
 
 
-class ReviewerFactory:
+class ReviewStrategyFactory:
     def make(
         self, library: str, record_type: str, collection: str
     ) -> marc_protocols.ResultsReviewer:
         match record_type, library, collection:
             case "cat", "nypl", "BL":
-                return NYPLBranchReviewer()
+                return NYPLCatBranchReviewStrategy()
             case "cat", "nypl", "RL":
-                return NYPLResearchReviewer()
+                return NYPLCatResearchReviewStrategy()
             case "cat", "bpl", _:
-                return BPLReviewer()
+                return BPLCatReviewStrategy()
             case "acq", _, _:
-                return AcquisitionsReviewer()
+                return AcquisitionsReviewStrategy()
             case "sel", _, _:
-                return SelectionReviewer()
+                return SelectionReviewStrategy()
             case _:
                 raise ValueError("Invalid library/record_type/collection combination")
 
 
-class BaseReviewer:
+class BaseReviewStrategy:
     """
     Compare a `DomainBib` to a list of candidate bibs and select the best match.
 
@@ -119,7 +119,7 @@ class BaseReviewer:
         self.target_bib_id = self.input.bib_id
 
 
-class SelectionReviewer(BaseReviewer):
+class SelectionReviewStrategy(BaseReviewStrategy):
     def review_results(
         self, input: bibs.DomainBib, results: list[bibs.BaseSierraResponse]
     ) -> str | None:
@@ -143,7 +143,7 @@ class SelectionReviewer(BaseReviewer):
         return self.target_bib_id
 
 
-class AcquisitionsReviewer(BaseReviewer):
+class AcquisitionsReviewStrategy(BaseReviewStrategy):
     def review_results(
         self, input: bibs.DomainBib, results: list[bibs.BaseSierraResponse]
     ) -> str | None:
@@ -153,7 +153,7 @@ class AcquisitionsReviewer(BaseReviewer):
         return self.target_bib_id
 
 
-class NYPLResearchReviewer(BaseReviewer):
+class NYPLCatResearchReviewStrategy(BaseReviewStrategy):
     def review_results(
         self, input: bibs.DomainBib, results: list[bibs.BaseSierraResponse]
     ) -> str | None:
@@ -188,7 +188,7 @@ class NYPLResearchReviewer(BaseReviewer):
         return self.target_bib_id
 
 
-class NYPLBranchReviewer(BaseReviewer):
+class NYPLCatBranchReviewStrategy(BaseReviewStrategy):
     def review_results(
         self, input: bibs.DomainBib, results: list[bibs.BaseSierraResponse]
     ) -> str | None:
@@ -244,7 +244,7 @@ class NYPLBranchReviewer(BaseReviewer):
         return self.target_bib_id
 
 
-class BPLReviewer(BaseReviewer):
+class BPLCatReviewStrategy(BaseReviewStrategy):
     def review_results(
         self, input: bibs.DomainBib, results: list[bibs.BaseSierraResponse]
     ) -> str | None:
