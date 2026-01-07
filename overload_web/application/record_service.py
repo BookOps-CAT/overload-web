@@ -39,7 +39,7 @@ class FullRecordProcessingService:
         self,
         bib_fetcher: marc_protocols.BibFetcher,
         bib_mapper: marc_protocols.BibMapper,
-        review_strategy: marc_protocols.ResultsReviewer,
+        review_strategy: marc_protocols.BibReviewStrategy,
         context_handler: marc_protocols.MarcContextHandler,
     ):
         """
@@ -51,7 +51,7 @@ class FullRecordProcessingService:
             bib_mapper:
                 A `marc_protocols.BibMapper` object
             review_strategy:
-                A `marc_protocols.ResultsReviewer` object
+                A `marc_protocols.BibReviewStrategy` object
             bib_updater:
                 A `marc_protocols.BibUpdater` object
         """
@@ -87,7 +87,7 @@ class OrderRecordProcessingService:
         self,
         bib_fetcher: marc_protocols.BibFetcher,
         bib_mapper: marc_protocols.BibMapper,
-        review_strategy: marc_protocols.ResultsReviewer,
+        review_strategy: marc_protocols.BibReviewStrategy,
         rules: dict[str, dict[str, str]],
         context_handler: marc_protocols.MarcContextHandler,
     ):
@@ -100,7 +100,7 @@ class OrderRecordProcessingService:
             bib_mapper:
                 A `marc_protocols.BibMapper` object
             review_strategy:
-                A `marc_protocols.ResultsReviewer` object
+                A `marc_protocols.BibReviewStrategy` object
             bib_updater:
                 A `marc_protocols.BibUpdater` object
         """

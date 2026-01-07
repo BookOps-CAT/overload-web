@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class ReviewStrategyFactory:
     def make(
         self, library: str, record_type: str, collection: str
-    ) -> marc_protocols.ResultsReviewer:
+    ) -> marc_protocols.BibReviewStrategy:
         match record_type, library, collection:
             case "cat", "nypl", "BL":
                 return NYPLCatBranchReviewStrategy()

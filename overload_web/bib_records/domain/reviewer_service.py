@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class BibReviewer:
-    def __init__(self, strategy: marc_protocols.ResultsReviewer) -> None:
+    def __init__(self, strategy: marc_protocols.BibReviewStrategy) -> None:
         self.strategy = strategy
 
     def review_and_attach(

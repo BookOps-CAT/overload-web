@@ -90,7 +90,7 @@ class BibUpdater(Protocol[D]):
 
 
 @runtime_checkable
-class ResultsReviewer(Protocol[C, F]):
+class BibReviewStrategy(Protocol[C, F]):
     """Review results of Sierra queries and select best match"""
 
     def review_results(
