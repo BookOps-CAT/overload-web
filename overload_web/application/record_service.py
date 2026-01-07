@@ -28,6 +28,7 @@ from overload_web.bib_records.domain_services import (
     match,
     parse,
     review,
+    serialize,
     update,
 )
 
@@ -77,9 +78,10 @@ class FullRecordProcessingService:
         self.reviewer = review.BibReviewer(policy=match_policy)
         self.matcher = match.FullLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = parse.FullLevelBibParser(mapper=bib_mapper)
-        self.serializer = update.FullLevelBibUpdater(update_handler=update_handler)
+        self.updater = update.FullLevelBibUpdater(update_handler=update_handler)
+        self.serializer = serialize.FullLevelBibSerializer()
 
-    def process_vendor_file(self, data: BinaryIO | bytes) -> BinaryIO:
+    def process_vendor_file(self, data: BinaryIO | bytes) -> dict[str, BinaryIO]:
         """
         Parse MARC records, match them against Sierra, update the records with required
         fields and write them to MARC binary.
@@ -87,16 +89,21 @@ class FullRecordProcessingService:
         Args:
             data: Binary MARC data as a `BinaryIO` or `bytes` object.
         Returns:
-            MARC data as a `BinaryIO` object
+            A dictionary containing the file type and an in-memory file stream
+            for each type of file to be written.
         """
         parsed_records, barcodes = self.parser.parse(data=data)
         matched_records = self.matcher.match(records=parsed_records)
         matched_analysis, attached_records = self.reviewer.review_candidates(
             candidates=matched_records
         )
-        updated_records = self.serializer.update(records=attached_records)
-        output = self.serializer.serialize(updated_records)
-        return output
+        updated_records = self.updater.update(records=attached_records)
+        deduped_records = self.updater.dedupe(
+            records=updated_records, reports=matched_analysis
+        )
+        self.updater.validate(record_batches=deduped_records, barcodes=barcodes)
+        serialized_records = self.serializer.serialize(record_batches=deduped_records)
+        return serialized_records
 
 
 class OrderRecordProcessingService:
@@ -128,9 +135,10 @@ class OrderRecordProcessingService:
         self.reviewer = review.BibReviewer(policy=match_policy)
         self.matcher = match.OrderLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = parse.OrderLevelBibParser(mapper=bib_mapper)
-        self.serializer = update.OrderLevelBibUpdater(
+        self.updater = update.OrderLevelBibUpdater(
             rules=rules, update_handler=update_handler
         )
+        self.serializer = serialize.OrderLevelBibSerializer()
 
     def process_vendor_file(
         self,
@@ -159,7 +167,7 @@ class OrderRecordProcessingService:
         matched_analysis, attached_records = self.reviewer.review_candidates(
             candidates=matched_records
         )
-        updated_records = self.serializer.update(
+        updated_records = self.updater.update(
             records=attached_records, template_data=template_data
         )
         output = self.serializer.serialize(updated_records)

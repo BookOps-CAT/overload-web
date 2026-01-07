@@ -305,7 +305,7 @@ class CatalogAction(str, Enum):
 @dataclass(frozen=True)
 class MatchResolution:
     target_bib_id: str | None
-    action: CatalogAction | None
+    action: CatalogAction
     call_number_match: bool
     duplicate_records: list[str]
     resource_id: str | None

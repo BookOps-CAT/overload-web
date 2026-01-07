@@ -90,28 +90,3 @@ class TestUpdater:
         updated_bibs = stub_service.update([stub_sel_bib], template_data=template_data)
         assert [i.order_code_1 for i in original_orders] == ["j"]
         assert [i.order_code_1 for i in updated_bibs[0].orders] == ["b"]
-
-    @pytest.mark.parametrize(
-        "library, collection",
-        [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
-    )
-    def test_serialize_order(self, stub_acq_bib, caplog, stub_constants):
-        stub_service = update.OrderLevelBibUpdater(
-            rules=stub_constants,
-            update_handler=self.update_handler,
-        )
-        marc_binary = stub_service.serialize(records=[stub_acq_bib])
-        assert marc_binary.read()[0:2] == b"00"
-        assert len(caplog.records) == 1
-        assert "Writing MARC binary for record: " in caplog.records[0].msg
-
-    @pytest.mark.parametrize(
-        "library, collection",
-        [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
-    )
-    def test_serialize_full(self, stub_cat_bib, caplog):
-        stub_service = update.FullLevelBibUpdater(update_handler=self.update_handler)
-        marc_binary = stub_service.serialize(records=[stub_cat_bib])
-        assert marc_binary.read()[0:2] == b"00"
-        assert len(caplog.records) == 1
-        assert "Writing MARC binary for record: " in caplog.records[0].msg
