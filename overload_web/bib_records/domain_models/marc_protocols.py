@@ -76,21 +76,6 @@ class BibMapper(Protocol[C]):
 
 
 @runtime_checkable
-class BibUpdater(Protocol[D]):
-    """
-    Update MARC records with appropriate fields during last stage of record processing.
-    """
-
-    rules: dict[str, dict[str, str]]
-
-    def update_full_record(self, record: D) -> D: ...  # pragma: no branch
-
-    def update_order_record(
-        self, record: D, template_data: dict[str, Any]
-    ) -> D: ...  # pragma: no branch
-
-
-@runtime_checkable
 class BibMatchPolicy(Protocol[C, F, M]):
     """Review results of Sierra queries and select best match"""
 
