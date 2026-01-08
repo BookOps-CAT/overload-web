@@ -1,29 +1,26 @@
 """Application services for processing files containing bibliographic records.
 
-This module defines record processing services for Full and Order-level MARC records.
-The service takes a `collection`, `BibFetcher`, `BibMapper`, and `BibUpdate` as args and
-has `collection`, `parser`, and `matcher` attributes. The `parser` attribute is a
-`BibParser` domain object and contains a concrete implementation of the `BibMapper`
-domain protocol. The `matcher` attribute is a `BibMatcher` domain object and contains
-a concrete implementation of the `BibFetcher` domain protocol.
+This module defines record processing services for full and order-level MARC records.
+The services each take `BibFetcher`, `BibMapper`, `BibMatchPolicy`, and
+`MarcUpdateHandler` objects as args and have an additional `serializer` attribute.
 
 Classes:
 
 `FullRecordProcessingService`
     An application service for processing full-level MARC records. This service can be
-    used to process MARC records following the cataloging workflow.
+    used to process MARC records following the cataloging workflow (ie. records
+    containing `acq` or `sel` as the value for their `record_type` attribute).
 
 `OrderRecordProcessingService`
     An application service for processing order-level MARC records. This service can be
-    used to process records following the acquisitions or selection workflows.
+    used to process records following the acquisitions or selection workflows (ie.
+    records containing `cat` as the value for their `record_type` attribute).
 """
 
 import logging
 from typing import Any, BinaryIO
 
-from overload_web.bib_records.domain_models import (
-    marc_protocols,
-)
+from overload_web.bib_records.domain_models import marc_protocols
 from overload_web.bib_records.domain_services import (
     match,
     parse,
@@ -36,6 +33,8 @@ logger = logging.getLogger(__name__)
 
 
 class MatchPolicyFactory:
+    """Create a `BibMatchPolicy` based on `library`, `record_type`, and `collection`"""
+
     def make(
         self, library: str, record_type: str, collection: str
     ) -> marc_protocols.BibMatchPolicy:
@@ -83,14 +82,18 @@ class FullRecordProcessingService:
 
     def process_vendor_file(self, data: BinaryIO | bytes) -> dict[str, BinaryIO]:
         """
-        Parse MARC records, match them against Sierra, update the records with required
-        fields and write them to MARC binary.
+        Process a file of full MARC records.
+
+        This service parses full MARC records, matches them against Sierra, analyzes
+        all bibs that were returned as matches, updates the records with required
+        fields, validates the output, and writes the output to MARC binary.
 
         Args:
             data: Binary MARC data as a `BinaryIO` or `bytes` object.
         Returns:
             A dictionary containing the file type and an in-memory file stream
-            for each type of file to be written.
+            for each type of file to be written. The keys for this dictionary
+            will be appended to the file name when writing the binary data to a file.
         """
         parsed_records, barcodes = self.parser.parse(data=data)
         matched_records = self.matcher.match(records=parsed_records)
@@ -147,11 +150,15 @@ class OrderRecordProcessingService:
         template_data: dict[str, Any],
     ) -> BinaryIO:
         """
-        Parse MARC records, match them against Sierra, update the records with required
-        fields and write them to MARC binary.
+        Process a file of full MARC records.
+
+        This service parses full MARC records, matches them against Sierra, analyzes
+        all bibs that were returned as matches, updates the records with required
+        fields, validates the output, and writes the output to MARC binary.
 
         Args:
-            data: Binary MARC data as a `BinaryIO` or `bytes` object.
+            data:
+                Binary MARC data as a `BinaryIO` or `bytes` object.
             matchpoints:
                 A dictionary containing matchpoints to be used in matching records.
             template_data:

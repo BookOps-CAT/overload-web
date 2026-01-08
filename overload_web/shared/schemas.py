@@ -1,4 +1,4 @@
-"""Shared schemas to be used by multiple layers of application"""
+"""Shared schemas to be used in multiple layers of application"""
 
 from __future__ import annotations
 

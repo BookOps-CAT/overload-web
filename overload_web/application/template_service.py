@@ -27,7 +27,7 @@ class OrderTemplateService:
         Retrieve an order template by its ID.
 
         Args:
-            template_id: Identifier of the template.
+            template_id: unique identifier for the template.
 
         Returns:
             The retrieved template as a `OrderTemplate` object or None.
@@ -41,8 +41,8 @@ class OrderTemplateService:
         Retrieve a list of templates in the database.
 
         Args:
-            offset: start position of `OrderTemplate` objects to return
-            limit: the maximum number of `OrderTemplate` objects to return
+            offset: start position of first `OrderTemplate` object to return.
+            limit: the maximum number of `OrderTemplate` objects to return.
 
         Returns:
             A list of `OrderTemplate` objects.
@@ -56,13 +56,13 @@ class OrderTemplateService:
         Save an order template.
 
         Args:
-            data: template data as a dict.
+            obj: the template data as an `OrderTemplateBase` object.
 
         Raises:
             ValidationError: If the template lacks a name, agent, or primary_matchpoint.
 
         Returns:
-            The saved template.
+            The saved template as an `OrderTemplate` object.
         """
         save_template = self.repo.save(obj=obj)
         return templates.OrderTemplate(**save_template.model_dump())
@@ -71,12 +71,14 @@ class OrderTemplateService:
         self, template_id: str, obj: templates.OrderTemplateBase
     ) -> templates.OrderTemplate | None:
         """
-        Update an existing an order template.
+        Update an existing order template.
 
         Args:
-            data: template data as a dict.
+            template_id: unique identifier for the template to be updated.
+            obj: the data to be replaces as an `OrderTemplateBase` object.
 
         Returns:
-            The updated template or None if the template does not exist
+            The updated template as an `OrderTemplate` or None if the template
+            does not exist.
         """
         return self.repo.update(id=template_id, data=obj)

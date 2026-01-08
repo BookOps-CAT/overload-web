@@ -17,7 +17,7 @@ class FileTransferService:
 
     def __init__(self, loader: file_protocols.FileLoader):
         """
-        Initialize `FileTransferService` obj.
+        Initialize `FileTransferService`.
 
         Args:
             loader: concrete implementation of `FileLoader` protocol
@@ -29,10 +29,10 @@ class FileTransferService:
         List files in a directory.
 
         Args:
-            dir: The directory to list files from.
+            dir: The directory whose files to list.
 
         Returns:
-            a list of filenames contained within the given directory
+            a list of filenames contained within the given directory as strings.
         """
         files = self.loader.list(dir=dir)
         logger.info(f"Files in {dir}: {files}")
@@ -43,8 +43,8 @@ class FileTransferService:
         Load a file from a directory.
 
         Args:
-            name: The name of the file.
-            dir: The directory to load the file from.
+            name: The name of the file as a string.
+            dir: The directory where the file is located.
 
         Returns:
             The loaded file as a `files.VendorFile` object.
@@ -59,7 +59,7 @@ class FileWriterService:
 
     def __init__(self, writer: file_protocols.FileWriter):
         """
-        Initialize `FileWriterService` obj.
+        Initialize `FileWriterService`.
 
         Args:
             writer: concrete implementation of `FileWriter` protocol
