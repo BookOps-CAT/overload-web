@@ -7,7 +7,7 @@ import json
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from overload_web.bib_records.domain_models import bibs
@@ -344,7 +344,7 @@ class MatcherResponse:
             self.bib.update_bib_id(bib_id)
 
 
-class CatalogAction(Enum):
+class CatalogAction(StrEnum):
     """Valid values for a cataloging action"""
 
     ATTACH = "attach"

@@ -4,20 +4,17 @@ from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
-class Collection(Enum):
+class Collection(StrEnum):
     """Valid values for NYPL and BPL collections"""
 
     BRANCH = "BL"
     RESEARCH = "RL"
     MIXED = "MIXED"
     NONE = "NONE"
-
-    def __str__(self):
-        return self.value
 
 
 class DomainBib:
@@ -93,20 +90,14 @@ class DomainBib:
         self.bib_id = bib_id
         self.binary_data = binary_data
         self.branch_call_number = branch_call_number
-        self.collection = (
-            Collection(str(collection).upper())
-            if not isinstance(collection, Collection)
-            else collection
-        )
+        self.collection = Collection(str(collection).upper())
         self.control_number = control_number
         self.isbn = isbn
-        self.library = LibrarySystem(library) if isinstance(library, str) else library
+        self.library = LibrarySystem(library)
         self.oclc_number = oclc_number
         self.orders = orders
         self.research_call_number = research_call_number
-        self.record_type = (
-            RecordType(record_type) if isinstance(record_type, str) else record_type
-        )
+        self.record_type = RecordType(record_type)
         self.title = title
         self.upc = upc
         self.update_date = update_date
@@ -158,14 +149,11 @@ class DomainBib:
         self.bib_id = bib_id
 
 
-class LibrarySystem(Enum):
+class LibrarySystem(StrEnum):
     """Valid values for library system"""
 
     BPL = "bpl"
     NYPL = "nypl"
-
-    def __str__(self):
-        return self.value
 
 
 class Order:
@@ -259,15 +247,12 @@ class Order:
         return out
 
 
-class RecordType(Enum):
+class RecordType(StrEnum):
     """Valid values for record type/processing workflow."""
 
     ACQUISITIONS = "acq"
     CATALOGING = "cat"
     SELECTION = "sel"
-
-    def __str__(self):
-        return self.value
 
 
 @dataclass(frozen=True)

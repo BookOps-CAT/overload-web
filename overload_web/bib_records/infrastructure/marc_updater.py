@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class MarcContext:
     def __init__(self, record: bibs.DomainBib) -> None:
-        self.bib_rec: Bib = Bib(record.binary_data, library=str(record.library))  # type: ignore
+        self.bib_rec: Bib = Bib(record.binary_data, library=record.library)  # type: ignore
         self.record = record
 
 

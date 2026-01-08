@@ -69,7 +69,7 @@ class BaseMatchAnalyzer:
 
 def get_input_call_no(incoming: bibs.DomainBib) -> str | None:
     call_no = None
-    if str(incoming.library) == "nypl" and str(incoming.collection) == "RL":
+    if incoming.library == "nypl" and incoming.collection == "RL":
         call_no = incoming.research_call_number
     else:
         call_no = incoming.branch_call_number
@@ -79,9 +79,7 @@ def get_input_call_no(incoming: bibs.DomainBib) -> str | None:
 
 
 def get_resource_id(incoming: bibs.DomainBib) -> str | None:
-    if incoming.bib_id:
-        return str(incoming.bib_id)
-    elif incoming.control_number:
+    if incoming.control_number:
         return incoming.control_number
     elif incoming.isbn:
         return incoming.isbn
@@ -126,7 +124,7 @@ class CandidateClassifier:
                 matched.append(c)
             elif c.collection == "MIXED":
                 mixed.append(c)
-            elif str(c.collection) == str(incoming.collection):
+            elif c.collection == incoming.collection:
                 matched.append(c)
             else:
                 other.append(c)

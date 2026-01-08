@@ -352,7 +352,7 @@ def stub_bib(library, collection) -> Bib:
             Field(
                 tag="910",
                 indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value=str(collection))],
+                subfields=[Subfield(code="a", value=collection)],
             )
         )
     bib.add_field(

@@ -13,32 +13,29 @@ class TestUpdater:
     @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
     def test_update_cat_bpl(self, stub_cat_bib):
         original_bib = Bib(
-            copy.deepcopy(stub_cat_bib.binary_data), library=str(stub_cat_bib.library)
+            copy.deepcopy(stub_cat_bib.binary_data), library=stub_cat_bib.library
         )
+
         stub_cat_bib.bib_id = "12345"
         stub_service = update.FullLevelBibUpdater(
             update_handler=self.update_handler,
         )
         updated_bibs = stub_service.update([stub_cat_bib])
-        updated_bib = Bib(
-            updated_bibs[0].binary_data, library=str(updated_bibs[0].library)
-        )
+        updated_bib = Bib(updated_bibs[0].binary_data, library=updated_bibs[0].library)
         assert len(original_bib.get_fields("907")) == 0
         assert len(updated_bib.get_fields("907")) == 1
 
     @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
     def test_update_cat_nypl(self, stub_cat_bib):
         original_bib = Bib(
-            copy.deepcopy(stub_cat_bib.binary_data), library=str(stub_cat_bib.library)
+            copy.deepcopy(stub_cat_bib.binary_data), library=stub_cat_bib.library
         )
         stub_cat_bib.bib_id = "12345"
         stub_service = update.FullLevelBibUpdater(
             update_handler=self.update_handler,
         )
         updated_bibs = stub_service.update([stub_cat_bib])
-        updated_bib = Bib(
-            updated_bibs[0].binary_data, library=str(updated_bibs[0].library)
-        )
+        updated_bib = Bib(updated_bibs[0].binary_data, library=updated_bibs[0].library)
         assert len(original_bib.get_fields("907")) == 0
         assert len(updated_bib.get_fields("945")) == 1
 
@@ -69,7 +66,7 @@ class TestUpdater:
     )
     def test_update_acq(self, stub_acq_bib, template_data, stub_constants):
         original_orders = copy.deepcopy(stub_acq_bib.orders)
-        assert str(stub_acq_bib.record_type) == "acq"
+        assert stub_acq_bib.record_type == "acq"
         stub_service = update.OrderLevelBibUpdater(
             rules=stub_constants,
             update_handler=self.update_handler,
@@ -83,7 +80,7 @@ class TestUpdater:
     )
     def test_update_sel(self, stub_sel_bib, template_data, stub_constants):
         original_orders = copy.deepcopy(stub_sel_bib.orders)
-        assert str(stub_sel_bib.record_type) == "sel"
+        assert stub_sel_bib.record_type == "sel"
         stub_service = update.OrderLevelBibUpdater(
             rules=stub_constants, update_handler=self.update_handler
         )

@@ -22,14 +22,14 @@ class FakeBibFetcher(StubFetcher):
         self.collection = collection
 
     def get_bibs_by_id(self, value, key):
-        if str(self.library) == "nypl":
-            file = f"tests/data/{str(self.library)}_{str(self.collection)}.json"
+        if self.library == "nypl":
+            file = f"tests/data/{self.library}_{self.collection}.json"
             with open(file, "r", encoding="utf-8") as fh:
                 bibs = json.loads(fh.read())
             data = bibs["data"]
             return [sierra_responses.NYPLPlatformResponse(data=i) for i in data]
         else:
-            file = f"tests/data/{str(self.library)}.json"
+            file = f"tests/data/{self.library}.json"
             with open(file, "r", encoding="utf-8") as fh:
                 bibs = json.loads(fh.read())
             data = bibs["response"]["docs"]

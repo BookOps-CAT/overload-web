@@ -50,14 +50,14 @@ class FakeBibFetcher(StubFetcher):
         self.collection = collection
 
     def get_bibs_by_id(self, value, key):
-        if str(self.library) == "nypl":
-            file = f"tests/data/{str(self.library)}_{str(self.collection)}.json"
+        if self.library == "nypl":
+            file = f"tests/data/{self.library}_{self.collection}.json"
             with open(file, "r", encoding="utf-8") as fh:
                 bibs = json.loads(fh.read())
             data = bibs["data"]
             return [sierra_responses.NYPLPlatformResponse(data=i) for i in data]
         else:
-            file = f"tests/data/{str(self.library)}.json"
+            file = f"tests/data/{self.library}.json"
             with open(file, "r", encoding="utf-8") as fh:
                 bibs = json.loads(fh.read())
             data = bibs["response"]["docs"]
@@ -243,7 +243,7 @@ class TestCandidateClassifier:
     @pytest.mark.parametrize(
         "library, collection", [("bpl", "NONE"), ("nypl", "BL"), ("nypl", "RL")]
     )
-    @pytest.mark.parametrize("key", ["bib_id", "control_number", "oclc_number", "upc"])
+    @pytest.mark.parametrize("key", ["control_number", "oclc_number", "upc"])
     def test_resolve_resource_id(self, new_domain_bib, key):
         new_domain_bib.isbn = None
         setattr(new_domain_bib, key, "987654321")

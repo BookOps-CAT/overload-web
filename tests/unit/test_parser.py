@@ -20,7 +20,7 @@ class TestParser:
         stub_service = parse.FullLevelBibParser(mapper=stub_mapper)
         records, barcodes = stub_service.parse(stub_bib.as_marc())
         assert len(records) == 1
-        assert str(records[0].library) == str(stub_service.mapper.library)
+        assert records[0].library == stub_service.mapper.library
         assert records[0].isbn == "9781234567890"
         assert barcodes == ["333331234567890"]
         assert records[0].vendor_info is not None
@@ -31,9 +31,9 @@ class TestParser:
         stub_service = parse.OrderLevelBibParser(mapper=stub_mapper)
         records = stub_service.parse(stub_bib.as_marc())
         assert len(records) == 1
-        assert str(records[0].library) == str(stub_service.mapper.library)
+        assert records[0].library == stub_service.mapper.library
         assert records[0].isbn == "9781234567890"
-        assert str(records[0].collection) == str(collection)
+        assert records[0].collection == collection
         assert records[0].barcodes == ["333331234567890"]
         assert records[0].vendor_info is None
         assert len(caplog.records) == 1

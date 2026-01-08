@@ -49,7 +49,7 @@ class OrderLevelBibUpdater:
         ctx = self.update_handler.create_order_marc_ctx(
             record=record, template_data=template_data, rules=self.rules
         )
-        pipeline = self.update_handler.order_pipelines[str(record.record_type)]
+        pipeline = self.update_handler.order_pipelines[record.record_type]
         for step in pipeline:
             step.apply(ctx)
         library_ctx = self.update_handler.create_library_ctx(
@@ -57,7 +57,7 @@ class OrderLevelBibUpdater:
             bib_id=record.bib_id,
             vendor=template_data.get("vendor"),
         )
-        policies = self.update_handler.library_pipelines[str(record.library)]
+        policies = self.update_handler.library_pipelines[record.library]
         for policy in policies:
             policy.apply(library_ctx)
 
@@ -92,13 +92,13 @@ class FullLevelBibUpdater:
 
     def _update_full_record(self, record: bibs.DomainBib) -> bibs.DomainBib:
         ctx = self.update_handler.create_full_marc_ctx(record=record)
-        pipeline = self.update_handler.full_record_pipelines[str(record.record_type)]
+        pipeline = self.update_handler.full_record_pipelines[record.record_type]
         for step in pipeline:
             step.apply(ctx)
         library_ctx = self.update_handler.create_library_ctx(
             bib_rec=ctx.bib_rec, bib_id=record.bib_id, vendor=record.vendor
         )
-        policies = self.update_handler.library_pipelines[str(record.library)]
+        policies = self.update_handler.library_pipelines[record.library]
         for policy in policies:
             policy.apply(library_ctx)
         record.binary_data = ctx.bib_rec.as_marc()
