@@ -1,6 +1,24 @@
 import pytest
+from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.order_templates.infrastructure import repository
+from overload_web.order_templates.infrastructure import repository, tables
+
+
+@pytest.fixture
+def test_sql_session():
+    test_engine = create_engine("sqlite:///:memory:")
+    SQLModel.metadata.create_all(test_engine)
+    with Session(test_engine) as session:
+        yield session
+
+
+@pytest.fixture
+def make_template():
+    def _make_template(data):
+        template = tables.TemplateTable(**data)
+        return template
+
+    return _make_template
 
 
 class TestTemplateService:
@@ -20,12 +38,12 @@ class TestTemplateService:
         template_list = service.list()
         assert template_list == []
 
-    def test_save_template(self, service, template_data, make_template):
-        template = make_template(template_data)
+    def test_save_template(self, service, fake_template_data, make_template):
+        template = make_template(fake_template_data)
         template_saver = service.save(obj=template)
-        assert template_saver.name == template_data["name"]
-        assert template_saver.agent == template_data["agent"]
-        assert template_saver.blanket_po == template_data["blanket_po"]
+        assert template_saver.name == fake_template_data["name"]
+        assert template_saver.agent == fake_template_data["agent"]
+        assert template_saver.blanket_po == fake_template_data["blanket_po"]
 
     @pytest.mark.parametrize(
         "id, name, agent",

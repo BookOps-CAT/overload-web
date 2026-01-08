@@ -1,12 +1,9 @@
 import datetime
-import json
 
 import pytest
 
-from overload_web.bib_records.domain_models import (
-    sierra_responses,
-)
-from overload_web.bib_records.domain_services import match, review
+from overload_web.bib_records.domain_models import sierra_responses
+from overload_web.bib_records.domain_services import review
 
 BPL_DATA = {
     "call_number": "Foo",
@@ -36,32 +33,6 @@ NYPL_DATA = {
         {"marcTag": "901", "subfields": [{"content": "CAT", "tag": "b"}]},
     ],
 }
-
-
-class StubFetcher(match.BibFetcher):
-    def __init__(self) -> None:
-        self.session = None
-
-
-class FakeBibFetcher(StubFetcher):
-    def __init__(self, library, collection):
-        super().__init__()
-        self.library = library
-        self.collection = collection
-
-    def get_bibs_by_id(self, value, key):
-        if self.library == "nypl":
-            file = f"tests/data/{self.library}_{self.collection}.json"
-            with open(file, "r", encoding="utf-8") as fh:
-                bibs = json.loads(fh.read())
-            data = bibs["data"]
-            return [sierra_responses.NYPLPlatformResponse(data=i) for i in data]
-        else:
-            file = f"tests/data/{self.library}.json"
-            with open(file, "r", encoding="utf-8") as fh:
-                bibs = json.loads(fh.read())
-            data = bibs["response"]["docs"]
-            return [sierra_responses.BPLSolrResponse(data=i) for i in data]
 
 
 @pytest.fixture
@@ -99,10 +70,10 @@ class TestReviewer:
             ("bpl", "NONE"),
         ],
     )
-    def test_base_analyzer(self, stub_acq_bib, sierra_response, library, collection):
+    def test_base_analyzer(self, acq_bib, sierra_response, library, collection):
         service = review.BaseMatchAnalyzer()
         with pytest.raises(NotImplementedError):
-            service.resolve(stub_acq_bib, candidates=[sierra_response])
+            service.resolve(acq_bib, candidates=[sierra_response])
 
     @pytest.mark.parametrize(
         "library, collection",
@@ -112,52 +83,40 @@ class TestReviewer:
             ("bpl", "NONE"),
         ],
     )
-    def test_attach_acq(self, stub_acq_bib, library, collection):
-        stub_acq_response = sierra_responses.MatcherResponse(
-            bib=stub_acq_bib,
-            matches=FakeBibFetcher(
-                library=library, collection=collection
-            ).get_bibs_by_id(key="isbn", value="9781234567890"),
+    def test_attach_acq(self, acq_bib, fake_matches):
+        acq_response = sierra_responses.MatcherResponse(
+            bib=acq_bib, matches=fake_matches
         )
-        stub_service = review.AcquisitionsMatchAnalyzer()
-        attached_bibs = stub_service.review_candidates([stub_acq_response])
+        service = review.AcquisitionsMatchAnalyzer()
+        attached_bibs = service.review_candidates([acq_response])
         assert attached_bibs[1][0].bib_id is None
-        assert stub_acq_response.bib.bib_id is None
+        assert acq_response.bib.bib_id is None
 
     @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
-    def test_attach_cat_bpl(self, stub_cat_bib, library, collection):
-        stub_cat_response = sierra_responses.MatcherResponse(
-            bib=stub_cat_bib,
-            matches=FakeBibFetcher(
-                library=library, collection=collection
-            ).get_bibs_by_id(key="isbn", value="9781234567890"),
+    def test_attach_cat_bpl(self, cat_bib, fake_matches):
+        cat_response = sierra_responses.MatcherResponse(
+            bib=cat_bib, matches=fake_matches
         )
-        stub_service = review.BPLCatMatchAnalyzer()
-        attached_bibs = stub_service.review_candidates([stub_cat_response])
+        service = review.BPLCatMatchAnalyzer()
+        attached_bibs = service.review_candidates([cat_response])
         assert attached_bibs[1][0].bib_id == "123"
 
     @pytest.mark.parametrize("library, collection", [("nypl", "BL")])
-    def test_attach_cat_nypl_bl(self, stub_cat_bib, library, collection):
-        stub_cat_response = sierra_responses.MatcherResponse(
-            bib=stub_cat_bib,
-            matches=FakeBibFetcher(
-                library=library, collection=collection
-            ).get_bibs_by_id(key="isbn", value="9781234567890"),
+    def test_attach_cat_nypl_bl(self, cat_bib, fake_matches):
+        cat_response = sierra_responses.MatcherResponse(
+            bib=cat_bib, matches=fake_matches
         )
-        stub_service = review.NYPLCatBranchMatchAnalyzer()
-        attached_bibs = stub_service.review_candidates([stub_cat_response])
+        service = review.NYPLCatBranchMatchAnalyzer()
+        attached_bibs = service.review_candidates([cat_response])
         assert attached_bibs[1][0].bib_id == "123"
 
     @pytest.mark.parametrize("library, collection", [("nypl", "RL")])
-    def test_attach_cat_nypl_rl(self, stub_cat_bib, library, collection):
-        stub_cat_response = sierra_responses.MatcherResponse(
-            bib=stub_cat_bib,
-            matches=FakeBibFetcher(
-                library=library, collection=collection
-            ).get_bibs_by_id(key="isbn", value="9781234567890"),
+    def test_attach_cat_nypl_rl(self, cat_bib, fake_matches):
+        cat_response = sierra_responses.MatcherResponse(
+            bib=cat_bib, matches=fake_matches
         )
-        stub_service = review.NYPLCatResearchMatchAnalyzer()
-        attached_bibs = stub_service.review_candidates([stub_cat_response])
+        service = review.NYPLCatResearchMatchAnalyzer()
+        attached_bibs = service.review_candidates([cat_response])
         assert attached_bibs[1][0].bib_id == "123"
 
     @pytest.mark.parametrize(
@@ -168,15 +127,12 @@ class TestReviewer:
             ("bpl", "NONE"),
         ],
     )
-    def test_attach_sel(self, stub_sel_bib, library, collection):
-        stub_sel_response = sierra_responses.MatcherResponse(
-            bib=stub_sel_bib,
-            matches=FakeBibFetcher(
-                library=library, collection=collection
-            ).get_bibs_by_id(key="isbn", value="9781234567890"),
+    def test_attach_sel(self, sel_bib, fake_matches):
+        sel_response = sierra_responses.MatcherResponse(
+            bib=sel_bib, matches=fake_matches
         )
-        stub_service = review.SelectionMatchAnalyzer()
-        attached_bibs = stub_service.review_candidates([stub_sel_response])
+        service = review.SelectionMatchAnalyzer()
+        attached_bibs = service.review_candidates([sel_response])
         assert attached_bibs[1][0].bib_id == "123"
 
 

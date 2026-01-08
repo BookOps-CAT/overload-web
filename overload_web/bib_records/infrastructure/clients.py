@@ -90,7 +90,7 @@ class SierraBibFetcher:
         }
 
         if key not in match_methods:
-            logger.error(f"Unsupported query matchpoint: {key}")
+            logger.error(f"Unsupported query matchpoint: '{key}'")
             raise ValueError(
                 f"Invalid matchpoint: '{key}'. Available matchpoints are: "
                 f"{sorted([i for i in match_methods.keys()])}"

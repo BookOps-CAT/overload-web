@@ -13,7 +13,7 @@ def tmp_file(tmp_path):
 
 
 class TestLocalFiles:
-    def stub_file(self, content, file_name):
+    def fake_file(self, content, file_name):
         return vendor_files.VendorFile(content=content, file_name=file_name)
 
     def test_local_objs(self, tmp_path):
@@ -22,30 +22,25 @@ class TestLocalFiles:
         assert isinstance(loader, file_protocols.FileLoader)
         assert isinstance(writer, file_protocols.FileWriter)
 
-    def test_load(self, tmp_path, tmp_file):
+    def test_local_load(self, tmp_path, tmp_file):
         loader = local_io.LocalFileLoader()
         loaded_file = loader.load("foo.mrc", dir=tmp_path)
         assert "333331234567890".encode() in loaded_file.content
         assert "foo.mrc" in os.listdir(tmp_path)
 
-    def test_list(self, tmp_path, tmp_file):
+    def test_local_list(self, tmp_path, tmp_file):
         loader = local_io.LocalFileLoader()
         file_list = loader.list(dir=tmp_path)
         assert len(file_list) == 1
         assert file_list[0] == "foo.mrc"
 
-    def test_write(self, tmp_path):
-        out_file = self.stub_file(content=b"333331234567890", file_name="foo.mrc")
+    def test_local_write(self, tmp_path):
+        out_file = self.fake_file(content=b"333331234567890", file_name="foo.mrc")
         writer = local_io.LocalFileWriter()
         new_file = writer.write(file=out_file, dir=tmp_path)
         assert new_file == os.path.join(tmp_path, "foo.mrc")
         assert "foo.mrc" in os.listdir(tmp_path)
         assert "333331234567890".encode() in open(new_file, "rb").read()
-
-
-class TestSFTPFiles:
-    def stub_file(self, content, file_name):
-        return vendor_files.VendorFile(content=content, file_name=file_name)
 
     def test_sftp_loader(self, mock_sftp_client):
         loader = sftp.SFTPFileLoader(client=mock_sftp_client)
@@ -62,20 +57,20 @@ class TestSFTPFiles:
         assert writer.client.name == "FOO"
         assert isinstance(writer, file_protocols.FileWriter)
 
-    def test_list(self, mock_sftp_client):
+    def test_sftp_list(self, mock_sftp_client):
         loader = sftp.SFTPFileLoader(client=mock_sftp_client)
         file_list = loader.list(dir="test")
         assert len(file_list) == 1
         assert file_list[0] == "foo.mrc"
 
-    def test_load(self, mock_sftp_client):
+    def test_sftp_load(self, mock_sftp_client):
         loader = sftp.SFTPFileLoader(client=mock_sftp_client)
         file = loader.load(name="foo.mrc", dir="test")
         assert file.content == b""
 
-    def test_write(self, mock_sftp_client):
+    def test_sftp_write(self, mock_sftp_client):
         writer = sftp.SFTPFileWriter(client=mock_sftp_client)
         out_file = writer.write(
-            file=self.stub_file(content=b"foo", file_name="foo.mrc"), dir="test"
+            file=self.fake_file(content=b"foo", file_name="foo.mrc"), dir="test"
         )
         assert out_file == "foo.mrc"

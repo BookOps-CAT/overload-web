@@ -7,7 +7,7 @@ from overload_web.order_templates.infrastructure import tables
 from overload_web.presentation import template_service_dep
 
 
-def stub_sql_session():
+def fake_sql_session():
     template = tables.TemplateTable(name="foo", agent="bar", primary_matchpoint="isbn")
     test_engine = create_engine("sqlite:///:memory:")
     SQLModel.metadata.create_all(test_engine)
@@ -18,7 +18,7 @@ def stub_sql_session():
 
 
 def test_api_startup(monkeypatch):
-    monkeypatch.setattr(template_service_dep, "create_db_and_tables", stub_sql_session)
+    monkeypatch.setattr(template_service_dep, "create_db_and_tables", fake_sql_session)
 
     with TestClient(app) as client:
         response = client.get("/")
@@ -31,10 +31,10 @@ def test_deps():
     assert isinstance(next(session), Session)
 
 
-@pytest.mark.usefixtures("mock_sierra_response", "mock_sftp_client")
+@pytest.mark.usefixtures("mock_session", "mock_sftp_client")
 class TestApp:
     client = TestClient(app)
-    app.dependency_overrides[template_service_dep.get_session] = stub_sql_session
+    app.dependency_overrides[template_service_dep.get_session] = fake_sql_session
     base_url = client.base_url
 
     def test_root_get(self):
@@ -128,8 +128,8 @@ class TestApp:
         )
         assert response.context["page_title"] == "Process Vendor File"
 
-    def test_api_create_template(self, template_data):
-        response = self.client.post("/api/template", data=template_data)
+    def test_api_create_template(self, fake_template_data):
+        response = self.client.post("/api/template", data=fake_template_data)
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request", "template"]
         assert response.context["template"].get("id") == 2

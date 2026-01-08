@@ -11,14 +11,10 @@ import requests
 from bookops_marc import Bib
 from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
-from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.bib_records.domain_models import sierra_responses
-from overload_web.bib_records.infrastructure import (
-    clients,
-    marc_mapper,
-)
-from overload_web.order_templates.infrastructure import tables
+from overload_web.bib_records.domain_services import match
+from overload_web.bib_records.infrastructure import clients, marc_mapper
 
 
 @pytest.fixture(autouse=True)
@@ -53,79 +49,14 @@ def fake_creds(monkeypatch):
     monkeypatch.setenv("NSDROP_DST", "nsdrop/vendor_files/bar")
 
 
-@pytest.fixture
-def test_sql_session():
-    test_engine = create_engine("sqlite:///:memory:")
-    SQLModel.metadata.create_all(test_engine)
-    with Session(test_engine) as session:
-        yield session
-
-
-@pytest.fixture
-def make_template():
-    def _make_template(data):
-        template = tables.TemplateTable(**data)
-        return template
-
-    return _make_template
-
-
 class MockHTTPResponse:
-    def __init__(self, status_code: int, ok: bool, stub_json: dict):
+    def __init__(self, status_code: int, ok: bool, _json: dict):
         self.status_code = status_code
         self.ok = ok
-        self.stub_json = stub_json
+        self._json = _json
 
     def json(self):
-        return self.stub_json
-
-
-@pytest.fixture
-def mock_sierra_response(monkeypatch):
-    def mock_response(*args, **kwargs):
-        stub_record = {"id": "123456789", "title": "foo"}
-        json = {
-            "response": {"docs": [stub_record]},
-            "data": [stub_record],
-        }
-        return MockHTTPResponse(status_code=200, ok=True, stub_json=json)
-
-    def mock_token_response(*args, **kwargs):
-        token_json = {"access_token": "foo", "expires_in": 10}
-        return MockHTTPResponse(status_code=200, ok=True, stub_json=token_json)
-
-    monkeypatch.setattr("requests.Session.get", mock_response)
-    monkeypatch.setattr("requests.post", mock_token_response)
-
-
-@pytest.fixture
-def mock_sierra_no_response(mock_sierra_response, monkeypatch):
-    def response_none(*args, **kwargs):
-        json = {"response": {"docs": []}, "data": []}
-        return MockHTTPResponse(status_code=200, ok=True, stub_json=json)
-
-    monkeypatch.setattr("requests.Session.get", response_none)
-
-
-@pytest.fixture
-def mock_sierra_nypl_auth_error(monkeypatch, mock_sierra_response):
-    def mock_nypl_error(*args, **kwargs):
-        raise requests.exceptions.Timeout
-
-    monkeypatch.setattr("requests.post", mock_nypl_error)
-
-
-@pytest.fixture
-def mock_sierra_error(monkeypatch, mock_sierra_response):
-    def mock_nypl_error(*args, **kwargs):
-        raise requests.exceptions.ConnectionError
-
-    monkeypatch.setattr("requests.Session.get", mock_nypl_error)
-
-
-class FakeSierraSession(clients.SierraSessionProtocol):
-    def __init__(self) -> None:
-        self.credentials = self._get_credentials()
+        return self._json
 
 
 class FakeSierraResponse(sierra_responses.BaseSierraResponse):
@@ -180,21 +111,70 @@ class FakeSierraResponse(sierra_responses.BaseSierraResponse):
         return [{"020": self._data["id"]}]
 
 
-@pytest.fixture
-def mock_session(monkeypatch, mock_sierra_response):
-    def mock_response(*args, **kwargs):
+class FakeSierraSession(clients.SierraSessionProtocol):
+    def _get_credentials(self):
+        return "foo"
+
+    def _get_bibs_by_bib_id(self, value: str | int):
+        pass
+
+    def _get_bibs_by_isbn(self, value: str | int):
+        pass
+
+    def _get_bibs_by_issn(self, value: str | int):
+        pass
+
+    def _get_bibs_by_oclc_number(self, value: str | int):
+        pass
+
+    def _get_bibs_by_upc(self, value: str | int):
+        pass
+
+    def _parse_response(
+        self, response: requests.Response
+    ) -> list[sierra_responses.BaseSierraResponse]:
         return [FakeSierraResponse({"id": "123456789", "title": "foo"})]
 
-    monkeypatch.setattr(clients.SierraSessionProtocol, "_parse_response", mock_response)
+
+@pytest.fixture
+def mock_session(monkeypatch):
+    def response(*args, **kwargs):
+        record = {"id": "123456789", "title": "foo"}
+        json = {"response": {"docs": [record]}, "data": [record]}
+        return MockHTTPResponse(status_code=200, ok=True, _json=json)
+
+    def token_response(*args, **kwargs):
+        token_json = {"access_token": "foo", "expires_in": 10}
+        return MockHTTPResponse(status_code=200, ok=True, _json=token_json)
+
+    monkeypatch.setattr("requests.Session.get", response)
+    # monkeypatch.setattr(
+    #     "overload_web.bib_records.infrastructure.clients.PlatformToken._get_token",
+    #     token_response,
+    # )
+    monkeypatch.setattr("requests.post", token_response)
     return FakeSierraSession()
 
 
 @pytest.fixture
-def mock_session_no_response(monkeypatch):
-    def mock_response(*args, **kwargs):
-        return []
+def mock_bpl_session_error(monkeypatch, mock_session):
+    def mock_error(*args, **kwargs):
+        raise clients.BookopsSolrError
 
-    monkeypatch.setattr(clients.SierraSessionProtocol, "_parse_response", mock_response)
+    monkeypatch.setattr(FakeSierraSession, "_get_bibs_by_isbn", mock_error)
+    return FakeSierraSession()
+
+
+@pytest.fixture
+def mock_nypl_session_error(monkeypatch, mock_session):
+    def mock_error(*args, **kwargs):
+        raise clients.BookopsPlatformError
+
+    def mock_nypl_error(*args, **kwargs):
+        raise requests.exceptions.Timeout
+
+    monkeypatch.setattr("requests.post", mock_nypl_error)
+    monkeypatch.setattr(FakeSierraSession, "_get_bibs_by_isbn", mock_error)
     return FakeSierraSession()
 
 
@@ -233,37 +213,7 @@ def mock_sftp_client(monkeypatch):
 
 
 @pytest.fixture
-def order_data() -> dict:
-    return {
-        "audience": ["a", "a", "a"],
-        "blanket_po": None,
-        "branches": ["fw", "bc", "gk"],
-        "copies": "7",
-        "country": "xxu",
-        "create_date": "2024-01-01",
-        "format": "a",
-        "fund": "25240adbk",
-        "internal_note": None,
-        "lang": "eng",
-        "locations": ["(4)fwa0f", "(2)bca0f", "gka0f"],
-        "order_code_1": "b",
-        "order_code_2": None,
-        "order_code_3": "d",
-        "order_code_4": "a",
-        "order_id": 1234567,
-        "order_type": "p",
-        "price": "$5.00",
-        "selector_note": None,
-        "shelves": ["0f", "0f", "0f"],
-        "status": "o",
-        "vendor_code": "0049",
-        "vendor_notes": None,
-        "vendor_title_no": None,
-    }
-
-
-@pytest.fixture
-def template_data() -> dict:
+def fake_template_data() -> dict:
     return {
         "name": "Foo",
         "agent": "Bar",
@@ -411,7 +361,7 @@ def stub_bib(library, collection) -> Bib:
 
 
 @pytest.fixture
-def make_domain_bib(stub_bib, stub_mapper_rules, library) -> Callable:
+def make_domain_bib(stub_bib, test_constants, library) -> Callable:
     def _make_dto(data: dict[str, dict[str, str]], record_type: str):
         record = copy.deepcopy(stub_bib)
         for k, v in data.items():
@@ -425,7 +375,7 @@ def make_domain_bib(stub_bib, stub_mapper_rules, library) -> Callable:
                 )
             )
         mapper = marc_mapper.BookopsMarcMapper(
-            rules=stub_mapper_rules,
+            rules=test_constants["mapper_rules"],
             library=library,
             record_type=record_type,
         )
@@ -441,30 +391,82 @@ def make_domain_bib(stub_bib, stub_mapper_rules, library) -> Callable:
 
 
 @pytest.fixture(scope="session")
-def stub_constants():
+def test_constants():
     with open("overload_web/vendor_specs.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     return constants
 
 
 @pytest.fixture
-def stub_mapper_rules(stub_constants):
-    return stub_constants["mapper_rules"]
-
-
-@pytest.fixture
-def stub_cat_bib(make_domain_bib):
+def cat_bib(make_domain_bib):
     dto = make_domain_bib({}, "cat")
     return dto
 
 
 @pytest.fixture
-def stub_acq_bib(make_domain_bib):
+def acq_bib(make_domain_bib):
     dto = make_domain_bib({}, "acq")
     return dto
 
 
 @pytest.fixture
-def stub_sel_bib(make_domain_bib):
+def sel_bib(make_domain_bib):
     dto = make_domain_bib({}, "sel")
     return dto
+
+
+class StubFetcher(match.BibFetcher):
+    def __init__(self) -> None:
+        self.session = None
+
+
+class FakeBibFetcher(StubFetcher):
+    def __init__(self, library, collection):
+        super().__init__()
+        self.library = library
+        self.collection = collection
+
+    def get_bibs_by_id(self, value, key):
+        if self.library == "nypl":
+            file = f"tests/data/{self.library}_{self.collection}.json"
+            with open(file, "r", encoding="utf-8") as fh:
+                bibs = json.loads(fh.read())
+            data = bibs["data"]
+            return [sierra_responses.NYPLPlatformResponse(data=i) for i in data]
+        else:
+            file = f"tests/data/{self.library}.json"
+            with open(file, "r", encoding="utf-8") as fh:
+                bibs = json.loads(fh.read())
+            data = bibs["response"]["docs"]
+            return [sierra_responses.BPLSolrResponse(data=i) for i in data]
+
+
+@pytest.fixture
+def fake_fetcher(monkeypatch, library, collection):
+    def fetcher(*args, **kwargs):
+        return FakeBibFetcher(library, collection)
+
+    monkeypatch.setattr(
+        "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
+        fetcher,
+    )
+    return clients.SierraBibFetcher(library)
+
+
+@pytest.fixture
+def fake_fetcher_no_matches(monkeypatch, library):
+    def fetcher(*args, **kwargs):
+        return StubFetcher()
+
+    monkeypatch.setattr(
+        "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
+        fetcher,
+    )
+    return clients.SierraBibFetcher(library)
+
+
+@pytest.fixture
+def fake_matches(library, collection):
+    return FakeBibFetcher(library=library, collection=collection).get_bibs_by_id(
+        key="isbn", value="9781234567890"
+    )
