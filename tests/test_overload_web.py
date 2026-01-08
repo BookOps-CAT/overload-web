@@ -1,4 +1,4 @@
-from overload_web import __version__, __title__  # type: ignore
+from overload_web import __title__, __version__
 
 
 def test_version():

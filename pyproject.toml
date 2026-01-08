@@ -35,6 +35,7 @@ markers = [
 addopts = '-m "not livetest" --cov=overload_web/'
 
 [tool.coverage.run]
+branch = true
 relative_files = true
 source = ["."]
 omit = [
@@ -49,7 +50,6 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E501"]
-"tests/test_overload_web.py" = ["F401"]
 
 [[tool.mypy.overrides]]
 module = ["tests.*"]
