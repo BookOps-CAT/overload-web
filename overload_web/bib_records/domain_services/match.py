@@ -20,7 +20,7 @@ from overload_web.errors import OverloadError
 logger = logging.getLogger(__name__)
 
 
-class BaseBibMatcher(ABC):
+class BibMatcher(ABC):
     """
     Domain service for finding the best match for a bib record.
 
@@ -69,7 +69,7 @@ class BaseBibMatcher(ABC):
         return []
 
 
-class OrderLevelBibMatcher(BaseBibMatcher):
+class OrderLevelBibMatcher(BibMatcher):
     def match(
         self, records: list[bibs.DomainBib], matchpoints: dict[str, str]
     ) -> list[sierra_responses.MatcherResponse]:
@@ -95,7 +95,7 @@ class OrderLevelBibMatcher(BaseBibMatcher):
         return out
 
 
-class FullLevelBibMatcher(BaseBibMatcher):
+class FullLevelBibMatcher(BibMatcher):
     def match(
         self, records: list[bibs.DomainBib]
     ) -> list[sierra_responses.MatcherResponse]:

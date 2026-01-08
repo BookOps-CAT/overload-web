@@ -17,9 +17,9 @@ class BookopsMarcMapper:
 
     def __init__(self, library: str, record_type: str, rules: dict[str, Any]) -> None:
         """
-        Initialize `BookopsMarcParser` using a set of marc mapping rules.
+        Initialize `BookopsMarcMapper` using a set of marc mapping rules.
 
-        This class is a concrete implementation of the `MarcParser` protocol.
+        This class is a concrete implementation of the `BibMapper` protocol.
 
         Args:
             library:

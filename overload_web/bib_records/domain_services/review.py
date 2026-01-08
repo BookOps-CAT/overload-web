@@ -7,46 +7,55 @@ from dataclasses import dataclass
 
 from overload_web.bib_records.domain_models import (
     bibs,
-    marc_protocols,
     sierra_responses,
 )
 
 logger = logging.getLogger(__name__)
 
 
-class BibReviewer:
-    def __init__(self, policy: marc_protocols.BibMatchPolicy) -> None:
-        self.policy = policy
+class BaseMatchAnalyzer:
+    def _determine_catalog_action(
+        self,
+        incoming: bibs.DomainBib,
+        candidate: sierra_responses.BaseSierraResponse,
+    ) -> tuple[sierra_responses.CatalogAction, bool]:
+        if candidate.cat_source == "inhouse":
+            return sierra_responses.CatalogAction.ATTACH, False
+
+        if (
+            not incoming.update_datetime
+            or candidate.update_datetime > incoming.update_datetime
+        ):
+            return sierra_responses.CatalogAction.OVERLAY, True
+
+        return sierra_responses.CatalogAction.ATTACH, False
 
     def review_candidates(
-        self, candidates: list[sierra_responses.MatcherResponse]
+        self,
+        candidates: list[sierra_responses.MatcherResponse],
     ) -> tuple[list[sierra_responses.MatchResolution], list[bibs.DomainBib]]:
         analysis_out = []
         bibs_out = []
-        for response in candidates:
-            resolved = self.policy.resolve(
-                incoming=response.bib, candidates=response.matches
-            )
-            response.apply_matched_bib_id(bib_id=resolved.target_bib_id)
-            bibs_out.append(response.bib)
-            analysis_out.append(resolved)
+        for candidate in candidates:
+            analysis, bib = self.review_response(candidate)
+            analysis_out.append(analysis)
+            bibs_out.append(bib)
         return analysis_out, bibs_out
 
+    def review_response(
+        self,
+        response: sierra_responses.MatcherResponse,
+    ) -> tuple[sierra_responses.MatchResolution, bibs.DomainBib]:
+        resolution = self.resolve(response.bib, response.matches)
+        response.apply_matched_bib_id(bib_id=resolution.target_bib_id)
+        return (resolution, response.bib)
 
-def determine_catalog_action(
-    incoming: bibs.DomainBib,
-    candidate: sierra_responses.BaseSierraResponse,
-) -> tuple[sierra_responses.CatalogAction, bool]:
-    if candidate.cat_source == "inhouse":
-        return sierra_responses.CatalogAction.ATTACH, False
-
-    if (
-        not incoming.update_datetime
-        or candidate.update_datetime > incoming.update_datetime
-    ):
-        return sierra_responses.CatalogAction.OVERLAY, True
-
-    return sierra_responses.CatalogAction.ATTACH, False
+    def resolve(
+        self,
+        incoming: bibs.DomainBib,
+        candidates: list[sierra_responses.BaseSierraResponse],
+    ) -> sierra_responses.MatchResolution:
+        raise NotImplementedError
 
 
 def get_input_call_no(incoming: bibs.DomainBib) -> str | None:
@@ -116,7 +125,7 @@ class CandidateClassifier:
         return ClassifiedCandidates(matched, mixed, other, input_call_no, resource_id)
 
 
-class NYPLCatResearchMatchPolicy:
+class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
     def resolve(
         self,
         incoming: bibs.DomainBib,
@@ -136,7 +145,7 @@ class NYPLCatResearchMatchPolicy:
 
         for candidate in classified.matched:
             if candidate.research_call_number:
-                action, updated = determine_catalog_action(incoming, candidate)
+                action, updated = self._determine_catalog_action(incoming, candidate)
                 return sierra_responses.MatchResolution(
                     duplicate_records=classified.duplicates,
                     target_bib_id=candidate.bib_id,
@@ -158,7 +167,7 @@ class NYPLCatResearchMatchPolicy:
         )
 
 
-class NYPLCatBranchMatchPolicy:
+class NYPLCatBranchMatchAnalyzer(BaseMatchAnalyzer):
     def resolve(
         self,
         incoming: bibs.DomainBib,
@@ -180,7 +189,7 @@ class NYPLCatBranchMatchPolicy:
                 candidate.branch_call_number
                 and incoming.branch_call_number == candidate.branch_call_number
             ):
-                action, updated = determine_catalog_action(incoming, candidate)
+                action, updated = self._determine_catalog_action(incoming, candidate)
                 return sierra_responses.MatchResolution(
                     duplicate_records=classified.duplicates,
                     target_bib_id=candidate.bib_id,
@@ -192,7 +201,7 @@ class NYPLCatBranchMatchPolicy:
                 )
 
         fallback = classified.matched[-1]
-        action, updated = determine_catalog_action(incoming, fallback)
+        action, updated = self._determine_catalog_action(incoming, fallback)
 
         return sierra_responses.MatchResolution(
             duplicate_records=classified.duplicates,
@@ -205,7 +214,7 @@ class NYPLCatBranchMatchPolicy:
         )
 
 
-class BPLCatMatchPolicy:
+class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
     def resolve(
         self,
         incoming: bibs.DomainBib,
@@ -228,7 +237,9 @@ class BPLCatMatchPolicy:
         for candidate in classified.matched:
             if candidate.branch_call_number:
                 if incoming.branch_call_number == candidate.branch_call_number:
-                    action, updated = determine_catalog_action(incoming, candidate)
+                    action, updated = self._determine_catalog_action(
+                        incoming, candidate
+                    )
                     return sierra_responses.MatchResolution(
                         duplicate_records=classified.duplicates,
                         target_bib_id=candidate.bib_id,
@@ -240,7 +251,7 @@ class BPLCatMatchPolicy:
                     )
 
         fallback = classified.matched[-1]
-        action, updated = determine_catalog_action(incoming, fallback)
+        action, updated = self._determine_catalog_action(incoming, fallback)
 
         return sierra_responses.MatchResolution(
             duplicate_records=classified.duplicates,
@@ -253,7 +264,7 @@ class BPLCatMatchPolicy:
         )
 
 
-class SelectionMatchPolicy:
+class SelectionMatchAnalyzer(BaseMatchAnalyzer):
     def resolve(
         self,
         incoming: bibs.DomainBib,
@@ -290,7 +301,7 @@ class SelectionMatchPolicy:
         )
 
 
-class AcquisitionsMatchPolicy:
+class AcquisitionsMatchAnalyzer(BaseMatchAnalyzer):
     def resolve(
         self,
         incoming: bibs.DomainBib,

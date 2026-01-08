@@ -12,7 +12,7 @@ from overload_web.bib_records.domain_models import bibs, marc_protocols
 logger = logging.getLogger(__name__)
 
 
-class BaseBibParser(ABC):
+class BibParser(ABC):
     def __init__(self, mapper: marc_protocols.BibMapper) -> None:
         self.mapper = mapper
 
@@ -27,7 +27,7 @@ class BaseBibParser(ABC):
         return parsed
 
 
-class FullLevelBibParser(BaseBibParser):
+class FullLevelBibParser(BibParser):
     def parse(self, data: BinaryIO | bytes) -> tuple[list[bibs.DomainBib], list[str]]:
         """
         Method used to build `DomainBib` objects for full-level MARC records
@@ -49,7 +49,7 @@ class FullLevelBibParser(BaseBibParser):
         return (parsed, list(itertools.chain.from_iterable(barcodes)))
 
 
-class OrderLevelBibParser(BaseBibParser):
+class OrderLevelBibParser(BibParser):
     def parse(self, data: BinaryIO | bytes) -> list[bibs.DomainBib]:
         """
         Method used to build `DomainBib` objects for order-level MARC records

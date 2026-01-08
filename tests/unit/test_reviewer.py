@@ -100,6 +100,19 @@ class TestReviewer:
             ("bpl", "NONE"),
         ],
     )
+    def test_base_analyzer(self, stub_acq_bib, sierra_response, library, collection):
+        service = review.BaseMatchAnalyzer()
+        with pytest.raises(NotImplementedError):
+            service.resolve(stub_acq_bib, candidates=[sierra_response])
+
+    @pytest.mark.parametrize(
+        "library, collection",
+        [
+            ("nypl", "BL"),
+            ("nypl", "RL"),
+            ("bpl", "NONE"),
+        ],
+    )
     def test_attach_acq(self, stub_acq_bib, library, collection):
         stub_acq_response = sierra_responses.MatcherResponse(
             bib=stub_acq_bib,
@@ -107,7 +120,7 @@ class TestReviewer:
                 library=library, collection=collection
             ).get_bibs_by_id(key="isbn", value="9781234567890"),
         )
-        stub_service = review.BibReviewer(review.AcquisitionsMatchPolicy())
+        stub_service = review.AcquisitionsMatchAnalyzer()
         attached_bibs = stub_service.review_candidates([stub_acq_response])
         assert attached_bibs[1][0].bib_id is None
         assert stub_acq_response.bib.bib_id is None
@@ -120,7 +133,7 @@ class TestReviewer:
                 library=library, collection=collection
             ).get_bibs_by_id(key="isbn", value="9781234567890"),
         )
-        stub_service = review.BibReviewer(review.BPLCatMatchPolicy())
+        stub_service = review.BPLCatMatchAnalyzer()
         attached_bibs = stub_service.review_candidates([stub_cat_response])
         assert attached_bibs[1][0].bib_id == "123"
 
@@ -132,7 +145,7 @@ class TestReviewer:
                 library=library, collection=collection
             ).get_bibs_by_id(key="isbn", value="9781234567890"),
         )
-        stub_service = review.BibReviewer(review.NYPLCatBranchMatchPolicy())
+        stub_service = review.NYPLCatBranchMatchAnalyzer()
         attached_bibs = stub_service.review_candidates([stub_cat_response])
         assert attached_bibs[1][0].bib_id == "123"
 
@@ -144,7 +157,7 @@ class TestReviewer:
                 library=library, collection=collection
             ).get_bibs_by_id(key="isbn", value="9781234567890"),
         )
-        stub_service = review.BibReviewer(review.NYPLCatResearchMatchPolicy())
+        stub_service = review.NYPLCatResearchMatchAnalyzer()
         attached_bibs = stub_service.review_candidates([stub_cat_response])
         assert attached_bibs[1][0].bib_id == "123"
 
@@ -163,7 +176,7 @@ class TestReviewer:
                 library=library, collection=collection
             ).get_bibs_by_id(key="isbn", value="9781234567890"),
         )
-        stub_service = review.BibReviewer(review.SelectionMatchPolicy())
+        stub_service = review.SelectionMatchAnalyzer()
         attached_bibs = stub_service.review_candidates([stub_sel_response])
         assert attached_bibs[1][0].bib_id == "123"
 
@@ -264,12 +277,12 @@ class TestCandidateClassifier:
         assert len(classified.matched) == 0
 
 
-class TestSelectionMatchPolicy:
+class TestSelectionMatchAnalyzer:
     @pytest.mark.parametrize(
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
     )
     def test_resolve(self, sierra_response, new_domain_bib):
-        reviewer = review.SelectionMatchPolicy()
+        reviewer = review.SelectionMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[sierra_response])
         assert new_domain_bib.bib_id is None
         assert result.target_bib_id == "12345"
@@ -287,7 +300,7 @@ class TestSelectionMatchPolicy:
             }
         ]
         response = sierra_responses.NYPLPlatformResponse(data=resp_data)
-        reviewer = review.SelectionMatchPolicy()
+        reviewer = review.SelectionMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[response])
         assert new_domain_bib.bib_id is None
         assert response.bib_id == "12345"
@@ -301,28 +314,28 @@ class TestSelectionMatchPolicy:
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
     )
     def test_resolve_no_results(self, new_domain_bib):
-        reviewer = review.SelectionMatchPolicy()
+        reviewer = review.SelectionMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[])
         assert new_domain_bib.bib_id is None
         assert result.target_bib_id is None
 
 
-class TestAcquisitionsMatchPolicy:
+class TestAcquisitionsMatchAnalyzer:
     @pytest.mark.parametrize(
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
     )
     def test_resolve(self, sierra_response, new_domain_bib):
-        reviewer = review.AcquisitionsMatchPolicy()
+        reviewer = review.AcquisitionsMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[sierra_response])
         assert new_domain_bib.bib_id is None
         assert result.target_bib_id is None
         assert result.duplicate_records == []
 
 
-class TestNYPLCatBranchMatchPolicy:
+class TestNYPLCatBranchMatchAnalyzer:
     @pytest.mark.parametrize("library, collection", [("nypl", "BL")])
     def test_resolve(self, sierra_response, new_domain_bib):
-        reviewer = review.NYPLCatBranchMatchPolicy()
+        reviewer = review.NYPLCatBranchMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[sierra_response])
         assert new_domain_bib.bib_id is None
         assert result.target_bib_id == "12345"
@@ -331,7 +344,7 @@ class TestNYPLCatBranchMatchPolicy:
 
     @pytest.mark.parametrize("library, collection", [("nypl", "BL")])
     def test_resolve_no_results(self, new_domain_bib):
-        reviewer = review.NYPLCatBranchMatchPolicy()
+        reviewer = review.NYPLCatBranchMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[])
         assert new_domain_bib.bib_id is None
         assert result.target_bib_id is None
@@ -341,7 +354,7 @@ class TestNYPLCatBranchMatchPolicy:
         data = {k: v for k, v in NYPL_DATA.items()}
         data["varFields"] = [i for i in NYPL_DATA["varFields"] if i["marcTag"] != "901"]
         response = sierra_responses.NYPLPlatformResponse(data)
-        reviewer = review.NYPLCatBranchMatchPolicy()
+        reviewer = review.NYPLCatBranchMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[response])
         assert result.target_bib_id == "12345"
         assert response.update_datetime < new_domain_bib.update_datetime
@@ -358,7 +371,7 @@ class TestNYPLCatBranchMatchPolicy:
             ],
         }
         response = sierra_responses.NYPLPlatformResponse(data)
-        reviewer = review.NYPLCatBranchMatchPolicy()
+        reviewer = review.NYPLCatBranchMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[response])
         assert result.target_bib_id == "23456"
         assert response.cat_source == "inhouse"
@@ -380,7 +393,7 @@ class TestNYPLCatBranchMatchPolicy:
             ],
         }
         response = sierra_responses.NYPLPlatformResponse(data)
-        reviewer = review.NYPLCatBranchMatchPolicy()
+        reviewer = review.NYPLCatBranchMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[response])
         assert result.target_bib_id == "34567"
         assert response.cat_source == "vendor"
@@ -399,7 +412,7 @@ class TestNYPLCatBranchMatchPolicy:
             ],
         }
         response = sierra_responses.NYPLPlatformResponse(data)
-        reviewer = review.NYPLCatBranchMatchPolicy()
+        reviewer = review.NYPLCatBranchMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[response])
         assert result.target_bib_id == "34567"
         assert response.branch_call_number is None
@@ -407,10 +420,10 @@ class TestNYPLCatBranchMatchPolicy:
         assert result.action == "overlay"
 
 
-class TestNYPLCatResearchMatchPolicy:
+class TestNYPLCatResearchMatchAnalyzer:
     @pytest.mark.parametrize("library, collection", [("nypl", "RL")])
     def test_resolve(self, sierra_response, new_domain_bib):
-        reviewer = review.NYPLCatResearchMatchPolicy()
+        reviewer = review.NYPLCatResearchMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[sierra_response])
         assert new_domain_bib.bib_id is None
         assert result.target_bib_id == "12345"
@@ -419,7 +432,7 @@ class TestNYPLCatResearchMatchPolicy:
 
     @pytest.mark.parametrize("library, collection", [("nypl", "RL")])
     def test_resolve_no_results(self, new_domain_bib):
-        reviewer = review.NYPLCatResearchMatchPolicy()
+        reviewer = review.NYPLCatResearchMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[])
         assert new_domain_bib.bib_id is None
         assert result.target_bib_id is None
@@ -445,7 +458,7 @@ class TestNYPLCatResearchMatchPolicy:
             ],
         }
         response = sierra_responses.NYPLPlatformResponse(data)
-        reviewer = review.NYPLCatResearchMatchPolicy()
+        reviewer = review.NYPLCatResearchMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[response])
         assert result.target_bib_id == "34567"
         assert response.cat_source == "vendor"
@@ -464,7 +477,7 @@ class TestNYPLCatResearchMatchPolicy:
             ],
         }
         response = sierra_responses.NYPLPlatformResponse(data)
-        reviewer = review.NYPLCatResearchMatchPolicy()
+        reviewer = review.NYPLCatResearchMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[response])
         assert result.target_bib_id == "34567"
         assert response.research_call_number == []
@@ -472,10 +485,10 @@ class TestNYPLCatResearchMatchPolicy:
         assert result.action == "overlay"
 
 
-class TestBPLCatMatchPolicy:
+class TestBPLCatMatchAnalyzer:
     @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
     def test_resolve(self, sierra_response, new_domain_bib):
-        reviewer = review.BPLCatMatchPolicy()
+        reviewer = review.BPLCatMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[sierra_response])
         assert new_domain_bib.bib_id is None
         assert result.target_bib_id == "12345"
@@ -484,7 +497,7 @@ class TestBPLCatMatchPolicy:
 
     @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
     def test_resolve_no_results(self, new_domain_bib):
-        reviewer = review.BPLCatMatchPolicy()
+        reviewer = review.BPLCatMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[])
         assert new_domain_bib.bib_id is None
         assert result.target_bib_id is None
@@ -498,7 +511,7 @@ class TestBPLCatMatchPolicy:
             },
             "cat",
         )
-        reviewer = review.BPLCatMatchPolicy()
+        reviewer = review.BPLCatMatchAnalyzer()
         result = reviewer.resolve(domain_bib, candidates=[])
         assert domain_bib.bib_id is None
         assert result.target_bib_id is None
@@ -516,7 +529,7 @@ class TestBPLCatMatchPolicy:
             "call_number": "Foo",
         }
         response = sierra_responses.BPLSolrResponse(data)
-        reviewer = review.BPLCatMatchPolicy()
+        reviewer = review.BPLCatMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[response])
         assert result.target_bib_id == "12345"
         assert result.action == action
@@ -532,7 +545,7 @@ class TestBPLCatMatchPolicy:
             "call_number": "Bar",
         }
         response = sierra_responses.BPLSolrResponse(data)
-        reviewer = review.BPLCatMatchPolicy()
+        reviewer = review.BPLCatMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[response])
         assert result.target_bib_id == "23456"
         assert response.cat_source == "inhouse"
@@ -551,7 +564,7 @@ class TestBPLCatMatchPolicy:
             "call_number": "Baz",
         }
         response = sierra_responses.BPLSolrResponse(data)
-        reviewer = review.BPLCatMatchPolicy()
+        reviewer = review.BPLCatMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[response])
         assert result.target_bib_id == "34567"
         assert response.cat_source == "vendor"
@@ -565,7 +578,7 @@ class TestBPLCatMatchPolicy:
             "ss_marc_tag_005": "20250101010000.0",
         }
         response = sierra_responses.BPLSolrResponse(data)
-        reviewer = review.BPLCatMatchPolicy()
+        reviewer = review.BPLCatMatchAnalyzer()
         result = reviewer.resolve(new_domain_bib, candidates=[response])
         assert result.target_bib_id == "34567"
         assert result.action == "overlay"
