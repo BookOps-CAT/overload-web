@@ -3,7 +3,6 @@ import json
 import pytest
 
 from overload_web.bib_records.domain_models import (
-    marc_protocols,
     sierra_responses,
 )
 from overload_web.bib_records.domain_services import match
@@ -11,7 +10,7 @@ from overload_web.bib_records.infrastructure import clients
 from overload_web.errors import OverloadError
 
 
-class StubFetcher(marc_protocols.BibFetcher):
+class StubFetcher(match.BibFetcher):
     def __init__(self) -> None:
         self.session = None
 

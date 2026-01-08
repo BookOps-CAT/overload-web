@@ -20,7 +20,6 @@ Classes:
 import logging
 from typing import Any, BinaryIO
 
-from overload_web.bib_records.domain_models import marc_protocols
 from overload_web.bib_records.domain_services import (
     match,
     parse,
@@ -37,7 +36,7 @@ class MatchAnalyzerFactory:
 
     def make(
         self, library: str, record_type: str, collection: str
-    ) -> marc_protocols.MatchAnalyzer:
+    ) -> review.MatchAnalyzer:
         match record_type, library, collection:
             case "cat", "nypl", "BL":
                 return review.NYPLCatBranchMatchAnalyzer()
@@ -56,23 +55,23 @@ class FullRecordProcessingService:
 
     def __init__(
         self,
-        bib_fetcher: marc_protocols.BibFetcher,
-        bib_mapper: marc_protocols.BibMapper,
-        match_analyzer: marc_protocols.MatchAnalyzer,
-        update_handler: marc_protocols.MarcUpdateHandler,
+        bib_fetcher: match.BibFetcher,
+        bib_mapper: parse.BibMapper,
+        match_analyzer: review.MatchAnalyzer,
+        update_handler: update.MarcUpdateHandler,
     ):
         """
         Initialize `FullRecordProcessingService`.
 
         Args:
             bib_fetcher:
-                A `marc_protocols.BibFetcher` object
+                A `match.BibFetcher` object
             bib_mapper:
-                A `marc_protocols.BibMapper` object
+                A `parse.BibMapper` object
             match_analyzer:
-                A `marc_protocols.MatchAnalyzer` object
+                A `review.MatchAnalyzer` object
             update_handler:
-                A `marc_protocols.MarcUpdateHandler` object
+                A `update.MarcUpdateHandler` object
         """
         self.reviewer = match_analyzer
         self.matcher = match.FullLevelBibMatcher(fetcher=bib_fetcher)
@@ -114,26 +113,26 @@ class OrderRecordProcessingService:
 
     def __init__(
         self,
-        bib_fetcher: marc_protocols.BibFetcher,
-        bib_mapper: marc_protocols.BibMapper,
-        match_analyzer: marc_protocols.MatchAnalyzer,
+        bib_fetcher: match.BibFetcher,
+        bib_mapper: parse.BibMapper,
+        match_analyzer: review.MatchAnalyzer,
         rules: dict[str, Any],
-        update_handler: marc_protocols.MarcUpdateHandler,
+        update_handler: update.MarcUpdateHandler,
     ):
         """
         Initialize `OrderRecordProcessingService`.
 
         Args:
             bib_fetcher:
-                A `marc_protocols.BibFetcher` object
+                A `match.BibFetcher` object
             bib_mapper:
-                A `marc_protocols.BibMapper` object
+                A `parse.BibMapper` object
             match_analyzer:
-                A `marc_protocols.MatchAnalyzer` object
+                A `review.MatchAnalyzer` object
             rules:
                 A set of rules to be used by the `MarcUpdateHandler` as a dict
             update_handler:
-                A `marc_protocols.MarcUpdateHandler` object
+                A `update.MarcUpdateHandler` object
         """
         self.reviewer = match_analyzer
         self.matcher = match.OrderLevelBibMatcher(fetcher=bib_fetcher)

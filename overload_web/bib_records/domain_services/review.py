@@ -4,13 +4,22 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from typing import Protocol
 
-from overload_web.bib_records.domain_models import (
-    bibs,
-    sierra_responses,
-)
+from overload_web.bib_records.domain_models import bibs, sierra_responses
 
 logger = logging.getLogger(__name__)
+
+
+class MatchAnalyzer(Protocol):
+    """Review matches identified by"""
+
+    def review_candidates(
+        self,
+        candidates: list[sierra_responses.MatcherResponse],
+    ) -> tuple[
+        list[sierra_responses.MatchResolution], list[bibs.DomainBib]
+    ]: ...  # pragma: no branch
 
 
 class BaseMatchAnalyzer:

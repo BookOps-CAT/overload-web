@@ -26,7 +26,7 @@ def get_match_analyzer(
     library: Annotated[str, Form(...)],
     collection: Annotated[str, Form(...)],
     record_type: Annotated[str, Form(...)],
-) -> Generator[record_service.marc_protocols.MatchAnalyzer, None, None]:
+) -> Generator[record_service.review.MatchAnalyzer, None, None]:
     yield record_service.MatchAnalyzerFactory().make(
         library=library, record_type=record_type, collection=collection
     )
@@ -46,7 +46,7 @@ def order_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
     mapper: Annotated[marc_mapper.BookopsMarcMapper, Depends(get_mapper)],
     reviewer: Annotated[
-        record_service.marc_protocols.MatchAnalyzer, Depends(get_match_analyzer)
+        record_service.review.MatchAnalyzer, Depends(get_match_analyzer)
     ],
     constants: Annotated[dict[str, Any], Depends(get_constants)],
 ) -> Generator[record_service.OrderRecordProcessingService, None, None]:
@@ -63,7 +63,7 @@ def full_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
     mapper: Annotated[marc_mapper.BookopsMarcMapper, Depends(get_mapper)],
     reviewer: Annotated[
-        record_service.marc_protocols.MatchAnalyzer, Depends(get_match_analyzer)
+        record_service.review.MatchAnalyzer, Depends(get_match_analyzer)
     ],
 ) -> Generator[record_service.FullRecordProcessingService, None, None]:
     yield record_service.FullRecordProcessingService(

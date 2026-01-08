@@ -4,10 +4,9 @@ import json
 import pytest
 
 from overload_web.bib_records.domain_models import (
-    marc_protocols,
     sierra_responses,
 )
-from overload_web.bib_records.domain_services import review
+from overload_web.bib_records.domain_services import match, review
 
 BPL_DATA = {
     "call_number": "Foo",
@@ -39,7 +38,7 @@ NYPL_DATA = {
 }
 
 
-class StubFetcher(marc_protocols.BibFetcher):
+class StubFetcher(match.BibFetcher):
     def __init__(self) -> None:
         self.session = None
 

@@ -5,20 +5,43 @@ from __future__ import annotations
 import logging
 from collections import Counter
 from itertools import chain
-from typing import Any
+from typing import Any, Protocol, TypeVar, runtime_checkable
 
 from overload_web.bib_records.domain_models import (
     bibs,
-    marc_protocols,
     sierra_responses,
 )
 
 logger = logging.getLogger(__name__)
 
+T = TypeVar("T", contravariant=True)  # variable for contravariant `Bib` type
+
+
+@runtime_checkable
+class MarcUpdateHandler(Protocol[T]):
+    full_record_pipelines: dict[str, Any]
+    order_pipelines: dict[str, Any]
+    library_pipelines: dict[str, Any]
+
+    def create_order_marc_ctx(
+        self,
+        record: bibs.DomainBib,
+        rules: dict[str, Any],
+        template_data: dict[str, Any],
+    ) -> Any: ...  # pragma: no branch
+
+    def create_library_ctx(
+        self, bib_id: str | None, bib_rec: T, vendor: str | None
+    ) -> Any: ...  # pragma: no branch
+
+    def create_full_marc_ctx(
+        self, record: bibs.DomainBib
+    ) -> Any: ...  # pragma: no branch
+
 
 class OrderLevelBibUpdater:
     def __init__(
-        self, rules: dict[str, Any], update_handler: marc_protocols.MarcUpdateHandler
+        self, rules: dict[str, Any], update_handler: MarcUpdateHandler
     ) -> None:
         self.rules = rules
         self.update_handler = update_handler
@@ -67,7 +90,7 @@ class OrderLevelBibUpdater:
 
 
 class FullLevelBibUpdater:
-    def __init__(self, update_handler: marc_protocols.MarcUpdateHandler) -> None:
+    def __init__(self, update_handler: MarcUpdateHandler) -> None:
         self.update_handler = update_handler
 
     def _update_full_record(self, record: bibs.DomainBib) -> bibs.DomainBib:
