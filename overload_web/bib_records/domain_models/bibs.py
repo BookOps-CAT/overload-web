@@ -9,7 +9,7 @@ from typing import Any
 
 
 class Collection(Enum):
-    """Includes valid values for NYPL and BPL collection"""
+    """Valid values for NYPL and BPL collections"""
 
     BRANCH = "BL"
     RESEARCH = "RL"
@@ -21,27 +21,7 @@ class Collection(Enum):
 
 
 class DomainBib:
-    """
-    A domain model representing a bib record and its associated order data.
-
-    Attributes:
-        library: the library to whom the record belongs as an enum or str.
-        binary_data: the marc record in binary (`bytes`)
-        barcodes: list of barcodes associated with the record.
-        bib_id: sierra bib ID.
-        branch_call_number: branch call number for the record, if present.
-        collection: the collection to whom the record belongs as an enum or str.
-        control_number: the record's control number, if present.
-        isbn: ISBN for the title, if present.
-        oclc_number: OCLC number(s) identifying the record, if present.
-        orders: list of orders associated with the record.
-        research_call_number: research call number for the record, if present.
-        title: the title associated with the record.
-        upc: UPC number, if present.
-        update_date: the date the record was last updated.
-        vendor: the vendor to whom the record belongs, if applicable.
-        vendor_info: info about the vendor as a `VendorInfo` object
-    """
+    """A domain model representing a bib record and its associated order data."""
 
     def __init__(
         self,
@@ -63,6 +43,52 @@ class DomainBib:
         vendor: str | None = None,
         vendor_info: VendorInfo | None = None,
     ) -> None:
+        """
+        Initialize a `DomainBib` object.
+
+        Args:
+            binary_data:
+                The marc record as a byte literal or `bytes` object
+            barcodes:
+                The list of barcodes associated with the bib record as strings.
+            bib_id:
+                The record's sierra bib ID as a string.
+            branch_call_number:
+                The branch call number for the record, if present.
+            collection:
+                The collection to whom the record belongs as an enum (`Collection`)
+                or str.
+            control_number:
+                The record's control number as a string, if present.
+            isbn:
+                The ISBN for the title as a string, if present.
+            library:
+                The library to whom the record belongs as an enum (`LibrarySystem`)
+                or str.
+            oclc_number:
+                OCLC number(s) identifying the record as a string or list of strings,
+                if present.
+            orders:
+                The list of orders associated with the record as `Order` domain objects.
+            record_type:
+                The workflow two whom this record belongs as an enum (`RecordType`)
+                or str.
+            research_call_number:
+                The research call number for the record as a string or list of strings,
+                if present.
+            title:
+                The title associated with the record.
+            upc:
+                The UPC number associated with the record, if present.
+            update_date:
+                The date the record was last updated as a string following MARC 005
+                formatting (ie. `YYYYMMDDHHMMSS.f`).
+            vendor:
+                The vendor to whom the record belongs as a string, if applicable.
+            vendor_info:
+                Info about the vendor as a `VendorInfo` object, if applicable.
+        """
+
         self.barcodes = barcodes
         self.bib_id = bib_id
         self.binary_data = binary_data
@@ -89,9 +115,22 @@ class DomainBib:
 
     @property
     def update_datetime(self) -> datetime.datetime | None:
+        """Creates `datetime.datetime` object from `update_date` string."""
         if self.update_date:
             return datetime.datetime.strptime(self.update_date, "%Y%m%d%H%M%S.%f")
         return None
+
+    @update_datetime.setter
+    def update_datetime(self, value: datetime.datetime | None) -> None:
+        """
+        Changes `update_date` if `update_datetime` is assigned a new value.
+        The new `update_date` value will be formatted like a MARC 005 field
+        (ie. `YYYYMMDDHHMMSS.f`).
+        """
+        if isinstance(value, datetime.datetime):
+            self.update_date = datetime.datetime.strftime(value, "%Y%m%d%H%M%S.%f")
+        else:
+            self.update_date = value
 
     def apply_order_template(self, template_data: dict[str, Any]) -> None:
         """
@@ -108,10 +147,10 @@ class DomainBib:
 
     def update_bib_id(self, bib_id: str) -> None:
         """
-        Update a DomainBib object's bib_id.
+        Update a `DomainBib` object's bib_id.
 
         Args:
-            bib_id: sierra bib ID.
+            bib_id: The new sierra bib ID as a string.
 
         Returns:
             None
@@ -120,7 +159,7 @@ class DomainBib:
 
 
 class LibrarySystem(Enum):
-    """Includes valid values for library system"""
+    """Valid values for library system"""
 
     BPL = "bpl"
     NYPL = "nypl"
@@ -186,7 +225,10 @@ class Order:
 
     def apply_template(self, template_data: dict[str, Any]) -> None:
         """
-        Apply template data to the order, updating any matching, non-empty fields.
+        Apply template data to the order.
+
+        Identifies fields based on the key of a key/value pair and overwrites
+        it with the value from the key/value pair if the attribute is not empty.
 
         Args:
             template_data: Field-value pairs to apply.
@@ -196,7 +238,7 @@ class Order:
                 setattr(self, k, v)
 
     def map_to_marc(
-        self, rules: dict[str, dict[str, str]]
+        self, rules: dict[str, Any]
     ) -> dict[str, dict[str, str | int | list[str] | None]]:
         """
         Map order data to MARC using a set of mapping rules
@@ -218,7 +260,7 @@ class Order:
 
 
 class RecordType(Enum):
-    """Includes valid values for record type"""
+    """Valid values for record type/processing workflow."""
 
     ACQUISITIONS = "acq"
     CATALOGING = "cat"
