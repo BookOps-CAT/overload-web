@@ -1,4 +1,4 @@
-"""Domain models that define responses from Sierra"""
+"""Domain models that define responses from Sierra and associated objects"""
 
 from __future__ import annotations
 
@@ -16,9 +16,54 @@ logger = logging.getLogger(__name__)
 
 
 class BaseSierraResponse(ABC):
+    """An abstract domain model that represents bib data returned from Sierra.
+
+    Attributes:
+        library:
+            The library to whom the record belongs as a str.
+        barcodes:
+            The list of barcodes associated with a bib record as strings.
+        bib_id:
+            The record's sierra bib ID as a string.
+        branch_call_number:
+            The branch call number for the record as a string, if present.
+        cat_source:
+            The source of cataloging as a string.
+        collection:
+            The collection to whom the record belongs as a str, if appropriate.
+        control_number:
+            The record's control number as a string, if present.
+        isbn:
+            The ISBNs for the title as a list of strings.
+        oclc_number:
+            OCLC number(s) identifying the record as a list of strings.
+        research_call_number:
+            The research call number for the record as a list of strings.
+        title:
+            The title associated with the record as a string.
+        upc:
+            The UPC number(s) associated with the record as a list of strings.
+        update_date:
+            The date the record was last updated as a string.
+        update_datetime:
+            The date the record was last updated as a datetime.datetime object.
+        var_fields:
+            MARC data fields present in the record as a list of strings.
+    """
+
     library: str
 
     def __init__(self, data: dict[str, Any]) -> None:
+        """
+        Initialize a `BaseSierraResponse` object.
+
+        The concrete implementations of this base class will parse the response
+        retrieved from Sierra based on the format of the dictionary that is returned.
+
+        Args:
+            data: The data retrieved from Sierra as a dictionary.
+
+        """
         self._data = data
         self.bib_id: str = data["id"]
         self.library = self.__class__.library
@@ -41,6 +86,7 @@ class BaseSierraResponse(ABC):
     def collection(self) -> str | None: ...  # pragma: no branch
 
     @property
+    @abstractmethod
     def control_number(self) -> str | None: ...  # pragma: no branch
 
     @property
@@ -286,6 +332,8 @@ class NYPLPlatformResponse(BaseSierraResponse):
 
 
 class MatcherResponse:
+    """A DTO that wraps a `DomainBib` object with its associated matches from Sierra."""
+
     def __init__(self, bib: bibs.DomainBib, matches: list[BaseSierraResponse]) -> None:
         self.bib = bib
         self.matches = matches
@@ -296,7 +344,9 @@ class MatcherResponse:
             self.bib.update_bib_id(bib_id)
 
 
-class CatalogAction(str, Enum):
+class CatalogAction(Enum):
+    """Valid values for a cataloging action"""
+
     ATTACH = "attach"
     OVERLAY = "overlay"
     INSERT = "insert"
@@ -304,6 +354,8 @@ class CatalogAction(str, Enum):
 
 @dataclass(frozen=True)
 class MatchResolution:
+    """Components extracted from match analysis"""
+
     target_bib_id: str | None
     action: CatalogAction
     call_number_match: bool

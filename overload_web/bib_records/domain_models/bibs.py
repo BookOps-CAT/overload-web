@@ -77,7 +77,7 @@ class DomainBib:
                 The research call number for the record as a string or list of strings,
                 if present.
             title:
-                The title associated with the record.
+                The title associated with the record as a string.
             upc:
                 The UPC number associated with the record, if present.
             update_date:

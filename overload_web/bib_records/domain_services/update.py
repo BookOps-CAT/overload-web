@@ -7,10 +7,7 @@ from collections import Counter
 from itertools import chain
 from typing import Any, Protocol, TypeVar, runtime_checkable
 
-from overload_web.bib_records.domain_models import (
-    bibs,
-    sierra_responses,
-)
+from overload_web.bib_records.domain_models import bibs, sierra_responses
 
 logger = logging.getLogger(__name__)
 
