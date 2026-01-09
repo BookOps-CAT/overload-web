@@ -4,6 +4,7 @@ import io
 import json
 import logging
 import os
+from functools import lru_cache
 from typing import Any, Callable
 
 import pytest
@@ -13,7 +14,6 @@ from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 
 from overload_web.bib_records.domain_models import sierra_responses
-from overload_web.bib_records.domain_services import match
 from overload_web.bib_records.infrastructure import clients, marc_mapper
 
 
@@ -148,10 +148,6 @@ def mock_session(monkeypatch):
         return MockHTTPResponse(status_code=200, ok=True, _json=token_json)
 
     monkeypatch.setattr("requests.Session.get", response)
-    # monkeypatch.setattr(
-    #     "overload_web.bib_records.infrastructure.clients.PlatformToken._get_token",
-    #     token_response,
-    # )
     monkeypatch.setattr("requests.post", token_response)
     return FakeSierraSession()
 
@@ -196,13 +192,14 @@ def mock_sftp_client(monkeypatch):
         file_data["file_name"] = kwargs["file"].file_name
         return FileInfo(**file_data)
 
+    def null_return(*args, **kwargs):
+        return None
+
     monkeypatch.setattr(Client, "get_file", _get_file)
     monkeypatch.setattr(Client, "get_file_info", _get_file_info)
     monkeypatch.setattr(Client, "list_files", _list_files)
     monkeypatch.setattr(Client, "put_file", _put_file)
-    monkeypatch.setattr(
-        Client, "_Client__connect_to_server", lambda *args, **kwargs: None
-    )
+    monkeypatch.setattr(Client, "_Client__connect_to_server", null_return)
     return Client(
         name="FOO",
         username=os.environ["FOO_USER"],
@@ -249,7 +246,7 @@ def stub_bib(library, collection) -> Bib:
     bib = Bib()
     bib.leader = "00000cam  2200517 i 4500"
     bib.library = library
-    bib.add_field(Field(tag="005", data="20000101000000.0"))
+    bib.add_field(Field(tag="005", data="20200101010000.0"))
     bib.add_field(
         Field(
             tag="020",
@@ -361,6 +358,23 @@ def stub_bib(library, collection) -> Bib:
 
 
 @pytest.fixture
+def stub_bib_alt_vendor(stub_bib):
+    bib = copy.deepcopy(stub_bib)
+    bib.add_ordered_field(
+        Field(
+            tag="947",
+            indicators=Indicators(" ", " "),
+            subfields=[
+                Subfield(code="a", value="B&amp;T SERIES"),
+                Subfield(code="f", value="bar"),
+                Subfield(code="m", value="baz"),
+            ],
+        )
+    )
+    return bib
+
+
+@pytest.fixture
 def make_domain_bib(stub_bib, test_constants, library) -> Callable:
     def _make_dto(data: dict[str, dict[str, str]], record_type: str):
         record = copy.deepcopy(stub_bib)
@@ -415,58 +429,37 @@ def sel_bib(make_domain_bib):
     return dto
 
 
-class StubFetcher(match.BibFetcher):
-    def __init__(self) -> None:
-        self.session = None
+@lru_cache
+def load_sierra_response_data(library, collection):
+    if library == "nypl":
+        file = f"tests/data/{library}_{collection}.json"
+        with open(file, "r", encoding="utf-8") as fh:
+            bibs = json.loads(fh.read())
+        return bibs["data"]
+    else:
+        file = f"tests/data/{library}.json"
+        with open(file, "r", encoding="utf-8") as fh:
+            bibs = json.loads(fh.read())
+        return bibs["response"]["docs"]
 
 
-class FakeBibFetcher(StubFetcher):
-    def __init__(self, library, collection):
-        super().__init__()
-        self.library = library
-        self.collection = collection
+@pytest.fixture
+def sierra_data(library, collection):
+    return load_sierra_response_data(library, collection)
 
-    def get_bibs_by_id(self, value, key):
-        if self.library == "nypl":
-            file = f"tests/data/{self.library}_{self.collection}.json"
-            with open(file, "r", encoding="utf-8") as fh:
-                bibs = json.loads(fh.read())
-            data = bibs["data"]
-            return [sierra_responses.NYPLPlatformResponse(data=i) for i in data]
+
+@pytest.fixture
+def fake_fetcher(monkeypatch, library, sierra_data):
+    def get_bibs_by_id(*args, **kwargs):
+        if library == "nypl":
+            return [sierra_responses.NYPLPlatformResponse(data=i) for i in sierra_data]
         else:
-            file = f"tests/data/{self.library}.json"
-            with open(file, "r", encoding="utf-8") as fh:
-                bibs = json.loads(fh.read())
-            data = bibs["response"]["docs"]
-            return [sierra_responses.BPLSolrResponse(data=i) for i in data]
+            return [sierra_responses.BPLSolrResponse(data=i) for i in sierra_data]
+
+    monkeypatch.setattr(FakeSierraSession, "_parse_response", get_bibs_by_id)
+    return clients.SierraBibFetcher(session=FakeSierraSession())
 
 
 @pytest.fixture
-def fake_fetcher(monkeypatch, library, collection):
-    def fetcher(*args, **kwargs):
-        return FakeBibFetcher(library, collection)
-
-    monkeypatch.setattr(
-        "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
-        fetcher,
-    )
-    return clients.SierraBibFetcher(library)
-
-
-@pytest.fixture
-def fake_fetcher_no_matches(monkeypatch, library):
-    def fetcher(*args, **kwargs):
-        return StubFetcher()
-
-    monkeypatch.setattr(
-        "overload_web.bib_records.infrastructure.clients.SierraBibFetcher",
-        fetcher,
-    )
-    return clients.SierraBibFetcher(library)
-
-
-@pytest.fixture
-def fake_matches(library, collection):
-    return FakeBibFetcher(library=library, collection=collection).get_bibs_by_id(
-        key="isbn", value="9781234567890"
-    )
+def fake_matches(fake_fetcher, library, collection):
+    return fake_fetcher.get_bibs_by_id(key="isbn", value="9781234567890")
