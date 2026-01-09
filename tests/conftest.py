@@ -24,6 +24,23 @@ def set_caplog_level(caplog):
             logger.removeHandler(handler)
 
 
+@pytest.fixture(autouse=True)
+def fake_creds(monkeypatch):
+    monkeypatch.setenv("NYPL_PLATFORM_CLIENT", "foo")
+    monkeypatch.setenv("NYPL_PLATFORM_SECRET", "bar")
+    monkeypatch.setenv("NYPL_PLATFORM_OAUTH", "baz")
+    monkeypatch.setenv("NYPL_PLATFORM_TARGET", "dev")
+    monkeypatch.setenv("NYPL_PLATFORM_AGENT", "test")
+    monkeypatch.setenv("BPL_SOLR_CLIENT", "foo")
+    monkeypatch.setenv("BPL_SOLR_TARGET", "test")
+    monkeypatch.setenv("FOO_USER", "foo")
+    monkeypatch.setenv("FOO_PASSWORD", "bar")
+    monkeypatch.setenv("FOO_HOST", "sftp.baz.com")
+    monkeypatch.setenv("FOO_PORT", "22")
+    monkeypatch.setenv("FOO_SRC", "/")
+    monkeypatch.setenv("FOO_DST", "nsdrop/vendor_files/foo")
+
+
 class MockHTTPResponse:
     def __init__(self, status_code: int, ok: bool, _json: dict):
         self.status_code = status_code
