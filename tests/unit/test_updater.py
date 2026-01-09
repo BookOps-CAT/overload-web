@@ -98,3 +98,67 @@ class TestUpdater:
         )
         assert [i.order_code_1 for i in original_orders] == ["j"]
         assert [i.order_code_1 for i in updated_bibs[0].orders] == ["b"]
+
+    @pytest.mark.parametrize(
+        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
+    )
+    def test_dedupe_cat(self, full_bib, match_resolution, library, collection, caplog):
+        service = update.FullLevelBibUpdater(
+            update_handler=self.update_handler,
+        )
+        deduped_bibs = service.dedupe([full_bib], [match_resolution])
+        assert len(deduped_bibs["DUP"]) == 0
+        assert len(deduped_bibs["NEW"]) == 1
+        assert len(deduped_bibs["DEDUPED"]) == 0
+
+    @pytest.mark.parametrize(
+        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
+    )
+    def test_validate_cat(self, full_bib, library, collection, caplog):
+        service = update.FullLevelBibUpdater(
+            update_handler=self.update_handler,
+        )
+        service.validate({"NEW": [full_bib]}, ["333331234567890"])
+        assert len(caplog.records) == 1
+        assert (
+            caplog.records[0].msg == "Integrity validation: True, missing_barcodes: []"
+        )
+
+    def test_validate_cat_bpl_960_item(self, full_bpl_bib, caplog):
+        service = update.FullLevelBibUpdater(
+            update_handler=self.update_handler,
+        )
+        service.validate({"NEW": [full_bpl_bib]}, ["333331234567890"])
+        assert len(caplog.records) == 1
+        assert (
+            caplog.records[0].msg == "Integrity validation: True, missing_barcodes: []"
+        )
+
+    @pytest.mark.parametrize(
+        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
+    )
+    def test_validate_missing_barcodes(self, full_bib, library, collection, caplog):
+        service = update.FullLevelBibUpdater(
+            update_handler=self.update_handler,
+        )
+        service.validate({"NEW": [full_bib]}, ["333331234567890", "333330987654321"])
+        assert len(caplog.records) == 2
+        assert (
+            caplog.records[0].msg
+            == "Integrity validation: False, missing_barcodes: ['333330987654321']"
+        )
+        assert caplog.records[1].msg == "Barcodes integrity error: ['333330987654321']"
+
+    def test_validate_bpl_960_item_missing_barcodes(self, full_bpl_bib, caplog):
+        service = update.FullLevelBibUpdater(
+            update_handler=self.update_handler,
+        )
+        service.validate(
+            {"NEW": [full_bpl_bib]}, ["333331234567890", "333330987654321"]
+        )
+        assert len(caplog.records) == 2
+        assert (
+            caplog.records[0].msg
+            == "Integrity validation: False, missing_barcodes: ['333330987654321']"
+        )
+        assert caplog.records[1].msg == "Barcodes integrity error: ['333330987654321']"

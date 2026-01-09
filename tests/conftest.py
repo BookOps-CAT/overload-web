@@ -412,6 +412,11 @@ def full_bib(order_level_bib):
 
 
 @pytest.fixture
+def match_resolution(sierra_response, full_bib):
+    return sierra_responses.MatcherResponse(bib=full_bib, matches=[sierra_response])
+
+
+@pytest.fixture
 def sierra_response(library, collection):
     if library == "bpl":
         data = {
@@ -451,3 +456,52 @@ def fake_fetcher(monkeypatch, sierra_response, library, collection):
 
     monkeypatch.setattr(FakeSierraSession, "_parse_response", fake_response)
     return clients.SierraBibFetcher(session=FakeSierraSession())
+
+
+@pytest.fixture
+def full_bpl_bib(test_constants):
+    bib = Bib()
+    bib.leader = "00000cam  2200517 i 4500"
+    bib.library = "bpl"
+    bib.add_field(Field(tag="005", data="20200101010000.0"))
+    bib.add_field(
+        Field(
+            tag="020",
+            indicators=Indicators(" ", " "),
+            subfields=[Subfield(code="a", value="9781234567890")],
+        )
+    )
+    bib.add_field(
+        Field(
+            tag="099",
+            indicators=Indicators(" ", " "),
+            subfields=[
+                Subfield(code="a", value="Foo"),
+            ],
+        )
+    )
+    bib.add_field(
+        Field(
+            tag="960",
+            indicators=Indicators(" ", " "),
+            subfields=[
+                Subfield(code="i", value="333331234567890"),
+            ],
+        )
+    )
+    mapper = marc_mapper.BookopsMarcMapper(
+        rules=test_constants["mapper_rules"],
+        library="bpl",
+        record_type="cat",
+    )
+    out = mapper.map_data(record=bib)
+    bib = marc_mapper.bibs.DomainBib(**out)
+    bib.vendor_info = marc_mapper.bibs.VendorInfo(
+        name="UNKNOWN",
+        bib_fields=[],
+        matchpoints={
+            "primary_matchpoint": "isbn",
+            "secondary_matchpoint": "oclc_number",
+        },
+    )
+    return bib

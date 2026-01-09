@@ -108,12 +108,12 @@ class FullLevelBibUpdater:
         self, record: bibs.DomainBib, all_dupes: list[bibs.DomainBib]
     ) -> bibs.DomainBib:
         base_rec_ctx = self.update_handler.create_full_marc_ctx(record=all_dupes[0])
-        if record.library == "nypl":
-            tag = "949"
-            ind2 = "1"
-        else:
+        if record.library == "bpl" and base_rec_ctx.bib_rec.overdrive_number is None:
             tag = "960"
             ind2 = " "
+        else:
+            tag = "949"
+            ind2 = "1"
         all_items = []
         for dupe in all_dupes[1:]:
             ctx = self.update_handler.create_full_marc_ctx(record=dupe)
@@ -187,12 +187,12 @@ class FullLevelBibUpdater:
         records = chain.from_iterable([v for k, v in record_batches.items()])
         for record in records:
             ctx = self.update_handler.create_full_marc_ctx(record=record)
-            if record.library == "nypl":
-                tag = "949"
-                ind2 = "1"
-            else:
+            if record.library == "bpl" and ctx.bib_rec.overdrive_number is None:
                 tag = "960"
                 ind2 = " "
+            else:
+                tag = "949"
+                ind2 = "1"
             for item in ctx.bib_rec.get_fields(tag):
                 if item.indicator1 == " " and item.indicator2 == ind2:
                     barcodes_from_batches.extend(item.get_subfields("i"))
@@ -202,7 +202,7 @@ class FullLevelBibUpdater:
                 missing_barcodes.add(barcode)
         valid = sorted(barcodes) == sorted(barcodes_from_batches)
         logger.debug(
-            f"Integrity validation: {valid}, missing_barcodes: {missing_barcodes}"
+            f"Integrity validation: {valid}, missing_barcodes: {list(missing_barcodes)}"
         )
         if not valid:
-            logger.error(f"Barcodes integrity error: {missing_barcodes}")
+            logger.error(f"Barcodes integrity error: {list(missing_barcodes)}")
