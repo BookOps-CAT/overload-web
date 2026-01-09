@@ -3,8 +3,6 @@ import datetime
 import io
 import json
 import logging
-import os
-from functools import lru_cache
 from typing import Any, Callable
 
 import pytest
@@ -24,29 +22,6 @@ def set_caplog_level(caplog):
     for handler in logger.handlers:
         if not isinstance(handler, logging.StreamHandler):
             logger.removeHandler(handler)
-
-
-@pytest.fixture(autouse=True)
-def fake_creds(monkeypatch):
-    monkeypatch.setenv("BPL_SOLR_CLIENT", "test")
-    monkeypatch.setenv("BPL_SOLR_TARGET", "dev")
-    monkeypatch.setenv("NYPL_PLATFORM_CLIENT", "test")
-    monkeypatch.setenv("NYPL_PLATFORM_SECRET", "test")
-    monkeypatch.setenv("NYPL_PLATFORM_OAUTH", "test")
-    monkeypatch.setenv("NYPL_PLATFORM_AGENT", "test")
-    monkeypatch.setenv("NYPL_PLATFORM_TARGET", "dev")
-    monkeypatch.setenv("FOO_USER", "foo")
-    monkeypatch.setenv("FOO_PASSWORD", "bar")
-    monkeypatch.setenv("FOO_HOST", "sftp.baz.com")
-    monkeypatch.setenv("FOO_PORT", "22")
-    monkeypatch.setenv("FOO_SRC", "/")
-    monkeypatch.setenv("FOO_DST", "nsdrop/vendor_files/foo")
-    monkeypatch.setenv("NSDROP_USER", "foo")
-    monkeypatch.setenv("NSDROP_PASSWORD", "bar")
-    monkeypatch.setenv("NSDROP_HOST", "sftp.baz.com")
-    monkeypatch.setenv("NSDROP_PORT", "22")
-    monkeypatch.setenv("NSDROP_SRC", "/")
-    monkeypatch.setenv("NSDROP_DST", "nsdrop/vendor_files/bar")
 
 
 class MockHTTPResponse:
@@ -201,11 +176,7 @@ def mock_sftp_client(monkeypatch):
     monkeypatch.setattr(Client, "put_file", _put_file)
     monkeypatch.setattr(Client, "_Client__connect_to_server", null_return)
     return Client(
-        name="FOO",
-        username=os.environ["FOO_USER"],
-        password=os.environ["FOO_PASSWORD"],
-        host=os.environ["FOO_HOST"],
-        port=os.environ["FOO_PORT"],
+        name="FOO", username="foo", password="bar", host="sftp.baz.com", port="22"
     )
 
 
@@ -429,37 +400,43 @@ def sel_bib(make_domain_bib):
     return dto
 
 
-@lru_cache
-def load_sierra_response_data(library, collection):
-    if library == "nypl":
-        file = f"tests/data/{library}_{collection}.json"
-        with open(file, "r", encoding="utf-8") as fh:
-            bibs = json.loads(fh.read())
-        return bibs["data"]
-    else:
-        file = f"tests/data/{library}.json"
-        with open(file, "r", encoding="utf-8") as fh:
-            bibs = json.loads(fh.read())
-        return bibs["response"]["docs"]
+@pytest.fixture
+def sierra_response(library, collection):
+    if library == "bpl":
+        data = {
+            "call_number": "Foo",
+            "id": "12345",
+            "isbn": ["9781234567890"],
+            "sm_bib_varfields": ["099 || {{a}} Foo"],
+            "sm_item_data": ['{"barcode": "33333123456789"}'],
+            "ss_marc_tag_001": "ocn123456789",
+            "ss_marc_tag_003": "OCoLC",
+            "ss_marc_tag_005": "20000101010000.0",
+            "title": "Record 1",
+        }
+        return sierra_responses.BPLSolrResponse(data=data)
+
+    call_no_field = {"content": "Foo", "tag": "a"}
+    data = {
+        "id": "12345",
+        "controlNumber": "ocn123456789",
+        "standardNumbers": ["9781234567890"],
+        "title": "Record 1",
+        "updatedDate": "2000-01-01T01:00:00",
+        "varFields": [
+            {"marcTag": "091", "subfields": [call_no_field]},
+            {"marcTag": "852", "ind1": "8", "ind2": " ", "subfields": [call_no_field]},
+            {"marcTag": "901", "subfields": [{"content": "CAT", "tag": "b"}]},
+            {"marcTag": "910", "subfields": [{"content": collection, "tag": "a"}]},
+        ],
+    }
+    return sierra_responses.NYPLPlatformResponse(data=data)
 
 
 @pytest.fixture
-def sierra_data(library, collection):
-    return load_sierra_response_data(library, collection)
+def fake_fetcher(monkeypatch, sierra_response, library, collection):
+    def fake_response(*args, **kwargs):
+        return [sierra_response]
 
-
-@pytest.fixture
-def fake_fetcher(monkeypatch, library, sierra_data):
-    def get_bibs_by_id(*args, **kwargs):
-        if library == "nypl":
-            return [sierra_responses.NYPLPlatformResponse(data=i) for i in sierra_data]
-        else:
-            return [sierra_responses.BPLSolrResponse(data=i) for i in sierra_data]
-
-    monkeypatch.setattr(FakeSierraSession, "_parse_response", get_bibs_by_id)
+    monkeypatch.setattr(FakeSierraSession, "_parse_response", fake_response)
     return clients.SierraBibFetcher(session=FakeSierraSession())
-
-
-@pytest.fixture
-def fake_matches(fake_fetcher, library, collection):
-    return fake_fetcher.get_bibs_by_id(key="isbn", value="9781234567890")

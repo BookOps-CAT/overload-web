@@ -7,6 +7,16 @@ from overload_web.order_templates.infrastructure import tables
 from overload_web.presentation import template_service_dep
 
 
+@pytest.fixture(autouse=True)
+def fake_creds(monkeypatch):
+    monkeypatch.setenv("FOO_USER", "foo")
+    monkeypatch.setenv("FOO_PASSWORD", "bar")
+    monkeypatch.setenv("FOO_HOST", "sftp.baz.com")
+    monkeypatch.setenv("FOO_PORT", "22")
+    monkeypatch.setenv("FOO_SRC", "/")
+    monkeypatch.setenv("FOO_DST", "nsdrop/vendor_files/foo")
+
+
 def fake_sql_session():
     template = tables.TemplateTable(name="foo", agent="bar", primary_matchpoint="isbn")
     test_engine = create_engine("sqlite:///:memory:")

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import itertools
 import logging
 from abc import ABC
 from typing import Any, BinaryIO, Iterator, Protocol, runtime_checkable
@@ -58,7 +57,7 @@ class BibParser(ABC):
 
 
 class FullLevelBibParser(BibParser):
-    def parse(self, data: BinaryIO | bytes) -> tuple[list[bibs.DomainBib], list[str]]:
+    def parse(self, data: BinaryIO | bytes) -> list[bibs.DomainBib]:
         """
         Method used to build `DomainBib` objects for full-level MARC records
 
@@ -75,8 +74,7 @@ class FullLevelBibParser(BibParser):
             bib_dict["vendor_info"] = bibs.VendorInfo(**vendor_info)
             logger.info(f"Vendor record parsed: {bib_dict}")
             parsed.append(bibs.DomainBib(**bib_dict))
-        barcodes = [i.barcodes for i in parsed]
-        return (parsed, list(itertools.chain.from_iterable(barcodes)))
+        return parsed
 
 
 class OrderLevelBibParser(BibParser):

@@ -12,7 +12,7 @@ class TestMatcher:
     def test_match_full(self, fake_fetcher, cat_bib):
         service = match.FullLevelBibMatcher(fetcher=fake_fetcher)
         matched_bibs = service.match([cat_bib])
-        assert len(matched_bibs[0].matches) == 4
+        assert len(matched_bibs[0].matches) == 1
 
     def test_match_full_no_vendor_index(self, fake_fetcher, acq_bib):
         service = match.FullLevelBibMatcher(fetcher=fake_fetcher)

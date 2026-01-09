@@ -5,53 +5,19 @@ import pytest
 from overload_web.bib_records.domain_models import sierra_responses
 from overload_web.bib_records.domain_services import review
 
-BPL_DATA = {
-    "call_number": "Foo",
-    "id": "12345",
-    "isbn": ["9781234567890"],
-    "sm_bib_varfields": ["099 || {{a}} Foo"],
-    "sm_item_data": ['{"barcode": "33333123456789"}'],
-    "ss_marc_tag_001": "ocn123456789",
-    "ss_marc_tag_003": "OCoLC",
-    "ss_marc_tag_005": "20000101010000.0",
-    "title": "Record 1",
-}
-NYPL_DATA = {
-    "id": "12345",
-    "controlNumber": "ocn123456789",
-    "standardNumbers": ["9781234567890"],
-    "title": "Record 1",
-    "updatedDate": "2000-01-01T01:00:00",
-    "varFields": [
-        {"marcTag": "091", "subfields": [{"content": "Foo", "tag": "a"}]},
-        {
-            "ind1": "8",
-            "ind2": " ",
-            "marcTag": "852",
-            "subfields": [{"content": "Foo", "tag": "a"}],
-        },
-        {"marcTag": "901", "subfields": [{"content": "CAT", "tag": "b"}]},
-    ],
-}
-
 
 @pytest.fixture
-def sierra_response(library, collection):
-    if library == "bpl":
-        return sierra_responses.BPLSolrResponse(data=BPL_DATA)
-    NYPL_DATA["varFields"] = [
-        i for i in NYPL_DATA["varFields"] if i["marcTag"] != "910"
-    ]
-    if collection == "BL":
-        NYPL_DATA["varFields"].append(
-            {"marcTag": "910", "subfields": [{"content": "BL", "tag": "a"}]}
-        )
-        return sierra_responses.NYPLPlatformResponse(data=NYPL_DATA)
-    elif collection == "RL":
-        NYPL_DATA["varFields"].append(
-            {"marcTag": "910", "subfields": [{"content": "RL", "tag": "a"}]}
-        )
-        return sierra_responses.NYPLPlatformResponse(data=NYPL_DATA)
+def nypl_data():
+    call_no = {"content": "Foo", "tag": "a"}
+    return {
+        "id": "12345",
+        "title": "Record 1",
+        "updatedDate": "2000-01-01T01:00:00",
+        "varFields": [
+            {"marcTag": "091", "subfields": [call_no]},
+            {"marcTag": "852", "ind1": "8", "ind2": " ", "subfields": [call_no]},
+        ],
+    }
 
 
 class TestReviewer:
@@ -76,9 +42,9 @@ class TestReviewer:
             ("bpl", "NONE"),
         ],
     )
-    def test_attach_acq(self, acq_bib, fake_matches):
+    def test_attach_acq(self, acq_bib, sierra_response):
         acq_response = sierra_responses.MatcherResponse(
-            bib=acq_bib, matches=fake_matches
+            bib=acq_bib, matches=[sierra_response]
         )
         service = review.AcquisitionsMatchAnalyzer()
         attached_bibs = service.review_candidates([acq_response])
@@ -86,31 +52,31 @@ class TestReviewer:
         assert acq_response.bib.bib_id is None
 
     @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
-    def test_attach_cat_bpl(self, cat_bib, fake_matches):
+    def test_attach_cat_bpl(self, cat_bib, sierra_response):
         cat_response = sierra_responses.MatcherResponse(
-            bib=cat_bib, matches=fake_matches
+            bib=cat_bib, matches=[sierra_response]
         )
         service = review.BPLCatMatchAnalyzer()
         attached_bibs = service.review_candidates([cat_response])
-        assert attached_bibs[1][0].bib_id == "123"
+        assert attached_bibs[1][0].bib_id == "12345"
 
     @pytest.mark.parametrize("library, collection", [("nypl", "BL")])
-    def test_attach_cat_nypl_bl(self, cat_bib, fake_matches):
+    def test_attach_cat_nypl_bl(self, cat_bib, sierra_response):
         cat_response = sierra_responses.MatcherResponse(
-            bib=cat_bib, matches=fake_matches
+            bib=cat_bib, matches=[sierra_response]
         )
         service = review.NYPLCatBranchMatchAnalyzer()
         attached_bibs = service.review_candidates([cat_response])
-        assert attached_bibs[1][0].bib_id == "123"
+        assert attached_bibs[1][0].bib_id == "12345"
 
     @pytest.mark.parametrize("library, collection", [("nypl", "RL")])
-    def test_attach_cat_nypl_rl(self, cat_bib, fake_matches):
+    def test_attach_cat_nypl_rl(self, cat_bib, sierra_response):
         cat_response = sierra_responses.MatcherResponse(
-            bib=cat_bib, matches=fake_matches
+            bib=cat_bib, matches=[sierra_response]
         )
         service = review.NYPLCatResearchMatchAnalyzer()
         attached_bibs = service.review_candidates([cat_response])
-        assert attached_bibs[1][0].bib_id == "123"
+        assert attached_bibs[1][0].bib_id == "12345"
 
     @pytest.mark.parametrize(
         "library, collection",
@@ -120,13 +86,13 @@ class TestReviewer:
             ("bpl", "NONE"),
         ],
     )
-    def test_attach_sel(self, sel_bib, fake_matches):
+    def test_attach_sel(self, sel_bib, sierra_response):
         sel_response = sierra_responses.MatcherResponse(
-            bib=sel_bib, matches=fake_matches
+            bib=sel_bib, matches=[sierra_response]
         )
         service = review.SelectionMatchAnalyzer()
         attached_bibs = service.review_candidates([sel_response])
-        assert attached_bibs[1][0].bib_id == "123"
+        assert attached_bibs[1][0].bib_id == "12345"
 
 
 class TestCandidateClassifier:
@@ -200,15 +166,14 @@ class TestCandidateClassifier:
         assert resource_id == "987654321"
 
     @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
-    def test_resolve_mixed(self, cat_bib):
-        data = {k: v for k, v in NYPL_DATA.items()}
-        data["varFields"].append(
+    def test_resolve_mixed(self, cat_bib, nypl_data):
+        nypl_data["varFields"].append(
             {"marcTag": "910", "subfields": [{"content": "BL", "tag": "a"}]}
         )
-        data["varFields"].append(
+        nypl_data["varFields"].append(
             {"marcTag": "910", "subfields": [{"content": "RL", "tag": "a"}]}
         )
-        response = sierra_responses.NYPLPlatformResponse(data=data)
+        response = sierra_responses.NYPLPlatformResponse(data=nypl_data)
         classified = review.CandidateClassifier.classify(cat_bib, candidates=[response])
         assert len(classified.mixed) == 1
 
@@ -237,15 +202,14 @@ class TestSelectionMatchAnalyzer:
         assert result.resource_id == "9781234567890"
 
     @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
-    def test_resolve_no_call_no(self, cat_bib, collection):
-        resp_data = {k: v for k, v in NYPL_DATA.items() if k != "varFields"}
-        resp_data["varFields"] = [
+    def test_resolve_no_call_no(self, cat_bib, collection, nypl_data):
+        nypl_data["varFields"] = [
             {
                 "marcTag": "910",
                 "subfields": [{"content": collection, "tag": "a"}],
             }
         ]
-        response = sierra_responses.NYPLPlatformResponse(data=resp_data)
+        response = sierra_responses.NYPLPlatformResponse(data=nypl_data)
         reviewer = review.SelectionMatchAnalyzer()
         result = reviewer.resolve(cat_bib, candidates=[response])
         assert cat_bib.bib_id is None
@@ -296,9 +260,11 @@ class TestNYPLCatBranchMatchAnalyzer:
         assert result.target_bib_id is None
 
     @pytest.mark.parametrize("library, collection", [("nypl", "BL")])
-    def test_resolve_vendor_record(self, cat_bib):
-        data = {k: v for k, v in NYPL_DATA.items()}
-        data["varFields"] = [i for i in NYPL_DATA["varFields"] if i["marcTag"] != "901"]
+    def test_resolve_vendor_record(self, cat_bib, nypl_data):
+        data = {k: v for k, v in nypl_data.items()}
+        data["varFields"].append(
+            {"marcTag": "910", "subfields": [{"content": "BL", "tag": "a"}]}
+        )
         response = sierra_responses.NYPLPlatformResponse(data)
         reviewer = review.NYPLCatBranchMatchAnalyzer()
         result = reviewer.resolve(cat_bib, candidates=[response])
