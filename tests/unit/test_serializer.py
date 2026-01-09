@@ -8,9 +8,9 @@ class TestUpdater:
         "library, collection",
         [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
     )
-    def test_serialize_order(self, acq_bib, caplog):
+    def test_serialize_order(self, order_level_bib, caplog):
         service = serialize.OrderLevelBibSerializer()
-        marc_binary = service.serialize(records=[acq_bib])
+        marc_binary = service.serialize(records=[order_level_bib])
         assert marc_binary.read()[0:2] == b"00"
         assert len(caplog.records) == 1
         assert "Writing MARC binary for record: " in caplog.records[0].msg
@@ -19,11 +19,11 @@ class TestUpdater:
         "library, collection",
         [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
     )
-    def test_serialize_full(self, cat_bib, caplog):
+    def test_serialize_full(self, full_bib, caplog):
         record_batch = {
-            "NEW": [cat_bib],
-            "DUP": [cat_bib],
-            "DEDUPED": [cat_bib],
+            "NEW": [full_bib],
+            "DUP": [full_bib],
+            "DEDUPED": [full_bib],
         }
         service = serialize.FullLevelBibSerializer()
         marc_binary = service.serialize(record_batches=record_batch)

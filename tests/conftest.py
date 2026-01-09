@@ -3,7 +3,7 @@ import datetime
 import io
 import json
 import logging
-from typing import Any, Callable
+from typing import Any
 
 import pytest
 import requests
@@ -292,6 +292,13 @@ def stub_bib(library, collection) -> Bib:
         )
     bib.add_field(
         Field(
+            tag="901",
+            indicators=Indicators(" ", " "),
+            subfields=[Subfield(code="a", value="BTSERIES")],
+        )
+    )
+    bib.add_field(
+        Field(
             tag="949",
             indicators=Indicators(" ", "1"),
             subfields=[
@@ -363,33 +370,10 @@ def stub_bib_alt_vendor(stub_bib):
 
 
 @pytest.fixture
-def make_domain_bib(stub_bib, test_constants, library) -> Callable:
-    def _make_dto(data: dict[str, dict[str, str]], record_type: str):
-        record = copy.deepcopy(stub_bib)
-        for k, v in data.items():
-            record.add_field(
-                Field(
-                    tag=k,
-                    indicators=Indicators(" ", " "),
-                    subfields=[
-                        Subfield(code=v["code"], value=v["value"]),
-                    ],
-                )
-            )
-        mapper = marc_mapper.BookopsMarcMapper(
-            rules=test_constants["mapper_rules"],
-            library=library,
-            record_type=record_type,
-        )
-        out: dict[str, Any] = mapper.map_data(record=record)
-        if record_type == "cat":
-            out["vendor_info"] = marc_mapper.bibs.VendorInfo(
-                **mapper.identify_vendor(record=record)
-            )
-        bib = marc_mapper.bibs.DomainBib(**out)
-        return bib
-
-    return _make_dto
+def stub_bib_unknown_vendor(stub_bib):
+    bib = copy.deepcopy(stub_bib)
+    bib.remove_fields("901")
+    return bib
 
 
 @pytest.fixture(scope="session")
@@ -400,21 +384,31 @@ def test_constants():
 
 
 @pytest.fixture
-def cat_bib(make_domain_bib):
-    dto = make_domain_bib({}, "cat")
-    return dto
+def order_level_bib(stub_bib, test_constants, library):
+    record = copy.deepcopy(stub_bib)
+    mapper = marc_mapper.BookopsMarcMapper(
+        rules=test_constants["mapper_rules"],
+        library=library,
+        record_type="acq",
+    )
+    out = mapper.map_data(record=record)
+    bib = marc_mapper.bibs.DomainBib(**out)
+    return bib
 
 
 @pytest.fixture
-def acq_bib(make_domain_bib):
-    dto = make_domain_bib({}, "acq")
-    return dto
-
-
-@pytest.fixture
-def sel_bib(make_domain_bib):
-    dto = make_domain_bib({}, "sel")
-    return dto
+def full_bib(order_level_bib):
+    bib = copy.deepcopy(order_level_bib)
+    bib.vendor_info = marc_mapper.bibs.VendorInfo(
+        name="UNKNOWN",
+        bib_fields=[],
+        matchpoints={
+            "primary_matchpoint": "isbn",
+            "secondary_matchpoint": "oclc_number",
+        },
+    )
+    bib.record_type = "cat"
+    return bib
 
 
 @pytest.fixture

@@ -29,6 +29,19 @@ class TestParser:
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
 
+    def test_parse_full_unknown_vendor(
+        self, fake_mapper, stub_bib_unknown_vendor, caplog
+    ):
+        service = parse.FullLevelBibParser(mapper=fake_mapper)
+        records = service.parse(stub_bib_unknown_vendor.as_marc())
+        assert len(records) == 1
+        assert records[0].library == service.mapper.library
+        assert records[0].isbn == "9781234567890"
+        assert records[0].barcodes == ["333331234567890"]
+        assert records[0].vendor_info is not None
+        assert len(caplog.records) == 1
+        assert "Vendor record parsed: " in caplog.records[0].msg
+
     def test_parse_full_alt_vendor_tags(self, fake_mapper, stub_bib_alt_vendor, caplog):
         service = parse.FullLevelBibParser(mapper=fake_mapper)
         records = service.parse(stub_bib_alt_vendor.as_marc())

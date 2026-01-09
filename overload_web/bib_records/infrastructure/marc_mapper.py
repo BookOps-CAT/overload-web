@@ -67,7 +67,7 @@ class BookopsMarcMapper:
 
     def identify_vendor(self, record: Bib) -> dict[str, Any]:
         """Determine the vendor who provided a `bookops_marc.Bib` record."""
-        vendor_rules = self.rules["vendors"][record.library.casefold()]
+        vendor_rules = self.rules["vendors"][self.library.casefold()]
         for vendor, info in vendor_rules.items():
             fields = info.get("bib_fields", [])
             matchpoints = info.get("matchpoints", {})
