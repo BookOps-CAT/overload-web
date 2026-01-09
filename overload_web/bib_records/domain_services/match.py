@@ -107,8 +107,9 @@ class OrderLevelBibMatcher(BibMatcher):
                 A dictionary containing matchpoints to be used in matching records.
 
         Returns:
-            A list of `MatcherResponse` objects containing a processed record as a
-            `bibs.DomainBib` object and its associated matches as `BaseSierraResponse`
+            A list of `MatcherResponse` objects containing a processed record as
+            a `bibs.DomainBib` object and its associated matches as
+            `BaseSierraResponse` objects
         """
         out = []
         for record in records:
