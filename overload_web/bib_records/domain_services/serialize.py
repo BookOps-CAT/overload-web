@@ -18,7 +18,7 @@ class OrderLevelBibSerializer:
 
         Args:
             records:
-                A list of parsed bibliographic records as `bibs.DomainBib` objects.
+                A list of parsed bibliographic records as `DomainBib` objects.
 
         Returns:
             MARC binary as an an in-memory file stream.
@@ -43,7 +43,7 @@ class FullLevelBibSerializer:
         Args:
             record_batches:
                 A dictionary containing list of parsed bibliographic records
-                as `bibs.DomainBib` objects organized by the files they should
+                as `DomainBib` objects organized by the files they should
                 be written to.
 
         Returns:

@@ -1,4 +1,4 @@
-"""Domain service for matching.
+"""Domain service for matching incoming records against Sierra.
 
 This module defines the `BibMatcher`, a domain service responsible for
 finding duplicate records in Sierra for a `DomainBib`. Matching is based on
@@ -20,8 +20,7 @@ logger = logging.getLogger(__name__)
 @runtime_checkable
 class BibFetcher(Protocol):
     """
-    Protocol for a service that can fetch bib records from Sierra based on an
-    identifier.
+    Protocol for a service that searches Sierra for bib records based on an identifier.
 
     This abstraction allows the `BibMatcher` to remain decoupled from any specific
     data source or API. Implementations can include REST APIs, BPL's Solr service,
@@ -33,7 +32,7 @@ class BibFetcher(Protocol):
     ) -> list[sierra_responses.BaseSierraResponse]: ...  # pragma: no branch
 
     """
-    Retrieve candidate bib records that match a key-value identifier.
+    Retrieve candidate bib records that match a key-value pair.
 
     Args:
         value: The identifier value to search by (eg. "9781234567890").
@@ -46,7 +45,7 @@ class BibFetcher(Protocol):
 
 class BibMatcher(ABC):
     """
-    Domain service for finding the best match for a bib record.
+    Domain service for retrieving records from Sierra that match a bib record.
 
     This service compares a `DomainBib` instance against external candidates using
     specified matchpoints (e.g., ISBN, OCLC number, UPC). The services queries Sierra
@@ -71,15 +70,16 @@ class BibMatcher(ABC):
         """
         Find all matches in Sierra for a given bib record.
 
-        The method queries the fetcher obj for candidates using each matchpoint.
+        This method queries the fetcher object for candidates using each matchpoint.
         The first non-empty match that returns candidates is used for comparison.
 
         Args:
             record:
                 The bibliographic record to match against Sierra represented as a
-                `bibs.DomainBib` object.
+                `DomainBib` object.
             matchpoints:
-                a dictionary containing matchpoints
+                a dictionary containing matchpoints and their priority e.g.
+                `{"primary_matchpoint": "isbn", "secondarty_matchpoint": "oclc_number"}`
         Returns:
             a list of the record's matches as `BaseSierraResponse` objects
         """
@@ -98,17 +98,17 @@ class OrderLevelBibMatcher(BibMatcher):
         self, records: list[bibs.DomainBib], matchpoints: dict[str, str]
     ) -> list[sierra_responses.MatcherResponse]:
         """
-        Match order-level bibliographic records.
+        Match order-level bibliographic records against Sierra.
 
         Args:
             records:
-                A list of parsed bibliographic records as `bibs.DomainBib` objects.
+                A list of parsed bibliographic records as `DomainBib` objects.
             matchpoints:
                 A dictionary containing matchpoints to be used in matching records.
 
         Returns:
             A list of `MatcherResponse` objects containing a processed record as
-            a `bibs.DomainBib` object and its associated matches as
+            a `DomainBib` object and its associated matches as
             `BaseSierraResponse` objects
         """
         out = []
@@ -125,19 +125,18 @@ class FullLevelBibMatcher(BibMatcher):
         self, records: list[bibs.DomainBib]
     ) -> list[sierra_responses.MatcherResponse]:
         """
-        Match full-level bibliographic records.
+        Match full-level bibliographic records against Sierra.
 
         Args:
             records:
-                A list of parsed bibliographic records as `bibs.DomainBib` objects.
+                A list of parsed bibliographic records as `DomainBib` objects.
 
         Returns:
             A list of `MatcherResponse` objects containing a processed record as a
-            `bibs.DomainBib` object and its associated matches as `BaseSierraResponse`
+            `DomainBib` object and its associated matches as `BaseSierraResponse`
 
         Raises:
-            OverloadError: if a record does not contain matchpoints within its
-            `vendor_info` attribute.
+            OverloadError: if the value of a record's `vendor_info` attribute is None.
         """
         out = []
         for record in records:

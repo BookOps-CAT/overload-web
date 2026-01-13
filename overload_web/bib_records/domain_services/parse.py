@@ -65,7 +65,7 @@ class FullLevelBibParser(BibParser):
             data: MARC data represented in binary format
 
         Returns:
-            a list of `bibs.DomainBib` objects mapped using `BibMapper``
+            a list of `DomainBib` objects mapped using `BibMapper``
         """
         parsed: list[bibs.DomainBib] = []
 
@@ -86,7 +86,7 @@ class OrderLevelBibParser(BibParser):
             data: MARC data represented in binary format
 
         Returns:
-            a list of `bibs.DomainBib` objects mapped using `BibMapper``
+            a list of `DomainBib` objects mapped using `BibMapper``
         """
         parsed: list[bibs.DomainBib] = []
 

@@ -72,12 +72,12 @@ class OrderLevelBibUpdater:
 
         Args:
             records:
-                A list of parsed bibliographic records as `bibs.DomainBib` objects.
+                A list of parsed bibliographic records as `DomainBib` objects.
             template_data:
                 A dictionary containing template data to be used in updating records.
 
         Returns:
-            A list of updated records as `bibs.DomainBib` objects
+            A list of updated records as `DomainBib` objects
         """
         out = []
         for record in records:
@@ -130,10 +130,10 @@ class FullLevelBibUpdater:
 
         Args:
             records:
-                A list of parsed bibliographic records as `bibs.DomainBib` objects.
+                A list of parsed bibliographic records as `DomainBib` objects.
 
         Returns:
-            A list of updated records as `bibs.DomainBib` objects
+            A list of updated records as `DomainBib` objects
         """
         out = []
         for record in records:
