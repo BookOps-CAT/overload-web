@@ -5,16 +5,16 @@ import yaml
 from file_retriever import Client
 
 from overload_web.application import file_service
-from overload_web.files.domain import file_protocols, vendor_files
+from overload_web.files.domain import vendor_files
 from overload_web.files.infrastructure import local_io, sftp
 
 
-class StubFileLoader(file_protocols.FileLoader):
+class StubFileLoader(vendor_files.FileLoader):
     def __init__(self) -> None:
         pass
 
 
-class StubFileWriter(file_protocols.FileWriter):
+class StubFileWriter(vendor_files.FileWriter):
     def __init__(self) -> None:
         pass
 

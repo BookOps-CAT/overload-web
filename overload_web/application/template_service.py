@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Sequence
 
-from overload_web.order_templates.domain import sql_protocol, templates
+from overload_web.order_templates.domain import templates
 
 logger = logging.getLogger(__name__)
 
@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 class OrderTemplateService:
     """Handles order template retrieval and persistence."""
 
-    def __init__(self, repo: sql_protocol.SqlRepositoryProtocol) -> None:
+    def __init__(self, repo: templates.SqlRepositoryProtocol) -> None:
         """
         Initialize `OrderTemplateService`.
 
         Args:
-            repo: a `sql_protocol.SqlRepositoryProtocol` object.
+            repo: a `templates.SqlRepositoryProtocol` object.
         """
         self.repo = repo
 

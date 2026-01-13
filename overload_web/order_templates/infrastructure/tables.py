@@ -64,4 +64,10 @@ class _TemplateTableBase(SQLModel):
 
 
 class TemplateTable(_TemplateTableBase, table=True):
+    """
+    A table model representing order templates including all fields required
+    for persistence (i.e., all fields present in a `_TemplateTableBase` object
+    with the addition of the unique identifier).
+    """
+
     id: Annotated[int, Field(default=None, primary_key=True, index=True)]

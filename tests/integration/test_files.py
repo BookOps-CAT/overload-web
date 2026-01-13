@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from overload_web.files.domain import file_protocols, vendor_files
+from overload_web.files.domain import vendor_files
 from overload_web.files.infrastructure import local_io, sftp
 
 
@@ -19,8 +19,8 @@ class TestLocalFiles:
     def test_local_objs(self, tmp_path):
         loader = local_io.LocalFileLoader()
         writer = local_io.LocalFileWriter()
-        assert isinstance(loader, file_protocols.FileLoader)
-        assert isinstance(writer, file_protocols.FileWriter)
+        assert isinstance(loader, vendor_files.FileLoader)
+        assert isinstance(writer, vendor_files.FileWriter)
 
     def test_local_load(self, tmp_path, tmp_file):
         loader = local_io.LocalFileLoader()
@@ -44,18 +44,18 @@ class TestLocalFiles:
 
     def test_sftp_loader(self, mock_sftp_client):
         loader = sftp.SFTPFileLoader(client=mock_sftp_client)
-        assert isinstance(loader, file_protocols.FileLoader)
+        assert isinstance(loader, vendor_files.FileLoader)
         assert hasattr(loader, "list")
         assert hasattr(loader, "load")
         assert loader.client.name == "FOO"
-        assert isinstance(loader, file_protocols.FileLoader)
+        assert isinstance(loader, vendor_files.FileLoader)
 
     def test_sftp_writer(self, mock_sftp_client):
         writer = sftp.SFTPFileWriter(client=mock_sftp_client)
-        assert isinstance(writer, file_protocols.FileWriter)
+        assert isinstance(writer, vendor_files.FileWriter)
         assert hasattr(writer, "write")
         assert writer.client.name == "FOO"
-        assert isinstance(writer, file_protocols.FileWriter)
+        assert isinstance(writer, vendor_files.FileWriter)
 
     def test_sftp_list(self, mock_sftp_client):
         loader = sftp.SFTPFileLoader(client=mock_sftp_client)
