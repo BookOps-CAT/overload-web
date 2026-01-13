@@ -52,7 +52,7 @@ class MatchAnalyzerFactory:
 
 
 class FullRecordProcessingService:
-    """Handles MARC record parsing, matching, and serialization."""
+    """Handles parsing, matching, and serialization of full-level MARC records."""
 
     def __init__(
         self,
@@ -113,7 +113,7 @@ class FullRecordProcessingService:
 
 
 class OrderRecordProcessingService:
-    """Handles MARC record parsing, matching, and serialization."""
+    """Handles parsing, matching, and serialization of order-level MARC records."""
 
     def __init__(
         self,
