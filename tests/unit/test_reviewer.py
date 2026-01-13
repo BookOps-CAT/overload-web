@@ -35,7 +35,7 @@ class TestReviewer:
             response = sierra_responses.MatcherResponse(
                 bib=order_level_bib, matches=[sierra_response]
             )
-            service.resolve(response)
+            service.analyze(response)
 
     @pytest.mark.parametrize(
         "library, collection",
@@ -209,7 +209,7 @@ class TestSelectionMatchAnalyzer:
         response = sierra_responses.MatcherResponse(
             bib=full_bib, matches=[sierra_response]
         )
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert full_bib.bib_id is None
         assert result.target_bib_id == "12345"
         assert result.duplicate_records == []
@@ -226,7 +226,7 @@ class TestSelectionMatchAnalyzer:
             bib=full_bib,
             matches=[sierra_responses.NYPLPlatformResponse(data=nypl_data)],
         )
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert full_bib.bib_id is None
         assert response.matches[0].bib_id == "12345"
         assert response.matches[0].branch_call_number is None
@@ -241,7 +241,7 @@ class TestSelectionMatchAnalyzer:
     def test_resolve_no_results(self, full_bib):
         reviewer = review.SelectionMatchAnalyzer()
         response = sierra_responses.MatcherResponse(bib=full_bib, matches=[])
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert full_bib.bib_id is None
         assert result.target_bib_id is None
 
@@ -255,7 +255,7 @@ class TestAcquisitionsMatchAnalyzer:
         response = sierra_responses.MatcherResponse(
             bib=full_bib, matches=[sierra_response]
         )
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert full_bib.bib_id is None
         assert result.target_bib_id is None
         assert result.duplicate_records == []
@@ -268,7 +268,7 @@ class TestNYPLCatBranchMatchAnalyzer:
         response = sierra_responses.MatcherResponse(
             bib=full_bib, matches=[sierra_response]
         )
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert full_bib.bib_id is None
         assert result.target_bib_id == "12345"
         assert result.duplicate_records == []
@@ -278,7 +278,7 @@ class TestNYPLCatBranchMatchAnalyzer:
     def test_resolve_no_results(self, full_bib):
         reviewer = review.NYPLCatBranchMatchAnalyzer()
         response = sierra_responses.MatcherResponse(bib=full_bib, matches=[])
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert full_bib.bib_id is None
         assert result.target_bib_id is None
 
@@ -292,7 +292,7 @@ class TestNYPLCatBranchMatchAnalyzer:
         response = sierra_responses.MatcherResponse(
             bib=full_bib, matches=[sierra_responses.NYPLPlatformResponse(data)]
         )
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert result.target_bib_id == "12345"
         assert response.matches[0].update_datetime < full_bib.update_datetime
         assert result.action == "attach"
@@ -312,7 +312,7 @@ class TestNYPLCatBranchMatchAnalyzer:
         response = sierra_responses.MatcherResponse(
             bib=full_bib, matches=[sierra_responses.NYPLPlatformResponse(data)]
         )
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert result.target_bib_id == "23456"
         assert response.matches[0].cat_source == "inhouse"
         assert result.action == "attach"
@@ -336,7 +336,7 @@ class TestNYPLCatBranchMatchAnalyzer:
         response = sierra_responses.MatcherResponse(
             bib=full_bib, matches=[sierra_responses.NYPLPlatformResponse(data)]
         )
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert result.target_bib_id == "34567"
         assert response.matches[0].cat_source == "vendor"
         assert response.matches[0].branch_call_number is not None
@@ -357,7 +357,7 @@ class TestNYPLCatBranchMatchAnalyzer:
         response = sierra_responses.MatcherResponse(
             bib=full_bib, matches=[sierra_responses.NYPLPlatformResponse(data)]
         )
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert result.target_bib_id == "34567"
         assert response.matches[0].branch_call_number is None
         assert result.call_number_match is False
@@ -371,7 +371,7 @@ class TestNYPLCatResearchMatchAnalyzer:
         response = sierra_responses.MatcherResponse(
             bib=full_bib, matches=[sierra_response]
         )
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert full_bib.bib_id is None
         assert result.target_bib_id == "12345"
         assert result.duplicate_records == []
@@ -381,7 +381,7 @@ class TestNYPLCatResearchMatchAnalyzer:
     def test_resolve_no_results(self, full_bib):
         reviewer = review.NYPLCatResearchMatchAnalyzer()
         response = sierra_responses.MatcherResponse(bib=full_bib, matches=[])
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert full_bib.bib_id is None
         assert result.target_bib_id is None
 
@@ -409,7 +409,7 @@ class TestNYPLCatResearchMatchAnalyzer:
         response = sierra_responses.MatcherResponse(
             bib=full_bib, matches=[sierra_responses.NYPLPlatformResponse(data)]
         )
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert result.target_bib_id == "34567"
         assert response.matches[0].cat_source == "vendor"
         assert len(response.matches[0].research_call_number) > 0
@@ -430,7 +430,7 @@ class TestNYPLCatResearchMatchAnalyzer:
         response = sierra_responses.MatcherResponse(
             bib=full_bib, matches=[sierra_responses.NYPLPlatformResponse(data)]
         )
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert result.target_bib_id == "34567"
         assert response.matches[0].research_call_number == []
         assert result.call_number_match is False
@@ -444,7 +444,7 @@ class TestBPLCatMatchAnalyzer:
         response = sierra_responses.MatcherResponse(
             bib=full_bib, matches=[sierra_response]
         )
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert full_bib.bib_id is None
         assert result.target_bib_id == "12345"
         assert result.duplicate_records == []
@@ -454,7 +454,7 @@ class TestBPLCatMatchAnalyzer:
     def test_resolve_no_results(self, full_bib):
         reviewer = review.BPLCatMatchAnalyzer()
         response = sierra_responses.MatcherResponse(bib=full_bib, matches=[])
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert full_bib.bib_id is None
         assert result.target_bib_id is None
 
@@ -463,7 +463,7 @@ class TestBPLCatMatchAnalyzer:
         full_bib.vendor = "Midwest DVD"
         reviewer = review.BPLCatMatchAnalyzer()
         response = sierra_responses.MatcherResponse(bib=full_bib, matches=[])
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert full_bib.bib_id is None
         assert result.target_bib_id is None
 
@@ -483,7 +483,7 @@ class TestBPLCatMatchAnalyzer:
         response = sierra_responses.MatcherResponse(
             bib=full_bib, matches=[sierra_responses.BPLSolrResponse(data)]
         )
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert result.target_bib_id == "12345"
         assert result.action == action
 
@@ -501,7 +501,7 @@ class TestBPLCatMatchAnalyzer:
         response = sierra_responses.MatcherResponse(
             bib=full_bib, matches=[sierra_responses.BPLSolrResponse(data)]
         )
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert result.target_bib_id == "23456"
         assert response.matches[0].cat_source == "inhouse"
         assert result.action == "attach"
@@ -522,7 +522,7 @@ class TestBPLCatMatchAnalyzer:
         response = sierra_responses.MatcherResponse(
             bib=full_bib, matches=[sierra_responses.BPLSolrResponse(data)]
         )
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert result.target_bib_id == "34567"
         assert response.matches[0].cat_source == "vendor"
         assert result.action == action
@@ -538,6 +538,6 @@ class TestBPLCatMatchAnalyzer:
         response = sierra_responses.MatcherResponse(
             bib=full_bib, matches=[sierra_responses.BPLSolrResponse(data)]
         )
-        result = reviewer.resolve(response)
+        result = reviewer.analyze(response)
         assert result.target_bib_id == "34567"
         assert result.action == "overlay"

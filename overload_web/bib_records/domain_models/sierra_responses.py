@@ -357,12 +357,10 @@ class MatcherResponse:
             return self.bib.control_number
         elif self.bib.isbn:
             return self.bib.isbn
-        elif self.bib.oclc_number:
-            return (
-                self.bib.oclc_number
-                if isinstance(self.bib.oclc_number, str)
-                else self.bib.oclc_number[0]
-            )
+        elif self.bib.oclc_number and isinstance(self.bib.oclc_number, str):
+            return self.bib.oclc_number
+        elif self.bib.oclc_number and isinstance(self.bib.oclc_number, list):
+            return self.bib.oclc_number[0]
         elif self.bib.upc:
             return self.bib.upc
         return None
@@ -389,7 +387,7 @@ class MatcherResponse:
 
 
 class CatalogAction(StrEnum):
-    """Valid values for a cataloging action"""
+    """Valid values for a cataloging action."""
 
     ATTACH = "attach"
     OVERLAY = "overlay"
@@ -397,15 +395,20 @@ class CatalogAction(StrEnum):
 
 
 @dataclass(frozen=True)
-class MatchResolution:
-    """Components extracted from match analysis"""
+class MatchAnalysis:
+    """Components extracted from match review process."""
 
-    target_bib_id: str | None
-    action: CatalogAction
-    call_number_match: bool
-    duplicate_records: list[str]
     resource_id: str | None
+    vendor: str | None
+    call_number_match: bool
+    target_call_no: str | None
     input_call_no: str | None
+    duplicate_records: list[str]
+    target_bib_id: str | None
+    target_title: str | None
+    mixed: list[str]
+    other: list[str]
+    action: CatalogAction
     updated_by_vendor: bool = False
 
 

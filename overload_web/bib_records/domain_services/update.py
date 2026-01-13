@@ -144,7 +144,7 @@ class FullLevelBibUpdater:
     def dedupe(
         self,
         records: list[bibs.DomainBib],
-        reports: list[sierra_responses.MatchResolution],
+        reports: list[sierra_responses.MatchAnalysis],
     ) -> dict[str, list[bibs.DomainBib]]:
         merge_recs: list[bibs.DomainBib] = []
         new_recs: list[bibs.DomainBib] = []

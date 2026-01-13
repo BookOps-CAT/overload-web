@@ -100,12 +100,12 @@ class FullRecordProcessingService:
             itertools.chain.from_iterable([i.barcodes for i in parsed_records])
         )
         matched_records = self.matcher.match(records=parsed_records)
-        matched_analysis, attached_records = self.reviewer.review_candidates(
+        match_analysis, attached_records = self.reviewer.review_candidates(
             candidates=matched_records
         )
         updated_records = self.updater.update(records=attached_records)
         deduped_records = self.updater.dedupe(
-            records=updated_records, reports=matched_analysis
+            records=updated_records, reports=match_analysis
         )
         self.updater.validate(record_batches=deduped_records, barcodes=barcodes)
         serialized_records = self.serializer.serialize(record_batches=deduped_records)
@@ -170,11 +170,13 @@ class OrderRecordProcessingService:
         Returns:
             MARC data as a `BinaryIO` object
         """
-        parsed_records = self.parser.parse(data=data)
+        parsed_records = self.parser.parse(
+            data=data, vendor=template_data.get("vendor")
+        )
         matched_records = self.matcher.match(
             records=parsed_records, matchpoints=matchpoints
         )
-        matched_analysis, attached_records = self.reviewer.review_candidates(
+        match_analysis, attached_records = self.reviewer.review_candidates(
             candidates=matched_records
         )
         updated_records = self.updater.update(

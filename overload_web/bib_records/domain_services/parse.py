@@ -99,7 +99,9 @@ class FullLevelBibParser(BibParser):
 
 
 class OrderLevelBibParser(BibParser):
-    def parse(self, data: BinaryIO | bytes) -> list[bibs.DomainBib]:
+    def parse(
+        self, data: BinaryIO | bytes, vendor: str | None = "UNKNOWN"
+    ) -> list[bibs.DomainBib]:
         """
         Method used to build `DomainBib` objects for order-level MARC records
 
@@ -111,6 +113,7 @@ class OrderLevelBibParser(BibParser):
         """
         parsed: list[bibs.DomainBib] = []
         for bib_dict, record in self._parse_records(data):
+            bib_dict["vendor"] = vendor
             logger.info(f"Vendor record parsed: {bib_dict}")
             parsed.append(bibs.DomainBib(**bib_dict))
 
