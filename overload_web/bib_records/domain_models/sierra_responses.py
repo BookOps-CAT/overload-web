@@ -338,10 +338,54 @@ class MatcherResponse:
         self.bib = bib
         self.matches = matches
 
+    @property
+    def input_call_no(self) -> str | None:
+        """Determine call number for incoming bib based on library and collection."""
+        call_number = None
+        if self.bib.library == "nypl" and self.bib.collection == "RL":
+            call_number = self.bib.research_call_number
+        else:
+            call_number = self.bib.branch_call_number
+        if isinstance(call_number, list):
+            return call_number[0]
+        return call_number
+
+    @property
+    def resource_id(self) -> str | None:
+        """Identify resource ID for incoming bib based on available identifiers."""
+        if self.bib.control_number:
+            return self.bib.control_number
+        elif self.bib.isbn:
+            return self.bib.isbn
+        elif self.bib.oclc_number:
+            return (
+                self.bib.oclc_number
+                if isinstance(self.bib.oclc_number, str)
+                else self.bib.oclc_number[0]
+            )
+        elif self.bib.upc:
+            return self.bib.upc
+        return None
+
     def apply_matched_bib_id(self, bib_id: str | None) -> None:
         """Apply the bib ID from a match to the `MatcherResponse` object's `bib`."""
         if bib_id:
             self.bib.update_bib_id(bib_id)
+
+    def classify(self) -> ClassifiedCandidates:
+        """Classify the candidate matches associated with this response."""
+        matched, mixed, other = [], [], []
+        for c in sorted(self.matches, key=lambda i: int(i.bib_id.strip(".b"))):
+            if c.library == "bpl":
+                matched.append(c)
+            elif c.collection == "MIXED":
+                mixed.append(c)
+            elif c.collection == self.bib.collection:
+                matched.append(c)
+            else:
+                other.append(c)
+
+        return ClassifiedCandidates(matched, mixed, other)
 
 
 class CatalogAction(StrEnum):
@@ -363,3 +407,19 @@ class MatchResolution:
     resource_id: str | None
     input_call_no: str | None
     updated_by_vendor: bool = False
+
+
+@dataclass(frozen=True)
+class ClassifiedCandidates:
+    """Holds candidate matches and associated data."""
+
+    matched: list[BaseSierraResponse]
+    mixed: list[BaseSierraResponse]
+    other: list[BaseSierraResponse]
+
+    @property
+    def duplicates(self) -> list[str]:
+        duplicates: list[str] = []
+        if len(self.matched) > 1:
+            return [i.bib_id for i in self.matched]
+        return duplicates

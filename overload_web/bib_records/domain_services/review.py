@@ -1,9 +1,38 @@
-"""Domain service for reviewing matches for bib records"""
+"""Domain service for reviewing matches for bib records.
+
+This module includes implementations of the `MatchAnalyzer` protocol used to review
+matches returned by the `BibMatcher` service. Each implementation contains logic
+specific to the library to whom the record belongs and workflow being used.
+
+Protocols:
+
+`MatchAnalyzer`
+    Protocol for reviewing matches identified by the `BibMatcher` service.
+
+Classes:
+
+`BaseMatchAnalyzer`
+    Base class for match analyzers providing shared functionality. Concrete
+    implementation of the `MatchAnalyzer` protocol.
+
+Child classes of `BaseMatchAnalyzer`:
+
+`NYPLCatResearchMatchAnalyzer`
+    Match analyzer for NYPL cataloging records belonging to the Research Library.
+`NYPLCatBranchMatchAnalyzer`
+    Match analyzer for NYPL cataloging records belonging to the Branch Libraries.
+`BPLCatMatchAnalyzer`
+    Match analyzer for BPL cataloging records.
+`SelectionMatchAnalyzer`
+    Match analyzer for selection workflow records.
+`AcquisitionsMatchAnalyzer`
+    Match analyzer for acquisitions workflow records.
+
+"""
 
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from typing import Protocol
 
 from overload_web.bib_records.domain_models import bibs, sierra_responses
@@ -12,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 
 class MatchAnalyzer(Protocol):
-    """Review matches identified by"""
+    """Review matches identified by the `BibMatcher` service."""
 
     def review_candidates(
         self,
@@ -55,90 +84,21 @@ class BaseMatchAnalyzer:
         self,
         response: sierra_responses.MatcherResponse,
     ) -> tuple[sierra_responses.MatchResolution, bibs.DomainBib]:
-        resolution = self.resolve(response.bib, response.matches)
+        resolution = self.resolve(response)
         response.apply_matched_bib_id(bib_id=resolution.target_bib_id)
         return (resolution, response.bib)
 
     def resolve(
-        self,
-        incoming: bibs.DomainBib,
-        candidates: list[sierra_responses.BaseSierraResponse],
+        self, response: sierra_responses.MatcherResponse
     ) -> sierra_responses.MatchResolution:
         raise NotImplementedError
 
 
-def get_input_call_no(incoming: bibs.DomainBib) -> str | None:
-    call_no = None
-    if incoming.library == "nypl" and incoming.collection == "RL":
-        call_no = incoming.research_call_number
-    else:
-        call_no = incoming.branch_call_number
-    if isinstance(call_no, list):
-        return call_no[0]
-    return call_no
-
-
-def get_resource_id(incoming: bibs.DomainBib) -> str | None:
-    if incoming.control_number:
-        return incoming.control_number
-    elif incoming.isbn:
-        return incoming.isbn
-    elif incoming.oclc_number:
-        return (
-            incoming.oclc_number
-            if isinstance(incoming.oclc_number, str)
-            else incoming.oclc_number[0]
-        )
-    elif incoming.upc:
-        return incoming.upc
-    return None
-
-
-@dataclass(frozen=True)
-class ClassifiedCandidates:
-    matched: list[sierra_responses.BaseSierraResponse]
-    mixed: list[sierra_responses.BaseSierraResponse]
-    other: list[sierra_responses.BaseSierraResponse]
-    input_call_no: str | None
-    resource_id: str | None
-
-    @property
-    def duplicates(self) -> list[str]:
-        duplicates: list[str] = []
-        if len(self.matched) > 1:
-            return [i.bib_id for i in self.matched]
-        return duplicates
-
-
-class CandidateClassifier:
-    @staticmethod
-    def classify(
-        incoming: bibs.DomainBib,
-        candidates: list[sierra_responses.BaseSierraResponse],
-    ) -> ClassifiedCandidates:
-        matched, mixed, other = [], [], []
-        input_call_no = get_input_call_no(incoming=incoming)
-        resource_id = get_resource_id(incoming=incoming)
-        for c in sorted(candidates, key=lambda i: int(i.bib_id.strip(".b"))):
-            if c.library == "bpl":
-                matched.append(c)
-            elif c.collection == "MIXED":
-                mixed.append(c)
-            elif c.collection == incoming.collection:
-                matched.append(c)
-            else:
-                other.append(c)
-
-        return ClassifiedCandidates(matched, mixed, other, input_call_no, resource_id)
-
-
 class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
     def resolve(
-        self,
-        incoming: bibs.DomainBib,
-        candidates: list[sierra_responses.BaseSierraResponse],
+        self, response: sierra_responses.MatcherResponse
     ) -> sierra_responses.MatchResolution:
-        classified = CandidateClassifier.classify(incoming, candidates)
+        classified = response.classify()
 
         if not classified.matched:
             return sierra_responses.MatchResolution(
@@ -146,21 +106,23 @@ class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
                 target_bib_id=None,
                 action=sierra_responses.CatalogAction.INSERT,
                 call_number_match=True,
-                input_call_no=classified.input_call_no,
-                resource_id=classified.resource_id,
+                input_call_no=response.input_call_no,
+                resource_id=response.resource_id,
             )
 
         for candidate in classified.matched:
             if candidate.research_call_number:
-                action, updated = self._determine_catalog_action(incoming, candidate)
+                action, updated = self._determine_catalog_action(
+                    response.bib, candidate
+                )
                 return sierra_responses.MatchResolution(
                     duplicate_records=classified.duplicates,
                     target_bib_id=candidate.bib_id,
                     action=action,
                     call_number_match=True,
                     updated_by_vendor=updated,
-                    input_call_no=classified.input_call_no,
-                    resource_id=classified.resource_id,
+                    input_call_no=response.input_call_no,
+                    resource_id=response.resource_id,
                 )
 
         last = classified.matched[-1]
@@ -169,46 +131,46 @@ class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
             target_bib_id=last.bib_id,
             action=sierra_responses.CatalogAction.OVERLAY,
             call_number_match=False,
-            input_call_no=classified.input_call_no,
-            resource_id=classified.resource_id,
+            input_call_no=response.input_call_no,
+            resource_id=response.resource_id,
         )
 
 
 class NYPLCatBranchMatchAnalyzer(BaseMatchAnalyzer):
     def resolve(
-        self,
-        incoming: bibs.DomainBib,
-        candidates: list[sierra_responses.BaseSierraResponse],
+        self, response: sierra_responses.MatcherResponse
     ) -> sierra_responses.MatchResolution:
-        classified = CandidateClassifier.classify(incoming, candidates)
+        classified = response.classify()
         if not classified.matched:
             return sierra_responses.MatchResolution(
                 duplicate_records=classified.duplicates,
                 target_bib_id=None,
                 action=sierra_responses.CatalogAction.INSERT,
                 call_number_match=True,
-                input_call_no=classified.input_call_no,
-                resource_id=classified.resource_id,
+                input_call_no=response.input_call_no,
+                resource_id=response.resource_id,
             )
 
         for candidate in classified.matched:
             if (
                 candidate.branch_call_number
-                and incoming.branch_call_number == candidate.branch_call_number
+                and response.bib.branch_call_number == candidate.branch_call_number
             ):
-                action, updated = self._determine_catalog_action(incoming, candidate)
+                action, updated = self._determine_catalog_action(
+                    response.bib, candidate
+                )
                 return sierra_responses.MatchResolution(
                     duplicate_records=classified.duplicates,
                     target_bib_id=candidate.bib_id,
                     action=action,
                     call_number_match=True,
                     updated_by_vendor=updated,
-                    input_call_no=classified.input_call_no,
-                    resource_id=classified.resource_id,
+                    input_call_no=response.input_call_no,
+                    resource_id=response.resource_id,
                 )
 
         fallback = classified.matched[-1]
-        action, updated = self._determine_catalog_action(incoming, fallback)
+        action, updated = self._determine_catalog_action(response.bib, fallback)
 
         return sierra_responses.MatchResolution(
             duplicate_records=classified.duplicates,
@@ -216,36 +178,34 @@ class NYPLCatBranchMatchAnalyzer(BaseMatchAnalyzer):
             action=action,
             call_number_match=False,
             updated_by_vendor=updated,
-            input_call_no=classified.input_call_no,
-            resource_id=classified.resource_id,
+            input_call_no=response.input_call_no,
+            resource_id=response.resource_id,
         )
 
 
 class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
     def resolve(
-        self,
-        incoming: bibs.DomainBib,
-        candidates: list[sierra_responses.BaseSierraResponse],
+        self, response: sierra_responses.MatcherResponse
     ) -> sierra_responses.MatchResolution:
-        classified = CandidateClassifier.classify(incoming, candidates)
+        classified = response.classify()
         if not classified.matched:
-            if incoming.vendor in ["Midwest DVD", "Midwest Audio", "Midwest CD"]:
+            if response.bib.vendor in ["Midwest DVD", "Midwest Audio", "Midwest CD"]:
                 action = sierra_responses.CatalogAction.ATTACH
             else:
                 action = sierra_responses.CatalogAction.INSERT
             return sierra_responses.MatchResolution(
                 duplicate_records=classified.duplicates,
-                target_bib_id=incoming.bib_id,
+                target_bib_id=response.bib.bib_id,
                 action=action,
                 call_number_match=True,
-                input_call_no=classified.input_call_no,
-                resource_id=classified.resource_id,
+                input_call_no=response.input_call_no,
+                resource_id=response.resource_id,
             )
         for candidate in classified.matched:
             if candidate.branch_call_number:
-                if incoming.branch_call_number == candidate.branch_call_number:
+                if response.bib.branch_call_number == candidate.branch_call_number:
                     action, updated = self._determine_catalog_action(
-                        incoming, candidate
+                        response.bib, candidate
                     )
                     return sierra_responses.MatchResolution(
                         duplicate_records=classified.duplicates,
@@ -253,12 +213,12 @@ class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
                         action=action,
                         call_number_match=True,
                         updated_by_vendor=updated,
-                        input_call_no=classified.input_call_no,
-                        resource_id=classified.resource_id,
+                        input_call_no=response.input_call_no,
+                        resource_id=response.resource_id,
                     )
 
         fallback = classified.matched[-1]
-        action, updated = self._determine_catalog_action(incoming, fallback)
+        action, updated = self._determine_catalog_action(response.bib, fallback)
 
         return sierra_responses.MatchResolution(
             duplicate_records=classified.duplicates,
@@ -266,26 +226,24 @@ class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
             action=action,
             call_number_match=False,
             updated_by_vendor=updated,
-            input_call_no=classified.input_call_no,
-            resource_id=classified.resource_id,
+            input_call_no=response.input_call_no,
+            resource_id=response.resource_id,
         )
 
 
 class SelectionMatchAnalyzer(BaseMatchAnalyzer):
     def resolve(
-        self,
-        incoming: bibs.DomainBib,
-        candidates: list[sierra_responses.BaseSierraResponse],
+        self, response: sierra_responses.MatcherResponse
     ) -> sierra_responses.MatchResolution:
-        classified = CandidateClassifier.classify(incoming, candidates)
+        classified = response.classify()
         if not classified.matched:
             return sierra_responses.MatchResolution(
                 duplicate_records=classified.duplicates,
                 target_bib_id=None,
                 action=sierra_responses.CatalogAction.INSERT,
                 call_number_match=True,
-                input_call_no=classified.input_call_no,
-                resource_id=classified.resource_id,
+                input_call_no=response.input_call_no,
+                resource_id=response.resource_id,
             )
         for candidate in classified.matched:
             if candidate.branch_call_number or len(candidate.research_call_number) > 0:
@@ -294,8 +252,8 @@ class SelectionMatchAnalyzer(BaseMatchAnalyzer):
                     target_bib_id=candidate.bib_id,
                     action=sierra_responses.CatalogAction.ATTACH,
                     call_number_match=True,
-                    input_call_no=classified.input_call_no,
-                    resource_id=classified.resource_id,
+                    input_call_no=response.input_call_no,
+                    resource_id=response.resource_id,
                 )
         fallback = classified.matched[-1]
         return sierra_responses.MatchResolution(
@@ -303,23 +261,21 @@ class SelectionMatchAnalyzer(BaseMatchAnalyzer):
             target_bib_id=fallback.bib_id,
             action=sierra_responses.CatalogAction.ATTACH,
             call_number_match=True,
-            input_call_no=classified.input_call_no,
-            resource_id=classified.resource_id,
+            input_call_no=response.input_call_no,
+            resource_id=response.resource_id,
         )
 
 
 class AcquisitionsMatchAnalyzer(BaseMatchAnalyzer):
     def resolve(
-        self,
-        incoming: bibs.DomainBib,
-        candidates: list[sierra_responses.BaseSierraResponse],
+        self, response: sierra_responses.MatcherResponse
     ) -> sierra_responses.MatchResolution:
-        classified = CandidateClassifier.classify(incoming, candidates)
+        classified = response.classify()
         return sierra_responses.MatchResolution(
             duplicate_records=classified.duplicates,
-            target_bib_id=incoming.bib_id,
+            target_bib_id=response.bib.bib_id,
             action=sierra_responses.CatalogAction.INSERT,
             call_number_match=True,
-            input_call_no=classified.input_call_no,
-            resource_id=classified.resource_id,
+            input_call_no=response.input_call_no,
+            resource_id=response.resource_id,
         )
