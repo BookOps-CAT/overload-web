@@ -20,8 +20,8 @@ class UpdateStep(Protocol):
 
 @runtime_checkable
 class MarcUpdateHandler(Protocol[T]):
-    library_pipeline: list
-    record_pipeline: list
+    library_pipeline: list[UpdateStep]
+    record_pipeline: list[UpdateStep]
 
     def create_order_marc_ctx(
         self, record: bibs.DomainBib, template_data: dict[str, Any]

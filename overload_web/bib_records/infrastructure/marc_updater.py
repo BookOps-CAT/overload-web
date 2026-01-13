@@ -42,16 +42,8 @@ class LibraryContext:
     vendor: str | None
 
 
-class OrderUpdateStep(Protocol):
-    def apply(self, ctx: OrderMarcContext) -> None: ...  # pragma: no branch
-
-
-class LibraryUpdateStep(Protocol):
-    def apply(self, ctx: LibraryContext) -> None: ...  # pragma: no branch
-
-
-class FullRecordUpdateStep(Protocol):
-    def apply(self, ctx: MarcContext) -> None: ...  # pragma: no branch
+class UpdateStep(Protocol):
+    def apply(self, ctx: Any) -> None: ...  # pragma: no branch
 
 
 class ApplyOrderTemplate:
@@ -231,7 +223,7 @@ class AddVendorFields:
 
 
 class BookopsMarcUpdateHandler:
-    RECORD_PIPELINES: dict[str, list] = {
+    RECORD_PIPELINES: dict[str, list[UpdateStep]] = {
         "acq": [ApplyOrderTemplate(), MapOrdersToMarc()],
         "cat": [AddVendorFields()],
         "sel": [
@@ -241,7 +233,7 @@ class BookopsMarcUpdateHandler:
             SetDefaultLocation(),
         ],
     }
-    LIBRARY_PIPELINES: dict[str, list] = {
+    LIBRARY_PIPELINES: dict[str, list[UpdateStep]] = {
         "nypl": [
             Update910Field(),
             AddBibId(tag="945"),
