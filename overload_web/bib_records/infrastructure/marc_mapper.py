@@ -1,4 +1,7 @@
-"""Parsers for MARC records using bookops_marc and pymarc."""
+"""Adapter module defining class used to parse MARC records into generics.
+
+Includes `BookopsMarcMapper` class to parse records using `bookops_marc` and `pymarc`
+"""
 
 from __future__ import annotations
 
@@ -13,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class BookopsMarcMapper:
-    """Parses MARC records based on domain objects."""
+    """Parses binary MARC data using `bookops_marc`."""
 
     def __init__(self, library: str, record_type: str, rules: dict[str, Any]) -> None:
         """
@@ -39,8 +42,8 @@ class BookopsMarcMapper:
         self, record: Bib, tags: dict[str, dict[str, str]]
     ) -> dict[str, dict[str, str]]:
         """
-        Get the MARC tag, subfield code, and value from a record based on a dictionary
-        containing tags and subfield codes that would be present in a vendor's records
+        Get the MARC tag, subfield code, and subfield value from a record based on a
+        dictionary containing tags and subfield codes.
 
         Args:
             record: A `bookops_marc.Bib` object
@@ -63,10 +66,11 @@ class BookopsMarcMapper:
         return bib_dict
 
     def get_reader(self, data: bytes | BinaryIO) -> SierraBibReader:
+        """Instantiate a `SierraBibReader` to read MARC binary data."""
         return SierraBibReader(data, library=self.library)
 
     def identify_vendor(self, record: Bib) -> dict[str, Any]:
-        """Determine the vendor who provided a `bookops_marc.Bib` record."""
+        """Determine the vendor who created a `bookops_marc.Bib` record."""
         vendor_rules = self.rules["vendors"][self.library.casefold()]
         for vendor, info in vendor_rules.items():
             fields = info.get("bib_fields", [])
@@ -95,7 +99,8 @@ class BookopsMarcMapper:
 
     def map_data(self, record: Bib) -> dict[str, Any]:
         """
-        Factory method used to build a `DomainBib` from a `bookops_marc.Bib` object.
+        Build a dictionary representing a `DomainBib` object from a
+        `bookops_marc.Bib` object and a set of mapping rules.
 
         Args:
             record: MARC record represented as a `bookops_marc.Bib` object.
