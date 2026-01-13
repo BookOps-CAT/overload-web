@@ -1,4 +1,4 @@
-"""Domain service for serializing bib records to file-like objects."""
+"""Domain service for serializing bib records to binary data."""
 
 from __future__ import annotations
 
