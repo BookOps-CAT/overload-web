@@ -141,9 +141,7 @@ class OrderRecordProcessingService:
         self.reviewer = match_analyzer
         self.matcher = match.OrderLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = parse.OrderLevelBibParser(mapper=bib_mapper)
-        self.updater = update.OrderLevelBibUpdater(
-            rules=rules, update_handler=update_handler
-        )
+        self.updater = update.OrderLevelBibUpdater(update_handler=update_handler)
         self.serializer = serialize.OrderLevelBibSerializer()
 
     def process_vendor_file(

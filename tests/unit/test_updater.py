@@ -8,8 +8,6 @@ from overload_web.bib_records.infrastructure import marc_updater
 
 
 class TestUpdater:
-    update_handler = marc_updater.BookopsMarcUpdateHandler()
-
     @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
     def test_update_cat_bpl(self, full_bib):
         original_bib = Bib(
@@ -18,7 +16,9 @@ class TestUpdater:
 
         full_bib.bib_id = "12345"
         service = update.FullLevelBibUpdater(
-            update_handler=self.update_handler,
+            update_handler=marc_updater.BookopsMarcUpdateHandler(
+                library="bpl", record_type="cat"
+            )
         )
         updated_bibs = service.update([full_bib])
         updated_bib = Bib(updated_bibs[0].binary_data, library=updated_bibs[0].library)
@@ -32,7 +32,9 @@ class TestUpdater:
         )
         full_bib.bib_id = "12345"
         service = update.FullLevelBibUpdater(
-            update_handler=self.update_handler,
+            update_handler=marc_updater.BookopsMarcUpdateHandler(
+                library="nypl", record_type="cat"
+            )
         )
         updated_bibs = service.update([full_bib])
         updated_bib = Bib(updated_bibs[0].binary_data, library=updated_bibs[0].library)
@@ -59,7 +61,9 @@ class TestUpdater:
         )
         original_bib = copy.deepcopy(Bib(full_bib.binary_data, library=library))
         service = update.FullLevelBibUpdater(
-            update_handler=self.update_handler,
+            update_handler=marc_updater.BookopsMarcUpdateHandler(
+                library=library, record_type="cat"
+            )
         )
         updated_bibs = service.update([full_bib])
         assert len(original_bib.get_fields("949")) == 1
@@ -71,12 +75,15 @@ class TestUpdater:
     @pytest.mark.parametrize(
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
     )
-    def test_update_acq(self, order_level_bib, fake_template_data, test_constants):
+    def test_update_acq(
+        self, order_level_bib, fake_template_data, test_constants, library
+    ):
         order_level_bib.record_type = "acq"
         original_orders = copy.deepcopy(order_level_bib.orders)
         service = update.OrderLevelBibUpdater(
-            rules=test_constants,
-            update_handler=self.update_handler,
+            update_handler=marc_updater.BookopsMarcUpdateHandler(
+                library=library, record_type="acq", rules=test_constants
+            ),
         )
         updated_bibs = service.update(
             [order_level_bib], template_data=fake_template_data
@@ -87,11 +94,15 @@ class TestUpdater:
     @pytest.mark.parametrize(
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
     )
-    def test_update_sel(self, order_level_bib, fake_template_data, test_constants):
+    def test_update_sel(
+        self, order_level_bib, fake_template_data, test_constants, library
+    ):
         order_level_bib.record_type = "sel"
         original_orders = copy.deepcopy(order_level_bib.orders)
         service = update.OrderLevelBibUpdater(
-            rules=test_constants, update_handler=self.update_handler
+            update_handler=marc_updater.BookopsMarcUpdateHandler(
+                library=library, record_type="sel", rules=test_constants
+            ),
         )
         updated_bibs = service.update(
             [order_level_bib], template_data=fake_template_data
@@ -104,7 +115,9 @@ class TestUpdater:
     )
     def test_dedupe_cat(self, full_bib, match_resolution, library, collection, caplog):
         service = update.FullLevelBibUpdater(
-            update_handler=self.update_handler,
+            update_handler=marc_updater.BookopsMarcUpdateHandler(
+                library=library, record_type="cat"
+            )
         )
         deduped_bibs = service.dedupe([full_bib], [match_resolution])
         assert len(deduped_bibs["DUP"]) == 0
@@ -116,7 +129,9 @@ class TestUpdater:
     )
     def test_validate_cat(self, full_bib, library, collection, caplog):
         service = update.FullLevelBibUpdater(
-            update_handler=self.update_handler,
+            update_handler=marc_updater.BookopsMarcUpdateHandler(
+                library=library, record_type="cat"
+            )
         )
         service.validate({"NEW": [full_bib]}, ["333331234567890"])
         assert len(caplog.records) == 1
@@ -126,7 +141,9 @@ class TestUpdater:
 
     def test_validate_cat_bpl_960_item(self, full_bpl_bib, caplog):
         service = update.FullLevelBibUpdater(
-            update_handler=self.update_handler,
+            update_handler=marc_updater.BookopsMarcUpdateHandler(
+                library="bpl", record_type="cat"
+            )
         )
         service.validate({"NEW": [full_bpl_bib]}, ["333331234567890"])
         assert len(caplog.records) == 1
@@ -139,7 +156,9 @@ class TestUpdater:
     )
     def test_validate_missing_barcodes(self, full_bib, library, collection, caplog):
         service = update.FullLevelBibUpdater(
-            update_handler=self.update_handler,
+            update_handler=marc_updater.BookopsMarcUpdateHandler(
+                library=library, record_type="cat"
+            )
         )
         service.validate({"NEW": [full_bib]}, ["333331234567890", "333330987654321"])
         assert len(caplog.records) == 2
@@ -151,7 +170,9 @@ class TestUpdater:
 
     def test_validate_bpl_960_item_missing_barcodes(self, full_bpl_bib, caplog):
         service = update.FullLevelBibUpdater(
-            update_handler=self.update_handler,
+            update_handler=marc_updater.BookopsMarcUpdateHandler(
+                library="bpl", record_type="cat"
+            )
         )
         service.validate(
             {"NEW": [full_bpl_bib]}, ["333331234567890", "333330987654321"]

@@ -14,17 +14,17 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T", contravariant=True)  # variable for contravariant `Bib` type
 
 
+class UpdateStep(Protocol):
+    def apply(self, ctx: Any) -> None: ...  # pragma: no branch
+
+
 @runtime_checkable
 class MarcUpdateHandler(Protocol[T]):
-    full_record_pipelines: dict[str, Any]
-    order_pipelines: dict[str, Any]
-    library_pipelines: dict[str, Any]
+    library_pipeline: list
+    record_pipeline: list
 
     def create_order_marc_ctx(
-        self,
-        record: bibs.DomainBib,
-        rules: dict[str, Any],
-        template_data: dict[str, Any],
+        self, record: bibs.DomainBib, template_data: dict[str, Any]
     ) -> Any: ...  # pragma: no branch
 
     def create_library_ctx(
@@ -37,28 +37,23 @@ class MarcUpdateHandler(Protocol[T]):
 
 
 class OrderLevelBibUpdater:
-    def __init__(
-        self, rules: dict[str, Any], update_handler: MarcUpdateHandler
-    ) -> None:
-        self.rules = rules
+    def __init__(self, update_handler: MarcUpdateHandler) -> None:
         self.update_handler = update_handler
 
     def _update_order_record(
         self, record: bibs.DomainBib, template_data: dict[str, Any]
     ) -> bibs.DomainBib:
         ctx = self.update_handler.create_order_marc_ctx(
-            record=record, template_data=template_data, rules=self.rules
+            record=record, template_data=template_data
         )
-        pipeline = self.update_handler.order_pipelines[record.record_type]
-        for step in pipeline:
+        for step in self.update_handler.record_pipeline:
             step.apply(ctx)
         library_ctx = self.update_handler.create_library_ctx(
             bib_rec=ctx.bib_rec,
             bib_id=record.bib_id,
             vendor=template_data.get("vendor"),
         )
-        policies = self.update_handler.library_pipelines[record.library]
-        for policy in policies:
+        for policy in self.update_handler.library_pipeline:
             policy.apply(library_ctx)
 
         record.binary_data = ctx.bib_rec.as_marc()
@@ -92,14 +87,12 @@ class FullLevelBibUpdater:
 
     def _update_full_record(self, record: bibs.DomainBib) -> bibs.DomainBib:
         ctx = self.update_handler.create_full_marc_ctx(record=record)
-        pipeline = self.update_handler.full_record_pipelines[record.record_type]
-        for step in pipeline:
+        for step in self.update_handler.record_pipeline:
             step.apply(ctx)
         library_ctx = self.update_handler.create_library_ctx(
             bib_rec=ctx.bib_rec, bib_id=record.bib_id, vendor=record.vendor
         )
-        policies = self.update_handler.library_pipelines[record.library]
-        for policy in policies:
+        for policy in self.update_handler.library_pipeline:
             policy.apply(library_ctx)
         record.binary_data = ctx.bib_rec.as_marc()
         return record
