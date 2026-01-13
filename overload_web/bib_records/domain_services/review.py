@@ -59,7 +59,6 @@ class BaseMatchAnalyzer:
     ) -> tuple[sierra_responses.CatalogAction, bool]:
         if candidate.cat_source == "inhouse":
             return sierra_responses.CatalogAction.ATTACH, False
-
         if (
             not incoming.update_datetime
             or candidate.update_datetime > incoming.update_datetime

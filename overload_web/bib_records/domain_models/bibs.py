@@ -111,18 +111,6 @@ class DomainBib:
             return datetime.datetime.strptime(self.update_date, "%Y%m%d%H%M%S.%f")
         return None
 
-    @update_datetime.setter
-    def update_datetime(self, value: datetime.datetime | None) -> None:
-        """
-        Changes `update_date` if `update_datetime` is assigned a new value.
-        The new `update_date` value will be formatted like a MARC 005 field
-        (ie. `YYYYMMDDHHMMSS.f`).
-        """
-        if isinstance(value, datetime.datetime):
-            self.update_date = datetime.datetime.strftime(value, "%Y%m%d%H%M%S.%f")
-        else:
-            self.update_date = value
-
     def apply_order_template(self, template_data: dict[str, Any]) -> None:
         """
         Apply template data to all orders in this bib record.
