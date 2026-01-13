@@ -1,7 +1,4 @@
-"""HTMX router for Overload Web UI fragments.
-
-Serves HTML partials in response to HTMX requests.
-"""
+"""HTMX router for UI fragments. Serves HTML partials in response to HTMX requests."""
 
 import logging
 
@@ -14,6 +11,7 @@ htmx_router = APIRouter(prefix="/htmx", tags=["htmx"])
 
 @htmx_router.get("/forms/local-files", response_class=HTMLResponse)
 def get_local_upload_form(request: Request) -> HTMLResponse:
+    """Renders form for local file upload."""
     return request.app.state.templates.TemplateResponse(
         request=request, name="files/local_form.html"
     )
@@ -21,6 +19,7 @@ def get_local_upload_form(request: Request) -> HTMLResponse:
 
 @htmx_router.get("/forms/remote-files", response_class=HTMLResponse)
 def get_remote_file_form(request: Request) -> HTMLResponse:
+    """Renders form for remote file upload."""
     return request.app.state.templates.TemplateResponse(
         request=request, name="files/remote_form.html"
     )
@@ -28,7 +27,7 @@ def get_remote_file_form(request: Request) -> HTMLResponse:
 
 @htmx_router.get("/forms/context", response_class=HTMLResponse)
 def get_context_form(request: Request) -> HTMLResponse:
-    """Get options for template inputs from application constants."""
+    """Renders form for context input."""
     return request.app.state.templates.TemplateResponse(
         request=request, name="context/form.html"
     )
@@ -38,7 +37,7 @@ def get_context_form(request: Request) -> HTMLResponse:
 def get_disabled_context_form(
     request: Request, library: str, collection: str, record_type: str
 ) -> HTMLResponse:
-    """Get options for template inputs from application constants."""
+    """Renders disabled context input form with selected values."""
     context = {"library": library, "collection": collection, "record_type": record_type}
     return request.app.state.templates.TemplateResponse(
         request=request, name="context/disabled_form.html", context={"context": context}
@@ -47,7 +46,7 @@ def get_disabled_context_form(
 
 @htmx_router.get("/forms/templates", response_class=HTMLResponse)
 def get_template_form(request: Request) -> HTMLResponse:
-    """Get options for template inputs from application constants."""
+    """Renders form for creating/editing order templates."""
     return request.app.state.templates.TemplateResponse(
         request=request, name="record_templates/template_form.html"
     )

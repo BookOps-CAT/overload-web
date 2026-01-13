@@ -1,4 +1,4 @@
-"""Frontend router using `Jinja2` request.app.state.templates.
+"""Frontend router used to generate pages using `Jinja2` templates.
 
 Serves HTML pages for Overload Web's user interface.
 """
@@ -17,7 +17,7 @@ frontend_router = APIRouter(tags=["frontend"])
 @frontend_router.get("/", response_class=HTMLResponse)
 def root(request: Request, page_title: str = "Overload Web") -> HTMLResponse:
     """
-    Renders the home page with default context.
+    Renders the home page.
 
     Args:
         request: `FastAPI` request object.
@@ -55,16 +55,16 @@ def post_context_form(
     record_type: str = Form(...), library: str = Form(...), collection: str = Form(...)
 ) -> RedirectResponse:
     """
-    Takes input from form on `process.html` and redirects to appropriate
-    endpoint for file processing.
+    Takes input from form in `process.html` and redirects to appropriate
+    endpoint for file processing. All args are passed to endpoint via an html form.
 
     Args:
         record_type:
-            the type of record to be processed as a str passed to a form
+            the type of record to be processed as a str
         library:
-            the library whose records are to be processed as a str passed to a form
+            the library whose records are to be processed as a str
         collection:
-            the collection whose records are to be processed as a str passed to a form
+            the collection whose records are to be processed as a str
 
     Returns:
         `RedirectResponse` to appropriate endpoint for record type
@@ -84,22 +84,19 @@ def process_records_page(
     page_title: str = "Process Vendor File",
 ) -> HTMLResponse:
     """
-    Renders the vendor file processing page for full MARC records.
+    Renders the 'Process Vendor File' page.
 
     Args:
         request:
             `FastAPI` request object.
-        library:
-            the library whose records are to be processed passed from
-            `/process` endpoint.
-        collection:
-            the collection whose records are to be processed passed from
-            `/process` endpoint.
         record_type:
-            the type of records to be processed (ie. 'order_level' or 'full') passed
-            from `/process` endpoint.
+            the type of record to be processed as a str
+        library:
+            the library whose records are to be processed as a str
+        collection:
+            the collection whose records are to be processed as a str
         page_title:
-            optional title for the page.
+            optional title to override the default.
 
     Returns:
         HTML response for the vendor file page.

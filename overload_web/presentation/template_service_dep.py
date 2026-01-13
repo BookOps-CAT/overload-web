@@ -1,3 +1,5 @@
+"""Dependency injection for the template service."""
+
 import logging
 import os
 from typing import Annotated, Any, Generator
@@ -12,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_postgres_uri() -> str:
+    """Get the Postgres database URI from environment variables."""
     db_type = os.environ.get("DB_TYPE", "sqlite")
     user = os.environ.get("POSTGRES_USER")
     pw = os.environ.get("POSTGRES_PASSWORD")
@@ -26,11 +29,13 @@ def get_postgres_uri() -> str:
 engine = create_engine(get_postgres_uri())
 
 
-def create_db_and_tables():
+def create_db_and_tables() -> None:
+    """Create the database and tables if they do not exist."""
     SQLModel.metadata.create_all(engine)
 
 
 def get_session() -> Generator[Session, None, None]:
+    """Create a new database session."""
     with Session(engine) as session:
         yield session
 
@@ -38,6 +43,7 @@ def get_session() -> Generator[Session, None, None]:
 def template_handler(
     session: Annotated[Any, Depends(get_session)],
 ) -> Generator[template_service.OrderTemplateService, None, None]:
+    """Create an order template service."""
     yield template_service.OrderTemplateService(
         repo=repository.SqlModelRepository(session=session)
     )

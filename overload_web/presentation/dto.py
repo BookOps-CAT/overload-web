@@ -57,14 +57,14 @@ class TemplateDataModel(BaseModel, schemas._TemplateData):
 class TemplatePatchModel(BaseModel, schemas._TemplateBase):
     """
     Pydantic model for serializing/deserializing order template data
-    when used to update a template in the DB.
+    when used to update a template in the database.
     """
 
 
 class TemplateCreateModel(BaseModel, schemas._TemplateBase):
     """
     Pydantic model for serializing/deserializing order template data
-    used when creating a template in the DB.
+    used when creating a template in the database.
     """
 
     name: str

@@ -1,7 +1,4 @@
-"""API router for Overload Web backend services.
-
-Includes endpoints for root and processing vendor MARC files.
-"""
+"""API router for Overload Web backend services."""
 
 from __future__ import annotations
 
@@ -25,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: APIRouter) -> AsyncGenerator[None, None]:
+    """Create and drop database tables on startup/shutdown."""
     logger.info("Starting up Overload...")
     template_service_dep.create_db_and_tables()
     yield
@@ -43,11 +41,11 @@ def create_template(
     service: TemplateService,
 ) -> HTMLResponse:
     """
-    Save a new order template to the template DB.
+    Save a new order template to the template database.
 
     Args:
-        template: the order template to save as an `TemplateCreateModel` object.
-        service: an `OrderTemplateService` object used to interact with the DB
+        template: the order template as an `TemplateCreateModel` object.
+        service: an `OrderTemplateService` object used to interact with the database.
 
     Returns:
         the saved order template wrapped in a `HTMLResponse` object
@@ -65,11 +63,11 @@ def get_template(
     request: Request, template_id: str, service: TemplateService
 ) -> HTMLResponse:
     """
-    Retrieve an order template from the DB.
+    Retrieve an order template from the database.
 
     Args:
         template_id: the template's ID as a string.
-        service: an `OrderTemplateService` object used to interact with the DB
+        service: an `OrderTemplateService` object used to interact with the database.
 
     Returns:
         the retrieved order template wrapped in a `HTMLResponse` object
@@ -85,21 +83,18 @@ def get_template(
 
 @api_router.get("/templates", response_class=HTMLResponse)
 def get_template_list(
-    request: Request,
-    service: TemplateService,
-    offset: int = 0,
-    limit: int = 20,
+    request: Request, service: TemplateService, offset: int = 0, limit: int = 20
 ) -> HTMLResponse:
     """
-    List order templates in the DB.
+    List order templates in the database.
 
     Args:
-        service: an `OrderTemplateService` object used to interact with the DB
+        service: an `OrderTemplateService` object used to interact with the database.
         offset: the first template to be listed
         limit: the maximum number of templates to list
 
     Returns:
-        a list of order templates retrieved from the db wrapped in a
+        a list of order templates retrieved from the database wrapped in a
         `HTMLResponse` object
     """
     template_list = service.list_templates(offset=offset, limit=limit)
@@ -118,7 +113,7 @@ def update_template(
     service: TemplateService,
 ) -> HTMLResponse:
     """
-    Apply patch updates to an order templates in the DB.
+    Apply patch updates to an order templates in the database.
 
     Args:
         template_id:
@@ -126,7 +121,7 @@ def update_template(
         template_patch:
             data to be updated in the template as an `TemplatePatchModel` object
         service:
-            an `OrderTemplateService` object used to interact with the DB
+            an `OrderTemplateService` object used to interact with the database.
 
     Returns:
         the updated order template wrapped in a `HTMLResponse` object
@@ -169,7 +164,7 @@ def list_remote_files(
     List all files on a vendor's SFTP server.
 
     Args:
-        vendor: the vendor whose server should be accessed
+        vendor: the vendor whose server to access
 
     Returns:
         the list of files wrapped in a `HTMLResponse` object
@@ -213,24 +208,28 @@ def process_vendor_file(
     record_type: Annotated[str, Form(...)],
 ) -> HTMLResponse:
     """
-    Process one or more MARC files using the `OrderRecordProcessingService`
-    of `FullRecordProcessingService`.
+    Process one or more files of MARC records.
+
+    Uses an `OrderRecordProcessingService` or `FullRecordProcessingService` to process
+    records.
 
     Args:
         full_record_service:
-            the `FullRecordProcessingService` created using library, collection,
-            and record_type
+            a `FullRecordProcessingService` object created using library, collection,
+            and record_type args
         order_record_service:
-            the `OrderRecordProcessingService` created using library, collection,
-            and record_type
+            an `OrderRecordProcessingService` created using library, collection,
+            and record_type args.
         files:
-            a list of vendor files from a local upload or a vendor's SFTP
+            a list of vendor files from a local upload or a vendor's SFTP as
+            `VendorFileModel` objects.
         order_template:
-            an order template loaded from the DB or created via a form
+            an order template loaded from the database or input via an html form.
         matchpoints:
-            a list of matchpoints created from a form
+            a list of matchpoints loaded from an order template in the database or
+            input via an html form.
         record_type:
-            The type of record as an Literal value from bibs.RecordType.
+            The type of record as an Literal value from `bibs.RecordType`.
 
     Returns:
         the processed files wrapped in a `HTMLResponse` object
