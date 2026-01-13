@@ -29,9 +29,11 @@ class SFTPFileLoader:
         self.client = client
 
     def list(self, dir: str) -> list[str]:
+        """List files in a remote directory."""
         return self.client.list_files(remote_dir=dir)
 
     def load(self, name: str, dir: str) -> vendor_files.VendorFile:
+        """Load a file from a remote directory."""
         file_info = self.client.get_file_info(file_name=name, remote_dir=dir)
         file = self.client.get_file(file=file_info, remote_dir=dir)
         file.file_stream.seek(0)
@@ -41,6 +43,7 @@ class SFTPFileLoader:
 
     @classmethod
     def create_loader_for_vendor(cls, vendor: str) -> SFTPFileLoader:
+        """Create an `SFTPFileLoader` for a specific vendor based on envars."""
         client = Client(
             name=vendor.upper(),
             username=os.environ[f"{vendor.upper()}_USER"],
@@ -63,6 +66,7 @@ class SFTPFileWriter:
         self.client = client
 
     def write(self, file: vendor_files.VendorFile, dir: str) -> str:
+        """Write a file to a remote directory."""
         converted_file = File(
             file_name=file.file_name,
             file_stream=io.BytesIO(file.content),
@@ -75,6 +79,7 @@ class SFTPFileWriter:
 
     @classmethod
     def create_writer_for_vendor(cls, vendor: str) -> SFTPFileWriter:
+        """Create an `SFTPFileWriter` for a specific vendor based on envars."""
         client = Client(
             name=vendor.upper(),
             username=os.environ[f"{vendor.upper()}_USER"],

@@ -20,13 +20,12 @@ class LocalFileLoader:
     contents from a specific directory on a local computer.
     """
 
-    def __init__(self):
-        pass
-
     def list(self, dir: str) -> list[str]:
+        """List available files in a local directory."""
         return os.listdir(dir)
 
     def load(self, name: str, dir: str) -> vendor_files.VendorFile:
+        """Load a file from a local directory."""
         with open(os.path.join(dir, name), "rb") as fh:
             file_dto = vendor_files.VendorFile(content=fh.read(), file_name=name)
         return file_dto
@@ -40,10 +39,8 @@ class LocalFileWriter:
     to files within a specific directory on a local computer.
     """
 
-    def __init__(self):
-        pass
-
     def write(self, file: vendor_files.VendorFile, dir: str) -> str:
+        """Write a file to a local directory."""
         path = os.path.join(dir, file.file_name)
         with open(path, "wb") as f:
             f.write(file.content)
