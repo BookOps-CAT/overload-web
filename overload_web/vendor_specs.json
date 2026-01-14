@@ -26,6 +26,10 @@
       "m": "blanket_po"
     }
   },
+  "bib_id_tag": {
+    "nypl": "945",
+    "bpl": "907"
+  },
   "mapper_rules": {
     "bib": {
       "barcodes": "barcodes",

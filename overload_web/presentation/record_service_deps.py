@@ -51,48 +51,41 @@ def get_mapper(
 def get_update_handler(
     library: Annotated[str, Form(...)],
     record_type: Annotated[str, Form(...)],
+    constants: Annotated[dict[str, Any], Depends(get_constants)],
 ) -> Generator[marc_updater.BookopsMarcUpdateHandler, None, None]:
     """Create a MARC mapper based on library and record type."""
     yield marc_updater.BookopsMarcUpdateHandler(
-        record_type=record_type, library=library
+        record_type=record_type, library=library, rules=constants
     )
 
 
 def order_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
     mapper: Annotated[marc_mapper.BookopsMarcMapper, Depends(get_mapper)],
-    match_analyzer: Annotated[
+    analyzer: Annotated[
         record_service.analysis.MatchAnalyzer, Depends(get_match_analyzer)
     ],
-    update_handler: Annotated[
+    handler: Annotated[
         marc_updater.BookopsMarcUpdateHandler, Depends(get_update_handler)
     ],
-    constants: Annotated[dict[str, Any], Depends(get_constants)],
 ) -> Generator[record_service.OrderRecordProcessingService, None, None]:
     """Create an order-record processing service with injected dependencies."""
     yield record_service.OrderRecordProcessingService(
-        bib_fetcher=fetcher,
-        bib_mapper=mapper,
-        match_analyzer=match_analyzer,
-        rules=constants,
-        update_handler=update_handler,
+        bib_fetcher=fetcher, bib_mapper=mapper, analyzer=analyzer, handler=handler
     )
 
 
 def full_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
     mapper: Annotated[marc_mapper.BookopsMarcMapper, Depends(get_mapper)],
-    match_analyzer: Annotated[
+    analyzer: Annotated[
         record_service.analysis.MatchAnalyzer, Depends(get_match_analyzer)
     ],
-    update_handler: Annotated[
+    handler: Annotated[
         marc_updater.BookopsMarcUpdateHandler, Depends(get_update_handler)
     ],
 ) -> Generator[record_service.FullRecordProcessingService, None, None]:
     """Create an full-record processing service with injected dependencies."""
     yield record_service.FullRecordProcessingService(
-        bib_fetcher=fetcher,
-        bib_mapper=mapper,
-        match_analyzer=match_analyzer,
-        update_handler=update_handler,
+        bib_fetcher=fetcher, bib_mapper=mapper, analyzer=analyzer, handler=handler
     )

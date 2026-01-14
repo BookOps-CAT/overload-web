@@ -205,6 +205,7 @@ def process_vendor_file(
     ],
     order_template: Annotated[Any, Depends(dto.from_form(dto.TemplateDataModel))],
     matchpoints: Annotated[Any, Depends(dto.from_form(dto.MatchpointSchema))],
+    vendor: Annotated[str, Form(...)],
     record_type: Annotated[str, Form(...)],
 ) -> HTMLResponse:
     """
@@ -230,6 +231,8 @@ def process_vendor_file(
             input via an html form.
         record_type:
             The type of record as an Literal value from `bibs.RecordType`.
+        vendor:
+            The vendor name as a string.
 
     Returns:
         the processed files wrapped in a `HTMLResponse` object
@@ -246,6 +249,7 @@ def process_vendor_file(
                 data=file.content,
                 template_data=order_template.model_dump(),
                 matchpoints=matchpoints.model_dump(),
+                vendor=vendor,
             )
             out_files.append({"file_name": file.file_name, "binary_content": output})
     return request.app.state.templates.TemplateResponse(

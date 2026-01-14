@@ -25,6 +25,7 @@ from overload_web.bib_records.domain_services import (
     analysis,
     match,
     parse,
+    review,
     serialize,
     update,
 )
@@ -58,8 +59,8 @@ class FullRecordProcessingService:
         self,
         bib_fetcher: match.BibFetcher,
         bib_mapper: parse.BibMapper,
-        match_analyzer: analysis.MatchAnalyzer,
-        update_handler: update.MarcUpdateHandler,
+        analyzer: analysis.MatchAnalyzer,
+        handler: update.MarcUpdateHandler,
     ):
         """
         Initialize `FullRecordProcessingService`.
@@ -69,15 +70,16 @@ class FullRecordProcessingService:
                 A `match.BibFetcher` object
             bib_mapper:
                 A `parse.BibMapper` object
-            match_analyzer:
-                A `review.MatchAnalyzer` object
-            update_handler:
+            analyzer:
+                An `analysis.MatchAnalyzer` object
+            handler:
                 A `update.MarcUpdateHandler` object
         """
-        self.match_analyzer = match_analyzer
+        self.analyzer = analyzer
         self.matcher = match.FullLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = parse.FullLevelBibParser(mapper=bib_mapper)
-        self.updater = update.FullLevelBibUpdater(update_handler=update_handler)
+        self.reviewer = review.FullLevelBibReviewer(handler=handler)
+        self.updater = update.FullLevelBibUpdater(handler=handler)
         self.serializer = serialize.FullLevelBibSerializer()
 
     def process_vendor_file(self, data: BinaryIO | bytes) -> dict[str, BinaryIO]:
@@ -100,15 +102,13 @@ class FullRecordProcessingService:
             itertools.chain.from_iterable([i.barcodes for i in parsed_records])
         )
         matched_records = self.matcher.match(records=parsed_records)
-        match_analysis = self.match_analyzer.review_candidates(
-            candidates=matched_records
-        )
+        match_analysis = self.analyzer.analyze_matches(candidates=matched_records)
         attached_records = self.updater.attach(responses=match_analysis)
         updated_records = self.updater.update(records=attached_records)
-        deduped_records = self.updater.dedupe(
+        deduped_records = self.reviewer.dedupe(
             records=updated_records, reports=match_analysis
         )
-        self.updater.validate(record_batches=deduped_records, barcodes=barcodes)
+        self.reviewer.validate(record_batches=deduped_records, barcodes=barcodes)
         serialized_records = self.serializer.serialize(record_batches=deduped_records)
         return serialized_records
 
@@ -120,9 +120,8 @@ class OrderRecordProcessingService:
         self,
         bib_fetcher: match.BibFetcher,
         bib_mapper: parse.BibMapper,
-        match_analyzer: analysis.MatchAnalyzer,
-        rules: dict[str, Any],
-        update_handler: update.MarcUpdateHandler,
+        analyzer: analysis.MatchAnalyzer,
+        handler: update.MarcUpdateHandler,
     ):
         """
         Initialize `OrderRecordProcessingService`.
@@ -132,17 +131,15 @@ class OrderRecordProcessingService:
                 A `match.BibFetcher` object
             bib_mapper:
                 A `parse.BibMapper` object
-            match_analyzer:
-                A `review.MatchAnalyzer` object
-            rules:
-                A set of rules to be used by the `MarcUpdateHandler` as a dict
-            update_handler:
+            analyzer:
+                An `analysis.MatchAnalyzer` object
+            handler:
                 A `update.MarcUpdateHandler` object
         """
-        self.match_analyzer = match_analyzer
+        self.analyzer = analyzer
         self.matcher = match.OrderLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = parse.OrderLevelBibParser(mapper=bib_mapper)
-        self.updater = update.OrderLevelBibUpdater(update_handler=update_handler)
+        self.updater = update.OrderLevelBibUpdater(handler=handler)
         self.serializer = serialize.OrderLevelBibSerializer()
 
     def process_vendor_file(
@@ -150,6 +147,7 @@ class OrderRecordProcessingService:
         data: BinaryIO | bytes,
         matchpoints: dict[str, str],
         template_data: dict[str, Any],
+        vendor: str,
     ) -> BinaryIO:
         """
         Process a file of full MARC records.
@@ -165,19 +163,17 @@ class OrderRecordProcessingService:
                 A dictionary containing matchpoints to be used in matching records.
             template_data:
                 Order template data as a dictionary.
+            vendor:
+                The vendor whose records are being processed as a string.
 
         Returns:
             MARC data as a `BinaryIO` object
         """
-        parsed_records = self.parser.parse(
-            data=data, vendor=template_data.get("vendor")
-        )
+        parsed_records = self.parser.parse(data=data, vendor=vendor)
         matched_records = self.matcher.match(
             records=parsed_records, matchpoints=matchpoints
         )
-        match_analysis = self.match_analyzer.review_candidates(
-            candidates=matched_records
-        )
+        match_analysis = self.analyzer.analyze_matches(candidates=matched_records)
         attached_records = self.updater.attach(responses=match_analysis)
         updated_records = self.updater.update(
             records=attached_records, template_data=template_data

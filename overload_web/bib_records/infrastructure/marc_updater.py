@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
-from typing import Any, Optional, Protocol
+from typing import Any, Protocol
 
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
@@ -15,9 +14,15 @@ logger = logging.getLogger(__name__)
 
 
 class MarcContext:
-    def __init__(self, record: bibs.DomainBib) -> None:
+    def __init__(self, record: bibs.DomainBib, rules: dict[str, Any]) -> None:
         self.bib_rec: Bib = Bib(record.binary_data, library=record.library)  # type: ignore
         self.record = record
+        self.vendor = record.vendor
+        self.order_mapping = rules["updater_rules"]
+        self.default_loc = rules["default_locations"][self.bib_rec.library].get(
+            self.bib_rec.collection
+        )
+        self.bib_id_tag = rules["bib_id_tag"][self.bib_rec.library]
 
 
 class OrderMarcContext(MarcContext):
@@ -27,19 +32,9 @@ class OrderMarcContext(MarcContext):
         template_data: dict[str, Any],
         rules: dict[str, Any],
     ) -> None:
-        super().__init__(record)
+        super().__init__(record, rules)
         self.template_data = template_data
-        self.order_mapping = rules["updater_rules"]
-        self.default_loc = rules["default_locations"][self.bib_rec.library].get(
-            self.bib_rec.collection
-        )
-
-
-@dataclass
-class LibraryContext:
-    bib_rec: Bib
-    bib_id: str | None
-    vendor: str | None
+        self.vendor = template_data.get("vendor")
 
 
 class UpdateStep(Protocol):
@@ -119,7 +114,7 @@ class SetDefaultLocation:
 
 
 class Update910Field:
-    def apply(self, ctx: LibraryContext) -> None:
+    def apply(self, ctx: MarcContext) -> None:
         ctx.bib_rec.remove_fields("910")
         field = Field(
             tag="910",
@@ -133,28 +128,28 @@ class AddBibId:
     def __init__(self, tag: str) -> None:
         self.tag = tag
 
-    def apply(self, ctx: LibraryContext) -> None:
-        if ctx.bib_id:
+    def apply(self, ctx: MarcContext) -> None:
+        if ctx.record.bib_id:
             ctx.bib_rec.remove_fields(self.tag)
             ctx.bib_rec.add_ordered_field(
                 Field(
                     tag=self.tag,
                     indicators=Indicators(" ", " "),
-                    subfields=[Subfield(code="a", value=ctx.bib_id)],
+                    subfields=[Subfield(code="a", value=ctx.record.bib_id)],
                 )
             )
 
 
 class UpdateLeader:
-    def apply(self, ctx: LibraryContext) -> None:
+    def apply(self, ctx: MarcContext) -> None:
         ctx.bib_rec.leader = ctx.bib_rec.leader[:9] + "a" + ctx.bib_rec.leader[10:]
 
 
 class UpdateBtSeriesCallNo:
-    def apply(self, ctx: LibraryContext) -> None:
+    def apply(self, ctx: MarcContext) -> None:
         if not (
             ctx.bib_rec.collection == "BL"
-            and ctx.vendor == "BT SERIES"
+            and ctx.record.vendor == "BT SERIES"
             and "091" in ctx.bib_rec
         ):
             return None
@@ -223,7 +218,7 @@ class AddVendorFields:
 
 
 class BookopsMarcUpdateHandler:
-    RECORD_PIPELINES: dict[str, list[UpdateStep]] = {
+    WORKFLOW_PIPELINES: dict[str, list[UpdateStep]] = {
         "acq": [ApplyOrderTemplate(), MapOrdersToMarc()],
         "cat": [AddVendorFields()],
         "sel": [
@@ -243,26 +238,18 @@ class BookopsMarcUpdateHandler:
         "bpl": [AddBibId(tag="907"), UpdateLeader()],
     }
 
-    def __init__(
-        self, record_type: str, library: str, rules: Optional[dict[str, Any]] = {}
-    ) -> None:
-        self.library_pipeline = self.LIBRARY_PIPELINES[library]
-        self.record_pipeline = self.RECORD_PIPELINES[record_type]
-        self.rules = rules if rules else {}
+    def __init__(self, record_type: str, library: str, rules: dict[str, Any]) -> None:
+        self.rules = rules
+        self.pipeline = (
+            self.WORKFLOW_PIPELINES[record_type] + self.LIBRARY_PIPELINES[library]
+        )
 
     def create_order_marc_ctx(
-        self,
-        record: bibs.DomainBib,
-        template_data: dict[str, Any],
+        self, record: bibs.DomainBib, template_data: dict[str, Any]
     ) -> OrderMarcContext:
         return OrderMarcContext(
             record=record, template_data=template_data, rules=self.rules
         )
 
-    def create_library_ctx(
-        self, bib_id: str | None, bib_rec: Bib, vendor: str | None
-    ) -> LibraryContext:
-        return LibraryContext(bib_rec=bib_rec, bib_id=bib_id, vendor=vendor)
-
     def create_full_marc_ctx(self, record: bibs.DomainBib) -> MarcContext:
-        return MarcContext(record=record)
+        return MarcContext(record=record, rules=self.rules)

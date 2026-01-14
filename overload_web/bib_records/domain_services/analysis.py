@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 class MatchAnalyzer(Protocol):
     """Review matches identified by the `BibMatcher` service."""
 
-    def review_candidates(
+    def analyze_matches(
         self,
         candidates: list[sierra_responses.MatcherResponse],
     ) -> list[sierra_responses.MatchAnalysis]: ...  # pragma: no branch
@@ -65,7 +65,7 @@ class BaseMatchAnalyzer:
 
         return sierra_responses.CatalogAction.ATTACH, False
 
-    def review_candidates(
+    def analyze_matches(
         self, candidates: list[sierra_responses.MatcherResponse]
     ) -> list[sierra_responses.MatchAnalysis]:
         analysis_out = []
