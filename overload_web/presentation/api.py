@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 from contextlib import asynccontextmanager
-from typing import Annotated, Any, AsyncGenerator
+from typing import Annotated, Any, AsyncGenerator, Optional
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -206,7 +206,7 @@ def process_vendor_file(
     order_template: Annotated[Any, Depends(dto.from_form(dto.TemplateDataModel))],
     matchpoints: Annotated[Any, Depends(dto.from_form(dto.MatchpointSchema))],
     vendor: Annotated[str, Form(...)],
-    record_type: Annotated[str, Form(...)],
+    record_type: Annotated[Optional[str], Form(...)],
 ) -> HTMLResponse:
     """
     Process one or more files of MARC records.

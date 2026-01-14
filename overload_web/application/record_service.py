@@ -147,7 +147,7 @@ class OrderRecordProcessingService:
         data: BinaryIO | bytes,
         matchpoints: dict[str, str],
         template_data: dict[str, Any],
-        vendor: str,
+        vendor: str | None,
     ) -> BinaryIO:
         """
         Process a file of full MARC records.
