@@ -1,5 +1,5 @@
 {
-  "updater_rules": {
+  "update_order_mapping": {
     "960": {
       "c": "order_code_1",
       "d": "order_code_2",

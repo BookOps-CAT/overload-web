@@ -1,4 +1,4 @@
-"""Parsers for MARC records using bookops_marc and pymarc."""
+"""Record updaters for MARC records using bookops_marc and pymarc."""
 
 from __future__ import annotations
 
@@ -17,8 +17,7 @@ class MarcContext:
     def __init__(self, record: bibs.DomainBib, rules: dict[str, Any]) -> None:
         self.bib_rec: Bib = Bib(record.binary_data, library=record.library)  # type: ignore
         self.record = record
-        self.vendor = record.vendor
-        self.order_mapping = rules["updater_rules"]
+        self.order_mapping = rules["update_order_mapping"]
         self.default_loc = rules["default_locations"][self.bib_rec.library].get(
             self.bib_rec.collection
         )
@@ -29,25 +28,20 @@ class OrderMarcContext(MarcContext):
     def __init__(
         self,
         record: bibs.DomainBib,
-        template_data: dict[str, Any],
         rules: dict[str, Any],
+        template_data: dict[str, Any],
     ) -> None:
         super().__init__(record, rules)
         self.template_data = template_data
-        self.vendor = template_data.get("vendor")
 
 
 class UpdateStep(Protocol):
     def apply(self, ctx: Any) -> None: ...  # pragma: no branch
 
 
-class ApplyOrderTemplate:
+class MapOrderTemplateToMarc:
     def apply(self, ctx: OrderMarcContext) -> None:
         ctx.record.apply_order_template(ctx.template_data)
-
-
-class MapOrdersToMarc:
-    def apply(self, ctx: OrderMarcContext) -> None:
         for order in ctx.record.orders:
             order_data = order.map_to_marc(rules=ctx.order_mapping)
             for tag, subfield_values in order_data.items():
@@ -125,15 +119,12 @@ class Update910Field:
 
 
 class AddBibId:
-    def __init__(self, tag: str) -> None:
-        self.tag = tag
-
     def apply(self, ctx: MarcContext) -> None:
         if ctx.record.bib_id:
-            ctx.bib_rec.remove_fields(self.tag)
+            ctx.bib_rec.remove_fields(ctx.bib_id_tag)
             ctx.bib_rec.add_ordered_field(
                 Field(
-                    tag=self.tag,
+                    tag=ctx.bib_id_tag,
                     indicators=Indicators(" ", " "),
                     subfields=[Subfield(code="a", value=ctx.record.bib_id)],
                 )
@@ -151,6 +142,7 @@ class UpdateBtSeriesCallNo:
             ctx.bib_rec.collection == "BL"
             and ctx.record.vendor == "BT SERIES"
             and "091" in ctx.bib_rec
+            and ctx.record.record_type == "cat"
         ):
             return None
         new_callno_subfields = []
@@ -219,23 +211,18 @@ class AddVendorFields:
 
 class BookopsMarcUpdateHandler:
     WORKFLOW_PIPELINES: dict[str, list[UpdateStep]] = {
-        "acq": [ApplyOrderTemplate(), MapOrdersToMarc()],
+        "acq": [MapOrderTemplateToMarc()],
         "cat": [AddVendorFields()],
-        "sel": [
-            ApplyOrderTemplate(),
-            MapOrdersToMarc(),
-            AddCommandTag(),
-            SetDefaultLocation(),
-        ],
+        "sel": [MapOrderTemplateToMarc(), AddCommandTag(), SetDefaultLocation()],
     }
     LIBRARY_PIPELINES: dict[str, list[UpdateStep]] = {
         "nypl": [
-            Update910Field(),
-            AddBibId(tag="945"),
-            UpdateBtSeriesCallNo(),
+            AddBibId(),
             UpdateLeader(),
+            Update910Field(),
+            UpdateBtSeriesCallNo(),
         ],
-        "bpl": [AddBibId(tag="907"), UpdateLeader()],
+        "bpl": [AddBibId(), UpdateLeader()],
     }
 
     def __init__(self, record_type: str, library: str, rules: dict[str, Any]) -> None:

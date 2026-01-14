@@ -93,18 +93,12 @@ class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
 
         if not classified.matched:
             return sierra_responses.MatchAnalysis(
-                duplicate_records=classified.duplicates,
-                target_bib_id=None,
+                classified=classified,
                 action=sierra_responses.CatalogAction.INSERT,
                 call_number_match=True,
-                input_call_no=response.input_call_no,
-                resource_id=response.resource_id,
-                vendor=response.bib.vendor,
+                target=None,
+                response=response,
                 target_call_no=None,
-                target_title=None,
-                mixed=[i.bib_id for i in classified.mixed],
-                other=[i.bib_id for i in classified.other],
-                domain_bib=response.bib,
             )
 
         for candidate in classified.matched:
@@ -113,35 +107,23 @@ class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
                     response.bib, candidate
                 )
                 return sierra_responses.MatchAnalysis(
-                    duplicate_records=classified.duplicates,
-                    target_bib_id=candidate.bib_id,
+                    classified=classified,
                     action=action,
                     call_number_match=True,
                     updated_by_vendor=updated,
-                    input_call_no=response.input_call_no,
-                    resource_id=response.resource_id,
-                    vendor=response.bib.vendor,
+                    target=candidate,
                     target_call_no=candidate.research_call_number[0],
-                    target_title=candidate.title,
-                    mixed=[i.bib_id for i in classified.mixed],
-                    other=[i.bib_id for i in classified.other],
-                    domain_bib=response.bib,
+                    response=response,
                 )
 
         last = classified.matched[-1]
         return sierra_responses.MatchAnalysis(
-            duplicate_records=classified.duplicates,
-            target_bib_id=last.bib_id,
+            classified=classified,
             action=sierra_responses.CatalogAction.OVERLAY,
             call_number_match=False,
-            input_call_no=response.input_call_no,
-            resource_id=response.resource_id,
-            vendor=response.bib.vendor,
+            target=last,
             target_call_no=None,
-            target_title=last.title,
-            mixed=[i.bib_id for i in classified.mixed],
-            other=[i.bib_id for i in classified.other],
-            domain_bib=response.bib,
+            response=response,
         )
 
 
@@ -152,20 +134,13 @@ class NYPLCatBranchMatchAnalyzer(BaseMatchAnalyzer):
         classified = response.classify()
         if not classified.matched:
             return sierra_responses.MatchAnalysis(
-                duplicate_records=classified.duplicates,
-                target_bib_id=None,
+                classified=classified,
                 action=sierra_responses.CatalogAction.INSERT,
                 call_number_match=True,
-                input_call_no=response.input_call_no,
-                resource_id=response.resource_id,
-                vendor=response.bib.vendor,
+                target=None,
                 target_call_no=None,
-                target_title=None,
-                mixed=[i.bib_id for i in classified.mixed],
-                other=[i.bib_id for i in classified.other],
-                domain_bib=response.bib,
+                response=response,
             )
-
         for candidate in classified.matched:
             if (
                 candidate.branch_call_number
@@ -175,38 +150,26 @@ class NYPLCatBranchMatchAnalyzer(BaseMatchAnalyzer):
                     response.bib, candidate
                 )
                 return sierra_responses.MatchAnalysis(
-                    duplicate_records=classified.duplicates,
-                    target_bib_id=candidate.bib_id,
+                    classified=classified,
                     action=action,
                     call_number_match=True,
                     updated_by_vendor=updated,
-                    input_call_no=response.input_call_no,
-                    resource_id=response.resource_id,
-                    vendor=response.bib.vendor,
+                    target=candidate,
+                    response=response,
                     target_call_no=candidate.branch_call_number,
-                    target_title=candidate.title,
-                    mixed=[i.bib_id for i in classified.mixed],
-                    other=[i.bib_id for i in classified.other],
-                    domain_bib=response.bib,
                 )
 
         fallback = classified.matched[-1]
         action, updated = self._determine_catalog_action(response.bib, fallback)
 
         return sierra_responses.MatchAnalysis(
-            duplicate_records=classified.duplicates,
-            target_bib_id=fallback.bib_id,
+            classified=classified,
             action=action,
             call_number_match=False,
             updated_by_vendor=updated,
-            input_call_no=response.input_call_no,
-            resource_id=response.resource_id,
-            vendor=response.bib.vendor,
+            target=fallback,
             target_call_no=fallback.branch_call_number,
-            target_title=fallback.title,
-            mixed=[i.bib_id for i in classified.mixed],
-            other=[i.bib_id for i in classified.other],
-            domain_bib=response.bib,
+            response=response,
         )
 
 
@@ -221,18 +184,12 @@ class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
             else:
                 action = sierra_responses.CatalogAction.INSERT
             return sierra_responses.MatchAnalysis(
-                duplicate_records=classified.duplicates,
-                target_bib_id=response.bib.bib_id,
+                classified=classified,
                 action=action,
                 call_number_match=True,
-                input_call_no=response.input_call_no,
-                resource_id=response.resource_id,
-                vendor=response.bib.vendor,
+                target=response.bib,
                 target_call_no=response.bib.branch_call_number,
-                target_title=response.bib.title,
-                mixed=[i.bib_id for i in classified.mixed],
-                other=[i.bib_id for i in classified.other],
-                domain_bib=response.bib,
+                response=response,
             )
         for candidate in classified.matched:
             if candidate.branch_call_number:
@@ -241,38 +198,25 @@ class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
                         response.bib, candidate
                     )
                     return sierra_responses.MatchAnalysis(
-                        duplicate_records=classified.duplicates,
-                        target_bib_id=candidate.bib_id,
+                        classified=classified,
                         action=action,
                         call_number_match=True,
                         updated_by_vendor=updated,
-                        input_call_no=response.input_call_no,
-                        resource_id=response.resource_id,
-                        vendor=response.bib.vendor,
+                        target=candidate,
                         target_call_no=candidate.branch_call_number,
-                        target_title=candidate.title,
-                        mixed=[i.bib_id for i in classified.mixed],
-                        other=[i.bib_id for i in classified.other],
-                        domain_bib=response.bib,
+                        response=response,
                     )
-
         fallback = classified.matched[-1]
         action, updated = self._determine_catalog_action(response.bib, fallback)
 
         return sierra_responses.MatchAnalysis(
-            duplicate_records=classified.duplicates,
-            target_bib_id=fallback.bib_id,
+            classified=classified,
             action=action,
             call_number_match=False,
             updated_by_vendor=updated,
-            input_call_no=response.input_call_no,
-            resource_id=response.resource_id,
-            vendor=response.bib.vendor,
+            target=fallback,
             target_call_no=fallback.branch_call_number,
-            target_title=fallback.title,
-            mixed=[i.bib_id for i in classified.mixed],
-            other=[i.bib_id for i in classified.other],
-            domain_bib=response.bib,
+            response=response,
         )
 
 
@@ -283,49 +227,31 @@ class SelectionMatchAnalyzer(BaseMatchAnalyzer):
         classified = response.classify()
         if not classified.matched:
             return sierra_responses.MatchAnalysis(
-                duplicate_records=classified.duplicates,
-                target_bib_id=None,
+                classified=classified,
                 action=sierra_responses.CatalogAction.INSERT,
                 call_number_match=True,
-                input_call_no=response.input_call_no,
-                resource_id=response.resource_id,
-                vendor=response.bib.vendor,
+                target=None,
                 target_call_no=None,
-                target_title=None,
-                mixed=[i.bib_id for i in classified.mixed],
-                other=[i.bib_id for i in classified.other],
-                domain_bib=response.bib,
+                response=response,
             )
         for candidate in classified.matched:
             if candidate.branch_call_number or len(candidate.research_call_number) > 0:
                 return sierra_responses.MatchAnalysis(
-                    duplicate_records=classified.duplicates,
-                    target_bib_id=candidate.bib_id,
+                    classified=classified,
                     action=sierra_responses.CatalogAction.ATTACH,
                     call_number_match=True,
-                    input_call_no=response.input_call_no,
-                    resource_id=response.resource_id,
-                    vendor=response.bib.vendor,
+                    target=candidate,
                     target_call_no=candidate.branch_call_number,
-                    target_title=candidate.title,
-                    mixed=[i.bib_id for i in classified.mixed],
-                    other=[i.bib_id for i in classified.other],
-                    domain_bib=response.bib,
+                    response=response,
                 )
         fallback = classified.matched[-1]
         return sierra_responses.MatchAnalysis(
-            duplicate_records=classified.duplicates,
-            target_bib_id=fallback.bib_id,
+            classified=classified,
             action=sierra_responses.CatalogAction.ATTACH,
             call_number_match=True,
-            input_call_no=response.input_call_no,
-            resource_id=response.resource_id,
-            vendor=response.bib.vendor,
+            target=fallback,
             target_call_no=fallback.branch_call_number,
-            target_title=fallback.title,
-            mixed=[i.bib_id for i in classified.mixed],
-            other=[i.bib_id for i in classified.other],
-            domain_bib=response.bib,
+            response=response,
         )
 
 
@@ -335,16 +261,10 @@ class AcquisitionsMatchAnalyzer(BaseMatchAnalyzer):
     ) -> sierra_responses.MatchAnalysis:
         classified = response.classify()
         return sierra_responses.MatchAnalysis(
-            duplicate_records=classified.duplicates,
-            target_bib_id=response.bib.bib_id,
+            classified=classified,
             action=sierra_responses.CatalogAction.INSERT,
             call_number_match=True,
-            input_call_no=response.input_call_no,
-            resource_id=response.resource_id,
-            vendor=response.bib.vendor,
+            target=response.bib,
             target_call_no=response.bib.branch_call_number,
-            target_title=response.bib.title,
-            mixed=[i.bib_id for i in classified.mixed],
-            other=[i.bib_id for i in classified.other],
-            domain_bib=response.bib,
+            response=response,
         )

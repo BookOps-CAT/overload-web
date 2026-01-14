@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Protocol, runtime_checkable
 
-from overload_web.bib_records.domain_models import bibs, sierra_responses
+from overload_web.bib_records.domain_models import bibs
 
 logger = logging.getLogger(__name__)
 
@@ -30,15 +30,6 @@ class MarcUpdateHandler(Protocol):
 class BaseBibUpdater:
     def __init__(self, handler: MarcUpdateHandler) -> None:
         self.handler = handler
-
-    def attach(
-        self, responses: list[sierra_responses.MatchAnalysis]
-    ) -> list[bibs.DomainBib]:
-        bibs = []
-        for response in responses:
-            response.apply_matched_bib_id(response.target_bib_id)
-            bibs.append(response.domain_bib)
-        return bibs
 
 
 class OrderLevelBibUpdater(BaseBibUpdater):

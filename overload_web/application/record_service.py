@@ -103,8 +103,9 @@ class FullRecordProcessingService:
         )
         matched_records = self.matcher.match(records=parsed_records)
         match_analysis = self.analyzer.analyze_matches(candidates=matched_records)
-        attached_records = self.updater.attach(responses=match_analysis)
-        updated_records = self.updater.update(records=attached_records)
+        updated_records = self.updater.update(
+            records=[i.updated_domain_bib for i in match_analysis]
+        )
         deduped_records = self.reviewer.dedupe(
             records=updated_records, reports=match_analysis
         )
@@ -174,9 +175,9 @@ class OrderRecordProcessingService:
             records=parsed_records, matchpoints=matchpoints
         )
         match_analysis = self.analyzer.analyze_matches(candidates=matched_records)
-        attached_records = self.updater.attach(responses=match_analysis)
         updated_records = self.updater.update(
-            records=attached_records, template_data=template_data
+            records=[i.updated_domain_bib for i in match_analysis],
+            template_data=template_data,
         )
         output = self.serializer.serialize(updated_records)
         return output

@@ -394,28 +394,43 @@ class CatalogAction(StrEnum):
     INSERT = "insert"
 
 
-@dataclass(frozen=True)
 class MatchAnalysis:
     """Components extracted from match review process."""
 
-    domain_bib: bibs.DomainBib
-    resource_id: str | None
-    vendor: str | None
-    call_number_match: bool
-    target_call_no: str | None
-    input_call_no: str | None
-    duplicate_records: list[str]
-    target_bib_id: str | None
-    target_title: str | None
-    mixed: list[str]
-    other: list[str]
-    action: CatalogAction
-    updated_by_vendor: bool = False
+    def __init__(
+        self,
+        response: MatcherResponse,
+        classified: ClassifiedCandidates,
+        target: BaseSierraResponse | bibs.DomainBib | None,
+        call_number_match: bool,
+        action: CatalogAction,
+        target_call_no: str | None,
+        updated_by_vendor: bool = False,
+    ) -> None:
+        self.domain_bib = response.bib
+        self.resource_id = response.resource_id
+        self.input_call_no = response.input_call_no
+        self.vendor = response.bib.vendor
+        self.duplicate_records = classified.duplicates
+        self.mixed = [i.bib_id for i in classified.mixed]
+        self.other = [i.bib_id for i in classified.other]
+        self.action = action
+        self.call_number_match = call_number_match
+        self.updated_by_vendor = updated_by_vendor
+        self.target_call_no = target_call_no
+        self.target_bib_id = target.bib_id if target else None
+        self.target_title = target.title if target else None
 
     def apply_matched_bib_id(self, bib_id: str | None) -> None:
         """Apply the bib ID from a match to the `MatcherResponse` object's `bib`."""
         if bib_id:
             self.domain_bib.update_bib_id(bib_id)
+
+    @property
+    def updated_domain_bib(self) -> bibs.DomainBib:
+        """Return the updated `DomainBib` object."""
+        self.apply_matched_bib_id(self.target_bib_id)
+        return self.domain_bib
 
 
 @dataclass(frozen=True)
