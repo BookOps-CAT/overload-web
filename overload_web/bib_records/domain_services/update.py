@@ -119,7 +119,7 @@ class FullLevelBibUpdater:
 
     def update(self, records: list[bibs.DomainBib]) -> list[bibs.DomainBib]:
         """
-        Update order-level bibliographic records.
+        Update full-level bibliographic records.
 
         Args:
             records:
