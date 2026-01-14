@@ -46,9 +46,12 @@ class MatchAnalyzer(Protocol):
     def review_candidates(
         self,
         candidates: list[sierra_responses.MatcherResponse],
-    ) -> tuple[
-        list[sierra_responses.MatchAnalysis], list[bibs.DomainBib]
-    ]: ...  # pragma: no branch
+    ) -> list[sierra_responses.MatchAnalysis]: ...  # pragma: no branch
+
+    def attach(
+        self,
+        responses: list[sierra_responses.MatchAnalysis],
+    ) -> list[bibs.DomainBib]: ...  # pragma: no branch
 
 
 class BaseMatchAnalyzer:
@@ -68,24 +71,28 @@ class BaseMatchAnalyzer:
         return sierra_responses.CatalogAction.ATTACH, False
 
     def review_candidates(
-        self,
-        candidates: list[sierra_responses.MatcherResponse],
-    ) -> tuple[list[sierra_responses.MatchAnalysis], list[bibs.DomainBib]]:
+        self, candidates: list[sierra_responses.MatcherResponse]
+    ) -> list[sierra_responses.MatchAnalysis]:
         analysis_out = []
-        bibs_out = []
         for candidate in candidates:
-            analysis, bib = self.review_response(candidate)
+            analysis = self.review_response(candidate)
             analysis_out.append(analysis)
-            bibs_out.append(bib)
-        return analysis_out, bibs_out
+        return analysis_out
 
     def review_response(
+        self, response: sierra_responses.MatcherResponse
+    ) -> sierra_responses.MatchAnalysis:
+        return self.analyze(response)
+
+    def attach(
         self,
-        response: sierra_responses.MatcherResponse,
-    ) -> tuple[sierra_responses.MatchAnalysis, bibs.DomainBib]:
-        resolution = self.analyze(response)
-        response.apply_matched_bib_id(bib_id=resolution.target_bib_id)
-        return (resolution, response.bib)
+        responses: list[sierra_responses.MatchAnalysis],
+    ) -> list[bibs.DomainBib]:
+        bibs = []
+        for response in responses:
+            response.apply_matched_bib_id(response.target_bib_id)
+            bibs.append(response.domain_bib)
+        return bibs
 
     def analyze(
         self, response: sierra_responses.MatcherResponse
@@ -112,6 +119,7 @@ class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
                 target_title=None,
                 mixed=[i.bib_id for i in classified.mixed],
                 other=[i.bib_id for i in classified.other],
+                domain_bib=response.bib,
             )
 
         for candidate in classified.matched:
@@ -132,6 +140,7 @@ class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
                     target_title=candidate.title,
                     mixed=[i.bib_id for i in classified.mixed],
                     other=[i.bib_id for i in classified.other],
+                    domain_bib=response.bib,
                 )
 
         last = classified.matched[-1]
@@ -147,6 +156,7 @@ class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
             target_title=last.title,
             mixed=[i.bib_id for i in classified.mixed],
             other=[i.bib_id for i in classified.other],
+            domain_bib=response.bib,
         )
 
 
@@ -168,6 +178,7 @@ class NYPLCatBranchMatchAnalyzer(BaseMatchAnalyzer):
                 target_title=None,
                 mixed=[i.bib_id for i in classified.mixed],
                 other=[i.bib_id for i in classified.other],
+                domain_bib=response.bib,
             )
 
         for candidate in classified.matched:
@@ -191,6 +202,7 @@ class NYPLCatBranchMatchAnalyzer(BaseMatchAnalyzer):
                     target_title=candidate.title,
                     mixed=[i.bib_id for i in classified.mixed],
                     other=[i.bib_id for i in classified.other],
+                    domain_bib=response.bib,
                 )
 
         fallback = classified.matched[-1]
@@ -209,6 +221,7 @@ class NYPLCatBranchMatchAnalyzer(BaseMatchAnalyzer):
             target_title=fallback.title,
             mixed=[i.bib_id for i in classified.mixed],
             other=[i.bib_id for i in classified.other],
+            domain_bib=response.bib,
         )
 
 
@@ -234,6 +247,7 @@ class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
                 target_title=response.bib.title,
                 mixed=[i.bib_id for i in classified.mixed],
                 other=[i.bib_id for i in classified.other],
+                domain_bib=response.bib,
             )
         for candidate in classified.matched:
             if candidate.branch_call_number:
@@ -254,6 +268,7 @@ class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
                         target_title=candidate.title,
                         mixed=[i.bib_id for i in classified.mixed],
                         other=[i.bib_id for i in classified.other],
+                        domain_bib=response.bib,
                     )
 
         fallback = classified.matched[-1]
@@ -272,6 +287,7 @@ class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
             target_title=fallback.title,
             mixed=[i.bib_id for i in classified.mixed],
             other=[i.bib_id for i in classified.other],
+            domain_bib=response.bib,
         )
 
 
@@ -293,6 +309,7 @@ class SelectionMatchAnalyzer(BaseMatchAnalyzer):
                 target_title=None,
                 mixed=[i.bib_id for i in classified.mixed],
                 other=[i.bib_id for i in classified.other],
+                domain_bib=response.bib,
             )
         for candidate in classified.matched:
             if candidate.branch_call_number or len(candidate.research_call_number) > 0:
@@ -308,6 +325,7 @@ class SelectionMatchAnalyzer(BaseMatchAnalyzer):
                     target_title=candidate.title,
                     mixed=[i.bib_id for i in classified.mixed],
                     other=[i.bib_id for i in classified.other],
+                    domain_bib=response.bib,
                 )
         fallback = classified.matched[-1]
         return sierra_responses.MatchAnalysis(
@@ -322,6 +340,7 @@ class SelectionMatchAnalyzer(BaseMatchAnalyzer):
             target_title=fallback.title,
             mixed=[i.bib_id for i in classified.mixed],
             other=[i.bib_id for i in classified.other],
+            domain_bib=response.bib,
         )
 
 
@@ -342,4 +361,5 @@ class AcquisitionsMatchAnalyzer(BaseMatchAnalyzer):
             target_title=response.bib.title,
             mixed=[i.bib_id for i in classified.mixed],
             other=[i.bib_id for i in classified.other],
+            domain_bib=response.bib,
         )

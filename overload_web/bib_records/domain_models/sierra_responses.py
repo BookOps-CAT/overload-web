@@ -398,6 +398,7 @@ class CatalogAction(StrEnum):
 class MatchAnalysis:
     """Components extracted from match review process."""
 
+    domain_bib: bibs.DomainBib
     resource_id: str | None
     vendor: str | None
     call_number_match: bool
@@ -410,6 +411,11 @@ class MatchAnalysis:
     other: list[str]
     action: CatalogAction
     updated_by_vendor: bool = False
+
+    def apply_matched_bib_id(self, bib_id: str | None) -> None:
+        """Apply the bib ID from a match to the `MatcherResponse` object's `bib`."""
+        if bib_id:
+            self.domain_bib.update_bib_id(bib_id)
 
 
 @dataclass(frozen=True)

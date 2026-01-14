@@ -100,9 +100,8 @@ class FullRecordProcessingService:
             itertools.chain.from_iterable([i.barcodes for i in parsed_records])
         )
         matched_records = self.matcher.match(records=parsed_records)
-        match_analysis, attached_records = self.reviewer.review_candidates(
-            candidates=matched_records
-        )
+        match_analysis = self.reviewer.review_candidates(candidates=matched_records)
+        attached_records = self.reviewer.attach(responses=match_analysis)
         updated_records = self.updater.update(records=attached_records)
         deduped_records = self.updater.dedupe(
             records=updated_records, reports=match_analysis
@@ -174,9 +173,8 @@ class OrderRecordProcessingService:
         matched_records = self.matcher.match(
             records=parsed_records, matchpoints=matchpoints
         )
-        match_analysis, attached_records = self.reviewer.review_candidates(
-            candidates=matched_records
-        )
+        match_analysis = self.reviewer.review_candidates(candidates=matched_records)
+        attached_records = self.reviewer.attach(responses=match_analysis)
         updated_records = self.updater.update(
             records=attached_records, template_data=template_data
         )

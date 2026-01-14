@@ -52,7 +52,7 @@ class TestReviewer:
         )
         service = review.AcquisitionsMatchAnalyzer()
         attached_bibs = service.review_candidates([acq_response])
-        assert attached_bibs[1][0].bib_id is None
+        assert attached_bibs[0].target_bib_id is None
         assert acq_response.bib.bib_id is None
 
     @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
@@ -62,7 +62,7 @@ class TestReviewer:
         )
         service = review.BPLCatMatchAnalyzer()
         attached_bibs = service.review_candidates([cat_response])
-        assert attached_bibs[1][0].bib_id == "12345"
+        assert attached_bibs[0].target_bib_id == "12345"
 
     @pytest.mark.parametrize("library, collection", [("nypl", "BL")])
     def test_attach_cat_nypl_bl(self, full_bib, sierra_response):
@@ -71,7 +71,7 @@ class TestReviewer:
         )
         service = review.NYPLCatBranchMatchAnalyzer()
         attached_bibs = service.review_candidates([cat_response])
-        assert attached_bibs[1][0].bib_id == "12345"
+        assert attached_bibs[0].target_bib_id == "12345"
 
     @pytest.mark.parametrize("library, collection", [("nypl", "RL")])
     def test_attach_cat_nypl_rl(self, full_bib, sierra_response):
@@ -80,7 +80,7 @@ class TestReviewer:
         )
         service = review.NYPLCatResearchMatchAnalyzer()
         attached_bibs = service.review_candidates([cat_response])
-        assert attached_bibs[1][0].bib_id == "12345"
+        assert attached_bibs[0].target_bib_id == "12345"
 
     @pytest.mark.parametrize(
         "library, collection",
@@ -97,7 +97,7 @@ class TestReviewer:
         )
         service = review.SelectionMatchAnalyzer()
         attached_bibs = service.review_candidates([sel_response])
-        assert attached_bibs[1][0].bib_id == "12345"
+        assert attached_bibs[0].target_bib_id == "12345"
 
 
 class TestCandidateClassifier:
