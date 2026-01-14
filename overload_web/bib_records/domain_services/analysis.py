@@ -48,11 +48,6 @@ class MatchAnalyzer(Protocol):
         candidates: list[sierra_responses.MatcherResponse],
     ) -> list[sierra_responses.MatchAnalysis]: ...  # pragma: no branch
 
-    def attach(
-        self,
-        responses: list[sierra_responses.MatchAnalysis],
-    ) -> list[bibs.DomainBib]: ...  # pragma: no branch
-
 
 class BaseMatchAnalyzer:
     def _determine_catalog_action(
@@ -83,16 +78,6 @@ class BaseMatchAnalyzer:
         self, response: sierra_responses.MatcherResponse
     ) -> sierra_responses.MatchAnalysis:
         return self.analyze(response)
-
-    def attach(
-        self,
-        responses: list[sierra_responses.MatchAnalysis],
-    ) -> list[bibs.DomainBib]:
-        bibs = []
-        for response in responses:
-            response.apply_matched_bib_id(response.target_bib_id)
-            bibs.append(response.domain_bib)
-        return bibs
 
     def analyze(
         self, response: sierra_responses.MatcherResponse

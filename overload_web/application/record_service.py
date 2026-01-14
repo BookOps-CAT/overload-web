@@ -22,9 +22,9 @@ import logging
 from typing import Any, BinaryIO
 
 from overload_web.bib_records.domain_services import (
+    analysis,
     match,
     parse,
-    review,
     serialize,
     update,
 )
@@ -37,18 +37,18 @@ class MatchAnalyzerFactory:
 
     def make(
         self, library: str, record_type: str, collection: str
-    ) -> review.MatchAnalyzer:
+    ) -> analysis.MatchAnalyzer:
         match record_type, library, collection:
             case "cat", "nypl", "BL":
-                return review.NYPLCatBranchMatchAnalyzer()
+                return analysis.NYPLCatBranchMatchAnalyzer()
             case "cat", "nypl", "RL":
-                return review.NYPLCatResearchMatchAnalyzer()
+                return analysis.NYPLCatResearchMatchAnalyzer()
             case "cat", "bpl", _:
-                return review.BPLCatMatchAnalyzer()
+                return analysis.BPLCatMatchAnalyzer()
             case "sel", _, _:
-                return review.SelectionMatchAnalyzer()
+                return analysis.SelectionMatchAnalyzer()
             case _:
-                return review.AcquisitionsMatchAnalyzer()
+                return analysis.AcquisitionsMatchAnalyzer()
 
 
 class FullRecordProcessingService:
@@ -58,7 +58,7 @@ class FullRecordProcessingService:
         self,
         bib_fetcher: match.BibFetcher,
         bib_mapper: parse.BibMapper,
-        match_analyzer: review.MatchAnalyzer,
+        match_analyzer: analysis.MatchAnalyzer,
         update_handler: update.MarcUpdateHandler,
     ):
         """
@@ -74,7 +74,7 @@ class FullRecordProcessingService:
             update_handler:
                 A `update.MarcUpdateHandler` object
         """
-        self.reviewer = match_analyzer
+        self.match_analyzer = match_analyzer
         self.matcher = match.FullLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = parse.FullLevelBibParser(mapper=bib_mapper)
         self.updater = update.FullLevelBibUpdater(update_handler=update_handler)
@@ -100,8 +100,10 @@ class FullRecordProcessingService:
             itertools.chain.from_iterable([i.barcodes for i in parsed_records])
         )
         matched_records = self.matcher.match(records=parsed_records)
-        match_analysis = self.reviewer.review_candidates(candidates=matched_records)
-        attached_records = self.reviewer.attach(responses=match_analysis)
+        match_analysis = self.match_analyzer.review_candidates(
+            candidates=matched_records
+        )
+        attached_records = self.updater.attach(responses=match_analysis)
         updated_records = self.updater.update(records=attached_records)
         deduped_records = self.updater.dedupe(
             records=updated_records, reports=match_analysis
@@ -118,7 +120,7 @@ class OrderRecordProcessingService:
         self,
         bib_fetcher: match.BibFetcher,
         bib_mapper: parse.BibMapper,
-        match_analyzer: review.MatchAnalyzer,
+        match_analyzer: analysis.MatchAnalyzer,
         rules: dict[str, Any],
         update_handler: update.MarcUpdateHandler,
     ):
@@ -137,7 +139,7 @@ class OrderRecordProcessingService:
             update_handler:
                 A `update.MarcUpdateHandler` object
         """
-        self.reviewer = match_analyzer
+        self.match_analyzer = match_analyzer
         self.matcher = match.OrderLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = parse.OrderLevelBibParser(mapper=bib_mapper)
         self.updater = update.OrderLevelBibUpdater(update_handler=update_handler)
@@ -173,8 +175,10 @@ class OrderRecordProcessingService:
         matched_records = self.matcher.match(
             records=parsed_records, matchpoints=matchpoints
         )
-        match_analysis = self.reviewer.review_candidates(candidates=matched_records)
-        attached_records = self.reviewer.attach(responses=match_analysis)
+        match_analysis = self.match_analyzer.review_candidates(
+            candidates=matched_records
+        )
+        attached_records = self.updater.attach(responses=match_analysis)
         updated_records = self.updater.update(
             records=attached_records, template_data=template_data
         )

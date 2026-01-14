@@ -59,6 +59,16 @@ class OrderLevelBibUpdater:
         record.binary_data = ctx.bib_rec.as_marc()
         return record
 
+    def attach(
+        self,
+        responses: list[sierra_responses.MatchAnalysis],
+    ) -> list[bibs.DomainBib]:
+        bibs = []
+        for response in responses:
+            response.apply_matched_bib_id(response.target_bib_id)
+            bibs.append(response.domain_bib)
+        return bibs
+
     def update(
         self, records: list[bibs.DomainBib], template_data: dict[str, Any]
     ) -> list[bibs.DomainBib]:
@@ -116,6 +126,16 @@ class FullLevelBibUpdater:
                 base_rec_ctx.bib_rec.add_ordered_field(item)
         record.binary_data = base_rec_ctx.bib_rec.as_marc()
         return record
+
+    def attach(
+        self,
+        responses: list[sierra_responses.MatchAnalysis],
+    ) -> list[bibs.DomainBib]:
+        bibs = []
+        for response in responses:
+            response.apply_matched_bib_id(response.target_bib_id)
+            bibs.append(response.domain_bib)
+        return bibs
 
     def update(self, records: list[bibs.DomainBib]) -> list[bibs.DomainBib]:
         """

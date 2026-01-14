@@ -30,7 +30,7 @@ def get_match_analyzer(
     library: Annotated[str, Form(...)],
     collection: Annotated[str, Form(...)],
     record_type: Annotated[str, Form(...)],
-) -> Generator[record_service.review.MatchAnalyzer, None, None]:
+) -> Generator[record_service.analysis.MatchAnalyzer, None, None]:
     """Create a match analyzer based on library, record type, and collection."""
     yield record_service.MatchAnalyzerFactory().make(
         library=library, record_type=record_type, collection=collection
@@ -61,8 +61,8 @@ def get_update_handler(
 def order_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
     mapper: Annotated[marc_mapper.BookopsMarcMapper, Depends(get_mapper)],
-    reviewer: Annotated[
-        record_service.review.MatchAnalyzer, Depends(get_match_analyzer)
+    match_analyzer: Annotated[
+        record_service.analysis.MatchAnalyzer, Depends(get_match_analyzer)
     ],
     update_handler: Annotated[
         marc_updater.BookopsMarcUpdateHandler, Depends(get_update_handler)
@@ -73,7 +73,7 @@ def order_level_processing_service(
     yield record_service.OrderRecordProcessingService(
         bib_fetcher=fetcher,
         bib_mapper=mapper,
-        match_analyzer=reviewer,
+        match_analyzer=match_analyzer,
         rules=constants,
         update_handler=update_handler,
     )
@@ -82,8 +82,8 @@ def order_level_processing_service(
 def full_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
     mapper: Annotated[marc_mapper.BookopsMarcMapper, Depends(get_mapper)],
-    reviewer: Annotated[
-        record_service.review.MatchAnalyzer, Depends(get_match_analyzer)
+    match_analyzer: Annotated[
+        record_service.analysis.MatchAnalyzer, Depends(get_match_analyzer)
     ],
     update_handler: Annotated[
         marc_updater.BookopsMarcUpdateHandler, Depends(get_update_handler)
@@ -93,6 +93,6 @@ def full_level_processing_service(
     yield record_service.FullRecordProcessingService(
         bib_fetcher=fetcher,
         bib_mapper=mapper,
-        match_analyzer=reviewer,
+        match_analyzer=match_analyzer,
         update_handler=update_handler,
     )
