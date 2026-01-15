@@ -2,7 +2,7 @@
 
 This module defines record processing services for full and order-level MARC records.
 The services each take `BibFetcher`, `BibMapper`, `MatchAnalyzer`, and
-`MarcUpdateHandler` objects as args and have an additional `serializer` attribute.
+`BibUpdater` objects as args and have an additional `serializer` attribute.
 
 Classes:
 
@@ -60,7 +60,7 @@ class FullRecordProcessingService:
         bib_fetcher: match.BibFetcher,
         bib_mapper: parse.BibMapper,
         analyzer: analysis.MatchAnalyzer,
-        handler: update.MarcUpdateHandler,
+        updater: update.BibUpdater,
     ):
         """
         Initialize `FullRecordProcessingService`.
@@ -72,14 +72,14 @@ class FullRecordProcessingService:
                 A `parse.BibMapper` object
             analyzer:
                 An `analysis.MatchAnalyzer` object
-            handler:
-                A `update.MarcUpdateHandler` object
+            updater:
+                An `update.BibUpdater` object
         """
         self.analyzer = analyzer
         self.matcher = match.FullLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = parse.FullLevelBibParser(mapper=bib_mapper)
-        self.reviewer = review.FullLevelBibReviewer(handler=handler)
-        self.updater = update.FullLevelBibUpdater(handler=handler)
+        self.reviewer = review.FullLevelBibReviewer(context_factory=updater.strategy)
+        self.updater = updater
         self.serializer = serialize.FullLevelBibSerializer()
 
     def process_vendor_file(self, data: BinaryIO | bytes) -> dict[str, BinaryIO]:
@@ -122,7 +122,7 @@ class OrderRecordProcessingService:
         bib_fetcher: match.BibFetcher,
         bib_mapper: parse.BibMapper,
         analyzer: analysis.MatchAnalyzer,
-        handler: update.MarcUpdateHandler,
+        updater: update.BibUpdater,
     ):
         """
         Initialize `OrderRecordProcessingService`.
@@ -134,13 +134,13 @@ class OrderRecordProcessingService:
                 A `parse.BibMapper` object
             analyzer:
                 An `analysis.MatchAnalyzer` object
-            handler:
-                A `update.MarcUpdateHandler` object
+            updater:
+                An `update.BibUpdater` object
         """
         self.analyzer = analyzer
         self.matcher = match.OrderLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = parse.OrderLevelBibParser(mapper=bib_mapper)
-        self.updater = update.OrderLevelBibUpdater(handler=handler)
+        self.updater = updater
         self.serializer = serialize.OrderLevelBibSerializer()
 
     def process_vendor_file(

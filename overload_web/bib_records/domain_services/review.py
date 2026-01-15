@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from collections import Counter
 from itertools import chain
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol
 
 from overload_web.bib_records.domain_models import bibs, sierra_responses
 
@@ -16,27 +16,22 @@ class UpdateStep(Protocol):
     def apply(self, ctx: Any) -> None: ...  # pragma: no branch
 
 
-@runtime_checkable
-class MarcUpdateHandler(Protocol):
-    pipeline: list[UpdateStep]
-
-    def create_order_marc_ctx(
-        self, record: bibs.DomainBib, template_data: dict[str, Any]
-    ) -> Any: ...  # pragma: no branch
-
-    def create_full_marc_ctx(
-        self, record: bibs.DomainBib
+class MarcUpdateStrategy(Protocol):
+    @property
+    def pipeline(self) -> list[UpdateStep]: ...  # pragma: no branch
+    def create_context(
+        self, record: bibs.DomainBib, **kwargs: Any
     ) -> Any: ...  # pragma: no branch
 
 
 class FullLevelBibReviewer:
-    def __init__(self, handler: MarcUpdateHandler) -> None:
-        self.handler = handler
+    def __init__(self, context_factory: MarcUpdateStrategy) -> None:
+        self.context_factory = context_factory
 
     def _merge_record(
         self, record: bibs.DomainBib, all_dupes: list[bibs.DomainBib]
     ) -> bibs.DomainBib:
-        base_rec_ctx = self.handler.create_full_marc_ctx(record=all_dupes[0])
+        base_rec_ctx = self.context_factory.create_context(record=all_dupes[0])
         if record.library == "bpl" and base_rec_ctx.bib_rec.overdrive_number is None:
             tag = "960"
             ind2 = " "
@@ -45,7 +40,7 @@ class FullLevelBibReviewer:
             ind2 = "1"
         all_items = []
         for dupe in all_dupes[1:]:
-            ctx = self.handler.create_full_marc_ctx(record=dupe)
+            ctx = self.context_factory.create_context(record=dupe)
             all_items.extend(ctx.bib_rec.get_fields(tag))
         for item in all_items:
             if item.indicator1 == " " and item.indicator2 == ind2:
@@ -98,7 +93,7 @@ class FullLevelBibReviewer:
         missing_barcodes = set()
         records = chain.from_iterable([v for k, v in record_batches.items()])
         for record in records:
-            ctx = self.handler.create_full_marc_ctx(record=record)
+            ctx = self.context_factory.create_context(record=record)
             if record.library == "bpl" and ctx.bib_rec.overdrive_number is None:
                 tag = "960"
                 ind2 = " "

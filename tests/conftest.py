@@ -12,7 +12,7 @@ from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 
 from overload_web.bib_records.domain_models import sierra_responses
-from overload_web.bib_records.infrastructure import clients, marc_mapper
+from overload_web.bib_records.infrastructure import clients, marc_mapper, marc_updater
 
 
 @pytest.fixture(autouse=True)
@@ -397,6 +397,29 @@ def order_level_bib(stub_bib, test_constants, library):
 
 
 @pytest.fixture
+def make_order_bib(stub_bib, test_constants, library):
+    def order_bib(value):
+        record = copy.deepcopy(stub_bib)
+        record.add_field(
+            Field(
+                tag="949",
+                indicators=Indicators(" ", " "),
+                subfields=[Subfield(code="a", value=value)],
+            )
+        )
+        mapper = marc_mapper.BookopsMarcMapper(
+            rules=test_constants["mapper_rules"],
+            library=library,
+            record_type="sel",
+        )
+        out = mapper.map_data(record=record)
+        bib = marc_mapper.bibs.DomainBib(**out)
+        return bib
+
+    return order_bib
+
+
+@pytest.fixture
 def full_bib(order_level_bib):
     bib = copy.deepcopy(order_level_bib)
     bib.vendor_info = marc_mapper.bibs.VendorInfo(
@@ -409,6 +432,78 @@ def full_bib(order_level_bib):
     )
     bib.record_type = "cat"
     return bib
+
+
+@pytest.fixture
+def make_bt_series_full_bib(test_constants):
+    def full_bib(pairs):
+        bib = Bib()
+        bib.leader = "00000cam  2200517 i 4500"
+        bib.library = "nypl"
+        bib.add_field(Field(tag="005", data="20200101010000.0"))
+        bib.add_field(
+            Field(
+                tag="020",
+                indicators=Indicators(" ", " "),
+                subfields=[Subfield(code="a", value="9781234567890")],
+            )
+        )
+        subfield_list = []
+        for k, v in pairs.items():
+            subfield_list.append(Subfield(code=k, value=v))
+        bib.add_field(
+            Field(tag="091", indicators=Indicators(" ", " "), subfields=subfield_list)
+        )
+        bib.add_field(
+            Field(
+                tag="910",
+                indicators=Indicators(" ", " "),
+                subfields=[Subfield(code="a", value="BL")],
+            )
+        )
+        bib.add_field(
+            Field(
+                tag="901",
+                indicators=Indicators(" ", " "),
+                subfields=[Subfield(code="a", value="BTSERIES")],
+            )
+        )
+        bib.add_field(
+            Field(
+                tag="949",
+                indicators=Indicators(" ", "1"),
+                subfields=[
+                    Subfield(code="i", value="333331234567890"),
+                ],
+            )
+        )
+        mapper = marc_mapper.BookopsMarcMapper(
+            rules=test_constants["mapper_rules"],
+            library="nypl",
+            record_type="cat",
+        )
+        out = mapper.map_data(record=bib)
+        out["vendor"] = "BT SERIES"
+        out["vendor_info"] = marc_mapper.bibs.VendorInfo(
+            name="BT SERIES",
+            matchpoints={
+                "primary_matchpoint": "isbn",
+                "secondary_matchpoint": "oclc_number",
+            },
+            bib_fields=[
+                {
+                    "tag": "949",
+                    "ind1": "",
+                    "ind2": "",
+                    "subfield_code": "a",
+                    "value": "*b2=a;",
+                }
+            ],
+        )
+        bib = marc_mapper.bibs.DomainBib(**out)
+        return bib
+
+    return full_bib
 
 
 @pytest.fixture
@@ -505,3 +600,12 @@ def full_bpl_bib(test_constants):
         },
     )
     return bib
+
+
+@pytest.fixture
+def update_strategy(
+    library, test_constants, record_type
+) -> marc_updater.BookopsMarcUpdateStrategy:
+    return marc_updater.BookopsMarcUpdateStrategy(
+        library=library, rules=test_constants, record_type=record_type
+    )

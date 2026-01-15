@@ -3,80 +3,63 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol, TypeVar
 
 from overload_web.bib_records.domain_models import bibs
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
 
 
 class UpdateStep(Protocol):
     def apply(self, ctx: Any) -> None: ...  # pragma: no branch
 
 
-@runtime_checkable
-class MarcUpdateHandler(Protocol):
-    pipeline: list[UpdateStep]
-
-    def create_order_marc_ctx(
-        self, record: bibs.DomainBib, template_data: dict[str, Any]
-    ) -> Any: ...  # pragma: no branch
-
-    def create_full_marc_ctx(
-        self, record: bibs.DomainBib
-    ) -> Any: ...  # pragma: no branch
+class MarcContext(Protocol[T]):
+    bib_rec: T
+    record: bibs.DomainBib
+    order_mapping: dict[str, Any]
+    default_loc: str | None
+    bib_id_tag: str
 
 
-class BaseBibUpdater:
-    def __init__(self, handler: MarcUpdateHandler) -> None:
-        self.handler = handler
+class MarcContextFactory(Protocol):
+    def create(self, record: bibs.DomainBib, **kwargs: Any) -> MarcContext: ...
 
 
-class OrderLevelBibUpdater(BaseBibUpdater):
+class MarcUpdateStrategy(Protocol):
+    @property
+    def pipeline(self) -> list[UpdateStep]: ...  # pragma: no branch
+    def create_context(
+        self, record: bibs.DomainBib, **kwargs: Any
+    ) -> MarcContext: ...  # pragma: no branch
+
+
+class BibUpdater:
+    def __init__(self, strategy: MarcUpdateStrategy) -> None:
+        self.strategy = strategy
+
     def update(
-        self, records: list[bibs.DomainBib], template_data: dict[str, Any]
+        self, records: list[bibs.DomainBib], **kwargs: Any
     ) -> list[bibs.DomainBib]:
         """
-        Update order-level bibliographic records.
+        Update bibliographic records.
 
         Args:
             records:
                 A list of parsed bibliographic records as `DomainBib` objects.
             template_data:
                 A dictionary containing template data to be used in updating records.
+                This kwarg is only used for order-level records.
 
         Returns:
             A list of updated records as `DomainBib` objects
         """
         out = []
         for record in records:
-            ctx = self.handler.create_order_marc_ctx(
-                record=record, template_data=template_data
-            )
-            for step in self.handler.pipeline:
-                step.apply(ctx)
-
-            record.binary_data = ctx.bib_rec.as_marc()
-            out.append(record)
-        return out
-
-
-class FullLevelBibUpdater(BaseBibUpdater):
-    def update(self, records: list[bibs.DomainBib]) -> list[bibs.DomainBib]:
-        """
-        Update full-level bibliographic records.
-
-        Args:
-            records:
-                A list of parsed bibliographic records as `DomainBib` objects.
-
-        Returns:
-            A list of updated records as `DomainBib` objects
-        """
-        out = []
-        for record in records:
-            ctx = self.handler.create_full_marc_ctx(record=record)
-            for step in self.handler.pipeline:
+            ctx = self.strategy.create_context(record=record, **kwargs)
+            for step in self.strategy.pipeline:
                 step.apply(ctx)
             record.binary_data = ctx.bib_rec.as_marc()
             out.append(record)

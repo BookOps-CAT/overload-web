@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
@@ -88,16 +88,19 @@ class SetDefaultLocation:
             ).startswith("*"):
                 command = field["a"].strip()
                 if "bn=" in command:
-                    ctx.bib_rec.add_ordered_field(field)
                     return None
                 else:
                     if command[-1] == ";":
                         new_command = f"{field['a']}bn={ctx.default_loc};"
                     else:
                         new_command = f"{field['a']};bn={ctx.default_loc};"
-
-                    field["a"] = new_command
-                    ctx.bib_rec.add_ordered_field(field)
+                    ctx.bib_rec.remove_field(field)
+                    new_field = Field(
+                        tag="949",
+                        indicators=Indicators(" ", " "),
+                        subfields=[Subfield(code="a", value=new_command)],
+                    )
+                    ctx.bib_rec.add_ordered_field(new_field)
                     return None
         field = Field(
             tag="949",
@@ -139,7 +142,7 @@ class UpdateLeader:
 class UpdateBtSeriesCallNo:
     def apply(self, ctx: MarcContext) -> None:
         if not (
-            ctx.bib_rec.collection == "BL"
+            ctx.record.collection == "BL"
             and ctx.record.vendor == "BT SERIES"
             and "091" in ctx.bib_rec
             and ctx.record.record_type == "cat"
@@ -185,7 +188,7 @@ class UpdateBtSeriesCallNo:
         )
         if callno != field.value():
             raise ValueError(
-                "Constructed call number does not match original."
+                "Constructed call number does not match original. "
                 f"New={callno}, Original={field.value()}"
             )
         ctx.bib_rec.remove_fields(field.tag)
@@ -209,34 +212,42 @@ class AddVendorFields:
             )
 
 
-class BookopsMarcUpdateHandler:
-    WORKFLOW_PIPELINES: dict[str, list[UpdateStep]] = {
-        "acq": [MapOrderTemplateToMarc()],
-        "cat": [AddVendorFields()],
-        "sel": [MapOrderTemplateToMarc(), AddCommandTag(), SetDefaultLocation()],
-    }
-    LIBRARY_PIPELINES: dict[str, list[UpdateStep]] = {
-        "nypl": [
-            AddBibId(),
-            UpdateLeader(),
-            Update910Field(),
-            UpdateBtSeriesCallNo(),
-        ],
-        "bpl": [AddBibId(), UpdateLeader()],
-    }
+StepFactory = Callable[[], UpdateStep]
 
-    def __init__(self, record_type: str, library: str, rules: dict[str, Any]) -> None:
+WORKFLOW_PIPELINES: dict[str, list[StepFactory]] = {
+    "acq": [MapOrderTemplateToMarc],
+    "cat": [AddVendorFields],
+    "sel": [MapOrderTemplateToMarc, AddCommandTag, SetDefaultLocation],
+}
+LIBRARY_PIPELINES: dict[str, list[StepFactory]] = {
+    "nypl": [
+        AddBibId,
+        UpdateLeader,
+        Update910Field,
+        UpdateBtSeriesCallNo,
+    ],
+    "bpl": [AddBibId, UpdateLeader],
+}
+
+
+class BookopsMarcUpdateStrategy:
+    def __init__(self, library: str, rules: dict[str, Any], record_type: str) -> None:
         self.rules = rules
-        self.pipeline = (
-            self.WORKFLOW_PIPELINES[record_type] + self.LIBRARY_PIPELINES[library]
-        )
+        self.record_type = record_type
+        self.library = library
 
-    def create_order_marc_ctx(
-        self, record: bibs.DomainBib, template_data: dict[str, Any]
-    ) -> OrderMarcContext:
-        return OrderMarcContext(
-            record=record, template_data=template_data, rules=self.rules
-        )
+    @property
+    def pipeline(self) -> list[UpdateStep]:
+        steps = WORKFLOW_PIPELINES[self.record_type] + LIBRARY_PIPELINES[self.library]
+        return [step() for step in steps]
 
-    def create_full_marc_ctx(self, record: bibs.DomainBib) -> MarcContext:
+    def create_context(
+        self,
+        record: bibs.DomainBib,
+        **kwargs: Any,
+    ) -> MarcContext:
+        if self.record_type in ["acq", "sel"]:
+            return OrderMarcContext(
+                record=record, rules=self.rules, template_data=kwargs["template_data"]
+            )
         return MarcContext(record=record, rules=self.rules)
