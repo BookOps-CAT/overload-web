@@ -2,33 +2,57 @@ import copy
 
 import pytest
 from bookops_marc import Bib
+from pymarc import Field, Indicators, Subfield
 
 from overload_web.bib_records.domain_services import update
 
 
+@pytest.fixture
+def bib_with_command_tag(order_level_bib):
+    def order_bib(value):
+        bib = copy.deepcopy(order_level_bib)
+        record = Bib(order_level_bib.binary_data, library=order_level_bib.library)
+        record.add_field(
+            Field(
+                tag="949",
+                indicators=Indicators(" ", " "),
+                subfields=[Subfield(code="a", value=value)],
+            )
+        )
+        bib.binary_data = record.as_marc()
+        return bib
+
+    return order_bib
+
+
 class TestUpdater:
+    @pytest.fixture
+    def updater_service(self, update_strategy):
+        return update.BibUpdater(strategy=update_strategy)
+
     @pytest.mark.parametrize(
-        "library, collection, tag",
-        [("bpl", "NONE", "907"), ("nypl", "BL", "945"), ("nypl", "RL", "945")],
+        "library, collection, tag, record_type",
+        [
+            ("bpl", "NONE", "907", "cat"),
+            ("nypl", "BL", "945", "cat"),
+            ("nypl", "RL", "945", "cat"),
+        ],
     )
-    @pytest.mark.parametrize("record_type", ["cat"])
-    def test_update_cat(self, full_bib, update_strategy, tag):
+    def test_update_cat(self, full_bib, updater_service, tag):
         original_bib = Bib(
             copy.deepcopy(full_bib.binary_data), library=full_bib.library
         )
-
         full_bib.bib_id = "12345"
-        service = update.BibUpdater(strategy=update_strategy)
-        updated_bibs = service.update([full_bib])
+        updated_bibs = updater_service.update([full_bib])
         updated_bib = Bib(updated_bibs[0].binary_data, library=updated_bibs[0].library)
         assert len(original_bib.get_fields(tag)) == 0
         assert len(updated_bib.get_fields(tag)) == 1
 
     @pytest.mark.parametrize(
-        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
+        "library, collection, record_type",
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    @pytest.mark.parametrize("record_type", ["cat"])
-    def test_update_cat_vendor_fields(self, full_bib, library, update_strategy):
+    def test_update_cat_vendor_fields(self, full_bib, library, updater_service):
         full_bib.vendor = "INGRAM"
         full_bib.vendor_info = update.bibs.VendorInfo(
             name="INGRAM",
@@ -44,8 +68,7 @@ class TestUpdater:
             ],
         )
         original_bib = copy.deepcopy(Bib(full_bib.binary_data, library=library))
-        service = update.BibUpdater(strategy=update_strategy)
-        updated_bibs = service.update([full_bib])
+        updated_bibs = updater_service.update([full_bib])
         assert len(original_bib.get_fields("949")) == 1
         assert (
             len(Bib(updated_bibs[0].binary_data, library=library).get_fields("949"))
@@ -53,16 +76,15 @@ class TestUpdater:
         )
 
     @pytest.mark.parametrize(
-        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
+        "library, collection, record_type",
+        [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
     )
-    @pytest.mark.parametrize("record_type", ["acq", "sel"])
     def test_update_template_data(
-        self, order_level_bib, fake_template_data, update_strategy, record_type
+        self, order_level_bib, fake_template_data, updater_service, record_type
     ):
         order_level_bib.record_type = record_type
         original_orders = copy.deepcopy(order_level_bib.orders)
-        service = update.BibUpdater(strategy=update_strategy)
-        updated_bibs = service.update(
+        updated_bibs = updater_service.update(
             [order_level_bib], template_data=fake_template_data
         )
         assert [i.order_code_1 for i in original_orders] == ["j"]
@@ -73,11 +95,12 @@ class TestUpdater:
         [("nypl", "BL", "sel"), ("nypl", "RL", "sel")],
     )
     @pytest.mark.parametrize("value", ["*b2=a;", "*b2=a;bn=;", "*b2=a"])
-    def test_update_default_loc(self, make_order_bib, update_strategy, library, value):
-        bib = make_order_bib(value)
+    def test_update_default_loc(
+        self, bib_with_command_tag, updater_service, library, collection, value
+    ):
+        bib = bib_with_command_tag(value)
         original_bib = copy.deepcopy(Bib(bib.binary_data, library=library))
-        service = update.BibUpdater(strategy=update_strategy)
-        updated_records = service.update([bib], template_data={})
+        updated_records = updater_service.update([bib], template_data={})
         updated_bib = Bib(updated_records[0].binary_data, library=library)
         assert [i.value() for i in original_bib.get_fields("949")] == [
             "333331234567890",
@@ -92,12 +115,11 @@ class TestUpdater:
     )
     @pytest.mark.parametrize("value", ["*b2=a;", "*b2=a;bn=;", "*b2=a"])
     def test_update_default_loc_bpl(
-        self, make_order_bib, update_strategy, library, value
+        self, bib_with_command_tag, updater_service, library, collection, value
     ):
-        bib = make_order_bib(value)
+        bib = bib_with_command_tag(value)
         original_bib = copy.deepcopy(Bib(bib.binary_data, library=library))
-        service = update.BibUpdater(strategy=update_strategy)
-        updated_records = service.update([bib], template_data={})
+        updated_records = updater_service.update([bib], template_data={})
         updated_bib = Bib(updated_records[0].binary_data, library=library)
         assert [i.value() for i in original_bib.get_fields("949")] == [
             "333331234567890",
@@ -113,12 +135,11 @@ class TestUpdater:
         [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
     )
     def test_update_default_loc_no_command_tag(
-        self, update_strategy, make_order_bib, library
+        self, updater_service, bib_with_command_tag, library, collection
     ):
-        bib = make_order_bib("*b2=a;")
+        bib = bib_with_command_tag("*b2=a;")
         original_bib = copy.deepcopy(Bib(bib.binary_data, library=library))
-        service = update.BibUpdater(strategy=update_strategy)
-        updated_records = service.update([bib], template_data={"format": "a"})
+        updated_records = updater_service.update([bib], template_data={"format": "a"})
         updated_bib = Bib(updated_records[0].binary_data, library=library)
         assert len(updated_bib.get_fields("949")) == 2
         assert len(original_bib.get_fields("949")) == 2
@@ -128,20 +149,16 @@ class TestUpdater:
         [("nypl", "BL", "sel", 2), ("nypl", "RL", "sel", 2), ("bpl", "NONE", "sel", 1)],
     )
     def test_update_no_command_tag_bpl(
-        self, order_level_bib, update_strategy, record_type, library, field_count
+        self, order_level_bib, updater_service, record_type, library, field_count
     ):
         order_level_bib.record_type = record_type
         original_bib = copy.deepcopy(Bib(order_level_bib.binary_data, library=library))
-        service = update.BibUpdater(strategy=update_strategy)
-        updated_records = service.update([order_level_bib], template_data={})
+        updated_records = updater_service.update([order_level_bib], template_data={})
         updated_bib = Bib(updated_records[0].binary_data, library=library)
         assert len(updated_bib.get_fields("949")) == field_count
         assert len(original_bib.get_fields("949")) == 1
 
-    @pytest.mark.parametrize(
-        "library, record_type",
-        [("nypl", "cat")],
-    )
+    @pytest.mark.parametrize("library, record_type", [("nypl", "cat")])
     @pytest.mark.parametrize(
         "pairs",
         [
@@ -156,12 +173,11 @@ class TestUpdater:
         ],
     )
     def test_update_bt_series_call_no(
-        self, make_bt_series_full_bib, library, update_strategy, pairs
+        self, make_bt_series_full_bib, library, updater_service, pairs
     ):
         bib = make_bt_series_full_bib(pairs)
         original_bib = copy.deepcopy(Bib(bib.binary_data, library=library))
-        service = update.BibUpdater(strategy=update_strategy)
-        updated_records = service.update([bib])
+        updated_records = updater_service.update([bib])
         updated_bib = Bib(updated_records[0].binary_data, library=library)
         assert updated_bib.get_fields("091")[0].value() == " ".join(
             [i for i in pairs.values()]
@@ -173,19 +189,15 @@ class TestUpdater:
         assert bib.vendor == "BT SERIES"
         assert bib.record_type == "cat"
 
-    @pytest.mark.parametrize(
-        "library, record_type",
-        [("nypl", "cat")],
-    )
+    @pytest.mark.parametrize("library, record_type", [("nypl", "cat")])
     def test_update_bt_series_call_no_error(
-        self, make_bt_series_full_bib, library, update_strategy
+        self, make_bt_series_full_bib, library, updater_service
     ):
         bib = make_bt_series_full_bib(
             {"z": "FOO", "p": "J", "a": "FIC", "c": "SNICKET"}
         )
-        service = update.BibUpdater(strategy=update_strategy)
         with pytest.raises(ValueError) as exc:
-            service.update([bib])
+            updater_service.update([bib])
         assert (
             str(exc.value)
             == "Constructed call number does not match original. New=FOO J FIC SNICKET, Original=FIC SNICKET"

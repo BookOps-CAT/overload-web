@@ -149,8 +149,8 @@ class BPLSolrResponse(BaseSierraResponse):
         return cat_source
 
     @property
-    def collection(self) -> None:
-        return None
+    def collection(self) -> str:
+        return "NONE"
 
     @property
     def control_number(self) -> str | None:
@@ -365,18 +365,11 @@ class MatcherResponse:
             return self.bib.upc
         return None
 
-    def apply_matched_bib_id(self, bib_id: str | None) -> None:
-        """Apply the bib ID from a match to the `MatcherResponse` object's `bib`."""
-        if bib_id:
-            self.bib.update_bib_id(bib_id)
-
     def classify(self) -> ClassifiedCandidates:
         """Classify the candidate matches associated with this response."""
         matched, mixed, other = [], [], []
         for c in sorted(self.matches, key=lambda i: int(i.bib_id.strip(".b"))):
-            if c.library == "bpl":
-                matched.append(c)
-            elif c.collection == "MIXED":
+            if c.collection == "MIXED":
                 mixed.append(c)
             elif c.collection == self.bib.collection:
                 matched.append(c)

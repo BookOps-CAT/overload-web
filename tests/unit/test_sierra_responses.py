@@ -1,3 +1,5 @@
+import datetime
+
 import pytest
 
 from overload_web.bib_records.domain_models import sierra_responses
@@ -43,8 +45,18 @@ class TestSierraResponses:
             **self.BASE_RESPONSE,
         }
         response = sierra_responses.NYPLPlatformResponse(data)
+        assert response.barcodes == []
+        assert response.branch_call_number == "FIC BAR"
         assert response.cat_source == "inhouse"
         assert response.collection == "BL"
+        assert response.control_number == "on9876543210"
+        assert response.isbn == ["9781234567890"]
+        assert sorted(response.oclc_number) == sorted(["on9876543210"])
+        assert response.research_call_number == []
+        assert sorted(response.upc) == sorted(["12345", "67890"])
+        assert response.update_date == "2020-01-01T00:00:01"
+        assert response.update_datetime == datetime.datetime(2020, 1, 1, 0, 0, 1, 0)
+        assert len(response.var_fields) == 6
 
     def test_nypl_response_rl(self):
         data = {
@@ -59,11 +71,21 @@ class TestSierraResponses:
                     "subfields": [{"tag": "a", "content": "RL"}],
                 },
             ],
+            "updatedDate": "2020-01-01T00:00:01",
             **self.BASE_RESPONSE,
         }
         response = sierra_responses.NYPLPlatformResponse(data)
+        assert response.barcodes == []
+        assert response.branch_call_number is None
         assert response.cat_source == "vendor"
         assert response.collection == "RL"
+        assert response.control_number is None
+        assert response.isbn == []
+        assert response.oclc_number == []
+        assert response.research_call_number == ["ReCAP 20-123456"]
+        assert response.upc == []
+        assert response.update_date == "2020-01-01T00:00:01"
+        assert response.update_datetime == datetime.datetime(2020, 1, 1, 0, 0, 1, 0)
 
     def test_nypl_response_mixed(self):
         data = {
@@ -134,6 +156,16 @@ class TestSierraResponses:
         assert response.barcodes == ["333331234567890"]
         assert response.branch_call_number == "FIC BAR"
         assert response.cat_source == "inhouse"
+        assert response.collection == "NONE"
+        assert response.control_number == "on9876543210"
+        assert response.isbn == ["9781234567890"]
+        assert sorted(response.oclc_number) == sorted(
+            ["on9876543210", "(OCoLC)9876543210"]
+        )
+        assert response.research_call_number == []
+        assert sorted(response.upc) == sorted(["12345", "67890"])
+        assert response.update_date == "20200101000001.0"
+        assert response.update_datetime == datetime.datetime(2020, 1, 1, 0, 0, 1, 0)
         assert len(response.var_fields) == 5
 
     def test_bpl_response_vendor(self):

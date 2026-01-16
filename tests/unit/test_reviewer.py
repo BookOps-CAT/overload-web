@@ -1,24 +1,28 @@
 import pytest
 
+from overload_web.bib_records.domain_models import sierra_responses
 from overload_web.bib_records.domain_services import review
 
 
 class TestReviewer:
     @pytest.mark.parametrize(
-        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
+        "library, collection, record_type",
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    @pytest.mark.parametrize("record_type", ["cat"])
-    def test_dedupe_cat(self, full_bib, match_resolution, update_strategy):
+    def test_dedupe_cat(self, full_bib, sierra_response, update_strategy):
         service = review.FullLevelBibReviewer(context_factory=update_strategy)
-        deduped_bibs = service.dedupe([full_bib], [match_resolution])
+        deduped_bibs = service.dedupe(
+            [full_bib],
+            [sierra_responses.MatcherResponse(bib=full_bib, matches=[sierra_response])],
+        )
         assert len(deduped_bibs["DUP"]) == 0
         assert len(deduped_bibs["NEW"]) == 1
         assert len(deduped_bibs["DEDUPED"]) == 0
 
     @pytest.mark.parametrize(
-        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
+        "library, collection, record_type",
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    @pytest.mark.parametrize("record_type", ["cat"])
     def test_validate_cat(self, full_bib, update_strategy, caplog):
         service = review.FullLevelBibReviewer(context_factory=update_strategy)
         service.validate({"NEW": [full_bib]}, ["333331234567890"])
@@ -27,8 +31,9 @@ class TestReviewer:
             caplog.records[0].msg == "Integrity validation: True, missing_barcodes: []"
         )
 
-    @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
-    @pytest.mark.parametrize("record_type", ["cat"])
+    @pytest.mark.parametrize(
+        "library, collection, record_type", [("bpl", "NONE", "cat")]
+    )
     def test_validate_cat_bpl_960_item(
         self, full_bpl_bib, update_strategy, caplog, collection
     ):
@@ -40,9 +45,9 @@ class TestReviewer:
         )
 
     @pytest.mark.parametrize(
-        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
+        "library, collection, record_type",
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    @pytest.mark.parametrize("record_type", ["cat"])
     def test_validate_missing_barcodes(
         self, full_bib, update_strategy, caplog, collection
     ):
@@ -55,8 +60,9 @@ class TestReviewer:
         )
         assert caplog.records[1].msg == "Barcodes integrity error: ['333330987654321']"
 
-    @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
-    @pytest.mark.parametrize("record_type", ["cat"])
+    @pytest.mark.parametrize(
+        "library, collection, record_type", [("bpl", "NONE", "cat")]
+    )
     def test_validate_bpl_960_item_missing_barcodes(
         self, full_bpl_bib, update_strategy, caplog, collection
     ):

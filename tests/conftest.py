@@ -1,4 +1,3 @@
-import copy
 import datetime
 import io
 import json
@@ -292,13 +291,6 @@ def stub_bib(library, collection) -> Bib:
         )
     bib.add_field(
         Field(
-            tag="901",
-            indicators=Indicators(" ", " "),
-            subfields=[Subfield(code="a", value="BTSERIES")],
-        )
-    )
-    bib.add_field(
-        Field(
             tag="949",
             indicators=Indicators(" ", "1"),
             subfields=[
@@ -352,30 +344,6 @@ def stub_bib(library, collection) -> Bib:
     return bib
 
 
-@pytest.fixture
-def stub_bib_alt_vendor(stub_bib):
-    bib = copy.deepcopy(stub_bib)
-    bib.add_ordered_field(
-        Field(
-            tag="947",
-            indicators=Indicators(" ", " "),
-            subfields=[
-                Subfield(code="a", value="B&amp;T SERIES"),
-                Subfield(code="f", value="bar"),
-                Subfield(code="m", value="baz"),
-            ],
-        )
-    )
-    return bib
-
-
-@pytest.fixture
-def stub_bib_unknown_vendor(stub_bib):
-    bib = copy.deepcopy(stub_bib)
-    bib.remove_fields("901")
-    return bib
-
-
 @pytest.fixture(scope="session")
 def test_constants():
     with open("overload_web/vendor_specs.json", "r", encoding="utf-8") as fh:
@@ -384,58 +352,78 @@ def test_constants():
 
 
 @pytest.fixture
-def order_level_bib(stub_bib, test_constants, library):
-    record = copy.deepcopy(stub_bib)
-    mapper = marc_mapper.BookopsMarcMapper(
-        rules=test_constants["mapper_rules"],
+def order_level_bib(stub_bib, collection, library):
+    order = marc_mapper.bibs.Order(
+        locations=["agj0y"],
+        audience=["j"],
+        branches=["ag"],
+        copies="13",
+        create_date="01-01-25",
+        format="b",
+        lang="eng",
+        order_id=".o10000010",
+        shelves=["0y"],
+        status="o",
+        vendor_notes=None,
+        order_code_1="j",
+        order_code_2="c",
+        order_code_3="d",
+        order_code_4="a",
+        order_type="l",
+        price="{{dollar}}13.20",
+        fund="lease",
+        vendor_code="btlea",
+        country="xxu",
+        internal_note="foo",
+        selector_note="f",
+        vendor_title_no=None,
+        blanket_po="baz",
+    )
+    bib = marc_mapper.bibs.DomainBib(
         library=library,
+        collection=collection,
+        isbn="9781234567890",
+        title="Foo",
         record_type="acq",
+        binary_data=stub_bib.as_marc(),
+        branch_call_number="Foo",
+        research_call_number=["Foo"],
+        vendor="BTSERIES",
+        barcodes=["333331234567890"],
+        orders=[order],
+        update_date="20200101010000.0",
     )
-    out = mapper.map_data(record=record)
-    bib = marc_mapper.bibs.DomainBib(**out)
     return bib
 
 
 @pytest.fixture
-def make_order_bib(stub_bib, test_constants, library):
-    def order_bib(value):
-        record = copy.deepcopy(stub_bib)
-        record.add_field(
-            Field(
-                tag="949",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value=value)],
-            )
-        )
-        mapper = marc_mapper.BookopsMarcMapper(
-            rules=test_constants["mapper_rules"],
-            library=library,
-            record_type="sel",
-        )
-        out = mapper.map_data(record=record)
-        bib = marc_mapper.bibs.DomainBib(**out)
-        return bib
-
-    return order_bib
-
-
-@pytest.fixture
-def full_bib(order_level_bib):
-    bib = copy.deepcopy(order_level_bib)
-    bib.vendor_info = marc_mapper.bibs.VendorInfo(
-        name="UNKNOWN",
-        bib_fields=[],
-        matchpoints={
-            "primary_matchpoint": "isbn",
-            "secondary_matchpoint": "oclc_number",
-        },
+def full_bib(library, collection, stub_bib):
+    bib = marc_mapper.bibs.DomainBib(
+        library=library,
+        collection=collection,
+        isbn="9781234567890",
+        title="Foo",
+        record_type="cat",
+        binary_data=stub_bib.as_marc(),
+        branch_call_number="Foo",
+        research_call_number=["Foo"],
+        barcodes=["333331234567890"],
+        orders=[],
+        update_date="20200101010000.0",
+        vendor_info=marc_mapper.bibs.VendorInfo(
+            name="UNKNOWN",
+            bib_fields=[],
+            matchpoints={
+                "primary_matchpoint": "isbn",
+                "secondary_matchpoint": "oclc_number",
+            },
+        ),
     )
-    bib.record_type = "cat"
     return bib
 
 
 @pytest.fixture
-def make_bt_series_full_bib(test_constants):
+def make_bt_series_full_bib():
     def full_bib(pairs):
         bib = Bib()
         bib.leader = "00000cam  2200517 i 4500"
@@ -477,38 +465,39 @@ def make_bt_series_full_bib(test_constants):
                 ],
             )
         )
-        mapper = marc_mapper.BookopsMarcMapper(
-            rules=test_constants["mapper_rules"],
+        domain_bib = marc_mapper.bibs.DomainBib(
             library="nypl",
+            collection="BL",
+            isbn="9781234567890",
+            title="Foo",
             record_type="cat",
+            binary_data=bib.as_marc(),
+            branch_call_number="Foo",
+            research_call_number=["Foo"],
+            vendor="BTSERIES",
+            barcodes=["333331234567890"],
+            orders=[],
+            update_date="20200101010000.0",
+            vendor_info=marc_mapper.bibs.VendorInfo(
+                name="BT SERIES",
+                matchpoints={
+                    "primary_matchpoint": "isbn",
+                    "secondary_matchpoint": "oclc_number",
+                },
+                bib_fields=[
+                    {
+                        "tag": "949",
+                        "ind1": "",
+                        "ind2": "",
+                        "subfield_code": "a",
+                        "value": "*b2=a;",
+                    }
+                ],
+            ),
         )
-        out = mapper.map_data(record=bib)
-        out["vendor"] = "BT SERIES"
-        out["vendor_info"] = marc_mapper.bibs.VendorInfo(
-            name="BT SERIES",
-            matchpoints={
-                "primary_matchpoint": "isbn",
-                "secondary_matchpoint": "oclc_number",
-            },
-            bib_fields=[
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
-            ],
-        )
-        bib = marc_mapper.bibs.DomainBib(**out)
-        return bib
+        return domain_bib
 
     return full_bib
-
-
-@pytest.fixture
-def match_resolution(sierra_response, full_bib):
-    return sierra_responses.MatcherResponse(bib=full_bib, matches=[sierra_response])
 
 
 @pytest.fixture
@@ -545,7 +534,7 @@ def sierra_response(library, collection):
 
 
 @pytest.fixture
-def fake_fetcher(monkeypatch, sierra_response, library, collection):
+def fake_fetcher(monkeypatch, sierra_response):
     def fake_response(*args, **kwargs):
         return [sierra_response]
 
@@ -554,7 +543,7 @@ def fake_fetcher(monkeypatch, sierra_response, library, collection):
 
 
 @pytest.fixture
-def full_bpl_bib(test_constants):
+def full_bpl_bib():
     bib = Bib()
     bib.leader = "00000cam  2200517 i 4500"
     bib.library = "bpl"
@@ -584,22 +573,28 @@ def full_bpl_bib(test_constants):
             ],
         )
     )
-    mapper = marc_mapper.BookopsMarcMapper(
-        rules=test_constants["mapper_rules"],
+    domain_bib = marc_mapper.bibs.DomainBib(
         library="bpl",
+        collection=None,
+        isbn="9781234567890",
+        title="Foo",
         record_type="cat",
+        binary_data=bib.as_marc(),
+        branch_call_number="Foo",
+        research_call_number=None,
+        barcodes=["333331234567890"],
+        orders=[],
+        update_date="20200101010000.0",
+        vendor_info=marc_mapper.bibs.VendorInfo(
+            name="UNKNOWN",
+            bib_fields=[],
+            matchpoints={
+                "primary_matchpoint": "isbn",
+                "secondary_matchpoint": "oclc_number",
+            },
+        ),
     )
-    out = mapper.map_data(record=bib)
-    bib = marc_mapper.bibs.DomainBib(**out)
-    bib.vendor_info = marc_mapper.bibs.VendorInfo(
-        name="UNKNOWN",
-        bib_fields=[],
-        matchpoints={
-            "primary_matchpoint": "isbn",
-            "secondary_matchpoint": "oclc_number",
-        },
-    )
-    return bib
+    return domain_bib
 
 
 @pytest.fixture
