@@ -45,7 +45,7 @@ class MatchAnalyzer(Protocol):
 
     def analyze_matches(
         self,
-        candidates: list[sierra_responses.MatcherResponse],
+        candidates: list[sierra_responses.MatchContext],
     ) -> list[sierra_responses.MatchAnalysis]: ...  # pragma: no branch
 
 
@@ -66,7 +66,7 @@ class BaseMatchAnalyzer:
         return sierra_responses.CatalogAction.ATTACH, False
 
     def analyze_matches(
-        self, candidates: list[sierra_responses.MatcherResponse]
+        self, candidates: list[sierra_responses.MatchContext]
     ) -> list[sierra_responses.MatchAnalysis]:
         analysis_out = []
         for candidate in candidates:
@@ -75,19 +75,19 @@ class BaseMatchAnalyzer:
         return analysis_out
 
     def review_response(
-        self, response: sierra_responses.MatcherResponse
+        self, response: sierra_responses.MatchContext
     ) -> sierra_responses.MatchAnalysis:
         return self.analyze(response)
 
     def analyze(
-        self, response: sierra_responses.MatcherResponse
+        self, response: sierra_responses.MatchContext
     ) -> sierra_responses.MatchAnalysis:
         raise NotImplementedError
 
 
 class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
     def analyze(
-        self, response: sierra_responses.MatcherResponse
+        self, response: sierra_responses.MatchContext
     ) -> sierra_responses.MatchAnalysis:
         classified = response.classify()
 
@@ -129,7 +129,7 @@ class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
 
 class NYPLCatBranchMatchAnalyzer(BaseMatchAnalyzer):
     def analyze(
-        self, response: sierra_responses.MatcherResponse
+        self, response: sierra_responses.MatchContext
     ) -> sierra_responses.MatchAnalysis:
         classified = response.classify()
         if not classified.matched:
@@ -175,7 +175,7 @@ class NYPLCatBranchMatchAnalyzer(BaseMatchAnalyzer):
 
 class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
     def analyze(
-        self, response: sierra_responses.MatcherResponse
+        self, response: sierra_responses.MatchContext
     ) -> sierra_responses.MatchAnalysis:
         classified = response.classify()
         if not classified.matched:
@@ -222,7 +222,7 @@ class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
 
 class SelectionMatchAnalyzer(BaseMatchAnalyzer):
     def analyze(
-        self, response: sierra_responses.MatcherResponse
+        self, response: sierra_responses.MatchContext
     ) -> sierra_responses.MatchAnalysis:
         classified = response.classify()
         if not classified.matched:
@@ -257,7 +257,7 @@ class SelectionMatchAnalyzer(BaseMatchAnalyzer):
 
 class AcquisitionsMatchAnalyzer(BaseMatchAnalyzer):
     def analyze(
-        self, response: sierra_responses.MatcherResponse
+        self, response: sierra_responses.MatchContext
     ) -> sierra_responses.MatchAnalysis:
         classified = response.classify()
         return sierra_responses.MatchAnalysis(

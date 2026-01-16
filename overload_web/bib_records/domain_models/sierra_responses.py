@@ -331,12 +331,38 @@ class NYPLPlatformResponse(BaseSierraResponse):
         return self._data.get("varFields", [])
 
 
-class MatcherResponse:
+class CatalogAction(StrEnum):
+    """Valid values for a cataloging action."""
+
+    ATTACH = "attach"
+    OVERLAY = "overlay"
+    INSERT = "insert"
+
+
+@dataclass(frozen=True)
+class ClassifiedCandidates:
+    """Holds candidate matches and associated data."""
+
+    matched: list[BaseSierraResponse]
+    mixed: list[BaseSierraResponse]
+    other: list[BaseSierraResponse]
+
+    @property
+    def duplicates(self) -> list[str]:
+        duplicates: list[str] = []
+        if len(self.matched) > 1:
+            return [i.bib_id for i in self.matched]
+        return duplicates
+
+
+class MatchContext:
     """A DTO that wraps a `DomainBib` object with its associated matches from Sierra."""
 
-    def __init__(self, bib: bibs.DomainBib, matches: list[BaseSierraResponse]) -> None:
+    def __init__(
+        self, bib: bibs.DomainBib, candidates: list[BaseSierraResponse]
+    ) -> None:
         self.bib = bib
-        self.matches = matches
+        self.candidates = candidates
 
     @property
     def input_call_no(self) -> str | None:
@@ -368,7 +394,7 @@ class MatcherResponse:
     def classify(self) -> ClassifiedCandidates:
         """Classify the candidate matches associated with this response."""
         matched, mixed, other = [], [], []
-        for c in sorted(self.matches, key=lambda i: int(i.bib_id.strip(".b"))):
+        for c in sorted(self.candidates, key=lambda i: int(i.bib_id.strip(".b"))):
             if c.collection == "MIXED":
                 mixed.append(c)
             elif c.collection == self.bib.collection:
@@ -379,20 +405,12 @@ class MatcherResponse:
         return ClassifiedCandidates(matched, mixed, other)
 
 
-class CatalogAction(StrEnum):
-    """Valid values for a cataloging action."""
-
-    ATTACH = "attach"
-    OVERLAY = "overlay"
-    INSERT = "insert"
-
-
 class MatchAnalysis:
     """Components extracted from match review process."""
 
     def __init__(
         self,
-        response: MatcherResponse,
+        response: MatchContext,
         classified: ClassifiedCandidates,
         target: BaseSierraResponse | bibs.DomainBib | None,
         call_number_match: bool,
@@ -415,7 +433,7 @@ class MatchAnalysis:
         self.target_title = target.title if target else None
 
     def apply_matched_bib_id(self, bib_id: str | None) -> None:
-        """Apply the bib ID from a match to the `MatcherResponse` object's `bib`."""
+        """Apply the bib ID from a match to the `MatchContext` object's `bib`."""
         if bib_id:
             self.domain_bib.update_bib_id(bib_id)
 
@@ -424,19 +442,3 @@ class MatchAnalysis:
         """Return the updated `DomainBib` object."""
         self.apply_matched_bib_id(self.target_bib_id)
         return self.domain_bib
-
-
-@dataclass(frozen=True)
-class ClassifiedCandidates:
-    """Holds candidate matches and associated data."""
-
-    matched: list[BaseSierraResponse]
-    mixed: list[BaseSierraResponse]
-    other: list[BaseSierraResponse]
-
-    @property
-    def duplicates(self) -> list[str]:
-        duplicates: list[str] = []
-        if len(self.matched) > 1:
-            return [i.bib_id for i in self.matched]
-        return duplicates

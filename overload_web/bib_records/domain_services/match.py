@@ -96,7 +96,7 @@ class BibMatcher(ABC):
 class OrderLevelBibMatcher(BibMatcher):
     def match(
         self, records: list[bibs.DomainBib], matchpoints: dict[str, str]
-    ) -> list[sierra_responses.MatcherResponse]:
+    ) -> list[sierra_responses.MatchContext]:
         """
         Match order-level bibliographic records against Sierra.
 
@@ -107,7 +107,7 @@ class OrderLevelBibMatcher(BibMatcher):
                 A dictionary containing matchpoints to be used in matching records.
 
         Returns:
-            A list of `MatcherResponse` objects containing a processed record as
+            A list of `MatchContext` objects containing a processed record as
             a `DomainBib` object and its associated matches as
             `BaseSierraResponse` objects
         """
@@ -116,14 +116,14 @@ class OrderLevelBibMatcher(BibMatcher):
             matches: list[sierra_responses.BaseSierraResponse] = self._match_bib(
                 record=record, matchpoints=matchpoints
             )
-            out.append(sierra_responses.MatcherResponse(bib=record, matches=matches))
+            out.append(sierra_responses.MatchContext(bib=record, candidates=matches))
         return out
 
 
 class FullLevelBibMatcher(BibMatcher):
     def match(
         self, records: list[bibs.DomainBib]
-    ) -> list[sierra_responses.MatcherResponse]:
+    ) -> list[sierra_responses.MatchContext]:
         """
         Match full-level bibliographic records against Sierra.
 
@@ -132,7 +132,7 @@ class FullLevelBibMatcher(BibMatcher):
                 A list of parsed bibliographic records as `DomainBib` objects.
 
         Returns:
-            A list of `MatcherResponse` objects containing a processed record as a
+            A list of `MatchContext` objects containing a processed record as a
             `DomainBib` object and its associated matches as `BaseSierraResponse`
 
         Raises:
@@ -145,5 +145,5 @@ class FullLevelBibMatcher(BibMatcher):
             matches: list[sierra_responses.BaseSierraResponse] = self._match_bib(
                 record=record, matchpoints=record.vendor_info.matchpoints
             )
-            out.append(sierra_responses.MatcherResponse(bib=record, matches=matches))
+            out.append(sierra_responses.MatchContext(bib=record, candidates=matches))
         return out

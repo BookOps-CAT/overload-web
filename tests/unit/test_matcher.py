@@ -34,7 +34,7 @@ class TestMatcher:
         stub_domain_bib.record_type = "cat"
         service = match.FullLevelBibMatcher(fetcher=fake_fetcher)
         matched_bibs = service.match([stub_domain_bib])
-        assert len(matched_bibs[0].matches) == 1
+        assert len(matched_bibs[0].candidates) == 1
 
     def test_match_full_no_vendor_index(self, fake_fetcher, stub_domain_bib):
         stub_domain_bib.record_type = "cat"
@@ -49,7 +49,7 @@ class TestMatcher:
         matched_bibs = service.match(
             [stub_domain_bib], matchpoints={"primary_matchpoint": "oclc_number"}
         )
-        assert len(matched_bibs[0].matches) == 0
+        assert len(matched_bibs[0].candidates) == 0
 
     def test_match_order_level_no_matchpoints(self, fake_fetcher, stub_domain_bib):
         service = match.OrderLevelBibMatcher(fetcher=fake_fetcher)
