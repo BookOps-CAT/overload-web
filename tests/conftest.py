@@ -1,6 +1,5 @@
 import datetime
 import io
-import json
 import logging
 from typing import Any
 
@@ -344,15 +343,8 @@ def stub_bib(library, collection) -> Bib:
     return bib
 
 
-@pytest.fixture(scope="session")
-def test_constants():
-    with open("overload_web/vendor_specs.json", "r", encoding="utf-8") as fh:
-        constants = json.load(fh)
-    return constants
-
-
 @pytest.fixture
-def order_level_bib(stub_bib, collection, library):
+def order_level_bib(collection, library):
     order = marc_mapper.bibs.Order(
         locations=["agj0y"],
         audience=["j"],
@@ -375,17 +367,120 @@ def order_level_bib(stub_bib, collection, library):
         vendor_code="btlea",
         country="xxu",
         internal_note="foo",
-        selector_note="f",
+        selector_note="bar",
         vendor_title_no=None,
         blanket_po="baz",
     )
-    bib = marc_mapper.bibs.DomainBib(
+    bib = Bib()
+    bib.leader = "00000cam  2200517 i 4500"
+    bib.library = library
+    bib.add_field(Field(tag="005", data="20200101010000.0"))
+    bib.add_field(
+        Field(
+            tag="020",
+            indicators=Indicators(" ", " "),
+            subfields=[Subfield(code="a", value="9781234567890")],
+        )
+    )
+    if library == "bpl":
+        bib.add_field(
+            Field(
+                tag="037",
+                indicators=Indicators(" ", " "),
+                subfields=[
+                    Subfield(code="a", value="123"),
+                    Subfield(code="b", value="OverDrive, Inc."),
+                ],
+            )
+        )
+        bib.add_field(
+            Field(
+                tag="099",
+                indicators=Indicators(" ", " "),
+                subfields=[
+                    Subfield(code="a", value="Foo"),
+                ],
+            )
+        )
+    else:
+        if collection == "BL":
+            bib.add_field(
+                Field(
+                    tag="091",
+                    indicators=Indicators(" ", " "),
+                    subfields=[
+                        Subfield(code="a", value="Foo"),
+                    ],
+                )
+            )
+        else:
+            bib.add_field(
+                Field(
+                    tag="852",
+                    indicators=Indicators("8", " "),
+                    subfields=[
+                        Subfield(code="a", value="Foo"),
+                    ],
+                )
+            )
+        bib.add_field(
+            Field(
+                tag="910",
+                indicators=Indicators(" ", " "),
+                subfields=[Subfield(code="a", value=collection)],
+            )
+        )
+    bib.add_field(
+        Field(
+            tag="949",
+            indicators=Indicators(" ", "1"),
+            subfields=[
+                Subfield(code="i", value="333331234567890"),
+            ],
+        )
+    )
+    bib.add_field(
+        Field(
+            tag="960",
+            indicators=Indicators(" ", " "),
+            subfields=[
+                Subfield(code="c", value=order.order_code_1),
+                Subfield(code="d", value=order.order_code_2),
+                Subfield(code="e", value=order.order_code_3),
+                Subfield(code="f", value=order.order_code_4),
+                Subfield(code="g", value=order.format),
+                Subfield(code="i", value=order.order_type),
+                Subfield(code="m", value=order.status),
+                Subfield(code="o", value=order.copies),
+                Subfield(code="q", value=order.create_date),
+                Subfield(code="s", value=order.price),
+                Subfield(code="t", value=order.locations[0]),
+                Subfield(code="u", value=order.fund),
+                Subfield(code="v", value=order.vendor_code),
+                Subfield(code="w", value=order.lang),
+                Subfield(code="x", value=order.country),
+                Subfield(code="z", value=order.order_id),
+            ],
+        )
+    )
+    bib.add_field(
+        Field(
+            tag="961",
+            indicators=Indicators(" ", " "),
+            subfields=[
+                Subfield(code="d", value=order.internal_note),
+                Subfield(code="f", value=order.selector_note),
+                Subfield(code="m", value=order.blanket_po),
+            ],
+        )
+    )
+    domain_bib = marc_mapper.bibs.DomainBib(
         library=library,
         collection=collection,
         isbn="9781234567890",
         title="Foo",
         record_type="acq",
-        binary_data=stub_bib.as_marc(),
+        binary_data=bib.as_marc(),
         branch_call_number="Foo",
         research_call_number=["Foo"],
         vendor="BTSERIES",
@@ -393,18 +488,85 @@ def order_level_bib(stub_bib, collection, library):
         orders=[order],
         update_date="20200101010000.0",
     )
-    return bib
+    return domain_bib
 
 
 @pytest.fixture
-def full_bib(library, collection, stub_bib):
-    bib = marc_mapper.bibs.DomainBib(
+def full_bib(library, collection):
+    bib = Bib()
+    bib.leader = "00000cam  2200517 i 4500"
+    bib.library = library
+    bib.add_field(Field(tag="005", data="20200101010000.0"))
+    bib.add_field(
+        Field(
+            tag="020",
+            indicators=Indicators(" ", " "),
+            subfields=[Subfield(code="a", value="9781234567890")],
+        )
+    )
+    if library == "bpl":
+        bib.add_field(
+            Field(
+                tag="099",
+                indicators=Indicators(" ", " "),
+                subfields=[
+                    Subfield(code="a", value="Foo"),
+                ],
+            )
+        )
+        bib.add_field(
+            Field(
+                tag="960",
+                indicators=Indicators(" ", " "),
+                subfields=[
+                    Subfield(code="i", value="333331234567890"),
+                ],
+            )
+        )
+    else:
+        if collection == "BL":
+            bib.add_field(
+                Field(
+                    tag="091",
+                    indicators=Indicators(" ", " "),
+                    subfields=[
+                        Subfield(code="a", value="Foo"),
+                    ],
+                )
+            )
+        else:
+            bib.add_field(
+                Field(
+                    tag="852",
+                    indicators=Indicators("8", " "),
+                    subfields=[
+                        Subfield(code="a", value="Foo"),
+                    ],
+                )
+            )
+        bib.add_field(
+            Field(
+                tag="910",
+                indicators=Indicators(" ", " "),
+                subfields=[Subfield(code="a", value=collection)],
+            )
+        )
+        bib.add_field(
+            Field(
+                tag="949",
+                indicators=Indicators(" ", "1"),
+                subfields=[
+                    Subfield(code="i", value="333331234567890"),
+                ],
+            )
+        )
+    domain_bib = marc_mapper.bibs.DomainBib(
         library=library,
         collection=collection,
         isbn="9781234567890",
         title="Foo",
         record_type="cat",
-        binary_data=stub_bib.as_marc(),
+        binary_data=bib.as_marc(),
         branch_call_number="Foo",
         research_call_number=["Foo"],
         barcodes=["333331234567890"],
@@ -419,85 +581,7 @@ def full_bib(library, collection, stub_bib):
             },
         ),
     )
-    return bib
-
-
-@pytest.fixture
-def make_bt_series_full_bib():
-    def full_bib(pairs):
-        bib = Bib()
-        bib.leader = "00000cam  2200517 i 4500"
-        bib.library = "nypl"
-        bib.add_field(Field(tag="005", data="20200101010000.0"))
-        bib.add_field(
-            Field(
-                tag="020",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value="9781234567890")],
-            )
-        )
-        subfield_list = []
-        for k, v in pairs.items():
-            subfield_list.append(Subfield(code=k, value=v))
-        bib.add_field(
-            Field(tag="091", indicators=Indicators(" ", " "), subfields=subfield_list)
-        )
-        bib.add_field(
-            Field(
-                tag="910",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value="BL")],
-            )
-        )
-        bib.add_field(
-            Field(
-                tag="901",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value="BTSERIES")],
-            )
-        )
-        bib.add_field(
-            Field(
-                tag="949",
-                indicators=Indicators(" ", "1"),
-                subfields=[
-                    Subfield(code="i", value="333331234567890"),
-                ],
-            )
-        )
-        domain_bib = marc_mapper.bibs.DomainBib(
-            library="nypl",
-            collection="BL",
-            isbn="9781234567890",
-            title="Foo",
-            record_type="cat",
-            binary_data=bib.as_marc(),
-            branch_call_number="Foo",
-            research_call_number=["Foo"],
-            vendor="BTSERIES",
-            barcodes=["333331234567890"],
-            orders=[],
-            update_date="20200101010000.0",
-            vendor_info=marc_mapper.bibs.VendorInfo(
-                name="BT SERIES",
-                matchpoints={
-                    "primary_matchpoint": "isbn",
-                    "secondary_matchpoint": "oclc_number",
-                },
-                bib_fields=[
-                    {
-                        "tag": "949",
-                        "ind1": "",
-                        "ind2": "",
-                        "subfield_code": "a",
-                        "value": "*b2=a;",
-                    }
-                ],
-            ),
-        )
-        return domain_bib
-
-    return full_bib
+    return domain_bib
 
 
 @pytest.fixture
@@ -543,64 +627,24 @@ def fake_fetcher(monkeypatch, sierra_response):
 
 
 @pytest.fixture
-def full_bpl_bib():
-    bib = Bib()
-    bib.leader = "00000cam  2200517 i 4500"
-    bib.library = "bpl"
-    bib.add_field(Field(tag="005", data="20200101010000.0"))
-    bib.add_field(
-        Field(
-            tag="020",
-            indicators=Indicators(" ", " "),
-            subfields=[Subfield(code="a", value="9781234567890")],
-        )
-    )
-    bib.add_field(
-        Field(
-            tag="099",
-            indicators=Indicators(" ", " "),
-            subfields=[
-                Subfield(code="a", value="Foo"),
-            ],
-        )
-    )
-    bib.add_field(
-        Field(
-            tag="960",
-            indicators=Indicators(" ", " "),
-            subfields=[
-                Subfield(code="i", value="333331234567890"),
-            ],
-        )
-    )
-    domain_bib = marc_mapper.bibs.DomainBib(
-        library="bpl",
-        collection=None,
-        isbn="9781234567890",
-        title="Foo",
-        record_type="cat",
-        binary_data=bib.as_marc(),
-        branch_call_number="Foo",
-        research_call_number=None,
-        barcodes=["333331234567890"],
-        orders=[],
-        update_date="20200101010000.0",
-        vendor_info=marc_mapper.bibs.VendorInfo(
-            name="UNKNOWN",
-            bib_fields=[],
-            matchpoints={
-                "primary_matchpoint": "isbn",
-                "secondary_matchpoint": "oclc_number",
-            },
-        ),
-    )
-    return domain_bib
+def fake_fetcher_no_matches(monkeypatch):
+    def fake_response(*args, **kwargs):
+        return []
+
+    monkeypatch.setattr(FakeSierraSession, "_parse_response", fake_response)
+    return clients.SierraBibFetcher(session=FakeSierraSession())
 
 
 @pytest.fixture
-def update_strategy(
-    library, test_constants, record_type
-) -> marc_updater.BookopsMarcUpdateStrategy:
+def update_strategy(library, record_type) -> marc_updater.BookopsMarcUpdateStrategy:
+    constants = {
+        "update_order_mapping": {
+            "960": {"c": "order_code_1", "t": "locations"},
+            "961": {"i": "vendor_title_no"},
+        },
+        "bib_id_tag": {"nypl": "945", "bpl": "907"},
+        "default_locations": {"nypl": {"BL": "zzzzz", "RL": "xxx"}, "bpl": {}},
+    }
     return marc_updater.BookopsMarcUpdateStrategy(
-        library=library, rules=test_constants, record_type=record_type
+        library=library, rules=constants, record_type=record_type
     )

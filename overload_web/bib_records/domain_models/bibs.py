@@ -124,7 +124,7 @@ class DomainBib:
         for order in self.orders:
             order.apply_template(template_data=template_data)
 
-    def update_bib_id(self, bib_id: str) -> None:
+    def update_bib_id(self, bib_id: str | None) -> None:
         """
         Update a `DomainBib` object's bib_id.
 
@@ -134,7 +134,35 @@ class DomainBib:
         Returns:
             None
         """
-        self.bib_id = bib_id
+        if bib_id:
+            self.bib_id = bib_id
+
+    def match_identifiers(self) -> DomainBibMatchIds:
+        """Determine call number and resource ID for bib record."""
+        call_number, resource_id = None, None
+        if self.library == "nypl" and self.collection == "RL":
+            call_number = self.research_call_number
+        else:
+            call_number = self.branch_call_number
+        if isinstance(call_number, list):
+            call_number = call_number[0]
+        if self.control_number:
+            resource_id = self.control_number
+        elif self.isbn:
+            resource_id = self.isbn
+        elif self.oclc_number and isinstance(self.oclc_number, str):
+            resource_id = self.oclc_number
+        elif self.oclc_number and isinstance(self.oclc_number, list):
+            resource_id = self.oclc_number[0]
+        elif self.upc:
+            resource_id = self.upc
+        return DomainBibMatchIds(call_number=call_number, resource_id=resource_id)
+
+
+@dataclass(frozen=True)
+class DomainBibMatchIds:
+    call_number: str | None
+    resource_id: str | None
 
 
 class LibrarySystem(StrEnum):

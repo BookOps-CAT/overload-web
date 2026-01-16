@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Protocol, TypeVar
 
-from overload_web.bib_records.domain_models import bibs
+from overload_web.bib_records.domain_models import bibs, matches
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +24,6 @@ class MarcContext(Protocol[T]):
     bib_id_tag: str
 
 
-class MarcContextFactory(Protocol):
-    def create(self, record: bibs.DomainBib, **kwargs: Any) -> MarcContext: ...
-
-
 class MarcUpdateStrategy(Protocol):
     @property
     def pipeline(self) -> list[UpdateStep]: ...  # pragma: no branch
@@ -41,14 +37,15 @@ class BibUpdater:
         self.strategy = strategy
 
     def update(
-        self, records: list[bibs.DomainBib], **kwargs: Any
+        self, records: list[matches.MatchDecisionResult], **kwargs: Any
     ) -> list[bibs.DomainBib]:
         """
         Update bibliographic records.
 
         Args:
             records:
-                A list of parsed bibliographic records as `DomainBib` objects.
+                A list of parsed bibliographic records and associated data as
+                `MatchDecisionResult` objects.
             template_data:
                 A dictionary containing template data to be used in updating records.
                 This kwarg is only used for order-level records.
@@ -58,9 +55,10 @@ class BibUpdater:
         """
         out = []
         for record in records:
-            ctx = self.strategy.create_context(record=record, **kwargs)
+            record.bib.update_bib_id(record.decision.target_bib_id)
+            ctx = self.strategy.create_context(record=record.bib, **kwargs)
             for step in self.strategy.pipeline:
                 step.apply(ctx)
-            record.binary_data = ctx.bib_rec.as_marc()
-            out.append(record)
+            record.bib.binary_data = ctx.bib_rec.as_marc()
+            out.append(record.bib)
         return out

@@ -1,6 +1,6 @@
 import pytest
 
-from overload_web.bib_records.domain_models import sierra_responses
+from overload_web.bib_records.domain_models import matches
 from overload_web.bib_records.domain_services import review
 
 
@@ -13,7 +13,7 @@ class TestReviewer:
         service = review.FullLevelBibReviewer(context_factory=update_strategy)
         deduped_bibs = service.dedupe(
             [full_bib],
-            [sierra_responses.MatchContext(bib=full_bib, candidates=[sierra_response])],
+            [matches.MatchContext(bib=full_bib, candidates=[sierra_response])],
         )
         assert len(deduped_bibs["DUP"]) == 0
         assert len(deduped_bibs["NEW"]) == 1
@@ -35,10 +35,10 @@ class TestReviewer:
         "library, collection, record_type", [("bpl", "NONE", "cat")]
     )
     def test_validate_cat_bpl_960_item(
-        self, full_bpl_bib, update_strategy, caplog, collection
+        self, full_bib, update_strategy, caplog, collection
     ):
         service = review.FullLevelBibReviewer(context_factory=update_strategy)
-        service.validate({"NEW": [full_bpl_bib]}, ["333331234567890"])
+        service.validate({"NEW": [full_bib]}, ["333331234567890"])
         assert len(caplog.records) == 1
         assert (
             caplog.records[0].msg == "Integrity validation: True, missing_barcodes: []"
@@ -64,12 +64,10 @@ class TestReviewer:
         "library, collection, record_type", [("bpl", "NONE", "cat")]
     )
     def test_validate_bpl_960_item_missing_barcodes(
-        self, full_bpl_bib, update_strategy, caplog, collection
+        self, full_bib, update_strategy, caplog, collection
     ):
         service = review.FullLevelBibReviewer(context_factory=update_strategy)
-        service.validate(
-            {"NEW": [full_bpl_bib]}, ["333331234567890", "333330987654321"]
-        )
+        service.validate({"NEW": [full_bib]}, ["333331234567890", "333330987654321"])
         assert len(caplog.records) == 2
         assert (
             caplog.records[0].msg

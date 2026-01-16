@@ -1,6 +1,8 @@
 import copy
+import datetime
 
 import pytest
+from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
 from overload_web.bib_records.domain_services import parse
@@ -8,19 +10,163 @@ from overload_web.bib_records.infrastructure import marc_mapper
 
 
 @pytest.fixture
-def full_parser_service(library, test_constants):
+def stub_bib(library, collection) -> Bib:
+    bib = Bib()
+    bib.leader = "00000cam  2200517 i 4500"
+    bib.library = library
+    if library == "bpl":
+        bib.add_field(
+            Field(
+                tag="037",
+                indicators=Indicators(" ", " "),
+                subfields=[
+                    Subfield(code="a", value="123"),
+                    Subfield(code="b", value="OverDrive, Inc."),
+                ],
+            )
+        )
+    else:
+        bib.add_field(
+            Field(
+                tag="910",
+                indicators=Indicators(" ", " "),
+                subfields=[Subfield(code="a", value=collection)],
+            )
+        )
+    bib.add_field(
+        Field(
+            tag="949",
+            indicators=Indicators(" ", "1"),
+            subfields=[
+                Subfield(code="i", value="333331234567890"),
+            ],
+        )
+    )
+    bib.add_field(
+        Field(
+            tag="960",
+            indicators=Indicators(" ", " "),
+            subfields=[
+                Subfield(code="c", value="j"),
+                Subfield(code="d", value="c"),
+                Subfield(code="e", value="d"),
+                Subfield(code="f", value="a"),
+                Subfield(code="g", value="b"),
+                Subfield(code="i", value="l"),
+                Subfield(code="m", value="o"),
+                Subfield(code="o", value="13"),
+                Subfield(code="q", value="01-01-25"),
+                Subfield(code="s", value="{{dollar}}13.20"),
+                Subfield(code="t", value="agj0y"),
+                Subfield(code="u", value="lease"),
+                Subfield(code="v", value="btlea"),
+                Subfield(code="w", value="eng"),
+                Subfield(code="x", value="xxu"),
+                Subfield(code="z", value=".o10000010"),
+            ],
+        )
+    )
+    bib.add_field(
+        Field(
+            tag="961",
+            indicators=Indicators(" ", " "),
+            subfields=[
+                Subfield(code="d", value="foo"),
+                Subfield(code="f", value="bar"),
+                Subfield(code="m", value="baz"),
+            ],
+        )
+    )
+    return bib
+
+
+@pytest.fixture
+def order_rules():
+    return {
+        "audience": "audn",
+        "branches": "branches",
+        "copies": "copies",
+        "create_date": "created",
+        "format": "form",
+        "lang": "lang",
+        "locations": "locs",
+        "order_id": "order_id",
+        "shelves": "shelves",
+        "status": "status",
+        "vendor_notes": "venNotes",
+        "_field": {
+            "c": "order_code_1",
+            "d": "order_code_2",
+            "e": "order_code_3",
+            "f": "order_code_4",
+            "i": "order_type",
+            "s": "price",
+            "u": "fund",
+            "v": "vendor_code",
+            "x": "country",
+        },
+        "_following_field": {
+            "d": "internal_note",
+            "f": "selector_note",
+            "i": "vendor_title_no",
+            "m": "blanket_po",
+        },
+    }
+
+
+@pytest.fixture
+def bib_rules():
+    return {
+        "barcodes": "barcodes",
+        "bib_id": "sierra_bib_id",
+        "collection": "collection",
+        "library": "library",
+        "title": "title",
+        "update_date": {"tag": "005"},
+    }
+
+
+@pytest.fixture
+def vendor_rules():
+    return {
+        "nypl": {
+            "UNKNOWN": {"vendor_tags": {}, "matchpoints": {}, "bib_fields": []},
+            "BT SERIES": {
+                "vendor_tags": {"primary": {"901": {"code": "a", "value": "BTSERIES"}}},
+                "matchpoints": {},
+                "bib_fields": [],
+            },
+        },
+        "bpl": {
+            "UNKNOWN": {"vendor_tags": {}, "matchpoints": {}, "bib_fields": []},
+            "BT SERIES": {
+                "vendor_tags": {
+                    "primary": {"037": {"code": "b", "value": "B&amp;T SERIES"}},
+                    "alternate": {"947": {"code": "a", "value": "B&amp;T SERIES"}},
+                },
+                "matchpoints": {},
+                "bib_fields": [],
+            },
+        },
+    }
+
+
+@pytest.fixture
+def full_parser_service(library, bib_rules, vendor_rules):
+    rules = {"bib": bib_rules, "order": {}, "vendors": vendor_rules}
     return parse.FullLevelBibParser(
         mapper=marc_mapper.BookopsMarcMapper(
-            rules=test_constants["mapper_rules"], library=library, record_type="cat"
+            rules=rules, library=library, record_type="cat"
         )
     )
 
 
 @pytest.fixture
-def order_parser_service(library, test_constants):
+def order_parser_service(library, bib_rules, order_rules):
+    rules = {"bib": bib_rules, "order": order_rules}
     return parse.OrderLevelBibParser(
         mapper=marc_mapper.BookopsMarcMapper(
-            rules=test_constants["mapper_rules"], library=library, record_type="acq"
+            rules=rules, library=library, record_type="acq"
         )
     )
 
@@ -30,11 +176,10 @@ def order_parser_service(library, test_constants):
     [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
 )
 class TestParser:
-    def test_parse_full(self, full_parser_service, full_bib, caplog):
-        records = full_parser_service.parse(full_bib.binary_data)
+    def test_parse_full(self, full_parser_service, stub_bib, caplog):
+        records = full_parser_service.parse(stub_bib.as_marc())
         assert len(records) == 1
         assert records[0].library == full_parser_service.mapper.library
-        assert records[0].isbn == "9781234567890"
         assert records[0].barcodes == ["333331234567890"]
         assert records[0].vendor_info.name == "UNKNOWN"
         assert len(caplog.records) == 1
@@ -55,31 +200,31 @@ class TestParser:
         records = full_parser_service.parse(stub_vendor_bib.as_marc())
         assert len(records) == 1
         assert records[0].library == full_parser_service.mapper.library
-        assert records[0].isbn == "9781234567890"
         assert records[0].barcodes == ["333331234567890"]
         assert records[0].vendor_info is not None
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
 
     def test_parse_order_level(
-        self, order_parser_service, order_level_bib, collection, caplog
+        self, order_parser_service, stub_bib, collection, caplog
     ):
-        records = order_parser_service.parse(order_level_bib.binary_data)
+        records = order_parser_service.parse(stub_bib.as_marc())
         assert len(records) == 1
         assert records[0].library == order_parser_service.mapper.library
-        assert records[0].isbn == "9781234567890"
         assert records[0].collection == collection
         assert records[0].barcodes == ["333331234567890"]
         assert records[0].vendor_info is None
+        assert records[0].update_date is None
+        assert records[0].update_datetime is None
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
 
-    def test_parse_no_005(self, order_parser_service, stub_bib, caplog):
-        stub_bib.remove_fields("005")
+    def test_parse_update_date(self, order_parser_service, stub_bib, caplog):
+        stub_bib.add_field(Field(tag="005", data="20200101010000.0"))
         records = order_parser_service.parse(stub_bib.as_marc())
         assert len(records) == 1
         assert records[0].vendor_info is None
-        assert records[0].update_date is None
-        assert records[0].update_datetime is None
+        assert records[0].update_date == "20200101010000.0"
+        assert records[0].update_datetime == datetime.datetime(2020, 1, 1, 1, 0, 0, 0)
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg

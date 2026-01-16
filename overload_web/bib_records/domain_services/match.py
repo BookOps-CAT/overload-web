@@ -11,7 +11,7 @@ import logging
 from abc import ABC
 from typing import Protocol, runtime_checkable
 
-from overload_web.bib_records.domain_models import bibs, sierra_responses
+from overload_web.bib_records.domain_models import bibs, matches, sierra_responses
 from overload_web.errors import OverloadError
 
 logger = logging.getLogger(__name__)
@@ -96,7 +96,7 @@ class BibMatcher(ABC):
 class OrderLevelBibMatcher(BibMatcher):
     def match(
         self, records: list[bibs.DomainBib], matchpoints: dict[str, str]
-    ) -> list[sierra_responses.MatchContext]:
+    ) -> list[matches.MatchContext]:
         """
         Match order-level bibliographic records against Sierra.
 
@@ -113,17 +113,15 @@ class OrderLevelBibMatcher(BibMatcher):
         """
         out = []
         for record in records:
-            matches: list[sierra_responses.BaseSierraResponse] = self._match_bib(
+            responses: list[sierra_responses.BaseSierraResponse] = self._match_bib(
                 record=record, matchpoints=matchpoints
             )
-            out.append(sierra_responses.MatchContext(bib=record, candidates=matches))
+            out.append(matches.MatchContext(bib=record, candidates=responses))
         return out
 
 
 class FullLevelBibMatcher(BibMatcher):
-    def match(
-        self, records: list[bibs.DomainBib]
-    ) -> list[sierra_responses.MatchContext]:
+    def match(self, records: list[bibs.DomainBib]) -> list[matches.MatchContext]:
         """
         Match full-level bibliographic records against Sierra.
 
@@ -142,8 +140,8 @@ class FullLevelBibMatcher(BibMatcher):
         for record in records:
             if record.vendor_info is None:
                 raise OverloadError("Vendor index required for cataloging workflow.")
-            matches: list[sierra_responses.BaseSierraResponse] = self._match_bib(
+            responses: list[sierra_responses.BaseSierraResponse] = self._match_bib(
                 record=record, matchpoints=record.vendor_info.matchpoints
             )
-            out.append(sierra_responses.MatchContext(bib=record, candidates=matches))
+            out.append(matches.MatchContext(bib=record, candidates=responses))
         return out

@@ -7,7 +7,7 @@ from collections import Counter
 from itertools import chain
 from typing import Any, Protocol
 
-from overload_web.bib_records.domain_models import bibs, sierra_responses
+from overload_web.bib_records.domain_models import bibs, matches
 
 logger = logging.getLogger(__name__)
 
@@ -51,13 +51,13 @@ class FullLevelBibReviewer:
     def dedupe(
         self,
         records: list[bibs.DomainBib],
-        reports: list[sierra_responses.MatchAnalysis],
+        reports: list[matches.MatchAnalysis],
     ) -> dict[str, list[bibs.DomainBib]]:
         merge_recs: list[bibs.DomainBib] = []
         new_recs: list[bibs.DomainBib] = []
         deduped_recs: list[bibs.DomainBib] = []
         for analysis, record in zip(reports, records):
-            if analysis == sierra_responses.CatalogAction.ATTACH:
+            if analysis == matches.CatalogAction.ATTACH:
                 merge_recs.append(record)
             else:
                 new_recs.append(record)

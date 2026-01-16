@@ -36,6 +36,17 @@ class TestMatcher:
         matched_bibs = service.match([stub_domain_bib])
         assert len(matched_bibs[0].candidates) == 1
 
+    def test_match_full_no_candidates(self, fake_fetcher_no_matches, stub_domain_bib):
+        stub_domain_bib.vendor_info = bibs.VendorInfo(
+            name="UNKNOWN",
+            matchpoints={"primary_matchpoint": "isbn"},
+            bib_fields=[],
+        )
+        stub_domain_bib.record_type = "cat"
+        service = match.FullLevelBibMatcher(fetcher=fake_fetcher_no_matches)
+        matched_bibs = service.match([stub_domain_bib])
+        assert len(matched_bibs[0].candidates) == 0
+
     def test_match_full_no_vendor_index(self, fake_fetcher, stub_domain_bib):
         stub_domain_bib.record_type = "cat"
         service = match.FullLevelBibMatcher(fetcher=fake_fetcher)
