@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 import logging
 from abc import ABC
 from typing import (
@@ -76,6 +77,10 @@ class BibParser(ABC, Generic[T]):
             parsed.append((bib_dict, record))
 
         return parsed
+
+    def extract_barcodes(self, records: list[bibs.DomainBib]) -> list[str]:
+        """Extract all barcodes from a list of `DomainBib` objects"""
+        return list(itertools.chain.from_iterable([i.barcodes for i in records]))
 
 
 class FullLevelBibParser(BibParser):

@@ -13,7 +13,15 @@ class TestReviewer:
         service = review.FullLevelBibReviewer(context_factory=update_strategy)
         deduped_bibs = service.dedupe(
             [full_bib],
-            [matches.MatchContext(bib=full_bib, candidates=[sierra_response])],
+            [
+                matches.MatchDecisionResult(
+                    full_bib,
+                    matches.MatchDecision(
+                        matches.CatalogAction.ATTACH, target_bib_id=full_bib.bib_id
+                    ),
+                    [matches.MatchContext(bib=full_bib, candidates=[sierra_response])],
+                )
+            ],
         )
         assert len(deduped_bibs["DUP"]) == 0
         assert len(deduped_bibs["NEW"]) == 1

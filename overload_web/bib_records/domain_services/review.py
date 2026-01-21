@@ -51,12 +51,13 @@ class FullLevelBibReviewer:
     def dedupe(
         self,
         records: list[bibs.DomainBib],
-        reports: list[matches.MatchAnalysis],
+        reports: list[matches.MatchDecisionResult],
     ) -> dict[str, list[bibs.DomainBib]]:
         merge_recs: list[bibs.DomainBib] = []
         new_recs: list[bibs.DomainBib] = []
         deduped_recs: list[bibs.DomainBib] = []
-        for analysis, record in zip(reports, records):
+        analyses = [i.analysis for i in reports]
+        for analysis, record in zip(analyses, records):
             if analysis == matches.CatalogAction.ATTACH:
                 merge_recs.append(record)
             else:
@@ -114,8 +115,28 @@ class FullLevelBibReviewer:
         if not valid:
             logger.error(f"Barcodes integrity error: {list(missing_barcodes)}")
 
-    # def review_records(self) -> dict[str, list[bibs.DomainBib]]:
+    def dedupe_and_validate(
+        self,
+        records: list[bibs.DomainBib],
+        reports: list[matches.MatchDecisionResult],
+        barcodes: list[str],
+    ) -> dict[str, list[bibs.DomainBib]]:
+        """
+        Review full-level bibliographic records before serializing records to MARC.
 
-    def review_records(self) -> None:
-        """Review full-level bibliographic records before finalizing updates."""
-        pass  # Implementation would go here
+        Args:
+            records:
+                a list of bib records represented at `DomainBib` objects.
+            reports:
+                a list of bib records and their associated match analysis results
+                as `MatchDecisionResult` objects.
+            barcodes:
+                the list of all barcodes present in the file extracted from the
+                records at the beginning of processing.
+        Returns:
+            a dictionary containing the `DomainBib` objects to be written and
+            the file that they should be written to.
+        """
+        deduped_recs = self.dedupe(records=records, reports=reports)
+        self.validate(record_batches=deduped_recs, barcodes=barcodes)
+        return deduped_recs

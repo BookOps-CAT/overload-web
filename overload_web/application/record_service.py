@@ -17,7 +17,6 @@ Classes:
     records containing `cat` as the value for their `record_type` attribute).
 """
 
-import itertools
 import logging
 from typing import Any, BinaryIO
 
@@ -98,16 +97,13 @@ class FullRecordProcessingService:
             will be appended to the file name when writing the binary data to a file.
         """
         parsed_records = self.parser.parse(data=data)
-        barcodes = list(
-            itertools.chain.from_iterable([i.barcodes for i in parsed_records])
-        )
+        barcodes = self.parser.extract_barcodes(parsed_records)
         matched_records = self.matcher.match(records=parsed_records)
         match_analysis = self.analyzer.analyze_matches(matches=matched_records)
         updated_records = self.updater.update(records=match_analysis)
-        deduped_records = self.reviewer.dedupe(
-            records=updated_records, reports=match_analysis
+        deduped_records = self.reviewer.dedupe_and_validate(
+            records=updated_records, reports=match_analysis, barcodes=barcodes
         )
-        self.reviewer.validate(record_batches=deduped_records, barcodes=barcodes)
         serialized_records = self.serializer.serialize(record_batches=deduped_records)
         return serialized_records
 
