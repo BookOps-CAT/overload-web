@@ -10,12 +10,7 @@ from typing import Annotated, Any, AsyncGenerator, Optional
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from overload_web.presentation import (
-    dto,
-    file_service_dep,
-    record_service_deps,
-    template_service_dep,
-)
+from overload_web.presentation.deps import dto, files, records, templates
 
 logger = logging.getLogger(__name__)
 
@@ -24,14 +19,14 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: APIRouter) -> AsyncGenerator[None, None]:
     """Create and drop database tables on startup/shutdown."""
     logger.info("Starting up Overload...")
-    template_service_dep.create_db_and_tables()
+    templates.create_db_and_tables()
     yield
     logger.info("Shutting down Overload...")
 
 
 api_router = APIRouter(prefix="/api", tags=["api"], lifespan=lifespan)
 
-TemplateService = Annotated[Any, Depends(template_service_dep.template_handler)]
+TemplateService = Annotated[Any, Depends(templates.template_handler)]
 
 
 @api_router.post("/template", response_class=HTMLResponse)
@@ -145,7 +140,7 @@ def update_template(
 def write_local_file(
     vendor_file: dto.VendorFileModel,
     dir: str,
-    service: Annotated[Any, Depends(file_service_dep.local_file_writer)],
+    service: Annotated[Any, Depends(files.local_file_writer)],
 ) -> JSONResponse:
     """Write a file to a local directory."""
     out_files = service.writer.write(file=vendor_file, dir=dir)
@@ -158,7 +153,7 @@ def write_local_file(
 def list_remote_files(
     request: Request,
     vendor: str,
-    service: Annotated[Any, Depends(file_service_dep.remote_file_loader)],
+    service: Annotated[Any, Depends(files.remote_file_loader)],
 ) -> HTMLResponse:
     """
     List all files on a vendor's SFTP server.
@@ -182,7 +177,7 @@ def write_remote_file(
     vendor_file: dto.VendorFileModel,
     dir: str,
     vendor: str,
-    service: Annotated[Any, Depends(file_service_dep.remote_file_writer)],
+    service: Annotated[Any, Depends(files.remote_file_writer)],
 ) -> JSONResponse:
     """Write a file to a remote directory."""
     out_files = service.writer.write(file=vendor_file, dir=dir)
@@ -194,15 +189,11 @@ def write_remote_file(
 @api_router.post("/process-vendor-file", response_class=HTMLResponse)
 def process_vendor_file(
     request: Request,
-    full_record_service: Annotated[
-        Any, Depends(record_service_deps.full_level_processing_service)
-    ],
+    full_record_service: Annotated[Any, Depends(records.full_level_processing_service)],
     order_record_service: Annotated[
-        Any, Depends(record_service_deps.order_level_processing_service)
+        Any, Depends(records.order_level_processing_service)
     ],
-    files: Annotated[
-        list[dto.VendorFileModel], Depends(file_service_dep.normalize_files)
-    ],
+    files: Annotated[list[dto.VendorFileModel], Depends(files.normalize_files)],
     order_template: Annotated[Any, Depends(dto.from_form(dto.TemplateDataModel))],
     matchpoints: Annotated[Any, Depends(dto.from_form(dto.MatchpointSchema))],
     vendor: Annotated[str, Form(...)],
