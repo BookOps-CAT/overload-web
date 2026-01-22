@@ -7,7 +7,7 @@ from collections import Counter
 from itertools import chain
 from typing import Any, Protocol
 
-from overload_web.bib_records.domain_models import bibs, matches
+from overload_web.bib_records.domain_models import bibs
 
 logger = logging.getLogger(__name__)
 
@@ -51,13 +51,13 @@ class FullLevelBibReviewer:
     def dedupe(
         self,
         records: list[bibs.DomainBib],
-        reports: list[matches.MatchAnalysis],
+        reports: list[bibs.MatchAnalysis],
     ) -> dict[str, list[bibs.DomainBib]]:
         merge_recs: list[bibs.DomainBib] = []
         new_recs: list[bibs.DomainBib] = []
         deduped_recs: list[bibs.DomainBib] = []
         for analysis, record in zip(reports, records):
-            if analysis == matches.CatalogAction.ATTACH:
+            if analysis == bibs.CatalogAction.ATTACH:
                 merge_recs.append(record)
             else:
                 new_recs.append(record)
@@ -117,7 +117,7 @@ class FullLevelBibReviewer:
     def dedupe_and_validate(
         self,
         records: list[bibs.DomainBib],
-        reports: list[matches.MatchAnalysis],
+        reports: list[bibs.MatchAnalysis],
         barcodes: list[str],
     ) -> dict[str, list[bibs.DomainBib]]:
         """
@@ -128,7 +128,7 @@ class FullLevelBibReviewer:
                 a list of bib records represented at `DomainBib` objects.
             reports:
                 a list of bib records and their associated match analysis results
-                as `MatchDecisionResult` objects.
+                as `MatchAnalysis` objects.
             barcodes:
                 the list of all barcodes present in the file extracted from the
                 records at the beginning of processing.

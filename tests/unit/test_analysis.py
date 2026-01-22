@@ -1,6 +1,6 @@
 import pytest
 
-from overload_web.bib_records.domain_models import matches, sierra_responses
+from overload_web.bib_records.domain_models import bibs, sierra_responses
 from overload_web.bib_records.domain_services import analysis
 
 
@@ -408,7 +408,7 @@ class TestBPLCatMatchAnalyzer:
         result = analyzer.analyze_match(record=full_bib, candidates=[])
         assert full_bib.bib_id is None
         assert result.target_bib_id is None
-        assert result.action == matches.CatalogAction.INSERT
+        assert result.action == bibs.CatalogAction.INSERT
 
     def test_analyze_no_results_midwest(self, full_bib):
         full_bib.vendor = "Midwest DVD"

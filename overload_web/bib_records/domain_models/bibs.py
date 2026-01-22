@@ -8,13 +8,12 @@ from enum import StrEnum
 from typing import Any
 
 
-class Collection(StrEnum):
-    """Valid values for NYPL and BPL collections"""
+class CatalogAction(StrEnum):
+    """Valid values for a cataloging action."""
 
-    BRANCH = "BL"
-    RESEARCH = "RL"
-    MIXED = "MIXED"
-    NONE = "NONE"
+    ATTACH = "attach"
+    OVERLAY = "overlay"
+    INSERT = "insert"
 
 
 @dataclass(frozen=True)
@@ -31,6 +30,15 @@ class ClassifiedCandidates:
         if len(self.matched) > 1:
             return [i.bib_id for i in self.matched]
         return duplicates
+
+
+class Collection(StrEnum):
+    """Valid values for NYPL and BPL collections"""
+
+    BRANCH = "BL"
+    RESEARCH = "RL"
+    MIXED = "MIXED"
+    NONE = "NONE"
 
 
 class DomainBib:
@@ -202,6 +210,41 @@ class LibrarySystem(StrEnum):
 
     BPL = "bpl"
     NYPL = "nypl"
+
+
+class MatchAnalysis:
+    """Components extracted from match review process."""
+
+    def __init__(
+        self,
+        call_number_match: bool,
+        classified: ClassifiedCandidates,
+        decision: MatchDecision,
+        match_identifiers: DomainBibMatchIds,
+        vendor: str | None,
+        target_call_no: str | None = None,
+        target_title: str | None = None,
+    ) -> None:
+        self.action = decision.action
+        self.call_number = match_identifiers.call_number
+        self.call_number_match = call_number_match
+        self.decision = decision
+        self.duplicate_records = classified.duplicates
+        self.mixed = classified.mixed
+        self.other = classified.other
+        self.resource_id = match_identifiers.resource_id
+        self.target_bib_id = decision.target_bib_id
+        self.target_call_no = target_call_no
+        self.target_title = target_title
+        self.updated_by_vendor = decision.updated_by_vendor
+        self.vendor = vendor
+
+
+@dataclass(frozen=True)
+class MatchDecision:
+    action: CatalogAction
+    target_bib_id: str | None
+    updated_by_vendor: bool = False
 
 
 class Order:

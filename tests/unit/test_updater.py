@@ -4,13 +4,13 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.bib_records.domain_models import bibs, matches
+from overload_web.bib_records.domain_models import bibs
 from overload_web.bib_records.domain_services import update
 
 
 @pytest.fixture
 def match_decision():
-    return matches.MatchDecision(matches.CatalogAction.ATTACH, "12345")
+    return bibs.MatchDecision(bibs.CatalogAction.ATTACH, "12345")
 
 
 @pytest.fixture

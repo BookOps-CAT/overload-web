@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Protocol, TypeVar
 
-from overload_web.bib_records.domain_models import bibs, matches
+from overload_web.bib_records.domain_models import bibs
 
 logger = logging.getLogger(__name__)
 
@@ -42,15 +42,17 @@ class BibUpdater:
         self.strategy = strategy
 
     def update(
-        self, record: bibs.DomainBib, decision: matches.MatchDecision, **kwargs: Any
+        self, record: bibs.DomainBib, decision: bibs.MatchDecision, **kwargs: Any
     ) -> bibs.DomainBib:
         """
         Update a bibliographic record.
 
         Args:
             record:
-                A parsed bibliographic records and associated data as a
-                `MatchDecisionResult` object.
+                A parsed bibliographic record
+            decision:
+                The bib ID to be assigned to the record and other associated data as a
+                `MatchDecision` object.
             template_data:
                 A dictionary containing template data to be used in updating records.
                 This kwarg is only used for order-level records.
