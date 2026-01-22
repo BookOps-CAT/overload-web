@@ -9,20 +9,6 @@ from overload_web.bib_records.domain_services import update
 
 
 @pytest.fixture
-def match_result():
-    def create_match_result(bib):
-        decision = matches.MatchDecision(matches.CatalogAction.ATTACH, bib.bib_id)
-        candidates = matches.ClassifiedCandidates([], [], [])
-        analysis = matches.MatchAnalysis(
-            True, candidates, decision, bib.match_identifiers(), bib.vendor
-        )
-        match_result = matches.MatchDecisionResult(bib, decision, analysis)
-        return match_result
-
-    return create_match_result
-
-
-@pytest.fixture
 def full_match_result(full_bib):
     decision = matches.MatchDecision(matches.CatalogAction.ATTACH, "12345")
     candidates = matches.ClassifiedCandidates([], [], [])
