@@ -229,20 +229,28 @@ def process_vendor_file(
         the processed files wrapped in a `HTMLResponse` object
 
     """
-    out_files = []
+    out_files = {}
     if record_type == "cat":
         for file in files:
-            output = full_record_service.process_vendor_file(data=file.content)
-            out_files.append({"file_name": file.file_name, "binary_content": output})
+            analysis, processed_records = full_record_service.process_vendor_file(
+                data=file.content
+            )
+            out_files[file.file_name] = {
+                "records": processed_records,
+                "analysis": analysis,
+            }
     else:
         for file in files:
-            output = order_record_service.process_vendor_file(
+            analysis, processed_records = order_record_service.process_vendor_file(
                 data=file.content,
                 template_data=order_template.model_dump(),
                 matchpoints=matchpoints.model_dump(),
                 vendor=vendor,
             )
-            out_files.append({"file_name": file.file_name, "binary_content": output})
+            out_files[file.file_name] = {
+                "records": processed_records,
+                "analysis": analysis,
+            }
     return request.app.state.templates.TemplateResponse(
         request=request, name="partials/pvf_results.html", context={"files": out_files}
     )

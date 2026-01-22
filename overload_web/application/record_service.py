@@ -2,7 +2,7 @@
 
 This module defines record processing services for full and order-level MARC records.
 The services each take `BibFetcher`, `BibMapper`, `MatchAnalyzer`, and
-`BibUpdater` objects as args and have an additional `serializer` attribute.
+`BibUpdater` objects as args.
 
 Classes:
 
@@ -20,14 +20,8 @@ Classes:
 import logging
 from typing import Any, BinaryIO
 
-from overload_web.bib_records.domain_services import (
-    analysis,
-    match,
-    parse,
-    review,
-    serialize,
-    update,
-)
+from overload_web.bib_records.domain_models import bibs
+from overload_web.bib_records.domain_services import analysis, match, parse, update
 
 logger = logging.getLogger(__name__)
 
@@ -52,14 +46,14 @@ class MatchAnalyzerFactory:
 
 
 class FullRecordProcessingService:
-    """Handles parsing, matching, and serialization of full-level MARC records."""
+    """Handles parsing, matching, and analysis of full-level MARC records."""
 
     def __init__(
         self,
         bib_fetcher: match.BibFetcher,
         bib_mapper: parse.BibMapper,
         analyzer: analysis.MatchAnalyzer,
-        updater: update.BibUpdater,
+        update_strategy: update.MarcUpdateStrategy,
     ):
         """
         Initialize `FullRecordProcessingService`.
@@ -71,23 +65,23 @@ class FullRecordProcessingService:
                 A `parse.BibMapper` object
             analyzer:
                 An `analysis.MatchAnalyzer` object
-            updater:
-                An `update.BibUpdater` object
+            update_strategy:
+                An `update.MarcUpdateStrategy` object
         """
         self.analyzer = analyzer
         self.matcher = match.FullLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = parse.FullLevelBibParser(mapper=bib_mapper)
-        self.reviewer = review.FullLevelBibReviewer(context_factory=updater.strategy)
-        self.updater = updater
-        self.serializer = serialize.FullLevelBibSerializer()
+        self.updater = update.BibUpdater(strategy=update_strategy)
 
-    def process_vendor_file(self, data: BinaryIO | bytes) -> dict[str, BinaryIO]:
+    def process_vendor_file(
+        self, data: BinaryIO | bytes
+    ) -> tuple[dict[str, Any], list[bibs.DomainBib]]:
         """
         Process a file of full MARC records.
 
         This service parses full MARC records, matches them against Sierra, analyzes
         all bibs that were returned as matches, updates the records with required
-        fields, validates the output, and writes the output to MARC binary.
+        fields, and outputs the updated records and the analysis.
 
         Args:
             data: Binary MARC data as a `BinaryIO` or `bytes` object.
@@ -99,30 +93,29 @@ class FullRecordProcessingService:
         parsed_records = self.parser.parse(data=data)
         barcodes = self.parser.extract_barcodes(parsed_records)
         updated_records = []
-        match_analysis = []
+        match_report = []
         for record in parsed_records:
             candidates = self.matcher.match(record=record)
             analysis = self.analyzer.analyze_match(record=record, candidates=candidates)
             record.apply_match_decision(analysis.decision)
             updated = self.updater.update(record=record)
             updated_records.append(updated)
-            match_analysis.append(analysis)
-        deduped_records = self.reviewer.dedupe_and_validate(
-            records=updated_records, reports=match_analysis, barcodes=barcodes
+            match_report.append(analysis)
+        analysis_report = bibs.MatchAnalysisReport(
+            analyses=match_report, barcodes=barcodes
         )
-        serialized_records = self.serializer.serialize(record_batches=deduped_records)
-        return serialized_records
+        return (analysis_report.to_dict(), updated_records)
 
 
 class OrderRecordProcessingService:
-    """Handles parsing, matching, and serialization of order-level MARC records."""
+    """Handles parsing, matching, and analysis of order-level MARC records."""
 
     def __init__(
         self,
         bib_fetcher: match.BibFetcher,
         bib_mapper: parse.BibMapper,
         analyzer: analysis.MatchAnalyzer,
-        updater: update.BibUpdater,
+        update_strategy: update.MarcUpdateStrategy,
     ):
         """
         Initialize `OrderRecordProcessingService`.
@@ -134,14 +127,13 @@ class OrderRecordProcessingService:
                 A `parse.BibMapper` object
             analyzer:
                 An `analysis.MatchAnalyzer` object
-            updater:
-                An `update.BibUpdater` object
+            update_strategy:
+                An `update.MarcUpdateStrategy` object
         """
         self.analyzer = analyzer
         self.matcher = match.OrderLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = parse.OrderLevelBibParser(mapper=bib_mapper)
-        self.updater = updater
-        self.serializer = serialize.OrderLevelBibSerializer()
+        self.updater = update.BibUpdater(strategy=update_strategy)
 
     def process_vendor_file(
         self,
@@ -149,13 +141,13 @@ class OrderRecordProcessingService:
         matchpoints: dict[str, str],
         template_data: dict[str, Any],
         vendor: str | None,
-    ) -> BinaryIO:
+    ) -> tuple[dict[str, Any], list[bibs.DomainBib]]:
         """
         Process a file of full MARC records.
 
         This service parses full MARC records, matches them against Sierra, analyzes
         all bibs that were returned as matches, updates the records with required
-        fields, validates the output, and writes the output to MARC binary.
+        fields, and outputs the updated records and the analysis.
 
         Args:
             data:
@@ -172,11 +164,13 @@ class OrderRecordProcessingService:
         """
         parsed_records = self.parser.parse(data=data, vendor=vendor)
         updated_records = []
+        match_report = []
         for record in parsed_records:
             candidates = self.matcher.match(record=record, matchpoints=matchpoints)
             analysis = self.analyzer.analyze_match(record=record, candidates=candidates)
             record.apply_match_decision(analysis.decision)
             updated = self.updater.update(record=record, template_data=template_data)
             updated_records.append(updated)
-        output = self.serializer.serialize(updated_records)
-        return output
+            match_report.append(analysis)
+        analysis_report = bibs.MatchAnalysisReport(analyses=match_report)
+        return (analysis_report.to_dict(), updated_records)

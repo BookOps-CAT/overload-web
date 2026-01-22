@@ -20,8 +20,11 @@ class TestReviewer:
                 bibs.MatchAnalysis(
                     True,
                     bibs.ClassifiedCandidates([], [], []),
+                    full_bib.collection,
                     decision,
+                    full_bib.library,
                     full_bib.match_identifiers(),
+                    full_bib.record_type,
                     full_bib.vendor,
                 ),
             ],

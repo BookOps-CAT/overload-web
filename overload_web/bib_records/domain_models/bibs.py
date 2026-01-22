@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any
+from typing import Any, Optional
 
 
 class CatalogAction(StrEnum):
@@ -222,8 +222,11 @@ class MatchAnalysis:
         self,
         call_number_match: bool,
         classified: ClassifiedCandidates,
+        collection: Collection,
         decision: MatchDecision,
+        library: LibrarySystem,
         match_identifiers: DomainBibMatchIds,
+        record_type: RecordType,
         vendor: str | None,
         target_call_no: str | None = None,
         target_title: str | None = None,
@@ -231,10 +234,13 @@ class MatchAnalysis:
         self.action = decision.action
         self.call_number = match_identifiers.call_number
         self.call_number_match = call_number_match
+        self.collection = collection
         self.decision = decision
         self.duplicate_records = classified.duplicates
+        self.library = library
         self.mixed = classified.mixed
         self.other = classified.other
+        self.record_type = record_type
         self.resource_id = match_identifiers.resource_id
         self.target_bib_id = decision.target_bib_id
         self.target_call_no = target_call_no
@@ -360,25 +366,21 @@ class VendorInfo:
 
 class MatchAnalysisReport:
     def __init__(
-        self,
-        analyses: list[MatchAnalysis],
-        library: str,
-        collection: str,
-        record_type: str,
+        self, analyses: list[MatchAnalysis], barcodes: Optional[list[str]] = None
     ) -> None:
         self._analyses = analyses
-        self.library = library
-        self.collection = collection
-        self.record_type = record_type
-
+        self.barcodes = barcodes
         self.action = tuple([i.action for i in self._analyses])
         self.call_number = tuple([i.call_number for i in self._analyses])
         self.call_number_match = tuple([i.call_number_match for i in self._analyses])
+        self.collection = tuple([i.collection for i in self._analyses])
         self.duplicate_records = tuple(
             [",".join(i.duplicate_records) for i in self._analyses]
         )
+        self.library = tuple([i.library for i in self._analyses])
         self.mixed = tuple([",".join(i.mixed) for i in self._analyses])
         self.other = tuple([",".join(i.other) for i in self._analyses])
+        self.record_type = tuple([i.record_type for i in self._analyses])
         self.resource_id = tuple([i.resource_id for i in self._analyses])
         self.target_bib_id = tuple([i.target_bib_id for i in self._analyses])
         self.target_call_no = tuple([i.target_call_no for i in self._analyses])
@@ -402,9 +404,9 @@ class MatchAnalysisReport:
             "mixed": list(self.mixed),
             "other": list(self.other),
             "action": list(self.action),
-            "library": [self.library] * record_count,
-            "collection": [self.collection] * record_count,
-            "record_type": [self.record_type] * record_count,
+            "library": list(self.library),
+            "collection": list(self.collection),
+            "record_type": list(self.record_type),
             "corrected": ["no"] * record_count,
             "date": datetime.date.today().strftime("%y-%m-%d"),
         }

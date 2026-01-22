@@ -49,15 +49,14 @@ def get_mapper(
     )
 
 
-def get_update_handler(
+def get_update_strategy(
     library: Annotated[str, Form(...)],
     record_type: Annotated[str, Form(...)],
     constants: Annotated[dict[str, Any], Depends(get_constants)],
-) -> update.BibUpdater:
-    strategy = marc_updater.BookopsMarcUpdateStrategy(
+) -> update.MarcUpdateStrategy:
+    return marc_updater.BookopsMarcUpdateStrategy(
         rules=constants, record_type=record_type, library=library
     )
-    return update.BibUpdater(strategy=strategy)
 
 
 def order_level_processing_service(
@@ -66,14 +65,14 @@ def order_level_processing_service(
     analyzer: Annotated[
         record_service.analysis.MatchAnalyzer, Depends(get_match_analyzer)
     ],
-    updater: Annotated[update.BibUpdater, Depends(get_update_handler)],
+    update_strategy: Annotated[update.MarcUpdateStrategy, Depends(get_update_strategy)],
 ) -> Generator[record_service.OrderRecordProcessingService, None, None]:
     """Create an order-record processing service with injected dependencies."""
     yield record_service.OrderRecordProcessingService(
         bib_fetcher=fetcher,
         bib_mapper=mapper,
         analyzer=analyzer,
-        updater=updater,
+        update_strategy=update_strategy,
     )
 
 
@@ -83,12 +82,12 @@ def full_level_processing_service(
     analyzer: Annotated[
         record_service.analysis.MatchAnalyzer, Depends(get_match_analyzer)
     ],
-    updater: Annotated[update.BibUpdater, Depends(get_update_handler)],
+    update_strategy: Annotated[update.MarcUpdateStrategy, Depends(get_update_strategy)],
 ) -> Generator[record_service.FullRecordProcessingService, None, None]:
     """Create an full-record processing service with injected dependencies."""
     yield record_service.FullRecordProcessingService(
         bib_fetcher=fetcher,
         bib_mapper=mapper,
         analyzer=analyzer,
-        updater=updater,
+        update_strategy=update_strategy,
     )

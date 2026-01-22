@@ -77,6 +77,9 @@ class AcquisitionsMatchAnalyzer(MatchAnalyzer):
             vendor=vendor,
             target_call_no=record.branch_call_number,
             target_title=record.title,
+            record_type=record.record_type,
+            library=record.library,
+            collection=record.collection,
         )
         return analysis
 
@@ -107,6 +110,9 @@ class BPLCatMatchAnalyzer(MatchAnalyzer):
                 vendor=vendor,
                 target_call_no=record.branch_call_number,
                 target_title=record.title,
+                record_type=record.record_type,
+                library=record.library,
+                collection=record.collection,
             )
             return analysis
         for candidate in classified.matched:
@@ -126,6 +132,9 @@ class BPLCatMatchAnalyzer(MatchAnalyzer):
                         vendor=vendor,
                         target_call_no=candidate.branch_call_number,
                         target_title=candidate.title,
+                        record_type=record.record_type,
+                        library=record.library,
+                        collection=record.collection,
                     )
                     return analysis
         fallback = classified.matched[-1]
@@ -143,6 +152,9 @@ class BPLCatMatchAnalyzer(MatchAnalyzer):
             vendor=vendor,
             target_call_no=fallback.branch_call_number,
             target_title=fallback.title,
+            record_type=record.record_type,
+            library=record.library,
+            collection=record.collection,
         )
         return analysis
 
@@ -166,6 +178,9 @@ class NYPLCatResearchMatchAnalyzer(MatchAnalyzer):
                 decision=decision,
                 match_identifiers=match_ids,
                 vendor=vendor,
+                record_type=record.record_type,
+                library=record.library,
+                collection=record.collection,
             )
             return analysis
         for candidate in classified.matched:
@@ -184,6 +199,9 @@ class NYPLCatResearchMatchAnalyzer(MatchAnalyzer):
                     vendor=vendor,
                     target_title=candidate.title,
                     target_call_no=candidate.research_call_number[0],
+                    record_type=record.record_type,
+                    library=record.library,
+                    collection=record.collection,
                 )
                 return analysis
         last = classified.matched[-1]
@@ -198,6 +216,9 @@ class NYPLCatResearchMatchAnalyzer(MatchAnalyzer):
             vendor=vendor,
             target_title=last.title,
             target_call_no=None,
+            record_type=record.record_type,
+            library=record.library,
+            collection=record.collection,
         )
         return analysis
 
@@ -221,6 +242,9 @@ class NYPLCatBranchMatchAnalyzer(MatchAnalyzer):
                 decision=decision,
                 match_identifiers=match_ids,
                 vendor=vendor,
+                record_type=record.record_type,
+                library=record.library,
+                collection=record.collection,
             )
             return analysis
         for candidate in classified.matched:
@@ -242,6 +266,9 @@ class NYPLCatBranchMatchAnalyzer(MatchAnalyzer):
                     vendor=vendor,
                     target_title=candidate.title,
                     target_call_no=candidate.branch_call_number,
+                    record_type=record.record_type,
+                    library=record.library,
+                    collection=record.collection,
                 )
                 return analysis
 
@@ -258,6 +285,9 @@ class NYPLCatBranchMatchAnalyzer(MatchAnalyzer):
             vendor=vendor,
             target_title=fallback.title,
             target_call_no=fallback.branch_call_number,
+            record_type=record.record_type,
+            library=record.library,
+            collection=record.collection,
         )
         return analysis
 
@@ -281,6 +311,9 @@ class SelectionMatchAnalyzer(MatchAnalyzer):
                 decision=decision,
                 match_identifiers=match_ids,
                 vendor=vendor,
+                record_type=record.record_type,
+                library=record.library,
+                collection=record.collection,
             )
             return analysis
         for candidate in classified.matched:
@@ -296,6 +329,9 @@ class SelectionMatchAnalyzer(MatchAnalyzer):
                     vendor=vendor,
                     target_call_no=candidate.branch_call_number,
                     target_title=candidate.title,
+                    record_type=record.record_type,
+                    library=record.library,
+                    collection=record.collection,
                 )
                 return analysis
         fallback = classified.matched[-1]
@@ -310,5 +346,8 @@ class SelectionMatchAnalyzer(MatchAnalyzer):
             vendor=vendor,
             target_call_no=fallback.branch_call_number,
             target_title=fallback.title,
+            record_type=record.record_type,
+            library=record.library,
+            collection=record.collection,
         )
         return analysis

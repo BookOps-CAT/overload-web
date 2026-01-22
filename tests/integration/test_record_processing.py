@@ -1,11 +1,10 @@
-import io
 import json
 from typing import Any
 
 import pytest
 
 from overload_web.application import record_service
-from overload_web.bib_records.domain_services import update
+from overload_web.bib_records.domain_models import bibs
 from overload_web.bib_records.infrastructure import marc_mapper, marc_updater
 
 
@@ -24,16 +23,15 @@ def service_components(
     mapper = marc_mapper.BookopsMarcMapper(
         rules=get_constants["mapper_rules"], library=library, record_type=record_type
     )
-    strategy = marc_updater.BookopsMarcUpdateStrategy(
-        rules=get_constants, record_type=record_type, library=library
-    )
     return (
         fake_fetcher,
         mapper,
         record_service.MatchAnalyzerFactory().make(
             library=library, record_type=record_type, collection=collection
         ),
-        update.BibUpdater(strategy=strategy),
+        marc_updater.BookopsMarcUpdateStrategy(
+            rules=get_constants, record_type=record_type, library=library
+        ),
     )
 
 
@@ -47,15 +45,14 @@ class TestRecordProcessingService:
             bib_fetcher=service_components[0],
             bib_mapper=service_components[1],
             analyzer=service_components[2],
-            updater=service_components[3],
+            update_strategy=service_components[3],
         )
         with open("tests/data/sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        processed_files = service.process_vendor_file(marc_data)
-        assert isinstance(processed_files, dict)
-        assert isinstance(processed_files["DEDUPED"], io.BytesIO)
-        assert isinstance(processed_files["DUP"], io.BytesIO)
-        assert isinstance(processed_files["NEW"], io.BytesIO)
+        analysis, processed_files = service.process_vendor_file(marc_data)
+        assert isinstance(analysis, dict)
+        assert isinstance(processed_files, list)
+        assert isinstance(processed_files[0], bibs.DomainBib)
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
@@ -66,14 +63,16 @@ class TestRecordProcessingService:
             bib_fetcher=service_components[0],
             bib_mapper=service_components[1],
             analyzer=service_components[2],
-            updater=service_components[3],
+            update_strategy=service_components[3],
         )
         with open("tests/data/sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        processed_files = service.process_vendor_file(
+        analysis, processed_files = service.process_vendor_file(
             data=marc_data,
             template_data={"format": "a"},
             matchpoints={"primary_matchpoint": "isbn"},
             vendor="UNKNOWN",
         )
-        assert isinstance(processed_files, io.BytesIO)
+        assert isinstance(analysis, dict)
+        assert isinstance(processed_files, list)
+        assert isinstance(processed_files[0], bibs.DomainBib)
