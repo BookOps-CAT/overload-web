@@ -17,6 +17,22 @@ class Collection(StrEnum):
     NONE = "NONE"
 
 
+@dataclass(frozen=True)
+class ClassifiedCandidates:
+    """Holds candidate matches and associated data."""
+
+    matched: list
+    mixed: list[str]
+    other: list[str]
+
+    @property
+    def duplicates(self) -> list[str]:
+        duplicates: list[str] = []
+        if len(self.matched) > 1:
+            return [i.bib_id for i in self.matched]
+        return duplicates
+
+
 class DomainBib:
     """A domain model representing a bib record and its associated order data."""
 
@@ -111,6 +127,9 @@ class DomainBib:
             return datetime.datetime.strptime(self.update_date, "%Y%m%d%H%M%S.%f")
         return None
 
+    def apply_match_decision(self, decision: Any) -> None:
+        self.update_bib_id(decision.target_bib_id)
+
     def apply_order_template(self, template_data: dict[str, Any]) -> None:
         """
         Apply template data to all orders in this bib record.
@@ -123,6 +142,19 @@ class DomainBib:
         """
         for order in self.orders:
             order.apply_template(template_data=template_data)
+
+    def classify_matches(self, matches: list) -> ClassifiedCandidates:
+        """Classify the candidate matches associated with this response."""
+        matched, mixed, other = [], [], []
+        for c in sorted(matches, key=lambda i: int(i.bib_id.strip(".b")), reverse=True):
+            if c.collection == "MIXED":
+                mixed.append(c.bib_id)
+            elif c.collection == self.collection:
+                matched.append(c)
+            else:
+                other.append(c.bib_id)
+
+        return ClassifiedCandidates(matched, mixed, other)
 
     def update_bib_id(self, bib_id: str | None) -> None:
         """

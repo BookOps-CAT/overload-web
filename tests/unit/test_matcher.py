@@ -33,8 +33,8 @@ class TestMatcher:
         )
         stub_domain_bib.record_type = "cat"
         service = match.FullLevelBibMatcher(fetcher=fake_fetcher)
-        matched_bibs = service.match(stub_domain_bib)
-        assert len(matched_bibs.candidates) == 1
+        candidates = service.match(stub_domain_bib)
+        assert len(candidates) == 1
 
     def test_match_full_no_candidates(self, fake_fetcher_no_matches, stub_domain_bib):
         stub_domain_bib.vendor_info = bibs.VendorInfo(
@@ -44,8 +44,8 @@ class TestMatcher:
         )
         stub_domain_bib.record_type = "cat"
         service = match.FullLevelBibMatcher(fetcher=fake_fetcher_no_matches)
-        matched_bibs = service.match(stub_domain_bib)
-        assert len(matched_bibs.candidates) == 0
+        candidates = service.match(stub_domain_bib)
+        assert len(candidates) == 0
 
     def test_match_full_no_vendor_index(self, fake_fetcher, stub_domain_bib):
         stub_domain_bib.record_type = "cat"
@@ -57,10 +57,10 @@ class TestMatcher:
 
     def test_match_order_level(self, fake_fetcher, stub_domain_bib):
         service = match.OrderLevelBibMatcher(fetcher=fake_fetcher)
-        matched_bibs = service.match(
+        candidates = service.match(
             stub_domain_bib, matchpoints={"primary_matchpoint": "oclc_number"}
         )
-        assert len(matched_bibs.candidates) == 0
+        assert len(candidates) == 0
 
     def test_match_order_level_no_matchpoints(self, fake_fetcher, stub_domain_bib):
         service = match.OrderLevelBibMatcher(fetcher=fake_fetcher)

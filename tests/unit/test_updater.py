@@ -11,7 +11,7 @@ from overload_web.bib_records.domain_services import update
 @pytest.fixture
 def full_match_result(full_bib):
     decision = matches.MatchDecision(matches.CatalogAction.ATTACH, "12345")
-    candidates = matches.ClassifiedCandidates([], [], [])
+    candidates = bibs.ClassifiedCandidates([], [], [])
     analysis = matches.MatchAnalysis(
         True, candidates, decision, full_bib.match_identifiers(), full_bib.vendor
     )
@@ -24,7 +24,7 @@ def order_match_result(order_level_bib):
     decision = matches.MatchDecision(
         matches.CatalogAction.ATTACH, order_level_bib.bib_id
     )
-    candidates = matches.ClassifiedCandidates([], [], [])
+    candidates = bibs.ClassifiedCandidates([], [], [])
     analysis = matches.MatchAnalysis(
         True,
         candidates,
@@ -50,7 +50,7 @@ def result_with_command_tag(order_level_bib):
         )
         bib.binary_data = record.as_marc()
         decision = matches.MatchDecision(matches.CatalogAction.ATTACH, bib.bib_id)
-        candidates = matches.ClassifiedCandidates([], [], [])
+        candidates = bibs.ClassifiedCandidates([], [], [])
         analysis = matches.MatchAnalysis(
             True, candidates, decision, order_level_bib.match_identifiers(), bib.vendor
         )
@@ -97,7 +97,7 @@ def make_bt_series_full_bib(full_bib, library, collection):
         )
         full_bib.vendor = "BT SERIES"
         decision = matches.MatchDecision(matches.CatalogAction.ATTACH, full_bib.bib_id)
-        candidates = matches.ClassifiedCandidates([], [], [])
+        candidates = bibs.ClassifiedCandidates([], [], [])
         analysis = matches.MatchAnalysis(
             True, candidates, decision, full_bib.match_identifiers(), full_bib.vendor
         )

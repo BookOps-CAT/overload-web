@@ -11,7 +11,7 @@ import logging
 from abc import ABC
 from typing import Protocol, runtime_checkable
 
-from overload_web.bib_records.domain_models import bibs, matches, sierra_responses
+from overload_web.bib_records.domain_models import bibs, sierra_responses
 from overload_web.errors import OverloadError
 
 logger = logging.getLogger(__name__)
@@ -96,7 +96,7 @@ class BibMatcher(ABC):
 class OrderLevelBibMatcher(BibMatcher):
     def match(
         self, record: bibs.DomainBib, matchpoints: dict[str, str]
-    ) -> matches.MatchContext:
+    ) -> list[sierra_responses.BaseSierraResponse]:
         """
         Match an order-level bibliographic record against Sierra.
 
@@ -114,11 +114,14 @@ class OrderLevelBibMatcher(BibMatcher):
         responses: list[sierra_responses.BaseSierraResponse] = self._match_bib(
             record=record, matchpoints=matchpoints
         )
-        return matches.MatchContext(bib=record, candidates=responses)
+        # return matches.MatchContext(bib=record, candidates=responses)
+        return responses
 
 
 class FullLevelBibMatcher(BibMatcher):
-    def match(self, record: bibs.DomainBib) -> matches.MatchContext:
+    def match(
+        self, record: bibs.DomainBib
+    ) -> list[sierra_responses.BaseSierraResponse]:
         """
         Match a full-level bibliographic record against Sierra.
 
@@ -138,4 +141,5 @@ class FullLevelBibMatcher(BibMatcher):
         responses: list[sierra_responses.BaseSierraResponse] = self._match_bib(
             record=record, matchpoints=record.vendor_info.matchpoints
         )
-        return matches.MatchContext(bib=record, candidates=responses)
+        # return matches.MatchContext(bib=record, candidates=responses)
+        return responses

@@ -1,6 +1,6 @@
 import pytest
 
-from overload_web.bib_records.domain_models import matches
+from overload_web.bib_records.domain_models import bibs, matches
 from overload_web.bib_records.domain_services import review
 
 
@@ -9,17 +9,24 @@ class TestReviewer:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_dedupe_cat(self, full_bib, sierra_response, update_strategy):
+    def test_dedupe_cat(self, full_bib, update_strategy):
         service = review.FullLevelBibReviewer(context_factory=update_strategy)
+        decision = matches.MatchDecision(
+            matches.CatalogAction.ATTACH, target_bib_id=full_bib.bib_id
+        )
         deduped_bibs = service.dedupe(
             [full_bib],
             [
                 matches.MatchDecisionResult(
                     full_bib,
-                    matches.MatchDecision(
-                        matches.CatalogAction.ATTACH, target_bib_id=full_bib.bib_id
+                    decision,
+                    matches.MatchAnalysis(
+                        True,
+                        bibs.ClassifiedCandidates([], [], []),
+                        decision,
+                        full_bib.match_identifiers(),
+                        full_bib.vendor,
                     ),
-                    [matches.MatchContext(bib=full_bib, candidates=[sierra_response])],
                 )
             ],
         )

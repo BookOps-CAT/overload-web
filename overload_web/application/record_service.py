@@ -101,8 +101,9 @@ class FullRecordProcessingService:
         updated_records = []
         match_analysis = []
         for record in parsed_records:
-            matched = self.matcher.match(record=record)
-            analysis = self.analyzer.analyze_match(match=matched)
+            candidates = self.matcher.match(record=record)
+            analysis = self.analyzer.analyze_match(record=record, candidates=candidates)
+            record.apply_match_decision(analysis.decision)
             updated = self.updater.update(record=analysis)
             updated_records.append(updated)
             match_analysis.append(analysis)
@@ -172,8 +173,9 @@ class OrderRecordProcessingService:
         parsed_records = self.parser.parse(data=data, vendor=vendor)
         updated_records = []
         for record in parsed_records:
-            matched = self.matcher.match(record=record, matchpoints=matchpoints)
-            analysis = self.analyzer.analyze_match(match=matched)
+            candidates = self.matcher.match(record=record, matchpoints=matchpoints)
+            analysis = self.analyzer.analyze_match(record=record, candidates=candidates)
+            record.apply_match_decision(analysis.decision)
             updated = self.updater.update(record=analysis, template_data=template_data)
             updated_records.append(updated)
         output = self.serializer.serialize(updated_records)

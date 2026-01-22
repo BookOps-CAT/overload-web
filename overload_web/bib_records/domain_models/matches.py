@@ -6,7 +6,7 @@ import logging
 from dataclasses import dataclass
 from enum import StrEnum
 
-from overload_web.bib_records.domain_models import bibs, sierra_responses
+from overload_web.bib_records.domain_models import bibs
 
 logger = logging.getLogger(__name__)
 
@@ -17,45 +17,6 @@ class CatalogAction(StrEnum):
     ATTACH = "attach"
     OVERLAY = "overlay"
     INSERT = "insert"
-
-
-@dataclass(frozen=True)
-class ClassifiedCandidates:
-    """Holds candidate matches and associated data."""
-
-    matched: list[sierra_responses.BaseSierraResponse]
-    mixed: list[str]
-    other: list[str]
-
-    @property
-    def duplicates(self) -> list[str]:
-        duplicates: list[str] = []
-        if len(self.matched) > 1:
-            return [i.bib_id for i in self.matched]
-        return duplicates
-
-
-@dataclass(frozen=True)
-class MatchContext:
-    """A DTO that wraps a `DomainBib` object with its associated matches from Sierra."""
-
-    bib: bibs.DomainBib
-    candidates: list[sierra_responses.BaseSierraResponse]
-
-    def classify(self) -> ClassifiedCandidates:
-        """Classify the candidate matches associated with this response."""
-        matched, mixed, other = [], [], []
-        for c in sorted(
-            self.candidates, key=lambda i: int(i.bib_id.strip(".b")), reverse=True
-        ):
-            if c.collection == "MIXED":
-                mixed.append(c.bib_id)
-            elif c.collection == self.bib.collection:
-                matched.append(c)
-            else:
-                other.append(c.bib_id)
-
-        return ClassifiedCandidates(matched, mixed, other)
 
 
 @dataclass(frozen=True)
@@ -78,7 +39,7 @@ class MatchAnalysis:
     def __init__(
         self,
         call_number_match: bool,
-        classified: ClassifiedCandidates,
+        classified: bibs.ClassifiedCandidates,
         decision: MatchDecision,
         match_identifiers: bibs.DomainBibMatchIds,
         vendor: str | None,
