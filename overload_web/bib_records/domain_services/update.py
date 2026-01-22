@@ -13,10 +13,14 @@ T = TypeVar("T")
 
 
 class UpdateStep(Protocol):
+    """A step in the bib record update workflow."""
+
     def apply(self, ctx: Any) -> None: ...  # pragma: no branch
 
 
 class MarcContext(Protocol[T]):
+    """A domain entity used in the bib record update workflow"""
+
     bib_rec: T
     record: bibs.DomainBib
     order_mapping: dict[str, Any]
@@ -27,6 +31,7 @@ class MarcContext(Protocol[T]):
 class MarcUpdateStrategy(Protocol):
     @property
     def pipeline(self) -> list[UpdateStep]: ...  # pragma: no branch
+
     def create_context(
         self, record: bibs.DomainBib, **kwargs: Any
     ) -> MarcContext: ...  # pragma: no branch
