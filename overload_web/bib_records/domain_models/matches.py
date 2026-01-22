@@ -45,7 +45,9 @@ class MatchContext:
     def classify(self) -> ClassifiedCandidates:
         """Classify the candidate matches associated with this response."""
         matched, mixed, other = [], [], []
-        for c in sorted(self.candidates, key=lambda i: int(i.bib_id.strip(".b"))):
+        for c in sorted(
+            self.candidates, key=lambda i: int(i.bib_id.strip(".b")), reverse=True
+        ):
             if c.collection == "MIXED":
                 mixed.append(c.bib_id)
             elif c.collection == self.bib.collection:
