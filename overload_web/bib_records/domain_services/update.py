@@ -42,7 +42,7 @@ class BibUpdater:
         self.strategy = strategy
 
     def update(
-        self, record: matches.MatchDecisionResult, **kwargs: Any
+        self, record: bibs.DomainBib, decision: matches.MatchDecision, **kwargs: Any
     ) -> bibs.DomainBib:
         """
         Update a bibliographic record.
@@ -58,9 +58,9 @@ class BibUpdater:
         Returns:
             An updated records as a `DomainBib` object
         """
-        record.bib.update_bib_id(record.decision.target_bib_id)
-        ctx = self.strategy.create_context(record=record.bib, **kwargs)
+        record.update_bib_id(decision.target_bib_id)
+        ctx = self.strategy.create_context(record=record, **kwargs)
         for step in self.strategy.pipeline:
             step.apply(ctx)
-        record.bib.binary_data = ctx.bib_rec.as_marc()
-        return record.bib
+        record.binary_data = ctx.bib_rec.as_marc()
+        return record

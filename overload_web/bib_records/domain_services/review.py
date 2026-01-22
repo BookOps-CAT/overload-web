@@ -51,13 +51,12 @@ class FullLevelBibReviewer:
     def dedupe(
         self,
         records: list[bibs.DomainBib],
-        reports: list[matches.MatchDecisionResult],
+        reports: list[matches.MatchAnalysis],
     ) -> dict[str, list[bibs.DomainBib]]:
         merge_recs: list[bibs.DomainBib] = []
         new_recs: list[bibs.DomainBib] = []
         deduped_recs: list[bibs.DomainBib] = []
-        analyses = [i.analysis for i in reports]
-        for analysis, record in zip(analyses, records):
+        for analysis, record in zip(reports, records):
             if analysis == matches.CatalogAction.ATTACH:
                 merge_recs.append(record)
             else:
@@ -118,7 +117,7 @@ class FullLevelBibReviewer:
     def dedupe_and_validate(
         self,
         records: list[bibs.DomainBib],
-        reports: list[matches.MatchDecisionResult],
+        reports: list[matches.MatchAnalysis],
         barcodes: list[str],
     ) -> dict[str, list[bibs.DomainBib]]:
         """

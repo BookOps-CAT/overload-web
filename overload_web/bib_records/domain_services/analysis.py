@@ -54,7 +54,7 @@ class MatchAnalyzer(Protocol):
         self,
         record: bibs.DomainBib,
         candidates: list[sierra_responses.BaseSierraResponse],
-    ) -> matches.MatchDecisionResult: ...  # pragma: no branch
+    ) -> matches.MatchAnalysis: ...  # pragma: no branch
 
 
 class AcquisitionsMatchAnalyzer(MatchAnalyzer):
@@ -62,7 +62,7 @@ class AcquisitionsMatchAnalyzer(MatchAnalyzer):
         self,
         record: bibs.DomainBib,
         candidates: list[sierra_responses.BaseSierraResponse],
-    ) -> matches.MatchDecisionResult:
+    ) -> matches.MatchAnalysis:
         classified = record.classify_matches(candidates)
         match_ids = record.match_identifiers()
         vendor = record.vendor
@@ -78,9 +78,7 @@ class AcquisitionsMatchAnalyzer(MatchAnalyzer):
             target_call_no=record.branch_call_number,
             target_title=record.title,
         )
-        return matches.MatchDecisionResult(
-            bib=record, decision=decision, analysis=analysis
-        )
+        return analysis
 
 
 class BPLCatMatchAnalyzer(MatchAnalyzer):
@@ -88,7 +86,7 @@ class BPLCatMatchAnalyzer(MatchAnalyzer):
         self,
         record: bibs.DomainBib,
         candidates: list[sierra_responses.BaseSierraResponse],
-    ) -> matches.MatchDecisionResult:
+    ) -> matches.MatchAnalysis:
         classified = record.classify_matches(candidates)
         match_ids = record.match_identifiers()
         vendor = record.vendor
@@ -110,9 +108,7 @@ class BPLCatMatchAnalyzer(MatchAnalyzer):
                 target_call_no=record.branch_call_number,
                 target_title=record.title,
             )
-            return matches.MatchDecisionResult(
-                bib=record, decision=decision, analysis=analysis
-            )
+            return analysis
         for candidate in classified.matched:
             if candidate.branch_call_number:
                 if record.branch_call_number == candidate.branch_call_number:
@@ -131,9 +127,7 @@ class BPLCatMatchAnalyzer(MatchAnalyzer):
                         target_call_no=candidate.branch_call_number,
                         target_title=candidate.title,
                     )
-                    return matches.MatchDecisionResult(
-                        bib=record, decision=decision, analysis=analysis
-                    )
+                    return analysis
         fallback = classified.matched[-1]
         action, updated = self._determine_catalog_action(record, fallback)
         decision = matches.MatchDecision(
@@ -150,9 +144,7 @@ class BPLCatMatchAnalyzer(MatchAnalyzer):
             target_call_no=fallback.branch_call_number,
             target_title=fallback.title,
         )
-        return matches.MatchDecisionResult(
-            bib=record, decision=decision, analysis=analysis
-        )
+        return analysis
 
 
 class NYPLCatResearchMatchAnalyzer(MatchAnalyzer):
@@ -160,7 +152,7 @@ class NYPLCatResearchMatchAnalyzer(MatchAnalyzer):
         self,
         record: bibs.DomainBib,
         candidates: list[sierra_responses.BaseSierraResponse],
-    ) -> matches.MatchDecisionResult:
+    ) -> matches.MatchAnalysis:
         classified = record.classify_matches(candidates)
         match_ids = record.match_identifiers()
         vendor = record.vendor
@@ -175,9 +167,7 @@ class NYPLCatResearchMatchAnalyzer(MatchAnalyzer):
                 match_identifiers=match_ids,
                 vendor=vendor,
             )
-            return matches.MatchDecisionResult(
-                bib=record, decision=decision, analysis=analysis
-            )
+            return analysis
         for candidate in classified.matched:
             if candidate.research_call_number:
                 action, updated = self._determine_catalog_action(record, candidate)
@@ -195,9 +185,7 @@ class NYPLCatResearchMatchAnalyzer(MatchAnalyzer):
                     target_title=candidate.title,
                     target_call_no=candidate.research_call_number[0],
                 )
-                return matches.MatchDecisionResult(
-                    bib=record, decision=decision, analysis=analysis
-                )
+                return analysis
         last = classified.matched[-1]
         decision = matches.MatchDecision(
             action=matches.CatalogAction.OVERLAY, target_bib_id=last.bib_id
@@ -211,9 +199,7 @@ class NYPLCatResearchMatchAnalyzer(MatchAnalyzer):
             target_title=last.title,
             target_call_no=None,
         )
-        return matches.MatchDecisionResult(
-            bib=record, decision=decision, analysis=analysis
-        )
+        return analysis
 
 
 class NYPLCatBranchMatchAnalyzer(MatchAnalyzer):
@@ -221,7 +207,7 @@ class NYPLCatBranchMatchAnalyzer(MatchAnalyzer):
         self,
         record: bibs.DomainBib,
         candidates: list[sierra_responses.BaseSierraResponse],
-    ) -> matches.MatchDecisionResult:
+    ) -> matches.MatchAnalysis:
         classified = record.classify_matches(candidates)
         match_ids = record.match_identifiers()
         vendor = record.vendor
@@ -236,9 +222,7 @@ class NYPLCatBranchMatchAnalyzer(MatchAnalyzer):
                 match_identifiers=match_ids,
                 vendor=vendor,
             )
-            return matches.MatchDecisionResult(
-                bib=record, decision=decision, analysis=analysis
-            )
+            return analysis
         for candidate in classified.matched:
             if (
                 candidate.branch_call_number
@@ -259,9 +243,7 @@ class NYPLCatBranchMatchAnalyzer(MatchAnalyzer):
                     target_title=candidate.title,
                     target_call_no=candidate.branch_call_number,
                 )
-                return matches.MatchDecisionResult(
-                    bib=record, decision=decision, analysis=analysis
-                )
+                return analysis
 
         fallback = classified.matched[-1]
         action, updated = self._determine_catalog_action(record, fallback)
@@ -277,9 +259,7 @@ class NYPLCatBranchMatchAnalyzer(MatchAnalyzer):
             target_title=fallback.title,
             target_call_no=fallback.branch_call_number,
         )
-        return matches.MatchDecisionResult(
-            bib=record, decision=decision, analysis=analysis
-        )
+        return analysis
 
 
 class SelectionMatchAnalyzer(MatchAnalyzer):
@@ -287,7 +267,7 @@ class SelectionMatchAnalyzer(MatchAnalyzer):
         self,
         record: bibs.DomainBib,
         candidates: list[sierra_responses.BaseSierraResponse],
-    ) -> matches.MatchDecisionResult:
+    ) -> matches.MatchAnalysis:
         classified = record.classify_matches(candidates)
         match_ids = record.match_identifiers()
         vendor = record.vendor
@@ -302,9 +282,7 @@ class SelectionMatchAnalyzer(MatchAnalyzer):
                 match_identifiers=match_ids,
                 vendor=vendor,
             )
-            return matches.MatchDecisionResult(
-                bib=record, decision=decision, analysis=analysis
-            )
+            return analysis
         for candidate in classified.matched:
             if candidate.branch_call_number or len(candidate.research_call_number) > 0:
                 decision = matches.MatchDecision(
@@ -319,9 +297,7 @@ class SelectionMatchAnalyzer(MatchAnalyzer):
                     target_call_no=candidate.branch_call_number,
                     target_title=candidate.title,
                 )
-                return matches.MatchDecisionResult(
-                    bib=record, decision=decision, analysis=analysis
-                )
+                return analysis
         fallback = classified.matched[-1]
         decision = matches.MatchDecision(
             action=matches.CatalogAction.ATTACH, target_bib_id=fallback.bib_id
@@ -335,6 +311,4 @@ class SelectionMatchAnalyzer(MatchAnalyzer):
             target_call_no=fallback.branch_call_number,
             target_title=fallback.title,
         )
-        return matches.MatchDecisionResult(
-            bib=record, decision=decision, analysis=analysis
-        )
+        return analysis

@@ -114,7 +114,6 @@ class OrderLevelBibMatcher(BibMatcher):
         responses: list[sierra_responses.BaseSierraResponse] = self._match_bib(
             record=record, matchpoints=matchpoints
         )
-        # return matches.MatchContext(bib=record, candidates=responses)
         return responses
 
 
@@ -141,5 +140,4 @@ class FullLevelBibMatcher(BibMatcher):
         responses: list[sierra_responses.BaseSierraResponse] = self._match_bib(
             record=record, matchpoints=record.vendor_info.matchpoints
         )
-        # return matches.MatchContext(bib=record, candidates=responses)
         return responses

@@ -9,35 +9,12 @@ from overload_web.bib_records.domain_services import update
 
 
 @pytest.fixture
-def full_match_result(full_bib):
-    decision = matches.MatchDecision(matches.CatalogAction.ATTACH, "12345")
-    candidates = bibs.ClassifiedCandidates([], [], [])
-    analysis = matches.MatchAnalysis(
-        True, candidates, decision, full_bib.match_identifiers(), full_bib.vendor
-    )
-    match_result = matches.MatchDecisionResult(full_bib, decision, analysis)
-    return match_result
+def match_decision():
+    return matches.MatchDecision(matches.CatalogAction.ATTACH, "12345")
 
 
 @pytest.fixture
-def order_match_result(order_level_bib):
-    decision = matches.MatchDecision(
-        matches.CatalogAction.ATTACH, order_level_bib.bib_id
-    )
-    candidates = bibs.ClassifiedCandidates([], [], [])
-    analysis = matches.MatchAnalysis(
-        True,
-        candidates,
-        decision,
-        order_level_bib.match_identifiers(),
-        order_level_bib.vendor,
-    )
-    match_result = matches.MatchDecisionResult(order_level_bib, decision, analysis)
-    return match_result
-
-
-@pytest.fixture
-def result_with_command_tag(order_level_bib):
+def bib_with_command_tag(order_level_bib):
     def create_match_result(value):
         bib = copy.deepcopy(order_level_bib)
         record = Bib(order_level_bib.binary_data, library=order_level_bib.library)
@@ -49,13 +26,7 @@ def result_with_command_tag(order_level_bib):
             )
         )
         bib.binary_data = record.as_marc()
-        decision = matches.MatchDecision(matches.CatalogAction.ATTACH, bib.bib_id)
-        candidates = bibs.ClassifiedCandidates([], [], [])
-        analysis = matches.MatchAnalysis(
-            True, candidates, decision, order_level_bib.match_identifiers(), bib.vendor
-        )
-        match_result = matches.MatchDecisionResult(bib, decision, analysis)
-        return match_result
+        return bib
 
     return create_match_result
 
@@ -96,13 +67,7 @@ def make_bt_series_full_bib(full_bib, library, collection):
             ],
         )
         full_bib.vendor = "BT SERIES"
-        decision = matches.MatchDecision(matches.CatalogAction.ATTACH, full_bib.bib_id)
-        candidates = bibs.ClassifiedCandidates([], [], [])
-        analysis = matches.MatchAnalysis(
-            True, candidates, decision, full_bib.match_identifiers(), full_bib.vendor
-        )
-        match_result = matches.MatchDecisionResult(full_bib, decision, analysis)
-        return match_result
+        return full_bib
 
     return make_full_bib
 
@@ -120,11 +85,9 @@ class TestUpdater:
             ("nypl", "RL", "945", "cat"),
         ],
     )
-    def test_update_cat(self, full_match_result, updater_service, tag):
-        original_bib = Bib(
-            full_match_result.bib.binary_data, library=full_match_result.bib.library
-        )
-        updated_bibs = updater_service.update(full_match_result)
+    def test_update_cat(self, full_bib, match_decision, updater_service, tag):
+        original_bib = Bib(full_bib.binary_data, library=full_bib.library)
+        updated_bibs = updater_service.update(record=full_bib, decision=match_decision)
         updated_bib = Bib(updated_bibs.binary_data, library=updated_bibs.library)
         assert len(original_bib.get_fields(tag)) == 0
         assert len(updated_bib.get_fields(tag)) == 1
@@ -133,9 +96,11 @@ class TestUpdater:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat")],
     )
-    def test_update_cat_nypl_vendor_fields(self, full_match_result, updater_service):
-        full_match_result.bib.vendor = "INGRAM"
-        full_match_result.bib.vendor_info = update.bibs.VendorInfo(
+    def test_update_cat_nypl_vendor_fields(
+        self, full_bib, match_decision, updater_service
+    ):
+        full_bib.vendor = "INGRAM"
+        full_bib.vendor_info = update.bibs.VendorInfo(
             name="INGRAM",
             matchpoints={"primary_matchpoint": "oclc_number"},
             bib_fields=[
@@ -148,10 +113,8 @@ class TestUpdater:
                 }
             ],
         )
-        original_bib = Bib(
-            full_match_result.bib.binary_data, library=full_match_result.bib.library
-        )
-        updated_bibs = updater_service.update(full_match_result)
+        original_bib = Bib(full_bib.binary_data, library=full_bib.library)
+        updated_bibs = updater_service.update(record=full_bib, decision=match_decision)
         assert len(original_bib.get_fields("949")) == 1
         assert (
             len(
@@ -166,9 +129,11 @@ class TestUpdater:
         "library, collection, record_type",
         [("bpl", "NONE", "cat")],
     )
-    def test_update_cat_bpl_vendor_fields(self, full_match_result, updater_service):
-        full_match_result.bib.vendor = "INGRAM"
-        full_match_result.bib.vendor_info = update.bibs.VendorInfo(
+    def test_update_cat_bpl_vendor_fields(
+        self, full_bib, match_decision, updater_service
+    ):
+        full_bib.vendor = "INGRAM"
+        full_bib.vendor_info = update.bibs.VendorInfo(
             name="INGRAM",
             matchpoints={"primary_matchpoint": "oclc_number"},
             bib_fields=[
@@ -181,10 +146,8 @@ class TestUpdater:
                 }
             ],
         )
-        original_bib = Bib(
-            full_match_result.bib.binary_data, library=full_match_result.bib.library
-        )
-        updated_bibs = updater_service.update(full_match_result)
+        original_bib = Bib(full_bib.binary_data, library=full_bib.library)
+        updated_bibs = updater_service.update(record=full_bib, decision=match_decision)
         assert len(original_bib.get_fields("949")) == 0
         assert (
             len(
@@ -199,10 +162,13 @@ class TestUpdater:
         "library, collection, record_type",
         [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
     )
-    def test_update_template_data(self, order_match_result, updater_service):
-        original_orders = copy.deepcopy(order_match_result.bib.orders)
+    def test_update_template_data(
+        self, order_level_bib, match_decision, updater_service
+    ):
+        original_orders = copy.deepcopy(order_level_bib.orders)
         updated_bibs = updater_service.update(
-            order_match_result,
+            order_level_bib,
+            decision=match_decision,
             template_data={"name": "Foo", "order_code_1": "b", "format": "a"},
         )
         assert [i.order_code_1 for i in original_orders] == ["j"]
@@ -213,10 +179,14 @@ class TestUpdater:
         [("nypl", "BL", "sel"), ("nypl", "RL", "sel")],
     )
     @pytest.mark.parametrize("value", ["*b2=a;", "*b2=a;bn=;", "*b2=a"])
-    def test_update_default_loc(self, result_with_command_tag, updater_service, value):
-        result = result_with_command_tag(value)
-        original_bib = Bib(result.bib.binary_data, library=result.bib.library)
-        updated_records = updater_service.update(result, template_data={})
+    def test_update_default_loc(
+        self, bib_with_command_tag, match_decision, updater_service, value
+    ):
+        result = bib_with_command_tag(value)
+        original_bib = Bib(result.binary_data, library=result.library)
+        updated_records = updater_service.update(
+            result, decision=match_decision, template_data={}
+        )
         updated_bib = Bib(updated_records.binary_data, library=updated_records.library)
         assert [i.value() for i in original_bib.get_fields("949")] == [
             "333331234567890",
@@ -231,11 +201,13 @@ class TestUpdater:
     )
     @pytest.mark.parametrize("value", ["*b2=a;", "*b2=a;bn=;", "*b2=a"])
     def test_update_default_loc_bpl(
-        self, result_with_command_tag, updater_service, value
+        self, bib_with_command_tag, match_decision, updater_service, value
     ):
-        result = result_with_command_tag(value)
-        original_bib = Bib(result.bib.binary_data, library=result.bib.library)
-        updated_records = updater_service.update(result, template_data={})
+        result = bib_with_command_tag(value)
+        original_bib = Bib(result.binary_data, library=result.library)
+        updated_records = updater_service.update(
+            result, decision=match_decision, template_data={}
+        )
         updated_bib = Bib(updated_records.binary_data, library=updated_records.library)
         assert [i.value() for i in original_bib.get_fields("949")] == [
             "333331234567890",
@@ -251,11 +223,13 @@ class TestUpdater:
         [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
     )
     def test_update_default_loc_no_command_tag(
-        self, updater_service, result_with_command_tag
+        self, updater_service, bib_with_command_tag, match_decision
     ):
-        result = result_with_command_tag("*b2=a;")
-        original_bib = Bib(result.bib.binary_data, library=result.bib.library)
-        updated_records = updater_service.update(result, template_data={"format": "a"})
+        result = bib_with_command_tag("*b2=a;")
+        original_bib = Bib(result.binary_data, library=result.library)
+        updated_records = updater_service.update(
+            result, decision=match_decision, template_data={"format": "a"}
+        )
         updated_bib = Bib(updated_records.binary_data, library=updated_records.library)
         assert len(updated_bib.get_fields("949")) == 2
         assert len(original_bib.get_fields("949")) == 2
@@ -266,12 +240,12 @@ class TestUpdater:
     )
     @pytest.mark.parametrize("record_type", ["sel"])
     def test_update_no_command_tag_bpl(
-        self, order_match_result, updater_service, field_count
+        self, order_level_bib, match_decision, updater_service, field_count
     ):
-        original_bib = Bib(
-            order_match_result.bib.binary_data, library=order_match_result.bib.library
+        original_bib = Bib(order_level_bib.binary_data, library=order_level_bib.library)
+        updated_records = updater_service.update(
+            order_level_bib, decision=match_decision, template_data={}
         )
-        updated_records = updater_service.update(order_match_result, template_data={})
         updated_bib = Bib(updated_records.binary_data, library=updated_records.library)
         assert len(updated_bib.get_fields("949")) == field_count
         assert len(original_bib.get_fields("949")) == 1
@@ -294,11 +268,11 @@ class TestUpdater:
         ],
     )
     def test_update_bt_series_call_no(
-        self, make_bt_series_full_bib, updater_service, pairs
+        self, make_bt_series_full_bib, match_decision, updater_service, pairs
     ):
         result = make_bt_series_full_bib(pairs)
-        original_bib = Bib(result.bib.binary_data, library=result.bib.library)
-        updated_records = updater_service.update(result)
+        original_bib = Bib(result.binary_data, library=result.library)
+        updated_records = updater_service.update(result, decision=match_decision)
         updated_bib = Bib(updated_records.binary_data, library=updated_records.library)
         assert updated_bib.get_fields("091")[0].value() == " ".join(
             [i for i in pairs.values()]
@@ -307,20 +281,20 @@ class TestUpdater:
             [i for i in pairs.values()]
         )
         assert original_bib.collection == "BL"
-        assert result.bib.vendor == "BT SERIES"
-        assert result.bib.record_type == "cat"
+        assert result.vendor == "BT SERIES"
+        assert result.record_type == "cat"
 
     @pytest.mark.parametrize(
         "library, collection, record_type", [("nypl", "BL", "cat")]
     )
     def test_update_bt_series_call_no_error(
-        self, make_bt_series_full_bib, updater_service
+        self, make_bt_series_full_bib, match_decision, updater_service
     ):
         result = make_bt_series_full_bib(
             {"z": "FOO", "p": "J", "a": "FIC", "c": "SNICKET"}
         )
         with pytest.raises(ValueError) as exc:
-            updater_service.update(result)
+            updater_service.update(result, decision=match_decision)
         assert (
             str(exc.value)
             == "Constructed call number does not match original. New=FOO J FIC SNICKET, Original=FIC SNICKET"

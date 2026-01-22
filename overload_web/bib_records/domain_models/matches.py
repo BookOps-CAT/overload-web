@@ -49,6 +49,7 @@ class MatchAnalysis:
         self.action = decision.action
         self.call_number = match_identifiers.call_number
         self.call_number_match = call_number_match
+        self.decision = decision
         self.duplicate_records = classified.duplicates
         self.mixed = classified.mixed
         self.other = classified.other
