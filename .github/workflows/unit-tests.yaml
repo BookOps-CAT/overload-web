@@ -9,10 +9,12 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
-      - name: Install Poetry with pipx
-        run: pipx install poetry
-      - name: Install dependencies with poetry
-        run: poetry install --no-root
+          python-version-file: ".python-version"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.26"          
+      - name: Install project with uv
+        run: uv sync --locked --all-extras --dev
       - name: Run tests
-        run: poetry run pytest -m "not livetest" --cov=overload_web/
+        run: uv run pytest -m "not livetest" --cov=overload_web/
