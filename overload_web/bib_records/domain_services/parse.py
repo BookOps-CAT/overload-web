@@ -98,8 +98,9 @@ class FullLevelBibParser(BibParser):
         for bib_dict, record in self._parse_records(data):
             vendor_info = self.mapper.identify_vendor(record)
             bib_dict["vendor_info"] = bibs.VendorInfo(**vendor_info)
-            logger.info(f"Vendor record parsed: {bib_dict}")
-            parsed.append(bibs.DomainBib(**bib_dict))
+            bib = bibs.DomainBib(**bib_dict)
+            logger.info(f"Vendor record parsed: {bib}")
+            parsed.append(bib)
         return parsed
 
 
@@ -119,7 +120,7 @@ class OrderLevelBibParser(BibParser):
         parsed: list[bibs.DomainBib] = []
         for bib_dict, record in self._parse_records(data):
             bib_dict["vendor"] = vendor
-            logger.info(f"Vendor record parsed: {bib_dict}")
-            parsed.append(bibs.DomainBib(**bib_dict))
-
+            bib = bibs.DomainBib(**bib_dict)
+            logger.info(f"Vendor record parsed: {bib}")
+            parsed.append(bib)
         return parsed

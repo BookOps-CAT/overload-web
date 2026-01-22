@@ -41,18 +41,13 @@ class BibUpdater:
     def __init__(self, strategy: MarcUpdateStrategy) -> None:
         self.strategy = strategy
 
-    def update(
-        self, record: bibs.DomainBib, decision: bibs.MatchDecision, **kwargs: Any
-    ) -> bibs.DomainBib:
+    def update(self, record: bibs.DomainBib, **kwargs: Any) -> bibs.DomainBib:
         """
         Update a bibliographic record.
 
         Args:
             record:
                 A parsed bibliographic record
-            decision:
-                The bib ID to be assigned to the record and other associated data as a
-                `MatchDecision` object.
             template_data:
                 A dictionary containing template data to be used in updating records.
                 This kwarg is only used for order-level records.
@@ -60,7 +55,6 @@ class BibUpdater:
         Returns:
             An updated records as a `DomainBib` object
         """
-        record.update_bib_id(decision.target_bib_id)
         ctx = self.strategy.create_context(record=record, **kwargs)
         for step in self.strategy.pipeline:
             step.apply(ctx)

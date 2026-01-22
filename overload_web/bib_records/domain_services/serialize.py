@@ -25,7 +25,7 @@ class OrderLevelBibSerializer:
         """
         io_data = io.BytesIO()
         for record in records:
-            logger.info(f"Writing MARC binary for record: {record.__dict__}")
+            logger.info(f"Writing MARC binary for record: {record}")
             io_data.write(record.binary_data)
         io_data.seek(0)
         return io_data
@@ -55,7 +55,7 @@ class FullLevelBibSerializer:
         new_record_data = io.BytesIO()
         for file, records in record_batches.items():
             for record in records:
-                logger.info(f"Writing MARC binary for record: {record.__dict__}")
+                logger.info(f"Writing MARC binary for record: {record}")
                 if file == "DEDUPED":
                     deduped_record_data.write(record.binary_data)
                 elif file == "NEW":

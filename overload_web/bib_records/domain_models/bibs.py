@@ -198,6 +198,9 @@ class DomainBib:
             resource_id = self.upc
         return DomainBibMatchIds(call_number=call_number, resource_id=resource_id)
 
+    def __repr__(self) -> str:
+        return f"DomainBib(bib_id: {self.bib_id}, branch_call_number: {self.branch_call_number}, collection: {self.collection}, control_number: {self.control_number}, isbn: {self.isbn}, library: {self.library}, oclc_number: {self.oclc_number}, research_call_number: {self.research_call_number}, record_type: {self.record_type}, title: {self.title}, upc: {self.upc}, update_date: {self.update_date}, vendor: {self.vendor})"  # noqa: E501
+
 
 @dataclass(frozen=True)
 class DomainBibMatchIds:
@@ -353,3 +356,55 @@ class VendorInfo:
     bib_fields: list[dict[str, str]]
     matchpoints: dict[str, str]
     name: str
+
+
+class MatchAnalysisReport:
+    def __init__(
+        self,
+        analyses: list[MatchAnalysis],
+        library: str,
+        collection: str,
+        record_type: str,
+    ) -> None:
+        self._analyses = analyses
+        self.library = library
+        self.collection = collection
+        self.record_type = record_type
+
+        self.action = tuple([i.action for i in self._analyses])
+        self.call_number = tuple([i.call_number for i in self._analyses])
+        self.call_number_match = tuple([i.call_number_match for i in self._analyses])
+        self.duplicate_records = tuple(
+            [",".join(i.duplicate_records) for i in self._analyses]
+        )
+        self.mixed = tuple([",".join(i.mixed) for i in self._analyses])
+        self.other = tuple([",".join(i.other) for i in self._analyses])
+        self.resource_id = tuple([i.resource_id for i in self._analyses])
+        self.target_bib_id = tuple([i.target_bib_id for i in self._analyses])
+        self.target_call_no = tuple([i.target_call_no for i in self._analyses])
+        self.target_title = tuple([i.target_title for i in self._analyses])
+        self.updated_by_vendor = tuple([i.updated_by_vendor for i in self._analyses])
+        self.vendor = tuple([i.vendor for i in self._analyses])
+        self.date = datetime.date.today().strftime("%y-%m-%d")
+
+    def to_dict(self) -> Any:
+        record_count = len(self.action)
+        return {
+            "resource_id": list(self.resource_id),
+            "vendor": list(self.vendor),
+            "updated_by_vendor": list(self.updated_by_vendor),
+            "call_number_match": list(self.call_number_match),
+            "target_call_no": list(self.target_call_no),
+            "call_number": list(self.call_number),
+            "duplicate_records": list(self.duplicate_records),
+            "target_bib_id": list(self.target_bib_id),
+            "target_title": list(self.target_title),
+            "mixed": list(self.mixed),
+            "other": list(self.other),
+            "action": list(self.action),
+            "library": [self.library] * record_count,
+            "collection": [self.collection] * record_count,
+            "record_type": [self.record_type] * record_count,
+            "corrected": ["no"] * record_count,
+            "date": datetime.date.today().strftime("%y-%m-%d"),
+        }
