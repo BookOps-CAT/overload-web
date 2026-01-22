@@ -98,9 +98,14 @@ class FullRecordProcessingService:
         """
         parsed_records = self.parser.parse(data=data)
         barcodes = self.parser.extract_barcodes(parsed_records)
-        matched_records = self.matcher.match(records=parsed_records)
-        match_analysis = self.analyzer.analyze_matches(matches=matched_records)
-        updated_records = self.updater.update(records=match_analysis)
+        updated_records = []
+        match_analysis = []
+        for record in parsed_records:
+            matched = self.matcher.match(record=record)
+            analysis = self.analyzer.analyze_match(match=matched)
+            updated = self.updater.update(record=analysis)
+            updated_records.append(updated)
+            match_analysis.append(analysis)
         deduped_records = self.reviewer.dedupe_and_validate(
             records=updated_records, reports=match_analysis, barcodes=barcodes
         )
@@ -165,12 +170,11 @@ class OrderRecordProcessingService:
             MARC data as a `BinaryIO` object
         """
         parsed_records = self.parser.parse(data=data, vendor=vendor)
-        matched_records = self.matcher.match(
-            records=parsed_records, matchpoints=matchpoints
-        )
-        match_analysis = self.analyzer.analyze_matches(matches=matched_records)
-        updated_records = self.updater.update(
-            records=match_analysis, template_data=template_data
-        )
+        updated_records = []
+        for record in parsed_records:
+            matched = self.matcher.match(record=record, matchpoints=matchpoints)
+            analysis = self.analyzer.analyze_match(match=matched)
+            updated = self.updater.update(record=analysis, template_data=template_data)
+            updated_records.append(updated)
         output = self.serializer.serialize(updated_records)
         return output

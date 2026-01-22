@@ -9,13 +9,9 @@ Protocols:
 `MatchAnalyzer`
     Protocol for reviewing matches identified by the `BibMatcher` service.
 
-Classes:
 
-`BaseMatchAnalyzer`
-    Base class for match analyzers providing shared functionality. Concrete
-    implementation of the `MatchAnalyzer` protocol.
 
-Child classes of `BaseMatchAnalyzer`:
+Child classes of `MatchAnalyzer`:
 
 `NYPLCatResearchMatchAnalyzer`
     Match analyzer for NYPL cataloging records belonging to the Research Library.
@@ -43,13 +39,6 @@ logger = logging.getLogger(__name__)
 class MatchAnalyzer(Protocol):
     """Review matches identified by the `BibMatcher` service."""
 
-    def analyze_matches(
-        self,
-        matches: list[matches.MatchContext],
-    ) -> list[matches.MatchDecisionResult]: ...  # pragma: no branch
-
-
-class BaseMatchAnalyzer:
     def _determine_catalog_action(
         self,
         bib: bibs.DomainBib,
@@ -61,22 +50,11 @@ class BaseMatchAnalyzer:
             return matches.CatalogAction.OVERLAY, True
         return matches.CatalogAction.ATTACH, False
 
-    def analyze_matches(
-        self, matches: list[matches.MatchContext]
-    ) -> list[matches.MatchDecisionResult]:
-        return [self.review_response(i) for i in matches]
-
-    def review_response(
-        self, match: matches.MatchContext
-    ) -> matches.MatchDecisionResult:
-        return self.analyze(match)
-
-    def analyze(self, match: matches.MatchContext) -> matches.MatchDecisionResult:
-        raise NotImplementedError
+    def analyze_match(self, match: matches.MatchContext): ...  # pragma: no branch
 
 
-class AcquisitionsMatchAnalyzer(BaseMatchAnalyzer):
-    def analyze(self, match: matches.MatchContext) -> matches.MatchDecisionResult:
+class AcquisitionsMatchAnalyzer(MatchAnalyzer):
+    def analyze_match(self, match: matches.MatchContext) -> matches.MatchDecisionResult:
         classified = match.classify()
         match_ids = match.bib.match_identifiers()
         vendor = match.bib.vendor
@@ -97,8 +75,8 @@ class AcquisitionsMatchAnalyzer(BaseMatchAnalyzer):
         )
 
 
-class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
-    def analyze(self, match: matches.MatchContext) -> matches.MatchDecisionResult:
+class BPLCatMatchAnalyzer(MatchAnalyzer):
+    def analyze_match(self, match: matches.MatchContext) -> matches.MatchDecisionResult:
         classified = match.classify()
         match_ids = match.bib.match_identifiers()
         vendor = match.bib.vendor
@@ -167,8 +145,8 @@ class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
         )
 
 
-class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
-    def analyze(self, match: matches.MatchContext) -> matches.MatchDecisionResult:
+class NYPLCatResearchMatchAnalyzer(MatchAnalyzer):
+    def analyze_match(self, match: matches.MatchContext) -> matches.MatchDecisionResult:
         classified = match.classify()
         match_ids = match.bib.match_identifiers()
         vendor = match.bib.vendor
@@ -224,8 +202,8 @@ class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
         )
 
 
-class NYPLCatBranchMatchAnalyzer(BaseMatchAnalyzer):
-    def analyze(self, match: matches.MatchContext) -> matches.MatchDecisionResult:
+class NYPLCatBranchMatchAnalyzer(MatchAnalyzer):
+    def analyze_match(self, match: matches.MatchContext) -> matches.MatchDecisionResult:
         classified = match.classify()
         match_ids = match.bib.match_identifiers()
         vendor = match.bib.vendor
@@ -286,8 +264,8 @@ class NYPLCatBranchMatchAnalyzer(BaseMatchAnalyzer):
         )
 
 
-class SelectionMatchAnalyzer(BaseMatchAnalyzer):
-    def analyze(self, match: matches.MatchContext) -> matches.MatchDecisionResult:
+class SelectionMatchAnalyzer(MatchAnalyzer):
+    def analyze_match(self, match: matches.MatchContext) -> matches.MatchDecisionResult:
         classified = match.classify()
         match_ids = match.bib.match_identifiers()
         vendor = match.bib.vendor

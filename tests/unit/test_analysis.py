@@ -35,15 +35,10 @@ def order_record_response(order_level_bib, sierra_response, collection):
     "library, collection", [("bpl", "NONE"), ("nypl", "BL"), ("nypl", "RL")]
 )
 class TestMatchAnalyzer:
-    def test_base_analyzer(self, order_record_response):
-        service = analysis.BaseMatchAnalyzer()
-        with pytest.raises(NotImplementedError):
-            service.analyze(order_record_response)
-
-    def test_analyze_matches(self, order_record_response):
+    def test_analyze_match(self, order_record_response):
         service = analysis.AcquisitionsMatchAnalyzer()
-        results = service.analyze_matches([order_record_response])
-        assert results[0].decision.target_bib_id is None
+        results = service.analyze_match(order_record_response)
+        assert results.decision.target_bib_id is None
         assert order_record_response.bib.bib_id is None
 
     @pytest.mark.parametrize("key", ["control_number", "isbn", "oclc_number", "upc"])
@@ -52,29 +47,29 @@ class TestMatchAnalyzer:
         setattr(full_bib, key, "123456789")
         response = matches.MatchContext(bib=full_bib, candidates=[sierra_response])
         service = analysis.AcquisitionsMatchAnalyzer()
-        results = service.analyze_matches([response])
-        assert results[0].analysis.resource_id == "123456789"
-        assert results[0].analysis.call_number == "Foo"
+        results = service.analyze_match(response)
+        assert results.analysis.resource_id == "123456789"
+        assert results.analysis.call_number == "Foo"
 
     def test_resource_id_multiple_oclc_numbers(self, full_bib, sierra_response):
         full_bib.isbn = None
         full_bib.oclc_number = ["123456789", "987654321"]
         response = matches.MatchContext(bib=full_bib, candidates=[sierra_response])
         service = analysis.AcquisitionsMatchAnalyzer()
-        results = service.analyze_matches([response])
-        assert results[0].analysis.resource_id == "123456789"
-        assert results[0].analysis.call_number == "Foo"
+        results = service.analyze_match(response)
+        assert results.analysis.resource_id == "123456789"
+        assert results.analysis.call_number == "Foo"
 
     def test_resource_id_none(self, full_bib, sierra_response):
         full_bib.isbn = None
         response = matches.MatchContext(bib=full_bib, candidates=[sierra_response])
         service = analysis.AcquisitionsMatchAnalyzer()
-        results = service.analyze_matches([response])
-        assert results[0].analysis.resource_id is None
-        assert results[0].bib.control_number is None
-        assert results[0].bib.isbn is None
-        assert results[0].bib.oclc_number is None
-        assert results[0].bib.upc is None
+        results = service.analyze_match(response)
+        assert results.analysis.resource_id is None
+        assert results.bib.control_number is None
+        assert results.bib.isbn is None
+        assert results.bib.oclc_number is None
+        assert results.bib.upc is None
 
 
 class TestCandidateClassifier:
@@ -121,10 +116,10 @@ class TestSelectionMatchAnalyzer:
     @pytest.mark.parametrize(
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
     )
-    def test_analyze(self, order_record_response):
+    def test_analyze_match(self, order_record_response):
         order_record_response.bib.record_type = "sel"
         analyzer = analysis.SelectionMatchAnalyzer()
-        result = analyzer.analyze(order_record_response)
+        result = analyzer.analyze_match(order_record_response)
         assert order_record_response.bib.bib_id is None
         assert result.analysis.target_bib_id == "12345"
         assert result.analysis.duplicate_records == []
@@ -146,7 +141,7 @@ class TestSelectionMatchAnalyzer:
         order_record_response = replace(order_record_response, candidates=[])
         order_record_response.bib.record_type = "sel"
         analyzer = analysis.SelectionMatchAnalyzer()
-        result = analyzer.analyze(order_record_response)
+        result = analyzer.analyze_match(order_record_response)
         assert order_record_response.bib.bib_id is None
         assert result.analysis.target_bib_id is None
         assert result.analysis.duplicate_records == []
@@ -171,7 +166,7 @@ class TestSelectionMatchAnalyzer:
             candidates=[sierra_responses.NYPLPlatformResponse(data=nypl_data)],
         )
         analyzer = analysis.SelectionMatchAnalyzer()
-        result = analyzer.analyze(order_record_response)
+        result = analyzer.analyze_match(order_record_response)
         assert result.analysis.target_bib_id == "12345"
         assert result.analysis.duplicate_records == []
         assert result.analysis.call_number == "Foo"
@@ -193,10 +188,10 @@ class TestAcquisitionsMatchAnalyzer:
     @pytest.mark.parametrize(
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
     )
-    def test_analyze(self, order_record_response):
+    def test_analyze_match(self, order_record_response):
         order_record_response.bib.record_type = "acq"
         analyzer = analysis.AcquisitionsMatchAnalyzer()
-        result = analyzer.analyze(order_record_response)
+        result = analyzer.analyze_match(order_record_response)
         assert order_record_response.bib.bib_id is None
         assert result.analysis.target_bib_id == order_record_response.bib.bib_id
         assert result.analysis.duplicate_records == []
@@ -213,9 +208,9 @@ class TestAcquisitionsMatchAnalyzer:
 
 @pytest.mark.parametrize("library, collection", [("nypl", "BL")])
 class TestNYPLCatBranchMatchAnalyzer:
-    def test_analyze(self, full_record_response):
+    def test_analyze_match(self, full_record_response):
         analyzer = analysis.NYPLCatBranchMatchAnalyzer()
-        result = analyzer.analyze(full_record_response)
+        result = analyzer.analyze_match(full_record_response)
         assert full_record_response.bib.bib_id is None
         assert result.analysis.target_bib_id == "12345"
         assert result.analysis.duplicate_records == []
@@ -233,7 +228,7 @@ class TestNYPLCatBranchMatchAnalyzer:
     def test_analyze_no_matches(self, full_record_response):
         full_record_response = replace(full_record_response, candidates=[])
         analyzer = analysis.NYPLCatBranchMatchAnalyzer()
-        result = analyzer.analyze(full_record_response)
+        result = analyzer.analyze_match(full_record_response)
         assert full_record_response.bib.bib_id is None
         assert result.analysis.target_bib_id is None
         assert result.analysis.duplicate_records == []
@@ -263,7 +258,7 @@ class TestNYPLCatBranchMatchAnalyzer:
             candidates=[sierra_responses.NYPLPlatformResponse(data)],
         )
         analyzer = analysis.NYPLCatBranchMatchAnalyzer()
-        result = analyzer.analyze(full_record_response)
+        result = analyzer.analyze_match(full_record_response)
         assert result.analysis.target_bib_id == "23456"
         assert full_record_response.candidates[0].cat_source == "inhouse"
         assert result.analysis.action == "attach"
@@ -302,7 +297,7 @@ class TestNYPLCatBranchMatchAnalyzer:
             candidates=[sierra_responses.NYPLPlatformResponse(data)],
         )
         analyzer = analysis.NYPLCatBranchMatchAnalyzer()
-        result = analyzer.analyze(full_record_response)
+        result = analyzer.analyze_match(full_record_response)
         assert result.analysis.target_bib_id == "34567"
         assert full_record_response.candidates[0].cat_source == "vendor"
         assert full_record_response.candidates[0].branch_call_number is not None
@@ -321,9 +316,9 @@ class TestNYPLCatBranchMatchAnalyzer:
 
 @pytest.mark.parametrize("library, collection", [("nypl", "RL")])
 class TestNYPLCatResearchMatchAnalyzer:
-    def test_analyze(self, full_record_response):
+    def test_analyze_match(self, full_record_response):
         analyzer = analysis.NYPLCatResearchMatchAnalyzer()
-        result = analyzer.analyze(full_record_response)
+        result = analyzer.analyze_match(full_record_response)
         assert full_record_response.bib.bib_id is None
         assert result.analysis.target_bib_id == "12345"
         assert result.analysis.duplicate_records == []
@@ -342,7 +337,7 @@ class TestNYPLCatResearchMatchAnalyzer:
     def test_analyze_no_results(self, full_record_response):
         full_record_response = replace(full_record_response, candidates=[])
         analyzer = analysis.NYPLCatResearchMatchAnalyzer()
-        result = analyzer.analyze(full_record_response)
+        result = analyzer.analyze_match(full_record_response)
         assert full_record_response.bib.bib_id is None
         assert result.analysis.target_bib_id is None
         assert result.analysis.duplicate_records == []
@@ -385,7 +380,7 @@ class TestNYPLCatResearchMatchAnalyzer:
             candidates=[sierra_responses.NYPLPlatformResponse(data=data)],
         )
         analyzer = analysis.NYPLCatResearchMatchAnalyzer()
-        result = analyzer.analyze(full_record_response)
+        result = analyzer.analyze_match(full_record_response)
         assert full_record_response.bib.bib_id is None
         assert result.analysis.target_bib_id == "34567"
         assert full_record_response.candidates[0].cat_source == "vendor"
@@ -415,7 +410,7 @@ class TestNYPLCatResearchMatchAnalyzer:
             candidates=[sierra_responses.NYPLPlatformResponse(data=data)],
         )
         analyzer = analysis.NYPLCatResearchMatchAnalyzer()
-        result = analyzer.analyze(full_record_response)
+        result = analyzer.analyze_match(full_record_response)
         assert full_record_response.bib.bib_id is None
         assert result.analysis.target_bib_id == "34567"
         assert full_record_response.candidates[0].research_call_number == []
@@ -435,9 +430,9 @@ class TestNYPLCatResearchMatchAnalyzer:
 
 @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
 class TestBPLCatMatchAnalyzer:
-    def test_analyze(self, full_record_response):
+    def test_analyze_match(self, full_record_response):
         analyzer = analysis.BPLCatMatchAnalyzer()
-        result = analyzer.analyze(full_record_response)
+        result = analyzer.analyze_match(full_record_response)
         assert full_record_response.bib.bib_id is None
         assert result.analysis.target_bib_id == "12345"
         assert result.analysis.duplicate_records == []
@@ -446,7 +441,7 @@ class TestBPLCatMatchAnalyzer:
     def test_analyze_no_results(self, full_record_response):
         full_record_response = replace(full_record_response, candidates=[])
         analyzer = analysis.BPLCatMatchAnalyzer()
-        result = analyzer.analyze(full_record_response)
+        result = analyzer.analyze_match(full_record_response)
         assert full_record_response.bib.bib_id is None
         assert result.analysis.target_bib_id is None
         assert result.analysis.action == matches.CatalogAction.INSERT
@@ -455,7 +450,7 @@ class TestBPLCatMatchAnalyzer:
         full_record_response.bib.vendor = "Midwest DVD"
         full_record_response = replace(full_record_response, candidates=[])
         analyzer = analysis.BPLCatMatchAnalyzer()
-        result = analyzer.analyze(full_record_response)
+        result = analyzer.analyze_match(full_record_response)
         assert full_record_response.bib.bib_id is None
         assert result.analysis.target_bib_id is None
         assert result.analysis.action == "attach"
@@ -476,7 +471,7 @@ class TestBPLCatMatchAnalyzer:
             candidates=[sierra_responses.BPLSolrResponse(data=data)],
         )
         analyzer = analysis.BPLCatMatchAnalyzer()
-        result = analyzer.analyze(full_record_response)
+        result = analyzer.analyze_match(full_record_response)
         assert result.analysis.target_bib_id == "12345"
         assert result.analysis.action == action
 
@@ -494,7 +489,7 @@ class TestBPLCatMatchAnalyzer:
             candidates=[sierra_responses.BPLSolrResponse(data=data)],
         )
         analyzer = analysis.BPLCatMatchAnalyzer()
-        result = analyzer.analyze(full_record_response)
+        result = analyzer.analyze_match(full_record_response)
         assert result.analysis.target_bib_id == "23456"
         assert full_record_response.candidates[0].cat_source == "inhouse"
         assert result.analysis.action == "attach"
@@ -515,7 +510,7 @@ class TestBPLCatMatchAnalyzer:
             candidates=[sierra_responses.BPLSolrResponse(data=data)],
         )
         analyzer = analysis.BPLCatMatchAnalyzer()
-        result = analyzer.analyze(full_record_response)
+        result = analyzer.analyze_match(full_record_response)
         assert result.analysis.target_bib_id == "34567"
         assert full_record_response.candidates[0].cat_source == "vendor"
         assert result.analysis.action == action
@@ -531,6 +526,6 @@ class TestBPLCatMatchAnalyzer:
             candidates=[sierra_responses.BPLSolrResponse(data=data)],
         )
         analyzer = analysis.BPLCatMatchAnalyzer()
-        result = analyzer.analyze(full_record_response)
+        result = analyzer.analyze_match(full_record_response)
         assert result.analysis.target_bib_id == "34567"
         assert result.analysis.action == "overlay"

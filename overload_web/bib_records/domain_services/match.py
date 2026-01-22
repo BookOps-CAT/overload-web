@@ -95,53 +95,47 @@ class BibMatcher(ABC):
 
 class OrderLevelBibMatcher(BibMatcher):
     def match(
-        self, records: list[bibs.DomainBib], matchpoints: dict[str, str]
-    ) -> list[matches.MatchContext]:
+        self, record: bibs.DomainBib, matchpoints: dict[str, str]
+    ) -> matches.MatchContext:
         """
-        Match order-level bibliographic records against Sierra.
+        Match an order-level bibliographic record against Sierra.
 
         Args:
-            records:
-                A list of parsed bibliographic records as `DomainBib` objects.
+            record:
+                A parsed bibliographic record as a `DomainBib` object.
             matchpoints:
-                A dictionary containing matchpoints to be used in matching records.
+                A dictionary containing matchpoints to be used in matching.
 
         Returns:
-            A list of `MatchContext` objects containing a processed record as
+            A `MatchContext` object containing a processed record as
             a `DomainBib` object and its associated matches as
             `BaseSierraResponse` objects
         """
-        out = []
-        for record in records:
-            responses: list[sierra_responses.BaseSierraResponse] = self._match_bib(
-                record=record, matchpoints=matchpoints
-            )
-            out.append(matches.MatchContext(bib=record, candidates=responses))
-        return out
+        responses: list[sierra_responses.BaseSierraResponse] = self._match_bib(
+            record=record, matchpoints=matchpoints
+        )
+        return matches.MatchContext(bib=record, candidates=responses)
 
 
 class FullLevelBibMatcher(BibMatcher):
-    def match(self, records: list[bibs.DomainBib]) -> list[matches.MatchContext]:
+    def match(self, record: bibs.DomainBib) -> matches.MatchContext:
         """
-        Match full-level bibliographic records against Sierra.
+        Match a full-level bibliographic record against Sierra.
 
         Args:
-            records:
-                A list of parsed bibliographic records as `DomainBib` objects.
+            record:
+                A parsed bibliographic record as a `DomainBib` object.
 
         Returns:
-            A list of `MatchContext` objects containing a processed record as a
+            A `MatchContext` object containing a processed record as a
             `DomainBib` object and its associated matches as `BaseSierraResponse`
 
         Raises:
             OverloadError: if the value of a record's `vendor_info` attribute is None.
         """
-        out = []
-        for record in records:
-            if record.vendor_info is None:
-                raise OverloadError("Vendor index required for cataloging workflow.")
-            responses: list[sierra_responses.BaseSierraResponse] = self._match_bib(
-                record=record, matchpoints=record.vendor_info.matchpoints
-            )
-            out.append(matches.MatchContext(bib=record, candidates=responses))
-        return out
+        if record.vendor_info is None:
+            raise OverloadError("Vendor index required for cataloging workflow.")
+        responses: list[sierra_responses.BaseSierraResponse] = self._match_bib(
+            record=record, matchpoints=record.vendor_info.matchpoints
+        )
+        return matches.MatchContext(bib=record, candidates=responses)

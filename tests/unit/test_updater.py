@@ -124,8 +124,8 @@ class TestUpdater:
         original_bib = Bib(
             full_match_result.bib.binary_data, library=full_match_result.bib.library
         )
-        updated_bibs = updater_service.update([full_match_result])
-        updated_bib = Bib(updated_bibs[0].binary_data, library=updated_bibs[0].library)
+        updated_bibs = updater_service.update(full_match_result)
+        updated_bib = Bib(updated_bibs.binary_data, library=updated_bibs.library)
         assert len(original_bib.get_fields(tag)) == 0
         assert len(updated_bib.get_fields(tag)) == 1
 
@@ -151,13 +151,13 @@ class TestUpdater:
         original_bib = Bib(
             full_match_result.bib.binary_data, library=full_match_result.bib.library
         )
-        updated_bibs = updater_service.update([full_match_result])
+        updated_bibs = updater_service.update(full_match_result)
         assert len(original_bib.get_fields("949")) == 1
         assert (
             len(
-                Bib(
-                    updated_bibs[0].binary_data, library=updated_bibs[0].library
-                ).get_fields("949")
+                Bib(updated_bibs.binary_data, library=updated_bibs.library).get_fields(
+                    "949"
+                )
             )
             == 2
         )
@@ -184,13 +184,13 @@ class TestUpdater:
         original_bib = Bib(
             full_match_result.bib.binary_data, library=full_match_result.bib.library
         )
-        updated_bibs = updater_service.update([full_match_result])
+        updated_bibs = updater_service.update(full_match_result)
         assert len(original_bib.get_fields("949")) == 0
         assert (
             len(
-                Bib(
-                    updated_bibs[0].binary_data, library=updated_bibs[0].library
-                ).get_fields("949")
+                Bib(updated_bibs.binary_data, library=updated_bibs.library).get_fields(
+                    "949"
+                )
             )
             == 1
         )
@@ -202,11 +202,11 @@ class TestUpdater:
     def test_update_template_data(self, order_match_result, updater_service):
         original_orders = copy.deepcopy(order_match_result.bib.orders)
         updated_bibs = updater_service.update(
-            [order_match_result],
+            order_match_result,
             template_data={"name": "Foo", "order_code_1": "b", "format": "a"},
         )
         assert [i.order_code_1 for i in original_orders] == ["j"]
-        assert [i.order_code_1 for i in updated_bibs[0].orders] == ["b"]
+        assert [i.order_code_1 for i in updated_bibs.orders] == ["b"]
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
@@ -216,10 +216,8 @@ class TestUpdater:
     def test_update_default_loc(self, result_with_command_tag, updater_service, value):
         result = result_with_command_tag(value)
         original_bib = Bib(result.bib.binary_data, library=result.bib.library)
-        updated_records = updater_service.update([result], template_data={})
-        updated_bib = Bib(
-            updated_records[0].binary_data, library=updated_records[0].library
-        )
+        updated_records = updater_service.update(result, template_data={})
+        updated_bib = Bib(updated_records.binary_data, library=updated_records.library)
         assert [i.value() for i in original_bib.get_fields("949")] == [
             "333331234567890",
             value,
@@ -237,10 +235,8 @@ class TestUpdater:
     ):
         result = result_with_command_tag(value)
         original_bib = Bib(result.bib.binary_data, library=result.bib.library)
-        updated_records = updater_service.update([result], template_data={})
-        updated_bib = Bib(
-            updated_records[0].binary_data, library=updated_records[0].library
-        )
+        updated_records = updater_service.update(result, template_data={})
+        updated_bib = Bib(updated_records.binary_data, library=updated_records.library)
         assert [i.value() for i in original_bib.get_fields("949")] == [
             "333331234567890",
             value,
@@ -259,12 +255,8 @@ class TestUpdater:
     ):
         result = result_with_command_tag("*b2=a;")
         original_bib = Bib(result.bib.binary_data, library=result.bib.library)
-        updated_records = updater_service.update(
-            [result], template_data={"format": "a"}
-        )
-        updated_bib = Bib(
-            updated_records[0].binary_data, library=updated_records[0].library
-        )
+        updated_records = updater_service.update(result, template_data={"format": "a"})
+        updated_bib = Bib(updated_records.binary_data, library=updated_records.library)
         assert len(updated_bib.get_fields("949")) == 2
         assert len(original_bib.get_fields("949")) == 2
 
@@ -279,10 +271,8 @@ class TestUpdater:
         original_bib = Bib(
             order_match_result.bib.binary_data, library=order_match_result.bib.library
         )
-        updated_records = updater_service.update([order_match_result], template_data={})
-        updated_bib = Bib(
-            updated_records[0].binary_data, library=updated_records[0].library
-        )
+        updated_records = updater_service.update(order_match_result, template_data={})
+        updated_bib = Bib(updated_records.binary_data, library=updated_records.library)
         assert len(updated_bib.get_fields("949")) == field_count
         assert len(original_bib.get_fields("949")) == 1
 
@@ -308,10 +298,8 @@ class TestUpdater:
     ):
         result = make_bt_series_full_bib(pairs)
         original_bib = Bib(result.bib.binary_data, library=result.bib.library)
-        updated_records = updater_service.update([result])
-        updated_bib = Bib(
-            updated_records[0].binary_data, library=updated_records[0].library
-        )
+        updated_records = updater_service.update(result)
+        updated_bib = Bib(updated_records.binary_data, library=updated_records.library)
         assert updated_bib.get_fields("091")[0].value() == " ".join(
             [i for i in pairs.values()]
         )
@@ -332,7 +320,7 @@ class TestUpdater:
             {"z": "FOO", "p": "J", "a": "FIC", "c": "SNICKET"}
         )
         with pytest.raises(ValueError) as exc:
-            updater_service.update([result])
+            updater_service.update(result)
         assert (
             str(exc.value)
             == "Constructed call number does not match original. New=FOO J FIC SNICKET, Original=FIC SNICKET"
