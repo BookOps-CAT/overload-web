@@ -3,23 +3,26 @@
   <div class="col-10">
     <div class="row">
       {% for field_id, field_data in context_fields.items() %} {{
-      macro.select_field(field_id, field_data, context.get(field_id)) }} {%
+      macro.disabled_field(field_id, field_data, context.get(field_id)) }} {%
       endfor %}
     </div>
     <div class="row">
       <div class="col">
-        <button
-          class="btn my-3"
-          hx-get="/htmx/forms/context"
-          hx-target="#context-form"
-          style="border-color: #d52828"
+        <a href="/process" class="btn my-3" style="border-color: #d52828"
+          >Edit Library Context</a
         >
-          Edit Library Context
-        </button>
       </div>
     </div>
   </div>
   <div class="col">
-    <div class="row">{% include "partials/context_display.html" %}</div>
+    {% for k,v in context.items() %}
+    <input id="{{ k }}" name="{{ k }}" type="hidden" value="{{ v }}" />
+    {% endfor %}
+    <div class="row" id="library-img">
+      <img
+        src="{{ url_for('static', path='images/{{context.library}}') }}"
+        class="img-fluid"
+      />
+    </div>
   </div>
 </div>

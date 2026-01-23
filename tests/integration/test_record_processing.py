@@ -11,7 +11,7 @@ from overload_web.bib_records.infrastructure import marc_mapper, marc_updater
 @pytest.fixture(scope="module")
 def get_constants() -> dict[str, Any]:
     """Retrieve processing constants from JSON file."""
-    with open("overload_web/vendor_specs.json", "r", encoding="utf-8") as fh:
+    with open("overload_web/data/vendor_specs.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     return constants
 

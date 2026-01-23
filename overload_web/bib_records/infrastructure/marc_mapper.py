@@ -32,7 +32,7 @@ class BookopsMarcMapper:
             rules:
                 A dictionary containing vendor identification rules, and rules to use
                 when mapping MARC records, to domain objects. Parsed from `mapper_rules`
-                in `/overload_web/vendor_specs.json`.
+                in `/overload_web/data/vendor_specs.json`.
         """
         self.library = library
         self.record_type = record_type

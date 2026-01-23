@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 from contextlib import asynccontextmanager
-from typing import Annotated, Any, AsyncGenerator, Optional
+from typing import Annotated, Any, AsyncGenerator
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -186,10 +186,43 @@ def write_remote_file(
     )
 
 
-@api_router.post("/process-vendor-file", response_class=HTMLResponse)
-def process_vendor_file(
+@api_router.post("/full-records/process-vendor-file", response_class=HTMLResponse)
+def process_full_records(
     request: Request,
     full_record_service: Annotated[Any, Depends(records.full_level_processing_service)],
+    files: Annotated[list[dto.VendorFileModel], Depends(files.normalize_files)],
+) -> HTMLResponse:
+    """
+    Process one or more files of MARC records.
+
+    Uses `FullRecordProcessingService` to process MARC records.
+
+    Args:
+        full_record_service:
+            a `FullRecordProcessingService` object created using library, collection,
+            and record_type args
+        files:
+            a list of vendor files from a local upload or a vendor's SFTP as
+            `VendorFileModel` objects.
+
+    Returns:
+        the processed files wrapped in a `HTMLResponse` object
+
+    """
+    out_files = {}
+    for file in files:
+        analysis, processed_records = full_record_service.process_vendor_file(
+            data=file.content
+        )
+        out_files[file.file_name] = {"records": processed_records, "analysis": analysis}
+    return request.app.state.templates.TemplateResponse(
+        request=request, name="partials/pvf_results.html", context={"files": out_files}
+    )
+
+
+@api_router.post("/order-records/process-vendor-file", response_class=HTMLResponse)
+def process_order_records(
+    request: Request,
     order_record_service: Annotated[
         Any, Depends(records.order_level_processing_service)
     ],
@@ -197,18 +230,13 @@ def process_vendor_file(
     order_template: Annotated[Any, Depends(dto.from_form(dto.TemplateDataModel))],
     matchpoints: Annotated[Any, Depends(dto.from_form(dto.MatchpointSchema))],
     vendor: Annotated[str, Form(...)],
-    record_type: Annotated[Optional[str], Form(...)],
 ) -> HTMLResponse:
     """
     Process one or more files of MARC records.
 
-    Uses an `OrderRecordProcessingService` or `FullRecordProcessingService` to process
-    records.
+    Uses an `OrderRecordProcessingService` to process MARC records.
 
     Args:
-        full_record_service:
-            a `FullRecordProcessingService` object created using library, collection,
-            and record_type args
         order_record_service:
             an `OrderRecordProcessingService` created using library, collection,
             and record_type args.
@@ -230,27 +258,17 @@ def process_vendor_file(
 
     """
     out_files = {}
-    if record_type == "cat":
-        for file in files:
-            analysis, processed_records = full_record_service.process_vendor_file(
-                data=file.content
-            )
-            out_files[file.file_name] = {
-                "records": processed_records,
-                "analysis": analysis,
-            }
-    else:
-        for file in files:
-            analysis, processed_records = order_record_service.process_vendor_file(
-                data=file.content,
-                template_data=order_template.model_dump(),
-                matchpoints=matchpoints.model_dump(),
-                vendor=vendor,
-            )
-            out_files[file.file_name] = {
-                "records": processed_records,
-                "analysis": analysis,
-            }
+    for file in files:
+        analysis, processed_records = order_record_service.process_vendor_file(
+            data=file.content,
+            template_data=order_template.model_dump(),
+            matchpoints=matchpoints.model_dump(),
+            vendor=vendor,
+        )
+        out_files[file.file_name] = {
+            "records": processed_records,
+            "analysis": analysis,
+        }
     return request.app.state.templates.TemplateResponse(
         request=request, name="partials/pvf_results.html", context={"files": out_files}
     )

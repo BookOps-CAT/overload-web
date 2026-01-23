@@ -45,7 +45,7 @@ def setup_logging():
 @lru_cache
 def get_templates() -> Jinja2Templates:
     """Loads Jinja2 templates and sets env vars"""
-    with open("overload_web/form_constants.json", "r", encoding="utf-8") as fh:
+    with open("overload_web/data/form_constants.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     templates = Jinja2Templates(directory="overload_web/presentation/templates")
     templates.env.globals["fixed_fields"] = constants["fixed_fields"]

@@ -3,7 +3,7 @@
 {% endblock %} {% block content %}
 <form
   id="pvf-form"
-  hx-post="/api/process-vendor-file"
+  hx-post="/api/full-records/process-vendor-file"
   hx-encoding="multipart/form-data"
   hx-target="#pvf-output"
 >
@@ -20,9 +20,6 @@
       </div>
     </div>
     <div class="row gy-1 my-2">{% include "partials/file_source.html" %}</div>
-    <div class="row gy-1 my-2">
-      {% include "partials/template_source.html" %}
-    </div>
     <div class="row gy-1 my-2">
       <div class="col">{% include "partials/pvf_button.html" %}</div>
       <div class="col">

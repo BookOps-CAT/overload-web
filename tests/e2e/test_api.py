@@ -41,7 +41,9 @@ class TestApp:
         routes = self.client.app.router.__dict__["routes"]
         route_names = [i.name for i in routes]
         assert "root" in route_names
-        assert "process_records_page" in route_names
+        assert "process_acq_records_page" in route_names
+        assert "process_cat_records_page" in route_names
+        assert "process_sel_records_page" in route_names
 
     def test_home_get(self):
         response = self.client.get("/")
@@ -79,7 +81,7 @@ class TestApp:
         assert "Process Vendor File" in response.text
         assert (
             response.url
-            == f"{self.base_url}/process/context?library=nypl&collection={collection}&record_type={record_type}"
+            == f"{self.base_url}/process/{record_type}?library=nypl&collection={collection}"
         )
 
     @pytest.mark.parametrize(
@@ -99,7 +101,7 @@ class TestApp:
         assert "Process Vendor File" in response.text
         assert (
             response.url
-            == f"{self.base_url}/process/context?library=bpl&collection=&record_type={record_type}"
+            == f"{self.base_url}/process/{record_type}?library=bpl&collection="
         )
 
     @pytest.mark.parametrize(
@@ -118,13 +120,13 @@ class TestApp:
     )
     def test_process_records_get(self, library, collection, record_type):
         response = self.client.get(
-            f"/process/context?library={library}&collection={collection}&record_type={record_type}"
+            f"/process/{record_type}?library={library}&collection={collection}"
         )
         assert response.status_code == 200
         assert "Process Vendor File" in response.text
         assert (
             response.url
-            == f"{self.base_url}/process/context?library={library}&collection={collection}&record_type={record_type}"
+            == f"{self.base_url}/process/{record_type}?library={library}&collection={collection}"
         )
         assert response.context["page_title"] == "Process Vendor File"
 
@@ -196,7 +198,7 @@ class TestApp:
             ("bpl", "NONE", "sel"),
         ],
     )
-    def test_api_process_vendor_file_local(self, library, collection, record_type):
+    def test_api_process_order_records_local(self, library, collection, record_type):
         context = {
             "library": library,
             "collection": collection,
@@ -209,7 +211,7 @@ class TestApp:
         }
         files = {"files": ("test.mrc", b"", "application/octet-stream")}
         response = self.client.post(
-            "/api/process-vendor-file", data=context, files=files
+            "/api/order-records/process-vendor-file", data=context, files=files
         )
         assert response.status_code == 200
 
@@ -227,7 +229,7 @@ class TestApp:
             ("bpl", "NONE", "sel"),
         ],
     )
-    def test_api_process_vendor_file_remote(self, library, collection, record_type):
+    def test_api_process_order_records_remote(self, library, collection, record_type):
         context = {
             "library": library,
             "collection": collection,
@@ -240,7 +242,61 @@ class TestApp:
         }
         files = {"files": (None, "test.mrc")}
         response = self.client.post(
-            "/api/process-vendor-file", data=context, files=files
+            "/api/order-records/process-vendor-file", data=context, files=files
+        )
+        assert response.status_code == 200
+
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [
+            ("nypl", "BL", "cat"),
+            ("nypl", "BL", "acq"),
+            ("nypl", "BL", "sel"),
+            ("nypl", "RL", "cat"),
+            ("nypl", "RL", "acq"),
+            ("nypl", "RL", "sel"),
+            ("bpl", "NONE", "cat"),
+            ("bpl", "NONE", "acq"),
+            ("bpl", "NONE", "sel"),
+        ],
+    )
+    def test_api_process_full_records_local(self, library, collection, record_type):
+        context = {
+            "library": library,
+            "collection": collection,
+            "record_type": record_type,
+            "vendor": "FOO",
+        }
+        files = {"files": ("test.mrc", b"", "application/octet-stream")}
+        response = self.client.post(
+            "/api/full-records/process-vendor-file", data=context, files=files
+        )
+        assert response.status_code == 200
+
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [
+            ("nypl", "BL", "acq"),
+            ("nypl", "BL", "cat"),
+            ("nypl", "BL", "sel"),
+            ("nypl", "RL", "acq"),
+            ("nypl", "RL", "cat"),
+            ("nypl", "RL", "sel"),
+            ("bpl", "NONE", "acq"),
+            ("bpl", "NONE", "cat"),
+            ("bpl", "NONE", "sel"),
+        ],
+    )
+    def test_api_process_full_records_remote(self, library, collection, record_type):
+        context = {
+            "library": library,
+            "collection": collection,
+            "record_type": record_type,
+            "vendor": "FOO",
+        }
+        files = {"files": (None, "test.mrc")}
+        response = self.client.post(
+            "/api/full-records/process-vendor-file", data=context, files=files
         )
         assert response.status_code == 200
 

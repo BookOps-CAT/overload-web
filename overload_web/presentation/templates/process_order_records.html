@@ -1,0 +1,42 @@
+{% extends 'base.html' %} {% block header %}
+<h2>{{ page_title }}</h2>
+{% endblock %} {% block content %}
+<form
+  id="pvf-form"
+  hx-post="/api/order-records/process-vendor-file"
+  hx-encoding="multipart/form-data"
+  hx-target="#pvf-output"
+>
+  <div class="container text-left">
+    <div class="row gy-1 my-2">
+      <div class="col">
+        <div
+          id="context-form"
+          class="col"
+          hx-get="/htmx/forms/disabled-context?library={{library}}&record_type={{record_type}}&collection={{collection}}"
+          hx-target="this"
+          hx-trigger="load"
+        ></div>
+      </div>
+    </div>
+    <div class="row gy-1 my-2">{% include "partials/file_source.html" %}</div>
+    <div class="row gy-1 my-2">
+      {% include "partials/template_source.html" %}
+    </div>
+    <div class="row gy-1 my-2">
+      <div class="col">{% include "partials/pvf_button.html" %}</div>
+      <div class="col">
+        <div
+          id="loading-spinner"
+          class="spinner-border text-primary"
+          role="status"
+          style="display: none; width: 2rem; height: 2rem; margin-left: 10px"
+        >
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+<div id="pvf-output"></div>
+{% endblock %}
