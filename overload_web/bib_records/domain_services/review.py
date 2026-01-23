@@ -24,7 +24,7 @@ class MarcUpdateStrategy(Protocol):
     ) -> Any: ...  # pragma: no branch
 
 
-class FullLevelBibReviewer:
+class BibReviewer:
     def __init__(self, context_factory: MarcUpdateStrategy) -> None:
         self.context_factory = context_factory
 

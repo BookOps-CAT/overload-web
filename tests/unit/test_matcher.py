@@ -2,7 +2,7 @@ import pytest
 
 from overload_web.bib_records.domain_models import bibs
 from overload_web.bib_records.domain_services import match
-from overload_web.errors import OverloadError
+from overload_web.shared.errors import OverloadError
 
 
 @pytest.fixture

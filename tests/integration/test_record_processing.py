@@ -49,10 +49,11 @@ class TestRecordProcessingService:
         )
         with open("tests/data/sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        analysis, processed_files = service.process_vendor_file(marc_data)
-        assert isinstance(analysis, dict)
-        assert isinstance(processed_files, list)
-        assert isinstance(processed_files[0], bibs.DomainBib)
+        out = service.process_vendor_file(marc_data)
+        assert isinstance(out, dict)
+        assert isinstance(out["report"], bibs.MatchAnalysisReport)
+        assert isinstance(out["records"], list)
+        assert isinstance(out["records"][0], bibs.DomainBib)
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
@@ -67,12 +68,13 @@ class TestRecordProcessingService:
         )
         with open("tests/data/sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        analysis, processed_files = service.process_vendor_file(
+        out = service.process_vendor_file(
             data=marc_data,
             template_data={"format": "a"},
             matchpoints={"primary_matchpoint": "isbn"},
             vendor="UNKNOWN",
         )
-        assert isinstance(analysis, dict)
-        assert isinstance(processed_files, list)
-        assert isinstance(processed_files[0], bibs.DomainBib)
+        assert isinstance(out, dict)
+        assert isinstance(out["report"], bibs.MatchAnalysisReport)
+        assert isinstance(out["records"], list)
+        assert isinstance(out["records"][0], bibs.DomainBib)

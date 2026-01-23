@@ -73,9 +73,7 @@ class FullRecordProcessingService:
         self.parser = parse.FullLevelBibParser(mapper=bib_mapper)
         self.updater = update.BibUpdater(strategy=update_strategy)
 
-    def process_vendor_file(
-        self, data: BinaryIO | bytes
-    ) -> tuple[dict[str, Any], list[bibs.DomainBib]]:
+    def process_vendor_file(self, data: BinaryIO | bytes) -> dict[str, Any]:
         """
         Process a file of full MARC records.
 
@@ -86,25 +84,21 @@ class FullRecordProcessingService:
         Args:
             data: Binary MARC data as a `BinaryIO` or `bytes` object.
         Returns:
-            A dictionary containing the file type and an in-memory file stream
-            for each type of file to be written. The keys for this dictionary
-            will be appended to the file name when writing the binary data to a file.
+            A dictionary containing the a list of processed records as `DomainBib`
+            objects and the the `MatchAnalysisReport` for the file of records.
         """
         parsed_records = self.parser.parse(data=data)
         barcodes = self.parser.extract_barcodes(parsed_records)
-        updated_records = []
-        match_report = []
+        out: dict[str, list[Any]] = {"records": [], "report": []}
         for record in parsed_records:
             candidates = self.matcher.match(record=record)
             analysis = self.analyzer.analyze_match(record=record, candidates=candidates)
+            out["report"].append(analysis)
             record.apply_match_decision(analysis.decision)
             updated = self.updater.update(record=record)
-            updated_records.append(updated)
-            match_report.append(analysis)
-        analysis_report = bibs.MatchAnalysisReport(
-            analyses=match_report, barcodes=barcodes
-        )
-        return (analysis_report.to_dict(), updated_records)
+            out["records"].append(updated)
+        report = bibs.MatchAnalysisReport(analyses=out["report"], barcodes=barcodes)
+        return {"records": out["records"], "report": report}
 
 
 class OrderRecordProcessingService:
@@ -141,7 +135,7 @@ class OrderRecordProcessingService:
         matchpoints: dict[str, str],
         template_data: dict[str, Any],
         vendor: str | None,
-    ) -> tuple[dict[str, Any], list[bibs.DomainBib]]:
+    ) -> dict[str, Any]:
         """
         Process a file of full MARC records.
 
@@ -160,17 +154,17 @@ class OrderRecordProcessingService:
                 The vendor whose records are being processed as a string.
 
         Returns:
-            MARC data as a `BinaryIO` object
+            A dictionary containing the a list of processed records as `DomainBib`
+            objects and the the `MatchAnalysisReport` for the file of records.
         """
         parsed_records = self.parser.parse(data=data, vendor=vendor)
-        updated_records = []
-        match_report = []
+        out: dict[str, list[Any]] = {"records": [], "report": []}
         for record in parsed_records:
             candidates = self.matcher.match(record=record, matchpoints=matchpoints)
             analysis = self.analyzer.analyze_match(record=record, candidates=candidates)
+            out["report"].append(analysis)
             record.apply_match_decision(analysis.decision)
             updated = self.updater.update(record=record, template_data=template_data)
-            updated_records.append(updated)
-            match_report.append(analysis)
-        analysis_report = bibs.MatchAnalysisReport(analyses=match_report)
-        return (analysis_report.to_dict(), updated_records)
+            out["records"].append(updated)
+        report = bibs.MatchAnalysisReport(analyses=out["report"])
+        return {"records": out["records"], "report": report}

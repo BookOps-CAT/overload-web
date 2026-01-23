@@ -4,11 +4,17 @@ from __future__ import annotations
 
 import io
 import logging
-from typing import BinaryIO
+from typing import BinaryIO, Protocol
 
 from overload_web.bib_records.domain_models import bibs
 
 logger = logging.getLogger(__name__)
+
+
+class MarcSerializer(Protocol):
+    def serialize(
+        self, records: list[bibs.DomainBib]
+    ) -> BinaryIO: ...  # pragma: no branch
 
 
 class OrderLevelBibSerializer:

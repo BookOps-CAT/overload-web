@@ -10,7 +10,7 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_dedupe_cat(self, full_bib, update_strategy):
-        service = review.FullLevelBibReviewer(context_factory=update_strategy)
+        service = review.BibReviewer(context_factory=update_strategy)
         decision = bibs.MatchDecision(
             bibs.CatalogAction.ATTACH, target_bib_id=full_bib.bib_id
         )
@@ -38,7 +38,7 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_validate_cat(self, full_bib, update_strategy, caplog):
-        service = review.FullLevelBibReviewer(context_factory=update_strategy)
+        service = review.BibReviewer(context_factory=update_strategy)
         service.validate({"NEW": [full_bib]}, ["333331234567890"])
         assert len(caplog.records) == 1
         assert (
@@ -51,7 +51,7 @@ class TestReviewer:
     def test_validate_cat_bpl_960_item(
         self, full_bib, update_strategy, caplog, collection
     ):
-        service = review.FullLevelBibReviewer(context_factory=update_strategy)
+        service = review.BibReviewer(context_factory=update_strategy)
         service.validate({"NEW": [full_bib]}, ["333331234567890"])
         assert len(caplog.records) == 1
         assert (
@@ -65,7 +65,7 @@ class TestReviewer:
     def test_validate_missing_barcodes(
         self, full_bib, update_strategy, caplog, collection
     ):
-        service = review.FullLevelBibReviewer(context_factory=update_strategy)
+        service = review.BibReviewer(context_factory=update_strategy)
         service.validate({"NEW": [full_bib]}, ["333331234567890", "333330987654321"])
         assert len(caplog.records) == 2
         assert (
@@ -80,7 +80,7 @@ class TestReviewer:
     def test_validate_bpl_960_item_missing_barcodes(
         self, full_bib, update_strategy, caplog, collection
     ):
-        service = review.FullLevelBibReviewer(context_factory=update_strategy)
+        service = review.BibReviewer(context_factory=update_strategy)
         service.validate({"NEW": [full_bib]}, ["333331234567890", "333330987654321"])
         assert len(caplog.records) == 2
         assert (

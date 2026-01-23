@@ -206,15 +206,14 @@ def process_full_records(
             `VendorFileModel` objects.
 
     Returns:
-        the processed files wrapped in a `HTMLResponse` object
+        the processed files and report data wrapped in a `HTMLResponse` object
 
     """
     out_files = {}
     for file in files:
-        analysis, processed_records = full_record_service.process_vendor_file(
+        out_files[file.file_name] = full_record_service.process_vendor_file(
             data=file.content
         )
-        out_files[file.file_name] = {"records": processed_records, "analysis": analysis}
     return request.app.state.templates.TemplateResponse(
         request=request, name="partials/pvf_results.html", context={"files": out_files}
     )
@@ -254,21 +253,17 @@ def process_order_records(
             The vendor name as a string.
 
     Returns:
-        the processed files wrapped in a `HTMLResponse` object
+        the processed files and report data wrapped in a `HTMLResponse` object
 
     """
     out_files = {}
     for file in files:
-        analysis, processed_records = order_record_service.process_vendor_file(
+        out_files[file.file_name] = order_record_service.process_vendor_file(
             data=file.content,
             template_data=order_template.model_dump(),
             matchpoints=matchpoints.model_dump(),
             vendor=vendor,
         )
-        out_files[file.file_name] = {
-            "records": processed_records,
-            "analysis": analysis,
-        }
     return request.app.state.templates.TemplateResponse(
         request=request, name="partials/pvf_results.html", context={"files": out_files}
     )
