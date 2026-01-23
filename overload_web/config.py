@@ -4,10 +4,12 @@ import json
 import logging
 import logging.config
 from functools import lru_cache
+from pathlib import Path
 
 from fastapi.templating import Jinja2Templates
 
 logger = logging.getLogger(__name__)
+BASE_DIR = Path(__file__).resolve().parent
 
 
 def setup_logging():
@@ -45,9 +47,9 @@ def setup_logging():
 @lru_cache
 def get_templates() -> Jinja2Templates:
     """Loads Jinja2 templates and sets env vars"""
-    with open("overload_web/data/form_constants.json", "r", encoding="utf-8") as fh:
+    with open(BASE_DIR / "data/form_constants.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
-    templates = Jinja2Templates(directory="overload_web/presentation/templates")
+    templates = Jinja2Templates(directory=BASE_DIR / "templates")
     templates.env.globals["fixed_fields"] = constants["fixed_fields"]
     templates.env.globals["var_fields"] = constants["var_fields"]
     templates.env.globals["matchpoints"] = constants["matchpoints"]
