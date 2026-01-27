@@ -17,12 +17,10 @@ Models:
 from __future__ import annotations
 
 import logging
-from typing import Annotated
 
-from sqlmodel import Field, MetaData, SQLModel
+from sqlmodel import Field, SQLModel
 
 logger = logging.getLogger(__name__)
-metadata = MetaData()
 
 
 class _TemplateTableBase(SQLModel):
@@ -37,30 +35,30 @@ class _TemplateTableBase(SQLModel):
 
     """
 
-    name: Annotated[str, Field(nullable=False, unique=True, index=True)]
-    agent: Annotated[str, Field(nullable=False, index=True)]
-    acquisition_type: Annotated[str | None, Field(default=None)]
-    blanket_po: Annotated[str | None, Field(default=None)]
-    claim_code: Annotated[str | None, Field(default=None)]
-    country: Annotated[str | None, Field(default=None)]
-    format: Annotated[str | None, Field(default=None)]
-    internal_note: Annotated[str | None, Field(default=None)]
-    lang: Annotated[str | None, Field(default=None)]
-    material_form: Annotated[str | None, Field(default=None)]
-    order_code_1: Annotated[str | None, Field(default=None)]
-    order_code_2: Annotated[str | None, Field(default=None)]
-    order_code_3: Annotated[str | None, Field(default=None)]
-    order_code_4: Annotated[str | None, Field(default=None)]
-    order_note: Annotated[str | None, Field(default=None)]
-    order_type: Annotated[str | None, Field(default=None)]
-    receive_action: Annotated[str | None, Field(default=None)]
-    selector_note: Annotated[str | None, Field(default=None)]
-    vendor_code: Annotated[str | None, Field(default=None)]
-    vendor_notes: Annotated[str | None, Field(default=None)]
-    vendor_title_no: Annotated[str | None, Field(default=None)]
-    primary_matchpoint: Annotated[str, Field(nullable=False)]
-    secondary_matchpoint: Annotated[str | None, Field(default=None)]
-    tertiary_matchpoint: Annotated[str | None, Field(default=None)]
+    name: str = Field(nullable=False, unique=True, index=True)
+    agent: str = Field(nullable=False, index=True)
+    acquisition_type: str | None = Field(default=None)
+    blanket_po: str | None = Field(default=None)
+    claim_code: str | None = Field(default=None)
+    country: str | None = Field(default=None)
+    format: str | None = Field(default=None)
+    internal_note: str | None = Field(default=None)
+    lang: str | None = Field(default=None)
+    material_form: str | None = Field(default=None)
+    order_code_1: str | None = Field(default=None)
+    order_code_2: str | None = Field(default=None)
+    order_code_3: str | None = Field(default=None)
+    order_code_4: str | None = Field(default=None)
+    order_note: str | None = Field(default=None)
+    order_type: str | None = Field(default=None)
+    receive_action: str | None = Field(default=None)
+    selector_note: str | None = Field(default=None)
+    vendor_code: str | None = Field(default=None)
+    vendor_notes: str | None = Field(default=None)
+    vendor_title_no: str | None = Field(default=None)
+    primary_matchpoint: str = Field(nullable=False)
+    secondary_matchpoint: str | None = Field(default=None)
+    tertiary_matchpoint: str | None = Field(default=None)
 
 
 class TemplateTable(_TemplateTableBase, table=True):
@@ -70,4 +68,4 @@ class TemplateTable(_TemplateTableBase, table=True):
     with the addition of the unique identifier).
     """
 
-    id: Annotated[int, Field(default=None, primary_key=True, index=True)]
+    id: int = Field(default=None, primary_key=True, index=True)
