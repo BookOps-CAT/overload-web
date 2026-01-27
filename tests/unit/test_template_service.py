@@ -10,6 +10,8 @@ def test_sql_session():
     SQLModel.metadata.create_all(test_engine)
     with Session(test_engine) as session:
         yield session
+    session.close()
+    test_engine.dispose()
 
 
 @pytest.fixture

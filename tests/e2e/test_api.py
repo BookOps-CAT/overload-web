@@ -15,10 +15,15 @@ def fake_sql_session():
         session.add(template)
         session.commit()
         yield session
+    session.close()
+    test_engine.dispose()
 
 
 def test_api_startup(monkeypatch):
-    monkeypatch.setattr(templates, "create_db_and_tables", fake_sql_session)
+    def fake_engine(*args, **kwargs):
+        return create_engine("sqlite:///:memory:")
+
+    monkeypatch.setattr(templates, "create_engine", fake_engine)
 
     with TestClient(app) as client:
         response = client.get("/")
@@ -26,9 +31,12 @@ def test_api_startup(monkeypatch):
 
 
 def test_deps():
-    templates.create_db_and_tables()
-    session = templates.get_session()
+    engine = create_engine("sqlite:///:memory:")
+    templates.create_db_and_tables(engine)
+    session = templates.get_session(engine)
     assert isinstance(next(session), Session)
+    session.close()
+    engine.dispose()
 
 
 @pytest.mark.usefixtures("mock_session", "mock_sftp_client")

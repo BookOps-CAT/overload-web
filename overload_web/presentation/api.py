@@ -19,9 +19,11 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: APIRouter) -> AsyncGenerator[None, None]:
     """Create and drop database tables on startup/shutdown."""
     logger.info("Starting up Overload...")
-    templates.create_db_and_tables()
+    engine = templates.get_engine_with_uri()
+    templates.create_db_and_tables(engine)
     yield
     logger.info("Shutting down Overload...")
+    engine.dispose()
 
 
 api_router = APIRouter(prefix="/api", tags=["api"], lifespan=lifespan)

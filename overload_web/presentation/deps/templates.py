@@ -26,15 +26,16 @@ def get_postgres_uri() -> str:
     return uri
 
 
-engine = create_engine(get_postgres_uri())
+def get_engine_with_uri():
+    return create_engine(get_postgres_uri())
 
 
-def create_db_and_tables() -> None:
+def create_db_and_tables(engine) -> None:
     """Create the database and tables if they do not exist."""
     SQLModel.metadata.create_all(engine)
 
 
-def get_session() -> Generator[Session, None, None]:
+def get_session(engine) -> Generator[Session, None, None]:
     """Create a new database session."""
     with Session(engine) as session:
         yield session

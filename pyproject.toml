@@ -21,7 +21,7 @@ dependencies = [
     "bookops-marc @ git+https://github.com/BookOps-CAT/bookops-marc.git",
     "sqlalchemy (>=2.0.40)",
     "file-retriever",
-    "sqlmodel (>=0.0.24,<0.0.25)",
+    "sqlmodel (>=0.0.24)",
     "psycopg2-binary (>=2.9.10,<3.0.0)",
     "debugpy (>=1.8.15,<2.0.0)",
     "google-api-python-client (>=2.188.0,<3.0.0)",
