@@ -1,19 +1,32 @@
-{% macro disabled_field(field_id, data, display_value) %}
-<div class="col">
-  <div class="form-floating">
-    <select id="{{field_id}}" class="form-select" name="{{field_id}}" disabled>
-      <option value="{{ display_value }}" selected>{{ display_value }}</option>
-    </select>
-    <label for="{{field_id}}">{{data['label']}}</label>
-  </div>
-</div>
-{% endmacro %} {% macro context_form(field_id, data, disabled=False) %}
+{% macro context_form_field(field_id, data, disabled=False, display_value="") %}
 <div class="form-floating">
-  {% if field_id == "library" %}
+  {% if disabled %}
+  <select id="{{ field_id }}" class="form-select" name="{{ field_id }}" disabled>
+    <option value="{{display_value}}" selected>{{ display_value }}</option>
+  </select>
+  <input
+    id="{{ field_id }}"
+    name="{{ field_id }}"
+    type="hidden"
+    value="{{display_value}}"
+  />
+  {% else %}
+  <select id="{{ field_id }}" class="form-select" name="{{ field_id }}">
+    <option value="" selected></option>
+    {% for k, v in data['options'].items() %}
+    <option value="{{ k }}">{{ v }}</option>
+    {% endfor %}
+  </select>
+  {% endif%}
+  <label for="{{ field_id }}">{{ data['label'] }}</label>
+</div>
+
+{% endmacro %} {% macro library_field(field_id, data) %}
+<div class="form-floating">
   <select
-    id="library"
+    id="{{ field_id }}"
     class="form-select"
-    name="library"
+    name="{{ field_id }}"
     hx-get="/htmx/forms/collection"
     hx-target="#collection-wrapper"
     hx-trigger="change"
@@ -23,18 +36,6 @@
     <option value="{{ k }}">{{ v }}</option>
     {% endfor %}
   </select>
-  {%else%} {% if disabled %}
-  <select id="{{ field_id }}" class="form-select" name="{{ field_id }}" disabled>
-    <input name="{{ field_id }}" type="hidden" value="" />
-  </select>
-  {% else %}
-  <select id="{{ field_id }}" class="form-select" name="{{ field_id }}">
-    <option value="" selected></option>
-    {% for k, v in data['options'].items() %}
-    <option value="{{ k }}">{{ v }}</option>
-    {% endfor %}
-  </select>
-  {% endif%} {%endif%}
   <label for="{{ field_id }}">{{ data['label'] }}</label>
 </div>
 

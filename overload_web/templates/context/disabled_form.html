@@ -3,8 +3,11 @@
   <div class="col-10">
     <div class="row">
       {% for field_id, field_data in context_fields.items() %}
-      {{macro.disabled_field(field_id, field_data,
-      field_data['options'][context.get(field_id)]) }} {% endfor %}
+      <div class="col">
+        {{macro.context_form_field(field_id, field_data,
+        display_value=field_data['options'][context.get(field_id)], disabled=True) }}
+      </div>
+      {% endfor %}
     </div>
     <div class="row">
       <div class="col">

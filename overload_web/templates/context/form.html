@@ -3,15 +3,15 @@
   <form id="context-form" action="/process" method="post">
     <div class="row">
       <div class="col" id="record_type_wrapper">
-        {{ macro.context_form( "record_type", context_fields["record_type"],
+        {{ macro.context_form_field( "record_type", context_fields["record_type"],
         disabled=False) }}
       </div>
       <div class="col" id="library_wrapper">
-        {{ macro.context_form( "library", context_fields["library"], disabled=False) }}
+        {{ macro.library_field( "library", context_fields["library"]) }}
       </div>
       <div class="col" id="collection-wrapper">
-        {{ macro.context_form( "collection", context_fields["collection"], disabled=True
-        ) }}
+        {{ macro.context_form_field( "collection", context_fields["collection"],
+        disabled=True ) }}
       </div>
     </div>
     <button
