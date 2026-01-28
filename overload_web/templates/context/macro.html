@@ -1,10 +1,8 @@
-{% macro disabled_field(field_id, data, context_field) %}
+{% macro disabled_field(field_id, data, display_value) %}
 <div class="col">
   <div class="form-floating">
     <select id="{{field_id}}" class="form-select" name="{{field_id}}" disabled>
-      <option value="{{ context_field }}" selected>
-        {{ data['options'][context_field] }}
-      </option>
+      <option value="{{ display_value }}" selected>{{ display_value }}</option>
     </select>
     <label for="{{field_id}}">{{data['label']}}</label>
   </div>
@@ -21,17 +19,12 @@
     hx-trigger="change"
   >
     <option value="" selected></option>
-    {% for k, v in context_fields["library"]["options"].items() %}
+    {% for k, v in data["options"].items() %}
     <option value="{{ k }}">{{ v }}</option>
     {% endfor %}
   </select>
   {%else%} {% if disabled %}
-  <select
-    id="{{ field_id }}"
-    class="form-select"
-    name="{{ field_id }}"
-    disabled
-  >
+  <select id="{{ field_id }}" class="form-select" name="{{ field_id }}" disabled>
     <input name="{{ field_id }}" type="hidden" value="" />
   </select>
   {% else %}

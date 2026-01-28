@@ -2,9 +2,9 @@
 <div id="context-section" class="row gy-1 my-2">
   <div class="col-10">
     <div class="row">
-      {% for field_id, field_data in context_fields.items() %} {{
-      macro.disabled_field(field_id, field_data, context.get(field_id)) }} {%
-      endfor %}
+      {% for field_id, field_data in context_fields.items() %}
+      {{macro.disabled_field(field_id, field_data,
+      field_data['options'][context.get(field_id)]) }} {% endfor %}
     </div>
     <div class="row">
       <div class="col">
