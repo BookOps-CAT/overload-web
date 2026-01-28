@@ -2,8 +2,18 @@
 <div id="context-section" class="col">
   <form id="context-form" action="/process" method="post">
     <div class="row">
-      {% for field_id, field_data in context_fields.items() %} {{
-      macro.select_field(field_id, field_data) }} {% endfor %}
+      <div class="col" id="record_type_wrapper">
+        {{ macro.context_form( "record_type", context_fields["record_type"],
+        disabled=False) }}
+      </div>
+      <div class="col" id="library_wrapper">
+        {{ macro.context_form( "library", context_fields["library"],
+        disabled=False) }}
+      </div>
+      <div class="col" id="collection-wrapper">
+        {{ macro.context_form( "collection", context_fields["collection"],
+        disabled=True ) }}
+      </div>
     </div>
     <button
       class="btn my-3"

@@ -66,21 +66,24 @@ class TestApp:
         assert response.context["page_title"] == "Process Vendor File"
 
     @pytest.mark.parametrize(
-        "collection, record_type",
+        "library, collection, record_type",
         [
-            ("branches", "acq"),
-            ("branches", "cat"),
-            ("branches", "sel"),
-            ("research", "acq"),
-            ("research", "cat"),
-            ("research", "sel"),
+            ("nypl", "BL", "acq"),
+            ("nypl", "BL", "cat"),
+            ("nypl", "BL", "sel"),
+            ("nypl", "RL", "acq"),
+            ("nypl", "RL", "cat"),
+            ("nypl", "RL", "sel"),
+            ("bpl", "", "acq"),
+            ("bpl", "", "cat"),
+            ("bpl", "", "sel"),
         ],
     )
-    def test_post_context_form_nypl(self, collection, record_type):
+    def test_post_context_form(self, library, collection, record_type):
         response = self.client.post(
             "/process",
             data={
-                "library": "nypl",
+                "library": library,
                 "collection": collection,
                 "record_type": record_type,
             },
@@ -89,41 +92,47 @@ class TestApp:
         assert "Process Vendor File" in response.text
         assert (
             response.url
-            == f"{self.base_url}/process/{record_type}?library=nypl&collection={collection}"
+            == f"{self.base_url}/process/{record_type}?library={library}&collection={collection.strip()}"
         )
 
     @pytest.mark.parametrize(
-        "record_type",
-        ["acq", "cat", "sel"],
+        "library, collection, record_type, msg",
+        [
+            ("nypl", "", "acq", "Collection is required for NYPL records."),
+            ("nypl", "", "cat", "Collection is required for NYPL records."),
+            ("nypl", "", "sel", "Collection is required for NYPL records."),
+            ("bpl", "BL", "acq", "Collection should be `None` for BPL records."),
+            ("bpl", "BL", "cat", "Collection should be `None` for BPL records."),
+            ("bpl", "BL", "sel", "Collection should be `None` for BPL records."),
+            ("bpl", "RL", "acq", "Collection should be `None` for BPL records."),
+            ("bpl", "RL", "cat", "Collection should be `None` for BPL records."),
+            ("bpl", "RL", "sel", "Collection should be `None` for BPL records."),
+        ],
     )
-    def test_post_context_form_bpl(self, record_type):
+    def test_post_context_form_error(self, library, collection, record_type, msg):
         response = self.client.post(
             "/process",
             data={
-                "library": "bpl",
-                "collection": None,
+                "library": library,
+                "collection": collection,
                 "record_type": record_type,
             },
         )
-        assert response.status_code == 200
-        assert "Process Vendor File" in response.text
-        assert (
-            response.url
-            == f"{self.base_url}/process/{record_type}?library=bpl&collection="
-        )
+        assert response.status_code == 422
+        assert msg in response.text
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
         [
-            ("nypl", "branches", "cat"),
-            ("nypl", "branches", "sel"),
-            ("nypl", "branches", "acq"),
-            ("nypl", "research", "cat"),
-            ("nypl", "research", "sel"),
-            ("nypl", "research", "acq"),
-            ("bpl", None, "cat"),
-            ("bpl", None, "sel"),
-            ("bpl", None, "acq"),
+            ("nypl", "BL", "cat"),
+            ("nypl", "BL", "sel"),
+            ("nypl", "BL", "acq"),
+            ("nypl", "RL", "cat"),
+            ("nypl", "RL", "sel"),
+            ("nypl", "RL", "acq"),
+            ("bpl", "", "cat"),
+            ("bpl", "", "sel"),
+            ("bpl", "", "acq"),
         ],
     )
     def test_process_records_get(self, library, collection, record_type):
@@ -211,7 +220,7 @@ class TestApp:
             "library": library,
             "collection": collection,
             "record_type": record_type,
-            "vendor": None,
+            "vendor": "INGRAM",
             "primary_matchpoint": "isbn",
             "name": "foo",
             "agent": "bar",
@@ -378,3 +387,9 @@ class TestApp:
         response = self.client.get("/htmx/forms/templates")
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request"]
+
+    @pytest.mark.parametrize("library", ["bpl", "nypl"])
+    def test_htmx_get_collection_field(self, library):
+        response = self.client.get(f"/htmx/forms/collection?library={library}")
+        assert response.status_code == 200
+        assert sorted(list(response.context.keys())) == ["disabled", "request"]

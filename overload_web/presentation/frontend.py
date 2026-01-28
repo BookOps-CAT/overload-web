@@ -10,6 +10,8 @@ import logging
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
+from overload_web.presentation.deps import dto
+
 logger = logging.getLogger(__name__)
 frontend_router = APIRouter(tags=["frontend"])
 
@@ -52,7 +54,7 @@ def vendor_file_page(
 
 @frontend_router.post("/process", response_class=HTMLResponse)
 def post_context_form(
-    record_type: str = Form(...), library: str = Form(...), collection: str = Form(...)
+    processing_context: dto.ProcessingContext = Form(),
 ) -> RedirectResponse:
     """
     Takes input from form in `context_form.html` and redirects to appropriate
@@ -70,7 +72,7 @@ def post_context_form(
         `RedirectResponse` to appropriate endpoint for record type
     """
     return RedirectResponse(
-        url=f"/process/{record_type}?library={library}&collection={collection}",
+        url=f"/process/{processing_context.record_type}?library={processing_context.library}&collection={processing_context.collection}",
         status_code=303,
     )
 

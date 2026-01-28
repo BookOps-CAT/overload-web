@@ -1,16 +1,4 @@
-{% macro select_field(field_id, data, context_field=None) %}
-<div class="col">
-  <div class="form-floating">
-    <select id="{{field_id}}" class="form-select" name="{{field_id}}">
-      <option value="" selected></option>
-      {% for k, v in data['options'].items() %}
-      <option value="{{k}}">{{v}}</option>
-      {%endfor%}
-    </select>
-    <label for="{{field_id}}">{{data['label']}}</label>
-  </div>
-</div>
-{% endmacro %} {% macro disabled_field(field_id, data, context_field) %}
+{% macro disabled_field(field_id, data, context_field) %}
 <div class="col">
   <div class="form-floating">
     <select id="{{field_id}}" class="form-select" name="{{field_id}}" disabled>
@@ -21,4 +9,40 @@
     <label for="{{field_id}}">{{data['label']}}</label>
   </div>
 </div>
+{% endmacro %} {% macro context_form(field_id, data, disabled=False) %}
+<div class="form-floating">
+  {% if field_id == "library" %}
+  <select
+    id="library"
+    class="form-select"
+    name="library"
+    hx-get="/htmx/forms/collection"
+    hx-target="#collection-wrapper"
+    hx-trigger="change"
+  >
+    <option value="" selected></option>
+    {% for k, v in context_fields["library"]["options"].items() %}
+    <option value="{{ k }}">{{ v }}</option>
+    {% endfor %}
+  </select>
+  {%else%} {% if disabled %}
+  <select
+    id="{{ field_id }}"
+    class="form-select"
+    name="{{ field_id }}"
+    disabled
+  >
+    <input name="{{ field_id }}" type="hidden" value="" />
+  </select>
+  {% else %}
+  <select id="{{ field_id }}" class="form-select" name="{{ field_id }}">
+    <option value="" selected></option>
+    {% for k, v in data['options'].items() %}
+    <option value="{{ k }}">{{ v }}</option>
+    {% endfor %}
+  </select>
+  {% endif%} {%endif%}
+  <label for="{{ field_id }}">{{ data['label'] }}</label>
+</div>
+
 {% endmacro %}

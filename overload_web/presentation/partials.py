@@ -50,3 +50,19 @@ def get_template_form(request: Request) -> HTMLResponse:
     return request.app.state.templates.TemplateResponse(
         request=request, name="record_templates/template_form.html"
     )
+
+
+@htmx_router.get("/forms/collection", response_class=HTMLResponse)
+def get_collection_field(request: Request, library: str):
+    if library == "nypl":
+        return request.app.state.templates.TemplateResponse(
+            name="context/collection_field.html",
+            request=request,
+            context={"disabled": False},
+        )
+
+    return request.app.state.templates.TemplateResponse(
+        name="context/collection_field.html",
+        request=request,
+        context={"disabled": True},
+    )

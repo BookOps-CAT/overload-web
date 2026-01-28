@@ -14,7 +14,7 @@
     },
     "collection": {
       "label": "Collection",
-      "options": { "BL": "Branches", "RL": "Research", "None": "None" }
+      "options": { "BL": "Branches", "RL": "Research" }
     }
   },
   "fixed_fields": {
