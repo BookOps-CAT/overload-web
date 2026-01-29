@@ -57,7 +57,7 @@ class BibReviewer:
         new_recs: list[bibs.DomainBib] = []
         deduped_recs: list[bibs.DomainBib] = []
         for analysis, record in zip(reports, records):
-            if analysis == bibs.CatalogAction.ATTACH:
+            if analysis.action == bibs.CatalogAction.ATTACH:
                 merge_recs.append(record)
             else:
                 new_recs.append(record)
@@ -89,20 +89,10 @@ class BibReviewer:
         self, record_batches: dict[str, list[bibs.DomainBib]], barcodes: list[str]
     ) -> None:
         valid = True
-        barcodes_from_batches = []
+        barcodes_from_batches = list(
+            chain.from_iterable(i.barcodes for j in record_batches.values() for i in j)
+        )
         missing_barcodes = set()
-        records = chain.from_iterable([v for k, v in record_batches.items()])
-        for record in records:
-            ctx = self.context_factory.create_context(record=record)
-            if record.library == "bpl" and ctx.bib_rec.overdrive_number is None:
-                tag = "960"
-                ind2 = " "
-            else:
-                tag = "949"
-                ind2 = "1"
-            for item in ctx.bib_rec.get_fields(tag):
-                if item.indicator1 == " " and item.indicator2 == ind2:
-                    barcodes_from_batches.extend(item.get_subfields("i"))
         for barcode in barcodes:
             if barcode not in barcodes_from_batches:
                 valid = False
