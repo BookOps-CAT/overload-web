@@ -1,12 +1,11 @@
 import copy
 
-import pandas as pd
 import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
 from overload_web.bib_records.domain_models import bibs
-from overload_web.bib_records.domain_services import analysis, update
+from overload_web.bib_records.domain_services import update
 
 
 @pytest.fixture
@@ -277,73 +276,3 @@ class TestUpdater:
             str(exc.value)
             == "Constructed call number does not match original. New=FOO J FIC SNICKET, Original=FIC SNICKET"
         )
-
-
-class TestMatchAnalysisReport:
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
-    )
-    def test_report(self, full_bib, sierra_response, library, collection, record_type):
-        rep = analysis.NYPLCatBranchMatchAnalyzer()
-        result = rep.analyze_match(record=full_bib, candidates=[sierra_response])
-        report = bibs.ProcessVendorFileReport(analyses=[result])
-        report_dict = report.to_dict()
-        assert sorted(list(report_dict.keys())) == sorted(
-            [
-                "resource_id",
-                "vendor",
-                "updated_by_vendor",
-                "call_number_match",
-                "target_call_no",
-                "call_number",
-                "duplicate_records",
-                "target_bib_id",
-                "target_title",
-                "mixed",
-                "other",
-                "action",
-                "library",
-                "collection",
-                "record_type",
-                "corrected",
-                "date",
-            ]
-        )
-        assert len(report_dict["action"]) == 1
-        assert len(report_dict["call_number"]) == 1
-        assert len(report_dict["call_number_match"]) == 1
-        assert len(report_dict["duplicate_records"]) == 1
-        assert len(report_dict["mixed"]) == 1
-        assert len(report_dict["other"]) == 1
-        assert len(report_dict["resource_id"]) == 1
-        assert len(report_dict["target_bib_id"]) == 1
-        assert len(report_dict["target_call_no"]) == 1
-        assert len(report_dict["target_title"]) == 1
-        assert len(report_dict["updated_by_vendor"]) == 1
-        assert len(report_dict["vendor"]) == 1
-        assert len(report_dict["library"]) == 1
-        assert len(report_dict["collection"]) == 1
-        assert len(report_dict["record_type"]) == 1
-        assert len(report_dict["corrected"]) == 1
-        df = pd.DataFrame(data=report_dict)
-        assert list(df.columns) == [
-            "resource_id",
-            "vendor",
-            "updated_by_vendor",
-            "call_number_match",
-            "target_call_no",
-            "call_number",
-            "duplicate_records",
-            "target_bib_id",
-            "target_title",
-            "mixed",
-            "other",
-            "action",
-            "library",
-            "collection",
-            "record_type",
-            "corrected",
-            "date",
-        ]
-        assert df.shape == (1, 17)

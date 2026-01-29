@@ -5,11 +5,12 @@ from __future__ import annotations
 import logging
 from collections import Counter
 from itertools import chain
-from typing import Any, Protocol
+from typing import Any, Protocol, TypeVar
 
 from overload_web.bib_records.domain_models import bibs
 
 logger = logging.getLogger(__name__)
+C = TypeVar("C")
 
 
 class UpdateStep(Protocol):
@@ -22,6 +23,24 @@ class MarcUpdateStrategy(Protocol):
     def create_context(
         self, record: bibs.DomainBib, **kwargs: Any
     ) -> Any: ...  # pragma: no branch
+
+
+class ReportHandler(Protocol[C]):
+    creds: C
+
+    def configure_sheet(self) -> C: ...  # pragma: no branch
+
+    def create_duplicate_report(
+        self, data: dict[str, Any]
+    ) -> list[list[Any]]: ...  # pragma: no branch
+
+    def create_call_number_report(
+        self, data: dict[str, Any]
+    ) -> list[list[Any]]: ...  # pragma: no branch
+
+    def write_report_to_sheet(
+        self, data: list[list[Any]]
+    ) -> None: ...  # pragma: no branch
 
 
 class BibReviewer:
@@ -86,7 +105,9 @@ class BibReviewer:
         return {"DUP": merge_recs, "NEW": new_recs, "DEDUPED": deduped_recs}
 
     def validate(
-        self, record_batches: dict[str, list[bibs.DomainBib]], barcodes: list[str]
+        self,
+        record_batches: dict[str, list[bibs.DomainBib]],
+        barcodes: list[str] = [],
     ) -> None:
         valid = True
         barcodes_from_batches = list(
@@ -129,3 +150,47 @@ class BibReviewer:
         deduped_recs = self.dedupe(records=records, reports=reports)
         self.validate(record_batches=deduped_recs, barcodes=barcodes)
         return deduped_recs
+
+    def review_processed_records(
+        self,
+        records: list[bibs.DomainBib],
+        reports: list[bibs.MatchAnalysis],
+        barcodes: list[str] = [],
+    ) -> dict[str, list[bibs.DomainBib]]:
+        """
+        Review processed bibliographic records before serializing records to MARC.
+
+        Args:
+            records:
+                a list of bib records represented at `DomainBib` objects.
+            reports:
+                a list of bib records and their associated match analysis results
+                as `MatchAnalysis` objects.
+            barcodes:
+                an optional list of barcodes present in the file extracted from the
+                records at the beginning of processing. used to deduplicate files
+                of full MARC records
+        Returns:
+            a dictionary containing the `DomainBib` objects to be written and
+            the file that they should be written to.
+        """
+        out = {}
+        if all(i.record_type == "cat" for i in records):
+            deduped_recs = self.dedupe(records=records, reports=reports)
+            self.validate(record_batches=deduped_recs, barcodes=barcodes)
+            out.update(deduped_recs)
+            return deduped_recs
+        return {"NEW": records}
+
+
+class BibReporter:
+    def __init__(self, handler: ReportHandler) -> None:
+        self.handler = handler
+
+    def report_on_files(self, data: dict[str, Any]) -> None:
+        call_no_report = self.handler.create_call_number_report(data=data)
+        if call_no_report:
+            self.handler.write_report_to_sheet(data=call_no_report)
+        dupe_report = self.handler.create_duplicate_report(data=data)
+        if dupe_report:
+            self.handler.write_report_to_sheet(data=dupe_report)

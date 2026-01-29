@@ -366,7 +366,7 @@ class VendorInfo:
 
 class ProcessVendorFileReport:
     def __init__(
-        self, analyses: list[MatchAnalysis], barcodes: Optional[list[str]] = None
+        self, analyses: list[MatchAnalysis], barcodes: Optional[list[str]] = []
     ) -> None:
         self._analyses = analyses
         self.barcodes = barcodes
@@ -389,7 +389,7 @@ class ProcessVendorFileReport:
         self.vendor = tuple([i.vendor for i in self._analyses])
         self.date = datetime.date.today().strftime("%y-%m-%d")
 
-    def to_dict(self) -> Any:
+    def to_dict(self) -> dict[str, list[Any]]:
         record_count = len(self.action)
         return {
             "resource_id": list(self.resource_id),
@@ -408,5 +408,4 @@ class ProcessVendorFileReport:
             "collection": list(self.collection),
             "record_type": list(self.record_type),
             "corrected": ["no"] * record_count,
-            "date": datetime.date.today().strftime("%y-%m-%d"),
         }
