@@ -287,7 +287,7 @@ class TestMatchAnalysisReport:
     def test_report(self, full_bib, sierra_response, library, collection, record_type):
         rep = analysis.NYPLCatBranchMatchAnalyzer()
         result = rep.analyze_match(record=full_bib, candidates=[sierra_response])
-        report = bibs.MatchAnalysisReport(analyses=[result])
+        report = bibs.ProcessVendorFileReport(analyses=[result])
         report_dict = report.to_dict()
         assert sorted(list(report_dict.keys())) == sorted(
             [

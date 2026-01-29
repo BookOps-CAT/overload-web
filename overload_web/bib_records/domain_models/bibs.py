@@ -364,7 +364,7 @@ class VendorInfo:
     name: str
 
 
-class MatchAnalysisReport:
+class ProcessVendorFileReport:
     def __init__(
         self, analyses: list[MatchAnalysis], barcodes: Optional[list[str]] = None
     ) -> None:

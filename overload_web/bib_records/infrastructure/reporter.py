@@ -12,124 +12,13 @@ from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
 from googleapiclient.discovery import build  # type: ignore
 from googleapiclient.errors import HttpError  # type: ignore
 
-from overload_web.bib_records.domain_models import bibs
-
 logger = logging.getLogger(__name__)
 
 
-class ProcessVendorFileReporter:
+class GoogleSheetsReporter:
     def __init__(self) -> None:
-        self.handler = GoogleHandler()
+        self.creds = self.configure_sheet()
 
-    def report_on_analysis(
-        self, report_data: list[bibs.MatchAnalysis]
-    ) -> dict[str, Any]:
-        analysis_report = bibs.MatchAnalysisReport(analyses=report_data)
-        return analysis_report.to_dict()
-
-    def create_duplicate_report(self, data: dict[str, Any]) -> pd.DataFrame:
-        if data["collection"][0] == "BL":
-            other = "research"
-            dups = "branch duplicates"
-        else:
-            other = "branches"
-            dups = "research duplicates"
-        df_data = {
-            "vendor": data["vendor"],
-            "resource_id": data["resource_id"],
-            "target_bib_id": data["target_bib_id"],
-            dups: data["duplicate_records"],
-            "mixed": data["mixed"],
-            other: data["other"],
-        }
-        df = pd.DataFrame(data=df_data)
-        return df[df[dups].notnull() | df["mixed"].notnull() | df["other"].notnull()]
-
-    def create_call_number_report(self, data: dict[str, Any]) -> pd.DataFrame:
-        if data["collection"][0] == "BL":
-            dups = "branch duplicates"
-        else:
-            dups = "research duplicates"
-        df_data = {
-            "vendor": data["vendor"],
-            "resource_id": data["resource_id"],
-            "target_bib_id": data["target_bib_id"],
-            "call_number": data["call_number"],
-            "target_call_no": data["target_call_no"],
-            dups: data["duplicate_records"],
-            "call_number_match": data["call_number_match"],
-        }
-        df = pd.DataFrame(data=df_data)
-        match_df = df[~df["call_no_match"]]
-        if data["record_type"][0] == "cat":
-            missing_df = df[df["call_number"].isnull() & df["target_call_no"].isnull()]
-            match_df = pd.concat([match_df, missing_df])
-        return match_df
-
-    def export_duplicate_report_for_sheet(
-        self, data: dict[str, Any]
-    ) -> list[list[Any]]:
-        df = self.create_duplicate_report(data=data)
-        df_out = df.assign(
-            date=data["date"], corrected="no", agency=data["record_type"]
-        )
-        columns = [
-            "date",
-            "agency",
-            "vendor",
-            "vendor_id",
-            "target_id",
-            "duplicate bibs",
-            "corrected",
-        ]
-        df_out = df_out[columns]
-
-        if data["library"][0] == "NYPL":
-            mask = (df_out.iloc[:, 5].isnull() & df_out.iloc[:, 6].isnull()) & ~(
-                df_out.iloc[:, 7].notnull() & df_out.iloc[:, 7].str.contains(",")
-            )
-            df_out.loc[mask, "corrected"] = "no action"
-        else:
-            mask = df_out.iloc[:, 5].isnull()
-            df_out.loc[mask, "corrected"] = "no action"
-
-        return df_out.values.tolist()
-
-    def export_call_number_report_for_sheet(
-        self, data: dict[str, Any]
-    ) -> list[list[Any]]:
-        df = self.create_call_number_report(data=data)
-        df_out = df.assign(date=data["date"], corrected="no")
-        columns = [
-            "date",
-            "vendor",
-            "vendor_id",
-            "target_id",
-            "vendor_callNo",
-            "target_callNo",
-            "duplicate bibs",
-            "corrected",
-        ]
-        df_out = df_out[columns]
-
-        return df_out.values.tolist()
-
-    def write_report_to_sheet(
-        self, report_data: pd.DataFrame, spreadsheet_id: str, sheet_name: str
-    ) -> None:
-        report_data.fillna("", inplace=True)
-        body = {
-            "majorDimension": "ROWS",
-            "range": f"{sheet_name}!A1:O10000",
-            "values": report_data.values.tolist(),
-        }
-        creds = self.handler.configure_sheet()
-        self.handler.write_data_to_sheet(
-            data=body, spreadsheet_id=spreadsheet_id, creds=creds, sheet_name=sheet_name
-        )
-
-
-class GoogleHandler:
     def configure_sheet(self) -> Credentials:
         """
         Get or update credentials for google sheets API and save token to file.
@@ -182,32 +71,112 @@ class GoogleHandler:
         except (ValueError, RefreshError) as e:
             raise e
 
-    def write_data_to_sheet(
-        self, data: dict, spreadsheet_id: str, creds: Credentials, sheet_name: str
-    ) -> None:
+    def create_duplicate_report(self, data: dict[str, Any]) -> list[list[Any]]:
+        if data["collection"][0] == "BL":
+            other = "research"
+            dups = "branch duplicates"
+        else:
+            other = "branches"
+            dups = "research duplicates"
+        df_data = {
+            "vendor": data["vendor"],
+            "resource_id": data["resource_id"],
+            "target_bib_id": data["target_bib_id"],
+            dups: data["duplicate_records"],
+            "mixed": data["mixed"],
+            other: data["other"],
+        }
+        df = pd.DataFrame(data=df_data)
+        filtered_df = df[
+            df[dups].notnull() | df["mixed"].notnull() | df["other"].notnull()
+        ]
+        df_out = filtered_df.assign(
+            date=data["date"], corrected="no", agency=data["record_type"]
+        )
+        columns = [
+            "date",
+            "agency",
+            "vendor",
+            "vendor_id",
+            "target_id",
+            "duplicate bibs",
+            "corrected",
+        ]
+        df_out = df_out[columns]
+
+        if data["library"][0] == "NYPL":
+            mask = (df_out.iloc[:, 5].isnull() & df_out.iloc[:, 6].isnull()) & ~(
+                df_out.iloc[:, 7].notnull() & df_out.iloc[:, 7].str.contains(",")
+            )
+            df_out.loc[mask, "corrected"] = "no action"
+        else:
+            mask = df_out.iloc[:, 5].isnull()
+            df_out.loc[mask, "corrected"] = "no action"
+        df_out.fillna("", inplace=True)
+        return df_out.values.tolist()
+
+    def create_call_number_report(self, data: dict[str, Any]) -> list[list[Any]]:
+        if data["collection"][0] == "BL":
+            dups = "branch duplicates"
+        else:
+            dups = "research duplicates"
+        df_data = {
+            "vendor": data["vendor"],
+            "resource_id": data["resource_id"],
+            "target_bib_id": data["target_bib_id"],
+            "call_number": data["call_number"],
+            "target_call_no": data["target_call_no"],
+            dups: data["duplicate_records"],
+            "call_number_match": data["call_number_match"],
+        }
+        df = pd.DataFrame(data=df_data)
+        match_df = df[~df["call_no_match"]]
+        if data["record_type"][0] == "cat":
+            missing_df = df[df["call_number"].isnull() & df["target_call_no"].isnull()]
+            match_df = pd.concat([match_df, missing_df])
+        df_out = match_df.assign(date=data["date"], corrected="no")
+        columns = [
+            "date",
+            "vendor",
+            "vendor_id",
+            "target_id",
+            "vendor_callNo",
+            "target_callNo",
+            "duplicate bibs",
+            "corrected",
+        ]
+        df_out = df_out[columns]
+        df_out.fillna("", inplace=True)
+        return df_out.values.tolist()
+
+    def write_report_to_sheet(self, data: list[list[Any]]) -> None:
         """
         Write output of validation to google sheet.
 
         Args:
             data: dictionary containing report data to be written.
-            spreadsheet_id: spreadsheet where data should be written.
-            creds: API credentials for sheet.
-            sheet_name: name of sheet within spreadsheet where data should be written
 
         Returns:
             None
         """
+        sheet_name = os.environ["GOOGLE_SHEET_NAME"]
+        body = {
+            "majorDimension": "ROWS",
+            "range": f"{sheet_name}!A1:O10000",
+            "values": data,
+        }
+        creds = self.configure_sheet()
         try:
             service = build("sheets", "v4", credentials=creds)
             result = (
                 service.spreadsheets()
                 .values()
                 .append(
-                    spreadsheetId=spreadsheet_id,
+                    spreadsheetId=os.environ["GOOGLE_SHEET_ID"],
                     range=f"{sheet_name.upper()}!A1:O10000",
                     valueInputOption="USER_ENTERED",
                     insertDataOption="INSERT_ROWS",
-                    body=data,
+                    body=body,
                     includeValuesInResponse=True,
                 )
                 .execute()
@@ -217,4 +186,4 @@ class GoogleHandler:
             logger.error(f"Unable to configure google sheet API credentials: {e}")
         except (HttpError, TimeoutError) as e:
             logger.error(f"Unable to send data to google sheet: {e}")
-        logger.error(f"({sheet_name}) Data not written to sheet.")
+        logger.error(f"({os.getenv('GOOGLE_SHEET_NAME')}) Data not written to sheet.")

@@ -85,7 +85,7 @@ class FullRecordProcessingService:
             data: Binary MARC data as a `BinaryIO` or `bytes` object.
         Returns:
             A dictionary containing the a list of processed records as `DomainBib`
-            objects and the the `MatchAnalysisReport` for the file of records.
+            objects and the the `ProcessVendorFileReport` for the file of records.
         """
         parsed_records = self.parser.parse(data=data)
         barcodes = self.parser.extract_barcodes(parsed_records)
@@ -97,7 +97,7 @@ class FullRecordProcessingService:
             record.apply_match_decision(analysis.decision)
             updated = self.updater.update(record=record)
             out["records"].append(updated)
-        report = bibs.MatchAnalysisReport(analyses=out["report"], barcodes=barcodes)
+        report = bibs.ProcessVendorFileReport(analyses=out["report"], barcodes=barcodes)
         return {"records": out["records"], "report": report}
 
 
@@ -155,7 +155,7 @@ class OrderRecordProcessingService:
 
         Returns:
             A dictionary containing the a list of processed records as `DomainBib`
-            objects and the the `MatchAnalysisReport` for the file of records.
+            objects and the the `ProcessVendorFileReport` for the file of records.
         """
         parsed_records = self.parser.parse(data=data, vendor=vendor)
         out: dict[str, list[Any]] = {"records": [], "report": []}
@@ -166,5 +166,5 @@ class OrderRecordProcessingService:
             record.apply_match_decision(analysis.decision)
             updated = self.updater.update(record=record, template_data=template_data)
             out["records"].append(updated)
-        report = bibs.MatchAnalysisReport(analyses=out["report"])
+        report = bibs.ProcessVendorFileReport(analyses=out["report"])
         return {"records": out["records"], "report": report}

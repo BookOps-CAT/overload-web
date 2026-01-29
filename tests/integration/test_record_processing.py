@@ -51,7 +51,7 @@ class TestRecordProcessingService:
             marc_data = fh.read()
         out = service.process_vendor_file(marc_data)
         assert isinstance(out, dict)
-        assert isinstance(out["report"], bibs.MatchAnalysisReport)
+        assert isinstance(out["report"], bibs.ProcessVendorFileReport)
         assert isinstance(out["records"], list)
         assert isinstance(out["records"][0], bibs.DomainBib)
 
@@ -75,6 +75,6 @@ class TestRecordProcessingService:
             vendor="UNKNOWN",
         )
         assert isinstance(out, dict)
-        assert isinstance(out["report"], bibs.MatchAnalysisReport)
+        assert isinstance(out["report"], bibs.ProcessVendorFileReport)
         assert isinstance(out["records"], list)
         assert isinstance(out["records"][0], bibs.DomainBib)
