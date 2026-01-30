@@ -13,7 +13,7 @@ from overload_web.order_templates.infrastructure import repository
 logger = logging.getLogger(__name__)
 
 
-def get_postgres_uri() -> str:
+def get_engine_with_uri():
     """Get the Postgres database URI from environment variables."""
     db_type = os.environ.get("DB_TYPE", "sqlite")
     user = os.environ.get("POSTGRES_USER")
@@ -23,11 +23,8 @@ def get_postgres_uri() -> str:
     name = os.environ.get("POSTGRES_DB")
     uri = f"{db_type}://{user}:{pw}@{host}:{port}/{name}"
     uri = uri.replace("sqlite://None:None@None:None/None", "sqlite:///:memory:")
-    return uri
-
-
-def get_engine_with_uri():
-    return create_engine(get_postgres_uri())
+    engine = create_engine(uri)
+    return engine
 
 
 def create_db_and_tables(engine) -> None:
