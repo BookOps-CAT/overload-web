@@ -40,13 +40,13 @@ class TestRecordProcessingService:
             marc_data = fh.read()
         out = service.process_vendor_file(marc_data)
         assert isinstance(out, dict)
-        assert isinstance(out["report"], bibs.ProcessVendorFileReport)
+        assert isinstance(out["report"], list)
         assert isinstance(out["records"], list)
         assert isinstance(out["records"][0], bibs.DomainBib)
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "rL", "cat"), ("bpl", "NONE", "cat")],
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_order_service_process_vendor_file(self, service_components):
         service = record_service.OrderRecordProcessingService(
@@ -64,6 +64,6 @@ class TestRecordProcessingService:
             vendor="UNKNOWN",
         )
         assert isinstance(out, dict)
-        assert isinstance(out["report"], bibs.ProcessVendorFileReport)
+        assert isinstance(out["report"], list)
         assert isinstance(out["records"], list)
         assert isinstance(out["records"][0], bibs.DomainBib)

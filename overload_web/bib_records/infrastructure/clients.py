@@ -48,7 +48,7 @@ class FetcherFactory:
     def make(self, library: str) -> SierraBibFetcher:
         client: SierraSessionProtocol
         if library not in ["bpl", "nypl"]:
-            raise ValueError("Invalid library. Must be 'bpl' or 'nypl'")
+            raise ValueError(f"Invalid library: {library}. Must be 'bpl' or 'nypl'")
         elif library == "bpl":
             client = BPLSolrSession()
         else:

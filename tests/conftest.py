@@ -42,6 +42,10 @@ def test_setup(caplog, monkeypatch):
     monkeypatch.setenv("FOO_PORT", "22")
     monkeypatch.setenv("FOO_SRC", "/")
     monkeypatch.setenv("FOO_DST", "nsdrop/vendor_files/foo")
+    monkeypatch.setenv("GOOGLE_SHEET_TOKEN", "foo")
+    monkeypatch.setenv("GOOGLE_SHEET_REFRESH_TOKEN", "bar")
+    monkeypatch.setenv("GOOGLE_SHEET_CLIENT_ID", "baz")
+    monkeypatch.setenv("GOOGLE_SHEET_CLIENT_SECRET", "qux")
 
 
 class MockHTTPResponse:

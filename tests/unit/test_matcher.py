@@ -70,3 +70,10 @@ class TestMatcher:
             str(exc.value)
             == "OrderLevelBibMatcher.match() missing 1 required positional argument: 'matchpoints'"
         )
+
+    def test_match_order_level_none(self, fake_fetcher, stub_domain_bib):
+        service = match.OrderLevelBibMatcher(fetcher=fake_fetcher)
+        candidates = service.match(
+            stub_domain_bib, matchpoints={"primary_matchpoint": None}
+        )
+        assert len(candidates) == 0

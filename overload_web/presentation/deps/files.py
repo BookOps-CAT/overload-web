@@ -47,7 +47,7 @@ def remote_file_writer(
 
 def normalize_files(
     files: Annotated[list[UploadFile] | list[str], Form(...)],
-    vendor: Annotated[str, Form(...)],
+    vendor: Annotated[str | None, Form()] = None,
 ) -> list[dto.VendorFileModel]:
     """
     Normalize a list of files loaded from either a remote or local directory.

@@ -230,7 +230,7 @@ def process_order_records(
     files: Annotated[list[dto.VendorFileModel], Depends(files.normalize_files)],
     order_template: Annotated[Any, Depends(dto.from_form(dto.TemplateDataModel))],
     matchpoints: Annotated[Any, Depends(dto.from_form(dto.MatchpointSchema))],
-    vendor: Annotated[str, Form(...)],
+    vendor: Annotated[str | None, Form()] = None,
 ) -> HTMLResponse:
     """
     Process one or more files of MARC records.
@@ -249,8 +249,6 @@ def process_order_records(
         matchpoints:
             a list of matchpoints loaded from an order template in the database or
             input via an html form.
-        record_type:
-            The type of record as an Literal value from `bibs.RecordType`.
         vendor:
             The vendor name as a string.
 

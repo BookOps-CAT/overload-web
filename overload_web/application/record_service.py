@@ -20,8 +20,12 @@ Classes:
 import logging
 from typing import Any, BinaryIO
 
-from overload_web.bib_records.domain_models import bibs
-from overload_web.bib_records.domain_services import analysis, match, parse, update
+from overload_web.bib_records.domain_services import (
+    analysis,
+    match,
+    parse,
+    update,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +93,7 @@ class FullRecordProcessingService:
         """
         parsed_records = self.parser.parse(data=data)
         barcodes = self.parser.extract_barcodes(parsed_records)
-        out: dict[str, list[Any]] = {"records": [], "report": []}
+        out: dict[str, list[Any]] = {"records": [], "report": [], "barcodes": barcodes}
         for record in parsed_records:
             candidates = self.matcher.match(record=record)
             analysis = self.analyzer.analyze_match(record=record, candidates=candidates)
@@ -97,8 +101,7 @@ class FullRecordProcessingService:
             record.apply_match_decision(analysis.decision)
             updated = self.updater.update(record=record)
             out["records"].append(updated)
-        report = bibs.ProcessVendorFileReport(analyses=out["report"], barcodes=barcodes)
-        return {"records": out["records"], "report": report}
+        return out
 
 
 class OrderRecordProcessingService:
@@ -134,7 +137,7 @@ class OrderRecordProcessingService:
         data: BinaryIO | bytes,
         matchpoints: dict[str, str],
         template_data: dict[str, Any],
-        vendor: str | None,
+        vendor: str | None = None,
     ) -> dict[str, Any]:
         """
         Process a file of full MARC records.
@@ -166,5 +169,4 @@ class OrderRecordProcessingService:
             record.apply_match_decision(analysis.decision)
             updated = self.updater.update(record=record, template_data=template_data)
             out["records"].append(updated)
-        report = bibs.ProcessVendorFileReport(analyses=out["report"])
-        return {"records": out["records"], "report": report}
+        return out

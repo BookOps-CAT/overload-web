@@ -83,11 +83,13 @@ class BibMatcher(ABC):
         Returns:
             a list of the record's matches as `BaseSierraResponse` objects
         """
-        for priority, key in matchpoints.items():
-            value = getattr(record, key, None)
+        for matchpoint in matchpoints.values():
+            if not matchpoint:
+                continue
+            value = getattr(record, matchpoint, None)
             if not value:
                 continue
-            candidates = self.fetcher.get_bibs_by_id(value=value, key=key)
+            candidates = self.fetcher.get_bibs_by_id(value=value, key=matchpoint)
             if candidates:
                 return candidates
         return []

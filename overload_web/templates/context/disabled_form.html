@@ -7,6 +7,12 @@
         {{macro.context_form_field(field_id, field_data,
         display_value=field_data['options'][context.get(field_id)], disabled=True) }}
       </div>
+      <input
+        id="{{ field_id }}"
+        name="{{ field_id }}"
+        type="hidden"
+        value="{{ context.get(field_id) }}"
+      />
       {% endfor %}
     </div>
     <div class="row">
@@ -18,9 +24,6 @@
     </div>
   </div>
   <div class="col">
-    {% for k,v in context.items() %}
-    <input id="{{ k }}" name="{{ k }}" type="hidden" value="{{ v }}" />
-    {% endfor %}
     <div class="row" id="library-img">
       <img
         src="{{ url_for('static', path='images/{{context.library}}') }}"

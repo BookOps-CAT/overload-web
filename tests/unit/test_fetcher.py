@@ -212,4 +212,4 @@ class TestFetcherFactory:
     def test_fetcher_factory_invalid_library(self):
         with pytest.raises(ValueError) as exc:
             clients.FetcherFactory().make(library="library")
-        assert str(exc.value) == "Invalid library. Must be 'bpl' or 'nypl'"
+        assert str(exc.value) == "Invalid library: library. Must be 'bpl' or 'nypl'"
