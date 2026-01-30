@@ -81,79 +81,8 @@ def stub_bib(library, collection) -> Bib:
 
 
 @pytest.fixture
-def order_rules():
-    return {
-        "audience": "audn",
-        "branches": "branches",
-        "copies": "copies",
-        "create_date": "created",
-        "format": "form",
-        "lang": "lang",
-        "locations": "locs",
-        "order_id": "order_id",
-        "shelves": "shelves",
-        "status": "status",
-        "vendor_notes": "venNotes",
-        "_field": {
-            "c": "order_code_1",
-            "d": "order_code_2",
-            "e": "order_code_3",
-            "f": "order_code_4",
-            "i": "order_type",
-            "s": "price",
-            "u": "fund",
-            "v": "vendor_code",
-            "x": "country",
-        },
-        "_following_field": {
-            "d": "internal_note",
-            "f": "selector_note",
-            "i": "vendor_title_no",
-            "m": "blanket_po",
-        },
-    }
-
-
-@pytest.fixture
-def bib_rules():
-    return {
-        "barcodes": "barcodes",
-        "bib_id": "sierra_bib_id",
-        "collection": "collection",
-        "library": "library",
-        "title": "title",
-        "update_date": {"tag": "005"},
-    }
-
-
-@pytest.fixture
-def vendor_rules():
-    return {
-        "nypl": {
-            "UNKNOWN": {"vendor_tags": {}, "matchpoints": {}, "bib_fields": []},
-            "BT SERIES": {
-                "vendor_tags": {"primary": {"901": {"code": "a", "value": "BTSERIES"}}},
-                "matchpoints": {},
-                "bib_fields": [],
-            },
-        },
-        "bpl": {
-            "UNKNOWN": {"vendor_tags": {}, "matchpoints": {}, "bib_fields": []},
-            "BT SERIES": {
-                "vendor_tags": {
-                    "primary": {"037": {"code": "b", "value": "B&amp;T SERIES"}},
-                    "alternate": {"947": {"code": "a", "value": "B&amp;T SERIES"}},
-                },
-                "matchpoints": {},
-                "bib_fields": [],
-            },
-        },
-    }
-
-
-@pytest.fixture
-def full_parser_service(library, bib_rules, vendor_rules):
-    rules = {"bib": bib_rules, "order": {}, "vendors": vendor_rules}
+def full_parser_service(library, get_constants):
+    rules = get_constants["mapper_rules"]
     return parse.FullLevelBibParser(
         mapper=marc_mapper.BookopsMarcMapper(
             rules=rules, library=library, record_type="cat"
@@ -162,8 +91,8 @@ def full_parser_service(library, bib_rules, vendor_rules):
 
 
 @pytest.fixture
-def order_parser_service(library, bib_rules, order_rules):
-    rules = {"bib": bib_rules, "order": order_rules}
+def order_parser_service(library, get_constants):
+    rules = get_constants["mapper_rules"]
     return parse.OrderLevelBibParser(
         mapper=marc_mapper.BookopsMarcMapper(
             rules=rules, library=library, record_type="acq"

@@ -1,19 +1,8 @@
-import json
-from typing import Any
-
 import pytest
 
 from overload_web.application import record_service
 from overload_web.bib_records.domain_models import bibs
 from overload_web.bib_records.infrastructure import marc_mapper, marc_updater
-
-
-@pytest.fixture(scope="module")
-def get_constants() -> dict[str, Any]:
-    """Retrieve processing constants from JSON file."""
-    with open("overload_web/data/vendor_specs.json", "r", encoding="utf-8") as fh:
-        constants = json.load(fh)
-    return constants
 
 
 @pytest.fixture

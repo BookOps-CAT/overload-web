@@ -279,6 +279,7 @@ class Order:
         order_id: str | None,
         order_type: str | None,
         price: str | int | None,
+        project_code: str | None,
         selector_note: str | None,
         shelves: list[str],
         status: str | None,
@@ -304,6 +305,7 @@ class Order:
         self.order_id = order_id
         self.order_type = order_type
         self.price = price
+        self.project_code = project_code
         self.selector_note = selector_note
         self.shelves = shelves
         self.status = status

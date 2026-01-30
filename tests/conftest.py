@@ -1,5 +1,6 @@
 import datetime
 import io
+import json
 import logging
 from typing import Any
 
@@ -9,21 +10,25 @@ from bookops_marc import Bib
 from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.bib_records.domain_models import sierra_responses
-from overload_web.bib_records.infrastructure import clients, marc_mapper, marc_updater
+from overload_web.bib_records.domain_models import bibs, sierra_responses
+from overload_web.bib_records.infrastructure import clients, marc_updater
+
+
+@pytest.fixture(scope="session")
+def get_constants() -> dict[str, Any]:
+    """Retrieve processing constants from JSON file."""
+    with open("overload_web/data/vendor_specs.json", "r", encoding="utf-8") as fh:
+        constants = json.load(fh)
+    return constants
 
 
 @pytest.fixture(autouse=True)
-def set_caplog_level(caplog):
+def test_setup(caplog, monkeypatch):
     caplog.set_level("DEBUG")
     logger = logging.getLogger("overload_web")
     for handler in logger.handlers:
         if not isinstance(handler, logging.StreamHandler):
             logger.removeHandler(handler)
-
-
-@pytest.fixture(autouse=True)
-def fake_creds(monkeypatch):
     monkeypatch.setenv("NYPL_PLATFORM_CLIENT", "foo")
     monkeypatch.setenv("NYPL_PLATFORM_SECRET", "bar")
     monkeypatch.setenv("NYPL_PLATFORM_OAUTH", "baz")
@@ -312,6 +317,7 @@ def stub_bib(library, collection) -> Bib:
                 Subfield(code="h", value="-"),
                 Subfield(code="i", value="l"),
                 Subfield(code="j", value="-"),
+                Subfield(code="k", value="A01"),
                 Subfield(code="m", value="o"),
                 Subfield(code="n", value="-"),
                 Subfield(code="o", value="13"),
@@ -345,7 +351,7 @@ def stub_bib(library, collection) -> Bib:
 
 @pytest.fixture
 def order_level_bib(collection, library):
-    order = marc_mapper.bibs.Order(
+    order = bibs.Order(
         locations=["agj0y"],
         audience=["j"],
         branches=["ag"],
@@ -363,6 +369,7 @@ def order_level_bib(collection, library):
         order_code_4="a",
         order_type="l",
         price="{{dollar}}13.20",
+        project_code="A01",
         fund="lease",
         vendor_code="btlea",
         country="xxu",
@@ -474,7 +481,7 @@ def order_level_bib(collection, library):
             ],
         )
     )
-    domain_bib = marc_mapper.bibs.DomainBib(
+    domain_bib = bibs.DomainBib(
         library=library,
         collection=collection,
         isbn="9781234567890",
@@ -560,7 +567,7 @@ def full_bib(library, collection):
                 ],
             )
         )
-    domain_bib = marc_mapper.bibs.DomainBib(
+    domain_bib = bibs.DomainBib(
         library=library,
         collection=collection,
         isbn="9781234567890",
@@ -572,7 +579,7 @@ def full_bib(library, collection):
         barcodes=["333331234567890"],
         orders=[],
         update_date="20200101010000.0",
-        vendor_info=marc_mapper.bibs.VendorInfo(
+        vendor_info=bibs.VendorInfo(
             name="UNKNOWN",
             bib_fields=[],
             matchpoints={

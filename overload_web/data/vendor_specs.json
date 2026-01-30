@@ -7,6 +7,7 @@
       "f": "order_code_4",
       "g": "format",
       "i": "order_type",
+      "k": "project_code",
       "m": "status",
       "o": "copies",
       "q": "create_date",
@@ -26,10 +27,7 @@
       "m": "blanket_po"
     }
   },
-  "bib_id_tag": {
-    "nypl": "945",
-    "bpl": "907"
-  },
+  "bib_id_tag": { "nypl": "945", "bpl": "907" },
   "mapper_rules": {
     "bib": {
       "barcodes": "barcodes",
@@ -62,6 +60,7 @@
         "e": "order_code_3",
         "f": "order_code_4",
         "i": "order_type",
+        "k": "project_code",
         "s": "price",
         "u": "fund",
         "v": "vendor_code",
@@ -85,9 +84,7 @@
           "bib_fields": []
         },
         "BT SERIES": {
-          "vendor_tags": {
-            "primary": { "901": { "code": "a", "value": "BTSERIES" } }
-          },
+          "vendor_tags": { "primary": { "901": { "code": "a", "value": "BTSERIES" } } },
           "matchpoints": {
             "primary_matchpoint": "isbn",
             "secondary_matchpoint": "oclc_number"
@@ -103,9 +100,7 @@
           ]
         },
         "BT PARADE": {
-          "vendor_tags": {
-            "primary": { "901": { "code": "a", "value": "PARADE" } }
-          },
+          "vendor_tags": { "primary": { "901": { "code": "a", "value": "PARADE" } } },
           "matchpoints": { "primary_matchpoint": "isbn" },
           "bib_fields": [
             {
@@ -118,9 +113,7 @@
           ]
         },
         "BT ROMANCE": {
-          "vendor_tags": {
-            "primary": { "901": { "code": "a", "value": "BTROMAN" } }
-          },
+          "vendor_tags": { "primary": { "901": { "code": "a", "value": "BTROMAN" } } },
           "matchpoints": { "primary_matchpoint": "isbn" },
           "bib_fields": [
             {
@@ -133,9 +126,7 @@
           ]
         },
         "BT URBAN": {
-          "vendor_tags": {
-            "primary": { "901": { "code": "a", "value": "BTURBN" } }
-          },
+          "vendor_tags": { "primary": { "901": { "code": "a", "value": "BTURBN" } } },
           "matchpoints": { "primary_matchpoint": "isbn" },
           "bib_fields": [
             {
@@ -148,9 +139,7 @@
           ]
         },
         "BT ODC": {
-          "vendor_tags": {
-            "primary": { "901": { "code": "a", "value": "BTODC" } }
-          },
+          "vendor_tags": { "primary": { "901": { "code": "a", "value": "BTODC" } } },
           "matchpoints": {
             "primary_matchpoint": "bib_id",
             "secondary_matchpoint": "isbn"
@@ -166,9 +155,7 @@
           ]
         },
         "BT LEASED": {
-          "vendor_tags": {
-            "primary": { "901": { "code": "a", "value": "LEASED" } }
-          },
+          "vendor_tags": { "primary": { "901": { "code": "a", "value": "LEASED" } } },
           "matchpoints": { "primary_matchpoint": "isbn" },
           "bib_fields": [
             {
@@ -271,9 +258,7 @@
           ]
         },
         "AMALIVRE": {
-          "vendor_tags": {
-            "primary": { "901": { "code": "a", "value": "AUXAM" } }
-          },
+          "vendor_tags": { "primary": { "901": { "code": "a", "value": "AUXAM" } } },
           "matchpoints": {
             "primary_matchpoint": "oclc_number",
             "secondary_matchpoint": "isbn"
@@ -289,9 +274,7 @@
           ]
         },
         "INGRAM": {
-          "vendor_tags": {
-            "primary": { "901": { "code": "a", "value": "INGRAM" } }
-          },
+          "vendor_tags": { "primary": { "901": { "code": "a", "value": "INGRAM" } } },
           "matchpoints": {
             "primary_matchpoint": "oclc_number",
             "secondary_matchpoint": "isbn"
@@ -307,9 +290,7 @@
           ]
         },
         "Sulaiman": {
-          "vendor_tags": {
-            "primary": { "037": { "code": "b", "value": "Sulaiman" } }
-          },
+          "vendor_tags": { "primary": { "037": { "code": "b", "value": "Sulaiman" } } },
           "matchpoints": {
             "primary_matchpoint": "oclc_number",
             "secondary_matchpoint": "isbn"
@@ -339,9 +320,7 @@
           "bib_fields": []
         },
         "INGRAM": {
-          "vendor_tags": {
-            "primary": { "947": { "code": "a", "value": "INGRAM" } }
-          },
+          "vendor_tags": { "primary": { "947": { "code": "a", "value": "INGRAM" } } },
           "matchpoints": {
             "primary_matchpoint": "bib_id",
             "secondary_matchpoint": "isbn",
@@ -358,9 +337,7 @@
           ]
         },
         "BT CLS": {
-          "vendor_tags": {
-            "primary": { "960": { "code": "n", "value": "B&amp;T" } }
-          },
+          "vendor_tags": { "primary": { "960": { "code": "n", "value": "B&amp;T" } } },
           "matchpoints": {
             "primary_matchpoint": "bib_id",
             "secondary_matchpoint": "isbn",
@@ -395,9 +372,7 @@
         "BT ROMANCE": {
           "vendor_tags": {
             "primary": { "037": { "code": "b", "value": "B&amp;T ROMANCE" } },
-            "alternate": {
-              "947": { "code": "a", "value": "B&amp;T ROMANCE" }
-            }
+            "alternate": { "947": { "code": "a", "value": "B&amp;T ROMANCE" } }
           },
           "matchpoints": { "primary_matchpoint": "isbn" },
           "bib_fields": [
@@ -413,9 +388,7 @@
         "BT URBAN": {
           "vendor_tags": {
             "primary": { "037": { "code": "b", "value": "B&amp;T URBAN" } },
-            "alternate": {
-              "947": { "code": "a", "value": "B&amp;T URBAN" }
-            }
+            "alternate": { "947": { "code": "a", "value": "B&amp;T URBAN" } }
           },
           "matchpoints": { "primary_matchpoint": "isbn" },
           "bib_fields": [
@@ -431,9 +404,7 @@
         "BT LEASE": {
           "vendor_tags": {
             "primary": { "037": { "code": "b", "value": "B&amp;T LEASE" } },
-            "alternate": {
-              "947": { "code": "a", "value": "B&amp;T LEASE" }
-            }
+            "alternate": { "947": { "code": "a", "value": "B&amp;T LEASE" } }
           },
           "matchpoints": { "primary_matchpoint": "isbn" },
           "bib_fields": [
@@ -449,9 +420,7 @@
         "BT PBP": {
           "vendor_tags": {
             "primary": { "037": { "code": "b", "value": "B&amp;T PBP" } },
-            "alternate": {
-              "947": { "code": "a", "value": "B&amp;T PBP" }
-            }
+            "alternate": { "947": { "code": "a", "value": "B&amp;T PBP" } }
           },
           "matchpoints": { "primary_matchpoint": "isbn" },
           "bib_fields": [
@@ -530,13 +499,7 @@
       }
     }
   },
-  "default_locations": {
-    "nypl": {
-      "BL": "zzzzz",
-      "RL": "xxx"
-    },
-    "bpl": {}
-  },
+  "default_locations": { "nypl": { "BL": "zzzzz", "RL": "xxx" }, "bpl": {} },
   "nypl_branches": {
     "label": "NYPL Branches",
     "options": {

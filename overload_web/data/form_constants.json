@@ -2,11 +2,7 @@
   "context_fields": {
     "record_type": {
       "label": "Record Type",
-      "options": {
-        "acq": "Acquisitions",
-        "cat": "Cataloging",
-        "sel": "Selection"
-      }
+      "options": { "acq": "Acquisitions", "cat": "Cataloging", "sel": "Selection" }
     },
     "library": {
       "label": "Library System",
@@ -959,6 +955,27 @@
         "zun": "Zuni"
       }
     },
+    "project_code": {
+      "label": "Project Code",
+      "options": {
+        "A01": "Branch Collections",
+        "A02": "Research Collections",
+        "BEC": "Branch EBooks Collections",
+        "BKH": "Books in the Home",
+        "BPI": "Branch Programming Initiatives",
+        "CPW": "College and Career Pathways",
+        "CSF": "Chatham Square Flood",
+        "DOE": "MyLibraryNYC",
+        "ELP": "Early Literacy Program",
+        "ESO": "English for Speaker of Other Languages",
+        "IMS": "Immigrant Services",
+        "LCS": "Lincoln Center Storytime",
+        "LS0": "General Public Service Activities",
+        "TEC": "Technology Training & Instruction",
+        "TVP": "Televisiting Project",
+        "TIM": "Correctional Services"
+      }
+    },
     "order_code_1": {
       "label": "Selector",
       "options": {
@@ -994,11 +1011,7 @@
     },
     "order_code_3": {
       "label": "Order Code 3",
-      "options": {
-        "d": "domestic",
-        "f": "foreign",
-        "-": "no code"
-      }
+      "options": { "d": "domestic", "f": "foreign", "-": "no code" }
     },
     "order_code_4": {
       "label": "Audience",
@@ -1131,6 +1144,7 @@
   },
   "var_fields": {
     "blanket_po": { "label": "Blanket PO" },
+    "identity": { "label": "Identity" },
     "internal_note": { "label": "Internal Note" },
     "selector_note": { "label": "Selector Note" },
     "vendor_notes": { "label": "Vendor Notes" },
