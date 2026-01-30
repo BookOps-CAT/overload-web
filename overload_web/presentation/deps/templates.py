@@ -35,8 +35,15 @@ def create_db_and_tables(engine) -> None:
     SQLModel.metadata.create_all(engine)
 
 
-def get_session(engine) -> Generator[Session, None, None]:
-    """Create a new database session."""
+def get_session(
+    engine: Any = Depends(get_engine_with_uri),
+) -> Generator[Session, None, None]:
+    """Create a new database session. `engine` is injected via Depends.
+
+    FastAPI will treat `engine` as a dependency instead of a required
+    request parameter, avoiding 422 validation errors on endpoints
+    that depend on this session provider.
+    """
     with Session(engine) as session:
         yield session
 
