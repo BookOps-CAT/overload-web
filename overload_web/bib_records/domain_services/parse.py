@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import itertools
 import logging
-from abc import ABC
+from collections import Counter
 from typing import (
     Any,
     BinaryIO,
-    Generic,
     Iterator,
     Protocol,
     TypeVar,
@@ -16,6 +15,7 @@ from typing import (
 )
 
 from overload_web.bib_records.domain_models import bibs
+from overload_web.shared.errors import OverloadError
 
 logger = logging.getLogger(__name__)
 
@@ -39,16 +39,12 @@ class BibMapper(Protocol[T]):
 
     """Instantiate an object that can read MARC binary as an iterator."""
 
-    def identify_vendor(self, record: T) -> dict[str, Any]: ...  # pragma: no branch
-
-    """Instantiate an object that can read MARC binary as an iterator."""
-
     def map_data(self, record: T) -> dict[str, Any]: ...  # pragma: no branch
 
     """Map MARC record to a domain object representing the record."""
 
 
-class BibParser(ABC, Generic[T]):
+class BibParser:
     """
     Domain service for parsing MARC records to domain objects.
 
@@ -59,34 +55,11 @@ class BibParser(ABC, Generic[T]):
     def __init__(self, mapper: BibMapper) -> None:
         self.mapper = mapper
 
-    def _parse_records(self, data: BinaryIO | bytes) -> list[tuple[dict[str, Any], T]]:
+    def parse(
+        self, data: BinaryIO | bytes, vendor: str | None = "UNKNOWN"
+    ) -> list[bibs.DomainBib]:
         """
-        Internal method used to parse MARC records using the injected `BibMapper`.
-
-        Args:
-            data: MARC data represented in binary format
-        Returns:
-            a list of tuples representing the parsed records and containing the mapped
-            data as a dictionary with its associated MARC record.
-        """
-        reader = self.mapper.get_reader(data)
-        parsed = []
-
-        for record in reader:
-            bib_dict = self.mapper.map_data(record)
-            parsed.append((bib_dict, record))
-
-        return parsed
-
-    def extract_barcodes(self, records: list[bibs.DomainBib]) -> list[str]:
-        """Extract all barcodes from a list of `DomainBib` objects"""
-        return list(itertools.chain.from_iterable([i.barcodes for i in records]))
-
-
-class FullLevelBibParser(BibParser):
-    def parse(self, data: BinaryIO | bytes) -> list[bibs.DomainBib]:
-        """
-        Method used to build `DomainBib` objects for full-level MARC records
+        Parse MARC records into `DomainBib` objects using the injected `BibMapper`
 
         Args:
             data: MARC data represented in binary format
@@ -94,33 +67,24 @@ class FullLevelBibParser(BibParser):
         Returns:
             a list of `DomainBib` objects mapped using `BibMapper``
         """
-        parsed: list[bibs.DomainBib] = []
-        for bib_dict, record in self._parse_records(data):
-            vendor_info = self.mapper.identify_vendor(record)
-            bib_dict["vendor_info"] = bibs.VendorInfo(**vendor_info)
+        reader = self.mapper.get_reader(data)
+        parsed = []
+
+        for record in reader:
+            bib_dict = self.mapper.map_data(record)
+            if bib_dict["record_type"] in ["acq", "sel"]:
+                bib_dict["vendor"] = vendor
             bib = bibs.DomainBib(**bib_dict)
             logger.info(f"Vendor record parsed: {bib}")
             parsed.append(bib)
+
         return parsed
 
-
-class OrderLevelBibParser(BibParser):
-    def parse(
-        self, data: BinaryIO | bytes, vendor: str | None = "UNKNOWN"
-    ) -> list[bibs.DomainBib]:
-        """
-        Method used to build `DomainBib` objects for order-level MARC records
-
-        Args:
-            data: MARC data represented in binary format
-
-        Returns:
-            a list of `DomainBib` objects mapped using `BibMapper`
-        """
-        parsed: list[bibs.DomainBib] = []
-        for bib_dict, record in self._parse_records(data):
-            bib_dict["vendor"] = vendor
-            bib = bibs.DomainBib(**bib_dict)
-            logger.info(f"Vendor record parsed: {bib}")
-            parsed.append(bib)
-        return parsed
+    def extract_barcodes(self, records: list[bibs.DomainBib]) -> list[str]:
+        """Extract all barcodes from a list of `DomainBib` objects"""
+        barcodes = list(itertools.chain.from_iterable([i.barcodes for i in records]))
+        barcode_counter = Counter(barcodes)
+        dupe_barcodes = [i for i, count in barcode_counter.items() if count > 1]
+        if dupe_barcodes:
+            raise OverloadError(f"Duplicate barcodes found in file: {dupe_barcodes}")
+        return barcodes

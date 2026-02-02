@@ -74,7 +74,7 @@ class FullRecordProcessingService:
         """
         self.analyzer = analyzer
         self.matcher = match.FullLevelBibMatcher(fetcher=bib_fetcher)
-        self.parser = parse.FullLevelBibParser(mapper=bib_mapper)
+        self.parser = parse.BibParser(mapper=bib_mapper)
         self.updater = update.BibUpdater(strategy=update_strategy)
 
     def process_vendor_file(self, data: BinaryIO | bytes) -> dict[str, Any]:
@@ -129,7 +129,7 @@ class OrderRecordProcessingService:
         """
         self.analyzer = analyzer
         self.matcher = match.OrderLevelBibMatcher(fetcher=bib_fetcher)
-        self.parser = parse.OrderLevelBibParser(mapper=bib_mapper)
+        self.parser = parse.BibParser(mapper=bib_mapper)
         self.updater = update.BibUpdater(strategy=update_strategy)
 
     def process_vendor_file(
@@ -161,6 +161,7 @@ class OrderRecordProcessingService:
             objects and the the `ProcessVendorFileReport` for the file of records.
         """
         parsed_records = self.parser.parse(data=data, vendor=vendor)
+        self.parser.extract_barcodes(parsed_records)
         out: dict[str, list[Any]] = {"records": [], "report": []}
         for record in parsed_records:
             candidates = self.matcher.match(record=record, matchpoints=matchpoints)

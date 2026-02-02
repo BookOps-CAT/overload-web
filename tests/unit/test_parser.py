@@ -83,8 +83,8 @@ def stub_bib(library, collection) -> Bib:
 @pytest.fixture
 def full_parser_service(library, get_constants):
     rules = get_constants["mapper_rules"]
-    return parse.FullLevelBibParser(
-        mapper=marc_mapper.BookopsMarcMapper(
+    return parse.BibParser(
+        mapper=marc_mapper.FullRecordMarcMapper(
             rules=rules, library=library, record_type="cat"
         )
     )
@@ -93,8 +93,8 @@ def full_parser_service(library, get_constants):
 @pytest.fixture
 def order_parser_service(library, get_constants):
     rules = get_constants["mapper_rules"]
-    return parse.OrderLevelBibParser(
-        mapper=marc_mapper.BookopsMarcMapper(
+    return parse.BibParser(
+        mapper=marc_mapper.OrderLevelMarcMapper(
             rules=rules, library=library, record_type="acq"
         )
     )

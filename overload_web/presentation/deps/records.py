@@ -7,7 +7,7 @@ from typing import Annotated, Any, Generator
 from fastapi import Depends, Form
 
 from overload_web.application import record_service
-from overload_web.bib_records.domain_services import update
+from overload_web.bib_records.domain_services import parse, update
 from overload_web.bib_records.infrastructure import clients, marc_mapper, marc_updater
 
 logger = logging.getLogger(__name__)
@@ -42,11 +42,16 @@ def get_mapper(
     library: Annotated[str, Form(...)],
     constants: Annotated[dict[str, Any], Depends(get_constants)],
     record_type: Annotated[str, Form(...)],
-) -> Generator[marc_mapper.BookopsMarcMapper, None, None]:
+) -> Generator[parse.BibMapper, None, None]:
     """Create a MARC mapper based on library and record type."""
-    yield marc_mapper.BookopsMarcMapper(
-        record_type=record_type, library=library, rules=constants["mapper_rules"]
-    )
+    if record_type == "cat":
+        yield marc_mapper.FullRecordMarcMapper(
+            record_type=record_type, library=library, rules=constants["mapper_rules"]
+        )
+    else:
+        yield marc_mapper.OrderLevelMarcMapper(
+            record_type=record_type, library=library, rules=constants["mapper_rules"]
+        )
 
 
 def get_update_strategy(
@@ -61,7 +66,7 @@ def get_update_strategy(
 
 def order_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
-    mapper: Annotated[marc_mapper.BookopsMarcMapper, Depends(get_mapper)],
+    mapper: Annotated[marc_mapper.OrderLevelMarcMapper, Depends(get_mapper)],
     analyzer: Annotated[
         record_service.analysis.MatchAnalyzer, Depends(get_match_analyzer)
     ],
@@ -78,7 +83,7 @@ def order_level_processing_service(
 
 def full_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
-    mapper: Annotated[marc_mapper.BookopsMarcMapper, Depends(get_mapper)],
+    mapper: Annotated[marc_mapper.FullRecordMarcMapper, Depends(get_mapper)],
     analyzer: Annotated[
         record_service.analysis.MatchAnalyzer, Depends(get_match_analyzer)
     ],
