@@ -217,7 +217,9 @@ def process_full_records(
             data=file.content
         )
     return request.app.state.templates.TemplateResponse(
-        request=request, name="partials/pvf_results.html", context={"files": out_files}
+        request=request,
+        name="pvf_partials/pvf_results.html",
+        context={"files": out_files},
     )
 
 
@@ -265,5 +267,7 @@ def process_order_records(
             vendor=vendor,
         )
     return request.app.state.templates.TemplateResponse(
-        request=request, name="partials/pvf_results.html", context={"files": out_files}
+        request=request,
+        name="pvf_partials/pvf_results.html",
+        context={"files": out_files},
     )
