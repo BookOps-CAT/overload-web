@@ -66,6 +66,30 @@ class TestApp:
         assert response.context["page_title"] == "Process Vendor File"
 
     @pytest.mark.parametrize(
+        "library, record_type",
+        [
+            ("bpl", "acq"),
+            ("bpl", "cat"),
+            ("bpl", "sel"),
+        ],
+    )
+    def test_post_context_form_bpl(self, library, record_type):
+        response = self.client.post(
+            "/process",
+            data={
+                "library": library,
+                "collection": "",
+                "record_type": record_type,
+            },
+        )
+        assert response.status_code == 200
+        assert "Process Vendor File" in response.text
+        assert (
+            response.url
+            == f"{self.base_url}/process/{record_type}?library={library}&collection=None"
+        )
+
+    @pytest.mark.parametrize(
         "library, collection, record_type",
         [
             ("nypl", "BL", "acq"),
@@ -74,12 +98,9 @@ class TestApp:
             ("nypl", "RL", "acq"),
             ("nypl", "RL", "cat"),
             ("nypl", "RL", "sel"),
-            ("bpl", "", "acq"),
-            ("bpl", "", "cat"),
-            ("bpl", "", "sel"),
         ],
     )
-    def test_post_context_form(self, library, collection, record_type):
+    def test_post_context_form_nypl(self, library, collection, record_type):
         response = self.client.post(
             "/process",
             data={

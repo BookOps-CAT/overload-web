@@ -6,6 +6,7 @@ to enable compatibility with pydantic while minimizing amount of repeated code.
 
 from __future__ import annotations
 
+import logging
 from inspect import Parameter, Signature
 from typing import Literal
 
@@ -13,6 +14,8 @@ from fastapi import Form
 from pydantic import BaseModel, field_validator, model_validator
 
 from overload_web.shared import schemas
+
+logger = logging.getLogger(__name__)
 
 
 def from_form(model_class: BaseModel):
@@ -90,9 +93,9 @@ class ProcessingContext(BaseModel):
     @classmethod
     def parse_collection(
         cls, value: Literal["BL", "RL"] | None
-    ) -> Literal["BL", "RL", ""]:
+    ) -> Literal["BL", "RL"] | None:
         if not value:
-            return ""
+            return None
         else:
             return value
 
