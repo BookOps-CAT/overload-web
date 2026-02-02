@@ -50,7 +50,7 @@ def create_template(
     saved_template = service.save_template(obj=template)
     return request.app.state.templates.TemplateResponse(
         request=request,
-        name="record_templates/template_form.html",
+        name="forms/order_template.html",
         context={"template": saved_template.__dict__},
     )
 
@@ -73,7 +73,7 @@ def get_template(
     template_out = {k: v for k, v in template.__dict__.items() if v} if template else {}
     return request.app.state.templates.TemplateResponse(
         request=request,
-        name="record_templates/rendered_template.html",
+        name="order_templates/rendered.html",
         context={"template": template_out},
     )
 
@@ -97,7 +97,7 @@ def get_template_list(
     template_list = service.list_templates(offset=offset, limit=limit)
     return request.app.state.templates.TemplateResponse(
         request=request,
-        name="record_templates/template_list.html",
+        name="order_templates/template_list.html",
         context={"templates": template_list},
     )
 
@@ -133,7 +133,7 @@ def update_template(
     )
     return request.app.state.templates.TemplateResponse(
         request=request,
-        name="record_templates/template_form.html",
+        name="forms/order_template.html",
         context={"template": template_out},
     )
 

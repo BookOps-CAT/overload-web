@@ -48,7 +48,7 @@ def vendor_file_page(
         HTML response for the home page.
     """
     return request.app.state.templates.TemplateResponse(
-        request=request, name="context_form.html", context={"page_title": page_title}
+        request=request, name="pvf_form.html", context={"page_title": page_title}
     )
 
 
@@ -57,7 +57,7 @@ def post_context_form(
     processing_context: dto.ProcessingContext = Form(),
 ) -> RedirectResponse:
     """
-    Takes input from form in `context_form.html` and redirects to appropriate
+    Takes input from form in `pvf_form.html` and redirects to appropriate
     endpoint for file processing. All args are passed to endpoint via an html form.
 
     Args:

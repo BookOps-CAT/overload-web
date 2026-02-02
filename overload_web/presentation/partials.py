@@ -13,7 +13,7 @@ htmx_router = APIRouter(prefix="/htmx", tags=["htmx"])
 def get_local_upload_form(request: Request) -> HTMLResponse:
     """Renders form for local file upload."""
     return request.app.state.templates.TemplateResponse(
-        request=request, name="files/local_form.html"
+        request=request, name="forms/local_files.html"
     )
 
 
@@ -21,7 +21,7 @@ def get_local_upload_form(request: Request) -> HTMLResponse:
 def get_remote_file_form(request: Request) -> HTMLResponse:
     """Renders form for remote file upload."""
     return request.app.state.templates.TemplateResponse(
-        request=request, name="files/remote_form.html"
+        request=request, name="forms/remote_files.html"
     )
 
 
@@ -29,7 +29,7 @@ def get_remote_file_form(request: Request) -> HTMLResponse:
 def get_context_form(request: Request) -> HTMLResponse:
     """Renders form for context input."""
     return request.app.state.templates.TemplateResponse(
-        request=request, name="context/form.html"
+        request=request, name="forms/context.html"
     )
 
 
@@ -40,7 +40,9 @@ def get_disabled_context_form(
     """Renders disabled context input form with selected values."""
     context = {"library": library, "collection": collection, "record_type": record_type}
     return request.app.state.templates.TemplateResponse(
-        request=request, name="context/disabled_form.html", context={"context": context}
+        request=request,
+        name="forms/disabled_context.html",
+        context={"context": context},
     )
 
 
@@ -48,7 +50,7 @@ def get_disabled_context_form(
 def get_template_form(request: Request) -> HTMLResponse:
     """Renders form for creating/editing order templates."""
     return request.app.state.templates.TemplateResponse(
-        request=request, name="record_templates/template_form.html"
+        request=request, name="forms/order_template.html"
     )
 
 
@@ -56,13 +58,13 @@ def get_template_form(request: Request) -> HTMLResponse:
 def get_collection_field(request: Request, library: str):
     if library == "nypl":
         return request.app.state.templates.TemplateResponse(
-            name="context/collection_field.html",
+            name="forms/collection_field.html",
             request=request,
             context={"disabled": False},
         )
 
     return request.app.state.templates.TemplateResponse(
-        name="context/collection_field.html",
+        name="forms/collection_field.html",
         request=request,
         context={"disabled": True},
     )

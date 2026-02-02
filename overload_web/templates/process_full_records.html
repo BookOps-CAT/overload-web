@@ -8,17 +8,7 @@
   hx-target="#pvf-output"
 >
   <div class="container text-left">
-    <div class="row gy-1 my-2">
-      <div class="col">
-        <div
-          id="context-form"
-          class="col"
-          hx-get="/htmx/forms/disabled-context?library={{library}}&record_type={{record_type}}&collection={{collection}}"
-          hx-target="this"
-          hx-trigger="load"
-        ></div>
-      </div>
-    </div>
+    <div class="row gy-1 my-2">{% include "partials/pvf_context.html" %}</div>
     <div class="row gy-1 my-2">{% include "partials/file_source.html" %}</div>
     <div class="row gy-1 my-2">
       <div class="col">{% include "partials/pvf_button.html" %}</div>
