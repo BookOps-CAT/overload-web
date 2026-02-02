@@ -102,15 +102,13 @@ class BaseMarcMapper(ABC):
                     field = getattr(order, k)
                     for code, attr in v.items():
                         order_dict[attr] = field.get(code) if field else None
-            if order_dict:
-                out["orders"].append(bibs.Order(**order_dict))
+            out["orders"].append(bibs.Order(**order_dict))
         out["binary_data"] = record.as_marc()
         out["record_type"] = self.record_type
         return out
 
     @abstractmethod
-    def map_data(self, record: Bib) -> dict[str, Any]:
-        return NotImplemented
+    def map_data(self, record: Bib) -> dict[str, Any]: ...  # pragma: no branch
 
 
 class FullRecordMarcMapper(BaseMarcMapper):

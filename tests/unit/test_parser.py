@@ -157,3 +157,8 @@ class TestParser:
         assert records[0].update_datetime == datetime.datetime(2020, 1, 1, 1, 0, 0, 0)
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
+
+    def test_extract_barcodes(self, order_parser_service, stub_bib):
+        records = order_parser_service.parse(stub_bib.as_marc())
+        barcodes = order_parser_service.extract_barcodes(records)
+        assert len(barcodes) == 1
