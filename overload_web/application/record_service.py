@@ -161,7 +161,6 @@ class OrderRecordProcessingService:
             objects and the the `ProcessVendorFileReport` for the file of records.
         """
         parsed_records = self.parser.parse(data=data, vendor=vendor)
-        self.parser.extract_barcodes(parsed_records)
         out: dict[str, list[Any]] = {"records": [], "report": []}
         for record in parsed_records:
             candidates = self.matcher.match(record=record, matchpoints=matchpoints)

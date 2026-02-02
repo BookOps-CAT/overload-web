@@ -158,7 +158,7 @@ class TestParser:
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
 
-    def test_extract_barcodes(self, order_parser_service, stub_bib):
-        records = order_parser_service.parse(stub_bib.as_marc())
-        barcodes = order_parser_service.extract_barcodes(records)
+    def test_extract_barcodes(self, full_parser_service, stub_bib):
+        records = full_parser_service.parse(stub_bib.as_marc())
+        barcodes = full_parser_service.extract_barcodes(records)
         assert len(barcodes) == 1
