@@ -26,9 +26,12 @@
   <div class="col">
     <div class="row" id="library-img">
       <img
-        src="{{ url_for('static', path='images/{{context.library}}') }}"
+        src="{{ url_for('static', path='images/' ~ context.library ~ 'Logo.gif') }}"
         class="img-fluid"
-      />
+      /><br />
+      <h3>{{context_fields['collection']['options'][context.collection]}}</h3>
+      <br />
+      <h3>{{context_fields['record_type']['options'][context.record_type]}}</h3>
     </div>
   </div>
 </div>
