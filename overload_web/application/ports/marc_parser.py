@@ -62,8 +62,6 @@ class BibParser:
         """
         reader = self.mapper.get_reader(data)
         parsed = []
-
-        barcodes = []
         for record in reader:
             bib_dict = self.mapper.map_data(record)
             if bib_dict["record_type"] in ["acq", "sel"]:
@@ -71,17 +69,7 @@ class BibParser:
             bib = bibs.DomainBib(**bib_dict)
             logger.info(f"Vendor record parsed: {bib}")
             parsed.append(bib)
-
-            barcodes.extend(bib.barcodes)
-        self.check_barcodes(barcodes=barcodes)
         return parsed
-
-    def check_barcodes(self, barcodes: list[str]) -> None:
-        """Check for duplicate barcodes"""
-        barcode_counter = Counter(barcodes)
-        dupe_barcodes = [i for i, count in barcode_counter.items() if count > 1]
-        if dupe_barcodes:
-            raise OverloadError(f"Duplicate barcodes found in file: {dupe_barcodes}")
 
     def extract_barcodes(self, records: list[bibs.DomainBib]) -> list[str]:
         """Extract all barcodes from a list of `DomainBib` objects"""

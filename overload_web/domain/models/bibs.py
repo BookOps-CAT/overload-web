@@ -127,6 +127,7 @@ class DomainBib:
         self.update_date = update_date
         self.vendor_info = vendor_info
         self.vendor = vendor if not vendor_info else vendor_info.name
+        self.analysis: MatchAnalysis | None = None
 
     @property
     def update_datetime(self) -> datetime.datetime | None:
@@ -135,8 +136,19 @@ class DomainBib:
             return datetime.datetime.strptime(self.update_date, "%Y%m%d%H%M%S.%f")
         return None
 
-    def apply_match_decision(self, decision: Any) -> None:
-        self.update_bib_id(decision.target_bib_id)
+    def apply_match(self, analysis: MatchAnalysis) -> None:
+        """
+        Update a `DomainBib` object's bib_id.
+
+        Args:
+            bib_id: The new sierra bib ID as a string.
+
+        Returns:
+            None
+        """
+        if analysis.target_bib_id:
+            self.bib_id = analysis.target_bib_id
+        self.analysis = analysis
 
     def apply_order_template(self, template_data: dict[str, Any]) -> None:
         """
@@ -163,19 +175,6 @@ class DomainBib:
                 other.append(c.bib_id)
 
         return ClassifiedCandidates(matched, mixed, other)
-
-    def update_bib_id(self, bib_id: str | None) -> None:
-        """
-        Update a `DomainBib` object's bib_id.
-
-        Args:
-            bib_id: The new sierra bib ID as a string.
-
-        Returns:
-            None
-        """
-        if bib_id:
-            self.bib_id = bib_id
 
     def match_identifiers(self) -> DomainBibMatchIds:
         """Determine call number and resource ID for bib record."""

@@ -21,7 +21,8 @@ import logging
 from typing import Any, BinaryIO
 
 from overload_web.application.ports import marc_parser
-from overload_web.domain.services import analysis, match, update
+from overload_web.application.services import match_service
+from overload_web.domain.services import match_analysis, update
 
 logger = logging.getLogger(__name__)
 
@@ -31,18 +32,18 @@ class MatchAnalyzerFactory:
 
     def make(
         self, library: str, record_type: str, collection: str
-    ) -> analysis.MatchAnalyzer:
+    ) -> match_analysis.MatchAnalyzer:
         match record_type, library, collection:
             case "cat", "nypl", "BL":
-                return analysis.NYPLCatBranchMatchAnalyzer()
+                return match_analysis.NYPLCatBranchMatchAnalyzer()
             case "cat", "nypl", "RL":
-                return analysis.NYPLCatResearchMatchAnalyzer()
+                return match_analysis.NYPLCatResearchMatchAnalyzer()
             case "cat", "bpl", _:
-                return analysis.BPLCatMatchAnalyzer()
+                return match_analysis.BPLCatMatchAnalyzer()
             case "sel", _, _:
-                return analysis.SelectionMatchAnalyzer()
+                return match_analysis.SelectionMatchAnalyzer()
             case _:
-                return analysis.AcquisitionsMatchAnalyzer()
+                return match_analysis.AcquisitionsMatchAnalyzer()
 
 
 class FullRecordProcessingService:
@@ -50,9 +51,9 @@ class FullRecordProcessingService:
 
     def __init__(
         self,
-        bib_fetcher: match.BibFetcher,
+        bib_fetcher: match_service.BibFetcher,
         bib_mapper: marc_parser.BibMapper,
-        analyzer: analysis.MatchAnalyzer,
+        analyzer: match_analysis.MatchAnalyzer,
         update_strategy: update.MarcUpdateStrategy,
     ):
         """
@@ -60,16 +61,16 @@ class FullRecordProcessingService:
 
         Args:
             bib_fetcher:
-                A `match.BibFetcher` object
+                A `match_service.BibFetcher` object
             bib_mapper:
                 A `marc_parser.BibMapper` object
             analyzer:
-                An `analysis.MatchAnalyzer` object
-            update_strategy:
+                An `match_analysis.MatchAnalyzer` object
+            update_engine:
                 An `update.MarcUpdateStrategy` object
         """
         self.analyzer = analyzer
-        self.matcher = match.FullLevelBibMatcher(fetcher=bib_fetcher)
+        self.matcher = match_service.FullLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = marc_parser.BibParser(mapper=bib_mapper)
         self.updater = update.BibUpdater(strategy=update_strategy)
 
@@ -79,7 +80,7 @@ class FullRecordProcessingService:
 
         This service parses full MARC records, matches them against Sierra, analyzes
         all bibs that were returned as matches, updates the records with required
-        fields, and outputs the updated records and the analysis.
+        fields, and outputs the updated records and the match_analysis.
 
         Args:
             data: Binary MARC data as a `BinaryIO` or `bytes` object.
@@ -88,13 +89,14 @@ class FullRecordProcessingService:
             objects and the the `ProcessVendorFileReport` for the file of records.
         """
         parsed_records = self.parser.parse(data=data)
+        marc_parser.BarcodeValidator.ensure_unique(parsed_records)
         barcodes = self.parser.extract_barcodes(parsed_records)
         out: dict[str, list[Any]] = {"records": [], "report": [], "barcodes": barcodes}
         for record in parsed_records:
             candidates = self.matcher.match(record=record)
-            analysis = self.analyzer.analyze_match(record=record, candidates=candidates)
+            analysis = self.analyzer.analyze(record=record, candidates=candidates)
             out["report"].append(analysis)
-            record.apply_match_decision(analysis.decision)
+            record.apply_match(analysis)
             updated = self.updater.update(record=record)
             out["records"].append(updated)
         return out
@@ -105,9 +107,9 @@ class OrderRecordProcessingService:
 
     def __init__(
         self,
-        bib_fetcher: match.BibFetcher,
+        bib_fetcher: match_service.BibFetcher,
         bib_mapper: marc_parser.BibMapper,
-        analyzer: analysis.MatchAnalyzer,
+        analyzer: match_analysis.MatchAnalyzer,
         update_strategy: update.MarcUpdateStrategy,
     ):
         """
@@ -115,16 +117,16 @@ class OrderRecordProcessingService:
 
         Args:
             bib_fetcher:
-                A `match.BibFetcher` object
+                A `match_service.BibFetcher` object
             bib_mapper:
                 A `marc_parser.BibMapper` object
             analyzer:
-                An `analysis.MatchAnalyzer` object
-            update_strategy:
+                An `match_analysis.MatchAnalyzer` object
+            update_engine:
                 An `update.MarcUpdateStrategy` object
         """
         self.analyzer = analyzer
-        self.matcher = match.OrderLevelBibMatcher(fetcher=bib_fetcher)
+        self.matcher = match_service.OrderLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = marc_parser.BibParser(mapper=bib_mapper)
         self.updater = update.BibUpdater(strategy=update_strategy)
 
@@ -140,7 +142,7 @@ class OrderRecordProcessingService:
 
         This service parses full MARC records, matches them against Sierra, analyzes
         all bibs that were returned as matches, updates the records with required
-        fields, and outputs the updated records and the analysis.
+        fields, and outputs the updated records and the match_analysis.
 
         Args:
             data:
@@ -157,12 +159,13 @@ class OrderRecordProcessingService:
             objects and the the `ProcessVendorFileReport` for the file of records.
         """
         parsed_records = self.parser.parse(data=data, vendor=vendor)
+        marc_parser.BarcodeValidator.ensure_unique(parsed_records)
         out: dict[str, list[Any]] = {"records": [], "report": []}
         for record in parsed_records:
             candidates = self.matcher.match(record=record, matchpoints=matchpoints)
-            analysis = self.analyzer.analyze_match(record=record, candidates=candidates)
+            analysis = self.analyzer.analyze(record=record, candidates=candidates)
             out["report"].append(analysis)
-            record.apply_match_decision(analysis.decision)
+            record.apply_match(analysis)
             updated = self.updater.update(record=record, template_data=template_data)
             out["records"].append(updated)
         return out

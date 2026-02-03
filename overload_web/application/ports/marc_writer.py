@@ -44,7 +44,7 @@ class FullLevelBibSerializer:
     ) -> dict[str, BinaryIO]:
         """
         Serialize `DomainBib` objects into a binary MARC stream and split into
-        appropriate file streams based on analysis.
+        appropriate file streams based on match_analysis.
 
         Args:
             record_batches:

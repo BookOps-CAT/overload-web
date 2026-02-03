@@ -50,7 +50,7 @@ class MatchAnalyzer(Protocol):
             return bibs.CatalogAction.OVERLAY, True
         return bibs.CatalogAction.ATTACH, False
 
-    def analyze_match(
+    def analyze(
         self,
         record: bibs.DomainBib,
         candidates: list[sierra_responses.BaseSierraResponse],
@@ -58,7 +58,7 @@ class MatchAnalyzer(Protocol):
 
 
 class AcquisitionsMatchAnalyzer(MatchAnalyzer):
-    def analyze_match(
+    def analyze(
         self,
         record: bibs.DomainBib,
         candidates: list[sierra_responses.BaseSierraResponse],
@@ -85,7 +85,7 @@ class AcquisitionsMatchAnalyzer(MatchAnalyzer):
 
 
 class BPLCatMatchAnalyzer(MatchAnalyzer):
-    def analyze_match(
+    def analyze(
         self,
         record: bibs.DomainBib,
         candidates: list[sierra_responses.BaseSierraResponse],
@@ -160,7 +160,7 @@ class BPLCatMatchAnalyzer(MatchAnalyzer):
 
 
 class NYPLCatResearchMatchAnalyzer(MatchAnalyzer):
-    def analyze_match(
+    def analyze(
         self,
         record: bibs.DomainBib,
         candidates: list[sierra_responses.BaseSierraResponse],
@@ -224,7 +224,7 @@ class NYPLCatResearchMatchAnalyzer(MatchAnalyzer):
 
 
 class NYPLCatBranchMatchAnalyzer(MatchAnalyzer):
-    def analyze_match(
+    def analyze(
         self,
         record: bibs.DomainBib,
         candidates: list[sierra_responses.BaseSierraResponse],
@@ -293,7 +293,7 @@ class NYPLCatBranchMatchAnalyzer(MatchAnalyzer):
 
 
 class SelectionMatchAnalyzer(MatchAnalyzer):
-    def analyze_match(
+    def analyze(
         self,
         record: bibs.DomainBib,
         candidates: list[sierra_responses.BaseSierraResponse],

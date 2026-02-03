@@ -1,8 +1,8 @@
 import pytest
 
+from overload_web.application.services import match_service
 from overload_web.domain.errors import OverloadError
 from overload_web.domain.models import bibs
-from overload_web.domain.services import match
 
 
 @pytest.fixture
@@ -32,7 +32,7 @@ class TestMatcher:
             bib_fields=[],
         )
         stub_domain_bib.record_type = "cat"
-        service = match.FullLevelBibMatcher(fetcher=fake_fetcher)
+        service = match_service.FullLevelBibMatcher(fetcher=fake_fetcher)
         candidates = service.match(stub_domain_bib)
         assert len(candidates) == 1
 
@@ -43,27 +43,27 @@ class TestMatcher:
             bib_fields=[],
         )
         stub_domain_bib.record_type = "cat"
-        service = match.FullLevelBibMatcher(fetcher=fake_fetcher_no_matches)
+        service = match_service.FullLevelBibMatcher(fetcher=fake_fetcher_no_matches)
         candidates = service.match(stub_domain_bib)
         assert len(candidates) == 0
 
     def test_match_full_no_vendor_index(self, fake_fetcher, stub_domain_bib):
         stub_domain_bib.record_type = "cat"
-        service = match.FullLevelBibMatcher(fetcher=fake_fetcher)
+        service = match_service.FullLevelBibMatcher(fetcher=fake_fetcher)
         assert stub_domain_bib.vendor_info is None
         with pytest.raises(OverloadError) as exc:
             service.match(stub_domain_bib)
         assert str(exc.value) == "Vendor index required for cataloging workflow."
 
     def test_match_order_level(self, fake_fetcher, stub_domain_bib):
-        service = match.OrderLevelBibMatcher(fetcher=fake_fetcher)
+        service = match_service.OrderLevelBibMatcher(fetcher=fake_fetcher)
         candidates = service.match(
             stub_domain_bib, matchpoints={"primary_matchpoint": "oclc_number"}
         )
         assert len(candidates) == 0
 
     def test_match_order_level_no_matchpoints(self, fake_fetcher, stub_domain_bib):
-        service = match.OrderLevelBibMatcher(fetcher=fake_fetcher)
+        service = match_service.OrderLevelBibMatcher(fetcher=fake_fetcher)
         with pytest.raises(TypeError) as exc:
             service.match(stub_domain_bib)
         assert (
@@ -72,7 +72,7 @@ class TestMatcher:
         )
 
     def test_match_order_level_none(self, fake_fetcher, stub_domain_bib):
-        service = match.OrderLevelBibMatcher(fetcher=fake_fetcher)
+        service = match_service.OrderLevelBibMatcher(fetcher=fake_fetcher)
         candidates = service.match(
             stub_domain_bib, matchpoints={"primary_matchpoint": None}
         )

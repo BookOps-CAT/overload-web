@@ -1,6 +1,6 @@
 import pytest
 
-from overload_web.domain.services import serialize
+from overload_web.application.ports import marc_writer
 
 
 class TestUpdater:
@@ -9,7 +9,7 @@ class TestUpdater:
         [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
     )
     def test_serialize_order(self, order_level_bib, caplog):
-        service = serialize.OrderLevelBibSerializer()
+        service = marc_writer.OrderLevelBibSerializer()
         marc_binary = service.serialize(records=[order_level_bib])
         assert marc_binary.read()[0:2] == b"00"
         assert len(caplog.records) == 1
@@ -25,7 +25,7 @@ class TestUpdater:
             "DUP": [full_bib],
             "DEDUPED": [full_bib],
         }
-        service = serialize.FullLevelBibSerializer()
+        service = marc_writer.FullLevelBibSerializer()
         marc_binary = service.serialize(record_batches=record_batch)
         assert marc_binary["NEW"].read()[0:2] == b"00"
         assert len(caplog.records) == 3

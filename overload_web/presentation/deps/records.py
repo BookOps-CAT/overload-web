@@ -33,7 +33,7 @@ def get_match_analyzer(
     library: Annotated[str, Form(...)],
     collection: Annotated[str, Form(...)],
     record_type: Annotated[str, Form(...)],
-) -> Generator[record_service.analysis.MatchAnalyzer, None, None]:
+) -> Generator[record_service.match_analysis.MatchAnalyzer, None, None]:
     """Create a match analyzer based on library, record type, and collection."""
     yield record_service.MatchAnalyzerFactory().make(
         library=library, record_type=record_type, collection=collection
@@ -70,7 +70,7 @@ def order_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
     mapper: Annotated[marc_mapper.OrderLevelMarcMapper, Depends(get_mapper)],
     analyzer: Annotated[
-        record_service.analysis.MatchAnalyzer, Depends(get_match_analyzer)
+        record_service.match_analysis.MatchAnalyzer, Depends(get_match_analyzer)
     ],
     update_strategy: Annotated[update.MarcUpdateStrategy, Depends(get_update_strategy)],
 ) -> Generator[record_service.OrderRecordProcessingService, None, None]:
@@ -87,7 +87,7 @@ def full_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
     mapper: Annotated[marc_mapper.FullRecordMarcMapper, Depends(get_mapper)],
     analyzer: Annotated[
-        record_service.analysis.MatchAnalyzer, Depends(get_match_analyzer)
+        record_service.match_analysis.MatchAnalyzer, Depends(get_match_analyzer)
     ],
     update_strategy: Annotated[update.MarcUpdateStrategy, Depends(get_update_strategy)],
 ) -> Generator[record_service.FullRecordProcessingService, None, None]:
