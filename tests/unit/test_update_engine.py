@@ -5,7 +5,7 @@ from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
 from overload_web.domain.models import bibs
-from overload_web.domain.services import update
+from overload_web.infrastructure.marc import update_engine
 
 
 @pytest.fixture
@@ -69,8 +69,21 @@ def make_bt_series_full_bib(full_bib, library, collection):
 
 class TestUpdater:
     @pytest.fixture
-    def updater_service(self, update_strategy):
-        return update.BibUpdater(strategy=update_strategy)
+    def updater_service(self, library, record_type, collection):
+        constants = {
+            "update_order_mapping": {
+                "960": {"c": "order_code_1", "t": "locations"},
+                "961": {"i": "vendor_title_no"},
+            },
+            "bib_id_tag": {"nypl": "945", "bpl": "907"},
+            "default_locations": {"nypl": {"BL": "zzzzz", "RL": "xxx"}, "bpl": {}},
+        }
+        return update_engine.BibUpdateEngine(
+            library=library,
+            rules=constants,
+            record_type=record_type,
+            collection=collection,
+        )
 
     @pytest.mark.parametrize(
         "library, collection, tag, record_type",
@@ -94,7 +107,7 @@ class TestUpdater:
     )
     def test_update_cat_nypl_vendor_fields(self, full_bib, updater_service):
         full_bib.vendor = "INGRAM"
-        full_bib.vendor_info = update.bibs.VendorInfo(
+        full_bib.vendor_info = bibs.VendorInfo(
             name="INGRAM",
             matchpoints={"primary_matchpoint": "oclc_number"},
             bib_fields=[
@@ -125,7 +138,7 @@ class TestUpdater:
     )
     def test_update_cat_bpl_vendor_fields(self, full_bib, updater_service):
         full_bib.vendor = "INGRAM"
-        full_bib.vendor_info = update.bibs.VendorInfo(
+        full_bib.vendor_info = bibs.VendorInfo(
             name="INGRAM",
             matchpoints={"primary_matchpoint": "oclc_number"},
             bib_fields=[
@@ -151,8 +164,12 @@ class TestUpdater:
         )
 
     @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
+        "library, collection",
+        [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
+    )
+    @pytest.mark.parametrize(
+        "record_type",
+        ["acq", "sel"],
     )
     def test_update_template_data(self, order_level_bib, updater_service):
         original_orders = copy.deepcopy(order_level_bib.orders)

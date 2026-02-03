@@ -13,14 +13,8 @@ logger = logging.getLogger(__name__)
 C = TypeVar("C")
 
 
-class UpdateStep(Protocol):
-    def apply(self, ctx: Any) -> None: ...  # pragma: no branch
-
-
 class MarcUpdateStrategy(Protocol):
-    @property
-    def pipeline(self) -> list[UpdateStep]: ...  # pragma: no branch
-    def create_context(
+    def create_bib(
         self, record: bibs.DomainBib, **kwargs: Any
     ) -> Any: ...  # pragma: no branch
 
@@ -50,8 +44,8 @@ class BibReviewer:
     def _merge_record(
         self, record: bibs.DomainBib, all_dupes: list[bibs.DomainBib]
     ) -> bibs.DomainBib:
-        base_rec_ctx = self.context_factory.create_context(record=all_dupes[0])
-        if record.library == "bpl" and base_rec_ctx.bib_rec.overdrive_number is None:
+        base_rec = self.context_factory.create_bib(record=all_dupes[0])
+        if record.library == "bpl" and base_rec.overdrive_number is None:
             tag = "960"
             ind2 = " "
         else:
@@ -59,12 +53,12 @@ class BibReviewer:
             ind2 = "1"
         all_items = []
         for dupe in all_dupes[1:]:
-            ctx = self.context_factory.create_context(record=dupe)
-            all_items.extend(ctx.bib_rec.get_fields(tag))
+            bib = self.context_factory.create_bib(record=dupe)
+            all_items.extend(bib.get_fields(tag))
         for item in all_items:
             if item.indicator1 == " " and item.indicator2 == ind2:
-                base_rec_ctx.bib_rec.add_ordered_field(item)
-        record.binary_data = base_rec_ctx.bib_rec.as_marc()
+                base_rec.add_ordered_field(item)
+        record.binary_data = base_rec.as_marc()
         return record
 
     def dedupe(

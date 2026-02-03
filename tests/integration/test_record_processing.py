@@ -3,7 +3,7 @@ import pytest
 from overload_web.application.services import record_service
 from overload_web.domain.errors import OverloadError
 from overload_web.domain.models import bibs
-from overload_web.infrastructure.marc import marc_mapper, marc_updater
+from overload_web.infrastructure.marc import marc_mapper, update_engine
 
 
 @pytest.fixture
@@ -21,8 +21,11 @@ def service_components(
             record_service.MatchAnalyzerFactory().make(
                 library=library, record_type=record_type, collection=collection
             ),
-            marc_updater.BookopsMarcUpdateStrategy(
-                rules=get_constants, record_type=record_type, library=library
+            update_engine.BibUpdateEngine(
+                rules=get_constants,
+                record_type=record_type,
+                library=library,
+                collection=collection,
             ),
         )
     else:
@@ -36,8 +39,11 @@ def service_components(
             record_service.MatchAnalyzerFactory().make(
                 library=library, record_type=record_type, collection=collection
             ),
-            marc_updater.BookopsMarcUpdateStrategy(
-                rules=get_constants, record_type=record_type, library=library
+            update_engine.BibUpdateEngine(
+                rules=get_constants,
+                record_type=record_type,
+                library=library,
+                collection=collection,
             ),
         )
 
@@ -52,7 +58,7 @@ class TestRecordProcessingService:
             bib_fetcher=service_components[0],
             bib_mapper=service_components[1],
             analyzer=service_components[2],
-            update_strategy=service_components[3],
+            updater=service_components[3],
         )
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -71,7 +77,7 @@ class TestRecordProcessingService:
             bib_fetcher=service_components[0],
             bib_mapper=service_components[1],
             analyzer=service_components[2],
-            update_strategy=service_components[3],
+            updater=service_components[3],
         )
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -95,7 +101,7 @@ class TestRecordProcessingService:
             bib_fetcher=service_components[0],
             bib_mapper=service_components[1],
             analyzer=service_components[2],
-            update_strategy=service_components[3],
+            updater=service_components[3],
         )
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -112,7 +118,7 @@ class TestRecordProcessingService:
             bib_fetcher=service_components[0],
             bib_mapper=service_components[1],
             analyzer=service_components[2],
-            update_strategy=service_components[3],
+            updater=service_components[3],
         )
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()

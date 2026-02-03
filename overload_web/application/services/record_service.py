@@ -20,9 +20,9 @@ Classes:
 import logging
 from typing import Any, BinaryIO
 
-from overload_web.application.ports import marc_parser
+from overload_web.application.ports import marc_parser, marc_updater
 from overload_web.application.services import match_service
-from overload_web.domain.services import match_analysis, update
+from overload_web.domain.services import match_analysis
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class FullRecordProcessingService:
         bib_fetcher: match_service.BibFetcher,
         bib_mapper: marc_parser.BibMapper,
         analyzer: match_analysis.MatchAnalyzer,
-        update_strategy: update.MarcUpdateStrategy,
+        updater: marc_updater.MarcUpdaterPort,
     ):
         """
         Initialize `FullRecordProcessingService`.
@@ -72,7 +72,7 @@ class FullRecordProcessingService:
         self.analyzer = analyzer
         self.matcher = match_service.FullLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = marc_parser.BibParser(mapper=bib_mapper)
-        self.updater = update.BibUpdater(strategy=update_strategy)
+        self.updater = updater
 
     def process_vendor_file(self, data: BinaryIO | bytes) -> dict[str, Any]:
         """
@@ -110,7 +110,7 @@ class OrderRecordProcessingService:
         bib_fetcher: match_service.BibFetcher,
         bib_mapper: marc_parser.BibMapper,
         analyzer: match_analysis.MatchAnalyzer,
-        update_strategy: update.MarcUpdateStrategy,
+        updater: marc_updater.MarcUpdaterPort,
     ):
         """
         Initialize `OrderRecordProcessingService`.
@@ -128,7 +128,7 @@ class OrderRecordProcessingService:
         self.analyzer = analyzer
         self.matcher = match_service.OrderLevelBibMatcher(fetcher=bib_fetcher)
         self.parser = marc_parser.BibParser(mapper=bib_mapper)
-        self.updater = update.BibUpdater(strategy=update_strategy)
+        self.updater = updater
 
     def process_vendor_file(
         self,

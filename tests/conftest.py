@@ -11,7 +11,7 @@ from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 
 from overload_web.domain.models import bibs, sierra_responses
-from overload_web.infrastructure.marc import marc_updater
+from overload_web.infrastructure.marc import update_engine
 from overload_web.infrastructure.sierra import clients
 
 
@@ -648,7 +648,7 @@ def fake_fetcher_no_matches(monkeypatch):
 
 
 @pytest.fixture
-def update_strategy(library, record_type) -> marc_updater.BookopsMarcUpdateStrategy:
+def update_strategy(library, record_type, collection) -> update_engine.BibUpdateEngine:
     constants = {
         "update_order_mapping": {
             "960": {"c": "order_code_1", "t": "locations"},
@@ -657,6 +657,6 @@ def update_strategy(library, record_type) -> marc_updater.BookopsMarcUpdateStrat
         "bib_id_tag": {"nypl": "945", "bpl": "907"},
         "default_locations": {"nypl": {"BL": "zzzzz", "RL": "xxx"}, "bpl": {}},
     }
-    return marc_updater.BookopsMarcUpdateStrategy(
-        library=library, rules=constants, record_type=record_type
+    return update_engine.BibUpdateEngine(
+        library=library, rules=constants, record_type=record_type, collection=collection
     )

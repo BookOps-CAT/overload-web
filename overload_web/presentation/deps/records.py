@@ -8,8 +8,7 @@ from fastapi import Depends, Form
 
 from overload_web.application.ports import marc_parser
 from overload_web.application.services import record_service
-from overload_web.domain.services import update
-from overload_web.infrastructure.marc import marc_mapper, marc_updater
+from overload_web.infrastructure.marc import marc_mapper, update_engine
 from overload_web.infrastructure.sierra import clients
 
 logger = logging.getLogger(__name__)
@@ -59,10 +58,11 @@ def get_mapper(
 def get_update_strategy(
     library: Annotated[str, Form(...)],
     record_type: Annotated[str, Form(...)],
+    collection: Annotated[str, Form(...)],
     constants: Annotated[dict[str, Any], Depends(get_constants)],
-) -> update.MarcUpdateStrategy:
-    return marc_updater.BookopsMarcUpdateStrategy(
-        rules=constants, record_type=record_type, library=library
+) -> update_engine.BibUpdateEngine:
+    return update_engine.BibUpdateEngine(
+        rules=constants, record_type=record_type, library=library, collection=collection
     )
 
 
@@ -72,14 +72,14 @@ def order_level_processing_service(
     analyzer: Annotated[
         record_service.match_analysis.MatchAnalyzer, Depends(get_match_analyzer)
     ],
-    update_strategy: Annotated[update.MarcUpdateStrategy, Depends(get_update_strategy)],
+    updater: Annotated[update_engine.BibUpdateEngine, Depends(get_update_strategy)],
 ) -> Generator[record_service.OrderRecordProcessingService, None, None]:
     """Create an order-record processing service with injected dependencies."""
     yield record_service.OrderRecordProcessingService(
         bib_fetcher=fetcher,
         bib_mapper=mapper,
         analyzer=analyzer,
-        update_strategy=update_strategy,
+        updater=updater,
     )
 
 
@@ -89,12 +89,12 @@ def full_level_processing_service(
     analyzer: Annotated[
         record_service.match_analysis.MatchAnalyzer, Depends(get_match_analyzer)
     ],
-    update_strategy: Annotated[update.MarcUpdateStrategy, Depends(get_update_strategy)],
+    updater: Annotated[update_engine.BibUpdateEngine, Depends(get_update_strategy)],
 ) -> Generator[record_service.FullRecordProcessingService, None, None]:
     """Create an full-record processing service with injected dependencies."""
     yield record_service.FullRecordProcessingService(
         bib_fetcher=fetcher,
         bib_mapper=mapper,
         analyzer=analyzer,
-        update_strategy=update_strategy,
+        updater=updater,
     )
