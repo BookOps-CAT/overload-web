@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable
 
-from overload_web.bib_records.infrastructure import update_steps
 from overload_web.domain.models import bibs
+from overload_web.infrastructure.marc import update_steps
 
 logger = logging.getLogger(__name__)
 

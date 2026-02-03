@@ -1,7 +1,7 @@
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.order_templates.infrastructure import repository, tables
+from overload_web.infrastructure.db import repository, tables
 
 
 @pytest.fixture

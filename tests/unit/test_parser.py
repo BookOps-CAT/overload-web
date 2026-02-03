@@ -5,8 +5,8 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.bib_records.infrastructure import marc_mapper
 from overload_web.domain.services import parse
+from overload_web.infrastructure.marc import marc_mapper
 
 
 @pytest.fixture

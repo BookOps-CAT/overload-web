@@ -14,8 +14,8 @@ from typing import (
     runtime_checkable,
 )
 
+from overload_web.domain.errors import OverloadError
 from overload_web.domain.models import bibs
-from overload_web.shared.errors import OverloadError
 
 logger = logging.getLogger(__name__)
 

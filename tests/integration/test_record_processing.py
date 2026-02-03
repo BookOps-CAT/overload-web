@@ -1,9 +1,9 @@
 import pytest
 
 from overload_web.application import record_service
-from overload_web.bib_records.infrastructure import marc_mapper, marc_updater
+from overload_web.domain.errors import OverloadError
 from overload_web.domain.models import bibs
-from overload_web.shared.errors import OverloadError
+from overload_web.infrastructure.marc import marc_mapper, marc_updater
 
 
 @pytest.fixture

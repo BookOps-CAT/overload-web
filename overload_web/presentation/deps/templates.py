@@ -8,7 +8,7 @@ from fastapi import Depends
 from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.application import template_service
-from overload_web.order_templates.infrastructure import repository
+from overload_web.infrastructure.db import repository
 
 logger = logging.getLogger(__name__)
 

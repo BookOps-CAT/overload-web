@@ -2,8 +2,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 
+from overload_web.infrastructure.db import tables
 from overload_web.main import app
-from overload_web.order_templates.infrastructure import tables
 from overload_web.presentation.deps import templates
 
 

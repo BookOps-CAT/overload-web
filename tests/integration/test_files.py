@@ -3,7 +3,7 @@ import os
 import pytest
 
 from overload_web.domain.models import vendor_files
-from overload_web.files.infrastructure import local_io, sftp
+from overload_web.infrastructure.storage import local_io, sftp
 
 
 @pytest.fixture

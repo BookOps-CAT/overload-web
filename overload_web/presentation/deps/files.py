@@ -7,7 +7,7 @@ from typing import Annotated, BinaryIO, Generator, Protocol, runtime_checkable
 from fastapi import Form, UploadFile
 
 from overload_web.application import file_service
-from overload_web.files.infrastructure import local_io, sftp
+from overload_web.infrastructure.storage import local_io, sftp
 from overload_web.presentation.deps import dto
 
 logger = logging.getLogger(__name__)

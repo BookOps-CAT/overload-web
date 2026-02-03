@@ -1,8 +1,8 @@
 import pytest
 
+from overload_web.domain.errors import OverloadError
 from overload_web.domain.models import bibs
 from overload_web.domain.services import match
-from overload_web.shared.errors import OverloadError
 
 
 @pytest.fixture
