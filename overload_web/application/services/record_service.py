@@ -20,7 +20,8 @@ Classes:
 import logging
 from typing import Any, BinaryIO
 
-from overload_web.domain.services import analysis, match, parse, update
+from overload_web.application.ports import marc_parser
+from overload_web.domain.services import analysis, match, update
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class FullRecordProcessingService:
     def __init__(
         self,
         bib_fetcher: match.BibFetcher,
-        bib_mapper: parse.BibMapper,
+        bib_mapper: marc_parser.BibMapper,
         analyzer: analysis.MatchAnalyzer,
         update_strategy: update.MarcUpdateStrategy,
     ):
@@ -61,7 +62,7 @@ class FullRecordProcessingService:
             bib_fetcher:
                 A `match.BibFetcher` object
             bib_mapper:
-                A `parse.BibMapper` object
+                A `marc_parser.BibMapper` object
             analyzer:
                 An `analysis.MatchAnalyzer` object
             update_strategy:
@@ -69,7 +70,7 @@ class FullRecordProcessingService:
         """
         self.analyzer = analyzer
         self.matcher = match.FullLevelBibMatcher(fetcher=bib_fetcher)
-        self.parser = parse.BibParser(mapper=bib_mapper)
+        self.parser = marc_parser.BibParser(mapper=bib_mapper)
         self.updater = update.BibUpdater(strategy=update_strategy)
 
     def process_vendor_file(self, data: BinaryIO | bytes) -> dict[str, Any]:
@@ -105,7 +106,7 @@ class OrderRecordProcessingService:
     def __init__(
         self,
         bib_fetcher: match.BibFetcher,
-        bib_mapper: parse.BibMapper,
+        bib_mapper: marc_parser.BibMapper,
         analyzer: analysis.MatchAnalyzer,
         update_strategy: update.MarcUpdateStrategy,
     ):
@@ -116,7 +117,7 @@ class OrderRecordProcessingService:
             bib_fetcher:
                 A `match.BibFetcher` object
             bib_mapper:
-                A `parse.BibMapper` object
+                A `marc_parser.BibMapper` object
             analyzer:
                 An `analysis.MatchAnalyzer` object
             update_strategy:
@@ -124,7 +125,7 @@ class OrderRecordProcessingService:
         """
         self.analyzer = analyzer
         self.matcher = match.OrderLevelBibMatcher(fetcher=bib_fetcher)
-        self.parser = parse.BibParser(mapper=bib_mapper)
+        self.parser = marc_parser.BibParser(mapper=bib_mapper)
         self.updater = update.BibUpdater(strategy=update_strategy)
 
     def process_vendor_file(

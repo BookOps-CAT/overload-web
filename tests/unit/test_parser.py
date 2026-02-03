@@ -5,7 +5,7 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain.services import parse
+from overload_web.application.ports import marc_parser
 from overload_web.infrastructure.marc import marc_mapper
 
 
@@ -83,7 +83,7 @@ def stub_bib(library, collection) -> Bib:
 @pytest.fixture
 def full_parser_service(library, get_constants):
     rules = get_constants["mapper_rules"]
-    return parse.BibParser(
+    return marc_parser.BibParser(
         mapper=marc_mapper.FullRecordMarcMapper(
             rules=rules, library=library, record_type="cat"
         )
@@ -93,7 +93,7 @@ def full_parser_service(library, get_constants):
 @pytest.fixture
 def order_parser_service(library, get_constants):
     rules = get_constants["mapper_rules"]
-    return parse.BibParser(
+    return marc_parser.BibParser(
         mapper=marc_mapper.OrderLevelMarcMapper(
             rules=rules, library=library, record_type="acq"
         )

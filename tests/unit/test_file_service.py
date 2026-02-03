@@ -4,7 +4,7 @@ import pytest
 import yaml
 from file_retriever import Client
 
-from overload_web.application import file_service
+from overload_web.application.services import file_service
 from overload_web.domain.models import vendor_files
 from overload_web.infrastructure.storage import local_io, sftp
 

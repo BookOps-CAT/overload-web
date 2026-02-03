@@ -1,6 +1,6 @@
 import pytest
 
-from overload_web.application import record_service
+from overload_web.application.services import record_service
 from overload_web.domain.errors import OverloadError
 from overload_web.domain.models import bibs
 from overload_web.infrastructure.marc import marc_mapper, marc_updater

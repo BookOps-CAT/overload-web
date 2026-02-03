@@ -7,7 +7,7 @@ from typing import Annotated, Any, Generator
 from fastapi import Depends
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.application import template_service
+from overload_web.application.services import template_service
 from overload_web.infrastructure.db import repository
 
 logger = logging.getLogger(__name__)

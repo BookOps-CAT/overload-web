@@ -6,8 +6,9 @@ from typing import Annotated, Any, Generator
 
 from fastapi import Depends, Form
 
-from overload_web.application import record_service
-from overload_web.domain.services import parse, update
+from overload_web.application.ports import marc_parser
+from overload_web.application.services import record_service
+from overload_web.domain.services import update
 from overload_web.infrastructure.marc import marc_mapper, marc_updater
 from overload_web.infrastructure.sierra import clients
 
@@ -43,7 +44,7 @@ def get_mapper(
     library: Annotated[str, Form(...)],
     constants: Annotated[dict[str, Any], Depends(get_constants)],
     record_type: Annotated[str, Form(...)],
-) -> Generator[parse.BibMapper, None, None]:
+) -> Generator[marc_parser.BibMapper, None, None]:
     """Create a MARC mapper based on library and record type."""
     if record_type == "cat":
         yield marc_mapper.FullRecordMarcMapper(
