@@ -1,8 +1,8 @@
 import pandas as pd
 import pytest
 
-from overload_web.bib_records.domain_models import bibs, sierra_responses
-from overload_web.bib_records.domain_services import analysis
+from overload_web.domain.models import bibs, sierra_responses
+from overload_web.domain.services import analysis
 
 
 @pytest.fixture

@@ -20,12 +20,7 @@ Classes:
 import logging
 from typing import Any, BinaryIO
 
-from overload_web.bib_records.domain_services import (
-    analysis,
-    match,
-    parse,
-    update,
-)
+from overload_web.domain.services import analysis, match, parse, update
 
 logger = logging.getLogger(__name__)
 

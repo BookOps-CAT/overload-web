@@ -2,7 +2,7 @@ import datetime
 
 import pytest
 
-from overload_web.bib_records.domain_models import sierra_responses
+from overload_web.domain.models import sierra_responses
 
 
 class TestSierraResponses:

@@ -14,7 +14,7 @@ from typing import Sequence
 
 from sqlmodel import Session, select
 
-from overload_web.order_templates.domain import templates
+from overload_web.domain.models import templates
 from overload_web.order_templates.infrastructure import tables
 
 logger = logging.getLogger(__name__)

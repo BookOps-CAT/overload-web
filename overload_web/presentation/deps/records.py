@@ -7,8 +7,8 @@ from typing import Annotated, Any, Generator
 from fastapi import Depends, Form
 
 from overload_web.application import record_service
-from overload_web.bib_records.domain_services import parse, update
 from overload_web.bib_records.infrastructure import clients, marc_mapper, marc_updater
+from overload_web.domain.services import parse, update
 
 logger = logging.getLogger(__name__)
 

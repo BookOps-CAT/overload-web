@@ -11,7 +11,7 @@ import logging
 from abc import ABC
 from typing import Protocol, runtime_checkable
 
-from overload_web.bib_records.domain_models import bibs, sierra_responses
+from overload_web.domain.models import bibs, sierra_responses
 from overload_web.shared.errors import OverloadError
 
 logger = logging.getLogger(__name__)

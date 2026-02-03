@@ -9,7 +9,7 @@ The classes within this module are concrete implementations of the `FileLoader` 
 
 import os
 
-from overload_web.files.domain import vendor_files
+from overload_web.domain.models import vendor_files
 
 
 class LocalFileLoader:

@@ -14,7 +14,7 @@ import os
 
 from file_retriever import Client, File
 
-from overload_web.files.domain import vendor_files
+from overload_web.domain.models import vendor_files
 
 
 class SFTPFileLoader:

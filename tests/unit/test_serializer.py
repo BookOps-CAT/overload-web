@@ -1,6 +1,6 @@
 import pytest
 
-from overload_web.bib_records.domain_services import serialize
+from overload_web.domain.services import serialize
 
 
 class TestUpdater:

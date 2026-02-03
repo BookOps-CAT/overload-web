@@ -10,8 +10,8 @@ from bookops_marc import Bib
 from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.bib_records.domain_models import bibs, sierra_responses
 from overload_web.bib_records.infrastructure import clients, marc_updater
+from overload_web.domain.models import bibs, sierra_responses
 
 
 @pytest.fixture(scope="session")

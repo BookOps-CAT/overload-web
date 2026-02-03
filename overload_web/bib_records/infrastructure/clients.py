@@ -33,7 +33,7 @@ import requests
 from bookops_bpl_solr import BookopsSolrError, SolrSession
 from bookops_nypl_platform import BookopsPlatformError, PlatformSession, PlatformToken
 
-from overload_web.bib_records.domain_models import sierra_responses
+from overload_web.domain.models import sierra_responses
 
 from ... import __title__, __version__
 

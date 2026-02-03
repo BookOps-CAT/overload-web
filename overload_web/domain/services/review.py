@@ -7,7 +7,7 @@ from collections import Counter
 from itertools import chain
 from typing import Any, Protocol, TypeVar
 
-from overload_web.bib_records.domain_models import bibs
+from overload_web.domain.models import bibs
 
 logger = logging.getLogger(__name__)
 C = TypeVar("C")

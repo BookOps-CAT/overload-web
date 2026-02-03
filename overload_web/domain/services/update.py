@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Protocol, TypeVar
 
-from overload_web.bib_records.domain_models import bibs
+from overload_web.domain.models import bibs
 
 logger = logging.getLogger(__name__)
 

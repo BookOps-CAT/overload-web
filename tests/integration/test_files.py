@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from overload_web.files.domain import vendor_files
+from overload_web.domain.models import vendor_files
 from overload_web.files.infrastructure import local_io, sftp
 
 

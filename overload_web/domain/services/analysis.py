@@ -31,7 +31,7 @@ from __future__ import annotations
 import logging
 from typing import Protocol
 
-from overload_web.bib_records.domain_models import bibs, sierra_responses
+from overload_web.domain.models import bibs, sierra_responses
 
 logger = logging.getLogger(__name__)
 

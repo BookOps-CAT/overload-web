@@ -11,7 +11,7 @@ from typing import Any, BinaryIO
 
 from bookops_marc import Bib, SierraBibReader
 
-from overload_web.bib_records.domain_models import bibs
+from overload_web.domain.models import bibs
 
 logger = logging.getLogger(__name__)
 

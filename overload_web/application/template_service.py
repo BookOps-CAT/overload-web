@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Sequence
 
-from overload_web.order_templates.domain import templates
+from overload_web.domain.models import templates
 
 logger = logging.getLogger(__name__)
 

@@ -8,7 +8,7 @@ from typing import Any, Protocol
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.bib_records.domain_models import bibs
+from overload_web.domain.models import bibs
 
 logger = logging.getLogger(__name__)
 

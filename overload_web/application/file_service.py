@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 
-from overload_web.files.domain import vendor_files
+from overload_web.domain.models import vendor_files
 
 logger = logging.getLogger(__name__)
 

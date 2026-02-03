@@ -5,7 +5,7 @@ import yaml
 from file_retriever import Client
 
 from overload_web.application import file_service
-from overload_web.files.domain import vendor_files
+from overload_web.domain.models import vendor_files
 from overload_web.files.infrastructure import local_io, sftp
 
 

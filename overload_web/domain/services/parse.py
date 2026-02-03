@@ -14,7 +14,7 @@ from typing import (
     runtime_checkable,
 )
 
-from overload_web.bib_records.domain_models import bibs
+from overload_web.domain.models import bibs
 from overload_web.shared.errors import OverloadError
 
 logger = logging.getLogger(__name__)
@@ -93,3 +93,12 @@ class BibParser:
     def extract_barcodes(self, records: list[bibs.DomainBib]) -> list[str]:
         """Extract all barcodes from a list of `DomainBib` objects"""
         return list(itertools.chain.from_iterable([i.barcodes for i in records]))
+
+
+class BarcodeValidator:
+    def ensure_unique(self, bibs: list[bibs.DomainBib]) -> None:
+        barcodes = list(itertools.chain.from_iterable([i.barcodes for i in bibs]))
+        barcode_counter = Counter(barcodes)
+        dupe_barcodes = [i for i, count in barcode_counter.items() if count > 1]
+        if dupe_barcodes:
+            raise OverloadError(f"Duplicate barcodes found in file: {dupe_barcodes}")
