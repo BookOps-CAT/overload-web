@@ -52,13 +52,7 @@ def make_bt_series_full_bib(full_bib, library, collection):
                 "secondary_matchpoint": "oclc_number",
             },
             bib_fields=[
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
+                {"tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;"}
             ],
         )
         full_bib.vendor = "BT SERIES"
@@ -111,13 +105,7 @@ class TestUpdater:
             name="INGRAM",
             matchpoints={"primary_matchpoint": "oclc_number"},
             bib_fields=[
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
+                {"tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;"}
             ],
         )
         original_bib = Bib(full_bib.binary_data, library=full_bib.library)
@@ -138,13 +126,7 @@ class TestUpdater:
             name="INGRAM",
             matchpoints={"primary_matchpoint": "oclc_number"},
             bib_fields=[
-                {
-                    "tag": "949",
-                    "ind1": "",
-                    "ind2": "",
-                    "subfield_code": "a",
-                    "value": "*b2=a;",
-                }
+                {"tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;"}
             ],
         )
         original_bib = Bib(full_bib.binary_data, library=full_bib.library)

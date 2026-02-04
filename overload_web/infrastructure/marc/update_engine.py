@@ -48,50 +48,53 @@ class BibUpdateEngine:
         match self.record_type:
             case "acq":
                 update_steps.MarcFields._apply_order_template(
-                    bib=record, template_data=kwargs["template_data"]
+                    domain_bib=record, template_data=kwargs["template_data"]
                 )
                 update_steps.MarcFields._update_order_fields(
-                    bib_rec=bib,
+                    bib=bib,
                     orders=record.orders,
                     mapping=self.order_mapping,
                 )
             case "cat":
                 update_steps.MarcFields._add_vendor_fields(
-                    bib_rec=bib,
+                    bib=bib,
                     bib_fields=getattr(record.vendor_info, "bib_fields", []),
                 )
-            case _:  # sel
+            case "sel":
                 update_steps.MarcFields._apply_order_template(
-                    bib=record, template_data=kwargs["template_data"]
+                    domain_bib=record, template_data=kwargs["template_data"]
                 )
                 update_steps.MarcFields._update_order_fields(
-                    bib_rec=bib,
+                    bib=bib,
                     orders=record.orders,
                     mapping=self.order_mapping,
                 )
                 update_steps.MarcFields._add_command_tag(
-                    bib_rec=bib, template_data=kwargs["template_data"]
+                    bib=bib, template_data=kwargs["template_data"]
                 )
                 update_steps.MarcFields._set_default_location(
-                    bib_rec=bib, default_loc=self.default_loc
+                    bib=bib, default_loc=self.default_loc
                 )
+            case _:
+                pass
         match self.library:
             case "nypl":
                 update_steps.MarcFields._add_bib_id(
-                    bib_rec=bib, bib_id=record.bib_id, tag=self.bib_id_tag
+                    bib=bib, bib_id=record.bib_id, tag=self.bib_id_tag
                 )
-                update_steps.MarcFields._update_leader(bib_rec=bib)
-                update_steps.MarcFields._update_910_field(bib_rec=bib)
+                update_steps.MarcFields._update_leader(bib=bib)
+                update_steps.MarcFields._update_910_field(bib=bib)
                 update_steps.MarcFields._update_bt_series_call_no(
-                    bib_rec=bib,
+                    bib=bib,
                     collection=record.collection,
                     vendor=record.vendor,
                     record_type=record.record_type,
                 )
-            case _:  # bpl
+            case "bpl":
                 update_steps.MarcFields._add_bib_id(
-                    bib_rec=bib, bib_id=record.bib_id, tag=self.bib_id_tag
+                    bib=bib, bib_id=record.bib_id, tag=self.bib_id_tag
                 )
-                update_steps.MarcFields._update_leader(bib_rec=bib)
+                update_steps.MarcFields._update_leader(bib=bib)
+            case _:
+                pass
         record.binary_data = bib.as_marc()
-        # return record
