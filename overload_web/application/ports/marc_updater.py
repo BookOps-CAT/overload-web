@@ -15,10 +15,7 @@ class MarcUpdaterPort(Protocol[T]):
     """Port defining what the application expects from a MARC updater."""
 
     def apply_updates(
-        self,
-        record: bibs.DomainBib,
-        *,
-        template_data: dict[str, Any] | None = None,
-    ) -> bibs.DomainBib:
+        self, record: bibs.DomainBib, *, template_data: dict[str, Any] | None = None
+    ) -> None:
         """Update a MARC record according to rules and record type."""
         ...

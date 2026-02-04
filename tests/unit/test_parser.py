@@ -84,9 +84,7 @@ def stub_bib(library, collection) -> Bib:
 def full_parser_service(library, get_constants):
     rules = get_constants["mapper_rules"]
     return marc_parser.BibParser(
-        mapper=marc_mapper.FullRecordMarcMapper(
-            rules=rules, library=library, record_type="cat"
-        )
+        mapper=marc_mapper.MarcMapper(rules=rules, library=library, record_type="cat")
     )
 
 
@@ -94,9 +92,7 @@ def full_parser_service(library, get_constants):
 def order_parser_service(library, get_constants):
     rules = get_constants["mapper_rules"]
     return marc_parser.BibParser(
-        mapper=marc_mapper.OrderLevelMarcMapper(
-            rules=rules, library=library, record_type="acq"
-        )
+        mapper=marc_mapper.MarcMapper(rules=rules, library=library, record_type="acq")
     )
 
 

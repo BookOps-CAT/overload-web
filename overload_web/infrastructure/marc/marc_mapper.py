@@ -6,7 +6,6 @@ Includes `BookopsMarcMapper` class to parse records using `bookops_marc` and `py
 from __future__ import annotations
 
 import logging
-from abc import ABC, abstractmethod
 from typing import Any, BinaryIO
 
 from bookops_marc import Bib, SierraBibReader
@@ -16,7 +15,7 @@ from overload_web.domain.models import bibs
 logger = logging.getLogger(__name__)
 
 
-class BaseMarcMapper(ABC):
+class MarcMapper:
     """Parses binary MARC data using `bookops_marc`."""
 
     def __init__(self, library: str, record_type: str, rules: dict[str, Any]) -> None:
@@ -107,13 +106,6 @@ class BaseMarcMapper(ABC):
         out["record_type"] = self.record_type
         return out
 
-    @abstractmethod
-    def map_data(self, record: Bib) -> dict[str, Any]: ...  # pragma: no branch
-
-
-class FullRecordMarcMapper(BaseMarcMapper):
-    """Parses binary MARC data using `bookops_marc`."""
-
     def identify_vendor(self, record: Bib) -> dict[str, Any]:
         """Determine the vendor who created a `bookops_marc.Bib` record."""
         vendor_rules = self.rules["vendors"][self.library.casefold()]
@@ -142,34 +134,25 @@ class FullRecordMarcMapper(BaseMarcMapper):
             "matchpoints": vendor_rules["UNKNOWN"]["matchpoints"],
         }
 
-    def map_data(self, record: Bib) -> dict[str, Any]:
+    def map_data(self, record: Bib, **kwargs) -> dict[str, Any]:
         """
         Build a dictionary representing a `DomainBib` object from a
         `bookops_marc.Bib` object and a set of mapping rules.
 
         Args:
-            record: MARC record represented as a `bookops_marc.Bib` object.
+            record:
+                MARC record represented as a `bookops_marc.Bib` object.
+            vendor:
+                The vendor whose records are being parsed (for order-level
+                records only)
 
         Returns:
             a dictionary containing a mapping between a `bookops_marc.Bib` object
             and a `DomainBib` object.
         """
         out = self._map_data(record=record)
-        out["vendor_info"] = bibs.VendorInfo(**self.identify_vendor(record=record))
+        if out["record_type"] == "cat":
+            out["vendor_info"] = bibs.VendorInfo(**self.identify_vendor(record=record))
+        else:
+            out["vendor"] = kwargs["vendor"]
         return out
-
-
-class OrderLevelMarcMapper(BaseMarcMapper):
-    def map_data(self, record: Bib) -> dict[str, Any]:
-        """
-        Build a dictionary representing a `DomainBib` object from a
-        `bookops_marc.Bib` object and a set of mapping rules.
-
-        Args:
-            record: MARC record represented as a `bookops_marc.Bib` object.
-
-        Returns:
-            a dictionary containing a mapping between a `bookops_marc.Bib` object
-            and a `DomainBib` object.
-        """
-        return self._map_data(record=record)

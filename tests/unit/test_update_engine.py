@@ -265,5 +265,5 @@ class TestUpdater:
             updater_service.apply_updates(input_bib)
         assert (
             str(exc.value)
-            == "Constructed call number does not match original. New=FOO J FIC SNICKET, Original=FIC SNICKET"
+            == "Constructed call number does not match original. New=FIC SNICKET, Original=FOO J FIC SNICKET"
         )

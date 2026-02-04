@@ -32,7 +32,7 @@ class BibMapper(Protocol[T]):
 
     """Instantiate an object that can read MARC binary as an iterator."""
 
-    def map_data(self, record: T) -> dict[str, Any]: ...  # pragma: no branch
+    def map_data(self, record: T, **kwargs) -> dict[str, Any]: ...  # pragma: no branch
 
     """Map MARC record to a domain object representing the record."""
 
@@ -56,6 +56,7 @@ class BibParser:
 
         Args:
             data: MARC data represented in binary format
+            vendor: the vendor whose records are being parsed
 
         Returns:
             a list of `DomainBib` objects mapped using `BibMapper``
@@ -63,9 +64,7 @@ class BibParser:
         reader = self.mapper.get_reader(data)
         parsed = []
         for record in reader:
-            bib_dict = self.mapper.map_data(record)
-            if bib_dict["record_type"] in ["acq", "sel"]:
-                bib_dict["vendor"] = vendor
+            bib_dict = self.mapper.map_data(record, vendor=vendor)
             bib = bibs.DomainBib(**bib_dict)
             logger.info(f"Vendor record parsed: {bib}")
             parsed.append(bib)

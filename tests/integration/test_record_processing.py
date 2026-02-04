@@ -10,42 +10,23 @@ from overload_web.infrastructure.marc import marc_mapper, update_engine
 def service_components(
     fake_fetcher, get_constants, library, collection, record_type
 ) -> tuple:
-    if record_type == "cat":
-        return (
-            fake_fetcher,
-            marc_mapper.FullRecordMarcMapper(
-                rules=get_constants["mapper_rules"],
-                library=library,
-                record_type=record_type,
-            ),
-            record_service.MatchAnalyzerFactory().make(
-                library=library, record_type=record_type, collection=collection
-            ),
-            update_engine.BibUpdateEngine(
-                rules=get_constants,
-                record_type=record_type,
-                library=library,
-                collection=collection,
-            ),
-        )
-    else:
-        return (
-            fake_fetcher,
-            marc_mapper.OrderLevelMarcMapper(
-                rules=get_constants["mapper_rules"],
-                library=library,
-                record_type=record_type,
-            ),
-            record_service.MatchAnalyzerFactory().make(
-                library=library, record_type=record_type, collection=collection
-            ),
-            update_engine.BibUpdateEngine(
-                rules=get_constants,
-                record_type=record_type,
-                library=library,
-                collection=collection,
-            ),
-        )
+    return (
+        fake_fetcher,
+        marc_mapper.MarcMapper(
+            rules=get_constants["mapper_rules"],
+            library=library,
+            record_type=record_type,
+        ),
+        record_service.MatchAnalyzerFactory().make(
+            library=library, record_type=record_type, collection=collection
+        ),
+        update_engine.BibUpdateEngine(
+            rules=get_constants,
+            record_type=record_type,
+            library=library,
+            collection=collection,
+        ),
+    )
 
 
 class TestRecordProcessingService:

@@ -45,14 +45,9 @@ def get_mapper(
     record_type: Annotated[str, Form(...)],
 ) -> Generator[marc_parser.BibMapper, None, None]:
     """Create a MARC mapper based on library and record type."""
-    if record_type == "cat":
-        yield marc_mapper.FullRecordMarcMapper(
-            record_type=record_type, library=library, rules=constants["mapper_rules"]
-        )
-    else:
-        yield marc_mapper.OrderLevelMarcMapper(
-            record_type=record_type, library=library, rules=constants["mapper_rules"]
-        )
+    yield marc_mapper.MarcMapper(
+        record_type=record_type, library=library, rules=constants["mapper_rules"]
+    )
 
 
 def get_update_strategy(
@@ -68,7 +63,7 @@ def get_update_strategy(
 
 def order_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
-    mapper: Annotated[marc_mapper.OrderLevelMarcMapper, Depends(get_mapper)],
+    mapper: Annotated[marc_mapper.MarcMapper, Depends(get_mapper)],
     analyzer: Annotated[
         record_service.match_analysis.MatchAnalyzer, Depends(get_match_analyzer)
     ],
@@ -85,7 +80,7 @@ def order_level_processing_service(
 
 def full_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
-    mapper: Annotated[marc_mapper.FullRecordMarcMapper, Depends(get_mapper)],
+    mapper: Annotated[marc_mapper.MarcMapper, Depends(get_mapper)],
     analyzer: Annotated[
         record_service.match_analysis.MatchAnalyzer, Depends(get_match_analyzer)
     ],

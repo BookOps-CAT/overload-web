@@ -44,12 +44,12 @@ class BibUpdateEngine:
         Returns:
             An updated records as a `DomainBib` object
         """
+        if self.record_type in ["acq", "sel"]:
+            record.apply_order_template(kwargs["template_data"])
         bib = self.create_bib(record=record)
+
         match self.record_type:
             case "acq":
-                update_steps.MarcFields._apply_order_template(
-                    domain_bib=record, template_data=kwargs["template_data"]
-                )
                 update_steps.MarcFields._update_order_fields(
                     bib=bib,
                     orders=record.orders,
@@ -61,16 +61,13 @@ class BibUpdateEngine:
                     bib_fields=getattr(record.vendor_info, "bib_fields", []),
                 )
             case "sel":
-                update_steps.MarcFields._apply_order_template(
-                    domain_bib=record, template_data=kwargs["template_data"]
-                )
                 update_steps.MarcFields._update_order_fields(
                     bib=bib,
                     orders=record.orders,
                     mapping=self.order_mapping,
                 )
                 update_steps.MarcFields._add_command_tag(
-                    bib=bib, template_data=kwargs["template_data"]
+                    bib=bib, format=kwargs["template_data"].get("format")
                 )
                 update_steps.MarcFields._set_default_location(
                     bib=bib, default_loc=self.default_loc
