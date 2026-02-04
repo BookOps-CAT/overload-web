@@ -2,6 +2,7 @@ import os
 
 import pytest
 
+from overload_web.application.ports import files as file_port
 from overload_web.domain.models import files
 from overload_web.infrastructure.storage import local_io, sftp
 
@@ -19,8 +20,8 @@ class TestLocalFiles:
     def test_local_objs(self, tmp_path):
         loader = local_io.LocalFileLoader()
         writer = local_io.LocalFileWriter()
-        assert isinstance(loader, files.FileLoader)
-        assert isinstance(writer, files.FileWriter)
+        assert isinstance(loader, file_port.FileLoader)
+        assert isinstance(writer, file_port.FileWriter)
 
     def test_local_load(self, tmp_path, tmp_file):
         loader = local_io.LocalFileLoader()
@@ -44,18 +45,18 @@ class TestLocalFiles:
 
     def test_sftp_loader(self, mock_sftp_client):
         loader = sftp.SFTPFileLoader(client=mock_sftp_client)
-        assert isinstance(loader, files.FileLoader)
+        assert isinstance(loader, file_port.FileLoader)
         assert hasattr(loader, "list")
         assert hasattr(loader, "load")
         assert loader.client.name == "FOO"
-        assert isinstance(loader, files.FileLoader)
+        assert isinstance(loader, file_port.FileLoader)
 
     def test_sftp_writer(self, mock_sftp_client):
         writer = sftp.SFTPFileWriter(client=mock_sftp_client)
-        assert isinstance(writer, files.FileWriter)
+        assert isinstance(writer, file_port.FileWriter)
         assert hasattr(writer, "write")
         assert writer.client.name == "FOO"
-        assert isinstance(writer, files.FileWriter)
+        assert isinstance(writer, file_port.FileWriter)
 
     def test_sftp_list(self, mock_sftp_client):
         loader = sftp.SFTPFileLoader(client=mock_sftp_client)

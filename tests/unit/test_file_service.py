@@ -4,17 +4,18 @@ import pytest
 import yaml
 from file_retriever import Client
 
+from overload_web.application.ports import files as file_port
 from overload_web.application.services import file_service
 from overload_web.domain.models import files
 from overload_web.infrastructure.storage import local_io, sftp
 
 
-class StubFileLoader(files.FileLoader):
+class StubFileLoader(file_port.FileLoader):
     def __init__(self) -> None:
         pass
 
 
-class StubFileWriter(files.FileWriter):
+class StubFileWriter(file_port.FileWriter):
     def __init__(self) -> None:
         pass
 
