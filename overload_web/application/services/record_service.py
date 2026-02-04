@@ -97,8 +97,8 @@ class FullRecordProcessingService:
             analysis = self.analyzer.analyze(record=record, candidates=candidates)
             out["report"].append(analysis)
             record.apply_match(analysis)
-            updated = self.updater.update(record=record)
-            out["records"].append(updated)
+            self.updater.apply_updates(record=record)
+            out["records"].append(record)
         return out
 
 
@@ -166,6 +166,6 @@ class OrderRecordProcessingService:
             analysis = self.analyzer.analyze(record=record, candidates=candidates)
             out["report"].append(analysis)
             record.apply_match(analysis)
-            updated = self.updater.update(record=record, template_data=template_data)
-            out["records"].append(updated)
+            self.updater.apply_updates(record=record, template_data=template_data)
+            out["records"].append(record)
         return out

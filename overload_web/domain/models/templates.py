@@ -60,4 +60,4 @@ class SqlRepositoryProtocol(Protocol[T]):
 
     def save(self, obj: T) -> T: ...  # pragma: no branch
 
-    def update(self, id: str, data: T) -> T | None: ...  # pragma: no branch
+    def apply_updates(self, id: str, data: T) -> T | None: ...  # pragma: no branch

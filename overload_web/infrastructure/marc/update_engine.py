@@ -30,7 +30,7 @@ class BibUpdateEngine:
     def create_bib(self, record: bibs.DomainBib) -> Bib:
         return Bib(record.binary_data, library=record.library)  # type: ignore
 
-    def update(self, record: bibs.DomainBib, **kwargs: Any) -> bibs.DomainBib:
+    def apply_updates(self, record: bibs.DomainBib, **kwargs: Any) -> None:
         """
         Update a bibliographic record.
 
@@ -94,4 +94,4 @@ class BibUpdateEngine:
                 )
                 update_steps.MarcFields._update_leader(bib_rec=bib)
         record.binary_data = bib.as_marc()
-        return record
+        # return record

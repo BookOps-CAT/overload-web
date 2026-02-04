@@ -14,7 +14,7 @@ T = TypeVar("T", covariant=True)  # variable bookops_marc `Bib` type
 class MarcUpdaterPort(Protocol[T]):
     """Port defining what the application expects from a MARC updater."""
 
-    def update(
+    def apply_updates(
         self,
         record: bibs.DomainBib,
         *,

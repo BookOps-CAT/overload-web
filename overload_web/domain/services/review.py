@@ -172,7 +172,7 @@ class BibReviewer:
         if all(i.record_type == "cat" for i in records):
             deduped_recs = self.dedupe(records=records, reports=reports)
             self.validate(record_batches=deduped_recs, barcodes=barcodes)
-            out.update(deduped_recs)
+            out.apply_updates(deduped_recs)
             return deduped_recs
         return {"NEW": records}
 

@@ -81,4 +81,4 @@ class OrderTemplateService:
             The updated template as an `OrderTemplate` or None if the template
             does not exist.
         """
-        return self.repo.update(id=template_id, data=obj)
+        return self.repo.apply_updates(id=template_id, data=obj)

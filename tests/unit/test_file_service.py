@@ -135,7 +135,7 @@ class TestSFTPFiles:
         yield client
         for file in client.session.connection.listdir():
             client.session.connection.remove(file)
-        os.environ.update(
+        os.environ.apply_updates(
             {
                 "NSDROP_USER": "foo",
                 "NSDROP_PASSWORD": "bar",
