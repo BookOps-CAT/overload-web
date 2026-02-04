@@ -5,16 +5,16 @@ import yaml
 from file_retriever import Client
 
 from overload_web.application.services import file_service
-from overload_web.domain.models import vendor_files
+from overload_web.domain.models import files
 from overload_web.infrastructure.storage import local_io, sftp
 
 
-class StubFileLoader(vendor_files.FileLoader):
+class StubFileLoader(files.FileLoader):
     def __init__(self) -> None:
         pass
 
 
-class StubFileWriter(vendor_files.FileWriter):
+class StubFileWriter(files.FileWriter):
     def __init__(self) -> None:
         pass
 
@@ -26,15 +26,15 @@ class FakeFileLoader(StubFileLoader):
     def list(self, dir: str) -> list[str]:
         return ["foo.mrc"]
 
-    def load(self, name: str, dir: str) -> vendor_files.VendorFile:
-        return vendor_files.VendorFile(file_name=name, content=b"")
+    def load(self, name: str, dir: str) -> files.VendorFile:
+        return files.VendorFile(file_name=name, content=b"")
 
 
 class FakeFileWriter(StubFileWriter):
     def __init__(self) -> None:
         pass
 
-    def write(self, file: vendor_files.VendorFile, dir: str) -> str:
+    def write(self, file: files.VendorFile, dir: str) -> str:
         return file.file_name
 
 
@@ -62,12 +62,12 @@ class TestFileWriterServices:
 
     def test_service_protocols(self):
         service = file_service.FileWriterService(writer=StubFileWriter())
-        vendor_file = vendor_files.VendorFile(file_name="foo.mrc", content=b"")
+        vendor_file = files.VendorFile(file_name="foo.mrc", content=b"")
         assert service.write_marc_file(file=vendor_file, dir="bar") is None
 
     def test_write_marc_file(self):
         out_file = self.writer.write(
-            file=vendor_files.VendorFile(file_name="foo.mrc", content=b""),
+            file=files.VendorFile(file_name="foo.mrc", content=b""),
             dir="bar",
         )
         assert out_file == "foo.mrc"
@@ -103,7 +103,7 @@ class TestLiveLocalFiles:
 
     def test_write(self, setup_dirs):
         writer = local_io.LocalFileWriter()
-        file = vendor_files.VendorFile(
+        file = files.VendorFile(
             id="foo.mrc", file_name="foo.mrc", content=b"Test content"
         )
         new_file = writer.write(file=file, dir=self.test_dir)
@@ -146,7 +146,7 @@ class TestSFTPFiles:
     def test_write(self, live_test_client):
         writer = sftp.SFTPFileWriter(client=live_test_client)
         outfile = writer.write(
-            file=vendor_files.VendorFile(
+            file=files.VendorFile(
                 id="test_bib.mrc",
                 file_name="test_bib.mrc",
                 content=b"02741pam  a2200445 a 4500",

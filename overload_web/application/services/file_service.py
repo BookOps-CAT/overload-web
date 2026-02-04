@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 
-from overload_web.domain.models import vendor_files
+from overload_web.domain.models import files
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class FileTransferService:
     """Handles file transfer operations through `FileLoader`."""
 
-    def __init__(self, loader: vendor_files.FileLoader):
+    def __init__(self, loader: files.FileLoader):
         """
         Initialize `FileTransferService`.
 
@@ -38,7 +38,7 @@ class FileTransferService:
         logger.info(f"Files in {dir}: {files}")
         return files
 
-    def load_file(self, name: str, dir: str) -> vendor_files.VendorFile:
+    def load_file(self, name: str, dir: str) -> files.VendorFile:
         """
         Load a file from a directory.
 
@@ -57,7 +57,7 @@ class FileTransferService:
 class FileWriterService:
     """Handles file writing operations through `FileWriter`."""
 
-    def __init__(self, writer: vendor_files.FileWriter):
+    def __init__(self, writer: files.FileWriter):
         """
         Initialize `FileWriterService`.
 
@@ -66,7 +66,7 @@ class FileWriterService:
         """
         self.writer = writer
 
-    def write_marc_file(self, file: vendor_files.VendorFile, dir: str) -> str:
+    def write_marc_file(self, file: files.VendorFile, dir: str) -> str:
         """
         Write a file to a directory.
 

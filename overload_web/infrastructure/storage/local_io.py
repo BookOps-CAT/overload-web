@@ -9,7 +9,7 @@ The classes within this module are concrete implementations of the `FileLoader` 
 
 import os
 
-from overload_web.domain.models import vendor_files
+from overload_web.domain.models import files
 
 
 class LocalFileLoader:
@@ -24,10 +24,10 @@ class LocalFileLoader:
         """List available files in a local directory."""
         return os.listdir(dir)
 
-    def load(self, name: str, dir: str) -> vendor_files.VendorFile:
+    def load(self, name: str, dir: str) -> files.VendorFile:
         """Load a file from a local directory."""
         with open(os.path.join(dir, name), "rb") as fh:
-            file_dto = vendor_files.VendorFile(content=fh.read(), file_name=name)
+            file_dto = files.VendorFile(content=fh.read(), file_name=name)
         return file_dto
 
 
@@ -39,7 +39,7 @@ class LocalFileWriter:
     to files within a specific directory on a local computer.
     """
 
-    def write(self, file: vendor_files.VendorFile, dir: str) -> str:
+    def write(self, file: files.VendorFile, dir: str) -> str:
         """Write a file to a local directory."""
         path = os.path.join(dir, file.file_name)
         with open(path, "wb") as f:
