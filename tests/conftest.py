@@ -10,6 +10,7 @@ from bookops_marc import Bib
 from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 
+from overload_web.application.ports import marc_updater
 from overload_web.domain.models import bibs, sierra_responses
 from overload_web.infrastructure.marc import update_engine
 from overload_web.infrastructure.sierra import clients
@@ -657,6 +658,12 @@ def update_strategy(library, record_type, collection) -> update_engine.BibUpdate
         "bib_id_tag": {"nypl": "945", "bpl": "907"},
         "default_locations": {"nypl": {"BL": "zzzzz", "RL": "xxx"}, "bpl": {}},
     }
-    return update_engine.BibUpdateEngine(
-        library=library, rules=constants, record_type=record_type, collection=collection
+    return marc_updater.BibUpdater(
+        engine=update_engine.BibUpdateEngine(
+            library=library,
+            order_mapping=constants["update_order_mapping"],
+            default_loc=constants["default_locations"][library].get(collection),
+            bib_id_tag=constants["bib_id_tag"][library],
+            record_type=record_type,
+        )
     )

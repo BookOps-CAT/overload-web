@@ -1,5 +1,6 @@
 import pytest
 
+from overload_web.application.ports import marc_updater
 from overload_web.application.services import record_service
 from overload_web.domain.errors import OverloadError
 from overload_web.domain.models import bibs
@@ -20,11 +21,14 @@ def service_components(
         record_service.MatchAnalyzerFactory().make(
             library=library, record_type=record_type, collection=collection
         ),
-        update_engine.BibUpdateEngine(
-            rules=get_constants,
-            record_type=record_type,
-            library=library,
-            collection=collection,
+        marc_updater.BibUpdater(
+            engine=update_engine.BibUpdateEngine(
+                library=library,
+                order_mapping=get_constants["update_order_mapping"],
+                default_loc=get_constants["default_locations"][library].get(collection),
+                bib_id_tag=get_constants["bib_id_tag"][library],
+                record_type=record_type,
+            )
         ),
     )
 

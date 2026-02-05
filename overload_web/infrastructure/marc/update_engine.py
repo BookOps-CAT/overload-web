@@ -18,17 +18,15 @@ class BibUpdateEngine:
     def __init__(
         self,
         library: str,
-        rules: dict[str, Any],
+        order_mapping: dict[str, Any],
+        default_loc: str,
+        bib_id_tag: str,
         record_type: str,
-        collection: str | None,
     ) -> None:
-        self.rules = vendor_rules.VendorRules(
-            library=library,
-            record_type=record_type,
-            order_mapping=rules["update_order_mapping"],
-            default_loc=rules["default_locations"][library].get(collection),
-            bib_id_tag=rules["bib_id_tag"][library],
-        )
+        self.library = library
+        self.order_mapping = order_mapping
+        self.default_loc = default_loc
+        self.bib_id_tag = bib_id_tag
         self.record_type = record_type
 
     def _get_call_no_field(self, bib: Bib) -> str | None:
@@ -47,7 +45,9 @@ class BibUpdateEngine:
     def create_bib(self, record: bibs.DomainBib) -> Bib:
         return Bib(record.binary_data, library=record.library)  # type: ignore
 
-    def apply_updates(self, record: bibs.DomainBib, **kwargs: Any) -> None:
+    def apply_updates(
+        self, record: bibs.DomainBib, updates: list[Any], bib: Bib
+    ) -> None:
         """
         Update a bibliographic record.
 
@@ -61,22 +61,11 @@ class BibUpdateEngine:
         Returns:
             An updated records as a `DomainBib` object
         """
-        template_data = kwargs.get("template_data", {})
-        if self.record_type in ["acq", "sel"]:
-            record.apply_order_template(template_data)
-        bib = self.create_bib(record=record)
-
-        updates = self.rules.fields_to_update(
-            record=record,
-            format=template_data.get("format"),
-            call_no=self._get_call_no_field(bib),
-            field=self._get_command_tag_field(bib),
-        )
         for update in updates:
-            if not update:
-                continue
             if update.delete:
                 bib.remove_fields(update.tag)
+            if update.original:
+                bib.remove_field(update.original)
             bib.add_ordered_field(
                 Field(
                     tag=update.tag,

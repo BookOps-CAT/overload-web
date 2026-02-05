@@ -4,6 +4,7 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
+from overload_web.application.ports import marc_updater
 from overload_web.domain.models import bibs
 from overload_web.infrastructure.marc import update_engine
 
@@ -72,11 +73,14 @@ class TestUpdater:
             "bib_id_tag": {"nypl": "945", "bpl": "907"},
             "default_locations": {"nypl": {"BL": "zzzzz", "RL": "xxx"}, "bpl": {}},
         }
-        return update_engine.BibUpdateEngine(
-            library=library,
-            rules=constants,
-            record_type=record_type,
-            collection=collection,
+        return marc_updater.BibUpdater(
+            engine=update_engine.BibUpdateEngine(
+                library=library,
+                order_mapping=constants["update_order_mapping"],
+                default_loc=constants["default_locations"][library].get(collection),
+                bib_id_tag=constants["bib_id_tag"][library],
+                record_type=record_type,
+            )
         )
 
     @pytest.mark.parametrize(
@@ -91,7 +95,7 @@ class TestUpdater:
         """Adds bib_id to appropriate tag"""
         full_bib.bib_id = "12345"
         original_bib = Bib(full_bib.binary_data, library=full_bib.library)
-        updater_service.apply_updates(record=full_bib)
+        updater_service.update_record(record=full_bib)
         updated_bib = Bib(full_bib.binary_data, library=full_bib.library)
         assert len(original_bib.get_fields(tag)) == 0
         assert len(updated_bib.get_fields(tag)) == 1
@@ -111,7 +115,7 @@ class TestUpdater:
             ],
         )
         original_bib = Bib(full_bib.binary_data, library=full_bib.library)
-        updater_service.apply_updates(record=full_bib)
+        updater_service.update_record(record=full_bib)
         assert len(original_bib.get_fields("949")) == 1
         assert (
             len(Bib(full_bib.binary_data, library=full_bib.library).get_fields("949"))
@@ -133,7 +137,7 @@ class TestUpdater:
             ],
         )
         original_bib = Bib(full_bib.binary_data, library=full_bib.library)
-        updater_service.apply_updates(record=full_bib)
+        updater_service.update_record(record=full_bib)
         assert len(original_bib.get_fields("949")) == 0
         assert (
             len(Bib(full_bib.binary_data, library=full_bib.library).get_fields("949"))
@@ -151,7 +155,7 @@ class TestUpdater:
     def test_update_template_data(self, order_level_bib, updater_service):
         """Updates orders based on template data."""
         original_orders = copy.deepcopy(order_level_bib.orders)
-        updater_service.apply_updates(
+        updater_service.update_record(
             order_level_bib,
             template_data={"name": "Foo", "order_code_1": "b", "format": "a"},
         )
@@ -178,7 +182,7 @@ class TestUpdater:
         """Updates existing command tag with default location."""
         input_bib = bib_with_command_tag(original)
         original_bib = Bib(input_bib.binary_data, library=input_bib.library)
-        updater_service.apply_updates(input_bib, template_data={})
+        updater_service.update_record(input_bib, template_data={})
         updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
         assert [i.value() for i in original_bib.get_fields("949")] == [
             "333331234567890",
@@ -203,7 +207,7 @@ class TestUpdater:
         """Checks for existing command tag based on format. Updates with default location."""
         input_bib = bib_with_command_tag("*b2=a;")
         original_bib = Bib(input_bib.binary_data, library=input_bib.library)
-        updater_service.apply_updates(input_bib, template_data={"format": "a"})
+        updater_service.update_record(input_bib, template_data={"format": "a"})
         updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
         assert len(updated_bib.get_fields("949")) == 2
         assert len(original_bib.get_fields("949")) == 2
@@ -229,7 +233,7 @@ class TestUpdater:
     ):
         """Adds command tag with default location."""
         original_bib = Bib(order_level_bib.binary_data, library=order_level_bib.library)
-        updater_service.apply_updates(order_level_bib, template_data={})
+        updater_service.update_record(order_level_bib, template_data={})
         updated_bib = Bib(order_level_bib.binary_data, library=order_level_bib.library)
         assert len(updated_bib.get_fields("949")) == field_count
         assert len(original_bib.get_fields("949")) == 1
@@ -260,7 +264,7 @@ class TestUpdater:
     ):
         input_bib = make_bt_series_full_bib(pairs)
         original_bib = Bib(input_bib.binary_data, library=input_bib.library)
-        updater_service.apply_updates(input_bib)
+        updater_service.update_record(input_bib)
         updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
         assert updated_bib.get_fields("091")[0].value() == " ".join(
             [i for i in pairs.values()]
@@ -282,7 +286,7 @@ class TestUpdater:
             {"z": "FOO", "p": "J", "a": "FIC", "c": "SNICKET"}
         )
         with pytest.raises(ValueError) as exc:
-            updater_service.apply_updates(input_bib)
+            updater_service.update_record(input_bib)
         assert (
             str(exc.value)
             == "Constructed call number does not match original. New=FIC SNICKET, Original=FOO J FIC SNICKET"

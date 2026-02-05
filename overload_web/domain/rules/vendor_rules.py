@@ -1,5 +1,3 @@
-"""Record updaters for MARC records using bookops_marc and pymarc."""
-
 from __future__ import annotations
 
 import logging
@@ -12,91 +10,65 @@ logger = logging.getLogger(__name__)
 
 
 class VendorRules:
-    def __init__(
-        self,
-        library: str,
-        record_type: str,
-        order_mapping: dict[str, Any],
-        bib_id_tag: str,
-        default_loc: str,
-    ) -> None:
-        self.record_type = record_type
-        self.library = library
-        self.order_mapping = order_mapping
-        self.default_loc = default_loc
-        self.bib_id_tag = bib_id_tag
-
+    @staticmethod
     def fields_to_update(
-        self,
         record: bibs.DomainBib,
-        format: str | None,
         call_no: str | None,
-        field: Any | None,
+        command_tag: Any | None,
+        record_type: str,
+        library: str,
+        order_mapping: dict[str, Any],
+        default_loc: str | None,
+        bib_id_tag: str,
+        template_data: dict[str, Any],
     ) -> list[Any]:
-        """
-        Update a bibliographic record.
-
-        Args:
-            record:
-                A parsed bibliographic record
-            template_data:
-                A dictionary containing template data to be used in updating records.
-                This kwarg is only used for order-level records.
-
-        Returns:
-            An updated records as a `DomainBib` object
-        """
         updates: list[Any] = []
 
-        if self.record_type == "cat":
-            updates.extend(
-                FieldRules.add_vendor_fields(
-                    bib_fields=getattr(record.vendor_info, "bib_fields", []),
-                )
-            )
-        elif self.record_type == "sel":
-            updates.extend(
-                FieldRules.update_order_fields(
-                    orders=record.orders, mapping=self.order_mapping
-                )
-            )
-            updates.append(
-                FieldRules.add_command_tag_and_default_loc(
-                    field=field, format=format, default_loc=self.default_loc
-                )
-            )
+        if record_type == "cat":
+            bib_fields = getattr(record.vendor_info, "bib_fields", [])
+            updates.extend(FieldRules.add_vendor_fields(bib_fields=bib_fields))
         else:
             updates.extend(
                 FieldRules.update_order_fields(
-                    orders=record.orders, mapping=self.order_mapping
+                    record=record,
+                    mapping=order_mapping,
+                    template_data=template_data,
                 )
             )
-        updates.append(FieldRules.add_bib_id(bib_id=record.bib_id, tag=self.bib_id_tag))
-        if self.library == "nypl":
+            if record_type == "sel":
+                format = template_data.get("format")
+                updates.append(
+                    FieldRules.add_command_tag(
+                        field=command_tag, format=format, default_loc=default_loc
+                    )
+                )
+        updates.append(FieldRules.add_bib_id(bib_id=record.bib_id, tag=bib_id_tag))
+        if library == "nypl":
             updates.append(FieldRules.update_910_field(collection=record.collection))
-            if record.collection == "BL" and self.record_type == "cat":
+            if record.collection == "BL" and record_type == "cat":
                 updates.append(
                     FieldRules.update_bt_series_call_no(
                         call_no=call_no, vendor=record.vendor
                     )
                 )
-        return updates
+        return [i for i in updates if i]
 
 
 @dataclass
-class MarcFieldObj:
+class MarcFieldUpdate:
     delete: bool
     tag: str
     ind1: str
     ind2: str
     subfields: list[dict[str, str]]
+    original: Any | None = None
 
 
 class FieldRules:
     @staticmethod
-    def add_bib_id(bib_id: str | None, tag: str) -> MarcFieldObj | None:
+    def add_bib_id(bib_id: str | None, tag: str) -> MarcFieldUpdate | None:
         if bib_id:
-            return MarcFieldObj(
+            return MarcFieldUpdate(
                 delete=True,
                 tag=tag,
                 ind1=" ",
@@ -106,9 +78,9 @@ class FieldRules:
         return None
 
     @staticmethod
-    def add_command_tag_and_default_loc(
+    def add_command_tag(
         format: str | None, default_loc: str | None, field: Any | None
-    ) -> MarcFieldObj | None:
+    ) -> MarcFieldUpdate | None:
         if not format and not default_loc:
             return None
         if not field:
@@ -118,14 +90,14 @@ class FieldRules:
                     command_tag = f"*b2={format};bn={default_loc};"
                 else:
                     command_tag = f"*b2={format};"
-                return MarcFieldObj(
+                return MarcFieldUpdate(
                     delete=False,
                     tag="949",
                     ind1=" ",
                     ind2=" ",
                     subfields=[{"code": "a", "value": command_tag}],
                 )
-            return MarcFieldObj(
+            return MarcFieldUpdate(
                 delete=False,
                 tag="949",
                 ind1=" ",
@@ -138,17 +110,30 @@ class FieldRules:
         if "bn=" in command_tag:
             return None
         elif "bn=" not in command_tag[-1] == ";":
-            field["a"] = f"{command_tag}bn={default_loc};"
+            return MarcFieldUpdate(
+                delete=False,
+                tag="949",
+                ind1=" ",
+                ind2=" ",
+                subfields=[{"code": "a", "value": f"{command_tag}bn={default_loc};"}],
+                original=field,
+            )
         else:
-            field["a"] = f"{command_tag};bn={default_loc};"
-        return None
+            return MarcFieldUpdate(
+                delete=False,
+                tag="949",
+                ind1=" ",
+                ind2=" ",
+                subfields=[{"code": "a", "value": f"{command_tag};bn={default_loc};"}],
+                original=field,
+            )
 
     @staticmethod
-    def add_vendor_fields(bib_fields: list[dict[str, Any]]) -> list[MarcFieldObj]:
+    def add_vendor_fields(bib_fields: list[dict[str, Any]]) -> list[MarcFieldUpdate]:
         field_objs = []
         for field_data in bib_fields:
             field_objs.append(
-                MarcFieldObj(
+                MarcFieldUpdate(
                     delete=False,
                     tag=field_data["tag"],
                     ind1=field_data["ind1"],
@@ -165,8 +150,8 @@ class FieldRules:
         return leader[:9] + "a" + leader[10:]
 
     @staticmethod
-    def update_910_field(collection: str) -> MarcFieldObj:
-        return MarcFieldObj(
+    def update_910_field(collection: str) -> MarcFieldUpdate:
+        return MarcFieldUpdate(
             delete=True,
             tag="910",
             ind1=" ",
@@ -177,7 +162,7 @@ class FieldRules:
     @staticmethod
     def update_bt_series_call_no(
         vendor: str | None, call_no: str | None
-    ) -> MarcFieldObj | None:
+    ) -> MarcFieldUpdate | None:
         if not vendor == "BT SERIES" or not call_no:
             return None
         new_subfields = []
@@ -218,16 +203,17 @@ class FieldRules:
                 "Constructed call number does not match original. "
                 f"New={new_call_no}, Original={call_no}"
             )
-        return MarcFieldObj(
+        return MarcFieldUpdate(
             delete=True, tag="091", ind1=" ", ind2=" ", subfields=new_subfields
         )
 
     @staticmethod
     def update_order_fields(
-        orders: list[bibs.Order], mapping: dict[str, Any]
-    ) -> list[MarcFieldObj]:
+        record: bibs.DomainBib, mapping: dict[str, Any], template_data: dict[str, Any]
+    ) -> list[MarcFieldUpdate]:
+        record.apply_order_template(template_data)
         fields = []
-        for order in orders:
+        for order in record.orders:
             order_data = order.map_to_marc(rules=mapping)
             for tag, subfield_values in order_data.items():
                 subfields = []
@@ -239,7 +225,7 @@ class FieldRules:
                     else:
                         subfields.append({"code": k, "value": str(v)})
                 fields.append(
-                    MarcFieldObj(
+                    MarcFieldUpdate(
                         delete=False, tag=tag, ind1=" ", ind2=" ", subfields=subfields
                     )
                 )

@@ -54,7 +54,7 @@ class FullRecordProcessingService:
         bib_fetcher: match_service.BibFetcher,
         bib_mapper: marc_parser.BibMapper,
         analyzer: match_analysis.MatchAnalyzer,
-        updater: marc_updater.MarcUpdaterPort,
+        updater: marc_updater.BibUpdater,
     ):
         """
         Initialize `FullRecordProcessingService`.
@@ -66,8 +66,8 @@ class FullRecordProcessingService:
                 A `marc_parser.BibMapper` object
             analyzer:
                 An `match_analysis.MatchAnalyzer` object
-            update_engine:
-                An `update.MarcUpdateStrategy` object
+            updater:
+                An `marc_updater.BibUpdater` object
         """
         self.analyzer = analyzer
         self.matcher = match_service.FullLevelBibMatcher(fetcher=bib_fetcher)
@@ -97,7 +97,7 @@ class FullRecordProcessingService:
             analysis = self.analyzer.analyze(record=record, candidates=candidates)
             out["report"].append(analysis)
             record.apply_match(analysis)
-            self.updater.apply_updates(record=record)
+            self.updater.update_record(record=record)
             out["records"].append(record)
         return out
 
@@ -110,7 +110,7 @@ class OrderRecordProcessingService:
         bib_fetcher: match_service.BibFetcher,
         bib_mapper: marc_parser.BibMapper,
         analyzer: match_analysis.MatchAnalyzer,
-        updater: marc_updater.MarcUpdaterPort,
+        updater: marc_updater.BibUpdater,
     ):
         """
         Initialize `OrderRecordProcessingService`.
@@ -122,8 +122,8 @@ class OrderRecordProcessingService:
                 A `marc_parser.BibMapper` object
             analyzer:
                 An `match_analysis.MatchAnalyzer` object
-            update_engine:
-                An `update.MarcUpdateStrategy` object
+            updater:
+                An `marc_updater.BibUpdater` object
         """
         self.analyzer = analyzer
         self.matcher = match_service.OrderLevelBibMatcher(fetcher=bib_fetcher)
@@ -166,6 +166,6 @@ class OrderRecordProcessingService:
             analysis = self.analyzer.analyze(record=record, candidates=candidates)
             out["report"].append(analysis)
             record.apply_match(analysis)
-            self.updater.apply_updates(record=record, template_data=template_data)
+            self.updater.update_record(record=record, template_data=template_data)
             out["records"].append(record)
         return out

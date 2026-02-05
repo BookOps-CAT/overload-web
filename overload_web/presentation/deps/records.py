@@ -57,7 +57,11 @@ def get_update_strategy(
     constants: Annotated[dict[str, Any], Depends(get_constants)],
 ) -> update_engine.BibUpdateEngine:
     return update_engine.BibUpdateEngine(
-        rules=constants, record_type=record_type, library=library, collection=collection
+        order_mapping=constants["update_order_mapping"],
+        default_loc=constants["default_locations"][library].get(collection),
+        bib_id_tag=constants["bib_id_tag"][library],
+        record_type=record_type,
+        library=library,
     )
 
 
