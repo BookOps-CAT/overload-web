@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 
+from overload_web.application.ports import files as file_port
 from overload_web.domain.models import files
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 class FileTransferService:
     """Handles file transfer operations through `FileLoader`."""
 
-    def __init__(self, loader: files.FileLoader):
+    def __init__(self, loader: file_port.FileLoader):
         """
         Initialize `FileTransferService`.
 
@@ -57,7 +58,7 @@ class FileTransferService:
 class FileWriterService:
     """Handles file writing operations through `FileWriter`."""
 
-    def __init__(self, writer: files.FileWriter):
+    def __init__(self, writer: file_port.FileWriter):
         """
         Initialize `FileWriterService`.
 
