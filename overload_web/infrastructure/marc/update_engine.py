@@ -6,9 +6,10 @@ import logging
 from typing import Any
 
 from bookops_marc import Bib
+from pymarc import Field, Indicators, Subfield
 
 from overload_web.domain.models import bibs
-from overload_web.infrastructure.marc import update_steps
+from overload_web.domain.rules import vendor_rules
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +22,27 @@ class BibUpdateEngine:
         record_type: str,
         collection: str | None,
     ) -> None:
+        self.rules = vendor_rules.VendorRules(
+            library=library,
+            record_type=record_type,
+            order_mapping=rules["update_order_mapping"],
+            default_loc=rules["default_locations"][library].get(collection),
+            bib_id_tag=rules["bib_id_tag"][library],
+        )
         self.record_type = record_type
-        self.library = library
-        self.order_mapping = rules["update_order_mapping"]
-        self.default_loc = rules["default_locations"][library].get(collection)
-        self.bib_id_tag = rules["bib_id_tag"][library]
+
+    def _get_call_no_field(self, bib: Bib) -> str | None:
+        if "091" in bib:
+            return bib.get_fields("091")[0].value()
+        return None
+
+    def _get_command_tag_field(self, bib: Bib) -> Field | None:
+        for field in bib.get_fields("949", []):
+            if field.indicators == Indicators(" ", " ") and field.get(
+                "a", ""
+            ).startswith("*"):
+                return field
+        return None
 
     def create_bib(self, record: bibs.DomainBib) -> Bib:
         return Bib(record.binary_data, library=record.library)  # type: ignore
@@ -44,54 +61,31 @@ class BibUpdateEngine:
         Returns:
             An updated records as a `DomainBib` object
         """
+        template_data = kwargs.get("template_data", {})
         if self.record_type in ["acq", "sel"]:
-            record.apply_order_template(kwargs["template_data"])
+            record.apply_order_template(template_data)
         bib = self.create_bib(record=record)
 
-        match self.record_type:
-            case "acq":
-                update_steps.MarcFields._update_order_fields(
-                    bib=bib,
-                    orders=record.orders,
-                    mapping=self.order_mapping,
+        updates = self.rules.fields_to_update(
+            record=record,
+            format=template_data.get("format"),
+            call_no=self._get_call_no_field(bib),
+            field=self._get_command_tag_field(bib),
+        )
+        for update in updates:
+            if not update:
+                continue
+            if update.delete:
+                bib.remove_fields(update.tag)
+            bib.add_ordered_field(
+                Field(
+                    tag=update.tag,
+                    indicators=Indicators(update.ind1, update.ind1),
+                    subfields=[
+                        Subfield(code=i["code"], value=i["value"])
+                        for i in update.subfields
+                    ],
                 )
-            case "cat":
-                update_steps.MarcFields._add_vendor_fields(
-                    bib=bib,
-                    bib_fields=getattr(record.vendor_info, "bib_fields", []),
-                )
-            case "sel":
-                update_steps.MarcFields._update_order_fields(
-                    bib=bib,
-                    orders=record.orders,
-                    mapping=self.order_mapping,
-                )
-                update_steps.MarcFields._add_command_tag(
-                    bib=bib, format=kwargs["template_data"].get("format")
-                )
-                update_steps.MarcFields._set_default_location(
-                    bib=bib, default_loc=self.default_loc
-                )
-            case _:
-                pass
-        match self.library:
-            case "nypl":
-                update_steps.MarcFields._add_bib_id(
-                    bib=bib, bib_id=record.bib_id, tag=self.bib_id_tag
-                )
-                update_steps.MarcFields._update_leader(bib=bib)
-                update_steps.MarcFields._update_910_field(bib=bib)
-                update_steps.MarcFields._update_bt_series_call_no(
-                    bib=bib,
-                    collection=record.collection,
-                    vendor=record.vendor,
-                    record_type=record.record_type,
-                )
-            case "bpl":
-                update_steps.MarcFields._add_bib_id(
-                    bib=bib, bib_id=record.bib_id, tag=self.bib_id_tag
-                )
-                update_steps.MarcFields._update_leader(bib=bib)
-            case _:
-                pass
+            )
+        bib.leader = vendor_rules.FieldRules.update_leader(bib.leader)
         record.binary_data = bib.as_marc()
