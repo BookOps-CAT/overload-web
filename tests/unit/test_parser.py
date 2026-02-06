@@ -5,8 +5,8 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.application.ports import marc_parser
-from overload_web.infrastructure.marc import marc_mapper
+from overload_web.application.services import marc_services
+from overload_web.infrastructure.marc import engine
 
 
 @pytest.fixture
@@ -81,27 +81,17 @@ def stub_bib(library, collection) -> Bib:
 
 
 @pytest.fixture
-def full_parser_service(library, get_constants):
-    config = marc_mapper.BibMapperConfig(
-        parser_bib_mapping=get_constants["bib_domain_mapping"],
-        parser_order_mapping=get_constants["order_domain_mapping"],
-        parser_vendor_mapping=get_constants["vendor_info_options"][library],
-        library=library,
-        record_type="cat",
+def full_parser_service(engine_config):
+    return marc_services.BibParser(
+        engine=engine.MarcEngine(rules=engine_config),
     )
-    return marc_parser.BibParser(mapper=marc_mapper.MarcMapper(rules=config))
 
 
 @pytest.fixture
-def order_parser_service(library, get_constants):
-    config = marc_mapper.BibMapperConfig(
-        parser_bib_mapping=get_constants["bib_domain_mapping"],
-        parser_order_mapping=get_constants["order_domain_mapping"],
-        parser_vendor_mapping=get_constants["vendor_info_options"][library],
-        library=library,
-        record_type="acq",
+def order_parser_service(engine_config):
+    return marc_services.BibParser(
+        engine=engine.MarcEngine(rules=engine_config),
     )
-    return marc_parser.BibParser(mapper=marc_mapper.MarcMapper(rules=config))
 
 
 @pytest.mark.parametrize(
@@ -112,7 +102,7 @@ class TestParser:
     def test_parse_full(self, full_parser_service, stub_bib, caplog):
         records = full_parser_service.parse(stub_bib.as_marc())
         assert len(records) == 1
-        assert records[0].library == full_parser_service.mapper.library
+        assert records[0].library == full_parser_service.engine.library
         assert records[0].barcodes == ["333331234567890"]
         assert records[0].vendor_info.name == "UNKNOWN"
         assert len(caplog.records) == 1
@@ -132,7 +122,7 @@ class TestParser:
         )
         records = full_parser_service.parse(stub_vendor_bib.as_marc())
         assert len(records) == 1
-        assert records[0].library == full_parser_service.mapper.library
+        assert records[0].library == full_parser_service.engine.library
         assert records[0].barcodes == ["333331234567890"]
         assert records[0].vendor_info is not None
         assert len(caplog.records) == 1
@@ -143,7 +133,7 @@ class TestParser:
     ):
         records = order_parser_service.parse(stub_bib.as_marc())
         assert len(records) == 1
-        assert records[0].library == order_parser_service.mapper.library
+        assert records[0].library == order_parser_service.engine.library
         assert records[0].collection == collection
         assert records[0].barcodes == ["333331234567890"]
         assert records[0].vendor_info is None

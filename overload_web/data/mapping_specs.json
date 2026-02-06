@@ -36,6 +36,7 @@
     "control_number": "control_number",
     "isbn": "isbn",
     "library": "library",
+    "oclc_number": { "name": "oclc_nos", "property": "values", "type": "list" },
     "research_call_number": "research_call_no",
     "title": "title",
     "upc": "upc_number",

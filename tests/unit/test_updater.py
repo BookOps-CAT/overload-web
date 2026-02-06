@@ -4,9 +4,9 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.application.ports import marc_updater
+from overload_web.application.services import marc_services
 from overload_web.domain.models import bibs
-from overload_web.infrastructure.marc import update_engine
+from overload_web.infrastructure.marc import engine
 
 
 @pytest.fixture
@@ -64,10 +64,8 @@ def make_bt_series_full_bib(full_bib, library, collection):
 
 class TestUpdater:
     @pytest.fixture
-    def updater_service(self, bib_engine_config):
-        return marc_updater.BibUpdater(
-            engine=update_engine.BibUpdateEngine(config=bib_engine_config)
-        )
+    def updater_service(self, engine_config):
+        return marc_services.BibUpdater(engine=engine.MarcEngine(rules=engine_config))
 
     @pytest.mark.parametrize(
         "library, collection, tag, record_type",

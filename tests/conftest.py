@@ -10,9 +10,9 @@ from bookops_marc import Bib
 from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.application.ports import marc_updater
+from overload_web.application.services import marc_services
 from overload_web.domain.models import bibs, sierra_responses
-from overload_web.infrastructure.marc import update_engine
+from overload_web.infrastructure.marc import engine
 from overload_web.infrastructure.sierra import clients
 
 
@@ -649,28 +649,21 @@ def fake_fetcher_no_matches(monkeypatch):
 
 
 @pytest.fixture
-def bib_engine_config(
-    library, record_type, collection
-) -> update_engine.BibEngineConfig:
-    constants: dict[str, Any] = {
-        "update_order_mapping": {
-            "960": {"c": "order_code_1", "t": "locations"},
-            "961": {"i": "vendor_title_no"},
-        },
-        "bib_id_tag": {"nypl": "945", "bpl": "907"},
-        "default_locations": {"nypl": {"BL": "zzzzz", "RL": "xxx"}, "bpl": {}},
-    }
-    return update_engine.BibEngineConfig(
+def engine_config(
+    library, record_type, collection, get_constants
+) -> engine.MarcEngineConfig:
+    return engine.MarcEngineConfig(
+        marc_order_mapping=get_constants["marc_order_mapping"],
+        default_loc=get_constants["default_locations"][library].get(collection),
+        bib_id_tag=get_constants["bib_id_tag"][library],
         library=library,
-        marc_order_mapping=constants["update_order_mapping"],
-        default_loc=constants["default_locations"][library].get(collection),
-        bib_id_tag=constants["bib_id_tag"][library],
         record_type=record_type,
+        parser_bib_mapping=get_constants["bib_domain_mapping"],
+        parser_order_mapping=get_constants["order_domain_mapping"],
+        parser_vendor_mapping=get_constants["vendor_info_options"][library],
     )
 
 
 @pytest.fixture
-def update_strategy(bib_engine_config) -> marc_updater.BibUpdater:
-    return marc_updater.BibUpdater(
-        engine=update_engine.BibUpdateEngine(config=bib_engine_config)
-    )
+def update_strategy(engine_config) -> marc_services.BibUpdater:
+    return marc_services.BibUpdater(engine=engine.MarcEngine(rules=engine_config))

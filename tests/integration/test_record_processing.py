@@ -3,34 +3,19 @@ import pytest
 from overload_web.application.services import record_service
 from overload_web.domain.errors import OverloadError
 from overload_web.domain.models import bibs
-from overload_web.infrastructure.marc import marc_mapper, update_engine
+from overload_web.infrastructure.marc import engine
 
 
 @pytest.fixture
 def service_components(
-    fake_fetcher, get_constants, library, collection, record_type
+    fake_fetcher, engine_config, library, collection, record_type
 ) -> tuple:
-    mapper_config = marc_mapper.BibMapperConfig(
-        parser_bib_mapping=get_constants["bib_domain_mapping"],
-        parser_order_mapping=get_constants["order_domain_mapping"],
-        parser_vendor_mapping=get_constants["vendor_info_options"][library],
-        library=library,
-        record_type=record_type,
-    )
-    engine_config = update_engine.BibEngineConfig(
-        library=library,
-        marc_order_mapping=get_constants["marc_order_mapping"],
-        default_loc=get_constants["default_locations"][library].get(collection),
-        bib_id_tag=get_constants["bib_id_tag"][library],
-        record_type=record_type,
-    )
     return (
         fake_fetcher,
-        marc_mapper.MarcMapper(rules=mapper_config),
+        engine.MarcEngine(rules=engine_config),
         record_service.MatchAnalyzerFactory().make(
             library=library, record_type=record_type, collection=collection
         ),
-        update_engine.BibUpdateEngine(config=engine_config),
     )
 
 
@@ -42,9 +27,8 @@ class TestRecordProcessingService:
     def test_full_service_process_vendor_file(self, library, service_components):
         service = record_service.FullRecordProcessingService(
             bib_fetcher=service_components[0],
-            bib_mapper=service_components[1],
+            engine=service_components[1],
             analyzer=service_components[2],
-            updater=service_components[3],
         )
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -61,9 +45,8 @@ class TestRecordProcessingService:
     def test_order_service_process_vendor_file(self, library, service_components):
         service = record_service.OrderRecordProcessingService(
             bib_fetcher=service_components[0],
-            bib_mapper=service_components[1],
+            engine=service_components[1],
             analyzer=service_components[2],
-            updater=service_components[3],
         )
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -85,9 +68,8 @@ class TestRecordProcessingService:
     def test_full_service_process_vendor_file_dupes(self, library, service_components):
         service = record_service.FullRecordProcessingService(
             bib_fetcher=service_components[0],
-            bib_mapper=service_components[1],
+            engine=service_components[1],
             analyzer=service_components[2],
-            updater=service_components[3],
         )
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -102,9 +84,8 @@ class TestRecordProcessingService:
     def test_order_service_process_vendor_file_dupes(self, library, service_components):
         service = record_service.OrderRecordProcessingService(
             bib_fetcher=service_components[0],
-            bib_mapper=service_components[1],
+            engine=service_components[1],
             analyzer=service_components[2],
-            updater=service_components[3],
         )
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()

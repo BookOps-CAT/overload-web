@@ -68,7 +68,7 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_dedupe_attach(self, full_bib, update_strategy):
-        service = review.BibReviewer(context_factory=update_strategy.engine)
+        service = review.BibReviewer(port=update_strategy.engine)
         deduped_bibs = service.dedupe(
             [full_bib],
             [
@@ -95,7 +95,7 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_dedupe_insert(self, full_bib, update_strategy, stub_analysis):
-        service = review.BibReviewer(context_factory=update_strategy.engine)
+        service = review.BibReviewer(port=update_strategy.engine)
         deduped_bibs = service.dedupe([full_bib], [stub_analysis])
         assert len(deduped_bibs["DUP"]) == 0
         assert len(deduped_bibs["NEW"]) == 1
@@ -108,7 +108,7 @@ class TestReviewer:
     def test_dedupe_deduped_bpl(
         self, library, full_bib, full_bib_add_barcodes, update_strategy, stub_analysis
     ):
-        service = review.BibReviewer(context_factory=update_strategy.engine)
+        service = review.BibReviewer(port=update_strategy.engine)
         deduped_bibs = service.dedupe(
             [full_bib, full_bib_add_barcodes],
             [stub_analysis, stub_analysis],
@@ -130,7 +130,7 @@ class TestReviewer:
     def test_dedupe_deduped_nypl(
         self, library, full_bib, full_bib_add_barcodes, update_strategy, stub_analysis
     ):
-        service = review.BibReviewer(context_factory=update_strategy.engine)
+        service = review.BibReviewer(port=update_strategy.engine)
         deduped_bibs = service.dedupe(
             [full_bib, full_bib_add_barcodes], [stub_analysis, stub_analysis]
         )
@@ -153,7 +153,7 @@ class TestReviewer:
     ):
         other_rec = copy.deepcopy(full_bib)
         other_rec.control_number = "123456789"
-        service = review.BibReviewer(context_factory=update_strategy.engine)
+        service = review.BibReviewer(port=update_strategy.engine)
         analysis = bibs.MatchAnalysis(
             True,
             bibs.ClassifiedCandidates([], [], []),
@@ -177,7 +177,7 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_validate_cat(self, full_bib, update_strategy, caplog):
-        service = review.BibReviewer(context_factory=update_strategy.engine)
+        service = review.BibReviewer(port=update_strategy.engine)
         service.validate({"NEW": [full_bib]}, ["333331234567890"])
         assert len(caplog.records) == 1
         assert (
@@ -190,7 +190,7 @@ class TestReviewer:
     def test_validate_cat_bpl_960_item(
         self, full_bib, update_strategy, caplog, collection
     ):
-        service = review.BibReviewer(context_factory=update_strategy.engine)
+        service = review.BibReviewer(port=update_strategy.engine)
         service.validate({"NEW": [full_bib]}, ["333331234567890"])
         assert len(caplog.records) == 1
         assert (
@@ -204,7 +204,7 @@ class TestReviewer:
     def test_validate_missing_barcodes(
         self, full_bib, update_strategy, caplog, collection
     ):
-        service = review.BibReviewer(context_factory=update_strategy.engine)
+        service = review.BibReviewer(port=update_strategy.engine)
         service.validate({"NEW": [full_bib]}, ["333331234567890", "333330987654321"])
         assert len(caplog.records) == 2
         assert (
@@ -219,7 +219,7 @@ class TestReviewer:
     def test_validate_bpl_960_item_missing_barcodes(
         self, full_bib, update_strategy, caplog, collection
     ):
-        service = review.BibReviewer(context_factory=update_strategy.engine)
+        service = review.BibReviewer(port=update_strategy.engine)
         service.validate({"NEW": [full_bib]}, ["333331234567890", "333330987654321"])
         assert len(caplog.records) == 2
         assert (
@@ -233,7 +233,7 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_dedupe_and_validate_cat(self, full_bib, update_strategy):
-        service = review.BibReviewer(context_factory=update_strategy.engine)
+        service = review.BibReviewer(port=update_strategy.engine)
         decision = bibs.MatchDecision(
             bibs.CatalogAction.ATTACH, target_bib_id=full_bib.bib_id
         )

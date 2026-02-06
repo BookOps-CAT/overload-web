@@ -7,16 +7,11 @@ from collections import Counter
 from itertools import chain
 from typing import Any, Protocol, TypeVar
 
+from overload_web.application.ports import marc
 from overload_web.domain.models import bibs
 
 logger = logging.getLogger(__name__)
 C = TypeVar("C")
-
-
-class MarcUpdateStrategy(Protocol):
-    def create_bib(
-        self, record: bibs.DomainBib, **kwargs: Any
-    ) -> Any: ...  # pragma: no branch
 
 
 class ReportHandler(Protocol[C]):
@@ -38,13 +33,13 @@ class ReportHandler(Protocol[C]):
 
 
 class BibReviewer:
-    def __init__(self, context_factory: MarcUpdateStrategy) -> None:
-        self.context_factory = context_factory
+    def __init__(self, port: marc.MarcEnginePort) -> None:
+        self.port = port
 
     def _merge_record(
         self, record: bibs.DomainBib, all_dupes: list[bibs.DomainBib]
     ) -> bibs.DomainBib:
-        base_rec = self.context_factory.create_bib(record=all_dupes[0])
+        base_rec = self.port.create_bib_from_domain(record=all_dupes[0])
         if record.library == "bpl" and base_rec.overdrive_number is None:
             tag = "960"
             ind2 = " "
@@ -53,7 +48,7 @@ class BibReviewer:
             ind2 = "1"
         all_items = []
         for dupe in all_dupes[1:]:
-            bib = self.context_factory.create_bib(record=dupe)
+            bib = self.port.create_bib_from_domain(record=dupe)
             all_items.extend(bib.get_fields(tag))
         for item in all_items:
             if item.indicator1 == " " and item.indicator2 == ind2:

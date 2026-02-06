@@ -363,6 +363,7 @@ class VendorInfo:
     bib_fields: list[dict[str, str]]
     matchpoints: dict[str, str]
     name: str
+    vendor_tags: list[dict[str, str]] | None = None
 
 
 class ProcessVendorFileReport:

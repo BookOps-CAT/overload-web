@@ -20,8 +20,8 @@ Classes:
 import logging
 from typing import Any, BinaryIO
 
-from overload_web.application.ports import marc_parser, marc_updater
-from overload_web.application.services import match_service
+from overload_web.application.ports import marc
+from overload_web.application.services import marc_services, match_service
 from overload_web.domain.services import match_analysis
 
 logger = logging.getLogger(__name__)
@@ -52,9 +52,8 @@ class FullRecordProcessingService:
     def __init__(
         self,
         bib_fetcher: match_service.BibFetcher,
-        bib_mapper: marc_parser.BibMapper,
+        engine: marc.MarcEnginePort,
         analyzer: match_analysis.MatchAnalyzer,
-        updater: marc_updater.MarcUpdaterPort,
     ):
         """
         Initialize `FullRecordProcessingService`.
@@ -62,17 +61,15 @@ class FullRecordProcessingService:
         Args:
             bib_fetcher:
                 A `match_service.BibFetcher` object
-            bib_mapper:
-                A `marc_parser.BibMapper` object
+            engine:
+                A `marc.MarcEnginePort` object
             analyzer:
                 An `match_analysis.MatchAnalyzer` object
-            updater:
-                An `marc_updater.BibUpdater` object
         """
         self.analyzer = analyzer
         self.matcher = match_service.FullLevelBibMatcher(fetcher=bib_fetcher)
-        self.parser = marc_parser.BibParser(mapper=bib_mapper)
-        self.updater = marc_updater.BibUpdater(engine=updater)
+        self.parser = marc_services.BibParser(engine=engine)
+        self.updater = marc_services.BibUpdater(engine=engine)
 
     def process_vendor_file(self, data: BinaryIO | bytes) -> dict[str, Any]:
         """
@@ -89,7 +86,7 @@ class FullRecordProcessingService:
             objects and the the `ProcessVendorFileReport` for the file of records.
         """
         parsed_records = self.parser.parse(data=data)
-        marc_parser.BarcodeValidator.ensure_unique(parsed_records)
+        marc_services.BarcodeValidator.ensure_unique(parsed_records)
         barcodes = self.parser.extract_barcodes(parsed_records)
         out: dict[str, list[Any]] = {"records": [], "report": [], "barcodes": barcodes}
         for record in parsed_records:
@@ -108,9 +105,8 @@ class OrderRecordProcessingService:
     def __init__(
         self,
         bib_fetcher: match_service.BibFetcher,
-        bib_mapper: marc_parser.BibMapper,
+        engine: marc.MarcEnginePort,
         analyzer: match_analysis.MatchAnalyzer,
-        updater: marc_updater.MarcUpdaterPort,
     ):
         """
         Initialize `OrderRecordProcessingService`.
@@ -118,17 +114,15 @@ class OrderRecordProcessingService:
         Args:
             bib_fetcher:
                 A `match_service.BibFetcher` object
-            bib_mapper:
-                A `marc_parser.BibMapper` object
+            engine:
+                A `marc.MarcEnginePort` object
             analyzer:
                 An `match_analysis.MatchAnalyzer` object
-            updater:
-                An `marc_updater.BibUpdater` object
         """
         self.analyzer = analyzer
         self.matcher = match_service.OrderLevelBibMatcher(fetcher=bib_fetcher)
-        self.parser = marc_parser.BibParser(mapper=bib_mapper)
-        self.updater = marc_updater.BibUpdater(engine=updater)
+        self.parser = marc_services.BibParser(engine=engine)
+        self.updater = marc_services.BibUpdater(engine=engine)
 
     def process_vendor_file(
         self,
@@ -159,7 +153,7 @@ class OrderRecordProcessingService:
             objects and the the `ProcessVendorFileReport` for the file of records.
         """
         parsed_records = self.parser.parse(data=data, vendor=vendor)
-        marc_parser.BarcodeValidator.ensure_unique(parsed_records)
+        marc_services.BarcodeValidator.ensure_unique(parsed_records)
         out: dict[str, list[Any]] = {"records": [], "report": []}
         for record in parsed_records:
             candidates = self.matcher.match(record=record, matchpoints=matchpoints)
