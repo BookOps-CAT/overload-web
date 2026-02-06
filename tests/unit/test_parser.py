@@ -99,6 +99,7 @@ def order_parser_service(engine_config):
     [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
 )
 class TestParser:
+    @pytest.mark.parametrize("record_type", ["cat"])
     def test_parse_full(self, full_parser_service, stub_bib, caplog):
         records = full_parser_service.parse(stub_bib.as_marc())
         assert len(records) == 1
@@ -109,7 +110,8 @@ class TestParser:
         assert "Vendor record parsed: " in caplog.records[0].msg
 
     @pytest.mark.parametrize(
-        "tag, value", [("901", "BTSERIES"), ("947", "B&amp;T SERIES")]
+        "tag, value, record_type",
+        [("901", "BTSERIES", "cat"), ("947", "B&amp;T SERIES", "cat")],
     )
     def test_parse_full_vendor(self, full_parser_service, stub_bib, tag, value, caplog):
         stub_vendor_bib = copy.deepcopy(stub_bib)
@@ -128,6 +130,7 @@ class TestParser:
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
 
+    @pytest.mark.parametrize("record_type", ["acq", "sel"])
     def test_parse_order_level(
         self, order_parser_service, stub_bib, collection, caplog
     ):
@@ -142,6 +145,7 @@ class TestParser:
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
 
+    @pytest.mark.parametrize("record_type", ["acq", "sel"])
     def test_parse_update_date(self, order_parser_service, stub_bib, caplog):
         stub_bib.add_field(Field(tag="005", data="20200101010000.0"))
         records = order_parser_service.parse(stub_bib.as_marc())
@@ -152,6 +156,7 @@ class TestParser:
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
 
+    @pytest.mark.parametrize("record_type", ["cat"])
     def test_extract_barcodes(self, full_parser_service, stub_bib):
         records = full_parser_service.parse(stub_bib.as_marc())
         barcodes = full_parser_service.extract_barcodes(records)
