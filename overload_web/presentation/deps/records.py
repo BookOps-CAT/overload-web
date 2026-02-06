@@ -1,24 +1,40 @@
 """Dependency injection for record processing services."""
 
-import json
 import logging
 from typing import Annotated, Any, Generator
 
 from fastapi import Depends, Form
 
-from overload_web.application.ports import marc_parser
 from overload_web.application.services import record_service
+from overload_web.infrastructure.config import loader
 from overload_web.infrastructure.marc import marc_mapper, update_engine
 from overload_web.infrastructure.sierra import clients
 
 logger = logging.getLogger(__name__)
 
 
-def get_constants() -> dict[str, Any]:
-    """Retrieve processing constants from JSON file."""
-    with open("overload_web/data/vendor_specs.json", "r", encoding="utf-8") as fh:
-        constants = json.load(fh)
-    return constants
+def get_bib_mapper_config(
+    library: Annotated[str, Form(...)],
+    constants: Annotated[dict[str, Any], Depends(loader.load_config)],
+    record_type: Annotated[str, Form(...)],
+) -> marc_mapper.BibMapperConfig:
+    return loader.mapper_config_from_constants(
+        constants=constants, library=library, record_type=record_type
+    )
+
+
+def get_bib_engine_config(
+    library: Annotated[str, Form(...)],
+    collection: Annotated[str, Form(...)],
+    constants: Annotated[dict[str, Any], Depends(loader.load_config)],
+    record_type: Annotated[str, Form(...)],
+) -> update_engine.BibEngineConfig:
+    return loader.engine_config_from_constants(
+        constants=constants,
+        library=library,
+        collection=collection,
+        record_type=record_type,
+    )
 
 
 def get_fetcher(
@@ -39,61 +55,43 @@ def get_match_analyzer(
     )
 
 
-def get_mapper(
-    library: Annotated[str, Form(...)],
-    constants: Annotated[dict[str, Any], Depends(get_constants)],
-    record_type: Annotated[str, Form(...)],
-) -> Generator[marc_parser.BibMapper, None, None]:
-    """Create a MARC mapper based on library and record type."""
-    yield marc_mapper.MarcMapper(
-        record_type=record_type, library=library, rules=constants["mapper_rules"]
-    )
-
-
-def get_update_strategy(
-    library: Annotated[str, Form(...)],
-    record_type: Annotated[str, Form(...)],
-    collection: Annotated[str, Form(...)],
-    constants: Annotated[dict[str, Any], Depends(get_constants)],
-) -> update_engine.BibUpdateEngine:
-    return update_engine.BibUpdateEngine(
-        order_mapping=constants["update_order_mapping"],
-        default_loc=constants["default_locations"][library].get(collection),
-        bib_id_tag=constants["bib_id_tag"][library],
-        record_type=record_type,
-        library=library,
-    )
-
-
 def order_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
-    mapper: Annotated[marc_mapper.MarcMapper, Depends(get_mapper)],
     analyzer: Annotated[
         record_service.match_analysis.MatchAnalyzer, Depends(get_match_analyzer)
     ],
-    updater: Annotated[update_engine.BibUpdateEngine, Depends(get_update_strategy)],
+    mapper_config: Annotated[
+        marc_mapper.BibMapperConfig, Depends(get_bib_mapper_config)
+    ],
+    update_engine_config: Annotated[
+        update_engine.BibEngineConfig, Depends(get_bib_engine_config)
+    ],
 ) -> Generator[record_service.OrderRecordProcessingService, None, None]:
     """Create an order-record processing service with injected dependencies."""
     yield record_service.OrderRecordProcessingService(
         bib_fetcher=fetcher,
-        bib_mapper=mapper,
         analyzer=analyzer,
-        updater=updater,
+        bib_mapper=marc_mapper.MarcMapper(rules=mapper_config),
+        updater=update_engine.BibUpdateEngine(config=update_engine_config),
     )
 
 
 def full_level_processing_service(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
-    mapper: Annotated[marc_mapper.MarcMapper, Depends(get_mapper)],
     analyzer: Annotated[
         record_service.match_analysis.MatchAnalyzer, Depends(get_match_analyzer)
     ],
-    updater: Annotated[update_engine.BibUpdateEngine, Depends(get_update_strategy)],
+    mapper_config: Annotated[
+        marc_mapper.BibMapperConfig, Depends(get_bib_mapper_config)
+    ],
+    update_engine_config: Annotated[
+        update_engine.BibEngineConfig, Depends(get_bib_engine_config)
+    ],
 ) -> Generator[record_service.FullRecordProcessingService, None, None]:
     """Create an full-record processing service with injected dependencies."""
     yield record_service.FullRecordProcessingService(
         bib_fetcher=fetcher,
-        bib_mapper=mapper,
         analyzer=analyzer,
-        updater=updater,
+        bib_mapper=marc_mapper.MarcMapper(rules=mapper_config),
+        updater=update_engine.BibUpdateEngine(config=update_engine_config),
     )

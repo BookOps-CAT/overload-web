@@ -82,18 +82,26 @@ def stub_bib(library, collection) -> Bib:
 
 @pytest.fixture
 def full_parser_service(library, get_constants):
-    rules = get_constants["mapper_rules"]
-    return marc_parser.BibParser(
-        mapper=marc_mapper.MarcMapper(rules=rules, library=library, record_type="cat")
+    config = marc_mapper.BibMapperConfig(
+        parser_bib_mapping=get_constants["bib_domain_mapping"],
+        parser_order_mapping=get_constants["order_domain_mapping"],
+        parser_vendor_mapping=get_constants["vendor_info_options"][library],
+        library=library,
+        record_type="cat",
     )
+    return marc_parser.BibParser(mapper=marc_mapper.MarcMapper(rules=config))
 
 
 @pytest.fixture
 def order_parser_service(library, get_constants):
-    rules = get_constants["mapper_rules"]
-    return marc_parser.BibParser(
-        mapper=marc_mapper.MarcMapper(rules=rules, library=library, record_type="acq")
+    config = marc_mapper.BibMapperConfig(
+        parser_bib_mapping=get_constants["bib_domain_mapping"],
+        parser_order_mapping=get_constants["order_domain_mapping"],
+        parser_vendor_mapping=get_constants["vendor_info_options"][library],
+        library=library,
+        record_type="acq",
     )
+    return marc_parser.BibParser(mapper=marc_mapper.MarcMapper(rules=config))
 
 
 @pytest.mark.parametrize(

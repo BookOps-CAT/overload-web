@@ -15,11 +15,7 @@ T = TypeVar("T")  # variable bookops_marc `Bib` type
 class MarcUpdaterPort(Protocol[T]):
     """Port defining what the application expects from a MARC updater."""
 
-    record_type: str
-    library: str
-    order_mapping: dict[str, Any]
-    bib_id_tag: str
-    default_loc: str
+    config: Any
 
     def _get_call_no_field(self, bib: T) -> str | None: ...
 
@@ -46,10 +42,6 @@ class BibUpdater:
             template_data=template_data,
             call_no=self.engine._get_call_no_field(bib),
             command_tag=self.engine._get_command_tag_field(bib),
-            record_type=self.engine.record_type,
-            library=self.engine.library,
-            order_mapping=self.engine.order_mapping,
-            bib_id_tag=self.engine.bib_id_tag,
-            default_loc=self.engine.default_loc,
+            context=self.engine.config,
         )
         self.engine.apply_updates(record=record, bib=bib, updates=updates)

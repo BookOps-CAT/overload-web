@@ -15,37 +15,37 @@ class VendorRules:
         record: bibs.DomainBib,
         call_no: str | None,
         command_tag: Any | None,
-        record_type: str,
-        library: str,
-        order_mapping: dict[str, Any],
-        default_loc: str | None,
-        bib_id_tag: str,
+        context: Any,
         template_data: dict[str, Any],
     ) -> list[Any]:
         updates: list[Any] = []
 
-        if record_type == "cat":
+        if context.record_type == "cat":
             bib_fields = getattr(record.vendor_info, "bib_fields", [])
             updates.extend(FieldRules.add_vendor_fields(bib_fields=bib_fields))
         else:
             updates.extend(
                 FieldRules.update_order_fields(
                     record=record,
-                    mapping=order_mapping,
+                    mapping=context.marc_order_mapping,
                     template_data=template_data,
                 )
             )
-            if record_type == "sel":
+            if context.record_type == "sel":
                 format = template_data.get("format")
                 updates.append(
                     FieldRules.add_command_tag(
-                        field=command_tag, format=format, default_loc=default_loc
+                        field=command_tag,
+                        format=format,
+                        default_loc=context.default_loc,
                     )
                 )
-        updates.append(FieldRules.add_bib_id(bib_id=record.bib_id, tag=bib_id_tag))
-        if library == "nypl":
+        updates.append(
+            FieldRules.add_bib_id(bib_id=record.bib_id, tag=context.bib_id_tag)
+        )
+        if context.library == "nypl":
             updates.append(FieldRules.update_910_field(collection=record.collection))
-            if record.collection == "BL" and record_type == "cat":
+            if record.collection == "BL" and context.record_type == "cat":
                 updates.append(
                     FieldRules.update_bt_series_call_no(
                         call_no=call_no, vendor=record.vendor
@@ -56,11 +56,11 @@ class VendorRules:
 
 @dataclass
 class MarcFieldUpdate:
-    delete: bool
     tag: str
     ind1: str
     ind2: str
     subfields: list[dict[str, str]]
+    delete: bool = False
     original: Any | None = None
 
 
@@ -91,14 +91,12 @@ class FieldRules:
                 else:
                     command_tag = f"*b2={format};"
                 return MarcFieldUpdate(
-                    delete=False,
                     tag="949",
                     ind1=" ",
                     ind2=" ",
                     subfields=[{"code": "a", "value": command_tag}],
                 )
             return MarcFieldUpdate(
-                delete=False,
                 tag="949",
                 ind1=" ",
                 ind2=" ",
@@ -111,7 +109,6 @@ class FieldRules:
             return None
         elif "bn=" not in command_tag[-1] == ";":
             return MarcFieldUpdate(
-                delete=False,
                 tag="949",
                 ind1=" ",
                 ind2=" ",
@@ -120,7 +117,6 @@ class FieldRules:
             )
         else:
             return MarcFieldUpdate(
-                delete=False,
                 tag="949",
                 ind1=" ",
                 ind2=" ",
@@ -134,7 +130,6 @@ class FieldRules:
         for field_data in bib_fields:
             field_objs.append(
                 MarcFieldUpdate(
-                    delete=False,
                     tag=field_data["tag"],
                     ind1=field_data["ind1"],
                     ind2=field_data["ind2"],
@@ -225,8 +220,6 @@ class FieldRules:
                     else:
                         subfields.append({"code": k, "value": str(v)})
                 fields.append(
-                    MarcFieldUpdate(
-                        delete=False, tag=tag, ind1=" ", ind2=" ", subfields=subfields
-                    )
+                    MarcFieldUpdate(tag=tag, ind1=" ", ind2=" ", subfields=subfields)
                 )
         return fields

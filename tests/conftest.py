@@ -19,7 +19,7 @@ from overload_web.infrastructure.sierra import clients
 @pytest.fixture(scope="session")
 def get_constants() -> dict[str, Any]:
     """Retrieve processing constants from JSON file."""
-    with open("overload_web/data/vendor_specs.json", "r", encoding="utf-8") as fh:
+    with open("overload_web/data/mapping_specs.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     return constants
 
@@ -649,8 +649,10 @@ def fake_fetcher_no_matches(monkeypatch):
 
 
 @pytest.fixture
-def update_strategy(library, record_type, collection) -> update_engine.BibUpdateEngine:
-    constants = {
+def bib_engine_config(
+    library, record_type, collection
+) -> update_engine.BibEngineConfig:
+    constants: dict[str, Any] = {
         "update_order_mapping": {
             "960": {"c": "order_code_1", "t": "locations"},
             "961": {"i": "vendor_title_no"},
@@ -658,12 +660,17 @@ def update_strategy(library, record_type, collection) -> update_engine.BibUpdate
         "bib_id_tag": {"nypl": "945", "bpl": "907"},
         "default_locations": {"nypl": {"BL": "zzzzz", "RL": "xxx"}, "bpl": {}},
     }
+    return update_engine.BibEngineConfig(
+        library=library,
+        marc_order_mapping=constants["update_order_mapping"],
+        default_loc=constants["default_locations"][library].get(collection),
+        bib_id_tag=constants["bib_id_tag"][library],
+        record_type=record_type,
+    )
+
+
+@pytest.fixture
+def update_strategy(bib_engine_config) -> marc_updater.BibUpdater:
     return marc_updater.BibUpdater(
-        engine=update_engine.BibUpdateEngine(
-            library=library,
-            order_mapping=constants["update_order_mapping"],
-            default_loc=constants["default_locations"][library].get(collection),
-            bib_id_tag=constants["bib_id_tag"][library],
-            record_type=record_type,
-        )
+        engine=update_engine.BibUpdateEngine(config=bib_engine_config)
     )

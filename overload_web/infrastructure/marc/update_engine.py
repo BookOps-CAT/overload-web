@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import Any
 
 from bookops_marc import Bib
@@ -14,20 +15,18 @@ from overload_web.domain.rules import vendor_rules
 logger = logging.getLogger(__name__)
 
 
+@dataclass(frozen=True)
+class BibEngineConfig:
+    marc_order_mapping: dict[str, Any]
+    default_loc: str | None
+    bib_id_tag: str
+    library: str
+    record_type: str
+
+
 class BibUpdateEngine:
-    def __init__(
-        self,
-        library: str,
-        order_mapping: dict[str, Any],
-        default_loc: str,
-        bib_id_tag: str,
-        record_type: str,
-    ) -> None:
-        self.library = library
-        self.order_mapping = order_mapping
-        self.default_loc = default_loc
-        self.bib_id_tag = bib_id_tag
-        self.record_type = record_type
+    def __init__(self, config: BibEngineConfig) -> None:
+        self.config = config
 
     def _get_call_no_field(self, bib: Bib) -> str | None:
         if "091" in bib:

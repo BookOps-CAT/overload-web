@@ -26,7 +26,11 @@ class BibMapper(Protocol[T]):
     `pymarc`, `bookops_marc` or other tools.
     """
 
-    rules: dict[str, Any]
+    bib_rules: dict[str, Any]
+    library: str
+    order_rules: dict[str, Any]
+    record_type: str
+    vendor_rules: dict[str, Any]
 
     def get_reader(self, data: bytes | BinaryIO) -> Iterator: ...  # pragma: no branch
 

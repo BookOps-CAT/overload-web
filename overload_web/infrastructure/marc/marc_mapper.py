@@ -6,6 +6,7 @@ Includes `BookopsMarcMapper` class to parse records using `bookops_marc` and `py
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import Any, BinaryIO
 
 from bookops_marc import Bib, SierraBibReader
@@ -15,28 +16,35 @@ from overload_web.domain.models import bibs
 logger = logging.getLogger(__name__)
 
 
+@dataclass(frozen=True)
+class BibMapperConfig:
+    parser_bib_mapping: dict[str, Any]
+    parser_order_mapping: dict[str, Any]
+    parser_vendor_mapping: dict[str, Any]
+    library: str
+    record_type: str
+
+
 class MarcMapper:
     """Parses binary MARC data using `bookops_marc`."""
 
-    def __init__(self, library: str, record_type: str, rules: dict[str, Any]) -> None:
+    def __init__(self, rules: BibMapperConfig) -> None:
         """
         Initialize `BookopsMarcMapper` using a set of marc mapping rules.
 
         This class is a concrete implementation of the `BibMapper` protocol.
 
         Args:
-            library:
-                the library system to whom the records belong.
-            record_type:
-                the workflow being used to parse records (ie. 'acq', 'cat', or 'sel').
             rules:
-                A dictionary containing vendor identification rules, and rules to use
-                when mapping MARC records, to domain objects. Parsed from `mapper_rules`
-                in `/overload_web/data/vendor_specs.json`.
+                A `BibMapperConfig` object containing vendor identification
+                rules, rules to use when mapping MARC records to domain objects, library
+                and record type. Parsed from `/overload_web/data/mapping_specs.json`.
         """
-        self.library = library
-        self.record_type = record_type
-        self.rules = rules
+        self.library = rules.library
+        self.record_type = rules.record_type
+        self.bib_rules = rules.parser_bib_mapping
+        self.order_rules = rules.parser_order_mapping
+        self.vendor_rules = rules.parser_vendor_mapping
 
     def _get_marc_tag_from_bib(
         self, record: Bib, tags: dict[str, dict[str, str]]
@@ -84,7 +92,7 @@ class MarcMapper:
         out: dict[str, Any] = {}
 
         out["oclc_number"] = list(record.oclc_nos.values())
-        for k, v in self.rules["bib"].items():
+        for k, v in self.bib_rules.items():
             if isinstance(v, dict):
                 field = record.get(v["tag"])
                 if field is not None:
@@ -94,7 +102,7 @@ class MarcMapper:
         out["orders"] = []
         for order in record.orders:
             order_dict = {}
-            for k, v in self.rules["order"].items():
+            for k, v in self.order_rules.items():
                 if isinstance(v, str):
                     order_dict[k] = getattr(order, v)
                 else:
@@ -108,8 +116,7 @@ class MarcMapper:
 
     def identify_vendor(self, record: Bib) -> dict[str, Any]:
         """Determine the vendor who created a `bookops_marc.Bib` record."""
-        vendor_rules = self.rules["vendors"][self.library.casefold()]
-        for vendor, info in vendor_rules.items():
+        for vendor, info in self.vendor_rules.items():
             fields = info.get("bib_fields", [])
             matchpoints = info.get("matchpoints", {})
             tags = info["vendor_tags"].get("primary", {})
@@ -130,8 +137,8 @@ class MarcMapper:
                 }
         return {
             "name": "UNKNOWN",
-            "bib_fields": vendor_rules["UNKNOWN"]["bib_fields"],
-            "matchpoints": vendor_rules["UNKNOWN"]["matchpoints"],
+            "bib_fields": self.vendor_rules["UNKNOWN"]["bib_fields"],
+            "matchpoints": self.vendor_rules["UNKNOWN"]["matchpoints"],
         }
 
     def map_data(self, record: Bib, **kwargs) -> dict[str, Any]:

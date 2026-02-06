@@ -64,23 +64,9 @@ def make_bt_series_full_bib(full_bib, library, collection):
 
 class TestUpdater:
     @pytest.fixture
-    def updater_service(self, library, record_type, collection):
-        constants = {
-            "update_order_mapping": {
-                "960": {"c": "order_code_1", "t": "locations"},
-                "961": {"i": "vendor_title_no"},
-            },
-            "bib_id_tag": {"nypl": "945", "bpl": "907"},
-            "default_locations": {"nypl": {"BL": "zzzzz", "RL": "xxx"}, "bpl": {}},
-        }
+    def updater_service(self, bib_engine_config):
         return marc_updater.BibUpdater(
-            engine=update_engine.BibUpdateEngine(
-                library=library,
-                order_mapping=constants["update_order_mapping"],
-                default_loc=constants["default_locations"][library].get(collection),
-                bib_id_tag=constants["bib_id_tag"][library],
-                record_type=record_type,
-            )
+            engine=update_engine.BibUpdateEngine(config=bib_engine_config)
         )
 
     @pytest.mark.parametrize(
