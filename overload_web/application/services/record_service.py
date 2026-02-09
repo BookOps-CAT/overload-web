@@ -68,8 +68,7 @@ class FullRecordProcessingService:
         """
         self.analyzer = analyzer
         self.matcher = match_service.FullLevelBibMatcher(fetcher=bib_fetcher)
-        self.parser = marc_services.BibParser(engine=engine)
-        self.updater = marc_services.BibUpdater(engine=engine)
+        self.engine = engine
 
     def process_vendor_file(self, data: BinaryIO | bytes) -> dict[str, Any]:
         """
@@ -85,16 +84,18 @@ class FullRecordProcessingService:
             A dictionary containing the a list of processed records as `DomainBib`
             objects and the the `ProcessVendorFileReport` for the file of records.
         """
-        parsed_records = self.parser.parse(data=data)
+        parsed_records = marc_services.BibParser.parse_marc_data(
+            data=data, engine=self.engine
+        )
         marc_services.BarcodeValidator.ensure_unique(parsed_records)
-        barcodes = self.parser.extract_barcodes(parsed_records)
+        barcodes = marc_services.BarcodeExtractor.extract_barcodes(parsed_records)
         out: dict[str, list[Any]] = {"records": [], "report": [], "barcodes": barcodes}
         for record in parsed_records:
             candidates = self.matcher.match(record=record)
             analysis = self.analyzer.analyze(record=record, candidates=candidates)
             out["report"].append(analysis)
             record.apply_match(analysis)
-            self.updater.update_record(record=record)
+            marc_services.BibUpdater.update_record(record=record, engine=self.engine)
             out["records"].append(record)
         return out
 
@@ -121,8 +122,7 @@ class OrderRecordProcessingService:
         """
         self.analyzer = analyzer
         self.matcher = match_service.OrderLevelBibMatcher(fetcher=bib_fetcher)
-        self.parser = marc_services.BibParser(engine=engine)
-        self.updater = marc_services.BibUpdater(engine=engine)
+        self.engine = engine
 
     def process_vendor_file(
         self,
@@ -152,7 +152,9 @@ class OrderRecordProcessingService:
             A dictionary containing the a list of processed records as `DomainBib`
             objects and the the `ProcessVendorFileReport` for the file of records.
         """
-        parsed_records = self.parser.parse(data=data, vendor=vendor)
+        parsed_records = marc_services.BibParser.parse_marc_data(
+            data=data, vendor=vendor, engine=self.engine
+        )
         marc_services.BarcodeValidator.ensure_unique(parsed_records)
         out: dict[str, list[Any]] = {"records": [], "report": []}
         for record in parsed_records:
@@ -160,6 +162,6 @@ class OrderRecordProcessingService:
             analysis = self.analyzer.analyze(record=record, candidates=candidates)
             out["report"].append(analysis)
             record.apply_match(analysis)
-            self.updater.update_record(record=record, template_data=template_data)
+            marc_services.BibUpdater.update_record(record=record, engine=self.engine)
             out["records"].append(record)
         return out

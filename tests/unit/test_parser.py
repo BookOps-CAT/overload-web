@@ -1,4 +1,3 @@
-import copy
 import datetime
 
 import pytest
@@ -6,7 +5,6 @@ from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
 from overload_web.application.services import marc_services
-from overload_web.infrastructure.marc import engine
 
 
 @pytest.fixture
@@ -80,63 +78,66 @@ def stub_bib(library, collection) -> Bib:
     return bib
 
 
-@pytest.fixture
-def full_parser_service(engine_config):
-    return marc_services.BibParser(
-        engine=engine.MarcEngine(rules=engine_config),
-    )
-
-
-@pytest.fixture
-def order_parser_service(engine_config):
-    return marc_services.BibParser(
-        engine=engine.MarcEngine(rules=engine_config),
-    )
-
-
-@pytest.mark.parametrize(
-    "library, collection",
-    [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
-)
 class TestParser:
-    @pytest.mark.parametrize("record_type", ["cat"])
-    def test_parse_full(self, full_parser_service, stub_bib, caplog):
-        records = full_parser_service.parse(stub_bib.as_marc())
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
+    )
+    def test_parse_full(self, marc_engine, stub_bib, caplog):
+        records = marc_services.BibParser.parse_marc_data(
+            stub_bib.as_marc(), engine=marc_engine
+        )
         assert len(records) == 1
-        assert records[0].library == full_parser_service.engine.library
+        assert records[0].library == marc_engine.library
         assert records[0].barcodes == ["333331234567890"]
         assert records[0].vendor_info.name == "UNKNOWN"
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
 
     @pytest.mark.parametrize(
-        "tag, value, record_type",
-        [("901", "BTSERIES", "cat"), ("947", "B&amp;T SERIES", "cat")],
+        "library, collection, record_type, tag, value",
+        [
+            ("nypl", "BL", "cat", "901", "BTSERIES"),
+            ("nypl", "RL", "cat", "901", "BTSERIES"),
+            ("bpl", "NONE", "cat", "947", "B&amp;T SERIES"),
+        ],
     )
-    def test_parse_full_vendor(self, full_parser_service, stub_bib, tag, value, caplog):
-        stub_vendor_bib = copy.deepcopy(stub_bib)
-        stub_vendor_bib.add_field(
+    def test_parse_full_vendor(self, marc_engine, stub_bib, tag, value, caplog):
+        stub_bib.add_field(
             Field(
                 tag=tag,
                 indicators=Indicators(" ", " "),
                 subfields=[Subfield(code="a", value=value)],
             )
         )
-        records = full_parser_service.parse(stub_vendor_bib.as_marc())
+        records = marc_services.BibParser.parse_marc_data(
+            stub_bib.as_marc(), engine=marc_engine
+        )
         assert len(records) == 1
-        assert records[0].library == full_parser_service.engine.library
+        assert records[0].library == marc_engine.library
         assert records[0].barcodes == ["333331234567890"]
         assert records[0].vendor_info is not None
+        assert records[0].vendor_info.name == "BT SERIES"
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
 
-    @pytest.mark.parametrize("record_type", ["acq", "sel"])
-    def test_parse_order_level(
-        self, order_parser_service, stub_bib, collection, caplog
-    ):
-        records = order_parser_service.parse(stub_bib.as_marc())
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [
+            ("nypl", "BL", "acq"),
+            ("nypl", "BL", "sel"),
+            ("nypl", "RL", "acq"),
+            ("nypl", "RL", "sel"),
+            ("bpl", "NONE", "acq"),
+            ("bpl", "NONE", "sel"),
+        ],
+    )
+    def test_parse_order_level(self, marc_engine, stub_bib, collection, caplog):
+        records = marc_services.BibParser.parse_marc_data(
+            stub_bib.as_marc(), engine=marc_engine
+        )
         assert len(records) == 1
-        assert records[0].library == order_parser_service.engine.library
+        assert records[0].library == marc_engine.library
         assert records[0].collection == collection
         assert records[0].barcodes == ["333331234567890"]
         assert records[0].vendor_info is None
@@ -145,10 +146,22 @@ class TestParser:
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
 
-    @pytest.mark.parametrize("record_type", ["acq", "sel"])
-    def test_parse_update_date(self, order_parser_service, stub_bib, caplog):
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [
+            ("nypl", "BL", "acq"),
+            ("nypl", "BL", "sel"),
+            ("nypl", "RL", "acq"),
+            ("nypl", "RL", "sel"),
+            ("bpl", "NONE", "acq"),
+            ("bpl", "NONE", "sel"),
+        ],
+    )
+    def test_parse_update_date(self, marc_engine, stub_bib, caplog):
         stub_bib.add_field(Field(tag="005", data="20200101010000.0"))
-        records = order_parser_service.parse(stub_bib.as_marc())
+        records = marc_services.BibParser.parse_marc_data(
+            stub_bib.as_marc(), engine=marc_engine
+        )
         assert len(records) == 1
         assert records[0].vendor_info is None
         assert records[0].update_date == "20200101010000.0"
@@ -156,8 +169,13 @@ class TestParser:
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
 
-    @pytest.mark.parametrize("record_type", ["cat"])
-    def test_extract_barcodes(self, full_parser_service, stub_bib):
-        records = full_parser_service.parse(stub_bib.as_marc())
-        barcodes = full_parser_service.extract_barcodes(records)
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
+    )
+    def test_extract_barcodes(self, marc_engine, stub_bib):
+        records = marc_services.BibParser.parse_marc_data(
+            stub_bib.as_marc(), engine=marc_engine
+        )
+        barcodes = marc_services.BarcodeExtractor.extract_barcodes(records)
         assert len(barcodes) == 1

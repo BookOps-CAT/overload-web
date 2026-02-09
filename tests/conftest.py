@@ -10,7 +10,6 @@ from bookops_marc import Bib
 from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.application.services import marc_services
 from overload_web.domain.models import bibs, sierra_responses
 from overload_web.infrastructure.marc import engine
 from overload_web.infrastructure.sierra import clients
@@ -665,5 +664,5 @@ def engine_config(
 
 
 @pytest.fixture
-def update_strategy(engine_config) -> marc_services.BibUpdater:
-    return marc_services.BibUpdater(engine=engine.MarcEngine(rules=engine_config))
+def marc_engine(engine_config) -> engine.MarcEngine:
+    return engine.MarcEngine(rules=engine_config)

@@ -86,8 +86,8 @@ class MarcEngine:
             A dictionary containing the values present in the MARC fields/subfields.
 
         """
-        bib_dict: dict = {}
         for tag, data in tags.items():
+            bib_dict: dict = {}
             fields = record.get_fields(tag)
             if not fields:
                 continue
@@ -96,7 +96,9 @@ class MarcEngine:
                 if value != data["value"]:
                     continue
                 bib_dict[tag] = {"code": data["code"], "value": value}
-        return bib_dict == tags
+            if bib_dict and bib_dict == tags:
+                return bib_dict == tags
+        return False
 
     def update_fields(self, field_updates: list[Any], bib: Bib) -> None:
         """
@@ -154,8 +156,7 @@ class MarcEngine:
             # dict containing additional info about nested data for attr
             elif isinstance(v, dict) and "name" in v:
                 property = getattr(obj, v["name"])
-                if v.get("property") == "values" and v.get("type") == "list":
-                    out[k] = list(property.values())
+                out[k] = list(property.values())
             # nested dict for `bookops_marc.Order` objects
             else:
                 field = getattr(obj, k)
@@ -169,15 +170,9 @@ class MarcEngine:
             tags = info["vendor_tags"].get("primary", {})
             tag_match = self.get_vendor_tags_from_bib(record=record, tags=tags)
             if tag_match:
-                info["name"] = vendor
                 return info
             alt_tags = info["vendor_tags"].get("alternate", {})
             alt_match = self.get_vendor_tags_from_bib(record=record, tags=alt_tags)
             if alt_match:
-                info["name"] = vendor
                 return info
-        return {
-            "name": "UNKNOWN",
-            "bib_fields": rules["UNKNOWN"]["bib_fields"],
-            "matchpoints": rules["UNKNOWN"]["matchpoints"],
-        }
+        return rules["UNKNOWN"]

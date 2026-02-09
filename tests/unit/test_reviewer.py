@@ -67,8 +67,8 @@ class TestReviewer:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_dedupe_attach(self, full_bib, update_strategy):
-        service = review.BibReviewer(port=update_strategy.engine)
+    def test_dedupe_attach(self, full_bib, marc_engine):
+        service = review.BibReviewer(port=marc_engine)
         deduped_bibs = service.dedupe(
             [full_bib],
             [
@@ -94,8 +94,8 @@ class TestReviewer:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_dedupe_insert(self, full_bib, update_strategy, stub_analysis):
-        service = review.BibReviewer(port=update_strategy.engine)
+    def test_dedupe_insert(self, full_bib, marc_engine, stub_analysis):
+        service = review.BibReviewer(port=marc_engine)
         deduped_bibs = service.dedupe([full_bib], [stub_analysis])
         assert len(deduped_bibs["DUP"]) == 0
         assert len(deduped_bibs["NEW"]) == 1
@@ -106,9 +106,9 @@ class TestReviewer:
         [("bpl", "NONE", "cat")],
     )
     def test_dedupe_deduped_bpl(
-        self, library, full_bib, full_bib_add_barcodes, update_strategy, stub_analysis
+        self, library, full_bib, full_bib_add_barcodes, marc_engine, stub_analysis
     ):
-        service = review.BibReviewer(port=update_strategy.engine)
+        service = review.BibReviewer(port=marc_engine)
         deduped_bibs = service.dedupe(
             [full_bib, full_bib_add_barcodes],
             [stub_analysis, stub_analysis],
@@ -128,9 +128,9 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat")],
     )
     def test_dedupe_deduped_nypl(
-        self, library, full_bib, full_bib_add_barcodes, update_strategy, stub_analysis
+        self, library, full_bib, full_bib_add_barcodes, marc_engine, stub_analysis
     ):
-        service = review.BibReviewer(port=update_strategy.engine)
+        service = review.BibReviewer(port=marc_engine)
         deduped_bibs = service.dedupe(
             [full_bib, full_bib_add_barcodes], [stub_analysis, stub_analysis]
         )
@@ -149,11 +149,11 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_dedupe_other_recs(
-        self, full_bib, full_bib_add_barcodes, stub_analysis, update_strategy
+        self, full_bib, full_bib_add_barcodes, stub_analysis, marc_engine
     ):
         other_rec = copy.deepcopy(full_bib)
         other_rec.control_number = "123456789"
-        service = review.BibReviewer(port=update_strategy.engine)
+        service = review.BibReviewer(port=marc_engine)
         analysis = bibs.MatchAnalysis(
             True,
             bibs.ClassifiedCandidates([], [], []),
@@ -176,8 +176,8 @@ class TestReviewer:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_validate_cat(self, full_bib, update_strategy, caplog):
-        service = review.BibReviewer(port=update_strategy.engine)
+    def test_validate_cat(self, full_bib, marc_engine, caplog):
+        service = review.BibReviewer(port=marc_engine)
         service.validate({"NEW": [full_bib]}, ["333331234567890"])
         assert len(caplog.records) == 1
         assert (
@@ -187,10 +187,8 @@ class TestReviewer:
     @pytest.mark.parametrize(
         "library, collection, record_type", [("bpl", "NONE", "cat")]
     )
-    def test_validate_cat_bpl_960_item(
-        self, full_bib, update_strategy, caplog, collection
-    ):
-        service = review.BibReviewer(port=update_strategy.engine)
+    def test_validate_cat_bpl_960_item(self, full_bib, marc_engine, caplog, collection):
+        service = review.BibReviewer(port=marc_engine)
         service.validate({"NEW": [full_bib]}, ["333331234567890"])
         assert len(caplog.records) == 1
         assert (
@@ -201,10 +199,8 @@ class TestReviewer:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_validate_missing_barcodes(
-        self, full_bib, update_strategy, caplog, collection
-    ):
-        service = review.BibReviewer(port=update_strategy.engine)
+    def test_validate_missing_barcodes(self, full_bib, marc_engine, caplog, collection):
+        service = review.BibReviewer(port=marc_engine)
         service.validate({"NEW": [full_bib]}, ["333331234567890", "333330987654321"])
         assert len(caplog.records) == 2
         assert (
@@ -217,9 +213,9 @@ class TestReviewer:
         "library, collection, record_type", [("bpl", "NONE", "cat")]
     )
     def test_validate_bpl_960_item_missing_barcodes(
-        self, full_bib, update_strategy, caplog, collection
+        self, full_bib, marc_engine, caplog, collection
     ):
-        service = review.BibReviewer(port=update_strategy.engine)
+        service = review.BibReviewer(port=marc_engine)
         service.validate({"NEW": [full_bib]}, ["333331234567890", "333330987654321"])
         assert len(caplog.records) == 2
         assert (
@@ -232,8 +228,8 @@ class TestReviewer:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_dedupe_and_validate_cat(self, full_bib, update_strategy):
-        service = review.BibReviewer(port=update_strategy.engine)
+    def test_dedupe_and_validate_cat(self, full_bib, marc_engine):
+        service = review.BibReviewer(port=marc_engine)
         decision = bibs.MatchDecision(
             bibs.CatalogAction.ATTACH, target_bib_id=full_bib.bib_id
         )

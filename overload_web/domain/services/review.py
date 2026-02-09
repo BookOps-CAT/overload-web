@@ -163,11 +163,9 @@ class BibReviewer:
             a dictionary containing the `DomainBib` objects to be written and
             the file that they should be written to.
         """
-        out = {}
         if all(i.record_type == "cat" for i in records):
             deduped_recs = self.dedupe(records=records, reports=reports)
             self.validate(record_batches=deduped_recs, barcodes=barcodes)
-            out.apply_updates(deduped_recs)
             return deduped_recs
         return {"NEW": records}
 
