@@ -1,41 +1,14 @@
 import logging
 from typing import Any, BinaryIO
 
-from overload_web.application.ports import marc
 from overload_web.application.services import (
     marc_services,
-    match_service,
+    record_service,
     report_service,
 )
 from overload_web.domain.models import rules
-from overload_web.domain.services import match_analysis
 
 logger = logging.getLogger(__name__)
-
-
-class ProcessingHandler:
-    """Handles parsing, matching, and analysis of full-level MARC records."""
-
-    def __init__(
-        self,
-        fetcher: match_service.BibFetcher,
-        engine: marc.MarcEnginePort,
-        analyzer: match_analysis.MatchAnalyzer,
-    ):
-        """
-        Initialize `FullRecordProcessingService`.
-
-        Args:
-            bib_fetcher:
-                A `match_service.BibFetcher` object
-            analyzer:
-                An `match_analysis.MatchAnalyzer` object
-            engine:
-                An `update.MarcEnginePort` object
-        """
-        self.analysis_service = analyzer
-        self.match_service = match_service.BibMatcher(fetcher=fetcher)
-        self.engine = engine
 
 
 class ProcessBatch:
@@ -43,7 +16,7 @@ class ProcessBatch:
 
     @staticmethod
     def execute_full_records_workflow(
-        data: BinaryIO | bytes, handler: ProcessingHandler
+        data: BinaryIO | bytes, handler: record_service.ProcessingHandler
     ) -> tuple:
         bibs = marc_services.BibParser.parse_marc_data(data=data, engine=handler.engine)
         marc_services.BarcodeValidator.ensure_unique(bibs)
@@ -82,7 +55,7 @@ class ProcessBatch:
     @staticmethod
     def execute_order_records_workflow(
         data: BinaryIO | bytes,
-        handler: ProcessingHandler,
+        handler: record_service.ProcessingHandler,
         matchpoints: dict[str, str],
         template_data: dict[str, Any],
         vendor: str | None = None,

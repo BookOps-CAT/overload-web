@@ -46,6 +46,31 @@ class MatchAnalyzerFactory:
                 return match_analysis.AcquisitionsMatchAnalyzer()
 
 
+class ProcessingHandler:
+    """Handles parsing, matching, and analysis of full-level MARC records."""
+
+    def __init__(
+        self,
+        fetcher: match_service.BibFetcher,
+        engine: marc.MarcEnginePort,
+        analyzer: match_analysis.MatchAnalyzer,
+    ):
+        """
+        Initialize `FullRecordProcessingService`.
+
+        Args:
+            bib_fetcher:
+                A `match_service.BibFetcher` object
+            analyzer:
+                An `match_analysis.MatchAnalyzer` object
+            engine:
+                An `update.MarcEnginePort` object
+        """
+        self.analysis_service = analyzer
+        self.match_service = match_service.BibMatcher(fetcher=fetcher)
+        self.engine = engine
+
+
 class FullRecordProcessingService:
     """Handles parsing, matching, and analysis of full-level MARC records."""
 

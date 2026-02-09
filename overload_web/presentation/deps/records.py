@@ -45,31 +45,16 @@ def get_match_analyzer(
     )
 
 
-def order_level_processing_service(
+def get_pvf_handler(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
     analyzer: Annotated[
         record_service.match_analysis.MatchAnalyzer, Depends(get_match_analyzer)
     ],
     config: Annotated[engine.MarcEngineConfig, Depends(get_marc_engine_config)],
-) -> Generator[record_service.OrderRecordProcessingService, None, None]:
-    """Create an order-record processing service with injected dependencies."""
-    yield record_service.OrderRecordProcessingService(
-        bib_fetcher=fetcher,
-        analyzer=analyzer,
-        engine=engine.MarcEngine(rules=config),
-    )
-
-
-def full_level_processing_service(
-    fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
-    analyzer: Annotated[
-        record_service.match_analysis.MatchAnalyzer, Depends(get_match_analyzer)
-    ],
-    config: Annotated[engine.MarcEngineConfig, Depends(get_marc_engine_config)],
-) -> Generator[record_service.FullRecordProcessingService, None, None]:
+) -> Generator[record_service.ProcessingHandler, None, None]:
     """Create an full-record processing service with injected dependencies."""
-    yield record_service.FullRecordProcessingService(
-        bib_fetcher=fetcher,
+    yield record_service.ProcessingHandler(
+        fetcher=fetcher,
         analyzer=analyzer,
         engine=engine.MarcEngine(rules=config),
     )

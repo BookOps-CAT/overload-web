@@ -10,6 +10,7 @@ from typing import Annotated, Any, AsyncGenerator
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
+from overload_web.application.commands import ProcessBatch
 from overload_web.presentation.deps import dto, files, records, templates
 
 logger = logging.getLogger(__name__)
@@ -191,7 +192,7 @@ def write_remote_file(
 @api_router.post("/full-records/process-vendor-file", response_class=HTMLResponse)
 def process_full_records(
     request: Request,
-    full_record_service: Annotated[Any, Depends(records.full_level_processing_service)],
+    service_handler: Annotated[Any, Depends(records.get_pvf_handler)],
     files: Annotated[list[dto.VendorFileModel], Depends(files.normalize_files)],
 ) -> HTMLResponse:
     """
@@ -213,8 +214,10 @@ def process_full_records(
     """
     out_files = {}
     for file in files:
-        out_files[file.file_name] = full_record_service.process_vendor_file(
-            data=file.content
+        out_files[file.file_name], out_files[f"{file.file_name}_report"] = (
+            ProcessBatch.execute_full_records_workflow(
+                data=file.content, handler=service_handler
+            )
         )
     return request.app.state.templates.TemplateResponse(
         request=request,
@@ -226,9 +229,7 @@ def process_full_records(
 @api_router.post("/order-records/process-vendor-file", response_class=HTMLResponse)
 def process_order_records(
     request: Request,
-    order_record_service: Annotated[
-        Any, Depends(records.order_level_processing_service)
-    ],
+    service_handler: Annotated[Any, Depends(records.get_pvf_handler)],
     files: Annotated[list[dto.VendorFileModel], Depends(files.normalize_files)],
     order_template: Annotated[Any, Depends(dto.from_form(dto.TemplateDataModel))],
     matchpoints: Annotated[Any, Depends(dto.from_form(dto.MatchpointSchema))],
@@ -260,12 +261,16 @@ def process_order_records(
     """
     out_files = {}
     for file in files:
-        out_files[file.file_name] = order_record_service.process_vendor_file(
-            data=file.content,
-            template_data=order_template.model_dump(),
-            matchpoints=matchpoints.model_dump(),
-            vendor=vendor,
+        out_files[file.file_name], out_files[f"{file.file_name}_report"] = (
+            ProcessBatch.execute_order_records_workflow(
+                data=file.content,
+                handler=service_handler,
+                template_data=order_template.model_dump(),
+                matchpoints=matchpoints.model_dump(),
+                vendor=vendor,
+            )
         )
+
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",

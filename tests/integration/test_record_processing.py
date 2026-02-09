@@ -2,7 +2,7 @@ import io
 
 import pytest
 
-from overload_web.application.commands import process_batch
+from overload_web.application.commands import ProcessBatch
 from overload_web.application.services import record_service
 from overload_web.domain.errors import OverloadError
 from overload_web.domain.models import bibs
@@ -108,14 +108,14 @@ class TestProcessBatch:
         [("nypl", "BL", "cat"), ("nypl", "rL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_full_service_process_vendor_file(self, library, service_components):
-        command_handler = process_batch.ProcessingHandler(
+        command_handler = record_service.ProcessingHandler(
             fetcher=service_components[0],
             engine=service_components[1],
             analyzer=service_components[2],
         )
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        records, stats = process_batch.ProcessBatch.execute_full_records_workflow(
+        records, stats = ProcessBatch.execute_full_records_workflow(
             marc_data, handler=command_handler
         )
         assert isinstance(stats, dict)
@@ -127,14 +127,14 @@ class TestProcessBatch:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_order_service_process_vendor_file(self, library, service_components):
-        command_handler = process_batch.ProcessingHandler(
+        command_handler = record_service.ProcessingHandler(
             fetcher=service_components[0],
             engine=service_components[1],
             analyzer=service_components[2],
         )
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        records, stats = process_batch.ProcessBatch.execute_order_records_workflow(
+        records, stats = ProcessBatch.execute_order_records_workflow(
             marc_data,
             handler=command_handler,
             template_data={"format": "a"},
@@ -149,7 +149,7 @@ class TestProcessBatch:
         [("nypl", "BL", "cat"), ("nypl", "rL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_full_service_process_vendor_file_dupes(self, library, service_components):
-        command_handler = process_batch.ProcessingHandler(
+        command_handler = record_service.ProcessingHandler(
             fetcher=service_components[0],
             engine=service_components[1],
             analyzer=service_components[2],
@@ -157,7 +157,7 @@ class TestProcessBatch:
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
         with pytest.raises(OverloadError) as exc:
-            process_batch.ProcessBatch.execute_full_records_workflow(
+            ProcessBatch.execute_full_records_workflow(
                 marc_data, handler=command_handler
             )
         assert "Duplicate barcodes found in file: " in str(exc.value)
@@ -167,7 +167,7 @@ class TestProcessBatch:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_order_service_process_vendor_file_dupes(self, library, service_components):
-        command_handler = process_batch.ProcessingHandler(
+        command_handler = record_service.ProcessingHandler(
             fetcher=service_components[0],
             engine=service_components[1],
             analyzer=service_components[2],
@@ -175,7 +175,7 @@ class TestProcessBatch:
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
         with pytest.raises(OverloadError) as exc:
-            process_batch.ProcessBatch.execute_order_records_workflow(
+            ProcessBatch.execute_order_records_workflow(
                 marc_data,
                 handler=command_handler,
                 template_data={"format": "a"},
