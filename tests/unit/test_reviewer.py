@@ -4,8 +4,8 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
+from overload_web.application.services import marc_services
 from overload_web.domain.models import bibs
-from overload_web.domain.services import review
 
 
 @pytest.fixture
@@ -68,23 +68,20 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_dedupe_attach(self, full_bib, marc_engine):
-        service = review.BibReviewer(port=marc_engine)
-        deduped_bibs = service.dedupe(
-            [full_bib],
-            [
-                bibs.MatchAnalysis(
-                    True,
-                    bibs.ClassifiedCandidates([], [], []),
-                    full_bib.collection,
-                    bibs.MatchDecision(
-                        bibs.CatalogAction.ATTACH, target_bib_id=full_bib.bib_id
-                    ),
-                    full_bib.library,
-                    full_bib.match_identifiers(),
-                    full_bib.record_type,
-                    full_bib.vendor,
-                ),
-            ],
+        full_bib.analysis = bibs.MatchAnalysis(
+            True,
+            bibs.ClassifiedCandidates([], [], []),
+            full_bib.collection,
+            bibs.MatchDecision(
+                bibs.CatalogAction.ATTACH, target_bib_id=full_bib.bib_id
+            ),
+            full_bib.library,
+            full_bib.match_identifiers(),
+            full_bib.record_type,
+            full_bib.vendor,
+        )
+        deduped_bibs = marc_services.Deduplicator.deduplicate(
+            records=[full_bib], engine=marc_engine
         )
         assert len(deduped_bibs["DUP"]) == 1
         assert len(deduped_bibs["NEW"]) == 0
@@ -95,8 +92,10 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_dedupe_insert(self, full_bib, marc_engine, stub_analysis):
-        service = review.BibReviewer(port=marc_engine)
-        deduped_bibs = service.dedupe([full_bib], [stub_analysis])
+        full_bib.analysis = stub_analysis
+        deduped_bibs = marc_services.Deduplicator.deduplicate(
+            records=[full_bib], engine=marc_engine
+        )
         assert len(deduped_bibs["DUP"]) == 0
         assert len(deduped_bibs["NEW"]) == 1
         assert len(deduped_bibs["DEDUPED"]) == 0
@@ -105,13 +104,13 @@ class TestReviewer:
         "library, collection, record_type",
         [("bpl", "NONE", "cat")],
     )
-    def test_dedupe_deduped_bpl(
+    def test_dedupe_bpl(
         self, library, full_bib, full_bib_add_barcodes, marc_engine, stub_analysis
     ):
-        service = review.BibReviewer(port=marc_engine)
-        deduped_bibs = service.dedupe(
-            [full_bib, full_bib_add_barcodes],
-            [stub_analysis, stub_analysis],
+        full_bib.analysis = stub_analysis
+        full_bib_add_barcodes.analysis = stub_analysis
+        deduped_bibs = marc_services.Deduplicator.deduplicate(
+            records=[full_bib, full_bib_add_barcodes], engine=marc_engine
         )
         assert len(deduped_bibs["DUP"]) == 0
         assert len(deduped_bibs["NEW"]) == 2
@@ -130,9 +129,10 @@ class TestReviewer:
     def test_dedupe_deduped_nypl(
         self, library, full_bib, full_bib_add_barcodes, marc_engine, stub_analysis
     ):
-        service = review.BibReviewer(port=marc_engine)
-        deduped_bibs = service.dedupe(
-            [full_bib, full_bib_add_barcodes], [stub_analysis, stub_analysis]
+        full_bib.analysis = stub_analysis
+        full_bib_add_barcodes.analysis = stub_analysis
+        deduped_bibs = marc_services.Deduplicator.deduplicate(
+            records=[full_bib, full_bib_add_barcodes], engine=marc_engine
         )
         assert len(deduped_bibs["DUP"]) == 0
         assert len(deduped_bibs["NEW"]) == 2
@@ -153,8 +153,7 @@ class TestReviewer:
     ):
         other_rec = copy.deepcopy(full_bib)
         other_rec.control_number = "123456789"
-        service = review.BibReviewer(port=marc_engine)
-        analysis = bibs.MatchAnalysis(
+        other_rec.analysis = bibs.MatchAnalysis(
             True,
             bibs.ClassifiedCandidates([], [], []),
             full_bib.collection,
@@ -164,9 +163,10 @@ class TestReviewer:
             full_bib.record_type,
             full_bib.vendor,
         )
-        deduped_bibs = service.dedupe(
-            [full_bib, full_bib_add_barcodes, other_rec],
-            [stub_analysis, stub_analysis, analysis],
+        full_bib.analysis = stub_analysis
+        full_bib_add_barcodes.analysis = stub_analysis
+        deduped_bibs = marc_services.Deduplicator.deduplicate(
+            records=[full_bib, full_bib_add_barcodes, other_rec], engine=marc_engine
         )
         assert len(deduped_bibs["DUP"]) == 0
         assert len(deduped_bibs["NEW"]) == 3
@@ -176,9 +176,10 @@ class TestReviewer:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_validate_cat(self, full_bib, marc_engine, caplog):
-        service = review.BibReviewer(port=marc_engine)
-        service.validate({"NEW": [full_bib]}, ["333331234567890"])
+    def test_validate_cat(self, full_bib, caplog, record_type):
+        marc_services.BarcodeValidator.ensure_preserved(
+            {"NEW": [full_bib]}, ["333331234567890"]
+        )
         assert len(caplog.records) == 1
         assert (
             caplog.records[0].msg == "Integrity validation: True, missing_barcodes: []"
@@ -187,9 +188,10 @@ class TestReviewer:
     @pytest.mark.parametrize(
         "library, collection, record_type", [("bpl", "NONE", "cat")]
     )
-    def test_validate_cat_bpl_960_item(self, full_bib, marc_engine, caplog, collection):
-        service = review.BibReviewer(port=marc_engine)
-        service.validate({"NEW": [full_bib]}, ["333331234567890"])
+    def test_validate_cat_bpl_960_item(self, full_bib, caplog, collection, record_type):
+        marc_services.BarcodeValidator.ensure_preserved(
+            {"NEW": [full_bib]}, ["333331234567890"]
+        )
         assert len(caplog.records) == 1
         assert (
             caplog.records[0].msg == "Integrity validation: True, missing_barcodes: []"
@@ -199,56 +201,13 @@ class TestReviewer:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_validate_missing_barcodes(self, full_bib, marc_engine, caplog, collection):
-        service = review.BibReviewer(port=marc_engine)
-        service.validate({"NEW": [full_bib]}, ["333331234567890", "333330987654321"])
+    def test_validate_missing_barcodes(self, full_bib, caplog, collection, record_type):
+        marc_services.BarcodeValidator.ensure_preserved(
+            {"NEW": [full_bib]}, ["333331234567890", "333330987654321"]
+        )
         assert len(caplog.records) == 2
         assert (
             caplog.records[0].msg
             == "Integrity validation: False, missing_barcodes: ['333330987654321']"
         )
         assert caplog.records[1].msg == "Barcodes integrity error: ['333330987654321']"
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type", [("bpl", "NONE", "cat")]
-    )
-    def test_validate_bpl_960_item_missing_barcodes(
-        self, full_bib, marc_engine, caplog, collection
-    ):
-        service = review.BibReviewer(port=marc_engine)
-        service.validate({"NEW": [full_bib]}, ["333331234567890", "333330987654321"])
-        assert len(caplog.records) == 2
-        assert (
-            caplog.records[0].msg
-            == "Integrity validation: False, missing_barcodes: ['333330987654321']"
-        )
-        assert caplog.records[1].msg == "Barcodes integrity error: ['333330987654321']"
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
-    )
-    def test_dedupe_and_validate_cat(self, full_bib, marc_engine):
-        service = review.BibReviewer(port=marc_engine)
-        decision = bibs.MatchDecision(
-            bibs.CatalogAction.ATTACH, target_bib_id=full_bib.bib_id
-        )
-        deduped_bibs = service.dedupe_and_validate(
-            [full_bib],
-            [
-                bibs.MatchAnalysis(
-                    True,
-                    bibs.ClassifiedCandidates([], [], []),
-                    full_bib.collection,
-                    decision,
-                    full_bib.library,
-                    full_bib.match_identifiers(),
-                    full_bib.record_type,
-                    full_bib.vendor,
-                ),
-            ],
-            ["333331234567890"],
-        )
-        assert len(deduped_bibs["DUP"]) == 1
-        assert len(deduped_bibs["NEW"]) == 0
-        assert len(deduped_bibs["DEDUPED"]) == 0

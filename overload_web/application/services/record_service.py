@@ -67,7 +67,7 @@ class FullRecordProcessingService:
                 An `match_analysis.MatchAnalyzer` object
         """
         self.analyzer = analyzer
-        self.matcher = match_service.FullLevelBibMatcher(fetcher=bib_fetcher)
+        self.matcher = match_service.BibMatcher(fetcher=bib_fetcher)
         self.engine = engine
 
     def process_vendor_file(self, data: BinaryIO | bytes) -> dict[str, Any]:
@@ -91,7 +91,7 @@ class FullRecordProcessingService:
         barcodes = marc_services.BarcodeExtractor.extract_barcodes(parsed_records)
         out: dict[str, list[Any]] = {"records": [], "report": [], "barcodes": barcodes}
         for record in parsed_records:
-            candidates = self.matcher.match(record=record)
+            candidates = self.matcher.match_full_record(record=record)
             analysis = self.analyzer.analyze(record=record, candidates=candidates)
             out["report"].append(analysis)
             record.apply_match(analysis)
@@ -121,7 +121,7 @@ class OrderRecordProcessingService:
                 An `match_analysis.MatchAnalyzer` object
         """
         self.analyzer = analyzer
-        self.matcher = match_service.OrderLevelBibMatcher(fetcher=bib_fetcher)
+        self.matcher = match_service.BibMatcher(fetcher=bib_fetcher)
         self.engine = engine
 
     def process_vendor_file(
@@ -158,10 +158,15 @@ class OrderRecordProcessingService:
         marc_services.BarcodeValidator.ensure_unique(parsed_records)
         out: dict[str, list[Any]] = {"records": [], "report": []}
         for record in parsed_records:
-            candidates = self.matcher.match(record=record, matchpoints=matchpoints)
+            candidates = self.matcher.match_order_record(
+                record=record, matchpoints=matchpoints
+            )
             analysis = self.analyzer.analyze(record=record, candidates=candidates)
             out["report"].append(analysis)
             record.apply_match(analysis)
-            marc_services.BibUpdater.update_record(record=record, engine=self.engine)
+            record.apply_order_template(template_data)
+            marc_services.BibUpdater.update_record(
+                record=record, engine=self.engine, template_data=template_data
+            )
             out["records"].append(record)
         return out

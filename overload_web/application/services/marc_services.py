@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import itertools
 import logging
 from collections import Counter
@@ -50,6 +51,28 @@ class BarcodeExtractor:
 
 class BarcodeValidator:
     @staticmethod
+    def ensure_preserved(
+        record_batches: dict[str, list[bibs.DomainBib]], barcodes: list[str]
+    ) -> None:
+        valid = True
+        barcodes_from_batches = list(
+            itertools.chain.from_iterable(
+                i.barcodes for j in record_batches.values() for i in j
+            )
+        )
+        missing_barcodes = set()
+        for barcode in barcodes:
+            if barcode not in barcodes_from_batches:
+                valid = False
+                missing_barcodes.add(barcode)
+        valid = sorted(barcodes) == sorted(barcodes_from_batches)
+        logger.debug(
+            f"Integrity validation: {valid}, missing_barcodes: {list(missing_barcodes)}"
+        )
+        if not valid:
+            logger.error(f"Barcodes integrity error: {list(missing_barcodes)}")
+
+    @staticmethod
     def ensure_unique(bibs: list[bibs.DomainBib]) -> None:
         barcodes = list(itertools.chain.from_iterable([i.barcodes for i in bibs]))
         barcode_counter = Counter(barcodes)
@@ -63,7 +86,6 @@ class BibUpdater:
     def update_record(
         record: bibs.DomainBib, engine: marc.MarcEnginePort, **kwargs: Any
     ) -> None:
-
         template_data = kwargs.get("template_data", {})
         bib = engine.create_bib_from_domain(record=record)
 
@@ -77,3 +99,74 @@ class BibUpdater:
         engine.update_fields(field_updates=updates, bib=bib)
         bib.leader = rules.FieldRules.update_leader(bib.leader)
         record.binary_data = bib.as_marc()
+
+
+class Deduplicator:
+    @staticmethod
+    def deduplicate(
+        records: list[bibs.DomainBib], engine: marc.MarcEnginePort
+    ) -> dict[str, list[bibs.DomainBib]]:
+        merge: list[bibs.DomainBib] = []
+        new: list[bibs.DomainBib] = []
+        deduped: list[bibs.DomainBib] = []
+        for record in records:
+            if record.analysis and record.analysis.action == bibs.CatalogAction.ATTACH:
+                merge.append(record)
+            else:
+                new.append(record)
+        if not new:
+            return {"DUP": merge, "NEW": new, "DEDUPED": deduped}
+        logger.debug("Deduping new records")
+        new_record_counter = Counter([i.control_number for i in new])
+        dupe_recs = [i for i, count in new_record_counter.items() if count > 1]
+        if not dupe_recs:
+            logger.debug("No duplicates found in file.")
+            return {"DUP": merge, "NEW": new, "DEDUPED": deduped}
+        logger.debug("Discovered duplicate records in processed file")
+
+        processed_dupes = []
+        for record in new:
+            if record.control_number not in dupe_recs:
+                deduped.append(record)
+            if record.control_number in processed_dupes:
+                continue
+            all_dupes = [i for i in new if i.control_number == record.control_number]
+            base_rec = engine.create_bib_from_domain(record=all_dupes[0])
+            if base_rec.library == "bpl" and base_rec.overdrive_number is None:
+                tag = "960"
+                ind2 = " "
+            else:
+                tag = "949"
+                ind2 = "1"
+            all_items = []
+            for dupe in all_dupes[1:]:
+                dupe_bib = engine.create_bib_from_domain(record=dupe)
+                all_items.extend(dupe_bib.get_fields(tag))
+            for item in all_items:
+                if item.indicator1 == " " and item.indicator2 == ind2:
+                    base_rec.add_ordered_field(item)
+            record.binary_data = base_rec.as_marc()
+            processed_dupes.append(record.control_number)
+            deduped.append(record)
+        return {"DUP": merge, "NEW": new, "DEDUPED": deduped}
+
+
+class BibSerializer:
+    @staticmethod
+    def write(records: list[bibs.DomainBib]) -> BinaryIO:
+        """
+        Serialize `DomainBib` objects into a binary MARC stream.
+
+        Args:
+            records:
+                A list of parsed bibliographic records as `DomainBib` objects.
+
+        Returns:
+            MARC binary as an an in-memory file stream.
+        """
+        io_data = io.BytesIO()
+        for record in records:
+            logger.info(f"Writing MARC binary for record: {record}")
+            io_data.write(record.binary_data)
+        io_data.seek(0)
+        return io_data

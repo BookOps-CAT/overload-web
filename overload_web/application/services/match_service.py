@@ -94,9 +94,7 @@ class BibMatcher(ABC):
                 return candidates
         return []
 
-
-class OrderLevelBibMatcher(BibMatcher):
-    def match(
+    def match_order_record(
         self, record: bibs.DomainBib, matchpoints: dict[str, str]
     ) -> list[sierra_responses.BaseSierraResponse]:
         """
@@ -118,9 +116,7 @@ class OrderLevelBibMatcher(BibMatcher):
         )
         return responses
 
-
-class FullLevelBibMatcher(BibMatcher):
-    def match(
+    def match_full_record(
         self, record: bibs.DomainBib
     ) -> list[sierra_responses.BaseSierraResponse]:
         """
