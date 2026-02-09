@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any, Optional
+from typing import Any
 
 
 class CatalogAction(StrEnum):
@@ -367,11 +367,8 @@ class VendorInfo:
 
 
 class ProcessVendorFileReport:
-    def __init__(
-        self, analyses: list[MatchAnalysis], barcodes: Optional[list[str]] = []
-    ) -> None:
+    def __init__(self, analyses: list[MatchAnalysis]) -> None:
         self._analyses = analyses
-        self.barcodes = barcodes
         self.action = tuple([i.action for i in self._analyses])
         self.call_number = tuple([i.call_number for i in self._analyses])
         self.call_number_match = tuple([i.call_number_match for i in self._analyses])

@@ -1,5 +1,8 @@
+import io
+
 import pytest
 
+from overload_web.application.commands import process_batch
 from overload_web.application.services import record_service
 from overload_web.domain.errors import OverloadError
 from overload_web.domain.models import bibs
@@ -92,6 +95,89 @@ class TestRecordProcessingService:
         with pytest.raises(OverloadError) as exc:
             service.process_vendor_file(
                 data=marc_data,
+                template_data={"format": "a"},
+                matchpoints={"primary_matchpoint": "isbn"},
+                vendor="UNKNOWN",
+            )
+        assert "Duplicate barcodes found in file: " in str(exc.value)
+
+
+class TestProcessBatch:
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [("nypl", "BL", "cat"), ("nypl", "rL", "cat"), ("bpl", "NONE", "cat")],
+    )
+    def test_full_service_process_vendor_file(self, library, service_components):
+        command_handler = process_batch.ProcessingHandler(
+            fetcher=service_components[0],
+            engine=service_components[1],
+            analyzer=service_components[2],
+        )
+        with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
+            marc_data = fh.read()
+        records, stats = process_batch.ProcessBatch.execute_full_records_workflow(
+            marc_data, handler=command_handler
+        )
+        assert isinstance(stats, dict)
+        assert isinstance(records, dict)
+        assert list(records.keys()) == ["DUP", "NEW", "DEDUPED"]
+
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
+    )
+    def test_order_service_process_vendor_file(self, library, service_components):
+        command_handler = process_batch.ProcessingHandler(
+            fetcher=service_components[0],
+            engine=service_components[1],
+            analyzer=service_components[2],
+        )
+        with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
+            marc_data = fh.read()
+        records, stats = process_batch.ProcessBatch.execute_order_records_workflow(
+            marc_data,
+            handler=command_handler,
+            template_data={"format": "a"},
+            matchpoints={"primary_matchpoint": "isbn"},
+            vendor="UNKNOWN",
+        )
+        assert isinstance(stats, dict)
+        assert isinstance(records, io.BytesIO)
+
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [("nypl", "BL", "cat"), ("nypl", "rL", "cat"), ("bpl", "NONE", "cat")],
+    )
+    def test_full_service_process_vendor_file_dupes(self, library, service_components):
+        command_handler = process_batch.ProcessingHandler(
+            fetcher=service_components[0],
+            engine=service_components[1],
+            analyzer=service_components[2],
+        )
+        with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
+            marc_data = fh.read()
+        with pytest.raises(OverloadError) as exc:
+            process_batch.ProcessBatch.execute_full_records_workflow(
+                marc_data, handler=command_handler
+            )
+        assert "Duplicate barcodes found in file: " in str(exc.value)
+
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
+    )
+    def test_order_service_process_vendor_file_dupes(self, library, service_components):
+        command_handler = process_batch.ProcessingHandler(
+            fetcher=service_components[0],
+            engine=service_components[1],
+            analyzer=service_components[2],
+        )
+        with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
+            marc_data = fh.read()
+        with pytest.raises(OverloadError) as exc:
+            process_batch.ProcessBatch.execute_order_records_workflow(
+                marc_data,
+                handler=command_handler,
                 template_data={"format": "a"},
                 matchpoints={"primary_matchpoint": "isbn"},
                 vendor="UNKNOWN",
