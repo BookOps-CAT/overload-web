@@ -11,7 +11,7 @@
     value="{{display_value}}"
   />
   {% else %}
-  <select id="{{ field_id }}" class="form-select" name="{{ field_id }}">
+  <select id="{{ field_id }}" class="form-select" name="{{ field_id }}" required>
     <option value="" selected></option>
     {% for k, v in data['options'].items() %}
     <option value="{{ k }}">{{ v }}</option>
@@ -30,6 +30,7 @@
     hx-get="/htmx/forms/collection"
     hx-target="#collection-wrapper"
     hx-trigger="change"
+    required
   >
     <option value="" selected></option>
     {% for k, v in data["options"].items() %}
