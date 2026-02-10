@@ -20,7 +20,7 @@ Classes:
 import logging
 from typing import Any, BinaryIO
 
-from overload_web.application.ports import marc
+from overload_web.application.ports import marc, sierra
 from overload_web.application.services import marc_services, match_service
 from overload_web.domain.services import match_analysis
 
@@ -51,7 +51,7 @@ class ProcessingHandler:
 
     def __init__(
         self,
-        fetcher: match_service.BibFetcher,
+        fetcher: sierra.BibFetcher,
         engine: marc.MarcEnginePort,
         analyzer: match_analysis.MatchAnalyzer,
     ):
@@ -60,7 +60,7 @@ class ProcessingHandler:
 
         Args:
             bib_fetcher:
-                A `match_service.BibFetcher` object
+                A `sierra.BibFetcher` object
             analyzer:
                 An `match_analysis.MatchAnalyzer` object
             engine:
@@ -76,7 +76,7 @@ class FullRecordProcessingService:
 
     def __init__(
         self,
-        bib_fetcher: match_service.BibFetcher,
+        bib_fetcher: sierra.BibFetcher,
         engine: marc.MarcEnginePort,
         analyzer: match_analysis.MatchAnalyzer,
     ):
@@ -85,7 +85,7 @@ class FullRecordProcessingService:
 
         Args:
             bib_fetcher:
-                A `match_service.BibFetcher` object
+                A `sierra.BibFetcher` object
             engine:
                 A `marc.MarcEnginePort` object
             analyzer:
@@ -130,7 +130,7 @@ class OrderRecordProcessingService:
 
     def __init__(
         self,
-        bib_fetcher: match_service.BibFetcher,
+        bib_fetcher: sierra.BibFetcher,
         engine: marc.MarcEnginePort,
         analyzer: match_analysis.MatchAnalyzer,
     ):
@@ -139,7 +139,7 @@ class OrderRecordProcessingService:
 
         Args:
             bib_fetcher:
-                A `match_service.BibFetcher` object
+                A `sierra.BibFetcher` object
             engine:
                 A `marc.MarcEnginePort` object
             analyzer:
