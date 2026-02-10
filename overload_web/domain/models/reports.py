@@ -50,36 +50,6 @@ class FileReport:
         }
 
 
-class SessionReport:
-    def __init__(
-        self,
-        analyses: dict[str, FileReport],
-        library: str,
-        collection: str,
-        record_type: str,
-    ) -> None:
-        self._analyses = analyses
-        self.reports = list(self._analyses.values())
-        self.report_dicts = [i.to_dict() for i in self.reports]
-        self.library = library
-        self.collection = collection
-        self.record_type = record_type
-        self.file_names = list(self._analyses.keys())
-        self.total_files_processed = len(self.file_names)
-        self.total_records_processed = sum([i.total_records for i in self.reports])
-        self.summary_report = {
-            "total_processed_files": self.total_files_processed,
-            "total_processed_bibs": self.total_records_processed,
-            "collection": self.collection,
-            "record_type": self.record_type,
-            "library": self.library,
-            "file_names": self.file_names,
-            "missing_barcodes": [],
-            "integrity_check": [],
-            "duplicates": [],
-        }
-
-
 @dataclass
 class SummaryReport:
     library: str
