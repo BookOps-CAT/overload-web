@@ -147,7 +147,7 @@ class TestProcessBatch:
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "rL", "cat"), ("bpl", "NONE", "cat")],
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_full_service_process_vendor_file_dupes(self, library, service_components):
         command_handler = record_service.ProcessingHandler(
