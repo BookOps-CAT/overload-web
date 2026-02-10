@@ -38,7 +38,7 @@ class MarcEnginePort(Protocol[T]):
         self, tag: str, bib: T
     ) -> str | None: ...  # pragma: no branch
 
-    """Get the value of the first MARC field for a tag."""
+    """Get the value of a MARC field by it's tag. Retrieves first field."""
 
     def get_vendor_tags_from_bib(
         self, record: T, tags: dict[str, dict[str, str]]
@@ -46,7 +46,7 @@ class MarcEnginePort(Protocol[T]):
 
     def identify_vendor(
         self, record: T, rules: dict[str, Any]
-    ) -> dict[str, Any]: ...  # pragma: nobranch
+    ) -> dict[str, Any]: ...  # pragma: no branch
 
     """Determine the vendor who created a `bookops_marc.Bib` record."""
 
