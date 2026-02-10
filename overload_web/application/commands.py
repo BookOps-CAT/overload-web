@@ -16,7 +16,9 @@ class ProcessBatch:
 
     @staticmethod
     def execute_full_records_workflow(
-        data: BinaryIO | bytes, handler: record_service.ProcessingHandler
+        data: BinaryIO | bytes,
+        file_name: str,
+        handler: record_service.ProcessingHandler,
     ) -> tuple:
         bibs = marc_services.BibParser.parse_marc_data(data=data, engine=handler.engine)
         marc_services.BarcodeValidator.ensure_unique(bibs)
@@ -44,17 +46,18 @@ class ProcessBatch:
             record_batches=batches, barcodes=barcodes
         )
         stats = report_service.ReportGenerator.processing_report(
-            batches["NEW"] + batches["DUP"] + batches["DEDUPED"]
+            bibs, file_name=file_name
         )
         out = {}
         for batch, records in batches.items():
             out[batch] = marc_services.BibSerializer.write(records)
 
-        return out, stats.to_dict()
+        return out, stats
 
     @staticmethod
     def execute_order_records_workflow(
         data: BinaryIO | bytes,
+        file_name: str,
         handler: record_service.ProcessingHandler,
         matchpoints: dict[str, str],
         template_data: dict[str, Any],
@@ -84,6 +87,8 @@ class ProcessBatch:
             bib.binary_data = marc_record.as_marc()
 
         stream = marc_services.BibSerializer.write(bibs)
-        stats = report_service.ReportGenerator.processing_report(bibs)
+        stats = report_service.ReportGenerator.processing_report(
+            bibs, file_name=file_name
+        )
 
-        return stream, stats.to_dict()
+        return stream, stats

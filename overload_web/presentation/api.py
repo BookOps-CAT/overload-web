@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from overload_web.application.commands import ProcessBatch
+from overload_web.application.services import report_service
 from overload_web.presentation.deps import dto, files, records, templates
 
 logger = logging.getLogger(__name__)
@@ -212,17 +213,24 @@ def process_full_records(
         the processed files and report data wrapped in a `HTMLResponse` object
 
     """
-    out_files = {}
+    out_files = []
+    out_data = {}
     for file in files:
-        out_files[file.file_name], out_files[f"{file.file_name}_report"] = (
-            ProcessBatch.execute_full_records_workflow(
-                data=file.content, handler=service_handler
-            )
+        out_file, out_report = ProcessBatch.execute_full_records_workflow(
+            data=file.content, handler=service_handler, file_name=file.file_name
         )
+        out_files.append(out_file)
+        out_data[file.file_name] = out_report
+    report = report_service.ReportGenerator.session_report(
+        analyses=out_data,
+        library=service_handler.engine.library,
+        collection="",
+        record_type=service_handler.engine.record_type,
+    )
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
-        context={"files": out_files},
+        context={"files": out_files, "report": report},
     )
 
 
@@ -259,20 +267,28 @@ def process_order_records(
         the processed files and report data wrapped in a `HTMLResponse` object
 
     """
-    out_files = {}
+    out_files = []
+    out_data = {}
     for file in files:
-        out_files[file.file_name], out_files[f"{file.file_name}_report"] = (
-            ProcessBatch.execute_order_records_workflow(
-                data=file.content,
-                handler=service_handler,
-                template_data=order_template.model_dump(),
-                matchpoints=matchpoints.model_dump(),
-                vendor=vendor,
-            )
+        out_file, out_report = ProcessBatch.execute_order_records_workflow(
+            data=file.content,
+            handler=service_handler,
+            template_data=order_template.model_dump(),
+            matchpoints=matchpoints.model_dump(),
+            vendor=vendor,
+            file_name=file.file_name,
         )
+        out_files.append(out_file)
+        out_data[file.file_name] = out_report
 
+    report = report_service.ReportGenerator.session_report(
+        analyses=out_data,
+        library=service_handler.engine.library,
+        collection="",
+        record_type=service_handler.engine.record_type,
+    )
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
-        context={"files": out_files},
+        context={"files": out_files, "report": report},
     )

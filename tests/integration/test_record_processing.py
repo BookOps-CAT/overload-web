@@ -5,7 +5,7 @@ import pytest
 from overload_web.application.commands import ProcessBatch
 from overload_web.application.services import record_service
 from overload_web.domain.errors import OverloadError
-from overload_web.domain.models import bibs
+from overload_web.domain.models import bibs, reports
 from overload_web.infrastructure.marc import engine
 
 
@@ -115,12 +115,12 @@ class TestProcessBatch:
         )
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        records, stats = ProcessBatch.execute_full_records_workflow(
-            marc_data, handler=command_handler
+        files, report = ProcessBatch.execute_full_records_workflow(
+            marc_data, handler=command_handler, file_name="foo.mrc"
         )
-        assert isinstance(stats, dict)
-        assert isinstance(records, dict)
-        assert list(records.keys()) == ["DUP", "NEW", "DEDUPED"]
+        assert isinstance(report, reports.FileReport)
+        assert isinstance(files, dict)
+        assert list(files.keys()) == ["DUP", "NEW", "DEDUPED"]
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
@@ -134,15 +134,16 @@ class TestProcessBatch:
         )
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        records, stats = ProcessBatch.execute_order_records_workflow(
+        file, report = ProcessBatch.execute_order_records_workflow(
             marc_data,
             handler=command_handler,
             template_data={"format": "a"},
             matchpoints={"primary_matchpoint": "isbn"},
             vendor="UNKNOWN",
+            file_name="foo.mrc",
         )
-        assert isinstance(stats, dict)
-        assert isinstance(records, io.BytesIO)
+        assert isinstance(report, reports.FileReport)
+        assert isinstance(file, io.BytesIO)
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
@@ -158,7 +159,7 @@ class TestProcessBatch:
             marc_data = fh.read()
         with pytest.raises(OverloadError) as exc:
             ProcessBatch.execute_full_records_workflow(
-                marc_data, handler=command_handler
+                marc_data, handler=command_handler, file_name="foo.mrc"
             )
         assert "Duplicate barcodes found in file: " in str(exc.value)
 
@@ -181,5 +182,6 @@ class TestProcessBatch:
                 template_data={"format": "a"},
                 matchpoints={"primary_matchpoint": "isbn"},
                 vendor="UNKNOWN",
+                file_name="foo.mrc",
             )
         assert "Duplicate barcodes found in file: " in str(exc.value)

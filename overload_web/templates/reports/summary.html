@@ -1,0 +1,14 @@
+<h3>Output:</h3>
+{% if report %}
+<h4>Summary</h4>
+System: {{report["library"]}}<br />
+Collection: {{report["collection"]}}<br />
+User: {{report["record_type"]}}<br />
+<br />
+<br />
+Total Processed Files: {{report.summary_report["total_processed_files"]}} <br />
+Total Processed Records: {{report.summary_report["total_processed_bibs"]}} <br />
+Files: {{report.summary_report["file_names"]}}<br />
+Data: {{report.report_dicts}}
+<h5>Vendor breakdown:</h5>
+Vendor: {% endif %}
