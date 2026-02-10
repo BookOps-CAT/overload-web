@@ -15,6 +15,13 @@ from googleapiclient.errors import HttpError  # type: ignore
 logger = logging.getLogger(__name__)
 
 
+class PandasReportHandler:
+    @staticmethod
+    def report_to_html(report_data: dict[str, list[Any]]) -> str:
+        df = pd.DataFrame(data=report_data)
+        return df.to_html()
+
+
 class GoogleSheetsReporter:
     def __init__(self) -> None:
         self.creds = self.configure_sheet()

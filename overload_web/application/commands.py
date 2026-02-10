@@ -48,9 +48,7 @@ class ProcessBatch:
         stats = report_service.ReportGenerator.processing_report(
             bibs, file_name=file_name
         )
-        out = {}
-        for batch, records in batches.items():
-            out[batch] = marc_services.BibSerializer.write(records)
+        out = {k: marc_services.BibSerializer.write(v) for k, v in batches.items()}
 
         return out, stats
 

@@ -1,3 +1,84 @@
+import pandas as pd
+import pytest
+
+from overload_web.domain.models import reports
+from overload_web.domain.services import match_analysis
+
+
+class TestReport:
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
+    )
+    def test_report(self, full_bib, sierra_response, library, collection, record_type):
+        rep = match_analysis.NYPLCatBranchMatchAnalyzer()
+        result = rep.analyze(record=full_bib, candidates=[sierra_response])
+        report = reports.FileReport(analyses=[result], file_name="foo.mrc")
+        report_dict = report.to_dict()
+        assert sorted(list(report_dict.keys())) == sorted(
+            [
+                "resource_id",
+                "vendor",
+                "updated_by_vendor",
+                "call_number_match",
+                "target_call_no",
+                "call_number",
+                "duplicate_records",
+                "target_bib_id",
+                "target_title",
+                "mixed",
+                "other",
+                "action",
+                "corrected",
+                "file_name",
+            ]
+        )
+        assert len(report_dict["action"]) == 1
+        assert len(report_dict["call_number"]) == 1
+        assert len(report_dict["call_number_match"]) == 1
+        assert len(report_dict["duplicate_records"]) == 1
+        assert len(report_dict["mixed"]) == 1
+        assert len(report_dict["other"]) == 1
+        assert len(report_dict["resource_id"]) == 1
+        assert len(report_dict["target_bib_id"]) == 1
+        assert len(report_dict["target_call_no"]) == 1
+        assert len(report_dict["target_title"]) == 1
+        assert len(report_dict["updated_by_vendor"]) == 1
+        assert len(report_dict["vendor"]) == 1
+        assert len(report_dict["corrected"]) == 1
+        df = pd.DataFrame(data=report_dict)
+        assert list(df.columns) == [
+            "resource_id",
+            "vendor",
+            "updated_by_vendor",
+            "call_number_match",
+            "target_call_no",
+            "call_number",
+            "duplicate_records",
+            "target_bib_id",
+            "target_title",
+            "mixed",
+            "other",
+            "action",
+            "corrected",
+            "file_name",
+        ]
+        assert df.shape == (1, 14)
+
+    # @pytest.mark.parametrize(
+    #     "library, collection, record_type",
+    #     [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
+    # )
+    # def test_pandas_report(
+    #     self, full_bib, sierra_response, library, collection, record_type
+    # ):
+    #     rep = match_analysis.NYPLCatBranchMatchAnalyzer()
+    #     result = rep.analyze(record=full_bib, candidates=[sierra_response])
+    #     report = reports.FileReport(analyses=[result], file_name="foo.mrc")
+    #     df = reporter.PandasReportHandler.vendor_breakdown(report=report)
+    #     assert df == ""
+
+
 # class MockCreds:
 #     def __init__(self):
 #         self.token = "foo"

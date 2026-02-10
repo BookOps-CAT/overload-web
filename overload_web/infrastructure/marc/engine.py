@@ -86,8 +86,8 @@ class MarcEngine:
             A dictionary containing the values present in the MARC fields/subfields.
 
         """
+        bib_dict: dict = {}
         for tag, data in tags.items():
-            bib_dict: dict = {}
             fields = record.get_fields(tag)
             if not fields:
                 continue
@@ -96,8 +96,8 @@ class MarcEngine:
                 if value != data["value"]:
                     continue
                 bib_dict[tag] = {"code": data["code"], "value": value}
-            if bib_dict and bib_dict == tags:
-                return bib_dict == tags
+        if bib_dict:
+            return bib_dict == tags
         return False
 
     def update_fields(self, field_updates: list[Any], bib: Bib) -> None:

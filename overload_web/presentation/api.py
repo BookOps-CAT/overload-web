@@ -12,6 +12,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 
 from overload_web.application.commands import ProcessBatch
 from overload_web.application.services import report_service
+from overload_web.infrastructure.logging import reporter
 from overload_web.presentation.deps import dto, files, records, templates
 
 logger = logging.getLogger(__name__)
@@ -214,23 +215,34 @@ def process_full_records(
 
     """
     out_files = []
-    out_data = {}
+    out_report_data = []
     for file in files:
         out_file, out_report = ProcessBatch.execute_full_records_workflow(
             data=file.content, handler=service_handler, file_name=file.file_name
         )
         out_files.append(out_file)
-        out_data[file.file_name] = out_report
-    report = report_service.ReportGenerator.session_report(
-        analyses=out_data,
+        out_report_data.extend(out_report)
+
+    reported = report_service.ReportGenerator.summary_report(
+        out_report_data,
         library=service_handler.engine.library,
         collection="",
         record_type=service_handler.engine.record_type,
+        file_names=out_files,
+    )
+    pandas_report = reporter.PandasReportHandler.report_to_html(
+        reported.vendor_breakdown
     )
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
-        context={"files": out_files, "report": report},
+        context={
+            "files": out_files,
+            "pd_report": pandas_report,
+            "report": {
+                k: v for k, v in reported.__dict__.items() if k != "vendor_breakdown"
+            },
+        },
     )
 
 
@@ -268,7 +280,7 @@ def process_order_records(
 
     """
     out_files = []
-    out_data = {}
+    out_report_data = []
     for file in files:
         out_file, out_report = ProcessBatch.execute_order_records_workflow(
             data=file.content,
@@ -279,16 +291,26 @@ def process_order_records(
             file_name=file.file_name,
         )
         out_files.append(out_file)
-        out_data[file.file_name] = out_report
-
-    report = report_service.ReportGenerator.session_report(
-        analyses=out_data,
+        out_report_data.extend(out_report)
+    reported = report_service.ReportGenerator.summary_report(
+        out_report_data,
         library=service_handler.engine.library,
         collection="",
         record_type=service_handler.engine.record_type,
+        file_names=out_files,
     )
+    pandas_report = reporter.PandasReportHandler.report_to_html(
+        reported.vendor_breakdown
+    )
+
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
-        context={"files": out_files, "report": report},
+        context={
+            "files": out_files,
+            "pd_report": pandas_report,
+            "report": {
+                k: v for k, v in reported.__dict__.items() if k != "vendor_breakdown"
+            },
+        },
     )

@@ -5,7 +5,7 @@ import pytest
 from overload_web.application.commands import ProcessBatch
 from overload_web.application.services import record_service
 from overload_web.domain.errors import OverloadError
-from overload_web.domain.models import bibs, reports
+from overload_web.domain.models import bibs
 from overload_web.infrastructure.marc import engine
 
 
@@ -118,7 +118,7 @@ class TestProcessBatch:
         files, report = ProcessBatch.execute_full_records_workflow(
             marc_data, handler=command_handler, file_name="foo.mrc"
         )
-        assert isinstance(report, reports.FileReport)
+        assert isinstance(report, list)
         assert isinstance(files, dict)
         assert list(files.keys()) == ["DUP", "NEW", "DEDUPED"]
 
@@ -142,7 +142,7 @@ class TestProcessBatch:
             vendor="UNKNOWN",
             file_name="foo.mrc",
         )
-        assert isinstance(report, reports.FileReport)
+        assert isinstance(report, list)
         assert isinstance(file, io.BytesIO)
 
     @pytest.mark.parametrize(

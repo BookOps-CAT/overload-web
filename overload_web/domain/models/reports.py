@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import datetime
+from dataclasses import dataclass
 from typing import Any
 
 from overload_web.domain.models import bibs
 
 
 class FileReport:
-    def __init__(self, analyses: list[bibs.MatchAnalysis], file_name: str) -> None:
+    def __init__(
+        self, analyses: list[bibs.MatchAnalysis], file_name: str | None = None
+    ) -> None:
         self._analyses = analyses
         self.file_name = file_name
         self.action = tuple([i.action for i in self._analyses])
@@ -75,3 +78,16 @@ class SessionReport:
             "integrity_check": [],
             "duplicates": [],
         }
+
+
+@dataclass
+class SummaryReport:
+    library: str
+    collection: str
+    record_type: str
+    file_names: list[str]
+    total_files_processed: int
+    total_records_processed: int
+    vendor_breakdown: dict[str, Any]
+    duplicates_report: Any | None = None
+    call_number_issues: Any | None = None
