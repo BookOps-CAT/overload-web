@@ -2,14 +2,17 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, BinaryIO
+from typing import Any, BinaryIO, Protocol
 
 from bookops_marc import Bib, SierraBibReader
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain.models import bibs
-
 logger = logging.getLogger(__name__)
+
+
+class DomainBibProtocol(Protocol):
+    library: str
+    binary_data: bytes
 
 
 @dataclass(frozen=True)
@@ -19,6 +22,7 @@ class MarcEngineConfig:
     bib_id_tag: str
     library: str
     record_type: str
+    collection: str | None
     parser_bib_mapping: dict[str, Any]
     parser_order_mapping: dict[str, Any]
     parser_vendor_mapping: dict[str, Any]
@@ -40,6 +44,7 @@ class MarcEngine:
                 and record type. Parsed from `/overload_web/data/mapping_specs.json`.
         """
         self.library = rules.library
+        self.collection = rules.collection
         self.record_type = rules.record_type
         self.bib_rules = rules.parser_bib_mapping
         self.order_rules = rules.parser_order_mapping
@@ -49,7 +54,7 @@ class MarcEngine:
         self.marc_order_mapping = rules.marc_order_mapping
         self._config = rules
 
-    def create_bib_from_domain(self, record: bibs.DomainBib) -> Bib:
+    def create_bib_from_domain(self, record: DomainBibProtocol) -> Bib:
         """Create a `bookops_marc.Bib` object from a `DomainBib` object"""
         return Bib(record.binary_data, library=record.library)  # type: ignore
 

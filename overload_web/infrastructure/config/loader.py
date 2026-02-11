@@ -23,6 +23,7 @@ def marc_engine_config_from_constants(
         bib_id_tag=constants["bib_id_tag"][library],
         library=library,
         record_type=record_type,
+        collection=collection,
         parser_bib_mapping=constants["bib_domain_mapping"],
         parser_order_mapping=constants["order_domain_mapping"],
         parser_vendor_mapping=constants["vendor_info_options"][library],

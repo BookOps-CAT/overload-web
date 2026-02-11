@@ -24,7 +24,7 @@ class BarcodeValidator:
     @staticmethod
     def ensure_preserved(
         record_batches: dict[str, list[bibs.DomainBib]], barcodes: list[str]
-    ) -> None:
+    ) -> list[str]:
         valid = True
         barcodes_from_batches = list(
             itertools.chain.from_iterable(
@@ -42,6 +42,7 @@ class BarcodeValidator:
         )
         if not valid:
             logger.error(f"Barcodes integrity error: {list(missing_barcodes)}")
+        return list(missing_barcodes)
 
     @staticmethod
     def ensure_unique(bibs: list[bibs.DomainBib]) -> None:
@@ -143,7 +144,7 @@ class Deduplicator:
         if not dupe_recs:
             logger.debug("No duplicates found in file.")
             return {"DUP": merge, "NEW": new, "DEDUPED": deduped}
-        logger.debug("Discovered duplicate records in processed file")
+        logger.info("Discovered duplicate records in processed file")
 
         processed_dupes = []
         for record in new:

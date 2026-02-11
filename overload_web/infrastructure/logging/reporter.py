@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import logging
 import os
 from typing import Any
@@ -12,14 +13,117 @@ from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
 from googleapiclient.discovery import build  # type: ignore
 from googleapiclient.errors import HttpError  # type: ignore
 
+from overload_web.domain.models import bibs
+
 logger = logging.getLogger(__name__)
 
 
 class PandasReportHandler:
     @staticmethod
-    def report_to_html(report_data: dict[str, list[Any]]) -> str:
+    def report_to_html(report_data: dict[str, list[Any]], classes: list[str]) -> str:
         df = pd.DataFrame(data=report_data)
-        return df.to_html()
+        return df.to_html(index=False, classes=classes)
+
+    @staticmethod
+    def list2dict(report_data: list[bibs.MatchAnalysis]) -> dict[str, list[Any]]:
+        return {
+            "action": [i.action for i in report_data],
+            "call_number": [i.call_number for i in report_data],
+            "call_number_match": [i.call_number_match for i in report_data],
+            "collection": [i.collection for i in report_data],
+            "decision": [i.decision for i in report_data],
+            "duplicate_records": [i.duplicate_records for i in report_data],
+            "library": [i.library for i in report_data],
+            "mixed": [i.mixed for i in report_data],
+            "other": [i.other for i in report_data],
+            "record_type": [i.record_type for i in report_data],
+            "resource_id": [i.resource_id for i in report_data],
+            "target_bib_id": [i.target_bib_id for i in report_data],
+            "target_call_no": [i.target_call_no for i in report_data],
+            "target_title": [i.target_title for i in report_data],
+            "updated_by_vendor": [i.updated_by_vendor for i in report_data],
+            "vendor": [i.vendor for i in report_data],
+        }
+
+    @staticmethod
+    def create_vendor_breakdown(
+        report_data: dict[str, list[Any]],
+    ) -> dict[str, list[Any]]:
+        data = {k: v for k, v in report_data.items() if k in ["vendor", "action"]}
+        df = pd.DataFrame(data=data)
+        vendor_data: dict[str, list[Any]] = {
+            "vendor": [],
+            "attach": [],
+            "insert": [],
+            "update": [],
+            "total": [],
+        }
+        for vendor, content in df.groupby("vendor"):
+            attach = content[content["action"] == "attach"]["action"].count()
+            insert = content[content["action"] == "insert"]["action"].count()
+            update = content[content["action"] == "overlay"]["action"].count()
+            vendor_data["vendor"].append(vendor)
+            vendor_data["attach"].append(attach)
+            vendor_data["insert"].append(insert)
+            vendor_data["update"].append(update)
+            vendor_data["total"].append(attach + insert + update)
+        return vendor_data
+
+    @staticmethod
+    def create_duplicate_report(
+        report_data: dict[str, list[Any]],
+    ) -> list[list[Any]]:
+        df_data = {
+            k: v
+            for k, v in report_data.items()
+            if k
+            in [
+                "vendor",
+                "resource_id",
+                "target_bib_id",
+                "duplicate_records",
+                "mixed",
+                "other",
+                "record_type",
+            ]
+        }
+        df = pd.DataFrame(data=df_data)
+        filtered_df = df[
+            df["duplicate_records"].notnull()
+            | df["mixed"].notnull()
+            | df["other"].notnull()
+        ]
+        df_out = filtered_df.assign(date=datetime.datetime.now())
+        df_out.fillna("", inplace=True)
+        return df_out.values.tolist()
+
+    @staticmethod
+    def create_call_number_report(
+        report_data: dict[str, list[Any]],
+    ) -> list[list[Any]]:
+        df_data = {
+            k: v
+            for k, v in report_data.items()
+            if k
+            in [
+                "vendor",
+                "resource_id",
+                "target_bib_id",
+                "duplicate_records",
+                "call_number_match",
+                "record_type",
+                "call_number",
+                "target_call_no",
+            ]
+        }
+        df = pd.DataFrame(data=df_data)
+        match_df = df[~df["call_number_match"]]
+        if report_data["record_type"] and report_data["record_type"][0] == "cat":
+            missing_df = df[df["call_number"].isnull() & df["target_call_no"].isnull()]
+            match_df = pd.concat([match_df, missing_df])
+        df_out = match_df.assign(date=datetime.datetime.now())
+        df_out.fillna("", inplace=True)
+        return df_out.values.tolist()
 
 
 class GoogleSheetsReporter:
@@ -77,84 +181,6 @@ class GoogleSheetsReporter:
             return creds
         except (ValueError, RefreshError) as e:
             raise e
-
-    def create_duplicate_report(self, data: dict[str, Any]) -> list[list[Any]]:
-        if data["collection"][0] == "BL":
-            other = "research"
-            dups = "branch duplicates"
-        else:
-            other = "branches"
-            dups = "research duplicates"
-        df_data = {
-            "vendor": data["vendor"],
-            "resource_id": data["resource_id"],
-            "target_bib_id": data["target_bib_id"],
-            dups: data["duplicate_records"],
-            "mixed": data["mixed"],
-            other: data["other"],
-        }
-        df = pd.DataFrame(data=df_data)
-        filtered_df = df[
-            df[dups].notnull() | df["mixed"].notnull() | df["other"].notnull()
-        ]
-        df_out = filtered_df.assign(
-            date=data["date"], corrected="no", agency=data["record_type"]
-        )
-        columns = [
-            "date",
-            "agency",
-            "vendor",
-            "vendor_id",
-            "target_id",
-            "duplicate bibs",
-            "corrected",
-        ]
-        df_out = df_out[columns]
-
-        if data["library"][0] == "NYPL":
-            mask = (df_out.iloc[:, 5].isnull() & df_out.iloc[:, 6].isnull()) & ~(
-                df_out.iloc[:, 7].notnull() & df_out.iloc[:, 7].str.contains(",")
-            )
-            df_out.loc[mask, "corrected"] = "no action"
-        else:
-            mask = df_out.iloc[:, 5].isnull()
-            df_out.loc[mask, "corrected"] = "no action"
-        df_out.fillna("", inplace=True)
-        return df_out.values.tolist()
-
-    def create_call_number_report(self, data: dict[str, Any]) -> list[list[Any]]:
-        if data["collection"][0] == "BL":
-            dups = "branch duplicates"
-        else:
-            dups = "research duplicates"
-        df_data = {
-            "vendor": data["vendor"],
-            "resource_id": data["resource_id"],
-            "target_bib_id": data["target_bib_id"],
-            "call_number": data["call_number"],
-            "target_call_no": data["target_call_no"],
-            dups: data["duplicate_records"],
-            "call_number_match": data["call_number_match"],
-        }
-        df = pd.DataFrame(data=df_data)
-        match_df = df[~df["call_no_match"]]
-        if data["record_type"][0] == "cat":
-            missing_df = df[df["call_number"].isnull() & df["target_call_no"].isnull()]
-            match_df = pd.concat([match_df, missing_df])
-        df_out = match_df.assign(date=data["date"], corrected="no")
-        columns = [
-            "date",
-            "vendor",
-            "vendor_id",
-            "target_id",
-            "vendor_callNo",
-            "target_callNo",
-            "duplicate bibs",
-            "corrected",
-        ]
-        df_out = df_out[columns]
-        df_out.fillna("", inplace=True)
-        return df_out.values.tolist()
 
     def write_report_to_sheet(self, data: list[list[Any]]) -> None:
         """

@@ -51,9 +51,9 @@ class ProcessingHandler:
             fetcher:
                 A `ports.BibFetcher` object
             analyzer:
-                An `match_analysis.MatchAnalyzer` object
+                A `match_analysis.MatchAnalyzer` object
             engine:
-                An `ports.MarcEnginePort` object
+                A `ports.MarcEnginePort` object
         """
         self.analysis_service = analyzer
         self.match_service = match_service.BibMatcher(fetcher=fetcher)

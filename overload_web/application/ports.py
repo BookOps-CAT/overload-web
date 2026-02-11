@@ -115,6 +115,7 @@ class MarcEnginePort(Protocol[T]):
     library: str
     order_rules: dict[str, Any]
     record_type: str
+    collection: str | None
     vendor_rules: dict[str, Any]
     _config: Any
 
@@ -179,4 +180,31 @@ class SqlRepositoryProtocol(Protocol[T]):
 
     def save(self, obj: T) -> T: ...  # pragma: no branch
 
-    def apply_updates(self, id: str, data: T) -> T | None: ...  # pragma: no branch
+    def update_template(self, id: str, data: T) -> T | None: ...  # pragma: no branch
+
+
+class ReportHandler(Protocol):
+    @staticmethod
+    def create_vendor_breakdown(
+        report_data: dict[str, list[Any]],
+    ) -> dict[str, list[Any]]: ...  # pragma: no branch
+
+    @staticmethod
+    def create_duplicate_report(
+        report_data: dict[str, list[Any]],
+    ) -> list[list[Any]]: ...  # pragma: no branch
+
+    @staticmethod
+    def create_call_number_report(
+        report_data: dict[str, Any],
+    ) -> list[list[Any]]: ...  # pragma: no branch
+
+    @staticmethod
+    def list2dict(
+        report_data: list[bibs.MatchAnalysis],
+    ) -> dict[str, list[Any]]: ...  # pragma: no branch
+
+    @staticmethod
+    def report_to_html(
+        report_data: dict[str, list[Any]], classes: list[str]
+    ) -> str: ...  # pragma: no branch

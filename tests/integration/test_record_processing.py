@@ -34,12 +34,12 @@ class TestProcessBatch:
         )
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        files, report = ProcessFullRecords.execute(
+        out = ProcessFullRecords.execute(
             marc_data, handler=command_handler, file_name="foo.mrc"
         )
-        assert isinstance(report, list)
-        assert isinstance(files, dict)
-        assert list(files.keys()) == ["DUP", "NEW", "DEDUPED"]
+        assert isinstance(out.duplicated_records, list)
+        assert isinstance(out.new_records, list)
+        assert isinstance(out.deduplicated_records, list)
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
@@ -53,15 +53,15 @@ class TestProcessBatch:
         )
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        file, report = ProcessOrderRecords.execute(
+        out = ProcessOrderRecords.execute(
             marc_data,
             handler=command_handler,
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
             file_name="foo.mrc",
         )
-        assert isinstance(report, list)
-        assert isinstance(file, io.BytesIO)
+        assert isinstance(out.records, list)
+        assert isinstance(out.record_stream, io.BytesIO)
 
     @pytest.mark.parametrize(
         "library, collection, record_type",

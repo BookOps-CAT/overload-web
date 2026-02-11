@@ -11,6 +11,8 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from overload_web.application.commands import (
+    CreateFullRecordsProcessingReport,
+    CreateOrderRecordsProcessingReport,
     CreateOrderTemplate,
     GetOrderTemplate,
     ListOrderTemplates,
@@ -20,8 +22,6 @@ from overload_web.application.commands import (
     UpdateOrderTemplate,
     WriteFile,
 )
-from overload_web.application.services import report_service
-from overload_web.infrastructure.logging import reporter
 from overload_web.presentation import deps, dto
 
 logger = logging.getLogger(__name__)
@@ -212,6 +212,7 @@ def process_full_records(
     request: Request,
     service_handler: Annotated[Any, Depends(deps.get_pvf_handler)],
     files: Annotated[list[dto.VendorFileModel], Depends(deps.normalize_files)],
+    report_handler: Annotated[Any, Depends(deps.get_report_handler)],
 ) -> HTMLResponse:
     """
     Process one or more files of MARC records.
@@ -231,33 +232,23 @@ def process_full_records(
 
     """
     out_files = []
-    out_report_data = []
     for file in files:
-        out_file, out_report = ProcessFullRecords.execute(
+        out_file = ProcessFullRecords.execute(
             data=file.content, handler=service_handler, file_name=file.file_name
         )
         out_files.append(out_file)
-        out_report_data.extend(out_report)
 
-    reported = report_service.ReportGenerator.summary_report(
-        out_report_data,
-        library=service_handler.engine.library,
-        collection="",
-        record_type=service_handler.engine.record_type,
-        file_names=out_files,
-    )
-    pandas_report = reporter.PandasReportHandler.report_to_html(
-        reported.vendor_breakdown
+    report = CreateFullRecordsProcessingReport.execute(
+        out_files, handler=report_handler
     )
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
         context={
-            "files": out_files,
-            "pd_report": pandas_report,
-            "report": {
-                k: v for k, v in reported.__dict__.items() if k != "vendor_breakdown"
-            },
+            "pd_report": report_handler.report_to_html(
+                report.vendor_breakdown, classes=["table"]
+            ),
+            "report": report.to_dict(),
         },
     )
 
@@ -269,6 +260,7 @@ def process_order_records(
     files: Annotated[list[dto.VendorFileModel], Depends(deps.normalize_files)],
     order_template: Annotated[Any, Depends(dto.from_form(dto.TemplateDataModel))],
     matchpoints: Annotated[Any, Depends(dto.from_form(dto.MatchpointSchema))],
+    report_handler: Annotated[Any, Depends(deps.get_report_handler)],
 ) -> HTMLResponse:
     """
     Process one or more files of MARC records.
@@ -287,15 +279,16 @@ def process_order_records(
         matchpoints:
             a list of matchpoints loaded from an order template in the database or
             input via an html form.
+        reporter:
+            A `ports.ReportHandler` object
 
     Returns:
         the processed files and report data wrapped in a `HTMLResponse` object
 
     """
     out_files = []
-    out_report_data = []
     for file in files:
-        out_file, out_report = ProcessOrderRecords.execute(
+        out_file = ProcessOrderRecords.execute(
             data=file.content,
             handler=service_handler,
             template_data=order_template.model_dump(),
@@ -303,26 +296,16 @@ def process_order_records(
             file_name=file.file_name,
         )
         out_files.append(out_file)
-        out_report_data.extend(out_report)
-    reported = report_service.ReportGenerator.summary_report(
-        out_report_data,
-        library=service_handler.engine.library,
-        collection="",
-        record_type=service_handler.engine.record_type,
-        file_names=out_files,
+    report = CreateOrderRecordsProcessingReport.execute(
+        out_files, handler=report_handler
     )
-    pandas_report = reporter.PandasReportHandler.report_to_html(
-        reported.vendor_breakdown
-    )
-
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
         context={
-            "files": out_files,
-            "pd_report": pandas_report,
-            "report": {
-                k: v for k, v in reported.__dict__.items() if k != "vendor_breakdown"
-            },
+            "pd_report": report_handler.report_to_html(
+                report.vendor_breakdown, classes=["table"]
+            ),
+            "report": report.to_dict(),
         },
     )

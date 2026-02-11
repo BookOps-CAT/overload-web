@@ -11,6 +11,7 @@ from overload_web.application.commands import LoadVendorFile
 from overload_web.application.services import record_service
 from overload_web.infrastructure.config import loader
 from overload_web.infrastructure.db import repository
+from overload_web.infrastructure.logging import reporter
 from overload_web.infrastructure.marc import engine
 from overload_web.infrastructure.sierra import clients
 from overload_web.infrastructure.storage import local_io, sftp
@@ -175,3 +176,7 @@ def get_pvf_handler(
         analyzer=analyzer,
         engine=engine.MarcEngine(rules=config),
     )
+
+
+def get_report_handler() -> reporter.PandasReportHandler:
+    return reporter.PandasReportHandler()

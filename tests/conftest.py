@@ -657,6 +657,7 @@ def engine_config(
         bib_id_tag=get_constants["bib_id_tag"][library],
         library=library,
         record_type=record_type,
+        collection=collection,
         parser_bib_mapping=get_constants["bib_domain_mapping"],
         parser_order_mapping=get_constants["order_domain_mapping"],
         parser_vendor_mapping=get_constants["vendor_info_options"][library],

@@ -2,12 +2,8 @@ import logging
 from typing import Any, BinaryIO, Sequence
 
 from overload_web.application import ports
-from overload_web.application.services import (
-    marc_services,
-    record_service,
-    report_service,
-)
-from overload_web.domain.models import files, rules, templates
+from overload_web.application.services import marc_services, record_service
+from overload_web.domain.models import bibs, files, rules, templates
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +16,7 @@ class ProcessFullRecords:
         data: BinaryIO | bytes,
         file_name: str,
         handler: record_service.ProcessingHandler,
-    ) -> tuple:
+    ) -> bibs.ProcessedFullRecordsBatch:
         """
         Process a file of full MARC records.
 
@@ -33,13 +29,15 @@ class ProcessFullRecords:
             file_name: the name of the file being processed.
             handler: a `ProcessingHandler` object used by the command.
         Returns:
-            A tuple containing a dictionary of the processed records and their file
-            names and the processing statistics
+            A `ProcessedFullRecordsBatch` object containing the processed records,
+            the file name and the processing statistics
         """
-        bibs = marc_services.BibParser.parse_marc_data(data=data, engine=handler.engine)
-        marc_services.BarcodeValidator.ensure_unique(bibs)
-        barcodes = marc_services.BarcodeExtractor.extract_barcodes(bibs)
-        for bib in bibs:
+        records = marc_services.BibParser.parse_marc_data(
+            data=data, engine=handler.engine
+        )
+        marc_services.BarcodeValidator.ensure_unique(records)
+        barcodes = marc_services.BarcodeExtractor.extract_barcodes(records)
+        for bib in records:
             matches = handler.match_service.match_full_record(bib)
             analysis = handler.analysis_service.analyze(record=bib, candidates=matches)
             bib.apply_match(analysis)
@@ -56,17 +54,27 @@ class ProcessFullRecords:
             bib.binary_data = marc_record.as_marc()
 
         batches = marc_services.Deduplicator.deduplicate(
-            records=bibs, engine=handler.engine
+            records=records, engine=handler.engine
         )
-        marc_services.BarcodeValidator.ensure_preserved(
+        missing_barcodes = marc_services.BarcodeValidator.ensure_preserved(
             record_batches=batches, barcodes=barcodes
         )
-        stats = report_service.ReportGenerator.processing_report(
-            bibs, file_name=file_name
+        out = bibs.ProcessedFullRecordsBatch(
+            duplicated_records=batches["DUP"],
+            duplicated_records_stream=marc_services.BibSerializer.write(batches["DUP"]),
+            new_records=batches["NEW"],
+            new_records_stream=marc_services.BibSerializer.write(batches["NEW"]),
+            deduplicated_records=batches["DEDUPED"],
+            deduplicated_records_stream=marc_services.BibSerializer.write(
+                batches["DEDUPED"]
+            ),
+            missing_barcodes=missing_barcodes,
+            file_name=file_name,
+            library=handler.engine.library,
+            record_type=handler.engine.record_type,
+            collection=handler.engine.collection,
         )
-        out = {k: marc_services.BibSerializer.write(v) for k, v in batches.items()}
-
-        return out, stats
+        return out
 
 
 class ProcessOrderRecords:
@@ -79,7 +87,7 @@ class ProcessOrderRecords:
         handler: record_service.ProcessingHandler,
         matchpoints: dict[str, str],
         template_data: dict[str, Any],
-    ) -> tuple:
+    ) -> bibs.ProcessedOrderRecordsBatch:
         """
         Process a file of order-level MARC records.
 
@@ -99,16 +107,16 @@ class ProcessOrderRecords:
             handler:
                 a `ProcessingHandler` object used by the command.
         Returns:
-            A containing the processed records as binary data and the processing
-            statistics
+            A `ProcessedOrderRecordsBatch` object containing the processed records,
+            the file name and the processing statistics
         """
-        bibs = marc_services.BibParser.parse_marc_data(
+        records = marc_services.BibParser.parse_marc_data(
             data=data,
             engine=handler.engine,
             vendor=template_data.get("vendor", "UNKNOWN"),
         )
-        marc_services.BarcodeValidator.ensure_unique(bibs)
-        for bib in bibs:
+        marc_services.BarcodeValidator.ensure_unique(records)
+        for bib in records:
             matches = handler.match_service.match_order_record(
                 bib, matchpoints=matchpoints
             )
@@ -127,12 +135,15 @@ class ProcessOrderRecords:
             marc_record.leader = rules.FieldRules.update_leader(marc_record.leader)
             bib.binary_data = marc_record.as_marc()
 
-        stream = marc_services.BibSerializer.write(bibs)
-        stats = report_service.ReportGenerator.processing_report(
-            bibs, file_name=file_name
+        stream = marc_services.BibSerializer.write(records)
+        return bibs.ProcessedOrderRecordsBatch(
+            records=records,
+            record_stream=stream,
+            file_name=file_name,
+            library=handler.engine.library,
+            record_type=handler.engine.record_type,
+            collection=handler.engine.collection,
         )
-
-        return stream, stats
 
 
 class CreateOrderTemplate:
@@ -271,3 +282,61 @@ class WriteFile:
         out_file = writer.write(file=file, dir=dir)
         logger.info(f"Writing file to directory: {dir}/{out_file}")
         return out_file
+
+
+class CreateFullRecordsProcessingReport:
+    @staticmethod
+    def execute(
+        report_data: list[bibs.ProcessedFullRecordsBatch], handler: ports.ReportHandler
+    ) -> bibs.AllReportData:
+        file_names = [i.file_name for i in report_data]
+        all_recs = []
+        missing_barcodes = []
+        for report in report_data:
+            all_recs.extend(report.duplicated_records)
+            all_recs.extend(report.new_records)
+            missing_barcodes.extend(report.missing_barcodes)
+        data_dict = handler.list2dict([i.analysis for i in all_recs])
+        vendor_breakdown = handler.create_vendor_breakdown(data_dict)
+        dupes_report = handler.create_duplicate_report(data_dict)
+        call_no_report = handler.create_call_number_report(data_dict)
+        return bibs.AllReportData(
+            library=report_data[0].library,
+            collection=report_data[0].collection,
+            record_type=report_data[0].record_type,
+            file_names=file_names,
+            total_files_processed=len(file_names),
+            total_records_processed=len(all_recs),
+            all_data=all_recs,
+            vendor_breakdown=vendor_breakdown,
+            duplicates_report=dupes_report,
+            missing_barcodes=missing_barcodes,
+            call_number_issues=call_no_report,
+        )
+
+
+class CreateOrderRecordsProcessingReport:
+    @staticmethod
+    def execute(
+        report_data: list[bibs.ProcessedOrderRecordsBatch], handler: ports.ReportHandler
+    ) -> bibs.AllReportData:
+        file_names = [i.file_name for i in report_data]
+        all_recs = []
+        for report in report_data:
+            all_recs.extend(report.records)
+        data_dict = handler.list2dict([i.analysis for i in all_recs])
+        vendor_breakdown = handler.create_vendor_breakdown(data_dict)
+        dupes_report = handler.create_duplicate_report(data_dict)
+        call_no_report = handler.create_call_number_report(data_dict)
+        return bibs.AllReportData(
+            library=report_data[0].library,
+            collection=report_data[0].collection,
+            record_type=report_data[0].record_type,
+            file_names=file_names,
+            total_files_processed=len(file_names),
+            total_records_processed=len(all_recs),
+            all_data=all_recs,
+            vendor_breakdown=vendor_breakdown,
+            duplicates_report=dupes_report,
+            call_number_issues=call_no_report,
+        )

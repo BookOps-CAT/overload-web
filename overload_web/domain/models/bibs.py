@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any
+from typing import Any, BinaryIO
 
 
 class CatalogAction(StrEnum):
@@ -127,7 +127,17 @@ class DomainBib:
         self.update_date = update_date
         self.vendor_info = vendor_info
         self.vendor = vendor if not vendor_info else vendor_info.name
-        self.analysis: MatchAnalysis | None = None
+        self._analysis: MatchAnalysis | None = None
+
+    @property
+    def analysis(self) -> MatchAnalysis:
+        if self._analysis is None:
+            raise RuntimeError("MatchAnalysis has not been assigned to the DomainBib")
+        return self._analysis
+
+    @analysis.setter
+    def analysis(self, value) -> None:
+        self._analysis = value
 
     @property
     def update_datetime(self) -> datetime.datetime | None:
@@ -148,7 +158,7 @@ class DomainBib:
         """
         if analysis.target_bib_id:
             self.bib_id = analysis.target_bib_id
-        self.analysis = analysis
+        self._analysis = analysis
 
     def apply_order_template(self, template_data: dict[str, Any]) -> None:
         """
@@ -364,3 +374,50 @@ class VendorInfo:
     matchpoints: dict[str, str]
     name: str
     vendor_tags: list[dict[str, str]] | None = None
+
+
+@dataclass
+class ProcessedFullRecordsBatch:
+    """A dataclass representing a processed file of records."""
+
+    duplicated_records: list[DomainBib]
+    new_records: list[DomainBib]
+    deduplicated_records: list[DomainBib]
+    duplicated_records_stream: BinaryIO
+    new_records_stream: BinaryIO
+    deduplicated_records_stream: BinaryIO
+    missing_barcodes: list[str]
+    file_name: str
+    library: str
+    collection: str | None
+    record_type: str
+
+
+@dataclass
+class ProcessedOrderRecordsBatch:
+    """A dataclass representing a processed file of records."""
+
+    records: list[DomainBib]
+    record_stream: BinaryIO
+    file_name: str
+    library: str
+    collection: str | None
+    record_type: str
+
+
+@dataclass
+class AllReportData:
+    library: str
+    collection: str | None
+    record_type: str
+    file_names: list[str]
+    total_files_processed: int
+    total_records_processed: int
+    all_data: list[DomainBib]
+    vendor_breakdown: dict[str, list[Any]]
+    duplicates_report: Any | None = None
+    call_number_issues: Any | None = None
+    missing_barcodes: list[str] | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return self.__dict__
