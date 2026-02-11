@@ -9,7 +9,7 @@ Classes:
 
 import logging
 
-from overload_web.application.ports import marc, sierra
+from overload_web.application import ports
 from overload_web.application.services import match_service
 from overload_web.domain.services import match_analysis
 
@@ -40,8 +40,8 @@ class ProcessingHandler:
 
     def __init__(
         self,
-        fetcher: sierra.BibFetcher,
-        engine: marc.MarcEnginePort,
+        fetcher: ports.BibFetcher,
+        engine: ports.MarcEnginePort,
         analyzer: match_analysis.MatchAnalyzer,
     ):
         """
@@ -49,7 +49,7 @@ class ProcessingHandler:
 
         Args:
             bib_fetcher:
-                A `sierra.BibFetcher` object
+                A `ports.BibFetcher` object
             analyzer:
                 An `match_analysis.MatchAnalyzer` object
             engine:

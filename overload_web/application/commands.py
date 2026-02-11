@@ -1,8 +1,7 @@
 import logging
 from typing import Any, BinaryIO, Sequence
 
-from overload_web.application.ports import db
-from overload_web.application.ports import files as file_port
+from overload_web.application import ports
 from overload_web.application.services import (
     marc_services,
     record_service,
@@ -139,13 +138,13 @@ class ProcessOrderRecords:
 class CreateOrderTemplate:
     @staticmethod
     def execute(
-        repository: db.SqlRepositoryProtocol, obj: templates.OrderTemplateBase
+        repository: ports.SqlRepositoryProtocol, obj: templates.OrderTemplateBase
     ) -> templates.OrderTemplate:
         """
         Save an order template.
 
         Args:
-            repository: a `db.SqlRepositoryProtocol` object.
+            repository: a `ports.SqlRepositoryProtocol` object.
             obj: the template data as an `OrderTemplateBase` object.
 
         Raises:
@@ -161,13 +160,13 @@ class CreateOrderTemplate:
 class GetOrderTemplate:
     @staticmethod
     def execute(
-        repository: db.SqlRepositoryProtocol, template_id: str
+        repository: ports.SqlRepositoryProtocol, template_id: str
     ) -> templates.OrderTemplate | None:
         """
         Retrieve an order template by its ID.
 
         Args:
-            repository: a `db.SqlRepositoryProtocol` object.
+            repository: a `ports.SqlRepositoryProtocol` object.
             template_id: unique identifier for the template.
 
         Returns:
@@ -179,7 +178,7 @@ class GetOrderTemplate:
 class ListOrderTemplates:
     @staticmethod
     def execute(
-        repository: db.SqlRepositoryProtocol,
+        repository: ports.SqlRepositoryProtocol,
         offset: int | None = 0,
         limit: int | None = 20,
     ) -> Sequence[templates.OrderTemplate]:
@@ -187,7 +186,7 @@ class ListOrderTemplates:
         Retrieve a list of templates in the database.
 
         Args:
-            repository: a `db.SqlRepositoryProtocol` object.
+            repository: a `ports.SqlRepositoryProtocol` object.
             offset: start position of first `OrderTemplate` object to return.
             limit: the maximum number of `OrderTemplate` objects to return.
 
@@ -200,7 +199,7 @@ class ListOrderTemplates:
 class UpdateOrderTemplate:
     @staticmethod
     def execute(
-        repository: db.SqlRepositoryProtocol,
+        repository: ports.SqlRepositoryProtocol,
         template_id: str,
         obj: templates.OrderTemplateBase,
     ) -> templates.OrderTemplate | None:
@@ -208,7 +207,7 @@ class UpdateOrderTemplate:
         Update an existing order template.
 
         Args:
-            repository: a `db.SqlRepositoryProtocol` object.
+            repository: a `ports.SqlRepositoryProtocol` object.
             template_id: unique identifier for the template to be updated.
             obj: the data to be replaces as an `OrderTemplateBase` object.
 
@@ -221,7 +220,7 @@ class UpdateOrderTemplate:
 
 class ListVendorFiles:
     @staticmethod
-    def execute(dir: str, loader: file_port.FileLoader) -> list[str]:
+    def execute(dir: str, loader: ports.FileLoader) -> list[str]:
         """
         List files in a directory.
 
@@ -238,7 +237,7 @@ class ListVendorFiles:
 
 class LoadVendorFile:
     @staticmethod
-    def execute(name: str, dir: str, loader: file_port.FileLoader) -> files.VendorFile:
+    def execute(name: str, dir: str, loader: ports.FileLoader) -> files.VendorFile:
         """
         Load a file from a directory.
 
@@ -257,7 +256,7 @@ class LoadVendorFile:
 
 class WriteFile:
     @staticmethod
-    def execute(file: files.VendorFile, dir: str, writer: file_port.FileWriter) -> str:
+    def execute(file: files.VendorFile, dir: str, writer: ports.FileWriter) -> str:
         """
         Write a file to a directory.
 

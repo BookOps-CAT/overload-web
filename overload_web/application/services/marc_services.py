@@ -6,7 +6,7 @@ import logging
 from collections import Counter
 from typing import Any, BinaryIO
 
-from overload_web.application.ports import marc
+from overload_web.application import ports
 from overload_web.domain.errors import OverloadError
 from overload_web.domain.models import bibs, rules
 
@@ -17,7 +17,7 @@ class BibParser:
     @staticmethod
     def parse_marc_data(
         data: BinaryIO | bytes,
-        engine: marc.MarcEnginePort,
+        engine: ports.MarcEnginePort,
         vendor: str | None = None,
     ) -> list[bibs.DomainBib]:
         reader = engine.get_reader(data)
@@ -84,7 +84,7 @@ class BarcodeValidator:
 class BibUpdater:
     @staticmethod
     def update_record(
-        record: bibs.DomainBib, engine: marc.MarcEnginePort, **kwargs: Any
+        record: bibs.DomainBib, engine: ports.MarcEnginePort, **kwargs: Any
     ) -> None:
         template_data = kwargs.get("template_data", {})
         bib = engine.create_bib_from_domain(record=record)
@@ -104,7 +104,7 @@ class BibUpdater:
 class Deduplicator:
     @staticmethod
     def deduplicate(
-        records: list[bibs.DomainBib], engine: marc.MarcEnginePort
+        records: list[bibs.DomainBib], engine: ports.MarcEnginePort
     ) -> dict[str, list[bibs.DomainBib]]:
         merge: list[bibs.DomainBib] = []
         new: list[bibs.DomainBib] = []

@@ -1,4 +1,4 @@
-"""Domain service for matching incoming records against Sierra.
+"""Domain service for matching incoming records against ports.
 
 This module defines the `BibMatcher`, a domain service responsible for
 finding duplicate records in Sierra for a `DomainBib`. Matching is based on
@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 
-from overload_web.application.ports import sierra
+from overload_web.application import ports
 from overload_web.domain.errors import OverloadError
 from overload_web.domain.models import bibs, sierra_responses
 
@@ -28,7 +28,7 @@ class BibMatcher:
     were found.
     """
 
-    def __init__(self, fetcher: sierra.BibFetcher) -> None:
+    def __init__(self, fetcher: ports.BibFetcher) -> None:
         """
         Initialize the match service with a fetcher.
 
@@ -71,7 +71,7 @@ class BibMatcher:
         self, record: bibs.DomainBib, matchpoints: dict[str, str]
     ) -> list[sierra_responses.BaseSierraResponse]:
         """
-        Match an order-level bibliographic record against Sierra.
+        Match an order-level bibliographic record against ports.
 
         Args:
             record:
@@ -93,7 +93,7 @@ class BibMatcher:
         self, record: bibs.DomainBib
     ) -> list[sierra_responses.BaseSierraResponse]:
         """
-        Match a full-level bibliographic record against Sierra.
+        Match a full-level bibliographic record against ports.
 
         Args:
             record:
