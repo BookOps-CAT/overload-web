@@ -249,6 +249,9 @@ def process_full_records(
                 report.vendor_breakdown, classes=["table"]
             ),
             "report": report.to_dict(),
+            "detailed_report": report_handler.report_to_html(
+                report.detailed_data, classes=["table"]
+            ),
         },
     )
 
@@ -307,5 +310,8 @@ def process_order_records(
                 report.vendor_breakdown, classes=["table"]
             ),
             "report": report.to_dict(),
+            "detailed_report": report_handler.report_to_html(
+                report.detailed_data, classes=["table"]
+            ),
         },
     )

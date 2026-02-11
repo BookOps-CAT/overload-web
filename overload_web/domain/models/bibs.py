@@ -415,6 +415,7 @@ class AllReportData:
     total_records_processed: int
     all_data: list[DomainBib]
     vendor_breakdown: dict[str, list[Any]]
+    detailed_data: dict[str, list[Any]]
     duplicates_report: Any | None = None
     call_number_issues: Any | None = None
     missing_barcodes: list[str] | None = None

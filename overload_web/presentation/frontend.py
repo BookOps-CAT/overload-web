@@ -102,7 +102,7 @@ def process_acq_records_page(
     """
     return request.app.state.templates.TemplateResponse(
         request=request,
-        name="process_order_records.html",
+        name="process_acq_records.html",
         context={
             "library": library,
             "collection": collection,
@@ -137,7 +137,7 @@ def process_cat_records_page(
     """
     return request.app.state.templates.TemplateResponse(
         request=request,
-        name="process_full_records.html",
+        name="process_cat_records.html",
         context={
             "library": library,
             "collection": collection,
@@ -172,7 +172,7 @@ def process_sel_records_page(
     """
     return request.app.state.templates.TemplateResponse(
         request=request,
-        name="process_order_records.html",
+        name="process_sel_records.html",
         context={
             "library": library,
             "collection": collection,

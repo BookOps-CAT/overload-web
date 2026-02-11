@@ -13,10 +13,10 @@ class VendorRules:
     @staticmethod
     def fields_to_update(
         record: bibs.DomainBib,
-        call_no: str | None,
-        command_tag: Any | None,
         context: Any,
         template_data: dict[str, Any],
+        command_tag: Any | None = None,
+        call_no: str | None = None,
     ) -> list[Any]:
         updates: list[Any] = []
 

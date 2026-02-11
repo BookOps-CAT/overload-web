@@ -11,4 +11,7 @@ Total Processed Records: {{report["total_records_processed"]}} <br />
 Files: {{report["file_names"]}}<br />
 {%endif%} {%if pd_report%}
 <h5>Vendor breakdown:</h5>
-{{ pd_report | safe}} {% endif %}
+{{ pd_report | safe}}
+
+<h5>Detailed Report:</h5>
+{{ detailed_report | safe}} {% endif %}

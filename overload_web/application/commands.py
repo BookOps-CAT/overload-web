@@ -46,7 +46,6 @@ class ProcessFullRecords:
                 record=bib,
                 context=handler.engine._config,
                 call_no=handler.engine.get_value_of_field(tag="091", bib=marc_record),
-                command_tag=handler.engine.get_command_tag_field(marc_record),
                 template_data={},
             )
             handler.engine.update_fields(field_updates=updates, bib=marc_record)
@@ -127,7 +126,6 @@ class ProcessOrderRecords:
             updates = rules.VendorRules.fields_to_update(
                 record=bib,
                 context=handler.engine._config,
-                call_no=handler.engine.get_value_of_field(tag="091", bib=marc_record),
                 command_tag=handler.engine.get_command_tag_field(marc_record),
                 template_data=template_data,
             )
@@ -300,6 +298,7 @@ class CreateFullRecordsProcessingReport:
         vendor_breakdown = handler.create_vendor_breakdown(data_dict)
         dupes_report = handler.create_duplicate_report(data_dict)
         call_no_report = handler.create_call_number_report(data_dict)
+        detailed_report = handler.create_detailed_report(data_dict)
         return bibs.AllReportData(
             library=report_data[0].library,
             collection=report_data[0].collection,
@@ -312,6 +311,7 @@ class CreateFullRecordsProcessingReport:
             duplicates_report=dupes_report,
             missing_barcodes=missing_barcodes,
             call_number_issues=call_no_report,
+            detailed_data=detailed_report,
         )
 
 
@@ -328,6 +328,7 @@ class CreateOrderRecordsProcessingReport:
         vendor_breakdown = handler.create_vendor_breakdown(data_dict)
         dupes_report = handler.create_duplicate_report(data_dict)
         call_no_report = handler.create_call_number_report(data_dict)
+        detailed_report = handler.create_detailed_report(data_dict)
         return bibs.AllReportData(
             library=report_data[0].library,
             collection=report_data[0].collection,
@@ -339,4 +340,5 @@ class CreateOrderRecordsProcessingReport:
             vendor_breakdown=vendor_breakdown,
             duplicates_report=dupes_report,
             call_number_issues=call_no_report,
+            detailed_data=detailed_report,
         )

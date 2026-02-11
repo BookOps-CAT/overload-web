@@ -208,3 +208,8 @@ class ReportHandler(Protocol):
     def report_to_html(
         report_data: dict[str, list[Any]], classes: list[str]
     ) -> str: ...  # pragma: no branch
+
+    @staticmethod
+    def create_detailed_report(
+        report_data: dict[str, list[Any]],
+    ) -> list[list[Any]]: ...  # pragma: no branch

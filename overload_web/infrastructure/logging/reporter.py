@@ -22,7 +22,7 @@ class PandasReportHandler:
     @staticmethod
     def report_to_html(report_data: dict[str, list[Any]], classes: list[str]) -> str:
         df = pd.DataFrame(data=report_data)
-        return df.to_html(index=False, classes=classes)
+        return df.to_html(index=False, classes=classes, justify="unset")
 
     @staticmethod
     def list2dict(report_data: list[bibs.MatchAnalysis]) -> dict[str, list[Any]]:
@@ -124,6 +124,32 @@ class PandasReportHandler:
         df_out = match_df.assign(date=datetime.datetime.now())
         df_out.fillna("", inplace=True)
         return df_out.values.tolist()
+
+    @staticmethod
+    def create_detailed_report(
+        report_data: dict[str, list[Any]],
+    ) -> dict[str, list[Any]]:
+        df_data = {
+            k: v
+            for k, v in report_data.items()
+            if k
+            in [
+                "vendor",
+                "resource_id",
+                "action",
+                "target_bib_id",
+                "updated",
+                "call_number_match",
+                "call_number",
+                "target_call_no",
+                "duplicates",
+                "mixed",
+                "other",
+            ]
+        }
+        df = pd.DataFrame(data=df_data)
+        df.fillna("", inplace=True)
+        return df_data
 
 
 class GoogleSheetsReporter:
