@@ -22,6 +22,21 @@ class ProcessFullRecords:
         file_name: str,
         handler: record_service.ProcessingHandler,
     ) -> tuple:
+        """
+        Process a file of full MARC records.
+
+        This service parses full MARC records, matches them against Sierra, analyzes
+        all bibs that were returned as matches, updates the records with required
+        fields, and outputs the updated records and the match_analysis.
+
+        Args:
+            data: Binary MARC data as a `BinaryIO` or `bytes` object.
+            file_name: the name of the file being processed.
+            handler: a `ProcessingHandler` object used by the command.
+        Returns:
+            A tuple containing a dictionary of the processed records and their file
+            names and the processing statistics
+        """
         bibs = marc_services.BibParser.parse_marc_data(data=data, engine=handler.engine)
         marc_services.BarcodeValidator.ensure_unique(bibs)
         barcodes = marc_services.BarcodeExtractor.extract_barcodes(bibs)
@@ -66,6 +81,28 @@ class ProcessOrderRecords:
         matchpoints: dict[str, str],
         template_data: dict[str, Any],
     ) -> tuple:
+        """
+        Process a file of order-level MARC records.
+
+        This service parses order-level MARC records, matches them against Sierra,
+        analyzes all bibs that were returned as matches, updates the records with
+        required fields, and outputs the updated records and the match_analysis.
+
+        Args:
+            data:
+                Binary MARC data as a `BinaryIO` or `bytes` object.
+            matchpoints:
+                A dictionary containing matchpoints to be used in matching records.
+            template_data:
+                Order template data as a dictionary.
+            file_name:
+                the name of the file being processed.
+            handler:
+                a `ProcessingHandler` object used by the command.
+        Returns:
+            A containing the processed records as binary data and the processing
+            statistics
+        """
         bibs = marc_services.BibParser.parse_marc_data(
             data=data,
             engine=handler.engine,

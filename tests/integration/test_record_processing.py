@@ -5,7 +5,6 @@ import pytest
 from overload_web.application.commands import ProcessFullRecords, ProcessOrderRecords
 from overload_web.application.services import record_service
 from overload_web.domain.errors import OverloadError
-from overload_web.domain.models import bibs
 from overload_web.infrastructure.marc import engine
 
 
@@ -20,84 +19,6 @@ def service_components(
             library=library, record_type=record_type, collection=collection
         ),
     )
-
-
-class TestRecordProcessingService:
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "rL", "cat"), ("bpl", "NONE", "cat")],
-    )
-    def test_full_service_process_vendor_file(self, library, service_components):
-        service = record_service.FullRecordProcessingService(
-            bib_fetcher=service_components[0],
-            engine=service_components[1],
-            analyzer=service_components[2],
-        )
-        with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
-            marc_data = fh.read()
-        out = service.process_vendor_file(marc_data)
-        assert isinstance(out, dict)
-        assert isinstance(out["report"], list)
-        assert isinstance(out["records"], list)
-        assert isinstance(out["records"][0], bibs.DomainBib)
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
-    )
-    def test_order_service_process_vendor_file(self, library, service_components):
-        service = record_service.OrderRecordProcessingService(
-            bib_fetcher=service_components[0],
-            engine=service_components[1],
-            analyzer=service_components[2],
-        )
-        with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
-            marc_data = fh.read()
-        out = service.process_vendor_file(
-            data=marc_data,
-            template_data={"format": "a"},
-            matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
-        )
-        assert isinstance(out, dict)
-        assert isinstance(out["report"], list)
-        assert isinstance(out["records"], list)
-        assert isinstance(out["records"][0], bibs.DomainBib)
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "rL", "cat"), ("bpl", "NONE", "cat")],
-    )
-    def test_full_service_process_vendor_file_dupes(self, library, service_components):
-        service = record_service.FullRecordProcessingService(
-            bib_fetcher=service_components[0],
-            engine=service_components[1],
-            analyzer=service_components[2],
-        )
-        with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
-            marc_data = fh.read()
-        with pytest.raises(OverloadError) as exc:
-            service.process_vendor_file(marc_data)
-        assert "Duplicate barcodes found in file: " in str(exc.value)
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
-    )
-    def test_order_service_process_vendor_file_dupes(self, library, service_components):
-        service = record_service.OrderRecordProcessingService(
-            bib_fetcher=service_components[0],
-            engine=service_components[1],
-            analyzer=service_components[2],
-        )
-        with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
-            marc_data = fh.read()
-        with pytest.raises(OverloadError) as exc:
-            service.process_vendor_file(
-                data=marc_data,
-                template_data={"format": "a"},
-                matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
-            )
-        assert "Duplicate barcodes found in file: " in str(exc.value)
 
 
 class TestProcessBatch:

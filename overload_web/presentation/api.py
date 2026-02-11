@@ -214,13 +214,13 @@ def process_full_records(
     files: Annotated[list[dto.VendorFileModel], Depends(deps.normalize_files)],
 ) -> HTMLResponse:
     """
-    Process one or more files of MARC deps.
+    Process one or more files of MARC records.
 
-    Uses `FullRecordProcessingService` to process MARC deps.
+    Uses a `ProcessingHandler` to process MARC records.
 
     Args:
-        full_record_service:
-            a `FullRecordProcessingService` object created using library, collection,
+        service_handler:
+            a `ProcessingHandler` object created using library, collection,
             and record_type args
         files:
             a list of vendor files from a local upload or a vendor's SFTP as
@@ -271,13 +271,13 @@ def process_order_records(
     matchpoints: Annotated[Any, Depends(dto.from_form(dto.MatchpointSchema))],
 ) -> HTMLResponse:
     """
-    Process one or more files of MARC deps.
+    Process one or more files of MARC records.
 
-    Uses an `OrderRecordProcessingService` to process MARC deps.
+    Uses a `ProcessingHandler` to process MARC records.
 
     Args:
-        order_record_service:
-            an `OrderRecordProcessingService` created using library, collection,
+        service_handler:
+            an `ProcessingHandler` created using library, collection,
             and record_type args.
         files:
             a list of vendor files from a local upload or a vendor's SFTP as
