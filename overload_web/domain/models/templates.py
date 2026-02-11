@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Protocol, Sequence, TypeVar, runtime_checkable
+from typing import TypeVar
 
 from overload_web.shared import schemas
 
@@ -40,24 +40,3 @@ class OrderTemplate(OrderTemplateBase):
     """Defines an order template domain entity"""
 
     id: int
-
-
-@runtime_checkable
-class SqlRepositoryProtocol(Protocol[T]):
-    """
-    Interface for repository operations on generic objects.
-
-    Includes methods for fetching and saving generic objects.
-    """
-
-    session: Any
-
-    def get(self, id: str) -> T | None: ...  # pragma: no branch
-
-    def list(
-        self, offset: int | None = 0, limit: int | None = 0
-    ) -> Sequence[T]: ...  # pragma: no branch
-
-    def save(self, obj: T) -> T: ...  # pragma: no branch
-
-    def apply_updates(self, id: str, data: T) -> T | None: ...  # pragma: no branch

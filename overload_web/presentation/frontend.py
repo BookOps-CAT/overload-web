@@ -10,7 +10,7 @@ import logging
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from overload_web.presentation.deps import dto
+from overload_web.presentation import dto
 
 logger = logging.getLogger(__name__)
 frontend_router = APIRouter(tags=["frontend"])

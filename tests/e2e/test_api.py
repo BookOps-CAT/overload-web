@@ -4,7 +4,7 @@ from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.infrastructure.db import tables
 from overload_web.main import app
-from overload_web.presentation.deps import templates
+from overload_web.presentation import deps
 
 
 def fake_sql_session():
@@ -23,7 +23,7 @@ def test_api_startup(monkeypatch):
     def fake_engine(*args, **kwargs):
         return create_engine("sqlite:///:memory:")
 
-    monkeypatch.setattr(templates, "create_engine", fake_engine)
+    monkeypatch.setattr(deps, "create_engine", fake_engine)
 
     with TestClient(app) as client:
         response = client.get("/")
@@ -32,8 +32,8 @@ def test_api_startup(monkeypatch):
 
 def test_deps():
     engine = create_engine("sqlite:///:memory:")
-    templates.create_db_and_tables(engine)
-    session = templates.get_session(engine)
+    deps.create_db_and_tables(engine)
+    session = deps.get_session(engine)
     assert isinstance(next(session), Session)
     session.close()
     engine.dispose()
@@ -42,7 +42,7 @@ def test_deps():
 @pytest.mark.usefixtures("mock_session", "mock_sftp_client")
 class TestApp:
     client = TestClient(app)
-    app.dependency_overrides[templates.get_session] = fake_sql_session
+    app.dependency_overrides[deps.get_session] = fake_sql_session
     base_url = client.base_url
 
     def test_root_get(self):

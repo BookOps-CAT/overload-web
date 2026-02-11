@@ -18,7 +18,7 @@ class BibParser:
     def parse_marc_data(
         data: BinaryIO | bytes,
         engine: marc.MarcEnginePort,
-        vendor: str | None = "UNKNOWN",
+        vendor: str | None = None,
     ) -> list[bibs.DomainBib]:
         reader = engine.get_reader(data)
         parsed = []

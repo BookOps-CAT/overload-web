@@ -1,21 +1,23 @@
 import logging
-from typing import Any, BinaryIO
+from typing import Any, BinaryIO, Sequence
 
+from overload_web.application.ports import db
+from overload_web.application.ports import files as file_port
 from overload_web.application.services import (
     marc_services,
     record_service,
     report_service,
 )
-from overload_web.domain.models import rules
+from overload_web.domain.models import files, rules, templates
 
 logger = logging.getLogger(__name__)
 
 
-class ProcessBatch:
-    """Handles parsing, matching, and analysis of MARC records."""
+class ProcessFullRecords:
+    """Handles parsing, matching, and analysis of full MARC records."""
 
     @staticmethod
-    def execute_full_records_workflow(
+    def execute(
         data: BinaryIO | bytes,
         file_name: str,
         handler: record_service.ProcessingHandler,
@@ -52,17 +54,22 @@ class ProcessBatch:
 
         return out, stats
 
+
+class ProcessOrderRecords:
+    """Handles parsing, matching, and analysis of order-level MARC records."""
+
     @staticmethod
-    def execute_order_records_workflow(
+    def execute(
         data: BinaryIO | bytes,
         file_name: str,
         handler: record_service.ProcessingHandler,
         matchpoints: dict[str, str],
         template_data: dict[str, Any],
-        vendor: str | None = None,
     ) -> tuple:
         bibs = marc_services.BibParser.parse_marc_data(
-            data=data, engine=handler.engine, vendor=vendor
+            data=data,
+            engine=handler.engine,
+            vendor=template_data.get("vendor", "UNKNOWN"),
         )
         marc_services.BarcodeValidator.ensure_unique(bibs)
         for bib in bibs:
@@ -90,3 +97,141 @@ class ProcessBatch:
         )
 
         return stream, stats
+
+
+class CreateOrderTemplate:
+    @staticmethod
+    def execute(
+        repository: db.SqlRepositoryProtocol, obj: templates.OrderTemplateBase
+    ) -> templates.OrderTemplate:
+        """
+        Save an order template.
+
+        Args:
+            repository: a `db.SqlRepositoryProtocol` object.
+            obj: the template data as an `OrderTemplateBase` object.
+
+        Raises:
+            ValidationError: If the template lacks a name, agent, or primary_matchpoint.
+
+        Returns:
+            The saved template as an `OrderTemplate` object.
+        """
+        save_template = repository.save(obj=obj)
+        return templates.OrderTemplate(**save_template.model_dump())
+
+
+class GetOrderTemplate:
+    @staticmethod
+    def execute(
+        repository: db.SqlRepositoryProtocol, template_id: str
+    ) -> templates.OrderTemplate | None:
+        """
+        Retrieve an order template by its ID.
+
+        Args:
+            repository: a `db.SqlRepositoryProtocol` object.
+            template_id: unique identifier for the template.
+
+        Returns:
+            The retrieved template as a `OrderTemplate` object or None.
+        """
+        return repository.get(id=template_id)
+
+
+class ListOrderTemplates:
+    @staticmethod
+    def execute(
+        repository: db.SqlRepositoryProtocol,
+        offset: int | None = 0,
+        limit: int | None = 20,
+    ) -> Sequence[templates.OrderTemplate]:
+        """
+        Retrieve a list of templates in the database.
+
+        Args:
+            repository: a `db.SqlRepositoryProtocol` object.
+            offset: start position of first `OrderTemplate` object to return.
+            limit: the maximum number of `OrderTemplate` objects to return.
+
+        Returns:
+            A list of `OrderTemplate` objects.
+        """
+        return repository.list(offset=offset, limit=limit)
+
+
+class UpdateOrderTemplate:
+    @staticmethod
+    def execute(
+        repository: db.SqlRepositoryProtocol,
+        template_id: str,
+        obj: templates.OrderTemplateBase,
+    ) -> templates.OrderTemplate | None:
+        """
+        Update an existing order template.
+
+        Args:
+            repository: a `db.SqlRepositoryProtocol` object.
+            template_id: unique identifier for the template to be updated.
+            obj: the data to be replaces as an `OrderTemplateBase` object.
+
+        Returns:
+            The updated template as an `OrderTemplate` or None if the template
+            does not exist.
+        """
+        return repository.apply_updates(id=template_id, data=obj)
+
+
+class ListVendorFiles:
+    @staticmethod
+    def execute(dir: str, loader: file_port.FileLoader) -> list[str]:
+        """
+        List files in a directory.
+
+        Args:
+            dir: The directory whose files to list.
+            loader: concrete implementation of `FileLoader` protocol
+        Returns:
+            a list of filenames contained within the given directory as strings.
+        """
+        files = loader.list(dir=dir)
+        logger.info(f"Files in {dir}: {files}")
+        return files
+
+
+class LoadVendorFile:
+    @staticmethod
+    def execute(name: str, dir: str, loader: file_port.FileLoader) -> files.VendorFile:
+        """
+        Load a file from a directory.
+
+        Args:
+            name: The name of the file as a string.
+            dir: The directory where the file is located.
+            loader: concrete implementation of `FileLoader` protocol
+
+        Returns:
+            The loaded file as a `files.VendorFile` object.
+        """
+        file = loader.load(name=name, dir=dir)
+        logger.info(f"File loaded: {name}")
+        return file
+
+
+class WriteFile:
+    @staticmethod
+    def execute(file: files.VendorFile, dir: str, writer: file_port.FileWriter) -> str:
+        """
+        Write a file to a directory.
+
+        Args:
+            file: The file to write as a `files.VendorFile` object.
+            dir: The directory where the file should be written.
+            writer: concrete implementation of `FileWriter` protocol
+
+        Returns:
+            the directory and filename where the file was written.
+        """
+        out_file = writer.write(file=file, dir=dir)
+        logger.info(f"Writing file to directory: {dir}/{out_file}")
+        return out_file

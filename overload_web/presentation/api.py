@@ -10,10 +10,19 @@ from typing import Annotated, Any, AsyncGenerator
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from overload_web.application.commands import ProcessBatch
+from overload_web.application.commands import (
+    CreateOrderTemplate,
+    GetOrderTemplate,
+    ListOrderTemplates,
+    ListVendorFiles,
+    ProcessFullRecords,
+    ProcessOrderRecords,
+    UpdateOrderTemplate,
+    WriteFile,
+)
 from overload_web.application.services import report_service
 from overload_web.infrastructure.logging import reporter
-from overload_web.presentation.deps import dto, files, records, templates
+from overload_web.presentation import deps, dto
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +31,8 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: APIRouter) -> AsyncGenerator[None, None]:
     """Create and drop database tables on startup/shutdown."""
     logger.info("Starting up Overload...")
-    engine = templates.get_engine_with_uri()
-    templates.create_db_and_tables(engine)
+    engine = deps.get_engine_with_uri()
+    deps.create_db_and_tables(engine)
     yield
     logger.info("Shutting down Overload...")
     engine.dispose()
@@ -31,26 +40,24 @@ async def lifespan(app: APIRouter) -> AsyncGenerator[None, None]:
 
 api_router = APIRouter(prefix="/api", tags=["api"], lifespan=lifespan)
 
-TemplateService = Annotated[Any, Depends(templates.template_handler)]
-
 
 @api_router.post("/template", response_class=HTMLResponse)
 def create_template(
     request: Request,
     template: Annotated[Any, Depends(dto.from_form(dto.TemplateCreateModel))],
-    service: TemplateService,
+    repository: Annotated[Any, Depends(deps.order_template_db)],
 ) -> HTMLResponse:
     """
     Save a new order template to the template database.
 
     Args:
         template: the order template as an `TemplateCreateModel` object.
-        service: an `OrderTemplateService` object used to interact with the database.
+        repository: a `repository.SqlModelRepository` object
 
     Returns:
         the saved order template wrapped in a `HTMLResponse` object
     """
-    saved_template = service.save_template(obj=template)
+    saved_template = CreateOrderTemplate.execute(obj=template, repository=repository)
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="forms/order_template.html",
@@ -60,19 +67,21 @@ def create_template(
 
 @api_router.get("/template", response_class=HTMLResponse)
 def get_template(
-    request: Request, template_id: str, service: TemplateService
+    request: Request,
+    template_id: str,
+    repository: Annotated[Any, Depends(deps.order_template_db)],
 ) -> HTMLResponse:
     """
     Retrieve an order template from the database.
 
     Args:
         template_id: the template's ID as a string.
-        service: an `OrderTemplateService` object used to interact with the database.
+        repository: a `repository.SqlModelRepository` object
 
     Returns:
         the retrieved order template wrapped in a `HTMLResponse` object
     """
-    template = service.get_template(template_id=template_id)
+    template = GetOrderTemplate.execute(template_id=template_id, repository=repository)
     template_out = {k: v for k, v in template.__dict__.items() if v} if template else {}
     return request.app.state.templates.TemplateResponse(
         request=request,
@@ -83,13 +92,16 @@ def get_template(
 
 @api_router.get("/templates", response_class=HTMLResponse)
 def get_template_list(
-    request: Request, service: TemplateService, offset: int = 0, limit: int = 20
+    request: Request,
+    repository: Annotated[Any, Depends(deps.order_template_db)],
+    offset: int = 0,
+    limit: int = 20,
 ) -> HTMLResponse:
     """
     List order templates in the database.
 
     Args:
-        service: an `OrderTemplateService` object used to interact with the database.
+        repository: a `repository.SqlModelRepository` object
         offset: the first template to be listed
         limit: the maximum number of templates to list
 
@@ -97,7 +109,9 @@ def get_template_list(
         a list of order templates retrieved from the database wrapped in a
         `HTMLResponse` object
     """
-    template_list = service.list_templates(offset=offset, limit=limit)
+    template_list = ListOrderTemplates.execute(
+        repository=repository, offset=offset, limit=limit
+    )
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="order_templates/template_list.html",
@@ -110,24 +124,24 @@ def update_template(
     request: Request,
     template_id: Annotated[str, Form(...)],
     template_patch: Annotated[Any, Depends(dto.from_form(dto.TemplatePatchModel))],
-    service: TemplateService,
+    repository: Annotated[Any, Depends(deps.order_template_db)],
 ) -> HTMLResponse:
     """
     Apply patch updates to an order templates in the database.
 
     Args:
+        repository:
+            a `repository.SqlModelRepository` object
         template_id:
             the template's ID as a string.
         template_patch:
             data to be updated in the template as an `TemplatePatchModel` object
-        service:
-            an `OrderTemplateService` object used to interact with the database.
 
     Returns:
         the updated order template wrapped in a `HTMLResponse` object
     """
-    updated_template = service.update_template(
-        template_id=template_id, obj=template_patch
+    updated_template = UpdateOrderTemplate.execute(
+        repository=repository, template_id=template_id, obj=template_patch
     )
     template_out = (
         {k: v for k, v in updated_template.__dict__.items() if v}
@@ -145,10 +159,10 @@ def update_template(
 def write_local_file(
     vendor_file: dto.VendorFileModel,
     dir: str,
-    service: Annotated[Any, Depends(files.local_file_writer)],
+    writer: Annotated[Any, Depends(deps.local_file_writer)],
 ) -> JSONResponse:
     """Write a file to a local directory."""
-    out_files = service.writer.write(file=vendor_file, dir=dir)
+    out_files = WriteFile.execute(file=vendor_file, dir=dir, writer=writer)
     return JSONResponse(
         content={"app": "Overload Web", "files": out_files, "directory": dir}
     )
@@ -158,7 +172,7 @@ def write_local_file(
 def list_remote_files(
     request: Request,
     vendor: str,
-    service: Annotated[Any, Depends(files.remote_file_loader)],
+    loader: Annotated[Any, Depends(deps.remote_file_loader)],
 ) -> HTMLResponse:
     """
     List all files on a vendor's SFTP server.
@@ -169,7 +183,9 @@ def list_remote_files(
     Returns:
         the list of files wrapped in a `HTMLResponse` object
     """
-    files = service.loader.list(dir=os.environ[f"{vendor.upper()}_SRC"])
+    files = ListVendorFiles.execute(
+        dir=os.environ[f"{vendor.upper()}_SRC"], loader=loader
+    )
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="files/remote_list.html",
@@ -182,10 +198,10 @@ def write_remote_file(
     vendor_file: dto.VendorFileModel,
     dir: str,
     vendor: str,
-    service: Annotated[Any, Depends(files.remote_file_writer)],
+    writer: Annotated[Any, Depends(deps.remote_file_writer)],
 ) -> JSONResponse:
     """Write a file to a remote directory."""
-    out_files = service.writer.write(file=vendor_file, dir=dir)
+    out_files = WriteFile.execute(file=vendor_file, dir=dir, writer=writer)
     return JSONResponse(
         content={"app": "Overload Web", "files": out_files, "directory": dir}
     )
@@ -194,13 +210,13 @@ def write_remote_file(
 @api_router.post("/full-records/process-vendor-file", response_class=HTMLResponse)
 def process_full_records(
     request: Request,
-    service_handler: Annotated[Any, Depends(records.get_pvf_handler)],
-    files: Annotated[list[dto.VendorFileModel], Depends(files.normalize_files)],
+    service_handler: Annotated[Any, Depends(deps.get_pvf_handler)],
+    files: Annotated[list[dto.VendorFileModel], Depends(deps.normalize_files)],
 ) -> HTMLResponse:
     """
-    Process one or more files of MARC records.
+    Process one or more files of MARC deps.
 
-    Uses `FullRecordProcessingService` to process MARC records.
+    Uses `FullRecordProcessingService` to process MARC deps.
 
     Args:
         full_record_service:
@@ -217,7 +233,7 @@ def process_full_records(
     out_files = []
     out_report_data = []
     for file in files:
-        out_file, out_report = ProcessBatch.execute_full_records_workflow(
+        out_file, out_report = ProcessFullRecords.execute(
             data=file.content, handler=service_handler, file_name=file.file_name
         )
         out_files.append(out_file)
@@ -249,16 +265,15 @@ def process_full_records(
 @api_router.post("/order-records/process-vendor-file", response_class=HTMLResponse)
 def process_order_records(
     request: Request,
-    service_handler: Annotated[Any, Depends(records.get_pvf_handler)],
-    files: Annotated[list[dto.VendorFileModel], Depends(files.normalize_files)],
+    service_handler: Annotated[Any, Depends(deps.get_pvf_handler)],
+    files: Annotated[list[dto.VendorFileModel], Depends(deps.normalize_files)],
     order_template: Annotated[Any, Depends(dto.from_form(dto.TemplateDataModel))],
     matchpoints: Annotated[Any, Depends(dto.from_form(dto.MatchpointSchema))],
-    vendor: Annotated[str | None, Form()] = None,
 ) -> HTMLResponse:
     """
-    Process one or more files of MARC records.
+    Process one or more files of MARC deps.
 
-    Uses an `OrderRecordProcessingService` to process MARC records.
+    Uses an `OrderRecordProcessingService` to process MARC deps.
 
     Args:
         order_record_service:
@@ -272,8 +287,6 @@ def process_order_records(
         matchpoints:
             a list of matchpoints loaded from an order template in the database or
             input via an html form.
-        vendor:
-            The vendor name as a string.
 
     Returns:
         the processed files and report data wrapped in a `HTMLResponse` object
@@ -282,12 +295,11 @@ def process_order_records(
     out_files = []
     out_report_data = []
     for file in files:
-        out_file, out_report = ProcessBatch.execute_order_records_workflow(
+        out_file, out_report = ProcessOrderRecords.execute(
             data=file.content,
             handler=service_handler,
             template_data=order_template.model_dump(),
             matchpoints=matchpoints.model_dump(),
-            vendor=vendor,
             file_name=file.file_name,
         )
         out_files.append(out_file)

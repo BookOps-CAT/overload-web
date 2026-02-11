@@ -4,8 +4,8 @@ import pytest
 import yaml
 from file_retriever import Client
 
+from overload_web.application.commands import ListVendorFiles, LoadVendorFile, WriteFile
 from overload_web.application.ports import files as file_port
-from overload_web.application.services import file_service
 from overload_web.domain.models import files
 from overload_web.infrastructure.storage import local_io, sftp
 
@@ -43,17 +43,19 @@ class TestFileTransferServices:
     loader = FakeFileLoader()
 
     def test_service_protocols(self):
-        service = file_service.FileTransferService(loader=StubFileLoader())
-        assert service.load_file(name="foo.mrc", dir="foo") is None
-        assert service.list_files(dir="foo") is None
+        assert (
+            LoadVendorFile.execute(name="foo.mrc", dir="foo", loader=StubFileLoader())
+            is None
+        )
+        assert ListVendorFiles.execute(dir="foo", loader=StubFileLoader()) is None
 
     def test_list_files(self):
-        file_list = self.loader.list(dir="foo")
+        file_list = ListVendorFiles.execute(dir="foo", loader=self.loader)
         assert len(file_list) == 1
         assert file_list[0] == "foo.mrc"
 
     def test_load_file(self):
-        file = self.loader.load(name="foo.mrc", dir="foo")
+        file = LoadVendorFile.execute(name="foo.mrc", dir="foo", loader=self.loader)
         assert file.file_name == "foo.mrc"
         assert file.content == b""
 
@@ -62,14 +64,17 @@ class TestFileWriterServices:
     writer = FakeFileWriter()
 
     def test_service_protocols(self):
-        service = file_service.FileWriterService(writer=StubFileWriter())
         vendor_file = files.VendorFile(file_name="foo.mrc", content=b"")
-        assert service.write_marc_file(file=vendor_file, dir="bar") is None
+        assert (
+            WriteFile.execute(file=vendor_file, dir="bar", writer=StubFileWriter())
+            is None
+        )
 
     def test_write_marc_file(self):
-        out_file = self.writer.write(
+        out_file = WriteFile.execute(
             file=files.VendorFile(file_name="foo.mrc", content=b""),
             dir="bar",
+            writer=self.writer,
         )
         assert out_file == "foo.mrc"
 
