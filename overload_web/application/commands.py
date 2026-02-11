@@ -215,7 +215,7 @@ class UpdateOrderTemplate:
             The updated template as an `OrderTemplate` or None if the template
             does not exist.
         """
-        return repository.apply_updates(id=template_id, data=obj)
+        return repository.update_template(id=template_id, data=obj)
 
 
 class ListVendorFiles:

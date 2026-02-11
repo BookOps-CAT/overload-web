@@ -77,7 +77,7 @@ class SqlModelRepository:
         self.session.refresh(valid_obj)
         return valid_obj
 
-    def apply_updates(
+    def update_template(
         self, id: str, data: tables.SQLModel
     ) -> templates.OrderTemplate | None:
         """
