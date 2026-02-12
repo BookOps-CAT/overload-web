@@ -6,7 +6,7 @@ from overload_web.application.commands import (
     GetOrderTemplate,
     ListOrderTemplates,
 )
-from overload_web.infrastructure.db import repository, tables
+from overload_web.infrastructure import repository, tables
 
 
 @pytest.fixture

@@ -4,7 +4,7 @@ import pytest
 
 from overload_web.application import ports
 from overload_web.domain.models import files
-from overload_web.infrastructure.storage import local_io, sftp
+from overload_web.infrastructure import local_io, sftp
 
 
 @pytest.fixture

@@ -7,7 +7,7 @@ from file_retriever import Client
 from overload_web.application import ports
 from overload_web.application.commands import ListVendorFiles, LoadVendorFile, WriteFile
 from overload_web.domain.models import files
-from overload_web.infrastructure.storage import local_io, sftp
+from overload_web.infrastructure import local_io, sftp
 
 
 class StubFileLoader(ports.FileLoader):

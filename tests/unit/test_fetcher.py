@@ -4,7 +4,7 @@ import pytest
 import yaml
 
 from overload_web.domain.models import sierra_responses
-from overload_web.infrastructure.sierra import clients
+from overload_web.infrastructure import clients
 
 
 @pytest.fixture

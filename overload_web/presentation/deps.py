@@ -9,12 +9,15 @@ from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.application.commands import LoadVendorFile
 from overload_web.application.services import record_service
-from overload_web.infrastructure.config import loader
-from overload_web.infrastructure.db import repository
-from overload_web.infrastructure.logging import reporter
-from overload_web.infrastructure.marc import engine
-from overload_web.infrastructure.sierra import clients
-from overload_web.infrastructure.storage import local_io, sftp
+from overload_web.infrastructure import (
+    clients,
+    loader,
+    local_io,
+    marc_engine,
+    reporter,
+    repository,
+    sftp,
+)
 from overload_web.presentation import dto
 
 logger = logging.getLogger(__name__)
@@ -136,7 +139,7 @@ def get_marc_engine_config(
     collection: Annotated[str, Form(...)],
     constants: Annotated[dict[str, Any], Depends(loader.load_config)],
     record_type: Annotated[str, Form(...)],
-) -> engine.MarcEngineConfig:
+) -> marc_engine.MarcEngineConfig:
     return loader.marc_engine_config_from_constants(
         constants=constants,
         library=library,
@@ -168,13 +171,13 @@ def get_pvf_handler(
     analyzer: Annotated[
         record_service.match_analysis.MatchAnalyzer, Depends(get_match_analyzer)
     ],
-    config: Annotated[engine.MarcEngineConfig, Depends(get_marc_engine_config)],
+    config: Annotated[marc_engine.MarcEngineConfig, Depends(get_marc_engine_config)],
 ) -> Generator[record_service.ProcessingHandler, None, None]:
     """Create an full-record processing service with injected dependencies."""
     yield record_service.ProcessingHandler(
         fetcher=fetcher,
         analyzer=analyzer,
-        engine=engine.MarcEngine(rules=config),
+        engine=marc_engine.MarcEngine(rules=config),
     )
 
 

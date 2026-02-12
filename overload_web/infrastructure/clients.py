@@ -35,7 +35,7 @@ from bookops_nypl_platform import BookopsPlatformError, PlatformSession, Platfor
 
 from overload_web.domain.models import sierra_responses
 
-from ... import __title__, __version__
+from .. import __title__, __version__
 
 logger = logging.getLogger(__name__)
 

@@ -5,7 +5,7 @@ import pytest
 from overload_web.application.commands import ProcessFullRecords, ProcessOrderRecords
 from overload_web.application.services import record_service
 from overload_web.domain.errors import OverloadError
-from overload_web.infrastructure.marc import engine
+from overload_web.infrastructure import marc_engine
 
 
 @pytest.fixture
@@ -14,7 +14,7 @@ def service_components(
 ) -> tuple:
     return (
         fake_fetcher,
-        engine.MarcEngine(rules=engine_config),
+        marc_engine.MarcEngine(rules=engine_config),
         record_service.MatchAnalyzerFactory().make(
             library=library, record_type=record_type, collection=collection
         ),

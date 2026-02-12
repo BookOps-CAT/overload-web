@@ -11,8 +11,8 @@ from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 
 from overload_web.domain.models import bibs, sierra_responses
-from overload_web.infrastructure.marc import engine
-from overload_web.infrastructure.sierra import clients
+from overload_web.infrastructure import clients
+from overload_web.infrastructure import marc_engine as engine
 
 
 @pytest.fixture(scope="session")

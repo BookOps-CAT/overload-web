@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Any
 
-from overload_web.infrastructure.marc import engine
+from overload_web.infrastructure import marc_engine
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +16,8 @@ def load_config() -> dict[str, Any]:
 
 def marc_engine_config_from_constants(
     constants: dict[str, Any], library: str, collection: str | None, record_type: str
-) -> engine.MarcEngineConfig:
-    return engine.MarcEngineConfig(
+) -> marc_engine.MarcEngineConfig:
+    return marc_engine.MarcEngineConfig(
         marc_order_mapping=constants["marc_order_mapping"],
         default_loc=constants["default_locations"][library].get(collection),
         bib_id_tag=constants["bib_id_tag"][library],
