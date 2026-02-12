@@ -237,7 +237,6 @@ def process_full_records(
             data=file.content, handler=service_handler, file_name=file.file_name
         )
         out_files.append(out_file)
-
     report = CreateFullRecordsProcessingReport.execute(
         out_files, handler=report_handler
     )
@@ -245,12 +244,20 @@ def process_full_records(
         request=request,
         name="pvf_partials/pvf_results.html",
         context={
-            "pd_report": report_handler.report_to_html(
+            "vendor_report": report_handler.report_to_html(
                 report.vendor_breakdown, classes=["table"]
             ),
-            "report": report.to_dict(),
+            "summary_report": report_handler.summary_report_to_html(
+                report.summary, classes=["table"]
+            ),
             "detailed_report": report_handler.report_to_html(
                 report.detailed_data, classes=["table"]
+            ),
+            "call_no_report": report_handler.report_to_html(
+                report.call_number_issues, classes=["table"]
+            ),
+            "dupe_report": report_handler.report_to_html(
+                report.duplicates_report, classes=["table"]
             ),
         },
     )
@@ -306,12 +313,20 @@ def process_order_records(
         request=request,
         name="pvf_partials/pvf_results.html",
         context={
-            "pd_report": report_handler.report_to_html(
+            "vendor_report": report_handler.report_to_html(
                 report.vendor_breakdown, classes=["table"]
             ),
-            "report": report.to_dict(),
+            "summary_report": report_handler.report_to_html(
+                report.summary, classes=["table"]
+            ),
             "detailed_report": report_handler.report_to_html(
                 report.detailed_data, classes=["table"]
+            ),
+            "call_no_report": report_handler.report_to_html(
+                report.call_number_issues, classes=["table"]
+            ),
+            "dupe_report": report_handler.report_to_html(
+                report.duplicates_report, classes=["table"]
             ),
         },
     )

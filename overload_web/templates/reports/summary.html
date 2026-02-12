@@ -1,17 +1,12 @@
 <h3>Output:</h3>
-{% if report %}
-<h4>Summary</h4>
-System: {{report["library"]}}<br />
-Collection: {{report["collection"]}}<br />
-User: {{report["record_type"]}}<br />
-<br />
-<br />
-Total Processed Files: {{report["total_files_processed"]}} <br />
-Total Processed Records: {{report["total_records_processed"]}} <br />
-Files: {{report["file_names"]}}<br />
-{%endif%} {%if pd_report%}
+{% if summary_report %}
+<h4>Summary:</h4>
+{{ summary_report | safe}} {%endif%} {%if vendor_report%}
 <h5>Vendor breakdown:</h5>
-{{ pd_report | safe}}
-
+{{ vendor_report | safe}} {% endif %}{%if dupe_report%}
+<h5>Duplicate Report:</h5>
+{{ dupe_report | safe}}{% endif %}{%if call_no_report%}
+<h5>Call Number Report:</h5>
+{{ call_no_report | safe}}{% endif %}{%if detailed_report%}
 <h5>Detailed Report:</h5>
 {{ detailed_report | safe}} {% endif %}

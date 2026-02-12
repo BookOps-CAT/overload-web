@@ -4,7 +4,7 @@ import io
 import itertools
 import logging
 from collections import Counter
-from typing import Any, BinaryIO
+from typing import Any
 
 from overload_web.application import ports
 from overload_web.domain.errors import OverloadError
@@ -56,7 +56,7 @@ class BarcodeValidator:
 class BibParser:
     @staticmethod
     def parse_marc_data(
-        data: BinaryIO | bytes, engine: ports.MarcEnginePort, vendor: str | None = None
+        data: bytes, engine: ports.MarcEnginePort, vendor: str | None = None
     ) -> list[bibs.DomainBib]:
         reader = engine.get_reader(data)
         parsed = []
@@ -103,7 +103,7 @@ class BibUpdater:
 
 class BibSerializer:
     @staticmethod
-    def write(records: list[bibs.DomainBib]) -> BinaryIO:
+    def write(records: list[bibs.DomainBib]) -> io.BytesIO:
         """
         Serialize `DomainBib` objects into a binary MARC stream.
 

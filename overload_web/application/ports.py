@@ -1,60 +1,18 @@
-"""Port used to define a database for order templates.
-
-Protocols:
-
-`SqlRepositoryProtocol`
-    Defines expected methods for a repository.
-
-"""
-
 from __future__ import annotations
 
 import logging
-from typing import (
-    Any,
-    BinaryIO,
-    Iterator,
-    Protocol,
-    Sequence,
-    TypeVar,
-    runtime_checkable,
-)
-
-from overload_web.domain.models import bibs, files, sierra_responses
+from typing import Any, Iterator, Protocol, Sequence, TypeVar, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar("T")
+T = TypeVar("T")  # variable for `bookops_marc.Bib` type
+U = TypeVar("U", contravariant=True)  # variable for `bibs.DomainBib` type
+V = TypeVar("V", covariant=True)  # variable for `VendorFile` return type
+W = TypeVar("W")  # variable for `VendorFile` param type
 
 
 @runtime_checkable
-class BibFetcher(Protocol):
-    """
-    Protocol for a service that searches Sierra for bib records based on an identifier.
-
-    This abstraction allows the `BibMatcher` to remain decoupled from any specific
-    data source or API. Implementations can include REST APIs, BPL's Solr service,
-    NYPL's Platform serivce, or other systems.
-    """
-
-    def get_bibs_by_id(
-        self, value: str | int, key: str
-    ) -> list[sierra_responses.BaseSierraResponse]: ...  # pragma: no branch
-
-    """
-    Retrieve candidate bib records that match a key-value pair.
-
-    Args:
-        value: The identifier value to search by (eg. "9781234567890").
-        key: The field name corresponding to the identifier (eg. "isbn").
-
-    Returns:
-        a list of `BaseSierraResponse` objects representing candidate matches.
-    """
-
-
-@runtime_checkable
-class FileLoader(Protocol):
+class FileLoader(Protocol[V]):
     """
     A protocol for a service which loads .mrc files for use within Overload.
 
@@ -73,7 +31,7 @@ class FileLoader(Protocol):
         a list of file names as strings
     """
 
-    def load(self, name: str, dir: str) -> files.VendorFile: ...  # pragma: no branch
+    def load(self, name: str, dir: str) -> V: ...  # pragma: no branch
 
     """
     Load the content of a specific file.
@@ -95,7 +53,7 @@ class FileWriter(Protocol):
     Implementations may interact with an FTP/SFTP server or a local file directory.
     """
 
-    def write(self, file: files.VendorFile, dir: str) -> str: ...  # pragma: no branch
+    def write(self, file: W, dir: str) -> str: ...  # pragma: no branch
 
     """
     Write a content to a specific file.
@@ -110,7 +68,7 @@ class FileWriter(Protocol):
 
 
 @runtime_checkable
-class MarcEnginePort(Protocol[T]):
+class MarcEnginePort(Protocol[T, U]):
     bib_rules: dict[str, Any]
     library: str
     order_rules: dict[str, Any]
@@ -119,9 +77,7 @@ class MarcEnginePort(Protocol[T]):
     vendor_rules: dict[str, Any]
     _config: Any
 
-    def create_bib_from_domain(
-        self, record: bibs.DomainBib
-    ) -> T: ...  # pragma:no branch
+    def create_bib_from_domain(self, record: U) -> T: ...  # pragma:no branch
 
     """Create a `bookops_marc.Bib` object from a `DomainBib` object"""
 
@@ -129,7 +85,7 @@ class MarcEnginePort(Protocol[T]):
 
     """Get the Sierra command tag from a bib record if present."""
 
-    def get_reader(self, data: bytes | BinaryIO) -> Iterator: ...  # pragma: no branch
+    def get_reader(self, data: bytes) -> Iterator: ...  # pragma: no branch
 
     """Instantiate an object that can read MARC binary as an iterator."""
 
@@ -185,7 +141,12 @@ class SqlRepositoryProtocol(Protocol[T]):
 
 class ReportHandler(Protocol):
     @staticmethod
-    def create_vendor_breakdown(
+    def create_call_number_report(
+        report_data: dict[str, Any],
+    ) -> dict[str, list[Any]]: ...  # pragma: no branch
+
+    @staticmethod
+    def create_detailed_report(
         report_data: dict[str, list[Any]],
     ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
@@ -195,13 +156,25 @@ class ReportHandler(Protocol):
     ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
     @staticmethod
-    def create_call_number_report(
-        report_data: dict[str, Any],
+    def create_summary_report(
+        library: str,
+        collection: str | None,
+        record_type: str,
+        file_names: list[str],
+        total_files_processed: int,
+        total_records_processed: int,
+        missing_barcodes: list[str] = [],
+        processing_integrity: str | None = None,
+    ) -> dict[str, list[Any]]: ...  # pragma: no branch
+
+    @staticmethod
+    def create_vendor_report(
+        report_data: dict[str, list[Any]],
     ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
     @staticmethod
     def list2dict(
-        report_data: list[bibs.MatchAnalysis],
+        report_data: list[Any],
     ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
     @staticmethod
@@ -210,6 +183,6 @@ class ReportHandler(Protocol):
     ) -> str: ...  # pragma: no branch
 
     @staticmethod
-    def create_detailed_report(
-        report_data: dict[str, list[Any]],
-    ) -> dict[str, list[Any]]: ...  # pragma: no branch
+    def summary_report_to_html(
+        report_data: dict[str, list[Any]], classes: list[str]
+    ) -> str: ...  # pragma: no branch

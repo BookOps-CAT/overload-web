@@ -1,9 +1,9 @@
 import logging
-from typing import Any, BinaryIO, Sequence
+from typing import Any, Sequence
 
 from overload_web.application import ports
 from overload_web.application.services import marc_services, record_service
-from overload_web.domain.models import bibs, files, templates
+from overload_web.domain.models import bibs, files, reports, templates
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +13,7 @@ class ProcessFullRecords:
 
     @staticmethod
     def execute(
-        data: BinaryIO | bytes,
-        file_name: str,
-        handler: record_service.ProcessingHandler,
+        data: bytes, file_name: str, handler: record_service.ProcessingHandler
     ) -> bibs.ProcessedFullRecordsBatch:
         """
         Process a file of full MARC records.
@@ -25,7 +23,7 @@ class ProcessFullRecords:
         fields, and outputs the updated records and the match_analysis.
 
         Args:
-            data: Binary MARC data as a `BinaryIO` or `bytes` object.
+            data: Binary MARC data as a `bytes` object.
             file_name: the name of the file being processed.
             handler: a `ProcessingHandler` object used by the command.
         Returns:
@@ -72,7 +70,7 @@ class ProcessOrderRecords:
 
     @staticmethod
     def execute(
-        data: BinaryIO | bytes,
+        data: bytes,
         file_name: str,
         handler: record_service.ProcessingHandler,
         matchpoints: dict[str, str],
@@ -87,7 +85,7 @@ class ProcessOrderRecords:
 
         Args:
             data:
-                Binary MARC data as a `BinaryIO` or `bytes` object.
+                Binary MARC data as a `bytes` object.
             matchpoints:
                 A dictionary containing matchpoints to be used in matching records.
             template_data:
@@ -269,7 +267,7 @@ class CreateFullRecordsProcessingReport:
     @staticmethod
     def execute(
         report_data: list[bibs.ProcessedFullRecordsBatch], handler: ports.ReportHandler
-    ) -> bibs.AllReportData:
+    ) -> reports.AllReportData:
         file_names = [i.file_name for i in report_data]
         all_recs = []
         missing_barcodes = []
@@ -278,21 +276,23 @@ class CreateFullRecordsProcessingReport:
             all_recs.extend(report.new_records)
             missing_barcodes.extend(report.missing_barcodes)
         data_dict = handler.list2dict([i.analysis for i in all_recs])
-        vendor_breakdown = handler.create_vendor_breakdown(data_dict)
+        vendor_breakdown = handler.create_vendor_report(data_dict)
         dupes_report = handler.create_duplicate_report(data_dict)
         call_no_report = handler.create_call_number_report(data_dict)
         detailed_report = handler.create_detailed_report(data_dict)
-        return bibs.AllReportData(
+        summary_report = handler.create_summary_report(
             library=report_data[0].library,
             collection=report_data[0].collection,
             record_type=report_data[0].record_type,
             file_names=file_names,
             total_files_processed=len(file_names),
             total_records_processed=len(all_recs),
-            all_data=all_recs,
+            missing_barcodes=missing_barcodes,
+        )
+        return reports.AllReportData(
+            summary=summary_report,
             vendor_breakdown=vendor_breakdown,
             duplicates_report=dupes_report,
-            missing_barcodes=missing_barcodes,
             call_number_issues=call_no_report,
             detailed_data=detailed_report,
         )
@@ -302,24 +302,26 @@ class CreateOrderRecordsProcessingReport:
     @staticmethod
     def execute(
         report_data: list[bibs.ProcessedOrderRecordsBatch], handler: ports.ReportHandler
-    ) -> bibs.AllReportData:
+    ) -> reports.AllReportData:
         file_names = [i.file_name for i in report_data]
         all_recs = []
         for report in report_data:
             all_recs.extend(report.records)
         data_dict = handler.list2dict([i.analysis for i in all_recs])
-        vendor_breakdown = handler.create_vendor_breakdown(data_dict)
+        vendor_breakdown = handler.create_vendor_report(data_dict)
         dupes_report = handler.create_duplicate_report(data_dict)
         call_no_report = handler.create_call_number_report(data_dict)
         detailed_report = handler.create_detailed_report(data_dict)
-        return bibs.AllReportData(
+        summary_report = handler.create_summary_report(
             library=report_data[0].library,
             collection=report_data[0].collection,
             record_type=report_data[0].record_type,
             file_names=file_names,
             total_files_processed=len(file_names),
             total_records_processed=len(all_recs),
-            all_data=all_recs,
+        )
+        return reports.AllReportData(
+            summary=summary_report,
             vendor_breakdown=vendor_breakdown,
             duplicates_report=dupes_report,
             call_number_issues=call_no_report,

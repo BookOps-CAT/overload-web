@@ -403,22 +403,3 @@ class ProcessedOrderRecordsBatch:
     library: str
     collection: str | None
     record_type: str
-
-
-@dataclass
-class AllReportData:
-    library: str
-    collection: str | None
-    record_type: str
-    file_names: list[str]
-    total_files_processed: int
-    total_records_processed: int
-    all_data: list[DomainBib]
-    vendor_breakdown: dict[str, list[Any]]
-    detailed_data: dict[str, list[Any]]
-    duplicates_report: Any | None = None
-    call_number_issues: Any | None = None
-    missing_barcodes: list[str] | None = None
-
-    def to_dict(self) -> dict[str, Any]:
-        return self.__dict__

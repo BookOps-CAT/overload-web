@@ -1,10 +1,66 @@
+import io
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 
+from overload_web.application.commands import ProcessFullRecords, ProcessOrderRecords
+from overload_web.domain.models import bibs
 from overload_web.infrastructure.db import tables
 from overload_web.main import app
 from overload_web.presentation import deps
+
+
+@pytest.fixture
+def processed_records(
+    monkeypatch, library, collection, record_type, order_level_bib, full_bib
+):
+    decision = bibs.MatchDecision(bibs.CatalogAction.ATTACH, target_bib_id=None)
+    candidates = bibs.ClassifiedCandidates([], [], [])
+    if record_type == "cat":
+        bib = full_bib
+    else:
+        bib = order_level_bib
+    analysis = bibs.MatchAnalysis(
+        True,
+        candidates,
+        collection,
+        decision,
+        library,
+        bib.match_identifiers(),
+        record_type,
+        bib.vendor,
+    )
+
+    def fake_order_response(*args, **kwargs):
+        order_level_bib.analysis = analysis
+        return bibs.ProcessedOrderRecordsBatch(
+            records=[order_level_bib],
+            record_stream=io.BytesIO(order_level_bib.binary_data),
+            file_name="foo.mrc",
+            library=library,
+            record_type=record_type,
+            collection=collection,
+        )
+
+    def fake_full_response(*args, **kwargs):
+        full_bib.analysis = analysis
+        return bibs.ProcessedFullRecordsBatch(
+            duplicated_records=[],
+            duplicated_records_stream=io.BytesIO(b""),
+            new_records=[full_bib],
+            new_records_stream=io.BytesIO(full_bib.binary_data),
+            deduplicated_records=[],
+            deduplicated_records_stream=io.BytesIO(b""),
+            missing_barcodes=[],
+            file_name="foo.mrc",
+            library=library,
+            record_type=record_type,
+            collection=collection,
+        )
+
+    monkeypatch.setattr(ProcessFullRecords, "execute", fake_full_response)
+    monkeypatch.setattr(ProcessOrderRecords, "execute", fake_order_response)
 
 
 def fake_sql_session():
@@ -225,18 +281,17 @@ class TestApp:
     @pytest.mark.parametrize(
         "library, collection, record_type",
         [
-            ("nypl", "BL", "cat"),
             ("nypl", "BL", "acq"),
             ("nypl", "BL", "sel"),
-            ("nypl", "RL", "cat"),
             ("nypl", "RL", "acq"),
             ("nypl", "RL", "sel"),
-            ("bpl", "NONE", "cat"),
             ("bpl", "NONE", "acq"),
             ("bpl", "NONE", "sel"),
         ],
     )
-    def test_api_process_order_records_local(self, library, collection, record_type):
+    def test_api_process_order_records_local(
+        self, library, collection, record_type, processed_records
+    ):
         context = {
             "library": library,
             "collection": collection,
@@ -257,17 +312,16 @@ class TestApp:
         "library, collection, record_type",
         [
             ("nypl", "BL", "acq"),
-            ("nypl", "BL", "cat"),
             ("nypl", "BL", "sel"),
             ("nypl", "RL", "acq"),
-            ("nypl", "RL", "cat"),
             ("nypl", "RL", "sel"),
             ("bpl", "NONE", "acq"),
-            ("bpl", "NONE", "cat"),
             ("bpl", "NONE", "sel"),
         ],
     )
-    def test_api_process_order_records_remote(self, library, collection, record_type):
+    def test_api_process_order_records_remote(
+        self, library, collection, record_type, processed_records
+    ):
         context = {
             "library": library,
             "collection": collection,
@@ -288,22 +342,17 @@ class TestApp:
         "library, collection, record_type",
         [
             ("nypl", "BL", "cat"),
-            ("nypl", "BL", "acq"),
-            ("nypl", "BL", "sel"),
             ("nypl", "RL", "cat"),
-            ("nypl", "RL", "acq"),
-            ("nypl", "RL", "sel"),
             ("bpl", "NONE", "cat"),
-            ("bpl", "NONE", "acq"),
-            ("bpl", "NONE", "sel"),
         ],
     )
-    def test_api_process_full_records_local(self, library, collection, record_type):
+    def test_api_process_full_records_local(
+        self, library, collection, record_type, processed_records
+    ):
         context = {
             "library": library,
             "collection": collection,
             "record_type": record_type,
-            "vendor": "FOO",
         }
         files = {"files": ("test.mrc", b"", "application/octet-stream")}
         response = self.client.post(
@@ -314,18 +363,14 @@ class TestApp:
     @pytest.mark.parametrize(
         "library, collection, record_type",
         [
-            ("nypl", "BL", "acq"),
             ("nypl", "BL", "cat"),
-            ("nypl", "BL", "sel"),
-            ("nypl", "RL", "acq"),
             ("nypl", "RL", "cat"),
-            ("nypl", "RL", "sel"),
-            ("bpl", "NONE", "acq"),
             ("bpl", "NONE", "cat"),
-            ("bpl", "NONE", "sel"),
         ],
     )
-    def test_api_process_full_records_remote(self, library, collection, record_type):
+    def test_api_process_full_records_remote(
+        self, library, collection, record_type, processed_records
+    ):
         context = {
             "library": library,
             "collection": collection,

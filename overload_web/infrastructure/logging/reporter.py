@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import datetime
 import logging
 import os
 from typing import Any
@@ -13,16 +12,121 @@ from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
 from googleapiclient.discovery import build  # type: ignore
 from googleapiclient.errors import HttpError  # type: ignore
 
-from overload_web.domain.models import bibs
+from overload_web.domain.models import bibs, reports
 
 logger = logging.getLogger(__name__)
 
 
 class PandasReportHandler:
     @staticmethod
-    def report_to_html(report_data: dict[str, list[Any]], classes: list[str]) -> str:
+    def create_call_number_report(
+        report_data: dict[str, list[Any]],
+    ) -> reports.CallNumberReport:
         df = pd.DataFrame(data=report_data)
-        return df.to_html(index=False, classes=classes, justify="unset")
+        match_df = df[~df["call_number_match"]]
+        if report_data["record_type"] and report_data["record_type"][0] == "cat":
+            missing_df = df[df["call_number"].isnull() & df["target_call_no"].isnull()]
+            match_df = pd.concat([match_df, missing_df])
+        return reports.CallNumberReport(
+            resource_id=match_df["resource_id"].to_list(),
+            target_bib_id=match_df["target_bib_id"].to_list(),
+            call_number_match=match_df["call_number_match"].to_list(),
+            call_number=match_df["call_number"].to_list(),
+            target_call_no=match_df["target_call_no"].to_list(),
+            duplicate_records=match_df["duplicate_records"].to_list(),
+            record_type=match_df["record_type"].to_list(),
+            vendor=match_df["vendor"].to_list(),
+        )
+
+    @staticmethod
+    def create_detailed_report(
+        report_data: dict[str, list[Any]],
+    ) -> reports.DetailedReport:
+        return reports.DetailedReport(
+            vendor=report_data["vendor"],
+            resource_id=report_data["resource_id"],
+            action=report_data["action"],
+            target_bib_id=report_data["target_bib_id"],
+            updated=report_data["updated_by_vendor"],
+            call_number_match=report_data["call_number_match"],
+            call_number=report_data["call_number"],
+            target_call_no=report_data["target_call_no"],
+            duplicate_records=report_data["duplicate_records"],
+            mixed=report_data["mixed"],
+            other=report_data["other"],
+        )
+
+    @staticmethod
+    def create_duplicate_report(
+        report_data: dict[str, list[Any]],
+    ) -> reports.DuplicateReport:
+        df = pd.DataFrame(data=report_data)
+        filtered_df = df[
+            df["duplicate_records"].notnull()
+            | df["mixed"].notnull()
+            | df["other"].notnull()
+        ]
+        return reports.DuplicateReport(
+            vendor=filtered_df["vendor"].to_list(),
+            resource_id=filtered_df["resource_id"].to_list(),
+            target_bib_id=filtered_df["target_bib_id"].to_list(),
+            duplicate_records=filtered_df["duplicate_records"].to_list(),
+            mixed=filtered_df["mixed"].to_list(),
+            other=filtered_df["other"].to_list(),
+            record_type=filtered_df["record_type"].to_list(),
+        )
+
+    @staticmethod
+    def create_summary_report(
+        library: str,
+        collection: str | None,
+        record_type: str,
+        file_names: list[str],
+        total_files_processed: int,
+        total_records_processed: int,
+        missing_barcodes: list[str] = [],
+        processing_integrity: str | None = None,
+    ) -> reports.SummaryReport:
+        return reports.SummaryReport(
+            library=[library],
+            collection=[collection],
+            record_type=[record_type],
+            file_names=[file_names],
+            total_files_processed=[total_files_processed],
+            total_records_processed=[total_records_processed],
+            missing_barcodes=[missing_barcodes],
+            processing_integrity=[processing_integrity],
+        )
+
+    @staticmethod
+    def create_vendor_report(
+        report_data: dict[str, list[Any]],
+    ) -> reports.VendorReport:
+        data = {k: v for k, v in report_data.items() if k in ["vendor", "action"]}
+        df = pd.DataFrame(data=data)
+        vendor_data: dict[str, list[Any]] = {
+            "vendor": [],
+            "attach": [],
+            "insert": [],
+            "update": [],
+            "total": [],
+        }
+        for vendor, content in df.groupby("vendor"):
+            attach = content[content["action"] == "attach"]["action"].count()
+            insert = content[content["action"] == "insert"]["action"].count()
+            update = content[content["action"] == "overlay"]["action"].count()
+            vendor_data["vendor"].append(vendor)
+            vendor_data["attach"].append(attach)
+            vendor_data["insert"].append(insert)
+            vendor_data["update"].append(update)
+            vendor_data["total"].append(attach + insert + update)
+        return reports.VendorReport(
+            vendor=vendor_data["vendor"],
+            attach=vendor_data["attach"],
+            insert=vendor_data["insert"],
+            update=vendor_data["update"],
+            total=vendor_data["total"],
+        )
 
     @staticmethod
     def list2dict(report_data: list[bibs.MatchAnalysis]) -> dict[str, list[Any]]:
@@ -46,110 +150,17 @@ class PandasReportHandler:
         }
 
     @staticmethod
-    def create_vendor_breakdown(
-        report_data: dict[str, list[Any]],
-    ) -> dict[str, list[Any]]:
-        data = {k: v for k, v in report_data.items() if k in ["vendor", "action"]}
-        df = pd.DataFrame(data=data)
-        vendor_data: dict[str, list[Any]] = {
-            "vendor": [],
-            "attach": [],
-            "insert": [],
-            "update": [],
-            "total": [],
-        }
-        for vendor, content in df.groupby("vendor"):
-            attach = content[content["action"] == "attach"]["action"].count()
-            insert = content[content["action"] == "insert"]["action"].count()
-            update = content[content["action"] == "overlay"]["action"].count()
-            vendor_data["vendor"].append(vendor)
-            vendor_data["attach"].append(attach)
-            vendor_data["insert"].append(insert)
-            vendor_data["update"].append(update)
-            vendor_data["total"].append(attach + insert + update)
-        return vendor_data
+    def report_to_html(report_data: dict[str, list[Any]], classes: list[str]) -> str:
+        df = pd.DataFrame(data=report_data)
+        return df.to_html(index=False, classes=classes, justify="unset")
 
     @staticmethod
-    def create_duplicate_report(
-        report_data: dict[str, list[Any]],
-    ) -> list[list[Any]]:
-        df_data = {
-            k: v
-            for k, v in report_data.items()
-            if k
-            in [
-                "vendor",
-                "resource_id",
-                "target_bib_id",
-                "duplicate_records",
-                "mixed",
-                "other",
-                "record_type",
-            ]
-        }
-        df = pd.DataFrame(data=df_data)
-        filtered_df = df[
-            df["duplicate_records"].notnull()
-            | df["mixed"].notnull()
-            | df["other"].notnull()
-        ]
-        df_out = filtered_df.assign(date=datetime.datetime.now())
-        df_out.fillna("", inplace=True)
-        return df_out.values.tolist()
-
-    @staticmethod
-    def create_call_number_report(
-        report_data: dict[str, list[Any]],
-    ) -> list[list[Any]]:
-        df_data = {
-            k: v
-            for k, v in report_data.items()
-            if k
-            in [
-                "vendor",
-                "resource_id",
-                "target_bib_id",
-                "duplicate_records",
-                "call_number_match",
-                "record_type",
-                "call_number",
-                "target_call_no",
-            ]
-        }
-        df = pd.DataFrame(data=df_data)
-        match_df = df[~df["call_number_match"]]
-        if report_data["record_type"] and report_data["record_type"][0] == "cat":
-            missing_df = df[df["call_number"].isnull() & df["target_call_no"].isnull()]
-            match_df = pd.concat([match_df, missing_df])
-        df_out = match_df.assign(date=datetime.datetime.now())
-        df_out.fillna("", inplace=True)
-        return df_out.values.tolist()
-
-    @staticmethod
-    def create_detailed_report(
-        report_data: dict[str, list[Any]],
-    ) -> dict[str, list[Any]]:
-        df_data = {
-            k: v
-            for k, v in report_data.items()
-            if k
-            in [
-                "vendor",
-                "resource_id",
-                "action",
-                "target_bib_id",
-                "updated",
-                "call_number_match",
-                "call_number",
-                "target_call_no",
-                "duplicates",
-                "mixed",
-                "other",
-            ]
-        }
-        df = pd.DataFrame(data=df_data)
-        df.fillna("", inplace=True)
-        return df_data
+    def summary_report_to_html(
+        report_data: dict[str, list[Any]], classes: list[str]
+    ) -> str:
+        df = pd.DataFrame(data=report_data)
+        df = df.T
+        return df.to_html(header=False, classes=classes, justify="unset")
 
 
 class GoogleSheetsReporter:

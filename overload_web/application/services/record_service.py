@@ -40,7 +40,7 @@ class ProcessingHandler:
 
     def __init__(
         self,
-        fetcher: ports.BibFetcher,
+        fetcher: match_service.BibFetcher,
         engine: ports.MarcEnginePort,
         analyzer: match_analysis.MatchAnalyzer,
     ):
@@ -49,7 +49,7 @@ class ProcessingHandler:
 
         Args:
             fetcher:
-                A `ports.BibFetcher` object
+                A `match_service.BibFetcher` object
             analyzer:
                 A `match_analysis.MatchAnalyzer` object
             engine:
