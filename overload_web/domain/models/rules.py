@@ -14,7 +14,7 @@ class VendorRules:
     def fields_to_update(
         record: bibs.DomainBib,
         context: Any,
-        template_data: dict[str, Any],
+        format: str | None = None,
         command_tag: Any | None = None,
         call_no: str | None = None,
     ) -> list[Any]:
@@ -26,13 +26,10 @@ class VendorRules:
         else:
             updates.extend(
                 FieldRules.update_order_fields(
-                    record=record,
-                    mapping=context.marc_order_mapping,
-                    template_data=template_data,
+                    record=record, mapping=context.marc_order_mapping
                 )
             )
             if context.record_type == "sel":
-                format = template_data.get("format")
                 updates.append(
                     FieldRules.add_command_tag(
                         field=command_tag,
@@ -204,9 +201,8 @@ class FieldRules:
 
     @staticmethod
     def update_order_fields(
-        record: bibs.DomainBib, mapping: dict[str, Any], template_data: dict[str, Any]
+        record: bibs.DomainBib, mapping: dict[str, Any]
     ) -> list[MarcFieldUpdate]:
-        record.apply_order_template(template_data)
         fields = []
         for order in record.orders:
             order_data = order.map_to_marc(rules=mapping)

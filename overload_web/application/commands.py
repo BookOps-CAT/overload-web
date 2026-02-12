@@ -3,7 +3,7 @@ from typing import Any, BinaryIO, Sequence
 
 from overload_web.application import ports
 from overload_web.application.services import marc_services, record_service
-from overload_web.domain.models import bibs, files, rules, templates
+from overload_web.domain.models import bibs, files, templates
 
 logger = logging.getLogger(__name__)
 
@@ -41,16 +41,7 @@ class ProcessFullRecords:
             matches = handler.match_service.match_full_record(bib)
             analysis = handler.analysis_service.analyze(record=bib, candidates=matches)
             bib.apply_match(analysis)
-            marc_record = handler.engine.create_bib_from_domain(record=bib)
-            updates = rules.VendorRules.fields_to_update(
-                record=bib,
-                context=handler.engine._config,
-                call_no=handler.engine.get_value_of_field(tag="091", bib=marc_record),
-                template_data={},
-            )
-            handler.engine.update_fields(field_updates=updates, bib=marc_record)
-            marc_record.leader = rules.FieldRules.update_leader(marc_record.leader)
-            bib.binary_data = marc_record.as_marc()
+            marc_services.BibUpdater.update_record(bib, engine=handler.engine)
 
         batches = marc_services.Deduplicator.deduplicate(
             records=records, engine=handler.engine
@@ -121,17 +112,9 @@ class ProcessOrderRecords:
             )
             analysis = handler.analysis_service.analyze(record=bib, candidates=matches)
             bib.apply_match(analysis)
-            bib.apply_order_template(template_data)
-            marc_record = handler.engine.create_bib_from_domain(record=bib)
-            updates = rules.VendorRules.fields_to_update(
-                record=bib,
-                context=handler.engine._config,
-                command_tag=handler.engine.get_command_tag_field(marc_record),
-                template_data=template_data,
+            marc_services.BibUpdater.update_record(
+                bib, engine=handler.engine, template_data=template_data
             )
-            handler.engine.update_fields(field_updates=updates, bib=marc_record)
-            marc_record.leader = rules.FieldRules.update_leader(marc_record.leader)
-            bib.binary_data = marc_record.as_marc()
 
         stream = marc_services.BibSerializer.write(records)
         return bibs.ProcessedOrderRecordsBatch(

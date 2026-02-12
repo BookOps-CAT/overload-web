@@ -56,9 +56,7 @@ class BarcodeValidator:
 class BibParser:
     @staticmethod
     def parse_marc_data(
-        data: BinaryIO | bytes,
-        engine: ports.MarcEnginePort,
-        vendor: str | None = None,
+        data: BinaryIO | bytes, engine: ports.MarcEnginePort, vendor: str | None = None
     ) -> list[bibs.DomainBib]:
         reader = engine.get_reader(data)
         parsed = []
@@ -88,11 +86,12 @@ class BibUpdater:
         record: bibs.DomainBib, engine: ports.MarcEnginePort, **kwargs: Any
     ) -> None:
         template_data = kwargs.get("template_data", {})
+        record.apply_order_template(template_data)
         bib = engine.create_bib_from_domain(record=record)
 
         updates = rules.VendorRules.fields_to_update(
             record=record,
-            template_data=template_data,
+            format=template_data.get("format"),
             call_no=engine.get_value_of_field(tag="091", bib=bib),
             command_tag=engine.get_command_tag_field(bib),
             context=engine._config,

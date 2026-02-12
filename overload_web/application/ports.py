@@ -192,12 +192,12 @@ class ReportHandler(Protocol):
     @staticmethod
     def create_duplicate_report(
         report_data: dict[str, list[Any]],
-    ) -> list[list[Any]]: ...  # pragma: no branch
+    ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
     @staticmethod
     def create_call_number_report(
         report_data: dict[str, Any],
-    ) -> list[list[Any]]: ...  # pragma: no branch
+    ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
     @staticmethod
     def list2dict(
@@ -212,4 +212,4 @@ class ReportHandler(Protocol):
     @staticmethod
     def create_detailed_report(
         report_data: dict[str, list[Any]],
-    ) -> list[list[Any]]: ...  # pragma: no branch
+    ) -> dict[str, list[Any]]: ...  # pragma: no branch
