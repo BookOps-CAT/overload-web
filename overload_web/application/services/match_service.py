@@ -52,7 +52,7 @@ class BibMatcher:
                 `DomainBib` object.
             matchpoints:
                 a dictionary containing matchpoints and their priority e.g.
-                `{"primary_matchpoint": "isbn", "secondarty_matchpoint": "oclc_number"}`
+                `{"primary_matchpoint": "isbn", "secondary_matchpoint": "oclc_number"}`
         Returns:
             a list of the record's matches as `BaseSierraResponse` objects
         """
