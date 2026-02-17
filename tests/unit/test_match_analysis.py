@@ -22,11 +22,11 @@ def nypl_data():
     "library, collection", [("bpl", "NONE"), ("nypl", "BL"), ("nypl", "RL")]
 )
 class TestMatchAnalyzer:
-    def test_analyze(self, order_level_bib, sierra_response):
+    def test_analyze(self, acq_bib, sierra_response):
         service = match_analysis.AcquisitionsMatchAnalyzer()
-        results = service.analyze(record=order_level_bib, candidates=[sierra_response])
+        results = service.analyze(record=acq_bib, candidates=[sierra_response])
         assert results.decision.target_bib_id is None
-        assert order_level_bib.bib_id is None
+        assert acq_bib.bib_id is None
 
     @pytest.mark.parametrize("key", ["control_number", "isbn", "oclc_number", "upc"])
     def test_resource_id(self, full_bib, sierra_response, key):
@@ -90,11 +90,10 @@ class TestSelectionMatchAnalyzer:
     @pytest.mark.parametrize(
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
     )
-    def test_analyze(self, order_level_bib, sierra_response):
-        order_level_bib.record_type = "sel"
+    def test_analyze(self, sel_bib, sierra_response):
         analyzer = match_analysis.SelectionMatchAnalyzer()
-        result = analyzer.analyze(record=order_level_bib, candidates=[sierra_response])
-        assert order_level_bib.bib_id is None
+        result = analyzer.analyze(record=sel_bib, candidates=[sierra_response])
+        assert sel_bib.bib_id is None
         assert result.target_bib_id == "12345"
         assert result.duplicate_records == []
         assert result.call_number == "Foo"
@@ -111,11 +110,10 @@ class TestSelectionMatchAnalyzer:
     @pytest.mark.parametrize(
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
     )
-    def test_analyze_no_matches(self, order_level_bib):
-        order_level_bib.record_type = "sel"
+    def test_analyze_no_matches(self, sel_bib):
         analyzer = match_analysis.SelectionMatchAnalyzer()
-        result = analyzer.analyze(record=order_level_bib, candidates=[])
-        assert order_level_bib.bib_id is None
+        result = analyzer.analyze(record=sel_bib, candidates=[])
+        assert sel_bib.bib_id is None
         assert result.target_bib_id is None
         assert result.duplicate_records == []
         assert result.call_number == "Foo"
@@ -130,17 +128,17 @@ class TestSelectionMatchAnalyzer:
         assert result.target_title is None
 
     @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
-    def test_analyze_no_call_no(self, order_level_bib, collection, nypl_data):
+    def test_analyze_no_call_no(self, sel_bib, collection, nypl_data):
         nypl_data["varFields"] = [
             {"marcTag": "910", "subfields": [{"content": collection, "tag": "a"}]}
         ]
         candidates = [sierra_responses.NYPLPlatformResponse(data=nypl_data)]
         analyzer = match_analysis.SelectionMatchAnalyzer()
-        result = analyzer.analyze(order_level_bib, candidates=candidates)
+        result = analyzer.analyze(sel_bib, candidates=candidates)
         assert result.target_bib_id == "12345"
         assert result.duplicate_records == []
         assert result.call_number == "Foo"
-        assert order_level_bib.bib_id is None
+        assert sel_bib.bib_id is None
         assert result.resource_id == "9781234567890"
         assert result.vendor == "BTSERIES"
         assert result.mixed == []
@@ -158,12 +156,11 @@ class TestAcquisitionsMatchAnalyzer:
     @pytest.mark.parametrize(
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
     )
-    def test_analyze(self, order_level_bib, sierra_response):
-        order_level_bib.record_type = "acq"
+    def test_analyze(self, acq_bib, sierra_response):
         analyzer = match_analysis.AcquisitionsMatchAnalyzer()
-        result = analyzer.analyze(record=order_level_bib, candidates=[sierra_response])
-        assert order_level_bib.bib_id is None
-        assert result.target_bib_id == order_level_bib.bib_id
+        result = analyzer.analyze(record=acq_bib, candidates=[sierra_response])
+        assert acq_bib.bib_id is None
+        assert result.target_bib_id == acq_bib.bib_id
         assert result.duplicate_records == []
         assert result.resource_id == "9781234567890"
         assert result.vendor == "BTSERIES"
@@ -173,7 +170,7 @@ class TestAcquisitionsMatchAnalyzer:
         assert result.call_number_match is True
         assert result.updated_by_vendor is False
         assert result.target_call_no == result.call_number
-        assert result.target_title == order_level_bib.title
+        assert result.target_title == acq_bib.title
 
 
 @pytest.mark.parametrize("library, collection", [("nypl", "BL")])

@@ -8,10 +8,10 @@ from overload_web.domain.models import bibs, rules
 
 
 @pytest.fixture
-def bib_with_command_tag(order_level_bib):
+def bib_with_command_tag(sel_bib):
     def create_match_result(value):
-        bib = copy.deepcopy(order_level_bib)
-        record = Bib(order_level_bib.binary_data, library=order_level_bib.library)
+        bib = copy.deepcopy(sel_bib)
+        record = Bib(sel_bib.binary_data, library=sel_bib.library)
         record.add_field(
             Field(
                 tag="949",
@@ -147,28 +147,44 @@ class TestUpdater:
         )
 
     @pytest.mark.parametrize(
-        "library, collection",
-        [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
+        "library, collection, record_type",
+        [("nypl", "BL", "acq"), ("nypl", "RL", "acq"), ("bpl", "NONE", "acq")],
     )
-    @pytest.mark.parametrize(
-        "record_type",
-        ["acq", "sel"],
-    )
-    def test_update_template_data(self, order_level_bib, marc_engine):
+    def test_update_template_data_acq(self, acq_bib, marc_engine):
         """Updates orders based on template data."""
-        original_orders = copy.deepcopy(order_level_bib.orders)
-        order_level_bib.apply_order_template(
+        original_orders = copy.deepcopy(acq_bib.orders)
+        acq_bib.apply_order_template(
             {"name": "Foo", "order_code_1": "b", "format": "a"}
         )
-        marc_record = marc_engine.create_bib_from_domain(record=order_level_bib)
+        marc_record = marc_engine.create_bib_from_domain(record=acq_bib)
         updates = rules.VendorRules.fields_to_update(
-            record=order_level_bib, context=marc_engine._config, format="a"
+            record=acq_bib, context=marc_engine._config, format="a"
         )
         marc_engine.update_fields(field_updates=updates, bib=marc_record)
         marc_record.leader = rules.FieldRules.update_leader(marc_record.leader)
-        order_level_bib.binary_data = marc_record.as_marc()
+        acq_bib.binary_data = marc_record.as_marc()
         assert [i.order_code_1 for i in original_orders] == ["j"]
-        assert [i.order_code_1 for i in order_level_bib.orders] == ["b"]
+        assert [i.order_code_1 for i in acq_bib.orders] == ["b"]
+
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
+    )
+    def test_update_template_data_sel(self, sel_bib, marc_engine):
+        """Updates orders based on template data."""
+        original_orders = copy.deepcopy(sel_bib.orders)
+        sel_bib.apply_order_template(
+            {"name": "Foo", "order_code_1": "b", "format": "a"}
+        )
+        marc_record = marc_engine.create_bib_from_domain(record=sel_bib)
+        updates = rules.VendorRules.fields_to_update(
+            record=sel_bib, context=marc_engine._config, format="a"
+        )
+        marc_engine.update_fields(field_updates=updates, bib=marc_record)
+        marc_record.leader = rules.FieldRules.update_leader(marc_record.leader)
+        sel_bib.binary_data = marc_record.as_marc()
+        assert [i.order_code_1 for i in original_orders] == ["j"]
+        assert [i.order_code_1 for i in sel_bib.orders] == ["b"]
 
     @pytest.mark.parametrize(
         "library, collection, record_type, original, output",
@@ -251,21 +267,19 @@ class TestUpdater:
             ("bpl", "NONE", "sel", 1, ["333331234567890"]),
         ],
     )
-    def test_update_no_command_tag_bpl(
-        self, order_level_bib, marc_engine, field_count, output
-    ):
+    def test_update_no_command_tag_bpl(self, sel_bib, marc_engine, field_count, output):
         """Adds command tag with default location."""
-        original_bib = Bib(order_level_bib.binary_data, library=order_level_bib.library)
-        marc_record = marc_engine.create_bib_from_domain(record=order_level_bib)
+        original_bib = Bib(sel_bib.binary_data, library=sel_bib.library)
+        marc_record = marc_engine.create_bib_from_domain(record=sel_bib)
         updates = rules.VendorRules.fields_to_update(
-            record=order_level_bib,
+            record=sel_bib,
             context=marc_engine._config,
             command_tag=marc_engine.get_command_tag_field(marc_record),
         )
         marc_engine.update_fields(field_updates=updates, bib=marc_record)
         marc_record.leader = rules.FieldRules.update_leader(marc_record.leader)
-        order_level_bib.binary_data = marc_record.as_marc()
-        updated_bib = Bib(order_level_bib.binary_data, library=order_level_bib.library)
+        sel_bib.binary_data = marc_record.as_marc()
+        updated_bib = Bib(sel_bib.binary_data, library=sel_bib.library)
         assert len(updated_bib.get_fields("949")) == field_count
         assert len(original_bib.get_fields("949")) == 1
         assert [i.value() for i in original_bib.get_fields("949")] == [

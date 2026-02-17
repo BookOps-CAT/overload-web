@@ -12,15 +12,13 @@ from overload_web.presentation import deps
 
 
 @pytest.fixture
-def processed_records(
-    monkeypatch, library, collection, record_type, order_level_bib, full_bib
-):
+def processed_records(monkeypatch, library, collection, record_type, acq_bib, full_bib):
     decision = bibs.MatchDecision(bibs.CatalogAction.ATTACH, target_bib_id=None)
     candidates = bibs.ClassifiedCandidates([], [], [])
     if record_type == "cat":
         bib = full_bib
     else:
-        bib = order_level_bib
+        bib = acq_bib
     analysis = bibs.MatchAnalysis(
         True,
         candidates,
@@ -33,10 +31,10 @@ def processed_records(
     )
 
     def fake_order_response(*args, **kwargs):
-        order_level_bib.analysis = analysis
+        acq_bib.analysis = analysis
         return bibs.ProcessedOrderRecordsBatch(
-            records=[order_level_bib],
-            record_stream=io.BytesIO(order_level_bib.binary_data),
+            records=[acq_bib],
+            record_stream=io.BytesIO(acq_bib.binary_data),
             file_name="foo.mrc",
             library=library,
             record_type=record_type,
