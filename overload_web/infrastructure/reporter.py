@@ -18,13 +18,17 @@ logger = logging.getLogger(__name__)
 
 
 class PandasReportHandler:
-    @staticmethod
+    def __init__(self, library: str, collection: str | None, record_type: str) -> None:
+        self.library = library
+        self.collection = collection
+        self.record_type = record_type
+
     def create_call_number_report(
-        report_data: dict[str, list[Any]], record_type: str
+        self, report_data: dict[str, list[Any]]
     ) -> reports.CallNumberReport:
         df = pd.DataFrame(data=report_data)
         match_df = df[~df["call_number_match"]]
-        if record_type == "cat":
+        if self.record_type == "cat":
             missing_df = df[df["call_number"].isnull() & df["target_call_no"].isnull()]
             match_df = pd.concat([match_df, missing_df])
         return reports.CallNumberReport(
@@ -37,8 +41,8 @@ class PandasReportHandler:
             vendor=match_df["vendor"].to_list(),
         )
 
-    @staticmethod
     def create_detailed_report(
+        self,
         report_data: dict[str, list[Any]],
     ) -> reports.DetailedReport:
         return reports.DetailedReport(
@@ -55,8 +59,8 @@ class PandasReportHandler:
             other=report_data["other"],
         )
 
-    @staticmethod
     def create_duplicate_report(
+        self,
         report_data: dict[str, list[Any]],
     ) -> reports.DuplicateReport:
         df = pd.DataFrame(data=report_data)
@@ -74,11 +78,8 @@ class PandasReportHandler:
             other=filtered_df["other"].to_list(),
         )
 
-    @staticmethod
     def create_summary_report(
-        library: str,
-        collection: str | None,
-        record_type: str,
+        self,
         file_names: list[str],
         total_files_processed: int,
         total_records_processed: int,
@@ -86,9 +87,9 @@ class PandasReportHandler:
         processing_integrity: str | None = None,
     ) -> reports.SummaryReport:
         return reports.SummaryReport(
-            library=[library],
-            collection=[collection],
-            record_type=[record_type],
+            library=[self.library],
+            collection=[self.collection],
+            record_type=[self.record_type],
             file_names=[file_names],
             total_files_processed=[total_files_processed],
             total_records_processed=[total_records_processed],
@@ -96,8 +97,8 @@ class PandasReportHandler:
             processing_integrity=[processing_integrity],
         )
 
-    @staticmethod
     def create_vendor_report(
+        self,
         report_data: dict[str, list[Any]],
     ) -> reports.VendorReport:
         data = {k: v for k, v in report_data.items() if k in ["vendor", "action"]}
@@ -126,8 +127,7 @@ class PandasReportHandler:
             total=vendor_data["total"],
         )
 
-    @staticmethod
-    def list2dict(report_data: list[bibs.DomainBib]) -> dict[str, list[Any]]:
+    def list2dict(self, report_data: list[bibs.DomainBib]) -> dict[str, list[Any]]:
         vendor = [i.vendor for i in report_data]
         analysis = [i.analysis for i in report_data]
         return {
@@ -145,14 +145,14 @@ class PandasReportHandler:
             "vendor": vendor,
         }
 
-    @staticmethod
-    def report_to_html(report_data: dict[str, list[Any]], classes: list[str]) -> str:
+    def report_to_html(
+        self, report_data: dict[str, list[Any]], classes: list[str]
+    ) -> str:
         df = pd.DataFrame(data=report_data)
         return df.to_html(index=False, classes=classes, justify="unset")
 
-    @staticmethod
     def summary_report_to_html(
-        report_data: dict[str, list[Any]], classes: list[str]
+        self, report_data: dict[str, list[Any]], classes: list[str]
     ) -> str:
         df = pd.DataFrame(data=report_data)
         df = df.T

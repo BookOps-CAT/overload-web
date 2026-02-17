@@ -6,7 +6,7 @@ import datetime
 import logging
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any, BinaryIO, Protocol
+from typing import Any, Protocol
 
 from overload_web.domain.models import sierra_responses
 
@@ -145,6 +145,32 @@ class DomainBib:
         self._analysis = value
 
     @property
+    def call_number(self) -> str | None:
+        """Determine call number for bib record."""
+        if self.library == "nypl" and self.collection == "RL":
+            call_number = self.research_call_number
+        else:
+            call_number = self.branch_call_number
+        if isinstance(call_number, list):
+            call_number = call_number[0]
+        return call_number
+
+    @property
+    def resource_id(self) -> str | None:
+        """Determine resource ID for bib record."""
+        if self.control_number:
+            return self.control_number
+        elif self.isbn:
+            return self.isbn
+        elif self.oclc_number and isinstance(self.oclc_number, str):
+            return self.oclc_number
+        elif self.oclc_number and isinstance(self.oclc_number, list):
+            return self.oclc_number[0]
+        elif self.upc:
+            return self.upc
+        return None
+
+    @property
     def update_datetime(self) -> datetime.datetime | None:
         """Creates `datetime.datetime` object from `update_date` string."""
         if self.update_date:
@@ -191,27 +217,6 @@ class DomainBib:
 
         return ClassifiedCandidates(matched, mixed, other)
 
-    def match_identifiers(self) -> DomainBibMatchIds:
-        """Determine call number and resource ID for bib record."""
-        call_number, resource_id = None, None
-        if self.library == "nypl" and self.collection == "RL":
-            call_number = self.research_call_number
-        else:
-            call_number = self.branch_call_number
-        if isinstance(call_number, list):
-            call_number = call_number[0]
-        if self.control_number:
-            resource_id = self.control_number
-        elif self.isbn:
-            resource_id = self.isbn
-        elif self.oclc_number and isinstance(self.oclc_number, str):
-            resource_id = self.oclc_number
-        elif self.oclc_number and isinstance(self.oclc_number, list):
-            resource_id = self.oclc_number[0]
-        elif self.upc:
-            resource_id = self.upc
-        return DomainBibMatchIds(call_number=call_number, resource_id=resource_id)
-
     def determine_catalog_action(
         self, candidate: sierra_responses.BaseSierraResponse
     ) -> tuple[CatalogAction, bool]:
@@ -228,7 +233,6 @@ class DomainBib:
         self, candidates: list[sierra_responses.BaseSierraResponse]
     ) -> MatchAnalysis:
         classified = self.classify_matches(candidates)
-        match_ids = self.match_identifiers()
         analyzer = MatchAnalyzerFactory().make(
             library=self.library,
             record_type=self.record_type,
@@ -237,23 +241,18 @@ class DomainBib:
         logger.info(
             f"Analyzing matches for bib record with {analyzer.__class__.__name__}"
         )
-        targets = analyzer.analyze(record=self, candidates=candidates)
+        targets = analyzer.analyze(record=self, candidates=classified)
         return MatchAnalysis(
+            action=targets.action,
+            call_number=self.call_number,
             call_number_match=targets.call_number_match,
             classified=classified,
-            action=targets.action,
+            resource_id=self.resource_id,
             target_bib_id=targets.target_bib_id,
-            match_identifiers=match_ids,
             target_call_no=targets.target_call_no,
             target_title=targets.target_title,
             updated_by_vendor=targets.updated_by_vendor,
         )
-
-
-@dataclass(frozen=True)
-class DomainBibMatchIds:
-    call_number: str | None
-    resource_id: str | None
 
 
 class MatchAnalyzerFactory:
@@ -285,22 +284,23 @@ class MatchAnalysis:
 
     def __init__(
         self,
+        call_number: str | None,
         call_number_match: bool,
         classified: ClassifiedCandidates,
         action: CatalogAction,
-        match_identifiers: DomainBibMatchIds,
+        resource_id: str | None,
         target_bib_id: str | None,
         target_call_no: str | None = None,
         target_title: str | None = None,
         updated_by_vendor: bool = False,
     ) -> None:
         self.action = action
-        self.call_number = match_identifiers.call_number
+        self.call_number = call_number
         self.call_number_match = call_number_match
         self.duplicate_records = classified.duplicates
         self.mixed = classified.mixed
         self.other = classified.other
-        self.resource_id = match_identifiers.resource_id
+        self.resource_id = resource_id
         self.target_bib_id = target_bib_id
         self.target_call_no = target_call_no
         self.target_title = target_title
@@ -426,35 +426,6 @@ class VendorInfo:
 
 
 @dataclass
-class ProcessedFullRecordsBatch:
-    """A dataclass representing a processed file of records."""
-
-    duplicate_records: list[DomainBib]
-    new_records: list[DomainBib]
-    deduplicated_records: list[DomainBib]
-    duplicate_records_stream: BinaryIO
-    new_records_stream: BinaryIO
-    deduplicated_records_stream: BinaryIO
-    missing_barcodes: list[str]
-    file_name: str
-    library: str
-    collection: str | None
-    record_type: str
-
-
-@dataclass
-class ProcessedOrderRecordsBatch:
-    """A dataclass representing a processed file of records."""
-
-    records: list[DomainBib]
-    record_stream: BinaryIO
-    file_name: str
-    library: str
-    collection: str | None
-    record_type: str
-
-
-@dataclass
 class Target:
     """A dataclass representing a processed file of records."""
 
@@ -470,16 +441,12 @@ class MatchAnalyzer(Protocol):
     """Review matches identified by the `BibMatcher` service."""
 
     def analyze(
-        self,
-        record: DomainBib,
-        candidates: list[sierra_responses.BaseSierraResponse],
+        self, record: DomainBib, candidates: ClassifiedCandidates
     ) -> Target: ...  # pragma: no branch
 
 
 class AcquisitionsMatchAnalyzer(MatchAnalyzer):
-    def analyze(
-        self, record: DomainBib, candidates: list[sierra_responses.BaseSierraResponse]
-    ) -> Target:
+    def analyze(self, record: DomainBib, candidates: ClassifiedCandidates) -> Target:
         return Target(
             call_number_match=True,
             action=CatalogAction.INSERT,
@@ -490,13 +457,8 @@ class AcquisitionsMatchAnalyzer(MatchAnalyzer):
 
 
 class BPLCatMatchAnalyzer(MatchAnalyzer):
-    def analyze(
-        self,
-        record: DomainBib,
-        candidates: list[sierra_responses.BaseSierraResponse],
-    ) -> Target:
-        classified = record.classify_matches(candidates)
-        if not classified.matched:
+    def analyze(self, record: DomainBib, candidates: ClassifiedCandidates) -> Target:
+        if not candidates.matched:
             if record.vendor in ["Midwest DVD", "Midwest Audio", "Midwest CD"]:
                 decision = MatchDecision(
                     action=CatalogAction.ATTACH, target_bib_id=record.bib_id
@@ -512,7 +474,7 @@ class BPLCatMatchAnalyzer(MatchAnalyzer):
                 target_call_no=record.branch_call_number,
                 target_title=record.title,
             )
-        for candidate in classified.matched:
+        for candidate in candidates.matched:
             if candidate.branch_call_number:
                 if record.branch_call_number == candidate.branch_call_number:
                     action, updated = record.determine_catalog_action(candidate)
@@ -525,7 +487,7 @@ class BPLCatMatchAnalyzer(MatchAnalyzer):
                         updated_by_vendor=updated,
                     )
 
-        fallback = classified.matched[-1]
+        fallback = candidates.matched[-1]
         action, updated = record.determine_catalog_action(fallback)
         return Target(
             call_number_match=False,
@@ -538,17 +500,12 @@ class BPLCatMatchAnalyzer(MatchAnalyzer):
 
 
 class NYPLCatResearchMatchAnalyzer(MatchAnalyzer):
-    def analyze(
-        self,
-        record: DomainBib,
-        candidates: list[sierra_responses.BaseSierraResponse],
-    ) -> Target:
-        classified = record.classify_matches(candidates)
-        if not classified.matched:
+    def analyze(self, record: DomainBib, candidates: ClassifiedCandidates) -> Target:
+        if not candidates.matched:
             return Target(
                 call_number_match=True, action=CatalogAction.INSERT, target_bib_id=None
             )
-        for candidate in classified.matched:
+        for candidate in candidates.matched:
             if candidate.research_call_number:
                 action, updated = record.determine_catalog_action(candidate)
                 return Target(
@@ -559,7 +516,7 @@ class NYPLCatResearchMatchAnalyzer(MatchAnalyzer):
                     target_call_no=candidate.research_call_number[0],
                     updated_by_vendor=updated,
                 )
-        last = classified.matched[-1]
+        last = candidates.matched[-1]
         return Target(
             call_number_match=False,
             action=CatalogAction.OVERLAY,
@@ -570,17 +527,12 @@ class NYPLCatResearchMatchAnalyzer(MatchAnalyzer):
 
 
 class NYPLCatBranchMatchAnalyzer(MatchAnalyzer):
-    def analyze(
-        self,
-        record: DomainBib,
-        candidates: list[sierra_responses.BaseSierraResponse],
-    ) -> Target:
-        classified = record.classify_matches(candidates)
-        if not classified.matched:
+    def analyze(self, record: DomainBib, candidates: ClassifiedCandidates) -> Target:
+        if not candidates.matched:
             return Target(
                 call_number_match=True, action=CatalogAction.INSERT, target_bib_id=None
             )
-        for candidate in classified.matched:
+        for candidate in candidates.matched:
             if (
                 candidate.branch_call_number
                 and record.branch_call_number == candidate.branch_call_number
@@ -595,7 +547,7 @@ class NYPLCatBranchMatchAnalyzer(MatchAnalyzer):
                     updated_by_vendor=updated,
                 )
 
-        fallback = classified.matched[-1]
+        fallback = candidates.matched[-1]
         action, updated = record.determine_catalog_action(fallback)
         return Target(
             call_number_match=False,
@@ -608,17 +560,12 @@ class NYPLCatBranchMatchAnalyzer(MatchAnalyzer):
 
 
 class SelectionMatchAnalyzer(MatchAnalyzer):
-    def analyze(
-        self,
-        record: DomainBib,
-        candidates: list[sierra_responses.BaseSierraResponse],
-    ) -> Target:
-        classified = record.classify_matches(candidates)
-        if not classified.matched:
+    def analyze(self, record: DomainBib, candidates: ClassifiedCandidates) -> Target:
+        if not candidates.matched:
             return Target(
                 call_number_match=True, action=CatalogAction.INSERT, target_bib_id=None
             )
-        for candidate in classified.matched:
+        for candidate in candidates.matched:
             if candidate.branch_call_number or len(candidate.research_call_number) > 0:
                 return Target(
                     call_number_match=True,
@@ -627,7 +574,7 @@ class SelectionMatchAnalyzer(MatchAnalyzer):
                     target_call_no=candidate.branch_call_number,
                     target_title=candidate.title,
                 )
-        fallback = classified.matched[-1]
+        fallback = candidates.matched[-1]
         return Target(
             call_number_match=True,
             action=CatalogAction.ATTACH,

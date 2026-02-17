@@ -140,26 +140,26 @@ class SqlRepositoryProtocol(Protocol[T]):
 
 
 class ReportHandler(Protocol):
-    @staticmethod
+    library: str
+    collection: str | None
+    record_type: str
+
     def create_call_number_report(
-        report_data: dict[str, Any], record_type: str
+        self, report_data: dict[str, Any]
     ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
-    @staticmethod
     def create_detailed_report(
+        self,
         report_data: dict[str, list[Any]],
     ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
-    @staticmethod
     def create_duplicate_report(
+        self,
         report_data: dict[str, list[Any]],
     ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
-    @staticmethod
     def create_summary_report(
-        library: str,
-        collection: str | None,
-        record_type: str,
+        self,
         file_names: list[str],
         total_files_processed: int,
         total_records_processed: int,
@@ -167,22 +167,20 @@ class ReportHandler(Protocol):
         processing_integrity: str | None = None,
     ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
-    @staticmethod
     def create_vendor_report(
+        self,
         report_data: dict[str, list[Any]],
     ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
-    @staticmethod
     def list2dict(
+        self,
         report_data: list[Any],
     ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
-    @staticmethod
     def report_to_html(
-        report_data: dict[str, list[Any]], classes: list[str]
+        self, report_data: dict[str, list[Any]], classes: list[str]
     ) -> str: ...  # pragma: no branch
 
-    @staticmethod
     def summary_report_to_html(
-        report_data: dict[str, list[Any]], classes: list[str]
+        self, report_data: dict[str, list[Any]], classes: list[str]
     ) -> str: ...  # pragma: no branch

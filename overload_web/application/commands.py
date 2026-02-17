@@ -3,7 +3,7 @@ from typing import Any, Sequence
 
 from overload_web.application import ports
 from overload_web.application.services import marc_services, record_service
-from overload_web.domain.models import bibs, files, reports, templates
+from overload_web.domain.models import files, reports, templates
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ class ProcessFullRecords:
     @staticmethod
     def execute(
         data: bytes, file_name: str, handler: record_service.ProcessingHandler
-    ) -> bibs.ProcessedFullRecordsBatch:
+    ) -> reports.ProcessedFullRecordsBatch:
         """
         Process a file of full MARC records.
 
@@ -45,7 +45,7 @@ class ProcessFullRecords:
         missing_barcodes = marc_services.BarcodeValidator.ensure_preserved(
             record_batches=batches, barcodes=barcodes
         )
-        out = bibs.ProcessedFullRecordsBatch(
+        out = reports.ProcessedFullRecordsBatch(
             duplicate_records=batches["DUP"],
             duplicate_records_stream=marc_services.BibSerializer.write(batches["DUP"]),
             new_records=batches["NEW"],
@@ -73,7 +73,7 @@ class ProcessOrderRecords:
         handler: record_service.ProcessingHandler,
         matchpoints: dict[str, str],
         template_data: dict[str, Any],
-    ) -> bibs.ProcessedOrderRecordsBatch:
+    ) -> reports.ProcessedOrderRecordsBatch:
         """
         Process a file of order-level MARC records.
 
@@ -113,7 +113,7 @@ class ProcessOrderRecords:
             )
 
         stream = marc_services.BibSerializer.write(records)
-        return bibs.ProcessedOrderRecordsBatch(
+        return reports.ProcessedOrderRecordsBatch(
             records=records,
             record_stream=stream,
             file_name=file_name,
@@ -264,7 +264,8 @@ class WriteFile:
 class CreateFullRecordsProcessingReport:
     @staticmethod
     def execute(
-        report_data: list[bibs.ProcessedFullRecordsBatch], handler: ports.ReportHandler
+        report_data: list[reports.ProcessedFullRecordsBatch],
+        handler: ports.ReportHandler,
     ) -> reports.AllReportData:
         file_names = [i.file_name for i in report_data]
         all_recs = []
@@ -274,58 +275,39 @@ class CreateFullRecordsProcessingReport:
             all_recs.extend(report.new_records)
             missing_barcodes.extend(report.missing_barcodes)
         data_dict = handler.list2dict(all_recs)
-        vendor_breakdown = handler.create_vendor_report(data_dict)
-        dupes_report = handler.create_duplicate_report(data_dict)
-        call_no_report = handler.create_call_number_report(
-            data_dict, report_data[0].record_type
-        )
-        detailed_report = handler.create_detailed_report(data_dict)
-        summary_report = handler.create_summary_report(
-            library=report_data[0].library,
-            collection=report_data[0].collection,
-            record_type=report_data[0].record_type,
-            file_names=file_names,
-            total_files_processed=len(file_names),
-            total_records_processed=len(all_recs),
-            missing_barcodes=missing_barcodes,
-        )
         return reports.AllReportData(
-            summary=summary_report,
-            vendor_breakdown=vendor_breakdown,
-            duplicates_report=dupes_report,
-            call_number_issues=call_no_report,
-            detailed_data=detailed_report,
+            summary=handler.create_summary_report(
+                file_names=file_names,
+                total_files_processed=len(file_names),
+                total_records_processed=len(all_recs),
+                missing_barcodes=missing_barcodes,
+            ),
+            vendor_breakdown=handler.create_vendor_report(data_dict),
+            duplicates_report=handler.create_duplicate_report(data_dict),
+            call_number_issues=handler.create_call_number_report(data_dict),
+            detailed_data=handler.create_detailed_report(data_dict),
         )
 
 
 class CreateOrderRecordsProcessingReport:
     @staticmethod
     def execute(
-        report_data: list[bibs.ProcessedOrderRecordsBatch], handler: ports.ReportHandler
+        report_data: list[reports.ProcessedOrderRecordsBatch],
+        handler: ports.ReportHandler,
     ) -> reports.AllReportData:
         file_names = [i.file_name for i in report_data]
         all_recs = []
         for report in report_data:
             all_recs.extend(report.records)
         data_dict = handler.list2dict(all_recs)
-        vendor_breakdown = handler.create_vendor_report(data_dict)
-        dupes_report = handler.create_duplicate_report(data_dict)
-        call_no_report = handler.create_call_number_report(
-            data_dict, report_data[0].record_type
-        )
-        detailed_report = handler.create_detailed_report(data_dict)
-        summary_report = handler.create_summary_report(
-            library=report_data[0].library,
-            collection=report_data[0].collection,
-            record_type=report_data[0].record_type,
-            file_names=file_names,
-            total_files_processed=len(file_names),
-            total_records_processed=len(all_recs),
-        )
         return reports.AllReportData(
-            summary=summary_report,
-            vendor_breakdown=vendor_breakdown,
-            duplicates_report=dupes_report,
-            call_number_issues=call_no_report,
-            detailed_data=detailed_report,
+            summary=handler.create_summary_report(
+                file_names=file_names,
+                total_files_processed=len(file_names),
+                total_records_processed=len(all_recs),
+            ),
+            vendor_breakdown=handler.create_vendor_report(data_dict),
+            duplicates_report=handler.create_duplicate_report(data_dict),
+            call_number_issues=handler.create_call_number_report(data_dict),
+            detailed_data=handler.create_detailed_report(data_dict),
         )

@@ -165,5 +165,11 @@ def get_pvf_handler(
     )
 
 
-def get_report_handler() -> reporter.PandasReportHandler:
-    return reporter.PandasReportHandler()
+def get_report_handler(
+    library: Annotated[str, Form(...)],
+    collection: Annotated[str, Form(...)],
+    record_type: Annotated[str, Form(...)],
+) -> reporter.PandasReportHandler:
+    return reporter.PandasReportHandler(
+        library=library, collection=collection, record_type=record_type
+    )

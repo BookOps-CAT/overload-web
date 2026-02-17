@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.application.commands import ProcessFullRecords, ProcessOrderRecords
-from overload_web.domain.models import bibs
+from overload_web.domain.models import bibs, reports
 from overload_web.infrastructure import tables
 from overload_web.main import app
 from overload_web.presentation import deps
@@ -19,12 +19,17 @@ def processed_records(monkeypatch, library, collection, record_type, acq_bib, fu
     else:
         bib = acq_bib
     analysis = bibs.MatchAnalysis(
-        True, candidates, bibs.CatalogAction.ATTACH, bib.match_identifiers(), None
+        bib.call_number,
+        True,
+        candidates,
+        bibs.CatalogAction.ATTACH,
+        bib.resource_id,
+        None,
     )
 
     def fake_order_response(*args, **kwargs):
         acq_bib.analysis = analysis
-        return bibs.ProcessedOrderRecordsBatch(
+        return reports.ProcessedOrderRecordsBatch(
             records=[acq_bib],
             record_stream=io.BytesIO(acq_bib.binary_data),
             file_name="foo.mrc",
@@ -35,7 +40,7 @@ def processed_records(monkeypatch, library, collection, record_type, acq_bib, fu
 
     def fake_full_response(*args, **kwargs):
         full_bib.analysis = analysis
-        return bibs.ProcessedFullRecordsBatch(
+        return reports.ProcessedFullRecordsBatch(
             duplicate_records=[],
             duplicate_records_stream=io.BytesIO(b""),
             new_records=[full_bib],
