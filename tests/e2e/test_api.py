@@ -46,8 +46,8 @@ def processed_records(
     def fake_full_response(*args, **kwargs):
         full_bib.analysis = analysis
         return bibs.ProcessedFullRecordsBatch(
-            duplicated_records=[],
-            duplicated_records_stream=io.BytesIO(b""),
+            duplicate_records=[],
+            duplicate_records_stream=io.BytesIO(b""),
             new_records=[full_bib],
             new_records_stream=io.BytesIO(full_bib.binary_data),
             deduplicated_records=[],

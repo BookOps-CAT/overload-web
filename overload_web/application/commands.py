@@ -48,8 +48,8 @@ class ProcessFullRecords:
             record_batches=batches, barcodes=barcodes
         )
         out = bibs.ProcessedFullRecordsBatch(
-            duplicated_records=batches["DUP"],
-            duplicated_records_stream=marc_services.BibSerializer.write(batches["DUP"]),
+            duplicate_records=batches["DUP"],
+            duplicate_records_stream=marc_services.BibSerializer.write(batches["DUP"]),
             new_records=batches["NEW"],
             new_records_stream=marc_services.BibSerializer.write(batches["NEW"]),
             deduplicated_records=batches["DEDUPED"],
@@ -272,7 +272,7 @@ class CreateFullRecordsProcessingReport:
         all_recs = []
         missing_barcodes = []
         for report in report_data:
-            all_recs.extend(report.duplicated_records)
+            all_recs.extend(report.duplicate_records)
             all_recs.extend(report.new_records)
             missing_barcodes.extend(report.missing_barcodes)
         data_dict = handler.list2dict([i.analysis for i in all_recs])

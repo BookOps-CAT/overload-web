@@ -142,7 +142,7 @@ class SqlRepositoryProtocol(Protocol[T]):
 class ReportHandler(Protocol):
     @staticmethod
     def create_call_number_report(
-        report_data: dict[str, Any],
+        report_data: dict[str, Any], record_type: str
     ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
     @staticmethod

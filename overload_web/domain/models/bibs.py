@@ -380,10 +380,10 @@ class VendorInfo:
 class ProcessedFullRecordsBatch:
     """A dataclass representing a processed file of records."""
 
-    duplicated_records: list[DomainBib]
+    duplicate_records: list[DomainBib]
     new_records: list[DomainBib]
     deduplicated_records: list[DomainBib]
-    duplicated_records_stream: BinaryIO
+    duplicate_records_stream: BinaryIO
     new_records_stream: BinaryIO
     deduplicated_records_stream: BinaryIO
     missing_barcodes: list[str]
