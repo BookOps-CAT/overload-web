@@ -155,29 +155,13 @@ def get_fetcher(
     yield clients.FetcherFactory().make(library)
 
 
-def get_match_analyzer(
-    library: Annotated[str, Form(...)],
-    collection: Annotated[str, Form(...)],
-    record_type: Annotated[str, Form(...)],
-) -> Generator[record_service.match_analysis.MatchAnalyzer, None, None]:
-    """Create a match analyzer based on library, record type, and collection."""
-    yield record_service.MatchAnalyzerFactory().make(
-        library=library, record_type=record_type, collection=collection
-    )
-
-
 def get_pvf_handler(
     fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
-    analyzer: Annotated[
-        record_service.match_analysis.MatchAnalyzer, Depends(get_match_analyzer)
-    ],
     config: Annotated[marc_engine.MarcEngineConfig, Depends(get_marc_engine_config)],
 ) -> Generator[record_service.ProcessingHandler, None, None]:
-    """Create an full-record processing service with injected dependencies."""
+    """Create a record processing service with injected dependencies."""
     yield record_service.ProcessingHandler(
-        fetcher=fetcher,
-        analyzer=analyzer,
-        engine=marc_engine.MarcEngine(rules=config),
+        fetcher=fetcher, engine=marc_engine.MarcEngine(rules=config)
     )
 
 

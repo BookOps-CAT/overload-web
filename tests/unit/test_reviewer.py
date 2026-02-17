@@ -53,12 +53,9 @@ def stub_analysis(full_bib):
     return bibs.MatchAnalysis(
         True,
         bibs.ClassifiedCandidates([], [], []),
-        full_bib.collection,
-        bibs.MatchDecision(bibs.CatalogAction.INSERT, target_bib_id=full_bib.bib_id),
-        full_bib.library,
+        bibs.CatalogAction.INSERT,
         full_bib.match_identifiers(),
-        full_bib.record_type,
-        full_bib.vendor,
+        full_bib.bib_id,
     )
 
 
@@ -71,14 +68,9 @@ class TestReviewer:
         full_bib.analysis = bibs.MatchAnalysis(
             True,
             bibs.ClassifiedCandidates([], [], []),
-            full_bib.collection,
-            bibs.MatchDecision(
-                bibs.CatalogAction.ATTACH, target_bib_id=full_bib.bib_id
-            ),
-            full_bib.library,
+            bibs.CatalogAction.ATTACH,
             full_bib.match_identifiers(),
-            full_bib.record_type,
-            full_bib.vendor,
+            full_bib.bib_id,
         )
         deduped_bibs = marc_services.Deduplicator.deduplicate(
             records=[full_bib], engine=marc_engine
@@ -156,12 +148,9 @@ class TestReviewer:
         other_rec.analysis = bibs.MatchAnalysis(
             True,
             bibs.ClassifiedCandidates([], [], []),
-            full_bib.collection,
-            bibs.MatchDecision(bibs.CatalogAction.INSERT, target_bib_id=None),
-            full_bib.library,
+            bibs.CatalogAction.INSERT,
             full_bib.match_identifiers(),
-            full_bib.record_type,
-            full_bib.vendor,
+            None,
         )
         full_bib.analysis = stub_analysis
         full_bib_add_barcodes.analysis = stub_analysis

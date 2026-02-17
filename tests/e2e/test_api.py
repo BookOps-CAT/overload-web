@@ -13,21 +13,13 @@ from overload_web.presentation import deps
 
 @pytest.fixture
 def processed_records(monkeypatch, library, collection, record_type, acq_bib, full_bib):
-    decision = bibs.MatchDecision(bibs.CatalogAction.ATTACH, target_bib_id=None)
     candidates = bibs.ClassifiedCandidates([], [], [])
     if record_type == "cat":
         bib = full_bib
     else:
         bib = acq_bib
     analysis = bibs.MatchAnalysis(
-        True,
-        candidates,
-        collection,
-        decision,
-        library,
-        bib.match_identifiers(),
-        record_type,
-        bib.vendor,
+        True, candidates, bibs.CatalogAction.ATTACH, bib.match_identifiers(), None
     )
 
     def fake_order_response(*args, **kwargs):

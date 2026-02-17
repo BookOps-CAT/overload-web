@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Any, TypedDict
+
+logger = logging.getLogger(__name__)
 
 
 class CallNumberReport(TypedDict):
@@ -12,7 +15,6 @@ class CallNumberReport(TypedDict):
     target_bib_id: list[str]
     duplicate_records: list[str]
     call_number_match: list[str]
-    record_type: list[str]
     call_number: list[str]
     target_call_no: list[str]
 
@@ -36,7 +38,6 @@ class DuplicateReport(TypedDict):
     resource_id: list[str]
     target_bib_id: list[str]
     duplicate_records: list[str]
-    record_type: list[str]
     mixed: list[str]
     other: list[str]
 

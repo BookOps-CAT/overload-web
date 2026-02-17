@@ -12,13 +12,7 @@ from overload_web.infrastructure import marc_engine
 def service_components(
     fake_fetcher, engine_config, library, collection, record_type
 ) -> tuple:
-    return (
-        fake_fetcher,
-        marc_engine.MarcEngine(rules=engine_config),
-        record_service.MatchAnalyzerFactory().make(
-            library=library, record_type=record_type, collection=collection
-        ),
-    )
+    return (fake_fetcher, marc_engine.MarcEngine(rules=engine_config))
 
 
 class TestProcessBatch:
@@ -28,9 +22,7 @@ class TestProcessBatch:
     )
     def test_full_service_process_vendor_file(self, library, service_components):
         command_handler = record_service.ProcessingHandler(
-            fetcher=service_components[0],
-            engine=service_components[1],
-            analyzer=service_components[2],
+            fetcher=service_components[0], engine=service_components[1]
         )
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -47,9 +39,7 @@ class TestProcessBatch:
     )
     def test_order_service_process_vendor_file(self, library, service_components):
         command_handler = record_service.ProcessingHandler(
-            fetcher=service_components[0],
-            engine=service_components[1],
-            analyzer=service_components[2],
+            fetcher=service_components[0], engine=service_components[1]
         )
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -69,9 +59,7 @@ class TestProcessBatch:
     )
     def test_full_service_process_vendor_file_dupes(self, library, service_components):
         command_handler = record_service.ProcessingHandler(
-            fetcher=service_components[0],
-            engine=service_components[1],
-            analyzer=service_components[2],
+            fetcher=service_components[0], engine=service_components[1]
         )
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -87,9 +75,7 @@ class TestProcessBatch:
     )
     def test_order_service_process_vendor_file_dupes(self, library, service_components):
         command_handler = record_service.ProcessingHandler(
-            fetcher=service_components[0],
-            engine=service_components[1],
-            analyzer=service_components[2],
+            fetcher=service_components[0], engine=service_components[1]
         )
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()

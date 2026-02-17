@@ -37,13 +37,11 @@ class ProcessFullRecords:
         barcodes = marc_services.BarcodeExtractor.extract_barcodes(records)
         for bib in records:
             matches = handler.match_service.match_full_record(bib)
-            analysis = handler.analysis_service.analyze(record=bib, candidates=matches)
+            analysis = bib.analyze_self(candidates=matches)
             bib.apply_match(analysis)
             marc_services.BibUpdater.update_record(bib, engine=handler.engine)
 
-        batches = marc_services.Deduplicator.deduplicate(
-            records=records, engine=handler.engine
-        )
+        batches = marc_services.Deduplicator.deduplicate(records, engine=handler.engine)
         missing_barcodes = marc_services.BarcodeValidator.ensure_preserved(
             record_batches=batches, barcodes=barcodes
         )
@@ -108,7 +106,7 @@ class ProcessOrderRecords:
             matches = handler.match_service.match_order_record(
                 bib, matchpoints=matchpoints
             )
-            analysis = handler.analysis_service.analyze(record=bib, candidates=matches)
+            analysis = bib.analyze_self(candidates=matches)
             bib.apply_match(analysis)
             marc_services.BibUpdater.update_record(
                 bib, engine=handler.engine, template_data=template_data
@@ -275,10 +273,12 @@ class CreateFullRecordsProcessingReport:
             all_recs.extend(report.duplicate_records)
             all_recs.extend(report.new_records)
             missing_barcodes.extend(report.missing_barcodes)
-        data_dict = handler.list2dict([i.analysis for i in all_recs])
+        data_dict = handler.list2dict(all_recs)
         vendor_breakdown = handler.create_vendor_report(data_dict)
         dupes_report = handler.create_duplicate_report(data_dict)
-        call_no_report = handler.create_call_number_report(data_dict)
+        call_no_report = handler.create_call_number_report(
+            data_dict, report_data[0].record_type
+        )
         detailed_report = handler.create_detailed_report(data_dict)
         summary_report = handler.create_summary_report(
             library=report_data[0].library,
@@ -307,10 +307,12 @@ class CreateOrderRecordsProcessingReport:
         all_recs = []
         for report in report_data:
             all_recs.extend(report.records)
-        data_dict = handler.list2dict([i.analysis for i in all_recs])
+        data_dict = handler.list2dict(all_recs)
         vendor_breakdown = handler.create_vendor_report(data_dict)
         dupes_report = handler.create_duplicate_report(data_dict)
-        call_no_report = handler.create_call_number_report(data_dict)
+        call_no_report = handler.create_call_number_report(
+            data_dict, report_data[0].record_type
+        )
         detailed_report = handler.create_detailed_report(data_dict)
         summary_report = handler.create_summary_report(
             library=report_data[0].library,

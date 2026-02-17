@@ -640,7 +640,7 @@ def sel_bib(collection, library):
         collection=collection,
         isbn="9781234567890",
         title="Foo",
-        record_type="acq",
+        record_type="sel",
         binary_data=bib.as_marc(),
         branch_call_number="Foo",
         research_call_number=["Foo"],

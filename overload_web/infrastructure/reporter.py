@@ -20,11 +20,11 @@ logger = logging.getLogger(__name__)
 class PandasReportHandler:
     @staticmethod
     def create_call_number_report(
-        report_data: dict[str, list[Any]],
+        report_data: dict[str, list[Any]], record_type: str
     ) -> reports.CallNumberReport:
         df = pd.DataFrame(data=report_data)
         match_df = df[~df["call_number_match"]]
-        if report_data["record_type"] and report_data["record_type"][0] == "cat":
+        if record_type == "cat":
             missing_df = df[df["call_number"].isnull() & df["target_call_no"].isnull()]
             match_df = pd.concat([match_df, missing_df])
         return reports.CallNumberReport(
@@ -34,7 +34,6 @@ class PandasReportHandler:
             call_number=match_df["call_number"].to_list(),
             target_call_no=match_df["target_call_no"].to_list(),
             duplicate_records=match_df["duplicate_records"].to_list(),
-            record_type=match_df["record_type"].to_list(),
             vendor=match_df["vendor"].to_list(),
         )
 
@@ -73,7 +72,6 @@ class PandasReportHandler:
             duplicate_records=filtered_df["duplicate_records"].to_list(),
             mixed=filtered_df["mixed"].to_list(),
             other=filtered_df["other"].to_list(),
-            record_type=filtered_df["record_type"].to_list(),
         )
 
     @staticmethod
@@ -129,24 +127,22 @@ class PandasReportHandler:
         )
 
     @staticmethod
-    def list2dict(report_data: list[bibs.MatchAnalysis]) -> dict[str, list[Any]]:
+    def list2dict(report_data: list[bibs.DomainBib]) -> dict[str, list[Any]]:
+        vendor = [i.vendor for i in report_data]
+        analysis = [i.analysis for i in report_data]
         return {
-            "action": [i.action for i in report_data],
-            "call_number": [i.call_number for i in report_data],
-            "call_number_match": [i.call_number_match for i in report_data],
-            "collection": [i.collection for i in report_data],
-            "decision": [i.decision for i in report_data],
-            "duplicate_records": [i.duplicate_records for i in report_data],
-            "library": [i.library for i in report_data],
-            "mixed": [i.mixed for i in report_data],
-            "other": [i.other for i in report_data],
-            "record_type": [i.record_type for i in report_data],
-            "resource_id": [i.resource_id for i in report_data],
-            "target_bib_id": [i.target_bib_id for i in report_data],
-            "target_call_no": [i.target_call_no for i in report_data],
-            "target_title": [i.target_title for i in report_data],
-            "updated_by_vendor": [i.updated_by_vendor for i in report_data],
-            "vendor": [i.vendor for i in report_data],
+            "action": [i.action for i in analysis],
+            "call_number": [i.call_number for i in analysis],
+            "call_number_match": [i.call_number_match for i in analysis],
+            "duplicate_records": [i.duplicate_records for i in analysis],
+            "mixed": [i.mixed for i in analysis],
+            "other": [i.other for i in analysis],
+            "resource_id": [i.resource_id for i in analysis],
+            "target_bib_id": [i.target_bib_id for i in analysis],
+            "target_call_no": [i.target_call_no for i in analysis],
+            "target_title": [i.target_title for i in analysis],
+            "updated_by_vendor": [i.updated_by_vendor for i in analysis],
+            "vendor": vendor,
         }
 
     @staticmethod
