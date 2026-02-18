@@ -5,10 +5,37 @@ from typing import Any, Iterator, Protocol, Sequence, TypeVar, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
+S = TypeVar("S")  # variable for `BaseSierraResponse` type
 T = TypeVar("T")  # variable for `bookops_marc.Bib` type
 U = TypeVar("U", contravariant=True)  # variable for `bibs.DomainBib` type
 V = TypeVar("V", covariant=True)  # variable for `VendorFile` return type
 W = TypeVar("W")  # variable for `VendorFile` param type
+
+
+@runtime_checkable
+class BibFetcher(Protocol):
+    """
+    Protocol for a service that searches Sierra for bib records based on an identifier.
+
+    This abstraction allows the `BibMatcher` to remain decoupled from any specific
+    data source or API. Implementations can include REST APIs, BPL's Solr service,
+    NYPL's Platform serivce, or other systems.
+    """
+
+    def get_bibs_by_id(
+        self, value: str | int, key: str
+    ) -> list[S]: ...  # pragma: no branch
+
+    """
+    Retrieve candidate bib records that match a key-value pair.
+
+    Args:
+        value: The identifier value to search by (eg. "9781234567890").
+        key: The field name corresponding to the identifier (eg. "isbn").
+
+    Returns:
+        a list of `BaseSierraResponse` objects representing candidate matches.
+    """
 
 
 @runtime_checkable

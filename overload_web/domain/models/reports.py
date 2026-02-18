@@ -1,5 +1,3 @@
-"""Domain models that define bib records, order records, and their component parts."""
-
 from __future__ import annotations
 
 import logging

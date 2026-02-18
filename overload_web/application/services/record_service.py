@@ -7,6 +7,8 @@ Classes:
     the application commands `ProcessFullRecords` and `ProcessOrderRecords`
 """
 
+from __future__ import annotations
+
 import logging
 
 from overload_web.application import ports
@@ -20,7 +22,7 @@ class ProcessingHandler:
 
     def __init__(
         self,
-        fetcher: match_service.BibFetcher,
+        fetcher: ports.BibFetcher,
         engine: ports.MarcEnginePort,
     ):
         """

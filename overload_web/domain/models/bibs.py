@@ -47,15 +47,15 @@ class Collection(StrEnum):
 
 
 class DomainBib:
-    """A domain model representing a bib record and its associated order data."""
+    """A domain entity representing a bib record and its associated order data."""
 
     def __init__(
         self,
         binary_data: bytes,
         collection: Collection | str | None,
         library: LibrarySystem | str,
-        title: str,
         record_type: RecordType | str,
+        title: str,
         barcodes: list[str] = [],
         bib_id: str | None = None,
         branch_call_number: str | None = None,
@@ -241,35 +241,7 @@ class DomainBib:
         logger.info(
             f"Analyzing matches for bib record with {analyzer.__class__.__name__}"
         )
-        targets = analyzer.analyze(record=self, candidates=classified)
-        return MatchAnalysis(
-            action=targets.action,
-            call_number=self.call_number,
-            call_number_match=targets.call_number_match,
-            classified=classified,
-            resource_id=self.resource_id,
-            target_bib_id=targets.target_bib_id,
-            target_call_no=targets.target_call_no,
-            target_title=targets.target_title,
-            updated_by_vendor=targets.updated_by_vendor,
-        )
-
-
-class MatchAnalyzerFactory:
-    """Create a `MatchAnalyzer` based on `library`, `record_type` and `collection`"""
-
-    def make(self, library: str, record_type: str, collection: str) -> MatchAnalyzer:
-        match record_type, library, collection:
-            case "cat", "nypl", "BL":
-                return NYPLCatBranchMatchAnalyzer()
-            case "cat", "nypl", "RL":
-                return NYPLCatResearchMatchAnalyzer()
-            case "cat", "bpl", _:
-                return BPLCatMatchAnalyzer()
-            case "sel", _, _:
-                return SelectionMatchAnalyzer()
-            case _:
-                return AcquisitionsMatchAnalyzer()
+        return analyzer.analyze(record=self, candidates=classified)
 
 
 class LibrarySystem(StrEnum):
@@ -307,69 +279,60 @@ class MatchAnalysis:
         self.updated_by_vendor = updated_by_vendor
 
 
-@dataclass(frozen=True)
-class MatchDecision:
-    action: CatalogAction
-    target_bib_id: str | None
-    updated_by_vendor: bool = False
+class MatchAnalyzer(Protocol):
+    """Review matches identified by the `BibMatcher` service."""
+
+    def analyze(
+        self, record: DomainBib, candidates: ClassifiedCandidates
+    ) -> MatchAnalysis: ...  # pragma: no branch
 
 
+class MatchAnalyzerFactory:
+    """Create a `MatchAnalyzer` based on `library`, `record_type` and `collection`"""
+
+    def make(self, library: str, record_type: str, collection: str) -> MatchAnalyzer:
+        match record_type, library, collection:
+            case "cat", "nypl", "BL":
+                return NYPLCatBranchMatchAnalyzer()
+            case "cat", "nypl", "RL":
+                return NYPLCatResearchMatchAnalyzer()
+            case "cat", "bpl", _:
+                return BPLCatMatchAnalyzer()
+            case "sel", _, _:
+                return SelectionMatchAnalyzer()
+            case _:
+                return AcquisitionsMatchAnalyzer()
+
+
+@dataclass
 class Order:
     """A domain model representing a Sierra order."""
 
-    def __init__(
-        self,
-        audience: list[str],
-        blanket_po: str | None,
-        branches: list[str],
-        copies: str | int | None,
-        country: str | None,
-        create_date: datetime.datetime | datetime.date | str | None,
-        format: str | None,
-        fund: str | None,
-        internal_note: str | None,
-        lang: str | None,
-        locations: list[str],
-        order_code_1: str | None,
-        order_code_2: str | None,
-        order_code_3: str | None,
-        order_code_4: str | None,
-        order_id: str | None,
-        order_type: str | None,
-        price: str | int | None,
-        project_code: str | None,
-        selector_note: str | None,
-        shelves: list[str],
-        status: str | None,
-        vendor_code: str | None,
-        vendor_notes: str | None,
-        vendor_title_no: str | None,
-    ) -> None:
-        self.audience = audience
-        self.blanket_po = blanket_po
-        self.branches = branches
-        self.copies = copies
-        self.country = country
-        self.create_date = create_date
-        self.format = format
-        self.fund = fund
-        self.internal_note = internal_note
-        self.lang = lang
-        self.locations = locations
-        self.order_code_1 = order_code_1
-        self.order_code_2 = order_code_2
-        self.order_code_3 = order_code_3
-        self.order_code_4 = order_code_4
-        self.order_id = order_id
-        self.order_type = order_type
-        self.price = price
-        self.project_code = project_code
-        self.selector_note = selector_note
-        self.shelves = shelves
-        self.status = status
-        self.vendor_code = vendor_code
-        self.vendor_notes = vendor_notes
-        self.vendor_title_no = vendor_title_no
+    audience: list[str]
+    blanket_po: str | None
+    branches: list[str]
+    copies: str | int | None
+    country: str | None
+    create_date: datetime.datetime | datetime.date | str | None
+    format: str | None
+    fund: str | None
+    internal_note: str | None
+    lang: str | None
+    locations: list[str]
+    order_code_1: str | None
+    order_code_2: str | None
+    order_code_3: str | None
+    order_code_4: str | None
+    order_id: str | None
+    order_type: str | None
+    price: str | int | None
+    project_code: str | None
+    selector_note: str | None
+    shelves: list[str]
+    status: str | None
+    vendor_code: str | None
+    vendor_notes: str | None
+    vendor_title_no: str | None
 
     def apply_template(self, template_data: dict[str, Any]) -> None:
         """
@@ -415,7 +378,7 @@ class RecordType(StrEnum):
     SELECTION = "sel"
 
 
-@dataclass(frozen=True)
+@dataclass
 class VendorInfo:
     """A dataclass to define a vendor rules as an entity"""
 
@@ -425,31 +388,16 @@ class VendorInfo:
     vendor_tags: list[dict[str, str]] | None = None
 
 
-@dataclass
-class Target:
-    """A dataclass representing a processed file of records."""
-
-    action: CatalogAction
-    call_number_match: bool
-    target_bib_id: str | None
-    target_call_no: str | None = None
-    target_title: str | None = None
-    updated_by_vendor: bool = False
-
-
-class MatchAnalyzer(Protocol):
-    """Review matches identified by the `BibMatcher` service."""
-
+class AcquisitionsMatchAnalyzer(MatchAnalyzer):
     def analyze(
         self, record: DomainBib, candidates: ClassifiedCandidates
-    ) -> Target: ...  # pragma: no branch
-
-
-class AcquisitionsMatchAnalyzer(MatchAnalyzer):
-    def analyze(self, record: DomainBib, candidates: ClassifiedCandidates) -> Target:
-        return Target(
-            call_number_match=True,
+    ) -> MatchAnalysis:
+        return MatchAnalysis(
             action=CatalogAction.INSERT,
+            call_number=record.call_number,
+            call_number_match=True,
+            classified=candidates,
+            resource_id=record.resource_id,
             target_bib_id=record.bib_id,
             target_call_no=record.branch_call_number,
             target_title=record.title,
@@ -457,20 +405,22 @@ class AcquisitionsMatchAnalyzer(MatchAnalyzer):
 
 
 class BPLCatMatchAnalyzer(MatchAnalyzer):
-    def analyze(self, record: DomainBib, candidates: ClassifiedCandidates) -> Target:
+    def analyze(
+        self, record: DomainBib, candidates: ClassifiedCandidates
+    ) -> MatchAnalysis:
         if not candidates.matched:
             if record.vendor in ["Midwest DVD", "Midwest Audio", "Midwest CD"]:
-                decision = MatchDecision(
-                    action=CatalogAction.ATTACH, target_bib_id=record.bib_id
-                )
+                action = CatalogAction.ATTACH
+
             else:
-                decision = MatchDecision(
-                    action=CatalogAction.INSERT, target_bib_id=record.bib_id
-                )
-            return Target(
+                action = CatalogAction.INSERT
+            return MatchAnalysis(
+                action=action,
+                call_number=record.call_number,
                 call_number_match=True,
-                action=decision.action,
-                target_bib_id=decision.target_bib_id,
+                classified=candidates,
+                resource_id=record.resource_id,
+                target_bib_id=record.bib_id,
                 target_call_no=record.branch_call_number,
                 target_title=record.title,
             )
@@ -478,9 +428,12 @@ class BPLCatMatchAnalyzer(MatchAnalyzer):
             if candidate.branch_call_number:
                 if record.branch_call_number == candidate.branch_call_number:
                     action, updated = record.determine_catalog_action(candidate)
-                    return Target(
+                    return MatchAnalysis(
                         call_number_match=True,
+                        call_number=record.call_number,
                         action=action,
+                        resource_id=record.resource_id,
+                        classified=candidates,
                         target_bib_id=candidate.bib_id,
                         target_call_no=candidate.branch_call_number,
                         target_title=candidate.title,
@@ -489,48 +442,71 @@ class BPLCatMatchAnalyzer(MatchAnalyzer):
 
         fallback = candidates.matched[-1]
         action, updated = record.determine_catalog_action(fallback)
-        return Target(
+        return MatchAnalysis(
             call_number_match=False,
             action=action,
             target_bib_id=fallback.bib_id,
             target_call_no=fallback.branch_call_number,
             target_title=fallback.title,
             updated_by_vendor=updated,
+            call_number=record.call_number,
+            resource_id=record.resource_id,
+            classified=candidates,
         )
 
 
 class NYPLCatResearchMatchAnalyzer(MatchAnalyzer):
-    def analyze(self, record: DomainBib, candidates: ClassifiedCandidates) -> Target:
+    def analyze(
+        self, record: DomainBib, candidates: ClassifiedCandidates
+    ) -> MatchAnalysis:
         if not candidates.matched:
-            return Target(
-                call_number_match=True, action=CatalogAction.INSERT, target_bib_id=None
+            return MatchAnalysis(
+                call_number_match=True,
+                action=CatalogAction.INSERT,
+                target_bib_id=None,
+                call_number=record.call_number,
+                resource_id=record.resource_id,
+                classified=candidates,
             )
         for candidate in candidates.matched:
             if candidate.research_call_number:
                 action, updated = record.determine_catalog_action(candidate)
-                return Target(
+                return MatchAnalysis(
                     call_number_match=True,
                     action=action,
                     target_bib_id=candidate.bib_id,
                     target_title=candidate.title,
                     target_call_no=candidate.research_call_number[0],
                     updated_by_vendor=updated,
+                    call_number=record.call_number,
+                    resource_id=record.resource_id,
+                    classified=candidates,
                 )
         last = candidates.matched[-1]
-        return Target(
+        return MatchAnalysis(
             call_number_match=False,
             action=CatalogAction.OVERLAY,
             target_bib_id=last.bib_id,
             target_title=last.title,
             target_call_no=None,
+            call_number=record.call_number,
+            resource_id=record.resource_id,
+            classified=candidates,
         )
 
 
 class NYPLCatBranchMatchAnalyzer(MatchAnalyzer):
-    def analyze(self, record: DomainBib, candidates: ClassifiedCandidates) -> Target:
+    def analyze(
+        self, record: DomainBib, candidates: ClassifiedCandidates
+    ) -> MatchAnalysis:
         if not candidates.matched:
-            return Target(
-                call_number_match=True, action=CatalogAction.INSERT, target_bib_id=None
+            return MatchAnalysis(
+                call_number_match=True,
+                action=CatalogAction.INSERT,
+                target_bib_id=None,
+                call_number=record.call_number,
+                resource_id=record.resource_id,
+                classified=candidates,
             )
         for candidate in candidates.matched:
             if (
@@ -538,47 +514,66 @@ class NYPLCatBranchMatchAnalyzer(MatchAnalyzer):
                 and record.branch_call_number == candidate.branch_call_number
             ):
                 action, updated = record.determine_catalog_action(candidate)
-                return Target(
+                return MatchAnalysis(
                     call_number_match=True,
                     action=action,
                     target_bib_id=candidate.bib_id,
                     target_title=candidate.title,
                     target_call_no=candidate.branch_call_number,
                     updated_by_vendor=updated,
+                    call_number=record.call_number,
+                    resource_id=record.resource_id,
+                    classified=candidates,
                 )
 
         fallback = candidates.matched[-1]
         action, updated = record.determine_catalog_action(fallback)
-        return Target(
+        return MatchAnalysis(
             call_number_match=False,
             action=action,
             target_bib_id=fallback.bib_id,
             updated_by_vendor=updated,
             target_title=fallback.title,
             target_call_no=fallback.branch_call_number,
+            call_number=record.call_number,
+            resource_id=record.resource_id,
+            classified=candidates,
         )
 
 
 class SelectionMatchAnalyzer(MatchAnalyzer):
-    def analyze(self, record: DomainBib, candidates: ClassifiedCandidates) -> Target:
+    def analyze(
+        self, record: DomainBib, candidates: ClassifiedCandidates
+    ) -> MatchAnalysis:
         if not candidates.matched:
-            return Target(
-                call_number_match=True, action=CatalogAction.INSERT, target_bib_id=None
+            return MatchAnalysis(
+                call_number_match=True,
+                action=CatalogAction.INSERT,
+                target_bib_id=None,
+                call_number=record.call_number,
+                resource_id=record.resource_id,
+                classified=candidates,
             )
         for candidate in candidates.matched:
             if candidate.branch_call_number or len(candidate.research_call_number) > 0:
-                return Target(
+                return MatchAnalysis(
                     call_number_match=True,
                     action=CatalogAction.ATTACH,
                     target_bib_id=candidate.bib_id,
                     target_call_no=candidate.branch_call_number,
                     target_title=candidate.title,
+                    call_number=record.call_number,
+                    resource_id=record.resource_id,
+                    classified=candidates,
                 )
         fallback = candidates.matched[-1]
-        return Target(
+        return MatchAnalysis(
             call_number_match=True,
             action=CatalogAction.ATTACH,
             target_bib_id=fallback.bib_id,
             target_call_no=fallback.branch_call_number,
             target_title=fallback.title,
+            call_number=record.call_number,
+            resource_id=record.resource_id,
+            classified=candidates,
         )
