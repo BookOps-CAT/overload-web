@@ -7,6 +7,7 @@ from typing import Annotated, Any, BinaryIO, Generator, Protocol, runtime_checka
 from fastapi import Depends, Form, UploadFile
 from sqlmodel import Session, SQLModel, create_engine
 
+from overload_web.application import ports
 from overload_web.application.commands import LoadVendorFile
 from overload_web.application.services import record_service
 from overload_web.infrastructure import (
@@ -134,6 +135,42 @@ def normalize_files(
     return file_list
 
 
+def fetch_files(
+    local_files: list[UploadFile] | None = None,
+    remote_file_names: list[str] | None = None,
+    vendor: str | None = None,
+) -> list[dto.VendorFileModel]:
+    """Return all files as (filename, bytes)."""
+    logger.info(
+        "Fetching files to process: local_uploads=%s, remote_files=%s, vendor=%s",
+        local_files,
+        remote_file_names,
+        vendor,
+    )
+    files: list[dto.VendorFileModel] = []
+
+    # Local files
+    if local_files:
+        for f in local_files:
+            vendor_file = dto.VendorFileModel(
+                file_name=str(f.filename), content=f.file.read()
+            )
+            files.append(vendor_file)
+
+    # Remote files
+    if remote_file_names and vendor:
+        loader = sftp.SFTPFileLoader.create_loader_for_vendor(vendor)
+        vendor_dir = os.environ[f"{vendor.upper()}_SRC"]
+        for name in remote_file_names:
+            loaded = LoadVendorFile.execute(name=name, dir=vendor_dir, loader=loader)
+            vendor_file = dto.VendorFileModel(
+                file_name=str(loaded.file_name), content=loaded.content
+            )
+            files.append(vendor_file)
+
+    return files
+
+
 def get_marc_engine_config(
     library: Annotated[str, Form(...)],
     collection: Annotated[str, Form(...)],
@@ -150,13 +187,13 @@ def get_marc_engine_config(
 
 def get_fetcher(
     library: Annotated[str, Form(...)],
-) -> Generator[clients.SierraBibFetcher, None, None]:
+) -> Generator[ports.BibFetcher, None, None]:
     """Create a Sierra bib fetcher service for a library."""
     yield clients.FetcherFactory().make(library)
 
 
 def get_pvf_handler(
-    fetcher: Annotated[clients.SierraBibFetcher, Depends(get_fetcher)],
+    fetcher: Annotated[ports.BibFetcher, Depends(get_fetcher)],
     config: Annotated[marc_engine.MarcEngineConfig, Depends(get_marc_engine_config)],
 ) -> Generator[record_service.ProcessingHandler, None, None]:
     """Create a record processing service with injected dependencies."""

@@ -378,44 +378,20 @@ class TestApp:
         )
         assert response.status_code == 200
 
-    def test_api_write_local_file_post(self, mocker):
-        mock_file = mocker.mock_open(read_data="")
-        mocker.patch("builtins.open", mock_file)
-
-        response = self.client.post(
-            "/api/local-file?dir=foo",
-            json={
-                "id": {"value": "1"},
-                "file_name": "foo.mrc",
-                "content": b"".decode("utf-8"),
-            },
+    @pytest.mark.parametrize(
+        "file_source",
+        ["local", "remote"],
+    )
+    def test_htmx_get_vendor_file_form(self, file_source):
+        response = self.client.get(
+            f"/htmx/forms/vendor-files?file_source={file_source}"
         )
         assert response.status_code == 200
-        assert response.url == f"{self.base_url}/api/local-file?dir=foo"
-
-    def test_api_write_remote_file_post(self):
-        response = self.client.post(
-            "/api/remote-file?dir=foo&vendor=foo",
-            json={
-                "id": {"value": "1"},
-                "file_name": "foo.mrc",
-                "content": b"".decode("utf-8"),
-            },
+        assert "Select Files" in response.text
+        assert (
+            response.url
+            == f"{self.base_url}/htmx/forms/vendor-files?file_source={file_source}"
         )
-        assert response.status_code == 200
-        assert response.url == f"{self.base_url}/api/remote-file?dir=foo&vendor=foo"
-
-    def test_htmx_get_local_upload_form(self):
-        response = self.client.get("/htmx/forms/local-files")
-        assert response.status_code == 200
-        assert "Select Files" in response.text
-        assert response.url == f"{self.base_url}/htmx/forms/local-files"
-
-    def test_htmx_get_remote_file_form(self):
-        response = self.client.get("/htmx/forms/remote-files")
-        assert response.status_code == 200
-        assert "Select Files" in response.text
-        assert response.url == f"{self.base_url}/htmx/forms/remote-files"
 
     def test_htmx_get_context_form(self):
         response = self.client.get("/htmx/forms/context")

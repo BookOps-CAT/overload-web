@@ -7,8 +7,8 @@ import os
 from contextlib import asynccontextmanager
 from typing import Annotated, Any, AsyncGenerator
 
-from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import APIRouter, Depends, Form, Request, UploadFile
+from fastapi.responses import HTMLResponse
 
 from overload_web.application.commands import (
     CreateFullRecordsProcessingReport,
@@ -20,7 +20,6 @@ from overload_web.application.commands import (
     ProcessFullRecords,
     ProcessOrderRecords,
     UpdateOrderTemplate,
-    WriteFile,
 )
 from overload_web.presentation import deps, dto
 
@@ -155,19 +154,6 @@ def update_template(
     )
 
 
-@api_router.post("/local-file")
-def write_local_file(
-    vendor_file: dto.VendorFileModel,
-    dir: str,
-    writer: Annotated[Any, Depends(deps.local_file_writer)],
-) -> JSONResponse:
-    """Write a file to a local directory."""
-    out_files = WriteFile.execute(file=vendor_file, dir=dir, writer=writer)
-    return JSONResponse(
-        content={"app": "Overload Web", "files": out_files, "directory": dir}
-    )
-
-
 @api_router.get("/remote-files", response_class=HTMLResponse)
 def list_remote_files(
     request: Request,
@@ -193,26 +179,14 @@ def list_remote_files(
     )
 
 
-@api_router.post("/remote-file")
-def write_remote_file(
-    vendor_file: dto.VendorFileModel,
-    dir: str,
-    vendor: str,
-    writer: Annotated[Any, Depends(deps.remote_file_writer)],
-) -> JSONResponse:
-    """Write a file to a remote directory."""
-    out_files = WriteFile.execute(file=vendor_file, dir=dir, writer=writer)
-    return JSONResponse(
-        content={"app": "Overload Web", "files": out_files, "directory": dir}
-    )
-
-
 @api_router.post("/full-records/process-vendor-file", response_class=HTMLResponse)
 def process_full_records(
     request: Request,
     service_handler: Annotated[Any, Depends(deps.get_pvf_handler)],
-    files: Annotated[list[dto.VendorFileModel], Depends(deps.normalize_files)],
     report_handler: Annotated[Any, Depends(deps.get_report_handler)],
+    local_files: Annotated[list[UploadFile] | None, Form()] = None,
+    remote_file_names: Annotated[list[str] | None, Form()] = None,
+    vendor: Annotated[str | None, Form()] = None,
 ) -> HTMLResponse:
     """
     Process one or more files of MARC records.
@@ -223,18 +197,23 @@ def process_full_records(
         service_handler:
             a `ProcessingHandler` object created using library, collection,
             and record_type args
-        files:
-            a list of vendor files from a local upload or a vendor's SFTP as
-            `VendorFileModel` objects.
-
+        local_files:
+            a list of files from a local upload as `VendorFileModel` objects.
+        remote_files:
+            a list of vendor files from a vendor's SFTP as `VendorFileModel` objects.
     Returns:
         the processed files and report data wrapped in a `HTMLResponse` object
 
     """
     out_files = []
-    for file in files:
+    all_files = deps.fetch_files(
+        local_files=local_files,
+        remote_file_names=remote_file_names,
+        vendor=vendor,
+    )
+    for file_name, content in all_files:
         out_file = ProcessFullRecords.execute(
-            data=file.content, handler=service_handler, file_name=file.file_name
+            data=content, handler=service_handler, file_name=file_name
         )
         out_files.append(out_file)
     report = CreateFullRecordsProcessingReport.execute(

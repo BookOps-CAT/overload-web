@@ -9,20 +9,17 @@ logger = logging.getLogger(__name__)
 htmx_router = APIRouter(prefix="/htmx", tags=["htmx"])
 
 
-@htmx_router.get("/forms/local-files", response_class=HTMLResponse)
-def get_local_upload_form(request: Request) -> HTMLResponse:
-    """Renders form for local file upload."""
-    return request.app.state.templates.TemplateResponse(
-        request=request, name="forms/local_files.html"
-    )
-
-
-@htmx_router.get("/forms/remote-files", response_class=HTMLResponse)
-def get_remote_file_form(request: Request) -> HTMLResponse:
+@htmx_router.get("/forms/vendor-files", response_class=HTMLResponse)
+def get_vendor_file_form(request: Request, file_source: str) -> HTMLResponse:
     """Renders form for remote file upload."""
-    return request.app.state.templates.TemplateResponse(
-        request=request, name="forms/remote_files.html"
-    )
+    if file_source == "remote":
+        return request.app.state.templates.TemplateResponse(
+            request=request, name="forms/remote_files.html"
+        )
+    else:
+        return request.app.state.templates.TemplateResponse(
+            request=request, name="forms/local_files.html"
+        )
 
 
 @htmx_router.get("/forms/context", response_class=HTMLResponse)
