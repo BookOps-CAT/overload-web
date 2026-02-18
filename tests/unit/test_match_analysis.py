@@ -22,7 +22,7 @@ def nypl_data():
 )
 class TestMatchAnalyzer:
     def test_analyze(self, acq_bib, sierra_response, caplog):
-        results = acq_bib.analyze_self(candidates=[sierra_response])
+        results = acq_bib.analyze_matches(candidates=[sierra_response])
         assert results.target_bib_id is None
         assert acq_bib.bib_id is None
         assert (
@@ -34,20 +34,20 @@ class TestMatchAnalyzer:
     def test_resource_id(self, full_bib, sierra_response, key, caplog):
         full_bib.isbn = None
         setattr(full_bib, key, "123456789")
-        results = full_bib.analyze_self(candidates=[sierra_response])
+        results = full_bib.analyze_matches(candidates=[sierra_response])
         assert results.resource_id == "123456789"
         assert results.call_number == "Foo"
 
     def test_resource_id_multiple_oclc_numbers(self, full_bib, sierra_response):
         full_bib.isbn = None
         full_bib.oclc_number = ["123456789", "987654321"]
-        results = full_bib.analyze_self(candidates=[sierra_response])
+        results = full_bib.analyze_matches(candidates=[sierra_response])
         assert results.resource_id == "123456789"
         assert results.call_number == "Foo"
 
     def test_resource_id_none(self, full_bib, sierra_response):
         full_bib.isbn = None
-        results = full_bib.analyze_self(candidates=[sierra_response])
+        results = full_bib.analyze_matches(candidates=[sierra_response])
         assert results.resource_id is None
         assert full_bib.control_number is None
         assert full_bib.isbn is None
@@ -90,7 +90,7 @@ class TestSelectionMatchAnalyzer:
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
     )
     def test_analyze(self, sel_bib, sierra_response, caplog):
-        result = sel_bib.analyze_self(candidates=[sierra_response])
+        result = sel_bib.analyze_matches(candidates=[sierra_response])
         assert (
             "Analyzing matches for bib record with SelectionMatchAnalyzer"
             in caplog.text
@@ -112,7 +112,7 @@ class TestSelectionMatchAnalyzer:
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
     )
     def test_analyze_no_matches(self, sel_bib, caplog):
-        result = sel_bib.analyze_self(candidates=[])
+        result = sel_bib.analyze_matches(candidates=[])
         assert (
             "Analyzing matches for bib record with SelectionMatchAnalyzer"
             in caplog.text
@@ -136,7 +136,7 @@ class TestSelectionMatchAnalyzer:
             {"marcTag": "910", "subfields": [{"content": collection, "tag": "a"}]}
         ]
         candidates = [sierra_responses.NYPLPlatformResponse(data=nypl_data)]
-        result = sel_bib.analyze_self(candidates=candidates)
+        result = sel_bib.analyze_matches(candidates=candidates)
         assert (
             "Analyzing matches for bib record with SelectionMatchAnalyzer"
             in caplog.text
@@ -162,7 +162,7 @@ class TestSelectionMatchAnalyzer:
 )
 class TestAcquisitionsMatchAnalyzer:
     def test_analyze(self, acq_bib, sierra_response, caplog):
-        result = acq_bib.analyze_self(candidates=[sierra_response])
+        result = acq_bib.analyze_matches(candidates=[sierra_response])
         assert (
             "Analyzing matches for bib record with AcquisitionsMatchAnalyzer"
             in caplog.text
@@ -183,7 +183,7 @@ class TestAcquisitionsMatchAnalyzer:
 @pytest.mark.parametrize("library, collection", [("nypl", "BL")])
 class TestNYPLCatBranchMatchAnalyzer:
     def test_analyze(self, full_bib, sierra_response, caplog):
-        result = full_bib.analyze_self(candidates=[sierra_response])
+        result = full_bib.analyze_matches(candidates=[sierra_response])
         assert (
             "Analyzing matches for bib record with NYPLCatBranchMatchAnalyzer"
             in caplog.text
@@ -202,7 +202,7 @@ class TestNYPLCatBranchMatchAnalyzer:
         assert result.target_title == "Record 1"
 
     def test_analyze_no_matches(self, full_bib, caplog):
-        result = full_bib.analyze_self(candidates=[])
+        result = full_bib.analyze_matches(candidates=[])
         assert (
             "Analyzing matches for bib record with NYPLCatBranchMatchAnalyzer"
             in caplog.text
@@ -231,7 +231,7 @@ class TestNYPLCatBranchMatchAnalyzer:
             ],
         }
         candidates = [sierra_responses.NYPLPlatformResponse(data)]
-        result = full_bib.analyze_self(candidates=candidates)
+        result = full_bib.analyze_matches(candidates=candidates)
         assert (
             "Analyzing matches for bib record with NYPLCatBranchMatchAnalyzer"
             in caplog.text
@@ -269,7 +269,7 @@ class TestNYPLCatBranchMatchAnalyzer:
             ],
         }
         candidates = [sierra_responses.NYPLPlatformResponse(data)]
-        result = full_bib.analyze_self(candidates=candidates)
+        result = full_bib.analyze_matches(candidates=candidates)
         assert (
             "Analyzing matches for bib record with NYPLCatBranchMatchAnalyzer"
             in caplog.text
@@ -292,7 +292,7 @@ class TestNYPLCatBranchMatchAnalyzer:
 @pytest.mark.parametrize("library, collection", [("nypl", "RL")])
 class TestNYPLCatResearchMatchAnalyzer:
     def test_analyze(self, full_bib, sierra_response, caplog):
-        result = full_bib.analyze_self(candidates=[sierra_response])
+        result = full_bib.analyze_matches(candidates=[sierra_response])
         assert (
             "Analyzing matches for bib record with NYPLCatResearchMatchAnalyzer"
             in caplog.text
@@ -312,7 +312,7 @@ class TestNYPLCatResearchMatchAnalyzer:
         assert result.target_title == "Record 1"
 
     def test_analyze_no_results(self, full_bib, caplog):
-        result = full_bib.analyze_self(candidates=[])
+        result = full_bib.analyze_matches(candidates=[])
         assert (
             "Analyzing matches for bib record with NYPLCatResearchMatchAnalyzer"
             in caplog.text
@@ -354,7 +354,7 @@ class TestNYPLCatResearchMatchAnalyzer:
             ],
         }
         candidates = [sierra_responses.NYPLPlatformResponse(data=data)]
-        result = full_bib.analyze_self(candidates=candidates)
+        result = full_bib.analyze_matches(candidates=candidates)
         assert (
             "Analyzing matches for bib record with NYPLCatResearchMatchAnalyzer"
             in caplog.text
@@ -383,7 +383,7 @@ class TestNYPLCatResearchMatchAnalyzer:
             ],
         }
         candidates = [sierra_responses.NYPLPlatformResponse(data=data)]
-        result = full_bib.analyze_self(candidates=candidates)
+        result = full_bib.analyze_matches(candidates=candidates)
         assert (
             "Analyzing matches for bib record with NYPLCatResearchMatchAnalyzer"
             in caplog.text
@@ -407,7 +407,7 @@ class TestNYPLCatResearchMatchAnalyzer:
 @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
 class TestBPLCatMatchAnalyzer:
     def test_analyze(self, full_bib, sierra_response, caplog):
-        result = full_bib.analyze_self(candidates=[sierra_response])
+        result = full_bib.analyze_matches(candidates=[sierra_response])
         assert (
             "Analyzing matches for bib record with BPLCatMatchAnalyzer" in caplog.text
         )
@@ -417,7 +417,7 @@ class TestBPLCatMatchAnalyzer:
         assert result.call_number == "Foo"
 
     def test_analyze_no_results(self, full_bib, caplog):
-        result = full_bib.analyze_self(candidates=[])
+        result = full_bib.analyze_matches(candidates=[])
         assert (
             "Analyzing matches for bib record with BPLCatMatchAnalyzer" in caplog.text
         )
@@ -427,7 +427,7 @@ class TestBPLCatMatchAnalyzer:
 
     def test_analyze_no_results_midwest(self, full_bib, caplog):
         full_bib.vendor = "Midwest DVD"
-        result = full_bib.analyze_self(candidates=[])
+        result = full_bib.analyze_matches(candidates=[])
         assert (
             "Analyzing matches for bib record with BPLCatMatchAnalyzer" in caplog.text
         )
@@ -446,7 +446,7 @@ class TestBPLCatMatchAnalyzer:
             "ss_marc_tag_005": date,
             "call_number": "Foo",
         }
-        result = full_bib.analyze_self(
+        result = full_bib.analyze_matches(
             candidates=[sierra_responses.BPLSolrResponse(data=data)]
         )
         assert (
@@ -465,7 +465,7 @@ class TestBPLCatMatchAnalyzer:
             "call_number": "Bar",
         }
         candidates = [sierra_responses.BPLSolrResponse(data=data)]
-        result = full_bib.analyze_self(candidates=candidates)
+        result = full_bib.analyze_matches(candidates=candidates)
         assert (
             "Analyzing matches for bib record with BPLCatMatchAnalyzer" in caplog.text
         )
@@ -485,7 +485,7 @@ class TestBPLCatMatchAnalyzer:
             "call_number": "Baz",
         }
         candidates = [sierra_responses.BPLSolrResponse(data=data)]
-        result = full_bib.analyze_self(candidates=candidates)
+        result = full_bib.analyze_matches(candidates=candidates)
         assert (
             "Analyzing matches for bib record with BPLCatMatchAnalyzer" in caplog.text
         )
@@ -499,7 +499,7 @@ class TestBPLCatMatchAnalyzer:
             "title": "Record 3",
             "ss_marc_tag_005": "20250101010000.0",
         }
-        result = full_bib.analyze_self(
+        result = full_bib.analyze_matches(
             candidates=[sierra_responses.BPLSolrResponse(data=data)]
         )
         assert (

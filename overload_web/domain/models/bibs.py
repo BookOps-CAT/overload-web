@@ -229,7 +229,7 @@ class DomainBib:
     def __repr__(self) -> str:
         return f"DomainBib(barcodes: {self.barcodes}, bib_id: {self.bib_id}, branch_call_number: {self.branch_call_number}, collection: {self.collection}, control_number: {self.control_number}, isbn: {self.isbn}, library: {self.library}, oclc_number: {self.oclc_number}, research_call_number: {self.research_call_number}, record_type: {self.record_type}, title: {self.title}, upc: {self.upc}, update_date: {self.update_date}, vendor: {self.vendor})"  # noqa: E501
 
-    def analyze_self(
+    def analyze_matches(
         self, candidates: list[sierra_responses.BaseSierraResponse]
     ) -> MatchAnalysis:
         classified = self.classify_matches(candidates)

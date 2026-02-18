@@ -37,7 +37,7 @@ class ProcessFullRecords:
         barcodes = marc_services.BarcodeExtractor.extract_barcodes(records)
         for bib in records:
             matches = handler.match_service.match_full_record(bib)
-            analysis = bib.analyze_self(candidates=matches)
+            analysis = bib.analyze_matches(candidates=matches)
             bib.apply_match(analysis)
             marc_services.BibUpdater.update_record(bib, engine=handler.engine)
 
@@ -106,7 +106,7 @@ class ProcessOrderRecords:
             matches = handler.match_service.match_order_record(
                 bib, matchpoints=matchpoints
             )
-            analysis = bib.analyze_self(candidates=matches)
+            analysis = bib.analyze_matches(candidates=matches)
             bib.apply_match(analysis)
             marc_services.BibUpdater.update_record(
                 bib, engine=handler.engine, template_data=template_data

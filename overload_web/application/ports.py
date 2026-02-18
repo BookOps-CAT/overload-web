@@ -5,6 +5,7 @@ from typing import Any, Iterator, Protocol, Sequence, TypeVar, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
+R = TypeVar("R", covariant=True)  # variable for `SummaryReport` type
 S = TypeVar("S")  # variable for `BaseSierraResponse` type
 T = TypeVar("T")  # variable for `bookops_marc.Bib` type
 U = TypeVar("U", contravariant=True)  # variable for `bibs.DomainBib` type
@@ -166,7 +167,7 @@ class SqlRepositoryProtocol(Protocol[T]):
     def update_template(self, id: str, data: T) -> T | None: ...  # pragma: no branch
 
 
-class ReportHandler(Protocol):
+class ReportHandler(Protocol[R]):
     library: str
     collection: str | None
     record_type: str
@@ -193,7 +194,7 @@ class ReportHandler(Protocol):
         report_data: dict[str, list[Any]],
         missing_barcodes: list[str] = [],
         processing_integrity: str | None = None,
-    ) -> dict[str, list[Any]]: ...  # pragma: no branch
+    ) -> R: ...  # pragma: no branch
 
     def create_vendor_report(
         self,
