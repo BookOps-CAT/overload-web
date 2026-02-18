@@ -1,12 +1,12 @@
 <h3>Output:</h3>
-{% if summary_report %}
+{% if report %}{%if report.get("summary_report")%}
 <h4>Summary:</h4>
-{{ summary_report | safe}} {%endif%} {%if vendor_report%}
+{{ report["summary_report"] | safe}} {%endif%} {%if report.get("vendor_report")%}
 <h5>Vendor breakdown:</h5>
-{{ vendor_report | safe}} {% endif %}{%if dupe_report%}
+{{ report["vendor_report"] | safe}} {% endif %}{%if report.get("dupe_report")%}
 <h5>Duplicate Report:</h5>
-{{ dupe_report | safe}}{% endif %}{%if call_no_report%}
+{{ report["dupe_report"] | safe}}{% endif %}{%if report.get("call_no_report")%}
 <h5>Call Number Report:</h5>
-{{ call_no_report | safe}}{% endif %}{%if detailed_report%}
+{{ report["call_no_report"] | safe}}{% endif %}{%if detailed_report%}
 <h5>Detailed Report:</h5>
-{{ detailed_report | safe}} {% endif %}
+{{ detailed_report | safe}} {% endif %}{% endif %}

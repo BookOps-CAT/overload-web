@@ -1,21 +1,25 @@
 <div id="report-container">{% include "reports/summary.html" %}</div>
-<div id="report-buttons">
-  <button
-    id="detailed-report-button"
-    hx-target="#report-container"
-    style="border-color: #d52828"
-    class="btn my-3"
-  >
-    View detailed report
-  </button>
-</div>
-<div id="output-file-container">
-  <button
-    id="download-files-button"
-    hx-target="#report-container"
-    style="border-color: #d52828"
-    class="btn my-3"
-  >
-    Download Files
-  </button>
+<div class="row row-cols-3 gy-1 my-2" id="report-buttons">
+  <div class="col">
+    <button
+      id="detailed-report-button"
+      hx-target="#report-container"
+      style="border-color: #d52828"
+      class="btn my-3"
+    >
+      View detailed report
+    </button>
+  </div>
+  <div class="col">
+    <div id="output-file-container">
+      <button
+        id="download-files-button"
+        hx-target="#report-container"
+        style="border-color: #d52828"
+        class="btn my-3"
+      >
+        Download Files
+      </button>
+    </div>
+  </div>
 </div>

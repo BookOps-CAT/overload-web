@@ -163,6 +163,7 @@ class ReportHandler(Protocol):
         file_names: list[str],
         total_files_processed: int,
         total_records_processed: int,
+        report_data: dict[str, list[Any]],
         missing_barcodes: list[str] = [],
         processing_integrity: str | None = None,
     ) -> dict[str, list[Any]]: ...  # pragma: no branch

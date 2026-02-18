@@ -244,20 +244,12 @@ def process_full_records(
         request=request,
         name="pvf_partials/pvf_results.html",
         context={
-            "vendor_report": report_handler.report_to_html(
-                report.vendor_breakdown, classes=["table"]
-            ),
-            "summary_report": report_handler.summary_report_to_html(
-                report.summary, classes=["table"]
+            "report": report_handler.summary_report_output(
+                report.summary,
+                classes=["table"],
             ),
             "detailed_report": report_handler.report_to_html(
                 report.detailed_data, classes=["table"]
-            ),
-            "call_no_report": report_handler.report_to_html(
-                report.call_number_issues, classes=["table"]
-            ),
-            "dupe_report": report_handler.report_to_html(
-                report.duplicates_report, classes=["table"]
             ),
         },
     )
@@ -313,20 +305,12 @@ def process_order_records(
         request=request,
         name="pvf_partials/pvf_results.html",
         context={
-            "vendor_report": report_handler.report_to_html(
-                report.vendor_breakdown, classes=["table"]
-            ),
-            "summary_report": report_handler.report_to_html(
-                report.summary, classes=["table"]
+            "report": report_handler.summary_report_output(
+                report.summary,
+                classes=["table"],
             ),
             "detailed_report": report_handler.report_to_html(
                 report.detailed_data, classes=["table"]
-            ),
-            "call_no_report": report_handler.report_to_html(
-                report.call_number_issues, classes=["table"]
-            ),
-            "dupe_report": report_handler.report_to_html(
-                report.duplicates_report, classes=["table"]
             ),
         },
     )

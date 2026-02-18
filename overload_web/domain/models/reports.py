@@ -82,6 +82,9 @@ class SummaryReport(TypedDict):
     total_records_processed: list[int]
     missing_barcodes: list[list[str]]
     processing_integrity: list[str | None]
+    vendor_breakdown: VendorReport
+    duplicates_report: DuplicateReport | None
+    call_number_issues: CallNumberReport | None
 
 
 class VendorReport(TypedDict):
@@ -94,8 +97,5 @@ class VendorReport(TypedDict):
 
 @dataclass
 class AllReportData:
-    summary: dict[str, list[Any]]
-    vendor_breakdown: dict[str, list[Any]]
+    summary: SummaryReport
     detailed_data: dict[str, list[Any]]
-    duplicates_report: dict[str, list[Any]] | None = None
-    call_number_issues: dict[str, list[Any]] | None = None

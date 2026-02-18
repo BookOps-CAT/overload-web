@@ -281,10 +281,8 @@ class CreateFullRecordsProcessingReport:
                 total_files_processed=len(file_names),
                 total_records_processed=len(all_recs),
                 missing_barcodes=missing_barcodes,
+                report_data=data_dict,
             ),
-            vendor_breakdown=handler.create_vendor_report(data_dict),
-            duplicates_report=handler.create_duplicate_report(data_dict),
-            call_number_issues=handler.create_call_number_report(data_dict),
             detailed_data=handler.create_detailed_report(data_dict),
         )
 
@@ -305,9 +303,7 @@ class CreateOrderRecordsProcessingReport:
                 file_names=file_names,
                 total_files_processed=len(file_names),
                 total_records_processed=len(all_recs),
+                report_data=data_dict,
             ),
-            vendor_breakdown=handler.create_vendor_report(data_dict),
-            duplicates_report=handler.create_duplicate_report(data_dict),
-            call_number_issues=handler.create_call_number_report(data_dict),
             detailed_data=handler.create_detailed_report(data_dict),
         )

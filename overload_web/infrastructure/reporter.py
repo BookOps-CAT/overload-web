@@ -83,6 +83,7 @@ class PandasReportHandler:
         file_names: list[str],
         total_files_processed: int,
         total_records_processed: int,
+        report_data: dict[str, list[Any]],
         missing_barcodes: list[str] = [],
         processing_integrity: str | None = None,
     ) -> reports.SummaryReport:
@@ -95,6 +96,9 @@ class PandasReportHandler:
             total_records_processed=[total_records_processed],
             missing_barcodes=[missing_barcodes],
             processing_integrity=[processing_integrity],
+            vendor_breakdown=self.create_vendor_report(report_data),
+            duplicates_report=self.create_duplicate_report(report_data),
+            call_number_issues=self.create_call_number_report(report_data),
         )
 
     def create_vendor_report(
@@ -151,12 +155,35 @@ class PandasReportHandler:
         df = pd.DataFrame(data=report_data)
         return df.to_html(index=False, classes=classes, justify="unset")
 
-    def summary_report_to_html(
-        self, report_data: dict[str, list[Any]], classes: list[str]
-    ) -> str:
-        df = pd.DataFrame(data=report_data)
-        df = df.T
-        return df.to_html(header=False, classes=classes, justify="unset")
+    def summary_report_output(
+        self, report_data: dict[str, Any], classes: list[str]
+    ) -> dict[str, str]:
+        summary = {
+            k: v
+            for k, v in report_data.items()
+            if k
+            not in [
+                "vendor_breakdown",
+                "duplicates_report",
+                "call_number_issues",
+            ]
+        }
+        summary_df = pd.DataFrame(data=summary)
+        summary_df = summary_df.T
+        return {
+            "summary_report": summary_df.to_html(
+                header=False, classes=classes, justify="unset"
+            ),
+            "vendor_report": self.report_to_html(
+                report_data["vendor_breakdown"], classes=classes
+            ),
+            "call_no_report": self.report_to_html(
+                report_data["call_number_issues"], classes=classes
+            ),
+            "dupe_report": self.report_to_html(
+                report_data["duplicates_report"], classes=classes
+            ),
+        }
 
 
 class GoogleSheetsReporter:
