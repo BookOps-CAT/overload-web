@@ -13,7 +13,7 @@ W = TypeVar("W")  # variable for `VendorFile` param type
 
 
 @runtime_checkable
-class BibFetcher(Protocol):
+class BibFetcher(Protocol[S]):
     """
     Protocol for a service that searches Sierra for bib records based on an identifier.
 

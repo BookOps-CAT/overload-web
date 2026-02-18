@@ -25,12 +25,14 @@ class PandasReportHandler:
 
     def create_call_number_report(
         self, report_data: dict[str, list[Any]]
-    ) -> reports.CallNumberReport:
+    ) -> reports.CallNumberReport | None:
         df = pd.DataFrame(data=report_data)
         match_df = df[~df["call_number_match"]]
         if self.record_type == "cat":
             missing_df = df[df["call_number"].isnull() & df["target_call_no"].isnull()]
             match_df = pd.concat([match_df, missing_df])
+        if match_df.empty:
+            return None
         return reports.CallNumberReport(
             resource_id=match_df["resource_id"].to_list(),
             target_bib_id=match_df["target_bib_id"].to_list(),
@@ -161,12 +163,7 @@ class PandasReportHandler:
         summary = {
             k: v
             for k, v in report_data.items()
-            if k
-            not in [
-                "vendor_breakdown",
-                "duplicates_report",
-                "call_number_issues",
-            ]
+            if k not in ["vendor_breakdown", "duplicates_report", "call_number_issues"]
         }
         summary_df = pd.DataFrame(data=summary)
         summary_df = summary_df.T

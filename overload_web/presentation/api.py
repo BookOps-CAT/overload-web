@@ -207,13 +207,11 @@ def process_full_records(
     """
     out_files = []
     all_files = deps.fetch_files(
-        local_files=local_files,
-        remote_file_names=remote_file_names,
-        vendor=vendor,
+        local_files=local_files, remote_file_names=remote_file_names, vendor=vendor
     )
-    for file_name, content in all_files:
+    for file in all_files:
         out_file = ProcessFullRecords.execute(
-            data=content, handler=service_handler, file_name=file_name
+            data=file.content, handler=service_handler, file_name=file.file_name
         )
         out_files.append(out_file)
     report = CreateFullRecordsProcessingReport.execute(
@@ -224,8 +222,7 @@ def process_full_records(
         name="pvf_partials/pvf_results.html",
         context={
             "report": report_handler.summary_report_output(
-                report.summary,
-                classes=["table"],
+                report.summary, classes=["table"]
             ),
             "detailed_report": report_handler.report_to_html(
                 report.detailed_data, classes=["table"]
@@ -238,10 +235,12 @@ def process_full_records(
 def process_order_records(
     request: Request,
     service_handler: Annotated[Any, Depends(deps.get_pvf_handler)],
-    files: Annotated[list[dto.VendorFileModel], Depends(deps.normalize_files)],
     order_template: Annotated[Any, Depends(dto.from_form(dto.TemplateDataModel))],
     matchpoints: Annotated[Any, Depends(dto.from_form(dto.MatchpointSchema))],
     report_handler: Annotated[Any, Depends(deps.get_report_handler)],
+    local_files: Annotated[list[UploadFile] | None, Form()] = None,
+    remote_file_names: Annotated[list[str] | None, Form()] = None,
+    vendor: Annotated[str | None, Form()] = None,
 ) -> HTMLResponse:
     """
     Process one or more files of MARC records.
@@ -250,11 +249,12 @@ def process_order_records(
 
     Args:
         service_handler:
-            an `ProcessingHandler` created using library, collection,
+            a `ProcessingHandler` created using library, collection,
             and record_type args.
-        files:
-            a list of vendor files from a local upload or a vendor's SFTP as
-            `VendorFileModel` objects.
+        local_files:
+            a list of files from a local upload as `VendorFileModel` objects.
+        remote_files:
+            a list of vendor files from a vendor's SFTP as `VendorFileModel` objects.
         order_template:
             an order template loaded from the database or input via an html form.
         matchpoints:
@@ -268,7 +268,10 @@ def process_order_records(
 
     """
     out_files = []
-    for file in files:
+    all_files = deps.fetch_files(
+        local_files=local_files, remote_file_names=remote_file_names, vendor=vendor
+    )
+    for file in all_files:
         out_file = ProcessOrderRecords.execute(
             data=file.content,
             handler=service_handler,
@@ -285,8 +288,7 @@ def process_order_records(
         name="pvf_partials/pvf_results.html",
         context={
             "report": report_handler.summary_report_output(
-                report.summary,
-                classes=["table"],
+                report.summary, classes=["table"]
             ),
             "detailed_report": report_handler.report_to_html(
                 report.detailed_data, classes=["table"]

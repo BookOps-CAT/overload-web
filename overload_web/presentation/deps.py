@@ -91,50 +91,6 @@ def remote_file_writer(
     yield sftp.SFTPFileWriter.create_writer_for_vendor(vendor=vendor)
 
 
-def normalize_files(
-    files: Annotated[list[UploadFile] | list[str], Form(...)],
-    vendor: Annotated[str | None, Form()] = None,
-) -> list[dto.VendorFileModel]:
-    """
-    Normalize a list of files loaded from either a remote or local directory.
-
-    This function loads remote files from an SFTP server based on a list of
-    file names if necessary. All files are returned `VendorFileModel` objects.
-
-    Args:
-        files: list of either `UploadFile` objects or remote file names
-        vendor: the vendor whose server to access
-    Returns:
-        a list of `VendorFileModel` objects
-    """
-    remote_files = []
-    local_files = []
-    for file in files:
-        if isinstance(file, FileProtocol):
-            local_files.append(
-                dto.VendorFileModel(
-                    file_name=str(file.filename), content=file.file.read()
-                )
-            )
-        else:
-            remote_files.append(file)
-
-    file_list = []
-    if local_files:
-        file_list.extend(local_files)
-    if remote_files and vendor:
-        vendor_dir = os.environ[f"{vendor.upper()}_SRC"]
-        loader = sftp.SFTPFileLoader.create_loader_for_vendor(vendor)
-
-        loaded_files = [
-            LoadVendorFile.execute(name=f, dir=vendor_dir, loader=loader)
-            for f in remote_files
-            if isinstance(f, str)
-        ]
-        file_list.extend([dto.VendorFileModel(**f.__dict__) for f in loaded_files])
-    return file_list
-
-
 def fetch_files(
     local_files: list[UploadFile] | None = None,
     remote_file_names: list[str] | None = None,
