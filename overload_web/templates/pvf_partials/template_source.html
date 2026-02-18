@@ -1,21 +1,35 @@
 <div class="row gy-1 my-2">
   <div class="col">
-    <h5>Order Data</h5>
+    <h5>Apply Order Template</h5>
     <div class="row">
       <div class="col">
-        <div class="form-check form-check-inline">
-          <input
-            class="form-check-input"
-            hx-get="/htmx/forms/templates"
-            hx-target="#record-templates"
-            name="template-source"
-            type="checkbox"
-            value="input"
-          />
-          <label class="form-check-label">Apply Template</label>
+        <div class="row gy-1 my-2">
+          <div
+            id="templates"
+            hx-get="/api/templates"
+            hx-target="#template-list"
+            hx-trigger="load"
+            name="templates"
+          ></div>
+          <div id="template-list"></div>
+        </div>
+      </div>
+      <div class="row gy-1 my-2">
+        <div class="col">
+          <div class="form-check form-check-inline">
+            <input
+              class="form-check-input"
+              hx-get="/htmx/forms/templates"
+              hx-target="#record-templates"
+              name="template-source"
+              type="checkbox"
+              value="input"
+            />
+            <label class="form-check-label">Create/Update Order Template</label>
+          </div>
         </div>
       </div>
     </div>
+    <div id="record-templates" class="row"></div>
   </div>
 </div>
-<div id="record-templates" class="row"></div>
