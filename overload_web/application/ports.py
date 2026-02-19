@@ -9,8 +9,8 @@ R = TypeVar("R", covariant=True)  # variable for `SummaryReport` type
 S = TypeVar("S")  # variable for `BaseSierraResponse` type
 T = TypeVar("T")  # variable for `bookops_marc.Bib` type
 U = TypeVar("U", contravariant=True)  # variable for `bibs.DomainBib` type
-V = TypeVar("V", covariant=True)  # variable for `VendorFile` return type
-W = TypeVar("W")  # variable for `VendorFile` param type
+V = TypeVar("V", covariant=True)  # variable for `VendorFile` within `FileLoader`
+W = TypeVar("W", contravariant=True)  # variable for `VendorFile` within `FileWriter`
 
 
 @runtime_checkable
@@ -74,7 +74,7 @@ class FileLoader(Protocol[V]):
 
 
 @runtime_checkable
-class FileWriter(Protocol):
+class FileWriter(Protocol[W]):
     """
     A protocol for a service which writes .mrc files for use within Overload.
 
