@@ -23,6 +23,8 @@ class BibFetcher(Protocol[S]):
     NYPL's Platform serivce, or other systems.
     """
 
+    session: Any
+
     def get_bibs_by_id(
         self, value: str | int, key: str
     ) -> list[S]: ...  # pragma: no branch
