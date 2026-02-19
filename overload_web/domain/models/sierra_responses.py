@@ -268,7 +268,7 @@ class NYPLPlatformResponse(BaseSierraResponse):
             research = True
         locations = [i.get("code") for i in self._data.get("locations", [])]
         for loc in locations:
-            if len(loc) < 2:
+            if len(loc) < 3:
                 continue
             if loc == "zzzzz":
                 branch = True

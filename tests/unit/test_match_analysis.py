@@ -12,7 +12,10 @@ def nypl_data():
         "title": "Record 1",
         "updatedDate": "2000-01-01T01:00:00",
         "varFields": [],
-        "locations": [{"code": "a", "name": "library"}],
+        "locations": [
+            {"code": "a", "name": "library"},
+            {"code": "123", "name": "library"},
+        ],
     }
 
 
