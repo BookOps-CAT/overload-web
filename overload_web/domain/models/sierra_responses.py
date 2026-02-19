@@ -1,4 +1,4 @@
-"""Domain models that define responses from Sierra and associated objects"""
+"""Domain models that define responses from Sierra"""
 
 from __future__ import annotations
 
@@ -249,6 +249,8 @@ class NYPLPlatformResponse(BaseSierraResponse):
 
     @property
     def collection(self) -> str | None:
+        branch = False
+        research = False
         collections = [
             subfield["content"]
             for j in self.var_fields
@@ -256,15 +258,41 @@ class NYPLPlatformResponse(BaseSierraResponse):
             for subfield in j["subfields"]
             if subfield["tag"] == "a"
         ]
-        if len(collections) > 1:
+        if "BL" in collections:
+            branch = True
+        if "RL" in collections:
+            research = True
+        if self.branch_call_number:
+            branch = True
+        if self.research_call_number:
+            research = True
+        locations = [i.get("code") for i in self._data.get("locations", [])]
+        for loc in locations:
+            if len(loc) < 2:
+                continue
+            if loc == "zzzzz":
+                branch = True
+            elif loc == "xxx":
+                research = True
+            elif loc in ["myd", "myh", "mym", "myt"]:
+                research = True
+            elif loc[:2] == "my" and loc not in ["myd", "myh", "mym", "myt"]:
+                branch = True
+            elif loc[:2] == "sc":
+                research = True
+            elif loc[:3] == "maj":
+                branch = True
+            elif loc[:2] == "ma" and loc[:3] != "maj":
+                research = True
+            elif loc[:3] in ["lsx", "lsd"]:
+                research = True
+            elif loc[:2] in NYPL_BRANCHES.keys():
+                branch = True
+        if branch and research:
             return "MIXED"
-        elif len(collections) == 1:
-            return collections[0]
-        if self.branch_call_number and self.research_call_number:
-            return "MIXED"
-        elif self.branch_call_number and not self.research_call_number:
+        elif branch and not research:
             return "BL"
-        elif self.research_call_number and not self.branch_call_number:
+        elif research and not branch:
             return "RL"
         else:
             return None
@@ -326,3 +354,183 @@ class NYPLPlatformResponse(BaseSierraResponse):
     @property
     def var_fields(self) -> list[dict[str, Any]]:
         return self._data.get("varFields", [])
+
+
+NYPL_BRANCHES = {
+    "ag": "Aguilar",
+    "al": "Allerton",
+    "ba": "Baychester",
+    "bc": "Bronx Library Center",
+    "be": "Belmont",
+    "bl": "Bloomingdale",
+    "br": "George Bruce",
+    "bt": "Battery Park",
+    "ca": "Cathedral, T. C. Cooke",
+    "cc": "SASB",
+    "ch": "Chatham Square",
+    "ci": "City Island",
+    "cl": "Morningside Heights",
+    "cn": "Charleston",
+    "cp": "Clason's Point",
+    "cs": "Columbus",
+    "ct": "Castle Hill",
+    "dh": "Dongan Hills",
+    "dy": "Spuyten Duyvil",
+    "ea": "Eastchester",
+    "ep": "Epiphany",
+    "ew": "Edenwald",
+    "fe": "58th Street",
+    "fw": "Fort Washington",
+    "fx": "Francis Martin",
+    "gc": "Grand Central",
+    "gd": "Grand Concourse",
+    "gk": "Great Kills",
+    "hb": "High Bridge",
+    "hd": "125th Street",
+    "hf": "Hamilton Fish Park",
+    "hg": "Hamilton Grange",
+    "hk": "Huguenot Park",
+    "hl": "Harlem",
+    "hp": "Hudson Park",
+    "hs": "Hunt's Point",
+    "ht": "Countee Cullen",
+    "hu": "115th Street (temp)",
+    "in": "Inwood",
+    "jm": "Jefferson Market",
+    "jp": "Jerome Park",
+    "kb": "Kingsbridge",
+    "kp": "Kips Bay",
+    "lb": "Andrew Heiskell",
+    "lm": "New Amsterdam",
+    "ma": "S.A. Schwarzman Bldg.",
+    "mb": "Macomb's Bridge",
+    "me": "Melrose",
+    "mh": "Mott Haven",
+    "ml": "Mulberry Street",
+    "mm": "Mid-Manhattan",
+    "mn": "Mariner's Harbor",
+    "mo": "Mosholu",
+    "mp": "Morris Park",
+    "mr": "Morrisania",
+    "mu": "Muhlenberg",
+    "my": "Performing Arts",
+    "nb": "West New Brighton",
+    "nd": "New Dorp",
+    "ns": "96th Street",
+    "ot": "Ottendorfer",
+    "pk": "Parkchester",
+    "pm": "Pelham Bay",
+    "pr": "Port Richmond",
+    "rd": "Riverdale",
+    "ri": "Roosevelt Island",
+    "rs": "Riverside",
+    "rt": "Richmondtown",
+    "sa": "St. Agnes",
+    "sb": "South Beach",
+    "sc": "Schomburg",
+    "sd": "Sedgwick",
+    "se": "Seward Park",
+    "sg": "St. George Library Center",
+    "sl": "Science, Industry & Business",
+    "sn": "Stavros Niarcos Library",
+    "ss": "67th Street",
+    "st": "Stapleton",
+    "sv": "Soundview",
+    "tg": "Throg's Neck",
+    "th": "Todt Hill-Westerleigh",
+    "tm": "Tremont",
+    "ts": "Tompkins Square",
+    "tv": "Tottenville",
+    "vc": "Van Cortlandt",
+    "vn": "Van Nest",
+    "wb": "Webster",
+    "wf": "West Farms",
+    "wh": "Washington Heights",
+    "wk": "Wakefield",
+    "wl": "Woodlawn Heights",
+    "wo": "Woodstock",
+    "wt": "Westchester Square",
+    "yv": "Yorkville",
+    "ft": "53rd Street",
+    "ls": "Library Services Center",
+}
+
+BPL_BRANCHES = {
+    "02": "Central Juv Children's Room",
+    "03": "Central YA Young Teens",
+    "04": "Central BKLYN Collection",
+    "11": "Central AMMS Art & Music",
+    "12": "Central Pop Audiovisual (Multimedia)",
+    "13": "Central HBR (Hist/Biog/Rel)",
+    "14": "Central Literature & Languages",
+    "16": "Central SST",
+    "21": "Arlington",
+    "22": "Bedford",
+    "23": "Business Library",
+    "24": "Brighton Beach",
+    "25": "Borough Park",
+    "26": "Stone Avenue",
+    "27": "Brownsville",
+    "28": "Bay Ridge",
+    "29": "Bushwick",
+    "30": "Crown Heights",
+    "31": "Carroll Gardens",
+    "32": "Coney Island",
+    "33": "Clarendon",
+    "34": "Canarsie",
+    "35": "DeKalb",
+    "36": "East Flatbush",
+    "37": "Eastern Parkway",
+    "38": "Flatbush",
+    "39": "Flatlands",
+    "40": "Fort Hamilton",
+    "41": "Greenpoint",
+    "42": "Highlawn",
+    "43": "Kensington",
+    "44": "Kings Bay",
+    "45": "Kings Highway",
+    "46": "Leonard",
+    "47": "Macon",
+    "48": "Midwood",
+    "49": "Mapleton",
+    "50": "Brooklyn Heights",
+    "51": "New Utrecht",
+    "52": "New Lots",
+    "53": "Park Slope",
+    "54": "Rugby",
+    "55": "Sunset Park",
+    "56": "Sheepshead Bay",
+    "57": "Saratoga",
+    "59": "Marcy",
+    "60": "Williamsburgh",
+    "61": "Washington Irving",
+    "62": "Walt Whitman",
+    "63": "Kidsmobile",
+    "64": "BiblioBus",
+    "65": "Cypress Hills",
+    "66": "Gerritsen Beach",
+    "67": "McKinley Park",
+    "68": "Mill Basin",
+    "69": "Pacific",
+    "70": "Red Hook",
+    "71": "Ulmer Park",
+    "72": "Bookmobile",
+    "73": "Bookmobile #2",
+    "74": "Gravesend",
+    "76": "Homecrest",
+    "77": "Windsor Terrace",
+    "78": "Paerdegat",
+    "79": "Brower Park",
+    "80": "Ryder",
+    "81": "Jamaica Bay",
+    "82": "Dyker",
+    "83": "Clinton Hill",
+    "84": "Brookdale Pop-up",
+    "85": "Spring Creek",
+    "87": "Cortelyou",
+    "88": "Adams St.",
+    "89": "BookOps",
+    "90": "Service to the Aging SAGE/SOA",
+    "91": "Center for Bkln History",
+    "94": "Central Literacy",
+}

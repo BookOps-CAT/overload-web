@@ -12,6 +12,7 @@ def nypl_data():
         "title": "Record 1",
         "updatedDate": "2000-01-01T01:00:00",
         "varFields": [],
+        "locations": [{"code": "a", "name": "library"}],
     }
 
 
@@ -45,6 +46,22 @@ class TestCandidateClassifier:
         ]
         classified = full_bib.classify_matches([nypl_data])
         assert len(classified.mixed) == 1
+
+    @pytest.mark.parametrize("library, collection", [("nypl", "BL")])
+    @pytest.mark.parametrize("location", ["zzzzz", "myj", "maj", "agj"])
+    def test_classify_matches_nypl_bl_locations(self, full_bib, nypl_data, location):
+        nypl_data["locations"] = [{"code": location, "name": "Foo"}]
+        classified = full_bib.classify_matches([nypl_data])
+        assert len(classified.matched) == 1
+        assert len(classified.mixed) == 0
+
+    @pytest.mark.parametrize("library, collection", [("nypl", "RL")])
+    @pytest.mark.parametrize("location", ["myd", "xxx", "lsx", "scx", "max"])
+    def test_classify_matches_nypl_rl_locations(self, full_bib, nypl_data, location):
+        nypl_data["locations"] = [{"code": location, "name": "Foo"}]
+        classified = full_bib.classify_matches([nypl_data])
+        assert len(classified.matched) == 1
+        assert len(classified.mixed) == 0
 
     @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
     def test_classify_matches_nypl_no_collection(self, full_bib, nypl_data):
