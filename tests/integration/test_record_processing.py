@@ -8,21 +8,16 @@ from overload_web.domain.errors import OverloadError
 from overload_web.infrastructure import marc_engine
 
 
-@pytest.fixture
-def service_components(
-    fake_fetcher, engine_config, library, collection, record_type
-) -> tuple:
-    return (fake_fetcher, marc_engine.MarcEngine(rules=engine_config))
-
-
 class TestProcessBatch:
     @pytest.mark.parametrize(
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "rL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_full_service_process_vendor_file(self, library, service_components):
+    def test_full_service_process_vendor_file(
+        self, library, fake_fetcher, engine_config
+    ):
         command_handler = record_service.ProcessingHandler(
-            fetcher=service_components[0], engine=service_components[1]
+            fetcher=fake_fetcher, engine=marc_engine.MarcEngine(rules=engine_config)
         )
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -37,9 +32,11 @@ class TestProcessBatch:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_order_service_process_vendor_file(self, library, service_components):
+    def test_order_service_process_vendor_file(
+        self, library, fake_fetcher, engine_config
+    ):
         command_handler = record_service.ProcessingHandler(
-            fetcher=service_components[0], engine=service_components[1]
+            fetcher=fake_fetcher, engine=marc_engine.MarcEngine(rules=engine_config)
         )
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -57,9 +54,11 @@ class TestProcessBatch:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_full_service_process_vendor_file_dupes(self, library, service_components):
+    def test_full_service_process_vendor_file_dupes(
+        self, library, fake_fetcher, engine_config
+    ):
         command_handler = record_service.ProcessingHandler(
-            fetcher=service_components[0], engine=service_components[1]
+            fetcher=fake_fetcher, engine=marc_engine.MarcEngine(rules=engine_config)
         )
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -73,9 +72,11 @@ class TestProcessBatch:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_order_service_process_vendor_file_dupes(self, library, service_components):
+    def test_order_service_process_vendor_file_dupes(
+        self, library, fake_fetcher, engine_config
+    ):
         command_handler = record_service.ProcessingHandler(
-            fetcher=service_components[0], engine=service_components[1]
+            fetcher=fake_fetcher, engine=marc_engine.MarcEngine(rules=engine_config)
         )
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
