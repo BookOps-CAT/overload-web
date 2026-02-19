@@ -297,7 +297,7 @@ class TestApp:
             "agent": "bar",
             "id": 1,
         }
-        files = {"files": ("test.mrc", b"", "application/octet-stream")}
+        files = {"local_files": ("test.mrc", b"", "application/octet-stream")}
         response = self.client.post(
             "/api/order-records/process-vendor-file", data=context, files=files
         )
@@ -327,7 +327,7 @@ class TestApp:
             "agent": "bar",
             "id": 1,
         }
-        files = {"files": (None, "test.mrc")}
+        files = {"remote_file_names": (None, "test.mrc")}
         response = self.client.post(
             "/api/order-records/process-vendor-file", data=context, files=files
         )
@@ -349,7 +349,7 @@ class TestApp:
             "collection": collection,
             "record_type": record_type,
         }
-        files = {"files": ("test.mrc", b"", "application/octet-stream")}
+        files = {"local_files": ("test.mrc", b"", "application/octet-stream")}
         response = self.client.post(
             "/api/full-records/process-vendor-file", data=context, files=files
         )
@@ -372,7 +372,7 @@ class TestApp:
             "record_type": record_type,
             "vendor": "FOO",
         }
-        files = {"files": (None, "test.mrc")}
+        files = {"remote_file_names": (None, "test.mrc")}
         response = self.client.post(
             "/api/full-records/process-vendor-file", data=context, files=files
         )

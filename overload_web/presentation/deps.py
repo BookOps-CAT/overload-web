@@ -13,7 +13,6 @@ from overload_web.application.services import record_service
 from overload_web.infrastructure import (
     clients,
     loader,
-    local_io,
     marc_engine,
     reporter,
     repository,
@@ -72,23 +71,11 @@ class FileProtocol(Protocol):
     file: BinaryIO
 
 
-def local_file_writer() -> Generator[local_io.LocalFileWriter, None, None]:
-    """Create a local file writer service."""
-    yield local_io.LocalFileWriter()
-
-
 def remote_file_loader(
     vendor: str,
 ) -> Generator[sftp.SFTPFileLoader, None, None]:
     """Create an SFTP file loader service."""
     yield sftp.SFTPFileLoader.create_loader_for_vendor(vendor=vendor)
-
-
-def remote_file_writer(
-    vendor: str,
-) -> Generator[sftp.SFTPFileWriter, None, None]:
-    """Create an SFTP file writer service."""
-    yield sftp.SFTPFileWriter.create_writer_for_vendor(vendor=vendor)
 
 
 def fetch_files(
