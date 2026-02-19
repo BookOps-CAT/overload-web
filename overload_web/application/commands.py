@@ -266,7 +266,7 @@ class CreateFullRecordsProcessingReport:
     def execute(
         report_data: list[reports.ProcessedFullRecordsBatch],
         handler: ports.ReportHandler,
-    ) -> reports.AllReportData:
+    ) -> reports.ProcessingStatistics:
         file_names = [i.file_name for i in report_data]
         all_recs = []
         missing_barcodes = []
@@ -275,7 +275,7 @@ class CreateFullRecordsProcessingReport:
             all_recs.extend(report.new_records)
             missing_barcodes.extend(report.missing_barcodes)
         data_dict = handler.list2dict(all_recs)
-        return reports.AllReportData(
+        return reports.ProcessingStatistics(
             summary=handler.create_summary_report(
                 file_names=file_names,
                 total_files_processed=len(file_names),
@@ -292,13 +292,13 @@ class CreateOrderRecordsProcessingReport:
     def execute(
         report_data: list[reports.ProcessedOrderRecordsBatch],
         handler: ports.ReportHandler,
-    ) -> reports.AllReportData:
+    ) -> reports.ProcessingStatistics:
         file_names = [i.file_name for i in report_data]
         all_recs = []
         for report in report_data:
             all_recs.extend(report.records)
         data_dict = handler.list2dict(all_recs)
-        return reports.AllReportData(
+        return reports.ProcessingStatistics(
             summary=handler.create_summary_report(
                 file_names=file_names,
                 total_files_processed=len(file_names),

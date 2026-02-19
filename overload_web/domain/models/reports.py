@@ -94,6 +94,6 @@ class VendorReport(TypedDict):
 
 
 @dataclass
-class AllReportData:
+class ProcessingStatistics:
     summary: SummaryReport
     detailed_data: dict[str, list[Any]]
