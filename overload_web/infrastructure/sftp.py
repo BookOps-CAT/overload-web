@@ -76,15 +76,3 @@ class SFTPFileWriter:
         )
         out_file = self.client.put_file(file=converted_file, remote=True, dir=dir)
         return getattr(out_file, "file_name", file.file_name)
-
-    @classmethod
-    def create_writer_for_vendor(cls, vendor: str) -> SFTPFileWriter:
-        """Create an `SFTPFileWriter` for a specific vendor based on envars."""
-        client = Client(
-            name=vendor.upper(),
-            username=os.environ[f"{vendor.upper()}_USER"],
-            password=os.environ[f"{vendor.upper()}_PASSWORD"],
-            host=os.environ[f"{vendor.upper()}_HOST"],
-            port=os.environ[f"{vendor.upper()}_PORT"],
-        )
-        return SFTPFileWriter(client=client)
