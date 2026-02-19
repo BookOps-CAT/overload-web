@@ -561,12 +561,18 @@ class SelectionMatchAnalyzer(MatchAnalyzer):
                 classified=candidates,
             )
         for candidate in candidates.matched:
-            if candidate.branch_call_number or len(candidate.research_call_number) > 0:
+            if candidate.branch_call_number:
+                call_no = candidate.branch_call_number
+            elif len(candidate.research_call_number) > 0:
+                call_no = candidate.research_call_number[0]
+            else:
+                call_no = None
+            if call_no:
                 return MatchAnalysis(
                     call_number_match=True,
                     action=CatalogAction.ATTACH,
                     target_bib_id=candidate.bib_id,
-                    target_call_no=candidate.branch_call_number,
+                    target_call_no=call_no,
                     target_title=candidate.title,
                     call_number=record.call_number,
                     resource_id=record.resource_id,

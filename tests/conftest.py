@@ -609,7 +609,7 @@ def sierra_response(library, collection):
             "call_number": "Foo",
             "id": "12345",
             "isbn": ["9781234567890"],
-            "sm_bib_varfields": ["099 || {{a}} Foo"],
+            "sm_bib_varfields": ["005 || 20200101000001.0", "024 || {{a}} 12345"],
             "sm_item_data": ['{"barcode": "33333123456789"}'],
             "ss_marc_tag_001": "ocn123456789",
             "ss_marc_tag_003": "OCoLC",
@@ -626,12 +626,16 @@ def sierra_response(library, collection):
         "title": "Record 1",
         "updatedDate": "2000-01-01T01:00:00",
         "varFields": [
-            {"marcTag": "091", "subfields": [call_no_field]},
-            {"marcTag": "852", "ind1": "8", "ind2": " ", "subfields": [call_no_field]},
             {"marcTag": "901", "subfields": [{"content": "CAT", "tag": "b"}]},
             {"marcTag": "910", "subfields": [{"content": collection, "tag": "a"}]},
         ],
     }
+    if collection == "RL":
+        data["varFields"].append(
+            {"marcTag": "852", "ind1": "8", "ind2": " ", "subfields": [call_no_field]}
+        )
+    else:
+        data["varFields"].append({"marcTag": "091", "subfields": [call_no_field]})
     return data
 
 

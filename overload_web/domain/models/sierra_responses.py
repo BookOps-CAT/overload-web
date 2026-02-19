@@ -119,11 +119,12 @@ class BPLSolrResponse(BaseSierraResponse):
 
     @property
     def barcodes(self) -> list[str]:
-        item_data = self._data.get("sm_item_data")
-        if not item_data:
-            return []
-        items = [json.loads(i) for i in item_data if i]
-        return [i.get("barcode") for i in items if i and i.get("barcode")]
+        item_data = self._data.get("sm_item_data", [])
+        items = []
+        for item in item_data:
+            parsed_item = json.loads(item)
+            items.append(parsed_item.get("barcode"))
+        return items
 
     @property
     def branch_call_number(self) -> str | None:
