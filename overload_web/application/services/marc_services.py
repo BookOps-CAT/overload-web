@@ -56,7 +56,7 @@ class BarcodeValidator:
 class BibParser:
     @staticmethod
     def parse_marc_data(
-        data: bytes, engine: ports.MarcEnginePort, vendor: str | None = None
+        data: bytes, engine: ports.MarcEnginePort, vendor: str | None = "UNKNOWN"
     ) -> list[bibs.DomainBib]:
         reader = engine.get_reader(data)
         parsed = []
