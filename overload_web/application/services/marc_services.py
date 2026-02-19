@@ -74,6 +74,8 @@ class BibParser:
                 )
             else:
                 bib_dict["vendor"] = vendor
+            if not bib_dict["collection"]:
+                bib_dict["collection"] = engine.collection
             bib = bibs.DomainBib(**bib_dict)
             logger.info(f"Vendor record parsed: {bib}")
             parsed.append(bib)

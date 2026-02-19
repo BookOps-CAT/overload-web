@@ -11,7 +11,7 @@ from overload_web.infrastructure import marc_engine
 class TestProcessBatch:
     @pytest.mark.parametrize(
         "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "rL", "cat"), ("bpl", "NONE", "cat")],
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_full_service_process_vendor_file(
         self, library, fake_fetcher, engine_config

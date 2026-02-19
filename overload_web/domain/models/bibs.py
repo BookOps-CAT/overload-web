@@ -152,7 +152,7 @@ class DomainBib:
         else:
             call_number = self.branch_call_number
         if isinstance(call_number, list):
-            call_number = call_number[0]
+            call_number = call_number[0] if call_number else None
         return call_number
 
     @property
@@ -417,7 +417,6 @@ class BPLCatMatchAnalyzer(MatchAnalyzer):
         if not candidates.matched:
             if record.vendor in ["Midwest DVD", "Midwest Audio", "Midwest CD"]:
                 action = CatalogAction.ATTACH
-
             else:
                 action = CatalogAction.INSERT
             return MatchAnalysis(
