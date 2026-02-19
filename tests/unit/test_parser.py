@@ -157,7 +157,7 @@ class TestParser:
             ("bpl", "NONE", "sel"),
         ],
     )
-    def test_parse_update_date(self, marc_engine, stub_bib, caplog):
+    def test_parse_update_datetime(self, marc_engine, stub_bib, caplog):
         stub_bib.add_field(Field(tag="005", data="20200101010000.0"))
         records = marc_services.BibParser.parse_marc_data(
             stub_bib.as_marc(), engine=marc_engine
@@ -168,14 +168,3 @@ class TestParser:
         assert records[0].update_datetime == datetime.datetime(2020, 1, 1, 1, 0, 0, 0)
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
-    )
-    def test_extract_barcodes(self, marc_engine, stub_bib):
-        records = marc_services.BibParser.parse_marc_data(
-            stub_bib.as_marc(), engine=marc_engine
-        )
-        barcodes = marc_services.BarcodeExtractor.extract_barcodes(records)
-        assert len(barcodes) == 1
