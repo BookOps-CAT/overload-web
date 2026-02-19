@@ -27,13 +27,11 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 import requests
 from bookops_bpl_solr import BookopsSolrError, SolrSession
 from bookops_nypl_platform import BookopsPlatformError, PlatformSession, PlatformToken
-
-from overload_web.domain.models import sierra_responses
 
 from .. import __title__, __version__
 
@@ -76,9 +74,7 @@ class SierraBibFetcher:
         """
         self.session = session
 
-    def get_bibs_by_id(
-        self, value: str | int, key: str
-    ) -> list[sierra_responses.BaseSierraResponse]:
+    def get_bibs_by_id(self, value: str | int, key: str) -> list[dict[str, Any]]:
         """
         Retrieves bib records by a specific matchpoint (e.g., isbn, oclc_number)
 
@@ -145,7 +141,7 @@ class SierraSessionProtocol(Protocol):
     ) -> requests.Response: ...  # pragma: no branch
     def _parse_response(
         self, response: requests.Response
-    ) -> list[sierra_responses.BaseSierraResponse]: ...  # pragma: no branch
+    ) -> list[dict[str, Any]]: ...  # pragma: no branch
 
 
 class BPLSolrSession(SolrSession):
@@ -166,14 +162,11 @@ class BPLSolrSession(SolrSession):
     def _get_credentials(self) -> str:
         return os.environ["BPL_SOLR_CLIENT"]
 
-    def _parse_response(
-        self, response: requests.Response
-    ) -> list[sierra_responses.BaseSierraResponse]:
+    def _parse_response(self, response: requests.Response) -> list[dict[str, Any]]:
         """Parse solr response into list of `BPLSolrResponse` objects."""
         logger.info(f"Sierra Session response code: {response.status_code}.")
         json_response = response.json()
-        bibs = json_response["response"]["docs"]
-        return [sierra_responses.BPLSolrResponse(i) for i in bibs]
+        return json_response["response"]["docs"]
 
     def _get_bibs_by_bib_id(self, value: str | int) -> requests.Response:
         """Search BPL Solr by bib ID."""
@@ -219,14 +212,11 @@ class NYPLPlatformSession(PlatformSession):
             os.environ["NYPL_PLATFORM_AGENT"],
         )
 
-    def _parse_response(
-        self, response: requests.Response
-    ) -> list[sierra_responses.BaseSierraResponse]:
+    def _parse_response(self, response: requests.Response) -> list[dict[str, Any]]:
         """Parse platform response into list of `NYPLPlatformResponse` objects."""
         logger.info(f"Sierra Session response code: {response.status_code}.")
         json_response = response.json()
-        bibs = json_response.get("data", [])
-        return [sierra_responses.NYPLPlatformResponse(i) for i in bibs]
+        return json_response.get("data", [])
 
     def _get_bibs_by_bib_id(self, value: str | int) -> requests.Response:
         """Search NYPL Platform by bib ID."""

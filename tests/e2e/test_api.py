@@ -6,7 +6,7 @@ from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.application.commands import ProcessFullRecords, ProcessOrderRecords
 from overload_web.domain.models import bibs, reports
-from overload_web.infrastructure import tables
+from overload_web.infrastructure import clients, tables
 from overload_web.main import app
 from overload_web.presentation import deps
 
@@ -377,6 +377,95 @@ class TestApp:
             "/api/full-records/process-vendor-file", data=context, files=files
         )
         assert response.status_code == 200
+
+    def test_api_process_full_records_fetcher_error(self):
+        """Tests incorrect library passed to `FetcherFactory` called in `deps.py`"""
+        context = {
+            "library": "Foo",
+            "collection": "BL",
+            "record_type": "cat",
+            "vendor": "FOO",
+        }
+        files = {"remote_file_names": (None, "test.mrc")}
+        with pytest.raises(ValueError) as exc:
+            self.client.post(
+                "/api/full-records/process-vendor-file", data=context, files=files
+            )
+        assert str(exc.value) == "Invalid library: Foo. Must be 'bpl' or 'nypl'"
+
+    @pytest.mark.parametrize("record_type", ["acq", "sel"])
+    def test_api_process_order_records_fetcher_error(self, record_type):
+        """Tests incorrect library passed to `FetcherFactory` called in `deps.py`"""
+        context = {
+            "library": "Foo",
+            "collection": "BL",
+            "record_type": record_type,
+            "vendor": "FOO",
+            "primary_matchpoint": "isbn",
+            "name": "foo",
+            "agent": "bar",
+            "id": 1,
+        }
+        files = {"remote_file_names": (None, "test.mrc")}
+        with pytest.raises(ValueError) as exc:
+            self.client.post(
+                "/api/order-records/process-vendor-file", data=context, files=files
+            )
+        assert str(exc.value) == "Invalid library: Foo. Must be 'bpl' or 'nypl'"
+
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [
+            ("nypl", "BL", "cat"),
+            ("nypl", "RL", "cat"),
+        ],
+    )
+    def test_api_process_full_records_platform_error(
+        self, library, collection, record_type, mock_nypl_session_error
+    ):
+        """Tests `FetcherFactory` called in `deps.py`"""
+        context = {
+            "library": library,
+            "collection": collection,
+            "record_type": record_type,
+            "vendor": "FOO",
+        }
+        files = {"remote_file_names": (None, "test.mrc")}
+        with pytest.raises(clients.BookopsPlatformError) as exc:
+            self.client.post(
+                "/api/full-records/process-vendor-file", data=context, files=files
+            )
+        assert "Trouble connecting: " in str(exc.value)
+
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [
+            ("nypl", "BL", "acq"),
+            ("nypl", "RL", "acq"),
+            ("nypl", "BL", "sel"),
+            ("nypl", "RL", "sel"),
+        ],
+    )
+    def test_api_process_order_records_platform_error(
+        self, library, collection, record_type, mock_nypl_session_error
+    ):
+        """Tests `FetcherFactory` called in `deps.py`"""
+        context = {
+            "library": library,
+            "collection": collection,
+            "record_type": record_type,
+            "vendor": "FOO",
+            "primary_matchpoint": "isbn",
+            "name": "foo",
+            "agent": "bar",
+            "id": 1,
+        }
+        files = {"remote_file_names": (None, "test.mrc")}
+        with pytest.raises(clients.BookopsPlatformError) as exc:
+            self.client.post(
+                "/api/order-records/process-vendor-file", data=context, files=files
+            )
+        assert "Trouble connecting: " in str(exc.value)
 
     @pytest.mark.parametrize(
         "file_source",

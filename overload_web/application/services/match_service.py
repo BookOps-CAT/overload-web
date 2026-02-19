@@ -8,10 +8,11 @@ specific identifiers such as OCLC number, ISBN, or Sierra Bib ID.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from overload_web.application import ports
 from overload_web.domain.errors import OverloadError
-from overload_web.domain.models import bibs, sierra_responses
+from overload_web.domain.models import bibs
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class BibMatcher:
 
     def _match_bib(
         self, record: bibs.DomainBib, matchpoints: dict[str, str]
-    ) -> list[sierra_responses.BaseSierraResponse]:
+    ) -> list[dict[str, Any]]:
         """
         Find all matches in Sierra for a given bib record.
 
@@ -54,9 +55,10 @@ class BibMatcher:
                 a dictionary containing matchpoints and their priority e.g.
                 `{"primary_matchpoint": "isbn", "secondary_matchpoint": "oclc_number"}`
         Returns:
-            a list of the record's matches as `BaseSierraResponse` objects
+            A list of the record's matches as dictionaries representing Sierra
+            responses, or an empty list if no matches were found.
         """
-        candidates: list[sierra_responses.BaseSierraResponse]
+        candidates: list[dict[str, Any]]
         for matchpoint in matchpoints.values():
             if not matchpoint:
                 continue
@@ -70,7 +72,7 @@ class BibMatcher:
 
     def match_order_record(
         self, record: bibs.DomainBib, matchpoints: dict[str, str]
-    ) -> list[sierra_responses.BaseSierraResponse]:
+    ) -> list[dict[str, Any]]:
         """
         Match an order-level bibliographic record against ports.
 
@@ -81,18 +83,15 @@ class BibMatcher:
                 A dictionary containing matchpoints to be used in matching.
 
         Returns:
-            A `MatchContext` object containing a processed record as
-            a `DomainBib` object and its associated matches as
-            `BaseSierraResponse` objects
+            A list of the record's matches as dictionaries representing Sierra
+            responses, or an empty list if no matches were found.
         """
-        responses: list[sierra_responses.BaseSierraResponse] = self._match_bib(
+        responses: list[dict[str, Any]] = self._match_bib(
             record=record, matchpoints=matchpoints
         )
         return responses
 
-    def match_full_record(
-        self, record: bibs.DomainBib
-    ) -> list[sierra_responses.BaseSierraResponse]:
+    def match_full_record(self, record: bibs.DomainBib) -> list[dict[str, Any]]:
         """
         Match a full-level bibliographic record against ports.
 
@@ -101,15 +100,15 @@ class BibMatcher:
                 A parsed bibliographic record as a `DomainBib` object.
 
         Returns:
-            A `MatchContext` object containing a processed record as a
-            `DomainBib` object and its associated matches as `BaseSierraResponse`
+            A list of the record's matches as dictionaries representing Sierra
+            responses, or an empty list if no matches were found.
 
         Raises:
             OverloadError: if the value of a record's `vendor_info` attribute is None.
         """
         if record.vendor_info is None:
             raise OverloadError("Vendor index required for cataloging workflow.")
-        responses: list[sierra_responses.BaseSierraResponse] = self._match_bib(
+        responses: list[dict[str, Any]] = self._match_bib(
             record=record, matchpoints=record.vendor_info.matchpoints
         )
         return responses

@@ -137,7 +137,7 @@ class DomainBib:
     @property
     def analysis(self) -> MatchAnalysis:
         if self._analysis is None:
-            raise RuntimeError("MatchAnalysis has not been assigned to the DomainBib")
+            raise AttributeError("MatchAnalysis has not been assigned to the DomainBib")
         return self._analysis
 
     @analysis.setter
@@ -187,7 +187,7 @@ class DomainBib:
         Returns:
             None
         """
-        if analysis.target_bib_id:
+        if analysis.target_bib_id and self.bib_id is None:
             self.bib_id = analysis.target_bib_id
         self._analysis = analysis
 
@@ -206,6 +206,14 @@ class DomainBib:
 
     def classify_matches(self, matches: list) -> ClassifiedCandidates:
         """Classify the candidate matches associated with this response."""
+        if self.library == "bpl":
+            matches = [sierra_responses.BPLSolrResponse(i) for i in matches]
+        elif self.library == "nypl":
+            matches = [sierra_responses.NYPLPlatformResponse(i) for i in matches]
+        else:
+            raise ValueError(
+                f"Unknown library: {self.library}. Cannot classify matches."
+            )
         matched, mixed, other = [], [], []
         for c in sorted(matches, key=lambda i: int(i.bib_id.strip(".b")), reverse=True):
             if c.collection == "MIXED":
@@ -238,9 +246,7 @@ class DomainBib:
             record_type=self.record_type,
             collection=self.collection,
         )
-        logger.info(
-            f"Analyzing matches for bib record with {analyzer.__class__.__name__}"
-        )
+        logger.info(f"Analyzing matches with {analyzer.__class__.__name__}")
         return analyzer.analyze(record=self, candidates=classified)
 
 

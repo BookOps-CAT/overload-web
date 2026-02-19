@@ -131,10 +131,8 @@ class FakeSierraSession(clients.SierraSessionProtocol):
     def _get_bibs_by_upc(self, value: str | int):
         pass
 
-    def _parse_response(
-        self, response: requests.Response
-    ) -> list[sierra_responses.BaseSierraResponse]:
-        return [FakeSierraResponse({"id": "123456789", "title": "foo"})]
+    def _parse_response(self, response: requests.Response) -> list[dict[str, Any]]:
+        return [{"id": "123456789", "title": "foo"}]
 
 
 @pytest.fixture
@@ -618,7 +616,7 @@ def sierra_response(library, collection):
             "ss_marc_tag_005": "20000101010000.0",
             "title": "Record 1",
         }
-        return sierra_responses.BPLSolrResponse(data=data)
+        return data
 
     call_no_field = {"content": "Foo", "tag": "a"}
     data = {
@@ -634,7 +632,7 @@ def sierra_response(library, collection):
             {"marcTag": "910", "subfields": [{"content": collection, "tag": "a"}]},
         ],
     }
-    return sierra_responses.NYPLPlatformResponse(data=data)
+    return data
 
 
 @pytest.fixture
