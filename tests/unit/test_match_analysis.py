@@ -233,29 +233,6 @@ class TestNYPLCatBranchMatchAnalyzer:
         assert result.target_call_no is None
         assert result.target_title is None
 
-    def test_analyze_no_call_number_match_inhouse_source(
-        self, full_bib, nypl_data, caplog
-    ):
-        nypl_data["varFields"] = [
-            {"marcTag": "091", "subfields": [{"content": "Bar", "tag": "a"}]},
-            {"marcTag": "901", "subfields": [{"content": "CAT", "tag": "b"}]},
-        ]
-        response = sierra_responses.NYPLPlatformResponse(nypl_data)
-        result = full_bib.analyze_matches(candidates=[nypl_data])
-        assert "Analyzing matches with NYPLCatBranchMatchAnalyzer" in caplog.text
-        assert result.target_bib_id == "12345"
-        assert response.cat_source == "inhouse"
-        assert result.action == "attach"
-        assert result.duplicate_records == []
-        assert result.call_number == "Foo"
-        assert result.resource_id == "9781234567890"
-        assert result.mixed == []
-        assert result.other == []
-        assert result.call_number_match is False
-        assert result.updated_by_vendor is False
-        assert result.target_call_no == "Bar"
-        assert result.target_title == "Record 1"
-
     @pytest.mark.parametrize(
         "date, action, updated",
         [
@@ -367,23 +344,20 @@ class TestNYPLCatResearchMatchAnalyzer:
         assert result.target_call_no == "Bar"
         assert result.target_title == "Record 1"
 
-    def test_analyze_no_call_no(self, full_bib, nypl_data, caplog):
-        nypl_data["varFields"] = [
-            {"marcTag": "910", "subfields": [{"content": "RL", "tag": "a"}]}
+    def test_analyze_no_call_no(self, full_bib, sierra_response, caplog):
+        sierra_response["varFields"] = [
+            i for i in sierra_response["varFields"] if i["marcTag"] != "852"
         ]
-        response = sierra_responses.NYPLPlatformResponse(data=nypl_data)
-        result = full_bib.analyze_matches(candidates=[nypl_data])
+        result = full_bib.analyze_matches(candidates=[sierra_response])
         assert "Analyzing matches with NYPLCatResearchMatchAnalyzer" in caplog.text
         assert full_bib.bib_id is None
         assert result.target_bib_id == "12345"
-        assert response.research_call_number == []
-        assert result.call_number_match is False
+        assert result.action == "overlay"
+        assert result.mixed == []
+        assert result.other == []
         assert result.duplicate_records == []
         assert result.resource_id == "9781234567890"
         assert result.call_number == "Foo"
-        assert result.mixed == []
-        assert result.other == []
-        assert result.action == "overlay"
         assert result.call_number_match is False
         assert result.updated_by_vendor is False
         assert result.target_call_no is None
@@ -402,11 +376,13 @@ class TestBPLCatMatchAnalyzer:
         assert result.call_number == "Foo"
         # test that the BPL response is parsed correctly
         assert response.barcodes == ["33333123456789"]
+        assert response.cat_source == "inhouse"
         assert response.control_number == "ocn123456789"
         assert response.isbn == ["9781234567890"]
         assert sorted(response.oclc_number) == sorted(["ocn123456789"])
         assert response.research_call_number == []
         assert sorted(response.upc) == sorted(["12345"])
+        assert result.call_number_match is True
 
     def test_analyze_no_results(self, full_bib, caplog):
         result = full_bib.analyze_matches(candidates=[])
@@ -414,6 +390,7 @@ class TestBPLCatMatchAnalyzer:
         assert full_bib.bib_id is None
         assert result.target_bib_id is None
         assert result.action == "insert"
+        assert result.call_number_match is True
 
     def test_analyze_no_results_midwest(self, full_bib, caplog):
         full_bib.vendor = "Midwest DVD"
@@ -422,6 +399,7 @@ class TestBPLCatMatchAnalyzer:
         assert full_bib.bib_id is None
         assert result.target_bib_id is None
         assert result.action == "attach"
+        assert result.call_number_match is True
 
     @pytest.mark.parametrize(
         "date, action",
@@ -429,42 +407,10 @@ class TestBPLCatMatchAnalyzer:
     )
     def test_analyze_vendor_record(self, full_bib, date, action, caplog):
         data = {
-            "id": "12345",
-            "title": "Record 2",
-            "ss_marc_tag_005": date,
-            "call_number": "Foo",
-        }
-        result = full_bib.analyze_matches(candidates=[data])
-        assert "Analyzing matches with BPLCatMatchAnalyzer" in caplog.text
-        assert result.target_bib_id == "12345"
-        assert result.action == action
-
-    def test_analyze_no_call_no_match_inhouse(self, full_bib, caplog):
-        data = {
-            "id": "23456",
-            "title": "Record 2",
-            "ss_marc_tag_005": "20200101010000.0",
-            "ss_marc_tag_001": "ocn123456789",
-            "ss_marc_tag_003": "OCoLC",
-            "call_number": "Bar",
-        }
-        response = sierra_responses.BPLSolrResponse(data=data)
-        result = full_bib.analyze_matches(candidates=[data])
-        assert "Analyzing matches with BPLCatMatchAnalyzer" in caplog.text
-        assert result.target_bib_id == "23456"
-        assert response.cat_source == "inhouse"
-        assert result.action == "attach"
-
-    @pytest.mark.parametrize(
-        "date, action",
-        [("20250101010000.0", "overlay"), ("20200101010000.0", "attach")],
-    )
-    def test_analyze_no_call_no_match_vendor(self, full_bib, date, action, caplog):
-        data = {
             "id": "34567",
             "title": "Record 3",
             "ss_marc_tag_005": date,
-            "call_number": "Baz",
+            "call_number": "Foo",
         }
         response = sierra_responses.BPLSolrResponse(data=data)
         result = full_bib.analyze_matches(candidates=[data])
@@ -472,6 +418,7 @@ class TestBPLCatMatchAnalyzer:
         assert result.target_bib_id == "34567"
         assert response.cat_source == "vendor"
         assert result.action == action
+        assert result.call_number_match is True
 
     def test_analyze_no_call_no(self, full_bib, caplog):
         data = {
@@ -483,3 +430,4 @@ class TestBPLCatMatchAnalyzer:
         assert "Analyzing matches with BPLCatMatchAnalyzer" in caplog.text
         assert result.target_bib_id == "34567"
         assert result.action == "overlay"
+        assert result.call_number_match is False

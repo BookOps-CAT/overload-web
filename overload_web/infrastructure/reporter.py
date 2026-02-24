@@ -44,8 +44,7 @@ class PandasReportHandler:
         )
 
     def create_detailed_report(
-        self,
-        report_data: dict[str, list[Any]],
+        self, report_data: dict[str, list[Any]]
     ) -> reports.DetailedReport:
         return reports.DetailedReport(
             vendor=report_data["vendor"],
@@ -62,8 +61,7 @@ class PandasReportHandler:
         )
 
     def create_duplicate_report(
-        self,
-        report_data: dict[str, list[Any]],
+        self, report_data: dict[str, list[Any]]
     ) -> reports.DuplicateReport:
         df = pd.DataFrame(data=report_data)
         filtered_df = df[
@@ -104,8 +102,7 @@ class PandasReportHandler:
         )
 
     def create_vendor_report(
-        self,
-        report_data: dict[str, list[Any]],
+        self, report_data: dict[str, list[Any]]
     ) -> reports.VendorReport:
         data = {k: v for k, v in report_data.items() if k in ["vendor", "action"]}
         df = pd.DataFrame(data=data)
@@ -239,7 +236,7 @@ class GoogleSheetsReporter:
         except (ValueError, RefreshError) as e:
             raise e
 
-    def write_report_to_sheet(self, data: list[list[Any]]) -> None:
+    def write_report(self, data: list[list[Any]]) -> None:
         """
         Write output of validation to google sheet.
 
@@ -255,9 +252,8 @@ class GoogleSheetsReporter:
             "range": f"{sheet_name}!A1:O10000",
             "values": data,
         }
-        creds = self.configure_sheet()
         try:
-            service = build("sheets", "v4", credentials=creds)
+            service = build("sheets", "v4", credentials=self.creds)
             result = (
                 service.spreadsheets()
                 .values()
@@ -276,4 +272,4 @@ class GoogleSheetsReporter:
             logger.error(f"Unable to configure google sheet API credentials: {e}")
         except (HttpError, TimeoutError) as e:
             logger.error(f"Unable to send data to google sheet: {e}")
-        logger.error(f"({os.getenv('GOOGLE_SHEET_NAME')}) Data not written to sheet.")
+        logger.error("Data not written to sheet.")

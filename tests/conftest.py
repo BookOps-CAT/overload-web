@@ -48,6 +48,8 @@ def test_setup(caplog, monkeypatch):
     monkeypatch.setenv("GOOGLE_SHEET_REFRESH_TOKEN", "bar")
     monkeypatch.setenv("GOOGLE_SHEET_CLIENT_ID", "baz")
     monkeypatch.setenv("GOOGLE_SHEET_CLIENT_SECRET", "qux")
+    monkeypatch.setenv("GOOGLE_SHEET_NAME", "sheet")
+    monkeypatch.setenv("GOOGLE_SHEET_ID", "id")
 
 
 class MockHTTPResponse:
