@@ -216,4 +216,8 @@ class ReportHandler(Protocol[R]):
         self, report_data: dict[str, list[Any]], classes: list[str]
     ) -> str: ...  # pragma: no branch
 
+    def prep_report(
+        self, data: dict[str, list[Any]]
+    ) -> list[list[Any]]: ...  # pragma: no branch
+
     def write_report(self, data: list[list[Any]]) -> None: ...  # pragma: no branch
