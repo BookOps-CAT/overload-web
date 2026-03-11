@@ -5,7 +5,7 @@ from typing import Any, Iterator, Protocol, Sequence, TypeVar, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
-R = TypeVar("R", covariant=True)  # variable for `SummaryReport` type
+R = TypeVar("R")  # variable for report typed dict type
 S = TypeVar("S")  # variable for `BaseSierraResponse` type
 T = TypeVar("T")  # variable for `bookops_marc.Bib` type
 U = TypeVar("U", contravariant=True)  # variable for `bibs.DomainBib` type
@@ -176,17 +176,15 @@ class ReportHandler(Protocol[R]):
 
     def create_call_number_report(
         self, report_data: dict[str, Any]
-    ) -> dict[str, list[Any]]: ...  # pragma: no branch
+    ) -> R: ...  # pragma: no branch
 
     def create_detailed_report(
-        self,
-        report_data: dict[str, list[Any]],
-    ) -> dict[str, list[Any]]: ...  # pragma: no branch
+        self, report_data: dict[str, list[Any]]
+    ) -> R: ...  # pragma: no branch
 
     def create_duplicate_report(
-        self,
-        report_data: dict[str, list[Any]],
-    ) -> dict[str, list[Any]]: ...  # pragma: no branch
+        self, report_data: dict[str, list[Any]]
+    ) -> R: ...  # pragma: no branch
 
     def create_summary_report(
         self,
@@ -199,25 +197,21 @@ class ReportHandler(Protocol[R]):
     ) -> R: ...  # pragma: no branch
 
     def create_vendor_report(
-        self,
-        report_data: dict[str, list[Any]],
-    ) -> dict[str, list[Any]]: ...  # pragma: no branch
+        self, report_data: dict[str, list[Any]]
+    ) -> R: ...  # pragma: no branch
 
     def list2dict(
-        self,
-        report_data: list[Any],
+        self, report_data: list[Any]
     ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
     def report_to_html(
         self, report_data: dict[str, list[Any]], classes: list[str]
     ) -> str: ...  # pragma: no branch
 
-    def summary_report_to_html(
+    def summary_report_output(
         self, report_data: dict[str, list[Any]], classes: list[str]
-    ) -> str: ...  # pragma: no branch
+    ) -> dict[str, str]: ...  # pragma: no branch
 
-    def prep_report(
-        self, data: dict[str, list[Any]]
-    ) -> list[list[Any]]: ...  # pragma: no branch
+    def prep_report(self, data: R) -> list[list[Any]]: ...  # pragma: no branch
 
     def write_report(self, data: list[list[Any]]) -> None: ...  # pragma: no branch

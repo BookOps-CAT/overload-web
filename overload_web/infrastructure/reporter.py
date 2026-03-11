@@ -236,9 +236,22 @@ class GoogleSheetsReporter:
         except (ValueError, RefreshError) as e:
             raise e
 
+    def prep_report(self, data: dict[str, list[Any]]) -> list[list[Any]]:
+        """
+        Prep output for google sheet.
+
+        Args:
+            data: dictionary containing report data to be written.
+
+        Returns:
+            The data to be writte as a list of lists
+        """
+        df = pd.DataFrame(data=data)
+        return df.values.tolist()
+
     def write_report(self, data: list[list[Any]]) -> None:
         """
-        Write output of validation to google sheet.
+        Write output to google sheet.
 
         Args:
             data: dictionary containing report data to be written.

@@ -191,8 +191,6 @@ def process_full_records(
     """
     Process one or more files of MARC records.
 
-    Uses a `ProcessingHandler` to process MARC records.
-
     Args:
         service_handler:
             a `ProcessingHandler` object created using library, collection,

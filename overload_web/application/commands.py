@@ -307,3 +307,14 @@ class CreateOrderRecordsProcessingReport:
             ),
             detailed_data=handler.create_detailed_report(data_dict),
         )
+
+
+class WriteReportToSheet:
+    @staticmethod
+    def execute(
+        report_data: reports.ProcessingStatistics, handler: ports.ReportHandler
+    ) -> None:
+        call_no_report = report_data.summary["call_number_issues"]
+        if call_no_report:
+            prepped_data = handler.prep_report(data=call_no_report)
+            handler.write_report(prepped_data)

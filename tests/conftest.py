@@ -679,3 +679,82 @@ def engine_config(
 @pytest.fixture
 def marc_engine(engine_config) -> engine.MarcEngine:
     return engine.MarcEngine(rules=engine_config)
+
+
+class MockCreds:
+    def __init__(self):
+        self.token = "foo"
+        self.refresh_token = "bar"
+
+    @property
+    def valid(self, *args, **kwargs):
+        return True
+
+    @property
+    def expired(self, *args, **kwargs):
+        return False
+
+    def refresh(self, *args, **kwargs):
+        self.expired = False
+        self.valid = True
+
+    def to_json(self, *args, **kwargs):
+        pass
+
+    def run_local_server(self, *args, **kwargs):
+        return self
+
+
+class MockResource:
+    def __init__(self):
+        self.spreadsheetId = "foo"
+        self.range = "bar"
+
+    def append(self, *args, **kwargs):
+        return self
+
+    def execute(self, *args, **kwargs):
+        return dict(spreadsheetId=self.spreadsheetId, tableRange=self.range)
+
+    def spreadsheets(self, *args, **kwargs):
+        return self
+
+    def values(self, *args, **kwargs):
+        return self
+
+
+@pytest.fixture
+def mock_sheet_config(monkeypatch, mocker) -> None:
+    m = mocker.mock_open(read_data="")
+    mocker.patch("overload_web.infrastructure.reporter.open", m)
+    mocker.patch("os.path.exists", lambda *args, **kwargs: True)
+
+    def build_sheet(*args, **kwargs):
+        return MockResource()
+
+    def mock_creds(*args, **kwargs):
+        return MockCreds()
+
+    monkeypatch.setattr("googleapiclient.discovery.build", build_sheet)
+    monkeypatch.setattr("googleapiclient.discovery.build_from_document", build_sheet)
+    monkeypatch.setattr(
+        "google.oauth2.credentials.Credentials.from_authorized_user_info", mock_creds
+    )
+
+
+@pytest.fixture
+def mock_sheet_config_expired_creds(monkeypatch, mock_sheet_config):
+    monkeypatch.setattr(MockCreds, "valid", False)
+    monkeypatch.setattr(MockCreds, "expired", True)
+
+
+@pytest.fixture
+def mock_sheet_config_no_creds(monkeypatch, mock_sheet_config):
+    monkeypatch.setattr(
+        "google_auth_oauthlib.flow.InstalledAppFlow.from_client_config",
+        lambda *args, **kwargs: MockCreds(),
+    )
+    monkeypatch.setattr(
+        "google.oauth2.credentials.Credentials.from_authorized_user_info",
+        lambda *args, **kwargs: None,
+    )
