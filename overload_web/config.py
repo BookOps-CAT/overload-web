@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent
 
 
-def setup_logging():
+def setup_logging() -> None:
     """Sets up logging based on logger dict"""
     logger_config = {
         "version": 1,
@@ -23,7 +23,7 @@ def setup_logging():
                 "defaults": {"app": "overload_web"},
             },
             "json": {
-                "format": '{"app": "%(name)s", "asciTime": "%(asctime)s", "fileName": "%(name)s", "lineNo":"%(lineno)d", "levelName": "%(levelname)s", "message": "%(message)s"}',  # noqa: E501
+                "format": '{"app": "%(name)s", "asciTime": "%(asctime)s", "fileName": "%(name)s", "lineNo":"%(lineno)d", "levelName": "%(levelname)s", "message": "%(message)s"}'  # noqa: E501
             },
         },
         "handlers": {
@@ -31,14 +31,14 @@ def setup_logging():
                 "class": "logging.StreamHandler",
                 "formatter": "basic",
                 "level": "DEBUG",
-            },
+            }
         },
         "loggers": {
             "overload_web": {
                 "handlers": ["stream"],
                 "level": "DEBUG",
                 "propagate": True,
-            },
+            }
         },
     }
     logging.config.dictConfig(logger_config)
