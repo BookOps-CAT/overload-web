@@ -67,8 +67,15 @@ omit = [
     "**/*.html"
 ]
 
+[tool.ruff.lint]
+select = ["F", "E", "ANN"]
+ignore = ["ANN401"]
+
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["E501"]
+"tests/*" = ["E501", "ANN"]
+
+[tool.ruff.format]
+skip-magic-trailing-comma = true
 
 [[tool.mypy.overrides]]
 module = ["tests.*"]
