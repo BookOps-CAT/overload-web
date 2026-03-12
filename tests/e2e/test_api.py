@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.application.commands import ProcessFullRecords, ProcessOrderRecords
-from overload_web.domain.models import bibs, reports
+from overload_web.domain.models import bibs
 from overload_web.infrastructure import clients, tables
 from overload_web.main import app
 from overload_web.presentation import deps
@@ -29,7 +29,7 @@ def processed_records(monkeypatch, library, collection, record_type, acq_bib, fu
 
     def fake_order_response(*args, **kwargs):
         acq_bib.analysis = analysis
-        return reports.ProcessedOrderRecordsBatch(
+        return bibs.ProcessedOrderMarcFile(
             records=[acq_bib],
             record_stream=io.BytesIO(acq_bib.binary_data),
             file_name="foo.mrc",
@@ -40,7 +40,7 @@ def processed_records(monkeypatch, library, collection, record_type, acq_bib, fu
 
     def fake_full_response(*args, **kwargs):
         full_bib.analysis = analysis
-        return reports.ProcessedFullRecordsBatch(
+        return bibs.ProcessedFullMarcFile(
             duplicate_records=[],
             duplicate_records_stream=io.BytesIO(b""),
             new_records=[full_bib],
@@ -117,21 +117,12 @@ class TestApp:
         assert response.context["page_title"] == "Process Vendor File"
 
     @pytest.mark.parametrize(
-        "library, record_type",
-        [
-            ("bpl", "acq"),
-            ("bpl", "cat"),
-            ("bpl", "sel"),
-        ],
+        "library, record_type", [("bpl", "acq"), ("bpl", "cat"), ("bpl", "sel")]
     )
     def test_post_context_form_bpl(self, library, record_type):
         response = self.client.post(
             "/process",
-            data={
-                "library": library,
-                "collection": "",
-                "record_type": record_type,
-            },
+            data={"library": library, "collection": "", "record_type": record_type},
         )
         assert response.status_code == 200
         assert "Process Vendor File" in response.text
@@ -335,11 +326,7 @@ class TestApp:
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
-        [
-            ("nypl", "BL", "cat"),
-            ("nypl", "RL", "cat"),
-            ("bpl", "NONE", "cat"),
-        ],
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_api_process_full_records_local(
         self, library, collection, record_type, processed_records
@@ -357,11 +344,7 @@ class TestApp:
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
-        [
-            ("nypl", "BL", "cat"),
-            ("nypl", "RL", "cat"),
-            ("bpl", "NONE", "cat"),
-        ],
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_api_process_full_records_remote(
         self, library, collection, record_type, processed_records
@@ -415,10 +398,7 @@ class TestApp:
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
-        [
-            ("nypl", "BL", "cat"),
-            ("nypl", "RL", "cat"),
-        ],
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat")],
     )
     def test_api_process_full_records_platform_error(
         self, library, collection, record_type, mock_nypl_session_error
@@ -467,10 +447,7 @@ class TestApp:
             )
         assert "Trouble connecting: " in str(exc.value)
 
-    @pytest.mark.parametrize(
-        "file_source",
-        ["local", "remote"],
-    )
+    @pytest.mark.parametrize("file_source", ["local", "remote"])
     def test_htmx_get_vendor_file_form(self, file_source):
         response = self.client.get(
             f"/htmx/forms/vendor-files?file_source={file_source}"

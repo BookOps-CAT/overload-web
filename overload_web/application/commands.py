@@ -3,7 +3,7 @@ from typing import Any, Sequence
 
 from overload_web.application import ports
 from overload_web.application.services import marc_services, record_service
-from overload_web.domain.models import files, reports, templates
+from overload_web.domain.models import bibs, files, reports, templates
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ class ProcessFullRecords:
     @staticmethod
     def execute(
         data: bytes, file_name: str, handler: record_service.ProcessingHandler
-    ) -> reports.ProcessedFullRecordsBatch:
+    ) -> bibs.ProcessedFullMarcFile:
         """
         Process a file of full MARC records.
 
@@ -27,7 +27,7 @@ class ProcessFullRecords:
             file_name: the name of the file being processed.
             handler: a `ProcessingHandler` object used by the command.
         Returns:
-            A `ProcessedFullRecordsBatch` object containing the processed records,
+            A `ProcessedFullMarcFile` object containing the processed records,
             the file name and the processing statistics
         """
         records = marc_services.BibParser.parse_marc_data(
@@ -45,7 +45,7 @@ class ProcessFullRecords:
         missing_barcodes = marc_services.BarcodeValidator.ensure_preserved(
             record_batches=batches, barcodes=barcodes
         )
-        out = reports.ProcessedFullRecordsBatch(
+        out = bibs.ProcessedFullMarcFile(
             duplicate_records=batches["DUP"],
             duplicate_records_stream=marc_services.BibSerializer.write(batches["DUP"]),
             new_records=batches["NEW"],
@@ -73,7 +73,7 @@ class ProcessOrderRecords:
         handler: record_service.ProcessingHandler,
         matchpoints: dict[str, str],
         template_data: dict[str, Any],
-    ) -> reports.ProcessedOrderRecordsBatch:
+    ) -> bibs.ProcessedOrderMarcFile:
         """
         Process a file of order-level MARC records.
 
@@ -93,7 +93,7 @@ class ProcessOrderRecords:
             handler:
                 a `ProcessingHandler` object used by the command.
         Returns:
-            A `ProcessedOrderRecordsBatch` object containing the processed records,
+            A `ProcessedOrderMarcFile` object containing the processed records,
             the file name and the processing statistics
         """
         records = marc_services.BibParser.parse_marc_data(
@@ -113,7 +113,7 @@ class ProcessOrderRecords:
             )
 
         stream = marc_services.BibSerializer.write(records)
-        return reports.ProcessedOrderRecordsBatch(
+        return bibs.ProcessedOrderMarcFile(
             records=records,
             record_stream=stream,
             file_name=file_name,
@@ -264,8 +264,7 @@ class WriteFile:
 class CreateFullRecordsProcessingReport:
     @staticmethod
     def execute(
-        report_data: list[reports.ProcessedFullRecordsBatch],
-        handler: ports.ReportHandler,
+        report_data: list[bibs.ProcessedFullMarcFile], handler: ports.ReportHandler
     ) -> reports.ProcessingStatistics:
         file_names = [i.file_name for i in report_data]
         all_recs = []
@@ -290,8 +289,7 @@ class CreateFullRecordsProcessingReport:
 class CreateOrderRecordsProcessingReport:
     @staticmethod
     def execute(
-        report_data: list[reports.ProcessedOrderRecordsBatch],
-        handler: ports.ReportHandler,
+        report_data: list[bibs.ProcessedOrderMarcFile], handler: ports.ReportHandler
     ) -> reports.ProcessingStatistics:
         file_names = [i.file_name for i in report_data]
         all_recs = []

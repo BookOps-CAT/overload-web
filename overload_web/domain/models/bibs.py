@@ -6,7 +6,7 @@ import datetime
 import logging
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any, Protocol
+from typing import Any, BinaryIO, Protocol
 
 from overload_web.domain.models import sierra_responses
 
@@ -372,6 +372,57 @@ class Order:
                 tag_dict[k] = getattr(self, v)
             out[key] = tag_dict
         return out
+
+
+@dataclass
+class ProcessedFullMarcFile:
+    """A dataclass representing a processed file of records."""
+
+    duplicate_records: list[DomainBib]
+    new_records: list[DomainBib]
+    deduplicated_records: list[DomainBib]
+    duplicate_records_stream: BinaryIO
+    new_records_stream: BinaryIO
+    deduplicated_records_stream: BinaryIO
+    missing_barcodes: list[str]
+    file_name: str
+    library: str
+    collection: str | None
+    record_type: str
+
+
+@dataclass
+class ProcessedOrderMarcFile:
+    """A dataclass representing a processed file of records."""
+
+    records: list[DomainBib]
+    record_stream: BinaryIO
+    file_name: str
+    library: str
+    collection: str | None
+    record_type: str
+
+
+@dataclass
+class ProcessedFullRecordsBatch:
+    """A dataclass representing a batch of processed marc files."""
+
+    files: list[ProcessedFullMarcFile]
+    library: str
+    collection: str | None
+    record_type: str
+
+
+@dataclass
+class ProcessedOrderRecordsBatch:
+    """A dataclass representing a batch of processed marc files."""
+
+    records: list[DomainBib]
+    record_stream: BinaryIO
+    file_name: str
+    library: str
+    collection: str | None
+    record_type: str
 
 
 class RecordType(StrEnum):

@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, BinaryIO, TypedDict
-
-from overload_web.domain.models import bibs
+from typing import Any, TypedDict
 
 logger = logging.getLogger(__name__)
 
@@ -40,35 +38,6 @@ class DuplicateReport(TypedDict):
     duplicate_records: list[str]
     mixed: list[str]
     other: list[str]
-
-
-@dataclass
-class ProcessedFullRecordsBatch:
-    """A dataclass representing a processed file of records."""
-
-    duplicate_records: list[bibs.DomainBib]
-    new_records: list[bibs.DomainBib]
-    deduplicated_records: list[bibs.DomainBib]
-    duplicate_records_stream: BinaryIO
-    new_records_stream: BinaryIO
-    deduplicated_records_stream: BinaryIO
-    missing_barcodes: list[str]
-    file_name: str
-    library: str
-    collection: str | None
-    record_type: str
-
-
-@dataclass
-class ProcessedOrderRecordsBatch:
-    """A dataclass representing a processed file of records."""
-
-    records: list[bibs.DomainBib]
-    record_stream: BinaryIO
-    file_name: str
-    library: str
-    collection: str | None
-    record_type: str
 
 
 class SummaryReport(TypedDict):
