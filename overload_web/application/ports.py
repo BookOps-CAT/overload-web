@@ -166,7 +166,7 @@ class SqlRepositoryProtocol(Protocol[T]):
 
     def save(self, obj: T) -> T: ...  # pragma: no branch
 
-    def update_template(self, id: str, data: T) -> T | None: ...  # pragma: no branch
+    def update(self, id: str, data: T) -> T | None: ...  # pragma: no branch
 
 
 class ReportHandler(Protocol[R]):
