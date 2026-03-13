@@ -38,7 +38,6 @@ def processed_records(monkeypatch, library, collection, record_type, acq_bib, fu
             insert_records=[full_bib],
             deduplicated_records=[],
             missing_barcodes=[],
-            file_name="foo.mrc",
         )
 
     monkeypatch.setattr(ProcessFullRecords, "execute", fake_full_response)

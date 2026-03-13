@@ -18,7 +18,6 @@ class ProcessedFullMarcFile:
     insert_records: list[bibs.DomainBib]
     deduplicated_records: list[bibs.DomainBib]
     missing_barcodes: list[str]
-    file_name: str
 
 
 @dataclass

@@ -24,9 +24,7 @@ class TestProcessBatch:
         )
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        out = ProcessFullRecords.execute(
-            marc_data, handler=command_handler, file_name="foo.mrc"
-        )
+        out = ProcessFullRecords.execute(marc_data, handler=command_handler)
         assert isinstance(out.merge_records, list)
         assert isinstance(out.insert_records, list)
         assert isinstance(out.deduplicated_records, list)
@@ -65,9 +63,7 @@ class TestProcessBatch:
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
         with pytest.raises(OverloadError) as exc:
-            ProcessFullRecords.execute(
-                marc_data, handler=command_handler, file_name="foo.mrc"
-            )
+            ProcessFullRecords.execute(marc_data, handler=command_handler)
         assert "Duplicate barcodes found in file: " in str(exc.value)
 
     @pytest.mark.parametrize(

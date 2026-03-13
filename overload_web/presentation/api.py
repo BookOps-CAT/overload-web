@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse
 
 from overload_web.application.commands import (
+    CombineMarcFiles,
     CreateFullRecordsProcessingReport,
     CreateOrderRecordsProcessingReport,
     CreateOrderTemplate,
@@ -203,17 +204,15 @@ def process_full_records(
         the processed files and report data wrapped in a `HTMLResponse` object
 
     """
-    out_files = []
     all_files = deps.fetch_files(
         local_files=local_files, remote_file_names=remote_file_names, vendor=vendor
     )
-    for file in all_files:
-        out_file = ProcessFullRecords.execute(
-            data=file.content, handler=service_handler, file_name=file.file_name
-        )
-        out_files.append(out_file)
+    combined = CombineMarcFiles.execute(
+        data=[i.content for i in all_files], handler=service_handler
+    )
+    processed = ProcessFullRecords.execute(data=combined, handler=service_handler)
     report = CreateFullRecordsProcessingReport.execute(
-        out_files, handler=report_handler
+        processed, handler=report_handler, file_names=[i.file_name for i in all_files]
     )
     return request.app.state.templates.TemplateResponse(
         request=request,

@@ -8,22 +8,32 @@ from overload_web.domain.models import files, record_batches, reports, templates
 logger = logging.getLogger(__name__)
 
 
+class CombineMarcFiles:
+    """Combine multiple MARC files into one for processing CAT records."""
+
+    @staticmethod
+    def execute(data: list[bytes], handler: record_service.ProcessingHandler) -> bytes:
+        return marc_services.MarcFileMerger.combine_marc_files(
+            data=data, engine=handler.engine
+        )
+
+
 class ProcessFullRecords:
     """Handles parsing, matching, and analysis of full MARC records."""
 
     @staticmethod
     def execute(
-        data: bytes, file_name: str, handler: record_service.ProcessingHandler
+        data: bytes, handler: record_service.ProcessingHandler
     ) -> record_batches.ProcessedFullMarcFile:
         """
         Process a file of full MARC records.
 
         This service parses full MARC records, matches them against Sierra, analyzes
         all bibs that were returned as matches, updates the records with required
-        fields, and outputs the updated records and the match_analysis.
+        fields, and outputs the updated records and the match analysis.
 
         Args:
-            data: Binary MARC data as a `bytes` object.
+            data: binary MARC data as a `bytes` object.
             file_name: the name of the file being processed.
             handler: a `ProcessingHandler` object used by the command.
         Returns:
@@ -50,7 +60,6 @@ class ProcessFullRecords:
             insert_records=batches["INSERT"],
             deduplicated_records=batches["INSERT_DEDUPED"],
             missing_barcodes=missing_barcodes,
-            file_name=file_name,
         )
         return out
 
@@ -71,11 +80,11 @@ class ProcessOrderRecords:
 
         This service parses order-level MARC records, matches them against Sierra,
         analyzes all bibs that were returned as matches, updates the records with
-        required fields, and outputs the updated records and the match_analysis.
+        required fields, and outputs the updated records and the match analysis.
 
         Args:
             data:
-                Binary MARC data as a `bytes` object.
+                binary MARC data as a `bytes` object.
             matchpoints:
                 A dictionary containing matchpoints to be used in matching records.
             template_data:
@@ -249,16 +258,12 @@ class WriteFile:
 class CreateFullRecordsProcessingReport:
     @staticmethod
     def execute(
-        report_data: list[record_batches.ProcessedFullMarcFile],
+        processed: record_batches.ProcessedFullMarcFile,
+        file_names: list[str],
         handler: ports.ReportHandler,
     ) -> reports.ProcessingStatistics:
-        file_names = [i.file_name for i in report_data]
-        all_recs = []
-        missing_barcodes = []
-        for report in report_data:
-            all_recs.extend(report.merge_records)
-            all_recs.extend(report.insert_records)
-            missing_barcodes.extend(report.missing_barcodes)
+        all_recs = processed.merge_records + processed.insert_records
+        missing_barcodes = processed.missing_barcodes
         data_dict = handler.list2dict(all_recs)
         return reports.ProcessingStatistics(
             summary=handler.create_summary_report(
@@ -290,7 +295,7 @@ class CreateOrderRecordsProcessingReport:
                 total_records_processed=len(all_recs),
                 report_data=data_dict,
             ),
-            detailed_data=handler.create_detailed_report(data_dict),
+            detailed_data=data_dict,
         )
 
 

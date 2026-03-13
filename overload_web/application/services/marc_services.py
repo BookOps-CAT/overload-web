@@ -172,3 +172,18 @@ class Deduplicator:
             processed_dupes.append(record.control_number)
             deduped.append(record)
         return {"MERGE": merge, "INSERT": new, "INSERT_DEDUPED": deduped}
+
+
+class MarcFileMerger:
+    @staticmethod
+    def combine_marc_files(data: list[bytes], engine: ports.MarcEnginePort) -> bytes:
+        records = []
+        for batch in data:
+            reader = engine.get_reader(batch)
+            for record in reader:
+                records.append(record)
+        io_data = io.BytesIO()
+        for record in records:
+            io_data.write(record.as_marc())
+        io_data.seek(0)
+        return io_data.getvalue()
