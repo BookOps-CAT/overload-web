@@ -138,13 +138,13 @@ class Deduplicator:
             else:
                 new.append(record)
         if not new:
-            return {"DUP": merge, "NEW": new, "DEDUPED": deduped}
+            return {"MERGE": merge, "INSERT": new, "INSERT_DEDUPED": deduped}
         logger.debug("Deduping new records")
         new_record_counter = Counter([i.control_number for i in new])
         dupe_recs = [i for i, count in new_record_counter.items() if count > 1]
         if not dupe_recs:
             logger.debug("No duplicates found in file.")
-            return {"DUP": merge, "NEW": new, "DEDUPED": deduped}
+            return {"MERGE": merge, "INSERT": new, "INSERT_DEDUPED": deduped}
         logger.info("Discovered duplicate records in processed file")
 
         processed_dupes = []
@@ -171,4 +171,4 @@ class Deduplicator:
             record.binary_data = base_rec.as_marc()
             processed_dupes.append(record.control_number)
             deduped.append(record)
-        return {"DUP": merge, "NEW": new, "DEDUPED": deduped}
+        return {"MERGE": merge, "INSERT": new, "INSERT_DEDUPED": deduped}

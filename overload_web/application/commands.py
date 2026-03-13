@@ -46,13 +46,15 @@ class ProcessFullRecords:
             record_batches=batches, barcodes=barcodes
         )
         out = bibs.ProcessedFullMarcFile(
-            duplicate_records=batches["DUP"],
-            duplicate_records_stream=marc_services.BibSerializer.write(batches["DUP"]),
-            new_records=batches["NEW"],
-            new_records_stream=marc_services.BibSerializer.write(batches["NEW"]),
-            deduplicated_records=batches["DEDUPED"],
+            duplicate_records=batches["MERGE"],
+            duplicate_records_stream=marc_services.BibSerializer.write(
+                batches["MERGE"]
+            ),
+            new_records=batches["INSERT"],
+            new_records_stream=marc_services.BibSerializer.write(batches["INSERT"]),
+            deduplicated_records=batches["INSERT_DEDUPED"],
             deduplicated_records_stream=marc_services.BibSerializer.write(
-                batches["DEDUPED"]
+                batches["INSERT_DEDUPED"]
             ),
             missing_barcodes=missing_barcodes,
             file_name=file_name,
