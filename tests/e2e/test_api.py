@@ -41,10 +41,10 @@ def processed_records(monkeypatch, library, collection, record_type, acq_bib, fu
     def fake_full_response(*args, **kwargs):
         full_bib.analysis = analysis
         return bibs.ProcessedFullMarcFile(
-            duplicate_records=[],
-            duplicate_records_stream=io.BytesIO(b""),
-            new_records=[full_bib],
-            new_records_stream=io.BytesIO(full_bib.binary_data),
+            merge_records=[],
+            merge_records_stream=io.BytesIO(b""),
+            insert_records=[full_bib],
+            insert_records_stream=io.BytesIO(full_bib.binary_data),
             deduplicated_records=[],
             deduplicated_records_stream=io.BytesIO(b""),
             missing_barcodes=[],

@@ -378,11 +378,11 @@ class Order:
 class ProcessedFullMarcFile:
     """A dataclass representing a processed file of records."""
 
-    duplicate_records: list[DomainBib]
-    new_records: list[DomainBib]
+    merge_records: list[DomainBib]
+    insert_records: list[DomainBib]
     deduplicated_records: list[DomainBib]
-    duplicate_records_stream: BinaryIO
-    new_records_stream: BinaryIO
+    merge_records_stream: BinaryIO
+    insert_records_stream: BinaryIO
     deduplicated_records_stream: BinaryIO
     missing_barcodes: list[str]
     file_name: str

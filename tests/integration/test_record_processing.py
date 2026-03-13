@@ -29,8 +29,8 @@ class TestProcessBatch:
         out = ProcessFullRecords.execute(
             marc_data, handler=command_handler, file_name="foo.mrc"
         )
-        assert isinstance(out.duplicate_records, list)
-        assert isinstance(out.new_records, list)
+        assert isinstance(out.merge_records, list)
+        assert isinstance(out.insert_records, list)
         assert isinstance(out.deduplicated_records, list)
 
     @pytest.mark.parametrize(

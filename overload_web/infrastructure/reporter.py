@@ -47,17 +47,18 @@ class PandasReportHandler:
         self, report_data: dict[str, list[Any]]
     ) -> reports.DetailedReport:
         return reports.DetailedReport(
-            vendor=report_data["vendor"],
-            resource_id=report_data["resource_id"],
             action=report_data["action"],
-            target_bib_id=report_data["target_bib_id"],
-            updated=report_data["updated_by_vendor"],
-            call_number_match=report_data["call_number_match"],
             call_number=report_data["call_number"],
-            target_call_no=report_data["target_call_no"],
+            call_number_match=report_data["call_number_match"],
             duplicate_records=report_data["duplicate_records"],
             mixed=report_data["mixed"],
             other=report_data["other"],
+            resource_id=report_data["resource_id"],
+            target_bib_id=report_data["target_bib_id"],
+            target_call_no=report_data["target_call_no"],
+            target_title=report_data["target_title"],
+            updated_by_vendor=report_data["updated_by_vendor"],
+            vendor=report_data["vendor"],
         )
 
     def create_duplicate_report(

@@ -46,12 +46,10 @@ class ProcessFullRecords:
             record_batches=batches, barcodes=barcodes
         )
         out = bibs.ProcessedFullMarcFile(
-            duplicate_records=batches["MERGE"],
-            duplicate_records_stream=marc_services.BibSerializer.write(
-                batches["MERGE"]
-            ),
-            new_records=batches["INSERT"],
-            new_records_stream=marc_services.BibSerializer.write(batches["INSERT"]),
+            merge_records=batches["MERGE"],
+            merge_records_stream=marc_services.BibSerializer.write(batches["MERGE"]),
+            insert_records=batches["INSERT"],
+            insert_records_stream=marc_services.BibSerializer.write(batches["INSERT"]),
             deduplicated_records=batches["INSERT_DEDUPED"],
             deduplicated_records_stream=marc_services.BibSerializer.write(
                 batches["INSERT_DEDUPED"]
@@ -272,8 +270,8 @@ class CreateFullRecordsProcessingReport:
         all_recs = []
         missing_barcodes = []
         for report in report_data:
-            all_recs.extend(report.duplicate_records)
-            all_recs.extend(report.new_records)
+            all_recs.extend(report.merge_records)
+            all_recs.extend(report.insert_records)
             missing_barcodes.extend(report.missing_barcodes)
         data_dict = handler.list2dict(all_recs)
         return reports.ProcessingStatistics(
