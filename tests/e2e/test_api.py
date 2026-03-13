@@ -1,11 +1,9 @@
-import io
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.application.commands import ProcessFullRecords, ProcessOrderRecords
-from overload_web.domain.models import bibs
+from overload_web.domain.models import bibs, record_batches
 from overload_web.infrastructure import clients, tables
 from overload_web.main import app
 from overload_web.presentation import deps
@@ -29,29 +27,18 @@ def processed_records(monkeypatch, library, collection, record_type, acq_bib, fu
 
     def fake_order_response(*args, **kwargs):
         acq_bib.analysis = analysis
-        return bibs.ProcessedOrderMarcFile(
-            records=[acq_bib],
-            record_stream=io.BytesIO(acq_bib.binary_data),
-            file_name="foo.mrc",
-            library=library,
-            record_type=record_type,
-            collection=collection,
+        return record_batches.ProcessedOrderMarcFile(
+            records=[acq_bib], file_name="foo.mrc"
         )
 
     def fake_full_response(*args, **kwargs):
         full_bib.analysis = analysis
-        return bibs.ProcessedFullMarcFile(
+        return record_batches.ProcessedFullMarcFile(
             merge_records=[],
-            merge_records_stream=io.BytesIO(b""),
             insert_records=[full_bib],
-            insert_records_stream=io.BytesIO(full_bib.binary_data),
             deduplicated_records=[],
-            deduplicated_records_stream=io.BytesIO(b""),
             missing_barcodes=[],
             file_name="foo.mrc",
-            library=library,
-            record_type=record_type,
-            collection=collection,
         )
 
     monkeypatch.setattr(ProcessFullRecords, "execute", fake_full_response)

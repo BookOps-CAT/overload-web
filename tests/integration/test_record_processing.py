@@ -1,5 +1,3 @@
-import io
-
 import pytest
 
 from overload_web.application.commands import (
@@ -53,7 +51,6 @@ class TestProcessBatch:
             file_name="foo.mrc",
         )
         assert isinstance(out.records, list)
-        assert isinstance(out.record_stream, io.BytesIO)
 
     @pytest.mark.parametrize(
         "library, collection, record_type",

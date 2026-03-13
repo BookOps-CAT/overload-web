@@ -3,7 +3,7 @@ from typing import Any, Sequence
 
 from overload_web.application import ports
 from overload_web.application.services import marc_services, record_service
-from overload_web.domain.models import bibs, files, reports, templates
+from overload_web.domain.models import files, record_batches, reports, templates
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ class ProcessFullRecords:
     @staticmethod
     def execute(
         data: bytes, file_name: str, handler: record_service.ProcessingHandler
-    ) -> bibs.ProcessedFullMarcFile:
+    ) -> record_batches.ProcessedFullMarcFile:
         """
         Process a file of full MARC records.
 
@@ -45,20 +45,12 @@ class ProcessFullRecords:
         missing_barcodes = marc_services.BarcodeValidator.ensure_preserved(
             record_batches=batches, barcodes=barcodes
         )
-        out = bibs.ProcessedFullMarcFile(
+        out = record_batches.ProcessedFullMarcFile(
             merge_records=batches["MERGE"],
-            merge_records_stream=marc_services.BibSerializer.write(batches["MERGE"]),
             insert_records=batches["INSERT"],
-            insert_records_stream=marc_services.BibSerializer.write(batches["INSERT"]),
             deduplicated_records=batches["INSERT_DEDUPED"],
-            deduplicated_records_stream=marc_services.BibSerializer.write(
-                batches["INSERT_DEDUPED"]
-            ),
             missing_barcodes=missing_barcodes,
             file_name=file_name,
-            library=handler.engine.library,
-            record_type=handler.engine.record_type,
-            collection=handler.engine.collection,
         )
         return out
 
@@ -73,7 +65,7 @@ class ProcessOrderRecords:
         handler: record_service.ProcessingHandler,
         matchpoints: dict[str, str],
         template_data: dict[str, Any],
-    ) -> bibs.ProcessedOrderMarcFile:
+    ) -> record_batches.ProcessedOrderMarcFile:
         """
         Process a file of order-level MARC records.
 
@@ -111,15 +103,8 @@ class ProcessOrderRecords:
             marc_services.BibUpdater.update_record(
                 bib, engine=handler.engine, template_data=template_data
             )
-
-        stream = marc_services.BibSerializer.write(records)
-        return bibs.ProcessedOrderMarcFile(
-            records=records,
-            record_stream=stream,
-            file_name=file_name,
-            library=handler.engine.library,
-            record_type=handler.engine.record_type,
-            collection=handler.engine.collection,
+        return record_batches.ProcessedOrderMarcFile(
+            records=records, file_name=file_name
         )
 
 
@@ -264,7 +249,8 @@ class WriteFile:
 class CreateFullRecordsProcessingReport:
     @staticmethod
     def execute(
-        report_data: list[bibs.ProcessedFullMarcFile], handler: ports.ReportHandler
+        report_data: list[record_batches.ProcessedFullMarcFile],
+        handler: ports.ReportHandler,
     ) -> reports.ProcessingStatistics:
         file_names = [i.file_name for i in report_data]
         all_recs = []
@@ -289,7 +275,8 @@ class CreateFullRecordsProcessingReport:
 class CreateOrderRecordsProcessingReport:
     @staticmethod
     def execute(
-        report_data: list[bibs.ProcessedOrderMarcFile], handler: ports.ReportHandler
+        report_data: list[record_batches.ProcessedOrderMarcFile],
+        handler: ports.ReportHandler,
     ) -> reports.ProcessingStatistics:
         file_names = [i.file_name for i in report_data]
         all_recs = []
