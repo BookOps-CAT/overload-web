@@ -1,3 +1,5 @@
+from contextlib import nullcontext as does_not_raise
+
 import pytest
 
 from overload_web.application.services import match_service
@@ -19,13 +21,37 @@ def stub_domain_bib(library, collection):
 
 
 class TestSierraBibFetcher:
-    @pytest.mark.parametrize("match", ["bib_id", "upc", "isbn", "oclc_number"])
+    @pytest.mark.parametrize("match", ["upc", "isbn"])
     def test_get_bibs_by_id_bpl(self, mock_session, match, caplog):
         fetcher = clients.SierraBibFetcher(session=clients.BPLSolrSession())
         fetcher.get_bibs_by_id(value="123456789", key=match)
         assert len(caplog.records) == 2
         assert "Querying Sierra with BPLSolrSession" in caplog.records[0].msg
         assert fetcher.session.__class__.__name__ == "BPLSolrSession"
+
+    @pytest.mark.parametrize("id", [".b123", ".i123", ".o123", "123", 123, 123456789])
+    def test_get_bibs_by_bib_id_bpl(self, mock_session, id, caplog):
+        """Test `_prep_sierra_number override."""
+        fetcher = clients.SierraBibFetcher(session=clients.BPLSolrSession())
+        with does_not_raise():
+            fetcher.get_bibs_by_id(value=id, key="bib_id")
+
+    @pytest.mark.parametrize(
+        "num, norm",
+        [
+            ("on1234567890", "on1234567890"),
+            ("123456789", "ocn123456789"),
+            (123, "ocm00000123"),
+            ("1234567890", "on1234567890"),
+        ],
+    )
+    def test_get_bibs_by_oclc_number_bpl(self, mock_session, num, norm, caplog):
+        fetcher = clients.SierraBibFetcher(session=clients.BPLSolrSession())
+        fetcher.get_bibs_by_id(value=num, key="oclc_number")
+        assert (
+            caplog.records[0].msg
+            == f"Querying Sierra with BPLSolrSession on oclc_number with value: {norm}."
+        )
 
     @pytest.mark.parametrize("match", ["bib_id", "upc", "isbn", "oclc_number"])
     def test_get_bibs_by_id_nypl(self, mock_session, match, caplog):
@@ -34,6 +60,30 @@ class TestSierraBibFetcher:
         assert len(caplog.records) == 2
         assert "Querying Sierra with NYPLPlatformSession" in caplog.records[0].msg
         assert fetcher.session.__class__.__name__ == "NYPLPlatformSession"
+
+    @pytest.mark.parametrize("id", [".b123", ".i123", ".o123", "123", 123, 123456789])
+    def test_get_bibs_by_bib_id_nypl(self, mock_session, id, caplog):
+        """Test `_prep_sierra_number override."""
+        fetcher = clients.SierraBibFetcher(session=clients.NYPLPlatformSession())
+        with does_not_raise():
+            fetcher.get_bibs_by_id(value=id, key="bib_id")
+
+    @pytest.mark.parametrize(
+        "num, norm",
+        [
+            ("on1234567890", "1234567890"),
+            ("ocn123456789", "123456789"),
+            ("ocm00000123", "123"),
+            (123, "123"),
+        ],
+    )
+    def test_get_bibs_by_oclc_number_nypl(self, mock_session, num, norm, caplog):
+        fetcher = clients.SierraBibFetcher(session=clients.NYPLPlatformSession())
+        fetcher.get_bibs_by_id(value=num, key="oclc_number")
+        assert (
+            caplog.records[0].msg
+            == f"Querying Sierra with NYPLPlatformSession on oclc_number with value: {norm}."
+        )
 
     def test_get_bibs_by_id_invalid_matchpoint(self, mock_session, caplog):
         fetcher = clients.SierraBibFetcher(session=mock_session)
@@ -75,8 +125,7 @@ class TestSierraBibFetcher:
 
 
 @pytest.mark.parametrize(
-    "library, collection",
-    [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")],
+    "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
 )
 class TestBibMatcher:
     def test_match_full(self, fake_fetcher, stub_domain_bib):
@@ -95,9 +144,7 @@ class TestBibMatcher:
 
     def test_match_full_no_candidates(self, fake_fetcher_no_matches, stub_domain_bib):
         stub_domain_bib.vendor_info = bibs.VendorInfo(
-            name="UNKNOWN",
-            matchpoints={"primary_matchpoint": "isbn"},
-            bib_fields=[],
+            name="UNKNOWN", matchpoints={"primary_matchpoint": "isbn"}, bib_fields=[]
         )
         stub_domain_bib.record_type = "cat"
         service = match_service.BibMatcher(fetcher=fake_fetcher_no_matches)

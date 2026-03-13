@@ -74,6 +74,30 @@ class SierraBibFetcher:
         """
         self.session = session
 
+    def _normalize_oclc(self, id: str | int) -> str:
+        """Normalizes OCLC numbers based on session type."""
+        if isinstance(id, int) and isinstance(self.session, NYPLPlatformSession):
+            return str(id)
+        elif isinstance(id, str) and isinstance(self.session, NYPLPlatformSession):
+            return str(int(id.lower().strip("()oclnm")))
+        else:
+            id_lower = str(id).lower()
+            if (
+                id_lower.startswith("ocm")
+                or id_lower.startswith("ocn")
+                or id_lower.startswith("on")
+            ):
+                return id_lower
+            else:
+                num = str(int(id_lower.strip("()oclnm")))
+                value_length = len(num)
+                if value_length <= 8 and value_length >= 1:
+                    return f"ocm{str(int(num)).zfill(8)}"
+                elif value_length == 9:
+                    return f"ocn{str(int(num))}"
+                else:
+                    return f"on{str(int(num))}"
+
     def get_bibs_by_id(self, value: str | int, key: str) -> list[dict[str, Any]]:
         """
         Retrieves bib records by a specific matchpoint (e.g., isbn, oclc_number)
@@ -103,6 +127,8 @@ class SierraBibFetcher:
         if value is None:
             logger.debug(f"Skipping Sierra query on {key} with missing value.")
             return bibs
+        if key == "oclc_number":
+            value = self._normalize_oclc(value)
         try:
             logger.debug(
                 f"Querying Sierra with {self.session.__class__.__name__} "
@@ -168,6 +194,26 @@ class BPLSolrSession(SolrSession):
         json_response = response.json()
         return json_response["response"]["docs"]
 
+    def _prep_sierra_number(self, id: str | int) -> str:
+        """
+        Formats Sierra ID numbers.
+
+        Overrides method in parent class that unnecessarily raises
+        errors when the number doesn't look like a Sierra ID.
+
+        Args:
+            id: Sierra bib, item, or order number as string or int
+
+        Returns:
+            Sierra id number as a string.
+        """
+        id = str(id).strip(".")
+        if id.casefold()[0] in ["b", "i", "o"]:
+            id = id[1:]
+        if len(id) == 9:
+            id = id[:8]
+        return id
+
     def _get_bibs_by_bib_id(self, value: str | int) -> requests.Response:
         """Search BPL Solr by bib ID."""
         return self.search_bibNo(str(value), default_response_fields=False)
@@ -217,6 +263,26 @@ class NYPLPlatformSession(PlatformSession):
         logger.info(f"Sierra Session response code: {response.status_code}.")
         json_response = response.json()
         return json_response.get("data", [])
+
+    def _prep_sierra_number(self, id: str | int) -> str:
+        """
+        Formats Sierra ID numbers.
+
+        Overrides method in parent class that unnecessarily raises
+        errors when the number doesn't look like a Sierra ID.
+
+        Args:
+            id: Sierra bib, item, or order number as string or int
+
+        Returns:
+            Sierra id number as a string.
+        """
+        id = str(id).strip(".")
+        if id.casefold()[0] in ["b", "i", "o"]:
+            id = id[1:]
+        if len(id) == 9:
+            id = id[:8]
+        return id
 
     def _get_bibs_by_bib_id(self, value: str | int) -> requests.Response:
         """Search NYPL Platform by bib ID."""

@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from typing import Any, BinaryIO, Protocol
 
 from bookops_marc import Bib, SierraBibReader
-from bookops_marc.models import OclcNumber
 from pymarc import Field, Indicators, Subfield
 
 logger = logging.getLogger(__name__)
@@ -154,8 +153,7 @@ class MarcEngine:
             # OCLC Numbers have to be normalized from a dictionary
             if v == "oclc_nos":
                 property = getattr(obj, v)
-                numbers = list(set(property.values()))
-                out[k] = [OclcNumber(i).with_prefix for i in numbers]
+                out[k] = list(set(property.values()))
             # most attrs have 1:1 mapping between `Bib` and `DomainBib`
             elif isinstance(v, str):
                 out[k] = getattr(obj, v)
