@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any, BinaryIO, Protocol
 
 from bookops_marc import Bib, SierraBibReader
+from bookops_marc.models import OclcNumber
 from pymarc import Field, Indicators, Subfield
 
 logger = logging.getLogger(__name__)
@@ -150,18 +151,19 @@ class MarcEngine:
         out: dict[str, Any] = {}
 
         for k, v in rules.items():
+            # OCLC Numbers have to be normalized from a dictionary
+            if v == "oclc_nos":
+                property = getattr(obj, v)
+                numbers = list(set(property.values()))
+                out[k] = [OclcNumber(i).with_prefix for i in numbers]
             # most attrs have 1:1 mapping between `Bib` and `DomainBib`
-            if isinstance(v, str):
+            elif isinstance(v, str):
                 out[k] = getattr(obj, v)
             # dict containing control field tag whose value to assign to attr
             elif isinstance(v, dict) and "tag" in v:
                 field = obj.get(v["tag"])
                 if field is not None:
                     out[k] = str(field.data)
-            # dict containing additional info about nested data for attr
-            elif isinstance(v, dict) and "name" in v:
-                property = getattr(obj, v["name"])
-                out[k] = list(property.values())
             # nested dict for `bookops_marc.Order` objects
             else:
                 field = getattr(obj, k)

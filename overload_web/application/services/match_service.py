@@ -65,9 +65,15 @@ class BibMatcher:
             value = getattr(record, matchpoint, None)
             if not value:
                 continue
-            candidates = self.fetcher.get_bibs_by_id(value=value, key=matchpoint)
-            if candidates:
-                return candidates
+            elif isinstance(value, list):
+                for v in value:
+                    candidates = self.fetcher.get_bibs_by_id(value=v, key=matchpoint)
+                    if candidates:
+                        return candidates
+            else:
+                candidates = self.fetcher.get_bibs_by_id(value=value, key=matchpoint)
+                if candidates:
+                    return candidates
         return []
 
     def match_order_record(
