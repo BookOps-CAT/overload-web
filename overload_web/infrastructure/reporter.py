@@ -132,7 +132,6 @@ class PandasReportHandler:
         )
 
     def list2dict(self, report_data: list[bibs.DomainBib]) -> dict[str, list[Any]]:
-        vendor = [i.vendor for i in report_data]
         analysis = [i.analysis for i in report_data]
         return {
             "action": [i.action for i in analysis],
@@ -146,7 +145,7 @@ class PandasReportHandler:
             "target_call_no": [i.target_call_no for i in analysis],
             "target_title": [i.target_title for i in analysis],
             "updated_by_vendor": [i.updated_by_vendor for i in analysis],
-            "vendor": vendor,
+            "vendor": [i.vendor for i in report_data],
         }
 
     def report_to_html(
