@@ -217,14 +217,7 @@ def process_full_records(
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
-        context={
-            "report": report_handler.summary_report_output(
-                report.summary, classes=["table"]
-            ),
-            "detailed_report": report_handler.report_to_html(
-                report.detailed_data, classes=["table"]
-            ),
-        },
+        context={"report": report.__dict__},
     )
 
 
@@ -283,12 +276,5 @@ def process_order_records(
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
-        context={
-            "report": report_handler.summary_report_output(
-                report.summary, classes=["table"]
-            ),
-            "detailed_report": report_handler.report_to_html(
-                report.detailed_data, classes=["table"]
-            ),
-        },
+        context={"report": report.__dict__},
     )

@@ -265,15 +265,17 @@ class CreateFullRecordsProcessingReport:
         all_recs = processed.merge_records + processed.insert_records
         missing_barcodes = processed.missing_barcodes
         data_dict = handler.list2dict(all_recs)
+        integrity = missing_barcodes != []
         return reports.ProcessingStatistics(
-            summary=handler.create_summary_report(
-                file_names=file_names,
-                total_files_processed=len(file_names),
-                total_records_processed=len(all_recs),
-                missing_barcodes=missing_barcodes,
-                report_data=data_dict,
-            ),
-            detailed_data=handler.create_detailed_report(data_dict),
+            file_names=file_names,
+            total_files_processed=len(file_names),
+            total_records_processed=len(all_recs),
+            missing_barcodes=missing_barcodes,
+            processing_integrity=integrity,
+            detailed_data=data_dict,
+            vendor_breakdown=handler.create_vendor_report(data_dict),
+            duplicates_report=handler.create_duplicate_report(data_dict),
+            call_number_issues=handler.create_call_number_report(data_dict),
         )
 
 
@@ -282,16 +284,15 @@ class CreateOrderRecordsProcessingReport:
     def execute(
         report_data: list[record_batches.ProcessedOrderMarcFile],
         handler: ports.ReportHandler,
-    ) -> reports.ProcessingStatistics:
+    ) -> reports.OrderProcessingStatistics:
         file_names = [i.file_name for i in report_data]
         all_recs = []
         for report in report_data:
             all_recs.extend(report.records)
         data_dict = handler.list2dict(all_recs)
-        return reports.ProcessingStatistics(
+        return reports.OrderProcessingStatistics(
             summary=handler.create_summary_report(
                 file_names=file_names,
-                total_files_processed=len(file_names),
                 total_records_processed=len(all_recs),
                 report_data=data_dict,
             ),
@@ -302,7 +303,7 @@ class CreateOrderRecordsProcessingReport:
 class WriteReportToSheet:
     @staticmethod
     def execute(
-        report_data: reports.ProcessingStatistics, handler: ports.ReportHandler
+        report_data: reports.OrderProcessingStatistics, handler: ports.ReportHandler
     ) -> None:
         call_no_report = report_data.summary["call_number_issues"]
         if call_no_report:

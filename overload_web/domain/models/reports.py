@@ -42,14 +42,11 @@ class DuplicateReport(TypedDict):
 
 
 class SummaryReport(TypedDict):
-    library: list[str]
-    collection: list[str | None]
-    record_type: list[str]
-    file_names: list[list[str]]
-    total_files_processed: list[int]
-    total_records_processed: list[int]
-    missing_barcodes: list[list[str]]
-    processing_integrity: list[str | None]
+    file_names: list[str]
+    total_files_processed: int
+    total_records_processed: int
+    missing_barcodes: list[str]
+    processing_integrity: str | None
     vendor_breakdown: VendorReport
     duplicates_report: DuplicateReport | None
     call_number_issues: CallNumberReport | None
@@ -65,5 +62,18 @@ class VendorReport(TypedDict):
 
 @dataclass
 class ProcessingStatistics:
+    file_names: list[str]
+    total_files_processed: int
+    total_records_processed: int
+    missing_barcodes: list[str]
+    processing_integrity: bool
+    vendor_breakdown: VendorReport
+    duplicates_report: DuplicateReport | None
+    call_number_issues: CallNumberReport | None
+    detailed_data: dict[str, list[Any]]
+
+
+@dataclass
+class OrderProcessingStatistics:
     summary: SummaryReport
     detailed_data: dict[str, list[Any]]

@@ -189,7 +189,6 @@ class ReportHandler(Protocol[R]):
     def create_summary_report(
         self,
         file_names: list[str],
-        total_files_processed: int,
         total_records_processed: int,
         report_data: dict[str, list[Any]],
         missing_barcodes: list[str] = [],

@@ -190,18 +190,14 @@ class TestOrderRecordsProcessingReports:
     ):
         report = pandas_handler.create_summary_report(
             file_names=["foo.mrc"],
-            total_files_processed=1,
             total_records_processed=1,
             report_data=order_records_dict,
         )
-        assert report["library"] == [library]
-        assert report["collection"] == [collection]
-        assert report["record_type"] == [record_type]
-        assert report["file_names"] == [["foo.mrc"]]
-        assert report["total_files_processed"] == [1]
-        assert report["total_records_processed"] == [1]
-        assert report["missing_barcodes"] == [[]]
-        assert report["processing_integrity"] == [None]
+        assert report["file_names"] == ["foo.mrc"]
+        assert report["total_files_processed"] == 1
+        assert report["total_records_processed"] == 1
+        assert report["missing_barcodes"] == []
+        assert report["processing_integrity"] is None
         assert report["vendor_breakdown"] == {
             "attach": [1],
             "insert": [0],
@@ -273,18 +269,14 @@ class TestFullRecordsProcessingReports:
     ):
         report = pandas_handler.create_summary_report(
             file_names=["foo.mrc"],
-            total_files_processed=1,
             total_records_processed=1,
             report_data=full_records_dict,
         )
-        assert report["library"] == [library]
-        assert report["collection"] == [collection]
-        assert report["record_type"] == [record_type]
-        assert report["file_names"] == [["foo.mrc"]]
-        assert report["total_files_processed"] == [1]
-        assert report["total_records_processed"] == [1]
-        assert report["missing_barcodes"] == [[]]
-        assert report["processing_integrity"] == [None]
+        assert report["file_names"] == ["foo.mrc"]
+        assert report["total_files_processed"] == 1
+        assert report["total_records_processed"] == 1
+        assert report["missing_barcodes"] == []
+        assert report["processing_integrity"] is None
         assert report["vendor_breakdown"] == {
             "attach": [1],
             "insert": [0],
