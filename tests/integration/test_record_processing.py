@@ -1,6 +1,7 @@
 import pytest
 
 from overload_web.application.commands import (
+    CombineMarcFiles,
     CreateOrderRecordsProcessingReport,
     ProcessFullRecords,
     ProcessOrderRecords,
@@ -24,7 +25,8 @@ class TestProcessBatch:
         )
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        out = ProcessFullRecords.execute(marc_data, handler=command_handler)
+        combined = CombineMarcFiles.execute(data=[marc_data], handler=command_handler)
+        out = ProcessFullRecords.execute(combined, handler=command_handler)
         assert isinstance(out.merge_records, list)
         assert isinstance(out.insert_records, list)
         assert isinstance(out.deduplicated_records, list)
