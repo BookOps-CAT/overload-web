@@ -17,6 +17,7 @@ def stub_domain_bib(library, collection):
         title="Foo",
         record_type="acq",
         binary_data=b"",
+        oclc_number=["12345", "67890"],
     )
 
 
@@ -128,23 +129,28 @@ class TestSierraBibFetcher:
     "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
 )
 class TestBibMatcher:
-    def test_match_full(self, fake_fetcher, stub_domain_bib):
+    @pytest.mark.parametrize(
+        "matchpoints",
+        [{"primary_matchpoint": "isbn"}, {"primary_matchpoint": "oclc_number"}],
+    )
+    def test_match_full(self, fake_fetcher, stub_domain_bib, matchpoints):
         stub_domain_bib.vendor_info = bibs.VendorInfo(
-            name="UNKNOWN",
-            matchpoints={
-                "primary_matchpoint": "isbn",
-                "secondary_matchpoint": "oclc_number",
-            },
-            bib_fields=[],
+            name="UNKNOWN", matchpoints=matchpoints, bib_fields=[]
         )
         stub_domain_bib.record_type = "cat"
         service = match_service.BibMatcher(fetcher=fake_fetcher)
         candidates = service.match_full_record(stub_domain_bib)
         assert len(candidates) == 1
 
-    def test_match_full_no_candidates(self, fake_fetcher_no_matches, stub_domain_bib):
+    @pytest.mark.parametrize(
+        "matchpoints",
+        [{"primary_matchpoint": "isbn"}, {"primary_matchpoint": "oclc_number"}],
+    )
+    def test_match_full_no_candidates(
+        self, fake_fetcher_no_matches, stub_domain_bib, matchpoints
+    ):
         stub_domain_bib.vendor_info = bibs.VendorInfo(
-            name="UNKNOWN", matchpoints={"primary_matchpoint": "isbn"}, bib_fields=[]
+            name="UNKNOWN", matchpoints=matchpoints, bib_fields=[]
         )
         stub_domain_bib.record_type = "cat"
         service = match_service.BibMatcher(fetcher=fake_fetcher_no_matches)
@@ -162,7 +168,7 @@ class TestBibMatcher:
     def test_match_order_level(self, fake_fetcher, stub_domain_bib):
         service = match_service.BibMatcher(fetcher=fake_fetcher)
         candidates = service.match_order_record(
-            stub_domain_bib, matchpoints={"primary_matchpoint": "oclc_number"}
+            stub_domain_bib, matchpoints={"primary_matchpoint": "upc"}
         )
         assert len(candidates) == 0
 
