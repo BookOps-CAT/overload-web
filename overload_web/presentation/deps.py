@@ -8,7 +8,7 @@ from fastapi import Depends, Form, UploadFile
 from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.application import ports
-from overload_web.application.commands import LoadVendorFile
+from overload_web.application.commands.file_io import LoadVendorFile
 from overload_web.application.services import record_service
 from overload_web.infrastructure import (
     clients,
@@ -57,9 +57,9 @@ def get_session(
 
 def order_template_db(
     session: Annotated[Any, Depends(get_session)],
-) -> Generator[repository.SqlModelRepository, None, None]:
+) -> Generator[repository.OrderTemplateRepository, None, None]:
     """Create an order template repository."""
-    yield repository.SqlModelRepository(session=session)
+    yield repository.OrderTemplateRepository(session=session)
 
 
 @runtime_checkable
@@ -71,9 +71,7 @@ class FileProtocol(Protocol):
     file: BinaryIO
 
 
-def remote_file_loader(
-    vendor: str,
-) -> Generator[sftp.SFTPFileLoader, None, None]:
+def remote_file_loader(vendor: str) -> Generator[sftp.SFTPFileLoader, None, None]:
     """Create an SFTP file loader service."""
     yield sftp.SFTPFileLoader.create_loader_for_vendor(vendor=vendor)
 

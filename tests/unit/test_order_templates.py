@@ -1,7 +1,7 @@
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.application.commands import (
+from overload_web.application.commands.order_template import (
     CreateOrderTemplate,
     GetOrderTemplate,
     ListOrderTemplates,
@@ -31,10 +31,10 @@ def make_template():
 class TestTemplateService:
     @pytest.fixture
     def repo(self, test_sql_session):
-        return repository.SqlModelRepository(session=test_sql_session)
+        return repository.OrderTemplateRepository(session=test_sql_session)
 
-    def test_SqlModelRepository(self, test_sql_session):
-        repo = repository.SqlModelRepository(session=test_sql_session)
+    def test_OrderTemplateRepository(self, test_sql_session):
+        repo = repository.OrderTemplateRepository(session=test_sql_session)
         assert hasattr(repo, "session")
 
     def test_get_template(self, repo):
@@ -69,7 +69,7 @@ class TestTemplateService:
                 "agent": agent,
                 "country": "xxu",
                 "primary_matchpoint": "isbn",
-            },
+            }
         )
         CreateOrderTemplate.execute(repository=repo, obj=template)
         saved_template = GetOrderTemplate.execute(repository=repo, template_id=id)

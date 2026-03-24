@@ -2,7 +2,10 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.application.commands import ProcessFullRecords, ProcessOrderRecords
+from overload_web.application.commands.process import (
+    ProcessFullRecords,
+    ProcessOrderRecords,
+)
 from overload_web.domain.models import bibs, record_batches
 from overload_web.infrastructure import clients, tables
 from overload_web.main import app

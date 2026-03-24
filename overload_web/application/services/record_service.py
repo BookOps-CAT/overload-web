@@ -20,11 +20,7 @@ logger = logging.getLogger(__name__)
 class ProcessingHandler:
     """Handles parsing, matching, and analysis of full-level MARC records."""
 
-    def __init__(
-        self,
-        fetcher: ports.BibFetcher,
-        engine: ports.MarcEnginePort,
-    ):
+    def __init__(self, fetcher: ports.BibFetcher, engine: ports.MarcEnginePort):
         """
         Initialize `ProcessingHandler`.
 

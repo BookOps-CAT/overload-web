@@ -1,10 +1,12 @@
 import pytest
 
-from overload_web.application.commands import (
+from overload_web.application.commands.process import (
     CombineMarcFiles,
-    CreateOrderRecordsProcessingReport,
     ProcessFullRecords,
     ProcessOrderRecords,
+)
+from overload_web.application.commands.report import (
+    CreateOrderRecordsProcessingReport,
     WriteReportToSheet,
 )
 from overload_web.application.services import record_service

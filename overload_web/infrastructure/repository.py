@@ -2,7 +2,7 @@
 
 Classes:
 
-`SqlModelRepository`
+`OrderTemplateRepository`
     `SQLModel` implementation of `SqlRepositoryProtocol` for managing
     `TemplateTable` objects in a SQL database.
 """
@@ -20,7 +20,7 @@ from overload_web.infrastructure import tables
 logger = logging.getLogger(__name__)
 
 
-class SqlModelRepository:
+class OrderTemplateRepository:
     """
     `SQLModel` repository for `TemplateTable` objects.
 

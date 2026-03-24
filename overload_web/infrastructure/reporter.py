@@ -144,37 +144,6 @@ class PandasReportHandler:
             "vendor": [i.vendor for i in report_data],
         }
 
-    def report_to_html(
-        self, report_data: dict[str, list[Any]], classes: list[str]
-    ) -> str:
-        df = pd.DataFrame(data=report_data)
-        return df.to_html(index=False, classes=classes, justify="unset")
-
-    def summary_report_output(
-        self, report_data: dict[str, Any], classes: list[str]
-    ) -> dict[str, str]:
-        summary = {
-            k: v
-            for k, v in report_data.items()
-            if k not in ["vendor_breakdown", "duplicates_report", "call_number_issues"]
-        }
-        summary_df = pd.DataFrame(data=summary)
-        summary_df = summary_df.T
-        return {
-            "summary_report": summary_df.to_html(
-                header=False, classes=classes, justify="unset"
-            ),
-            "vendor_report": self.report_to_html(
-                report_data["vendor_breakdown"], classes=classes
-            ),
-            "call_no_report": self.report_to_html(
-                report_data["call_number_issues"], classes=classes
-            ),
-            "dupe_report": self.report_to_html(
-                report_data["duplicates_report"], classes=classes
-            ),
-        }
-
 
 class GoogleSheetsReporter:
     def __init__(self) -> None:
@@ -242,7 +211,8 @@ class GoogleSheetsReporter:
         Returns:
             The data to be writte as a list of lists
         """
-        df = pd.DataFrame(data=data)
+        df = pd.DataFrame(data=data, dtype="str")
+        df.fillna("", inplace=True)
         return df.values.tolist()
 
     def write_report(self, data: list[list[Any]]) -> None:
@@ -255,6 +225,7 @@ class GoogleSheetsReporter:
         Returns:
             None
         """
+        creds = self.configure_sheet()
         sheet_name = os.environ["GOOGLE_SHEET_NAME"]
         body = {
             "majorDimension": "ROWS",
@@ -262,13 +233,13 @@ class GoogleSheetsReporter:
             "values": data,
         }
         try:
-            service = build("sheets", "v4", credentials=self.creds)
+            service = build("sheets", "v4", credentials=creds)
             result = (
                 service.spreadsheets()
                 .values()
                 .append(
                     spreadsheetId=os.environ["GOOGLE_SHEET_ID"],
-                    range=f"{sheet_name.upper()}!A1:O10000",
+                    range=f"{sheet_name}!A1:O10000",
                     valueInputOption="USER_ENTERED",
                     insertDataOption="INSERT_ROWS",
                     body=body,
@@ -277,6 +248,7 @@ class GoogleSheetsReporter:
                 .execute()
             )
             logger.info(f"Data written to Google Sheet: {result}")
+            return
         except (ValueError, RefreshError) as e:
             logger.error(f"Unable to configure google sheet API credentials: {e}")
         except (HttpError, TimeoutError) as e:

@@ -10,17 +10,21 @@ from typing import Annotated, Any, AsyncGenerator
 from fastapi import APIRouter, Depends, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse
 
-from overload_web.application.commands import (
-    CombineMarcFiles,
-    CreateFullRecordsProcessingReport,
-    CreateOrderRecordsProcessingReport,
+from overload_web.application.commands.file_io import ListVendorFiles
+from overload_web.application.commands.order_template import (
     CreateOrderTemplate,
     GetOrderTemplate,
     ListOrderTemplates,
-    ListVendorFiles,
+    UpdateOrderTemplate,
+)
+from overload_web.application.commands.process import (
+    CombineMarcFiles,
     ProcessFullRecords,
     ProcessOrderRecords,
-    UpdateOrderTemplate,
+)
+from overload_web.application.commands.report import (
+    CreateFullRecordsProcessingReport,
+    CreateOrderRecordsProcessingReport,
 )
 from overload_web.presentation import deps, dto
 
@@ -52,7 +56,7 @@ def create_template(
 
     Args:
         template: the order template as an `TemplateCreateModel` object.
-        repository: a `repository.SqlModelRepository` object
+        repository: a `repository.OrderTemplateRepository` object
 
     Returns:
         the saved order template wrapped in a `HTMLResponse` object
@@ -76,7 +80,7 @@ def get_template(
 
     Args:
         template_id: the template's ID as a string.
-        repository: a `repository.SqlModelRepository` object
+        repository: a `repository.OrderTemplateRepository` object
 
     Returns:
         the retrieved order template wrapped in a `HTMLResponse` object
@@ -101,7 +105,7 @@ def get_template_list(
     List order templates in the database.
 
     Args:
-        repository: a `repository.SqlModelRepository` object
+        repository: a `repository.OrderTemplateRepository` object
         offset: the first template to be listed
         limit: the maximum number of templates to list
 
@@ -131,7 +135,7 @@ def update_template(
 
     Args:
         repository:
-            a `repository.SqlModelRepository` object
+            a `repository.OrderTemplateRepository` object
         template_id:
             the template's ID as a string.
         template_patch:
