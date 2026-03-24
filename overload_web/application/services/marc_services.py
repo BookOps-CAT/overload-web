@@ -23,20 +23,18 @@ class BarcodeExtractor:
 class BarcodeValidator:
     @staticmethod
     def ensure_preserved(
-        record_batches: dict[str, list[bibs.DomainBib]], barcodes: list[str]
+        records: list[bibs.DomainBib], barcodes: list[str]
     ) -> list[str]:
         valid = True
-        barcodes_from_batches = list(
-            itertools.chain.from_iterable(
-                i.barcodes for j in record_batches.values() for i in j
-            )
+        processed_barcodes = list(
+            itertools.chain.from_iterable([i.barcodes for i in records])
         )
         missing_barcodes = set()
         for barcode in barcodes:
-            if barcode not in barcodes_from_batches:
+            if barcode not in processed_barcodes:
                 valid = False
                 missing_barcodes.add(barcode)
-        valid = sorted(barcodes) == sorted(barcodes_from_batches)
+        valid = sorted(barcodes) == sorted(processed_barcodes)
         logger.debug(
             f"Integrity validation: {valid}, missing_barcodes: {list(missing_barcodes)}"
         )

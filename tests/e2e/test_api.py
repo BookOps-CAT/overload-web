@@ -6,7 +6,7 @@ from overload_web.application.commands.process import (
     ProcessFullRecords,
     ProcessOrderRecords,
 )
-from overload_web.domain.models import bibs, record_batches
+from overload_web.domain.models import bibs
 from overload_web.infrastructure import clients, tables
 from overload_web.main import app
 from overload_web.presentation import deps
@@ -30,18 +30,11 @@ def processed_records(monkeypatch, library, collection, record_type, acq_bib, fu
 
     def fake_order_response(*args, **kwargs):
         acq_bib.analysis = analysis
-        return record_batches.ProcessedOrderMarcFile(
-            records=[acq_bib], file_name="foo.mrc"
-        )
+        return bibs.ProcessedMarcFile(records=[acq_bib], file_name="foo.mrc")
 
     def fake_full_response(*args, **kwargs):
         full_bib.analysis = analysis
-        return record_batches.ProcessedFullMarcFile(
-            merge_records=[],
-            insert_records=[full_bib],
-            deduplicated_records=[],
-            missing_barcodes=[],
-        )
+        return bibs.ProcessedMarcFile(records=[full_bib], missing_barcodes=[])
 
     monkeypatch.setattr(ProcessFullRecords, "execute", fake_full_response)
     monkeypatch.setattr(ProcessOrderRecords, "execute", fake_order_response)

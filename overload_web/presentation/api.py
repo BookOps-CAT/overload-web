@@ -22,10 +22,7 @@ from overload_web.application.commands.process import (
     ProcessFullRecords,
     ProcessOrderRecords,
 )
-from overload_web.application.commands.report import (
-    CreateFullRecordsProcessingReport,
-    CreateOrderRecordsProcessingReport,
-)
+from overload_web.application.commands.statistics import CreateRecordsProcessingReport
 from overload_web.presentation import deps, dto
 
 logger = logging.getLogger(__name__)
@@ -215,9 +212,7 @@ def process_full_records(
         data=[i.content for i in all_files], handler=service_handler
     )
     processed = ProcessFullRecords.execute(data=combined, handler=service_handler)
-    report = CreateFullRecordsProcessingReport.execute(
-        processed, handler=report_handler, file_names=[i.file_name for i in all_files]
-    )
+    report = CreateRecordsProcessingReport.execute(processed, handler=report_handler)
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
@@ -274,9 +269,7 @@ def process_order_records(
             file_name=file.file_name,
         )
         out_files.append(out_file)
-    report = CreateOrderRecordsProcessingReport.execute(
-        out_files, handler=report_handler
-    )
+    report = CreateRecordsProcessingReport.execute(out_files, handler=report_handler)
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",

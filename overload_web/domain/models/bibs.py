@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any, Protocol
 
@@ -372,6 +372,15 @@ class Order:
                 tag_dict[k] = getattr(self, v)
             out[key] = tag_dict
         return out
+
+
+@dataclass
+class ProcessedMarcFile:
+    """A dataclass representing a processed file of records."""
+
+    records: list[DomainBib]
+    file_name: str | None = None
+    missing_barcodes: list[str] = field(default_factory=list)
 
 
 class RecordType(StrEnum):

@@ -2,7 +2,7 @@ import logging
 from typing import Any
 
 from overload_web.application.services import marc_services, record_service
-from overload_web.domain.models import record_batches
+from overload_web.domain.models import bibs
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class ProcessFullRecords:
     @staticmethod
     def execute(
         data: bytes, handler: record_service.ProcessingHandler
-    ) -> record_batches.ProcessedFullMarcFile:
+    ) -> bibs.ProcessedMarcFile:
         """
         Process a file of full MARC records.
 
@@ -50,16 +50,10 @@ class ProcessFullRecords:
             bib.apply_match(analysis)
             marc_services.BibUpdater.update_record(bib, engine=handler.engine)
 
-        batches = marc_services.Deduplicator.deduplicate(records, engine=handler.engine)
         missing_barcodes = marc_services.BarcodeValidator.ensure_preserved(
-            record_batches=batches, barcodes=barcodes
+            records=records, barcodes=barcodes
         )
-        out = record_batches.ProcessedFullMarcFile(
-            merge_records=batches["MERGE"],
-            insert_records=batches["INSERT"],
-            deduplicated_records=batches["INSERT_DEDUPED"],
-            missing_barcodes=missing_barcodes,
-        )
+        out = bibs.ProcessedMarcFile(records=records, missing_barcodes=missing_barcodes)
         return out
 
 
@@ -73,7 +67,7 @@ class ProcessOrderRecords:
         handler: record_service.ProcessingHandler,
         matchpoints: dict[str, str],
         template_data: dict[str, Any],
-    ) -> record_batches.ProcessedOrderMarcFile:
+    ) -> bibs.ProcessedMarcFile:
         """
         Process a file of order-level MARC records.
 
@@ -111,6 +105,4 @@ class ProcessOrderRecords:
             marc_services.BibUpdater.update_record(
                 bib, engine=handler.engine, template_data=template_data
             )
-        return record_batches.ProcessedOrderMarcFile(
-            records=records, file_name=file_name
-        )
+        return bibs.ProcessedMarcFile(records=records, file_name=file_name)

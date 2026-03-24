@@ -5,8 +5,8 @@ from overload_web.application.commands.process import (
     ProcessFullRecords,
     ProcessOrderRecords,
 )
-from overload_web.application.commands.report import (
-    CreateOrderRecordsProcessingReport,
+from overload_web.application.commands.statistics import (
+    CreateRecordsProcessingReport,
     WriteReportToSheet,
 )
 from overload_web.application.services import record_service
@@ -29,9 +29,7 @@ class TestProcessBatch:
             marc_data = fh.read()
         combined = CombineMarcFiles.execute(data=[marc_data], handler=command_handler)
         out = ProcessFullRecords.execute(combined, handler=command_handler)
-        assert isinstance(out.merge_records, list)
-        assert isinstance(out.insert_records, list)
-        assert isinstance(out.deduplicated_records, list)
+        assert isinstance(out.records, list)
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
@@ -98,6 +96,39 @@ class TestWriteReport:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
+    def test_full_service_process_vendor_file(
+        self,
+        library,
+        fake_fetcher,
+        engine_config,
+        mock_sheet_config,
+        caplog,
+        collection,
+        record_type,
+    ):
+        command_handler = record_service.ProcessingHandler(
+            fetcher=fake_fetcher, engine=marc_engine.MarcEngine(rules=engine_config)
+        )
+        with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
+            marc_data = fh.read()
+        combined = CombineMarcFiles.execute(data=[marc_data], handler=command_handler)
+        out = ProcessFullRecords.execute(combined, handler=command_handler)
+        assert isinstance(out.records, list)
+        handler = reporter.PandasReportHandler(
+            library=library, collection=collection, record_type=record_type
+        )
+        report = CreateRecordsProcessingReport.execute(processed=out, handler=handler)
+        writer = reporter.GoogleSheetsReporter()
+        WriteReportToSheet.execute(report_data=report, handler=handler, writer=writer)
+        assert (
+            "Data written to Google Sheet: {'spreadsheetId': 'foo', 'tableRange': 'bar'}"
+            in caplog.text
+        )
+
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
+    )
     def test_order_service_process_vendor_file(
         self,
         library,
@@ -120,14 +151,12 @@ class TestWriteReport:
             matchpoints={"primary_matchpoint": "isbn"},
             file_name="foo.mrc",
         )
-        report = CreateOrderRecordsProcessingReport.execute(
-            report_data=[out],
-            handler=reporter.PandasReportHandler(
-                library=library, collection=collection, record_type=record_type
-            ),
+        handler = reporter.PandasReportHandler(
+            library=library, collection=collection, record_type=record_type
         )
-        google_handler = reporter.GoogleSheetsReporter()
-        WriteReportToSheet.execute(report_data=report, handler=google_handler)
+        report = CreateRecordsProcessingReport.execute(processed=[out], handler=handler)
+        writer = reporter.GoogleSheetsReporter()
+        WriteReportToSheet.execute(report_data=report, handler=handler, writer=writer)
         assert (
             "Data written to Google Sheet: {'spreadsheetId': 'foo', 'tableRange': 'bar'}"
             in caplog.text

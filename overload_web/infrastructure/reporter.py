@@ -24,9 +24,19 @@ class PandasReportHandler:
         self.record_type = record_type
 
     def create_call_number_report(
-        self, report_data: dict[str, list[Any]]
+        self, report_data: reports.ProcessingStatistics
     ) -> reports.CallNumberReport | None:
-        df = pd.DataFrame(data=report_data)
+        df = pd.DataFrame(
+            data={
+                "resource_id": report_data.resource_id,
+                "target_bib_id": report_data.target_bib_id,
+                "call_number_match": report_data.call_number_match,
+                "call_number": report_data.call_number,
+                "target_call_no": report_data.target_call_no,
+                "duplicate_records": report_data.duplicate_records,
+                "vendor": report_data.vendor,
+            }
+        )
         match_df = df[~df["call_number_match"]]
         if self.record_type == "cat":
             missing_df = df[df["call_number"].isnull() & df["target_call_no"].isnull()]
@@ -43,28 +53,19 @@ class PandasReportHandler:
             vendor=match_df["vendor"].to_list(),
         )
 
-    def create_detailed_report(
-        self, report_data: dict[str, list[Any]]
-    ) -> reports.DetailedReport:
-        return reports.DetailedReport(
-            action=report_data["action"],
-            call_number=report_data["call_number"],
-            call_number_match=report_data["call_number_match"],
-            duplicate_records=report_data["duplicate_records"],
-            mixed=report_data["mixed"],
-            other=report_data["other"],
-            resource_id=report_data["resource_id"],
-            target_bib_id=report_data["target_bib_id"],
-            target_call_no=report_data["target_call_no"],
-            target_title=report_data["target_title"],
-            updated_by_vendor=report_data["updated_by_vendor"],
-            vendor=report_data["vendor"],
-        )
-
     def create_duplicate_report(
-        self, report_data: dict[str, list[Any]]
+        self, report_data: reports.ProcessingStatistics
     ) -> reports.DuplicateReport:
-        df = pd.DataFrame(data=report_data)
+        df = pd.DataFrame(
+            data={
+                "resource_id": report_data.resource_id,
+                "target_bib_id": report_data.target_bib_id,
+                "mixed": report_data.mixed,
+                "other": report_data.other,
+                "duplicate_records": report_data.duplicate_records,
+                "vendor": report_data.vendor,
+            }
+        )
         filtered_df = df[
             df["duplicate_records"].notnull()
             | df["mixed"].notnull()
@@ -79,30 +80,12 @@ class PandasReportHandler:
             other=filtered_df["other"].to_list(),
         )
 
-    def create_summary_report(
-        self,
-        file_names: list[str],
-        total_records_processed: int,
-        report_data: dict[str, list[Any]],
-        missing_barcodes: list[str] = [],
-        processing_integrity: str | None = None,
-    ) -> reports.SummaryReport:
-        return reports.SummaryReport(
-            file_names=file_names,
-            total_files_processed=len(file_names),
-            total_records_processed=total_records_processed,
-            missing_barcodes=missing_barcodes,
-            processing_integrity=processing_integrity,
-            vendor_breakdown=self.create_vendor_report(report_data),
-            duplicates_report=self.create_duplicate_report(report_data),
-            call_number_issues=self.create_call_number_report(report_data),
-        )
-
     def create_vendor_report(
-        self, report_data: dict[str, list[Any]]
+        self, report_data: reports.ProcessingStatistics
     ) -> reports.VendorReport:
-        data = {k: v for k, v in report_data.items() if k in ["vendor", "action"]}
-        df = pd.DataFrame(data=data)
+        df = pd.DataFrame(
+            data={"action": report_data.action, "vendor": report_data.vendor}
+        )
         vendor_data: dict[str, list[Any]] = {
             "vendor": [],
             "attach": [],
