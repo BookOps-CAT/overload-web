@@ -266,9 +266,7 @@ def stub_bib(library, collection) -> Bib:
             Field(
                 tag="099",
                 indicators=Indicators(" ", " "),
-                subfields=[
-                    Subfield(code="a", value="Foo"),
-                ],
+                subfields=[Subfield(code="a", value="Foo")],
             )
         )
     else:
@@ -277,9 +275,7 @@ def stub_bib(library, collection) -> Bib:
                 Field(
                     tag="091",
                     indicators=Indicators(" ", " "),
-                    subfields=[
-                        Subfield(code="a", value="Foo"),
-                    ],
+                    subfields=[Subfield(code="a", value="Foo")],
                 )
             )
         else:
@@ -287,9 +283,7 @@ def stub_bib(library, collection) -> Bib:
                 Field(
                     tag="852",
                     indicators=Indicators("8", " "),
-                    subfields=[
-                        Subfield(code="a", value="Foo"),
-                    ],
+                    subfields=[Subfield(code="a", value="Foo")],
                 )
             )
         bib.add_field(
@@ -303,9 +297,7 @@ def stub_bib(library, collection) -> Bib:
         Field(
             tag="949",
             indicators=Indicators(" ", "1"),
-            subfields=[
-                Subfield(code="i", value="333331234567890"),
-            ],
+            subfields=[Subfield(code="i", value="333331234567890")],
         )
     )
     bib.add_field(
@@ -410,9 +402,7 @@ def acq_bib(collection, library):
             Field(
                 tag="099",
                 indicators=Indicators(" ", " "),
-                subfields=[
-                    Subfield(code="a", value="Foo"),
-                ],
+                subfields=[Subfield(code="a", value="Foo")],
             )
         )
     else:
@@ -421,9 +411,7 @@ def acq_bib(collection, library):
                 Field(
                     tag="091",
                     indicators=Indicators(" ", " "),
-                    subfields=[
-                        Subfield(code="a", value="Foo"),
-                    ],
+                    subfields=[Subfield(code="a", value="Foo")],
                 )
             )
         else:
@@ -431,9 +419,7 @@ def acq_bib(collection, library):
                 Field(
                     tag="852",
                     indicators=Indicators("8", " "),
-                    subfields=[
-                        Subfield(code="a", value="Foo"),
-                    ],
+                    subfields=[Subfield(code="a", value="Foo")],
                 )
             )
         bib.add_field(
@@ -447,9 +433,7 @@ def acq_bib(collection, library):
         Field(
             tag="949",
             indicators=Indicators(" ", "1"),
-            subfields=[
-                Subfield(code="i", value="333331234567890"),
-            ],
+            subfields=[Subfield(code="i", value="333331234567890")],
         )
     )
     bib.add_field(
@@ -529,18 +513,14 @@ def full_bib(library, collection):
             Field(
                 tag="099",
                 indicators=Indicators(" ", " "),
-                subfields=[
-                    Subfield(code="a", value="Foo"),
-                ],
+                subfields=[Subfield(code="a", value="Foo")],
             )
         )
         bib.add_field(
             Field(
                 tag="960",
                 indicators=Indicators(" ", " "),
-                subfields=[
-                    Subfield(code="i", value="333331234567890"),
-                ],
+                subfields=[Subfield(code="i", value="333331234567890")],
             )
         )
     else:
@@ -549,9 +529,7 @@ def full_bib(library, collection):
                 Field(
                     tag="091",
                     indicators=Indicators(" ", " "),
-                    subfields=[
-                        Subfield(code="a", value="Foo"),
-                    ],
+                    subfields=[Subfield(code="a", value="Foo")],
                 )
             )
         else:
@@ -559,9 +537,7 @@ def full_bib(library, collection):
                 Field(
                     tag="852",
                     indicators=Indicators("8", " "),
-                    subfields=[
-                        Subfield(code="a", value="Foo"),
-                    ],
+                    subfields=[Subfield(code="a", value="Foo")],
                 )
             )
         bib.add_field(
@@ -575,9 +551,7 @@ def full_bib(library, collection):
             Field(
                 tag="949",
                 indicators=Indicators(" ", "1"),
-                subfields=[
-                    Subfield(code="i", value="333331234567890"),
-                ],
+                subfields=[Subfield(code="i", value="333331234567890")],
             )
         )
     domain_bib = bibs.DomainBib(
