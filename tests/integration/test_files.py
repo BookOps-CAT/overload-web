@@ -3,8 +3,7 @@ import os
 import pytest
 
 from overload_web.application import ports
-from overload_web.domain.models import files
-from overload_web.infrastructure import local_io, sftp
+from overload_web.infrastructure import file_io
 
 
 @pytest.fixture
@@ -14,37 +13,35 @@ def tmp_file(tmp_path):
 
 
 class TestLocalFiles:
-    def fake_file(self, content, file_name):
-        return files.VendorFile(content=content, file_name=file_name)
-
     def test_local_objs(self, tmp_path):
-        loader = local_io.LocalFileLoader()
-        writer = local_io.LocalFileWriter()
+        loader = file_io.LocalFileLoader()
+        writer = file_io.LocalFileWriter()
         assert isinstance(loader, ports.FileLoader)
         assert isinstance(writer, ports.FileWriter)
 
     def test_local_load(self, tmp_path, tmp_file):
-        loader = local_io.LocalFileLoader()
+        loader = file_io.LocalFileLoader()
         loaded_file = loader.load("foo.mrc", dir=tmp_path)
-        assert "333331234567890".encode() in loaded_file.content
+        assert "333331234567890".encode() in loaded_file
         assert "foo.mrc" in os.listdir(tmp_path)
 
     def test_local_list(self, tmp_path, tmp_file):
-        loader = local_io.LocalFileLoader()
+        loader = file_io.LocalFileLoader()
         file_list = loader.list(dir=tmp_path)
         assert len(file_list) == 1
         assert file_list[0] == "foo.mrc"
 
     def test_local_write(self, tmp_path):
-        out_file = self.fake_file(content=b"333331234567890", file_name="foo.mrc")
-        writer = local_io.LocalFileWriter()
-        new_file = writer.write(file=out_file, dir=tmp_path)
+        writer = file_io.LocalFileWriter()
+        new_file = writer.write(
+            file=b"333331234567890", file_name="foo.mrc", dir=tmp_path
+        )
         assert new_file == os.path.join(tmp_path, "foo.mrc")
         assert "foo.mrc" in os.listdir(tmp_path)
         assert "333331234567890".encode() in open(new_file, "rb").read()
 
     def test_sftp_loader(self, mock_sftp_client):
-        loader = sftp.SFTPFileLoader(client=mock_sftp_client)
+        loader = file_io.SFTPFileLoader(client=mock_sftp_client)
         assert isinstance(loader, ports.FileLoader)
         assert hasattr(loader, "list")
         assert hasattr(loader, "load")
@@ -52,26 +49,24 @@ class TestLocalFiles:
         assert isinstance(loader, ports.FileLoader)
 
     def test_sftp_writer(self, mock_sftp_client):
-        writer = sftp.SFTPFileWriter(client=mock_sftp_client)
+        writer = file_io.SFTPFileWriter(client=mock_sftp_client)
         assert isinstance(writer, ports.FileWriter)
         assert hasattr(writer, "write")
         assert writer.client.name == "FOO"
         assert isinstance(writer, ports.FileWriter)
 
     def test_sftp_list(self, mock_sftp_client):
-        loader = sftp.SFTPFileLoader(client=mock_sftp_client)
+        loader = file_io.SFTPFileLoader(client=mock_sftp_client)
         file_list = loader.list(dir="test")
         assert len(file_list) == 1
         assert file_list[0] == "foo.mrc"
 
     def test_sftp_load(self, mock_sftp_client):
-        loader = sftp.SFTPFileLoader(client=mock_sftp_client)
+        loader = file_io.SFTPFileLoader(client=mock_sftp_client)
         file = loader.load(name="foo.mrc", dir="test")
-        assert file.content == b""
+        assert file == b""
 
     def test_sftp_write(self, mock_sftp_client):
-        writer = sftp.SFTPFileWriter(client=mock_sftp_client)
-        out_file = writer.write(
-            file=self.fake_file(content=b"foo", file_name="foo.mrc"), dir="test"
-        )
+        writer = file_io.SFTPFileWriter(client=mock_sftp_client)
+        out_file = writer.write(file=b"foo", file_name="foo.mrc", dir="test")
         assert out_file == "foo.mrc"

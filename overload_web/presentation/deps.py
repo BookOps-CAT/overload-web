@@ -11,7 +11,13 @@ from sqlmodel import Session, SQLModel, create_engine
 from overload_web.application import ports
 from overload_web.application.commands.file_io import LoadVendorFile
 from overload_web.application.services import record_service
-from overload_web.infrastructure import clients, marc_engine, reporter, repository, sftp
+from overload_web.infrastructure import (
+    clients,
+    file_io,
+    marc_engine,
+    reporter,
+    repository,
+)
 from overload_web.presentation import dto
 
 logger = logging.getLogger(__name__)
@@ -65,9 +71,9 @@ class FileProtocol(Protocol):
     file: BinaryIO
 
 
-def remote_file_loader(vendor: str) -> Generator[sftp.SFTPFileLoader, None, None]:
+def remote_file_loader(vendor: str) -> Generator[file_io.SFTPFileLoader, None, None]:
     """Create an SFTP file loader service."""
-    yield sftp.SFTPFileLoader.create_loader_for_vendor(vendor=vendor)
+    yield file_io.SFTPFileLoader.create_loader_for_vendor(vendor=vendor)
 
 
 def fetch_files(
@@ -94,7 +100,7 @@ def fetch_files(
 
     # Remote files
     if remote_file_names and vendor:
-        loader = sftp.SFTPFileLoader.create_loader_for_vendor(vendor)
+        loader = file_io.SFTPFileLoader.create_loader_for_vendor(vendor)
         vendor_dir = os.environ[f"{vendor.upper()}_SRC"]
         for name in remote_file_names:
             loaded = LoadVendorFile.execute(name=name, dir=vendor_dir, loader=loader)

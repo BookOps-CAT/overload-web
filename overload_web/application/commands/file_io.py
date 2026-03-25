@@ -39,23 +39,24 @@ class LoadVendorFile:
         """
         file = loader.load(name=name, dir=dir)
         logger.info(f"File loaded: {name}")
-        return file
+        return files.VendorFile(file_name=name, content=file)
 
 
 class WriteFile:
     @staticmethod
-    def execute(file: files.VendorFile, dir: str, writer: ports.FileWriter) -> str:
+    def execute(file: bytes, file_name: str, dir: str, writer: ports.FileWriter) -> str:
         """
         Write a file to a directory.
 
         Args:
-            file: The file to write as a `files.VendorFile` object.
+            file: The file content to write as a bytes object.
+            file_name: The name of the file as a str.
             dir: The directory where the file should be written.
             writer: concrete implementation of `FileWriter` protocol
 
         Returns:
             the directory and filename where the file was written.
         """
-        out_file = writer.write(file=file, dir=dir)
+        out_file = writer.write(file=file, file_name=file_name, dir=dir)
         logger.info(f"Writing file to directory: {dir}/{out_file}")
         return out_file

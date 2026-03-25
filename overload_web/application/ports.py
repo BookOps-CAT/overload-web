@@ -9,8 +9,6 @@ R = TypeVar("R")  # variabe for `ProcessingStatistics` report type
 S = TypeVar("S")  # variable for `BaseSierraResponse` type
 T = TypeVar("T")  # variable for `bookops_marc.Bib` type
 U = TypeVar("U", contravariant=True)  # variable for `bibs.DomainBib` type
-V = TypeVar("V", covariant=True)  # variable for `VendorFile` within `FileLoader`
-W = TypeVar("W", contravariant=True)  # variable for `VendorFile` within `FileWriter`
 
 
 @runtime_checkable
@@ -42,7 +40,7 @@ class BibFetcher(Protocol[S]):
 
 
 @runtime_checkable
-class FileLoader(Protocol[V]):
+class FileLoader(Protocol):
     """
     A protocol for a service which loads .mrc files for use within Overload.
 
@@ -61,7 +59,7 @@ class FileLoader(Protocol[V]):
         a list of file names as strings
     """
 
-    def load(self, name: str, dir: str) -> V: ...  # pragma: no branch
+    def load(self, name: str, dir: str) -> bytes: ...  # pragma: no branch
 
     """
     Load the content of a specific file.
@@ -76,14 +74,16 @@ class FileLoader(Protocol[V]):
 
 
 @runtime_checkable
-class FileWriter(Protocol[W]):
+class FileWriter(Protocol):
     """
     A protocol for a service which writes .mrc files for use within Overload.
 
     Implementations may interact with an FTP/SFTP server or a local file directory.
     """
 
-    def write(self, file: W, dir: str) -> str: ...  # pragma: no branch
+    def write(
+        self, file: bytes, file_name: str, dir: str
+    ) -> str: ...  # pragma: no branch
 
     """
     Write a content to a specific file.
