@@ -39,14 +39,14 @@ class CreateRecordsProcessingReport:
 class WriteReportToSheet:
     @staticmethod
     def execute(
-        report_data: reports.ProcessingStatistics,
+        data: reports.ProcessingStatistics,
         handler: ports.ReportHandler,
         writer: ports.ReportWriter,
     ) -> None:
-        call_no_report = handler.create_call_number_report(report_data)
+        call_no_report = handler.create_call_number_report(data.call_number_report_data)
         if call_no_report:
             prepped_data = writer.prep_report(data=call_no_report)
             writer.write_report(prepped_data)
-        duplicates_report = handler.create_duplicate_report(report_data)
+        duplicates_report = handler.create_duplicate_report(data.duplicate_report_data)
         prepped_data = writer.prep_report(data=duplicates_report)
         writer.write_report(prepped_data)

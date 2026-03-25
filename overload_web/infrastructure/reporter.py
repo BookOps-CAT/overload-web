@@ -25,19 +25,9 @@ class PandasReportHandler:
         self.record_type = record_type
 
     def create_call_number_report(
-        self, report_data: reports.ProcessingStatistics
+        self, report_data: dict[str, list[Any]]
     ) -> reports.CallNumberReport | None:
-        df = pd.DataFrame(
-            data={
-                "resource_id": report_data.resource_id,
-                "target_bib_id": report_data.target_bib_id,
-                "call_number_match": report_data.call_number_match,
-                "call_number": report_data.call_number,
-                "target_call_no": report_data.target_call_no,
-                "duplicate_records": report_data.duplicate_records,
-                "vendor": report_data.vendor,
-            }
-        )
+        df = pd.DataFrame(data=report_data)
         match_df = df[~df["call_number_match"]]
         if self.record_type == "cat":
             missing_df = df[df["call_number"].isnull() & df["target_call_no"].isnull()]
@@ -55,18 +45,9 @@ class PandasReportHandler:
         )
 
     def create_duplicate_report(
-        self, report_data: reports.ProcessingStatistics
+        self, report_data: dict[str, list[Any]]
     ) -> reports.DuplicateReport:
-        df = pd.DataFrame(
-            data={
-                "resource_id": report_data.resource_id,
-                "target_bib_id": report_data.target_bib_id,
-                "mixed": report_data.mixed,
-                "other": report_data.other,
-                "duplicate_records": report_data.duplicate_records,
-                "vendor": report_data.vendor,
-            }
-        )
+        df = pd.DataFrame(data=report_data)
         filtered_df = df[
             df["duplicate_records"].notnull()
             | df["mixed"].notnull()
@@ -82,11 +63,9 @@ class PandasReportHandler:
         )
 
     def create_vendor_report(
-        self, report_data: reports.ProcessingStatistics
+        self, report_data: dict[str, list[Any]]
     ) -> reports.VendorReport:
-        df = pd.DataFrame(
-            data={"action": report_data.action, "vendor": report_data.vendor}
-        )
+        df = pd.DataFrame(data=report_data)
         vendor_data: dict[str, list[Any]] = {
             "vendor": [],
             "attach": [],

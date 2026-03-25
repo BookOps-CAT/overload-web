@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import TypedDict
+from typing import Any, TypedDict
 
 logger = logging.getLogger(__name__)
 
@@ -53,3 +53,30 @@ class ProcessingStatistics:
     vendor: list[str]
     missing_barcodes: list[str] = field(default_factory=list)
     processing_integrity: bool = True
+
+    @property
+    def call_number_report_data(self) -> dict[str, list[Any]]:
+        return {
+            "resource_id": self.resource_id,
+            "target_bib_id": self.target_bib_id,
+            "call_number_match": self.call_number_match,
+            "call_number": self.call_number,
+            "target_call_no": self.target_call_no,
+            "duplicate_records": self.duplicate_records,
+            "vendor": self.vendor,
+        }
+
+    @property
+    def duplicate_report_data(self) -> dict[str, list[Any]]:
+        return {
+            "resource_id": self.resource_id,
+            "target_bib_id": self.target_bib_id,
+            "mixed": self.mixed,
+            "other": self.other,
+            "duplicate_records": self.duplicate_records,
+            "vendor": self.vendor,
+        }
+
+    @property
+    def vendor_report_data(self) -> dict[str, list[Any]]:
+        return {"action": self.action, "vendor": self.vendor}

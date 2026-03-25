@@ -144,11 +144,15 @@ def pandas_handler(library, collection, record_type):
 )
 class TestRecordsProcessingReports:
     def test_call_number_report(self, stub_report, pandas_handler):
-        report = pandas_handler.create_call_number_report(report_data=stub_report)
+        report = pandas_handler.create_call_number_report(
+            stub_report.call_number_report_data
+        )
         assert report is None
 
     def test_duplicate_report(self, stub_report, pandas_handler):
-        report = pandas_handler.create_duplicate_report(stub_report)
+        report = pandas_handler.create_duplicate_report(
+            stub_report.duplicate_report_data
+        )
         assert report["vendor"] == ["BTSERIES"]
         assert report["resource_id"] == ["9781234567890"]
         assert report["target_bib_id"] == ["12345"]
@@ -157,7 +161,7 @@ class TestRecordsProcessingReports:
         assert report["other"] == [[]]
 
     def test_vendor_report(self, stub_report, pandas_handler):
-        report = pandas_handler.create_vendor_report(stub_report)
+        report = pandas_handler.create_vendor_report(stub_report.vendor_report_data)
         assert report["vendor"] == ["BTSERIES"]
         assert report["attach"] == [1]
         assert report["insert"] == [0]

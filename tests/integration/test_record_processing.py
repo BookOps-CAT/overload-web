@@ -119,7 +119,7 @@ class TestWriteReport:
         )
         report = CreateRecordsProcessingReport.execute(processed=out, handler=handler)
         writer = reporter.GoogleSheetsReporter()
-        WriteReportToSheet.execute(report_data=report, handler=handler, writer=writer)
+        WriteReportToSheet.execute(data=report, handler=handler, writer=writer)
         assert (
             "Data written to Google Sheet: {'spreadsheetId': 'foo', 'tableRange': 'bar'}"
             in caplog.text
@@ -156,7 +156,7 @@ class TestWriteReport:
         )
         report = CreateRecordsProcessingReport.execute(processed=[out], handler=handler)
         writer = reporter.GoogleSheetsReporter()
-        WriteReportToSheet.execute(report_data=report, handler=handler, writer=writer)
+        WriteReportToSheet.execute(data=report, handler=handler, writer=writer)
         assert (
             "Data written to Google Sheet: {'spreadsheetId': 'foo', 'tableRange': 'bar'}"
             in caplog.text
