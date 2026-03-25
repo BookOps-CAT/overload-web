@@ -1,6 +1,6 @@
 {% import "macros/context.html" as macro %}
-<div id="context-section" class="col-9">
-  <form id="context-form" action="/process" method="post">
+<form id="context-form" action="/process" method="post">
+  <div id="context-section" class="col-9">
     <div class="row">
       <div class="col" id="record_type_wrapper">
         {{ macro.context_form_field( "record_type", context_fields["record_type"], disabled=False) }}
@@ -11,5 +11,5 @@
       </div>
     </div>
     <button class="btn my-3" form="context-form" style="border-color: #d52828" type="submit">Submit</button>
-  </form>
-</div>
+  </div>
+</form>

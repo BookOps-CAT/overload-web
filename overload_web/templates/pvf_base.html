@@ -1,0 +1,15 @@
+{% extends 'base.html' %} {% block header %}
+<h2>{{ page_title }}</h2>
+{% endblock %} {% block content %} {% block pvf_body %}
+<div class="container text-left">
+  <div class="row gy-1 my-2">{% block pvf_context_source %}{% endblock %}</div>
+
+  <div class="row gy-1 my-2">{% block pvf_file_source %}{% endblock %}</div>
+
+  <div class="row gy-1 my-2">{% block pvf_template_source %}{% endblock %}</div>
+
+  <div class="row gy-1 my-2">{% block pvf_button %}{% include "pvf_partials/pvf_button.html" %}{% endblock %}</div>
+</div>
+{% endblock %}{% block pvf_output %}
+<div id="pvf_output"></div>
+{% endblock %} {% endblock %}

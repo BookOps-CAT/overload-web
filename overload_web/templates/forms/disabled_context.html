@@ -1,6 +1,6 @@
 {% import "macros/context.html" as macro %}
-<div id="context-section" class="row gy-1 my-2">
-  <div class="col-10">
+<div class="row gy-1 my-2">
+  <div id="context-section" class="col-9">
     <div class="row">
       {% for field_id, field_data in context_fields.items() %}
       <div class="col">
@@ -16,7 +16,7 @@
       </div>
     </div>
   </div>
-  <div class="col">
+  <div class="col-3">
     <div class="row" id="library-img">
       <img src="{{ url_for('static', path='images/' ~ context.library ~ 'Logo.gif') }}" class="img-fluid" /><br />
       <h3>{{context_fields['collection']['options'][context.collection]}}</h3>

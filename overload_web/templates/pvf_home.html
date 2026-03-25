@@ -1,0 +1,5 @@
+{% extends 'pvf_base.html' %} {% block header %}
+<h2>{{ page_title }}</h2>
+{% endblock %} {% block content %} {% block pvf_body %} {% block pvf_context_source %}
+<div id="context-section" class="col" hx-get="/htmx/forms/context" hx-target="this" hx-trigger="load"></div>
+{% endblock %} {% block pvf_button %}{% endblock %} {% endblock %}{% endblock %}

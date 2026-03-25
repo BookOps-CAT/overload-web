@@ -61,7 +61,5 @@ def get_collection_field(request: Request, library: str):
         )
 
     return request.app.state.templates.TemplateResponse(
-        name="forms/collection_field.html",
-        request=request,
-        context={"disabled": True},
+        name="forms/collection_field.html", request=request, context={"disabled": True}
     )
