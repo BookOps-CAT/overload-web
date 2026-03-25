@@ -187,18 +187,20 @@ def list_remote_files(
 @api_router.post("/full-records/process-vendor-file", response_class=HTMLResponse)
 def process_full_records(
     request: Request,
-    service_handler: Annotated[Any, Depends(deps.get_pvf_handler)],
+    fetcher: Annotated[Any, Depends(deps.get_fetcher)],
+    marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
     local_files: Annotated[list[UploadFile] | None, Form()] = None,
     remote_file_names: Annotated[list[str] | None, Form()] = None,
     vendor: Annotated[str | None, Form()] = None,
 ) -> HTMLResponse:
     """
-    Process one or more files of MARC records.
+    Process one or more files of full-level MARC records.
 
     Args:
-        service_handler:
-            a `ProcessingHandler` object created using library, collection,
-            and record_type args
+        marc_engine:
+            a `ports.MarcEnginePort` object used by the command.
+        fetcher:
+            a `ports.BibFetcher` object used by the command.
         local_files:
             a list of files from a local upload as `VendorFileModel` objects.
         remote_files:
@@ -213,9 +215,11 @@ def process_full_records(
         local_files=local_files, remote_file_names=remote_file_names, vendor=vendor
     )
     combined = CombineMarcFiles.execute(
-        data=[i.content for i in all_files], handler=service_handler
+        data=[i.content for i in all_files], marc_engine=marc_engine
     )
-    processed = ProcessFullRecords.execute(data=combined, handler=service_handler)
+    processed = ProcessFullRecords.execute(
+        data=combined, marc_engine=marc_engine, fetcher=fetcher
+    )
     report = CreateFullRecordsProcessingReport.execute(
         processed, file_names=[i.file_name for i in all_files]
     )
@@ -229,7 +233,8 @@ def process_full_records(
 @api_router.post("/order-records/process-vendor-file", response_class=HTMLResponse)
 def process_order_records(
     request: Request,
-    service_handler: Annotated[Any, Depends(deps.get_pvf_handler)],
+    fetcher: Annotated[Any, Depends(deps.get_fetcher)],
+    marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
     order_template: Annotated[Any, Depends(dto.from_form(dto.TemplateDataModel))],
     matchpoints: Annotated[Any, Depends(dto.from_form(dto.MatchpointSchema))],
     local_files: Annotated[list[UploadFile] | None, Form()] = None,
@@ -237,14 +242,13 @@ def process_order_records(
     vendor: Annotated[str | None, Form()] = None,
 ) -> HTMLResponse:
     """
-    Process one or more files of MARC records.
-
-    Uses a `ProcessingHandler` to process MARC records.
+    Process one or more files of order-level MARC records.
 
     Args:
-        service_handler:
-            a `ProcessingHandler` created using library, collection,
-            and record_type args.
+        marc_engine:
+            a `ports.MarcEnginePort` object used by the command.
+        fetcher:
+            a `ports.BibFetcher` object used by the command.
         local_files:
             a list of files from a local upload as `VendorFileModel` objects.
         remote_files:
@@ -266,7 +270,8 @@ def process_order_records(
     for file in all_files:
         out_file = ProcessOrderRecords.execute(
             data=file.content,
-            handler=service_handler,
+            marc_engine=marc_engine,
+            fetcher=fetcher,
             template_data=order_template.model_dump(),
             matchpoints=matchpoints.model_dump(),
             file_name=file.file_name,

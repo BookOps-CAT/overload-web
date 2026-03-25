@@ -8,9 +8,7 @@ from typing import Annotated, Any, BinaryIO, Generator, Protocol, runtime_checka
 from fastapi import Depends, Form, UploadFile
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.application import ports
 from overload_web.application.commands.file_io import LoadVendorFile
-from overload_web.application.services import record_service
 from overload_web.infrastructure import clients, file_io, marc_engine, repository
 from overload_web.presentation import dto
 
@@ -128,16 +126,13 @@ def get_marc_engine_config(
 
 def get_fetcher(
     library: Annotated[str, Form(...)],
-) -> Generator[ports.BibFetcher, None, None]:
+) -> Generator[clients.SierraBibFetcher, None, None]:
     """Create a Sierra bib fetcher service for a library."""
     yield clients.FetcherFactory().make(library)
 
 
-def get_pvf_handler(
-    fetcher: Annotated[ports.BibFetcher, Depends(get_fetcher)],
+def get_marc_engine(
     config: Annotated[marc_engine.MarcEngineConfig, Depends(get_marc_engine_config)],
-) -> Generator[record_service.ProcessingHandler, None, None]:
+) -> Generator[marc_engine.MarcEngine, None, None]:
     """Create a record processing service with injected dependencies."""
-    yield record_service.ProcessingHandler(
-        fetcher=fetcher, engine=marc_engine.MarcEngine(rules=config)
-    )
+    yield marc_engine.MarcEngine(rules=config)

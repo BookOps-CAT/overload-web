@@ -10,7 +10,6 @@ from overload_web.application.commands.statistics import (
     CreateOrderRecordsProcessingReport,
     WriteReportToSheet,
 )
-from overload_web.application.services import record_service
 from overload_web.domain.errors import OverloadError
 from overload_web.infrastructure import marc_engine, reporter
 
@@ -23,13 +22,13 @@ class TestProcessBatch:
     def test_full_service_process_vendor_file(
         self, library, fake_fetcher, engine_config
     ):
-        command_handler = record_service.ProcessingHandler(
-            fetcher=fake_fetcher, engine=marc_engine.MarcEngine(rules=engine_config)
-        )
+        engine = marc_engine.MarcEngine(rules=engine_config)
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        combined = CombineMarcFiles.execute(data=[marc_data], handler=command_handler)
-        out = ProcessFullRecords.execute(combined, handler=command_handler)
+        combined = CombineMarcFiles.execute(data=[marc_data], marc_engine=engine)
+        out = ProcessFullRecords.execute(
+            combined, marc_engine=engine, fetcher=fake_fetcher
+        )
         assert isinstance(out.records, list)
 
     @pytest.mark.parametrize(
@@ -39,14 +38,14 @@ class TestProcessBatch:
     def test_order_service_process_vendor_file(
         self, library, fake_fetcher, engine_config
     ):
-        command_handler = record_service.ProcessingHandler(
-            fetcher=fake_fetcher, engine=marc_engine.MarcEngine(rules=engine_config)
-        )
+        engine = marc_engine.MarcEngine(rules=engine_config)
+
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
         out = ProcessOrderRecords.execute(
             marc_data,
-            handler=command_handler,
+            marc_engine=engine,
+            fetcher=fake_fetcher,
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
             file_name="foo.mrc",
@@ -60,13 +59,14 @@ class TestProcessBatch:
     def test_full_service_process_vendor_file_dupes(
         self, library, fake_fetcher, engine_config
     ):
-        command_handler = record_service.ProcessingHandler(
-            fetcher=fake_fetcher, engine=marc_engine.MarcEngine(rules=engine_config)
-        )
+        engine = marc_engine.MarcEngine(rules=engine_config)
+
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
         with pytest.raises(OverloadError) as exc:
-            ProcessFullRecords.execute(marc_data, handler=command_handler)
+            ProcessFullRecords.execute(
+                marc_data, marc_engine=engine, fetcher=fake_fetcher
+            )
         assert "Duplicate barcodes found in file: " in str(exc.value)
 
     @pytest.mark.parametrize(
@@ -76,15 +76,15 @@ class TestProcessBatch:
     def test_order_service_process_vendor_file_dupes(
         self, library, fake_fetcher, engine_config
     ):
-        command_handler = record_service.ProcessingHandler(
-            fetcher=fake_fetcher, engine=marc_engine.MarcEngine(rules=engine_config)
-        )
+        engine = marc_engine.MarcEngine(rules=engine_config)
+
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
         with pytest.raises(OverloadError) as exc:
             ProcessOrderRecords.execute(
                 marc_data,
-                handler=command_handler,
+                marc_engine=engine,
+                fetcher=fake_fetcher,
                 template_data={"format": "a"},
                 matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
                 file_name="foo.mrc",
@@ -107,13 +107,13 @@ class TestWriteReport:
         collection,
         record_type,
     ):
-        command_handler = record_service.ProcessingHandler(
-            fetcher=fake_fetcher, engine=marc_engine.MarcEngine(rules=engine_config)
-        )
+        engine = marc_engine.MarcEngine(rules=engine_config)
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        combined = CombineMarcFiles.execute(data=[marc_data], handler=command_handler)
-        out = ProcessFullRecords.execute(combined, handler=command_handler)
+        combined = CombineMarcFiles.execute(data=[marc_data], marc_engine=engine)
+        out = ProcessFullRecords.execute(
+            combined, marc_engine=engine, fetcher=fake_fetcher
+        )
         assert isinstance(out.records, list)
         handler = reporter.PandasReportHandler(
             library=library, collection=collection, record_type=record_type
@@ -142,14 +142,13 @@ class TestWriteReport:
         collection,
         record_type,
     ):
-        command_handler = record_service.ProcessingHandler(
-            fetcher=fake_fetcher, engine=marc_engine.MarcEngine(rules=engine_config)
-        )
+        engine = marc_engine.MarcEngine(rules=engine_config)
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
         out = ProcessOrderRecords.execute(
             marc_data,
-            handler=command_handler,
+            marc_engine=engine,
+            fetcher=fake_fetcher,
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
             file_name="foo.mrc",
