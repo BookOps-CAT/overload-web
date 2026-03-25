@@ -1,5 +1,6 @@
 """Dependency injection functions."""
 
+import json
 import logging
 import os
 from typing import Annotated, Any, BinaryIO, Generator, Protocol, runtime_checkable
@@ -10,14 +11,7 @@ from sqlmodel import Session, SQLModel, create_engine
 from overload_web.application import ports
 from overload_web.application.commands.file_io import LoadVendorFile
 from overload_web.application.services import record_service
-from overload_web.infrastructure import (
-    clients,
-    loader,
-    marc_engine,
-    reporter,
-    repository,
-    sftp,
-)
+from overload_web.infrastructure import clients, marc_engine, reporter, repository, sftp
 from overload_web.presentation import dto
 
 logger = logging.getLogger(__name__)
@@ -115,14 +109,20 @@ def fetch_files(
 def get_marc_engine_config(
     library: Annotated[str, Form(...)],
     collection: Annotated[str, Form(...)],
-    constants: Annotated[dict[str, Any], Depends(loader.load_config)],
     record_type: Annotated[str, Form(...)],
 ) -> marc_engine.MarcEngineConfig:
-    return loader.marc_engine_config_from_constants(
-        constants=constants,
+    with open("overload_web/data/mapping_specs.json", "r", encoding="utf-8") as fh:
+        constants = json.load(fh)
+    return marc_engine.MarcEngineConfig(
+        marc_order_mapping=constants["marc_order_mapping"],
+        default_loc=constants["default_locations"][library].get(collection),
+        bib_id_tag=constants["bib_id_tag"][library],
         library=library,
-        collection=collection,
         record_type=record_type,
+        collection=collection,
+        parser_bib_mapping=constants["bib_domain_mapping"],
+        parser_order_mapping=constants["order_domain_mapping"],
+        parser_vendor_mapping=constants["vendor_info_options"][library],
     )
 
 

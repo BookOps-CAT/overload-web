@@ -5,8 +5,7 @@ from typing import Any, Iterator, Protocol, Sequence, TypeVar, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
-P = TypeVar("P")  # variabe for `ProcessingStatistics`
-R = TypeVar("R", covariant=True)  # variable for report typed dict type
+R = TypeVar("R")  # variabe for `ProcessingStatistics` report type
 S = TypeVar("S")  # variable for `BaseSierraResponse` type
 T = TypeVar("T")  # variable for `bookops_marc.Bib` type
 U = TypeVar("U", contravariant=True)  # variable for `bibs.DomainBib` type
@@ -170,16 +169,22 @@ class SqlRepositoryProtocol(Protocol[T]):
     def update(self, id: str, data: T) -> T | None: ...  # pragma: no branch
 
 
-class ReportHandler(Protocol[R]):
+class ReportHandler(Protocol):
     library: str
     collection: str | None
     record_type: str
 
-    def create_call_number_report(self, report_data: P) -> R: ...  # pragma: no branch
+    def create_call_number_report(
+        self, report_data: R
+    ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
-    def create_duplicate_report(self, report_data: P) -> R: ...  # pragma: no branch
+    def create_duplicate_report(
+        self, report_data: R
+    ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
-    def create_vendor_report(self, report_data: P) -> R: ...  # pragma: no branch
+    def create_vendor_report(
+        self, report_data: R
+    ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
     def list2dict(
         self, report_data: list[Any]
@@ -188,11 +193,11 @@ class ReportHandler(Protocol[R]):
 
 class ReportWriter(Protocol):
     def report_to_html(
-        self, report_data: P, classes: list[str]
+        self, report_data: R, classes: list[str]
     ) -> str: ...  # pragma: no branch
 
     def summary_report_output(
-        self, report_data: P, classes: list[str]
+        self, report_data: R, classes: list[str]
     ) -> dict[str, str]: ...  # pragma: no branch
 
     def prep_report(
