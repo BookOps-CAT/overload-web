@@ -26,7 +26,7 @@ class CreateOrderTemplate:
             The saved template as an `OrderTemplate` object.
         """
         save_template = repository.save(obj=obj)
-        return templates.OrderTemplate(**save_template.model_dump())
+        return templates.OrderTemplate(**save_template)
 
 
 class GetOrderTemplate:
@@ -44,7 +44,10 @@ class GetOrderTemplate:
         Returns:
             The retrieved template as a `OrderTemplate` object or None.
         """
-        return repository.get(id=template_id)
+        data = repository.get(id=template_id)
+        if data:
+            return templates.OrderTemplate(**data)
+        return None
 
 
 class ListOrderTemplates:
@@ -65,7 +68,8 @@ class ListOrderTemplates:
         Returns:
             A list of `OrderTemplate` objects.
         """
-        return repository.list(offset=offset, limit=limit)
+        template_list = repository.list(offset=offset, limit=limit)
+        return [templates.OrderTemplate(**i) for i in template_list]
 
 
 class UpdateOrderTemplate:
@@ -87,4 +91,7 @@ class UpdateOrderTemplate:
             The updated template as an `OrderTemplate` or None if the template
             does not exist.
         """
-        return repository.update(id=template_id, data=obj)
+        data = repository.update(id=template_id, data=obj)
+        if data:
+            return templates.OrderTemplate(**data)
+        return None

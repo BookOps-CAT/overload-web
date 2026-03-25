@@ -10,11 +10,10 @@ Classes:
 from __future__ import annotations
 
 import logging
-from typing import Sequence
+from typing import Any, Sequence
 
 from sqlmodel import Session, select
 
-from overload_web.domain.models import templates
 from overload_web.infrastructure import tables
 
 logger = logging.getLogger(__name__)
@@ -33,7 +32,7 @@ class OrderTemplateRepository:
     def __init__(self, session: Session):
         self.session = session
 
-    def get(self, id: str | int) -> templates.OrderTemplate | None:
+    def get(self, id: str | int) -> dict[str, Any] | None:
         """
         Retrieve a `OrderTemplate` object by its ID.
 
@@ -44,11 +43,11 @@ class OrderTemplateRepository:
             a `OrderTemplate` instance or `None` if not found.
         """
         template = self.session.get(tables.TemplateTable, id)
-        return templates.OrderTemplate(**template.model_dump()) if template else None
+        return template.model_dump() if template else None
 
     def list(
         self, offset: int | None = 0, limit: int | None = 0
-    ) -> Sequence[templates.OrderTemplate]:
+    ) -> Sequence[dict[str, Any]]:
         """
         Retrieve all `OrderTemplate` objects in the database.
 
@@ -62,9 +61,9 @@ class OrderTemplateRepository:
         statement = select(tables.TemplateTable).offset(offset).limit(limit)
         results = self.session.exec(statement)
         all_templates = results.all()
-        return [templates.OrderTemplate(**i.model_dump()) for i in all_templates]
+        return [i.model_dump() for i in all_templates]
 
-    def save(self, obj: tables.TemplateTable) -> tables.TemplateTable:
+    def save(self, obj: tables.TemplateTable) -> dict[str, Any]:
         """
         Adds a new `TemplateTable` to the database.
 
@@ -75,9 +74,9 @@ class OrderTemplateRepository:
         self.session.add(valid_obj)
         self.session.commit()
         self.session.refresh(valid_obj)
-        return valid_obj
+        return valid_obj.model_dump()
 
-    def update(self, id: str, data: tables.SQLModel) -> templates.OrderTemplate | None:
+    def update(self, id: str, data: tables.SQLModel) -> dict[str, Any] | None:
         """
         Updates an existing `OrderTemplate` in the database.
 
@@ -96,4 +95,4 @@ class OrderTemplateRepository:
             self.session.add(template)
             self.session.commit()
             self.session.refresh(template)
-        return templates.OrderTemplate(**template.model_dump()) if template else None
+        return template.model_dump() if template else None

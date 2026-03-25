@@ -7,8 +7,9 @@ logger = logging.getLogger(__name__)
 
 R = TypeVar("R")  # variabe for `ProcessingStatistics` report type
 S = TypeVar("S")  # variable for `BaseSierraResponse` type
-T = TypeVar("T")  # variable for `bookops_marc.Bib` type
+T = TypeVar("T", contravariant=True)  # variable for `OrderTemplate` type
 U = TypeVar("U", contravariant=True)  # variable for `bibs.DomainBib` type
+V = TypeVar("V")  # variable for `bibs.DomainBib` type
 
 
 @runtime_checkable
@@ -98,7 +99,7 @@ class FileWriter(Protocol):
 
 
 @runtime_checkable
-class MarcEnginePort(Protocol[T, U]):
+class MarcEnginePort(Protocol[U, V]):
     bib_rules: dict[str, Any]
     library: str
     order_rules: dict[str, Any]
@@ -107,11 +108,11 @@ class MarcEnginePort(Protocol[T, U]):
     vendor_rules: dict[str, Any]
     _config: Any
 
-    def create_bib_from_domain(self, record: U) -> T: ...  # pragma:no branch
+    def create_bib_from_domain(self, record: U) -> V: ...  # pragma:no branch
 
     """Create a `bookops_marc.Bib` object from a `DomainBib` object"""
 
-    def get_command_tag_field(self, bib: T) -> Any | None: ...  # pragma: no branch
+    def get_command_tag_field(self, bib: V) -> Any | None: ...  # pragma: no branch
 
     """Get the Sierra command tag from a bib record if present."""
 
@@ -120,17 +121,17 @@ class MarcEnginePort(Protocol[T, U]):
     """Instantiate an object that can read MARC binary as an iterator."""
 
     def get_value_of_field(
-        self, tag: str, bib: T
+        self, tag: str, bib: V
     ) -> str | None: ...  # pragma: no branch
 
     """Get the value of a MARC field by it's tag. Retrieves first field."""
 
     def get_vendor_tags_from_bib(
-        self, record: T, tags: dict[str, dict[str, str]]
+        self, record: V, tags: dict[str, dict[str, str]]
     ) -> bool: ...  # pragma:no branch
 
     def identify_vendor(
-        self, record: T, rules: dict[str, Any]
+        self, record: V, rules: dict[str, Any]
     ) -> dict[str, Any]: ...  # pragma: no branch
 
     """Determine the vendor who created a `bookops_marc.Bib` record."""
@@ -142,7 +143,7 @@ class MarcEnginePort(Protocol[T, U]):
     """Map an object to a dictionary following a set of rules."""
 
     def update_fields(
-        self, field_updates: list[Any], bib: T
+        self, field_updates: list[Any], bib: V
     ) -> None: ...  # pragma:no branch
 
     """Update record in place"""
@@ -158,15 +159,17 @@ class SqlRepositoryProtocol(Protocol[T]):
 
     session: Any
 
-    def get(self, id: str) -> T | None: ...  # pragma: no branch
+    def get(self, id: str) -> dict[str, Any] | None: ...  # pragma: no branch
 
     def list(
         self, offset: int | None = 0, limit: int | None = 0
-    ) -> Sequence[T]: ...  # pragma: no branch
+    ) -> Sequence[dict[str, Any]]: ...  # pragma: no branch
 
-    def save(self, obj: T) -> T: ...  # pragma: no branch
+    def save(self, obj: T) -> dict[str, Any]: ...  # pragma: no branch
 
-    def update(self, id: str, data: T) -> T | None: ...  # pragma: no branch
+    def update(
+        self, id: str, data: T
+    ) -> dict[str, Any] | None: ...  # pragma: no branch
 
 
 class ReportHandler(Protocol):
