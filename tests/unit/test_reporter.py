@@ -114,8 +114,8 @@ def stub_report(sel_bib, sierra_response, record_type):
     sel_bib.apply_match(analysis)
     return reports.ProcessingStatistics(
         file_names=["foo.mrc"],
-        total_files_processed=1,
-        total_records_processed=1,
+        total_files=1,
+        total_records=1,
         vendor=["BTSERIES"],
         resource_id=[sel_bib.analysis.resource_id],
         target_bib_id=[sel_bib.analysis.target_bib_id],

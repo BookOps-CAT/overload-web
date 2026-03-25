@@ -22,7 +22,10 @@ from overload_web.application.commands.process import (
     ProcessFullRecords,
     ProcessOrderRecords,
 )
-from overload_web.application.commands.statistics import CreateRecordsProcessingReport
+from overload_web.application.commands.statistics import (
+    CreateFullRecordsProcessingReport,
+    CreateOrderRecordsProcessingReport,
+)
 from overload_web.presentation import deps, dto
 
 logger = logging.getLogger(__name__)
@@ -185,7 +188,6 @@ def list_remote_files(
 def process_full_records(
     request: Request,
     service_handler: Annotated[Any, Depends(deps.get_pvf_handler)],
-    report_handler: Annotated[Any, Depends(deps.get_report_handler)],
     local_files: Annotated[list[UploadFile] | None, Form()] = None,
     remote_file_names: Annotated[list[str] | None, Form()] = None,
     vendor: Annotated[str | None, Form()] = None,
@@ -201,6 +203,8 @@ def process_full_records(
             a list of files from a local upload as `VendorFileModel` objects.
         remote_files:
             a list of vendor files from a vendor's SFTP as `VendorFileModel` objects.
+        vendor:
+            the vendor whose files are being processed as a string.
     Returns:
         the processed files and report data wrapped in a `HTMLResponse` object
 
@@ -212,7 +216,9 @@ def process_full_records(
         data=[i.content for i in all_files], handler=service_handler
     )
     processed = ProcessFullRecords.execute(data=combined, handler=service_handler)
-    report = CreateRecordsProcessingReport.execute(processed, handler=report_handler)
+    report = CreateFullRecordsProcessingReport.execute(
+        processed, file_names=[i.file_name for i in all_files]
+    )
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
@@ -226,7 +232,6 @@ def process_order_records(
     service_handler: Annotated[Any, Depends(deps.get_pvf_handler)],
     order_template: Annotated[Any, Depends(dto.from_form(dto.TemplateDataModel))],
     matchpoints: Annotated[Any, Depends(dto.from_form(dto.MatchpointSchema))],
-    report_handler: Annotated[Any, Depends(deps.get_report_handler)],
     local_files: Annotated[list[UploadFile] | None, Form()] = None,
     remote_file_names: Annotated[list[str] | None, Form()] = None,
     vendor: Annotated[str | None, Form()] = None,
@@ -249,8 +254,6 @@ def process_order_records(
         matchpoints:
             a list of matchpoints loaded from an order template in the database or
             input via an html form.
-        reporter:
-            A `ports.ReportHandler` object
 
     Returns:
         the processed files and report data wrapped in a `HTMLResponse` object
@@ -269,7 +272,7 @@ def process_order_records(
             file_name=file.file_name,
         )
         out_files.append(out_file)
-    report = CreateRecordsProcessingReport.execute(out_files, handler=report_handler)
+    report = CreateOrderRecordsProcessingReport.execute(out_files)
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",

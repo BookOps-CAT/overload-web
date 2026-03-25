@@ -13,8 +13,6 @@ from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
 from googleapiclient.discovery import build  # type: ignore
 from googleapiclient.errors import HttpError  # type: ignore
 
-from overload_web.domain.models import reports
-
 logger = logging.getLogger(__name__)
 
 
@@ -26,7 +24,7 @@ class PandasReportHandler:
 
     def create_call_number_report(
         self, report_data: dict[str, list[Any]]
-    ) -> reports.CallNumberReport | None:
+    ) -> dict[str, list[Any]] | None:
         df = pd.DataFrame(data=report_data)
         match_df = df[~df["call_number_match"]]
         if self.record_type == "cat":
@@ -34,45 +32,26 @@ class PandasReportHandler:
             match_df = pd.concat([match_df, missing_df])
         if match_df.empty:
             return None
-        return reports.CallNumberReport(
-            resource_id=match_df["resource_id"].to_list(),
-            target_bib_id=match_df["target_bib_id"].to_list(),
-            call_number_match=match_df["call_number_match"].to_list(),
-            call_number=match_df["call_number"].to_list(),
-            target_call_no=match_df["target_call_no"].to_list(),
-            duplicate_records=match_df["duplicate_records"].to_list(),
-            vendor=match_df["vendor"].to_list(),
-        )
+        df_dict = match_df.to_dict("list")
+        return {str(k): v for k, v in df_dict.items()}
 
     def create_duplicate_report(
         self, report_data: dict[str, list[Any]]
-    ) -> reports.DuplicateReport:
+    ) -> dict[str, list[Any]]:
         df = pd.DataFrame(data=report_data)
         filtered_df = df[
             df["duplicate_records"].notnull()
             | df["mixed"].notnull()
             | df["other"].notnull()
         ]
-        return reports.DuplicateReport(
-            vendor=filtered_df["vendor"].to_list(),
-            resource_id=filtered_df["resource_id"].to_list(),
-            target_bib_id=filtered_df["target_bib_id"].to_list(),
-            duplicate_records=filtered_df["duplicate_records"].to_list(),
-            mixed=filtered_df["mixed"].to_list(),
-            other=filtered_df["other"].to_list(),
-        )
+        df_dict = filtered_df.to_dict("list")
+        return {str(k): v for k, v in df_dict.items()}
 
     def create_vendor_report(
-        self, report_data: dict[str, list[Any]]
-    ) -> reports.VendorReport:
+        self, report_data: dict[str, list[str]]
+    ) -> dict[str, list[Any]]:
         df = pd.DataFrame(data=report_data)
-        vendor_data: dict[str, list[Any]] = {
-            "vendor": [],
-            "attach": [],
-            "insert": [],
-            "update": [],
-            "total": [],
-        }
+        vendor_data = defaultdict(list)
         for vendor, content in df.groupby("vendor"):
             attach = content[content["action"] == "attach"]["action"].count()
             insert = content[content["action"] == "insert"]["action"].count()
@@ -82,20 +61,7 @@ class PandasReportHandler:
             vendor_data["insert"].append(insert)
             vendor_data["update"].append(update)
             vendor_data["total"].append(attach + insert + update)
-        return reports.VendorReport(
-            vendor=vendor_data["vendor"],
-            attach=vendor_data["attach"],
-            insert=vendor_data["insert"],
-            update=vendor_data["update"],
-            total=vendor_data["total"],
-        )
-
-    def list2dict(self, report_data: list[dict[str, Any]]) -> dict[str, list[Any]]:
-        out = defaultdict(list)
-        for report in report_data:
-            for k, v in report.items():
-                out[k].append(v)
-        return dict(out)
+        return vendor_data
 
 
 class GoogleSheetsReporter:
@@ -154,7 +120,7 @@ class GoogleSheetsReporter:
         except (ValueError, RefreshError) as e:
             raise e
 
-    def prep_report(self, data: dict[str, list[Any]]) -> list[list[Any]]:
+    def prep_report(self, data: dict[str, list[Any]]) -> list[list[str]]:
         """
         Prep output for google sheet.
 
@@ -168,7 +134,7 @@ class GoogleSheetsReporter:
         df.fillna("", inplace=True)
         return df.values.tolist()
 
-    def write_report(self, data: list[list[Any]]) -> None:
+    def write_report(self, data: list[list[str]]) -> None:
         """
         Write output to google sheet.
 

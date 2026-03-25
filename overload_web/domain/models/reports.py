@@ -47,8 +47,8 @@ class ProcessingStatistics:
     target_bib_id: list[str]
     target_call_no: list[str]
     target_title: list[str]
-    total_files_processed: int
-    total_records_processed: int
+    total_files: int
+    total_records: int
     updated_by_vendor: list[str]
     vendor: list[str]
     missing_barcodes: list[str] = field(default_factory=list)

@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from typing import Any
 
 from overload_web.application import ports
@@ -7,33 +8,45 @@ from overload_web.domain.models import bibs, reports
 logger = logging.getLogger(__name__)
 
 
-class CreateRecordsProcessingReport:
+class CreateOrderRecordsProcessingReport:
     @staticmethod
     def execute(
-        processed: bibs.ProcessedMarcFile | list[bibs.ProcessedMarcFile],
-        handler: ports.ReportHandler,
+        processed: list[bibs.ProcessedMarcFile],
     ) -> reports.ProcessingStatistics:
-        file_names = []
-        missing_barcodes = []
+        stats = defaultdict(list)
         all_recs = []
-        if isinstance(processed, list):
-            for file in processed:
-                file_names.append(file.file_name)
-                missing_barcodes.extend(file.missing_barcodes)
-                all_recs.extend(file.records)
-        else:
-            file_names.append(processed.file_name)
-            missing_barcodes.extend(processed.missing_barcodes)
-            all_recs.extend(processed.records)
-        data_dict: dict[str, Any] = {
-            "total_records_processed": len(all_recs),
-            "file_names": file_names,
-            "total_files_processed": len(file_names),
-            "missing_barcodes": missing_barcodes,
-            "vendor": [i.vendor for i in all_recs],
-        }
-        data_dict.update(handler.list2dict([i.analysis.__dict__ for i in all_recs]))
-        return reports.ProcessingStatistics(**data_dict)
+        for file in processed:
+            stats["file_names"].append(file.file_name)
+            stats["missing_barcodes"].extend(file.missing_barcodes)
+            all_recs.extend(file.records)
+            for rec in file.records:
+                for k, v in rec.analysis.__dict__.items():
+                    stats[k].append(v)
+                stats["vendor"].append(rec.vendor)
+        out: dict[str, Any] = dict(stats)
+        out["total_records"] = len(all_recs)
+        out["total_files"] = len(stats["file_names"])
+        return reports.ProcessingStatistics(**out)
+
+
+class CreateFullRecordsProcessingReport:
+    @staticmethod
+    def execute(
+        processed: bibs.ProcessedMarcFile, file_names: list[str]
+    ) -> reports.ProcessingStatistics:
+        stats = defaultdict(list)
+        all_recs = []
+        stats["file_names"].extend(file_names)
+        stats["missing_barcodes"].extend(processed.missing_barcodes)
+        all_recs.extend(processed.records)
+        for rec in all_recs:
+            for k, v in rec.analysis.__dict__.items():
+                stats[k].append(v)
+            stats["vendor"].append(getattr(rec, "vendor", "UNKNOWN"))
+        out: dict[str, Any] = dict(stats)
+        out["total_records"] = len(all_recs)
+        out["total_files"] = len(stats["file_names"])
+        return reports.ProcessingStatistics(**out)
 
 
 class WriteReportToSheet:

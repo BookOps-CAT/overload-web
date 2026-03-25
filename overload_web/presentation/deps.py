@@ -11,13 +11,7 @@ from sqlmodel import Session, SQLModel, create_engine
 from overload_web.application import ports
 from overload_web.application.commands.file_io import LoadVendorFile
 from overload_web.application.services import record_service
-from overload_web.infrastructure import (
-    clients,
-    file_io,
-    marc_engine,
-    reporter,
-    repository,
-)
+from overload_web.infrastructure import clients, file_io, marc_engine, repository
 from overload_web.presentation import dto
 
 logger = logging.getLogger(__name__)
@@ -146,14 +140,4 @@ def get_pvf_handler(
     """Create a record processing service with injected dependencies."""
     yield record_service.ProcessingHandler(
         fetcher=fetcher, engine=marc_engine.MarcEngine(rules=config)
-    )
-
-
-def get_report_handler(
-    library: Annotated[str, Form(...)],
-    collection: Annotated[str, Form(...)],
-    record_type: Annotated[str, Form(...)],
-) -> reporter.PandasReportHandler:
-    return reporter.PandasReportHandler(
-        library=library, collection=collection, record_type=record_type
     )

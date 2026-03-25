@@ -6,7 +6,8 @@ from overload_web.application.commands.process import (
     ProcessOrderRecords,
 )
 from overload_web.application.commands.statistics import (
-    CreateRecordsProcessingReport,
+    CreateFullRecordsProcessingReport,
+    CreateOrderRecordsProcessingReport,
     WriteReportToSheet,
 )
 from overload_web.application.services import record_service
@@ -117,7 +118,9 @@ class TestWriteReport:
         handler = reporter.PandasReportHandler(
             library=library, collection=collection, record_type=record_type
         )
-        report = CreateRecordsProcessingReport.execute(processed=out, handler=handler)
+        report = CreateFullRecordsProcessingReport.execute(
+            processed=out, file_names=["foo.mrc"]
+        )
         writer = reporter.GoogleSheetsReporter()
         WriteReportToSheet.execute(data=report, handler=handler, writer=writer)
         assert (
@@ -154,7 +157,7 @@ class TestWriteReport:
         handler = reporter.PandasReportHandler(
             library=library, collection=collection, record_type=record_type
         )
-        report = CreateRecordsProcessingReport.execute(processed=[out], handler=handler)
+        report = CreateOrderRecordsProcessingReport.execute(processed=[out])
         writer = reporter.GoogleSheetsReporter()
         WriteReportToSheet.execute(data=report, handler=handler, writer=writer)
         assert (
