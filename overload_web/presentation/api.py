@@ -267,13 +267,15 @@ def process_order_records(
     all_files = deps.fetch_files(
         local_files=local_files, remote_file_names=remote_file_names, vendor=vendor
     )
+    template_data = order_template.model_dump()
+    matchpoints = matchpoints.model_dump()
     for file in all_files:
         out_file = ProcessOrderRecords.execute(
             data=file.content,
             marc_engine=marc_engine,
             fetcher=fetcher,
-            template_data=order_template.model_dump(),
-            matchpoints=matchpoints.model_dump(),
+            template_data=template_data,
+            matchpoints=matchpoints,
             file_name=file.file_name,
         )
         out_files.append(out_file)
