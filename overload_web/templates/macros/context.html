@@ -4,12 +4,7 @@
   <select id="{{ field_id }}" class="form-select" name="{{ field_id }}" disabled>
     <option value="{{display_value}}" selected>{{ display_value }}</option>
   </select>
-  <input
-    id="{{ field_id }}"
-    name="{{ field_id }}"
-    type="hidden"
-    value="{{display_value}}"
-  />
+  <input id="{{ field_id }}" name="{{ field_id }}" type="hidden" value="{{display_value}}" />
   {% else %}
   <select id="{{ field_id }}" class="form-select" name="{{ field_id }}" required>
     <option value="" selected></option>

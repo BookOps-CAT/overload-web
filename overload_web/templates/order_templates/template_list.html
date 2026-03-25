@@ -1,9 +1,4 @@
-<select
-  class="form-select"
-  hx-get="/api/template"
-  hx-target="#template-form-fields"
-  name="template_id"
->
+<select class="form-select" hx-get="/api/template" hx-target="#template-form-fields" name="template_id">
   <option value="" selected></option>
   {% for template in templates %}
   <option value="{{template.id}}">{{template.name}}</option>

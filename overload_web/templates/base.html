@@ -12,9 +12,7 @@
   </head>
   <body>
     {% block nav %}{% include "partials/nav_bar.html" %}{% endblock %}
-    <div class="container-lg my-4">
-      {% block header %}{% endblock %} {% block content %} {% endblock %}
-    </div>
+    <div class="container-lg my-4">{% block header %}{% endblock %} {% block content %} {% endblock %}</div>
     <script src="/static/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>

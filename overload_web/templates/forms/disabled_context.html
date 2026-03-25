@@ -4,31 +4,21 @@
     <div class="row">
       {% for field_id, field_data in context_fields.items() %}
       <div class="col">
-        {{macro.context_form_field(field_id, field_data,
-        display_value=field_data['options'][context.get(field_id)], disabled=True) }}
+        {{macro.context_form_field(field_id, field_data, display_value=field_data['options'][context.get(field_id)],
+        disabled=True) }}
       </div>
-      <input
-        id="{{ field_id }}"
-        name="{{ field_id }}"
-        type="hidden"
-        value="{{ context.get(field_id) }}"
-      />
+      <input id="{{ field_id }}" name="{{ field_id }}" type="hidden" value="{{ context.get(field_id) }}" />
       {% endfor %}
     </div>
     <div class="row">
       <div class="col">
-        <a href="/process" class="btn my-3" style="border-color: #d52828"
-          >Edit Library Context</a
-        >
+        <a href="/process" class="btn my-3" style="border-color: #d52828">Edit Library Context</a>
       </div>
     </div>
   </div>
   <div class="col">
     <div class="row" id="library-img">
-      <img
-        src="{{ url_for('static', path='images/' ~ context.library ~ 'Logo.gif') }}"
-        class="img-fluid"
-      /><br />
+      <img src="{{ url_for('static', path='images/' ~ context.library ~ 'Logo.gif') }}" class="img-fluid" /><br />
       <h3>{{context_fields['collection']['options'][context.collection]}}</h3>
       <br />
       <h3>{{context_fields['record_type']['options'][context.record_type]}}</h3>

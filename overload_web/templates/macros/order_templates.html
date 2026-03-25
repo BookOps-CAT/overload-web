@@ -4,9 +4,7 @@
     <select id="{{field_id}}" class="form-select" name="{{field_id}}">
       {% if field_input %}
       <option value=""></option>
-      <option value="{{ field_input }}" selected>
-        {{ field_input }} ({{ data['options'][field_input] }})
-      </option>
+      <option value="{{ field_input }}" selected>{{ field_input }} ({{ data['options'][field_input] }})</option>
       {% for k, v in data['options'].items() %} {% if k != field_input %}
       <option value="{{k}}">{{k}} ({{v}})</option>
       {%endif%} {%endfor%} {% else %}
