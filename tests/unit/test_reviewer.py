@@ -45,10 +45,10 @@ def full_bib_add_barcodes(full_bib, library):
 @pytest.fixture
 def stub_analysis(full_bib):
     return bibs.MatchAnalysis(
+        bibs.CatalogAction.INSERT,
         full_bib.call_number,
         True,
         bibs.ClassifiedCandidates([], [], []),
-        bibs.CatalogAction.INSERT,
         full_bib.resource_id,
         full_bib.bib_id,
     )
@@ -61,10 +61,10 @@ class TestReviewer:
     )
     def test_dedupe_attach(self, full_bib, marc_engine):
         full_bib.analysis = bibs.MatchAnalysis(
+            bibs.CatalogAction.ATTACH,
             full_bib.call_number,
             True,
             bibs.ClassifiedCandidates([], [], []),
-            bibs.CatalogAction.ATTACH,
             full_bib.resource_id,
             full_bib.bib_id,
         )
@@ -141,10 +141,10 @@ class TestReviewer:
         other_rec = copy.deepcopy(full_bib)
         other_rec.control_number = "123456789"
         other_rec.analysis = bibs.MatchAnalysis(
+            bibs.CatalogAction.INSERT,
             full_bib.call_number,
             True,
             bibs.ClassifiedCandidates([], [], []),
-            bibs.CatalogAction.INSERT,
             full_bib.resource_id,
             None,
         )

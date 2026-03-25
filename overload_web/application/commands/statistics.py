@@ -30,8 +30,9 @@ class CreateRecordsProcessingReport:
             "file_names": file_names,
             "total_files_processed": len(file_names),
             "missing_barcodes": missing_barcodes,
+            "vendor": [i.vendor for i in all_recs],
         }
-        data_dict.update(handler.list2dict(all_recs))
+        data_dict.update(handler.list2dict([i.analysis.__dict__ for i in all_recs]))
         return reports.ProcessingStatistics(**data_dict)
 
 

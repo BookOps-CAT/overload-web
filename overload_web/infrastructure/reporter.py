@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+from collections import defaultdict
 from typing import Any
 
 import pandas as pd
@@ -12,7 +13,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
 from googleapiclient.discovery import build  # type: ignore
 from googleapiclient.errors import HttpError  # type: ignore
 
-from overload_web.domain.models import bibs, reports
+from overload_web.domain.models import reports
 
 logger = logging.getLogger(__name__)
 
@@ -110,22 +111,12 @@ class PandasReportHandler:
             total=vendor_data["total"],
         )
 
-    def list2dict(self, report_data: list[bibs.DomainBib]) -> dict[str, list[Any]]:
-        analysis = [i.analysis for i in report_data]
-        return {
-            "action": [i.action for i in analysis],
-            "call_number": [i.call_number for i in analysis],
-            "call_number_match": [i.call_number_match for i in analysis],
-            "duplicate_records": [i.duplicate_records for i in analysis],
-            "mixed": [i.mixed for i in analysis],
-            "other": [i.other for i in analysis],
-            "resource_id": [i.resource_id for i in analysis],
-            "target_bib_id": [i.target_bib_id for i in analysis],
-            "target_call_no": [i.target_call_no for i in analysis],
-            "target_title": [i.target_title for i in analysis],
-            "updated_by_vendor": [i.updated_by_vendor for i in analysis],
-            "vendor": [i.vendor for i in report_data],
-        }
+    def list2dict(self, report_data: list[dict[str, Any]]) -> dict[str, list[Any]]:
+        out = defaultdict(list)
+        for report in report_data:
+            for k, v in report.items():
+                out[k].append(v)
+        return dict(out)
 
 
 class GoogleSheetsReporter:

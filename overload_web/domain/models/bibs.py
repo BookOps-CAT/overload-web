@@ -260,10 +260,10 @@ class MatchAnalysis:
 
     def __init__(
         self,
+        action: CatalogAction,
         call_number: str | None,
         call_number_match: bool,
         classified: ClassifiedCandidates,
-        action: CatalogAction,
         resource_id: str | None,
         target_bib_id: str | None,
         target_call_no: str | None = None,

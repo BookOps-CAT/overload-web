@@ -20,10 +20,10 @@ def processed_records(monkeypatch, library, collection, record_type, acq_bib, fu
     else:
         bib = acq_bib
     analysis = bibs.MatchAnalysis(
+        bibs.CatalogAction.ATTACH,
         bib.call_number,
         True,
         candidates,
-        bibs.CatalogAction.ATTACH,
         bib.resource_id,
         None,
     )
