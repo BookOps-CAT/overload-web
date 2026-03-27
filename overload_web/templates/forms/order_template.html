@@ -3,7 +3,25 @@
     <div class="row">
       <div class="col">
         <div id="template-form-fields">{% include "order_templates/rendered.html" %}</div>
-        <div id="template-buttons">{% include "order_templates/buttons.html" %}</div>
+        <div id="template-buttons">
+          <div class="row row-cols-3 gy-1 my-2">
+            <div class="col" hx-include="#template-form-fields">
+              <button class="btn btn-nypl" hx-post="/api/template" hx-target="#template-form" type="submit">
+                Save Template as New
+              </button>
+            </div>
+            <div class="col">
+              <button class="btn btn-nypl" hx-patch="/api/template" hx-target="#template-form" type="submit">
+                Update Template
+              </button>
+            </div>
+            <div class="col">
+              <button class="btn btn-nypl" hx-get="/htmx/forms/templates" hx-target="#template-form" type="reset">
+                Clear Template Form
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

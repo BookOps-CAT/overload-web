@@ -1,19 +1,32 @@
 {% extends 'base.html' %} {% block header %}
 <h2>{{ page_title }}</h2>
-{% endblock %} {% block content %} {% block pvf_body %}
-<div class="container text-left">
-  <div class="row gy-1 my-2">{% block pvf_context_source %}{% endblock %}</div>
-
-  <div class="row gy-1 my-2">{% block pvf_file_source %}{% endblock %}</div>
-
-  <div class="row gy-1 my-2">{% block pvf_template_source %}{% endblock %}</div>
-
-  <div class="row gy-1 my-2"
-    >{% block pvf_button %}
-    <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
-    {% endblock %}</div
-  >
-</div>
-{% endblock %}{% block pvf_output %}
-<div id="pvf_output"></div>
-{% endblock %} {% endblock %}
+{% endblock %}
+<!-- prettier ignore -->
+{% block content %}
+<section class="pvf-body">
+  {% block pvf_body %}
+  <!-- prettier ignore -->
+  {% block pvf_context_source %}{% endblock %}
+  <!-- prettier ignore -->
+  {% block pvf_file_source %}{% endblock %}
+  <!-- prettier ignore -->
+  {% block pvf_template_source %}{% endblock %}
+  <!-- prettier ignore -->
+  {% block pvf_button %}
+  <div class="row">
+    <div class="col">
+      <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
+    </div>
+  </div>
+  {% endblock %}
+  <!-- prettier ignore -->
+  {% endblock %}
+  <!-- prettier ignore -->
+</section>
+<!-- prettier ignore -->
+<section class="reports">
+  <!-- prettier ignore -->
+  <div id="pvf_output"> {% block pvf_output %} {% endblock %} </div>
+  <!-- prettier ignore -->
+</section>
+{% endblock %}
