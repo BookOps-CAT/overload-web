@@ -1,0 +1,41 @@
+:root {
+  --page-title-padding-top: 30px;
+  --page-title-padding-bottom: 24px;
+  --nypl-brand-color: #d52828;
+}
+
+.navbar {
+  background-color: var(--nypl-brand-color);
+  color: white;
+  padding-top: 40px;
+  padding-bottom: 16px;
+}
+.navbar .navbar-brand {
+  font-size: 2rem;
+  font-weight: 500;
+  text-align: center;
+  display: block;
+  color: white;
+}
+.form-floating .form-select {
+  height: auto;
+  min-height: 3.5rem;
+  padding-top: 1.25rem;
+  padding-bottom: 0.25rem;
+  line-height: 1.5;
+}
+.page-title {
+  padding-top: var(--page-title-padding-top);
+  padding-bottom: var(--page-title-padding-bottom);
+}
+.page-title h2 {
+  font-size: 2rem;
+  font-weight: 500;
+}
+.btn-nypl {
+  border-color: var(--nypl-brand-color);
+}
+.btn-nypl:hover {
+  background-color: var(--nypl-brand-color);
+  color: white;
+}
