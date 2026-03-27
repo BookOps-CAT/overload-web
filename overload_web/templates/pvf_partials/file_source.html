@@ -1,28 +1,40 @@
-<div class="row"
-  ><div class="col-2">
-    <input
-      class="btn-check"
-      hx-get="/htmx/forms/vendor-files"
-      hx-target="#file-form"
-      name="file_source"
-      type="radio"
-      value="local"
-      id="local-btn-check"
-    />
-    <label class="btn btn-nypl" for="local-btn-check">Local Upload</label>
+<div class="row">
+  <div class="col">
+    <button class="btn btn-nypl" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-local">
+      Local Upload
+    </button>
+    <div class="collapse" id="collapse-local">
+      <div class="card card-body">
+        <h5>Select Files</h5>
+        <input name="vendor" type="hidden" value="" />
+        <input id="local_files" class="form-control" name="local_files" type="file" multiple />
+      </div>
+    </div>
   </div>
-  <div class="col-2">
-    <input
-      class="btn-check"
-      hx-get="/htmx/forms/vendor-files"
-      hx-target="#file-form"
-      name="file_source"
-      type="radio"
-      value="remote"
-      id="remote-btn-check"
-    />
-    <label class="btn btn-nypl" for="remote-btn-check">Remote Server</label>
-  </div>
-  <div class="col-2"></div>
-  <div id="file-form" class="col-6"></div>
+  <div class="col">
+    <button class="btn btn-nypl" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-remote">
+      Remote Server
+    </button>
+    <div class="collapse" id="collapse-remote">
+      <div class="card card-body">
+        <h5>Select Vendor</h5>
+        <div class="form-floating">
+          <select
+            id="vendor"
+            class="form-select"
+            name="vendor"
+            hx-get="/api/remote-files"
+            hx-target="#file-list"
+            hx-trigger="change"
+          >
+            <option value="" selected></option>
+            {% for id, name in vendors.items() %}
+            <option value="{{id}}">{{name}}</option>
+            {%endfor%}
+          </select>
+          <label for="vendor">Vendor</label>
+        </div>
+        <div id="file-list"></div>
+      </div> </div
+  ></div>
 </div>
