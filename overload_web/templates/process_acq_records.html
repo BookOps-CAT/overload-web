@@ -1,14 +1,21 @@
-{% extends 'pvf_base.html' %} {% block header %}
-<h2>{{ page_title }}</h2>
-{% endblock %} {% block content %} {% block pvf_body %}
+{% extends 'pvf_base.html' %} {% block content %} {% block pvf_body %}
 <form
   id="pvf-form"
   hx-post="/api/order-records/process-vendor-file"
   hx-encoding="multipart/form-data"
   hx-target="#pvf_output"
 >
-  {% block pvf_context_source %}{% include "pvf_partials/pvf_context.html" %}{% endblock %} {% block pvf_file_source
-  %}{% include "pvf_partials/file_source.html" %}{% endblock %} {% block pvf_template_source %}{% include
-  "pvf_partials/template_source.html" %}{% endblock %} {% block pvf_button %}{{ super() }}{% endblock%}
+  <!-- prettier ignore -->
+  {% block pvf_context_source %}{% include "forms/disabled_context.html" %}{% endblock %}
+  <!-- prettier ignore -->
+  {% block pvf_file_source %}{%include "pvf_partials/file_source.html" %}{% endblock %}
+  <!-- prettier ignore -->
+  {% block pvf_template_source %}{% include "pvf_partials/template_source.html" %}{% endblock %}
+  <!-- prettier ignore -->
+  {% block pvf_button %}{{ super() }}{% endblock%}
 </form>
-{% endblock %}{% block pvf_output %}{{ super() }}{% endblock %} {% endblock %}
+{% endblock %}
+<!-- prettier ignore -->
+{% block pvf_output %}{{ super() }}{% endblock %}
+<!-- prettier ignore -->
+{% endblock %}

@@ -30,6 +30,20 @@ def get_context_form(request: Request) -> HTMLResponse:
     )
 
 
+@htmx_router.get("/forms/single-context", response_class=HTMLResponse)
+def get_single_context_form(
+    request: Request,
+    disabled: bool,
+    library: str | None = None,
+    collection: str | None = None,
+    record_type: str | None = None,
+) -> HTMLResponse:
+    """Renders form for context input."""
+    return request.app.state.templates.TemplateResponse(
+        request=request, name="forms/context.html"
+    )
+
+
 @htmx_router.get("/forms/disabled-context", response_class=HTMLResponse)
 def get_disabled_context_form(
     request: Request, library: str, collection: str, record_type: str

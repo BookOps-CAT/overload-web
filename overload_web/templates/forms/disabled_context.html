@@ -1,27 +1,38 @@
 {% import "macros/context.html" as macro %}
-<div class="row gy-1 my-2">
-  <div id="context-section" class="col-9">
-    <div class="row">
-      {% for field_id, field_data in context_fields.items() %}
-      <div class="col">
-        {{macro.context_form_field(field_id, field_data, display_value=field_data['options'][context.get(field_id)],
-        disabled=True) }}
-      </div>
-      <input id="{{ field_id }}" name="{{ field_id }}" type="hidden" value="{{ context.get(field_id) }}" />
-      {% endfor %}
+<!-- prettier ignore -->
+{% set record_type = context_fields["record_type"]['options'][record_type]%}
+<!-- prettier ignore -->
+{% set library = context_fields["library"]['options'][library]%}
+<!-- prettier ignore -->
+{% set collection = context_fields["collection"]['options'][collection]%}
+<div id="context-form" class="col">
+  <div class="row">
+    <div class="col-3" id="record_type_wrapper">
+      {{ macro.context_form_field( "record_type", context_fields["record_type"], display_value=record_type,
+      disabled=True) }}
     </div>
-    <div class="row">
-      <div class="col">
-        <a href="/process" class="btn my-3" style="border-color: #d52828">Edit Library Context</a>
+    <div class="col-3" id="library_wrapper">
+      {{ macro.context_form_field( "library", context_fields["library"], display_value=library, disabled=True) }}
+    </div>
+    <div class="col-3" id="collection-wrapper">
+      {{ macro.context_form_field( "collection", context_fields["collection"], display_value=collection, disabled=True)
+      }}
+    </div>
+    <div class="col-2 text-center" id="library-img">
+      <img src="{{ url_for('static', path='images/' ~ library ~ 'Logo.gif') }}" class="img-fluid" />
+    </div>
+    <div class="col-1">
+      <div class="row">
+        <h3>{{collection}}</h3>
+      </div>
+      <div class="row">
+        <h3>{{record_type}}</h3>
       </div>
     </div>
   </div>
-  <div class="col-3">
-    <div class="row" id="library-img">
-      <img src="{{ url_for('static', path='images/' ~ context.library ~ 'Logo.gif') }}" class="img-fluid" /><br />
-      <h3>{{context_fields['collection']['options'][context.collection]}}</h3>
-      <br />
-      <h3>{{context_fields['record_type']['options'][context.record_type]}}</h3>
+  <div class="row">
+    <div class="col">
+      <a href="/process" class="btn btn-nypl my-3">Edit Library Context</a>
     </div>
   </div>
 </div>

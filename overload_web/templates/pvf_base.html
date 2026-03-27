@@ -8,7 +8,11 @@
 
   <div class="row gy-1 my-2">{% block pvf_template_source %}{% endblock %}</div>
 
-  <div class="row gy-1 my-2">{% block pvf_button %}{% include "pvf_partials/pvf_button.html" %}{% endblock %}</div>
+  <div class="row gy-1 my-2"
+    >{% block pvf_button %}
+    <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
+    {% endblock %}</div
+  >
 </div>
 {% endblock %}{% block pvf_output %}
 <div id="pvf_output"></div>

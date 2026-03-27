@@ -1,5 +1,5 @@
 :root {
-  --page-title-padding-top: 30px;
+  --page-title-padding-top: 40px;
   --page-title-padding-bottom: 24px;
   --nypl-brand-color: #d52828;
 }
@@ -8,7 +8,7 @@
   background-color: var(--nypl-brand-color);
   color: white;
   padding-top: 40px;
-  padding-bottom: 16px;
+  padding-bottom: 10px;
 }
 .navbar .navbar-brand {
   font-size: 2rem;
@@ -34,6 +34,8 @@
 }
 .btn-nypl {
   border-color: var(--nypl-brand-color);
+  margin-top: 1rem !important;
+  margin-bottom: 1rem !important;
 }
 .btn-nypl:hover {
   background-color: var(--nypl-brand-color);

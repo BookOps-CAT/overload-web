@@ -1,34 +1,16 @@
 <div class="row row-cols-3 gy-1 my-2">
   <div class="col" hx-include="#template-form-fields">
-    <button
-      class="btn my-3"
-      hx-post="/api/template"
-      hx-target="#template-form"
-      style="border-color: #d52828"
-      type="submit"
-    >
+    <button class="btn btn-nypl" hx-post="/api/template" hx-target="#template-form" type="submit">
       Save Template as New
     </button>
   </div>
   <div class="col">
-    <button
-      class="btn my-3"
-      hx-patch="/api/template"
-      hx-target="#template-form"
-      style="border-color: #d52828"
-      type="submit"
-    >
+    <button class="btn btn-nypl" hx-patch="/api/template" hx-target="#template-form" type="submit">
       Update Template
     </button>
   </div>
   <div class="col">
-    <button
-      class="btn my-3"
-      hx-get="/htmx/forms/templates"
-      hx-target="#template-form"
-      style="border-color: #d52828"
-      type="reset"
-    >
+    <button class="btn btn-nypl" hx-get="/htmx/forms/templates" hx-target="#template-form" type="reset">
       Clear Template Form
     </button>
   </div>

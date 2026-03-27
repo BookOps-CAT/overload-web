@@ -4,15 +4,24 @@
     {% block head %}
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{% block title %}{% endblock %} - {{ application }}</title>
+    <title>{{ application }}</title>
     <link rel="stylesheet" href="/static/css/bootstrap.min.css" />
     <link rel="stylesheet" href="/static/css/style.css" />
     <script src="https://unpkg.com/htmx.org@2.0.0"></script>
     {% endblock %}
   </head>
   <body>
-    {% block nav %}{% include "partials/nav_bar.html" %}{% endblock %}
-    <div class="container-lg my-4">{% block header %}{% endblock %} {% block content %} {% endblock %}</div>
+    {% block nav %}
+    <header class="navbar shadow">
+      <div class="container-lg">
+        <a class="navbar-brand" href="{{ url_for('root') }}">{{ application }}</a>
+      </div>
+    </header>
+    {% endblock %}
+    <div class="container-lg">
+      <section class="page-title">{% block header %}{% endblock %}</section>
+      {% block content %} {% endblock %}
+    </div>
     <script src="/static/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>
