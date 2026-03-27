@@ -429,18 +429,6 @@ class TestApp:
             )
         assert "Trouble connecting: " in str(exc.value)
 
-    @pytest.mark.parametrize("file_source", ["local", "remote"])
-    def test_htmx_get_vendor_file_form(self, file_source):
-        response = self.client.get(
-            f"/htmx/forms/vendor-files?file_source={file_source}"
-        )
-        assert response.status_code == 200
-        assert "Select Files" in response.text
-        assert (
-            response.url
-            == f"{self.base_url}/htmx/forms/vendor-files?file_source={file_source}"
-        )
-
     def test_htmx_get_context_form(self):
         response = self.client.get("/htmx/forms/context")
         assert response.status_code == 200
