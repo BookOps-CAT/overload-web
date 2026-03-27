@@ -5,13 +5,17 @@
 {% block content %}
 <section class="pvf-body">
   {% block pvf_body %}
-  <!-- prettier ignore -->
-  {% block pvf_context_source %}{% endblock %}
-  <!-- prettier ignore -->
-  {% block pvf_file_source %}{% endblock %}
-  <!-- prettier ignore -->
-  {% block pvf_template_source %}{% endblock %}
-  <!-- prettier ignore -->
+  <section class="context-section">
+    <!-- prettier ignore -->
+    {% block pvf_context_source %}{% endblock %}
+  </section>
+  <section class="file-source-section">
+    <!-- prettier ignore -->
+    {% block pvf_file_source %}<h5>File Source</h5>{% endblock %}
+  </section>
+  <section class="template-source-section">
+    {% block pvf_template_source %}<h5>Apply Order Template</h5>{% endblock %}
+  </section>
   {% block pvf_button %}
   <div class="row">
     <div class="col">
@@ -21,12 +25,8 @@
   {% endblock %}
   <!-- prettier ignore -->
   {% endblock %}
-  <!-- prettier ignore -->
 </section>
-<!-- prettier ignore -->
 <section class="reports">
-  <!-- prettier ignore -->
   <div id="pvf_output"> {% block pvf_output %} {% endblock %} </div>
-  <!-- prettier ignore -->
 </section>
 {% endblock %}
