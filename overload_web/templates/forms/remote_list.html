@@ -1,17 +1,15 @@
 <div class="row row-cols-3">
   {% for file in files %}
-  <div class="col">
-    <div class="form-check">
-      <input
-        class="form-check-input"
-        name="remote_file_names"
-        style="color: #d52828"
-        type="checkbox"
-        value="{{ file }}"
-      />
-      <label class="form-check-label" for="{{ file }}">{{ file }}</label>
+    <div class="col">
+      <div class="form-check">
+        <input class="form-check-input"
+               name="remote_file_names"
+               style="color: #d52828"
+               type="checkbox"
+               value="{{ file }}" />
+        <label class="form-check-label" for="{{ file }}">{{ file }}</label>
+      </div>
     </div>
-  </div>
   {% endfor %}
   <input name="vendor" type="hidden" value="{{ vendor }}" />
 </div>

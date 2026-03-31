@@ -1,12 +1,22 @@
 <h3>Output:</h3>
-{% if report %}{%if report.get("summary_report")%}
-<h4>Summary:</h4>
-{{ report["summary_report"] | safe}} {%endif%} {%if report.get("vendor_report")%}
-<h5>Vendor breakdown:</h5>
-{{ report["vendor_report"] | safe}} {% endif %}{%if report.get("dupe_report")%}
-<h5>Duplicate Report:</h5>
-{{ report["dupe_report"] | safe}}{% endif %}{%if report.get("call_no_report")%}
-<h5>Call Number Report:</h5>
-{{ report["call_no_report"] | safe}}{% endif %}{%if detailed_report%}
-<h5>Detailed Report:</h5>
-{{ detailed_report | safe}} {% endif %}{% endif %}
+{% if report %}
+    {% if report.get("summary_report") %}
+        <h4>Summary:</h4>
+        {{ report["summary_report"] | safe }} {% endif %}
+        {% if report.get("vendor_report") %}
+            <h5>Vendor breakdown:</h5>
+            {{ report["vendor_report"] | safe }}
+        {% endif %}
+        {% if report.get("dupe_report") %}
+            <h5>Duplicate Report:</h5>
+            {{ report["dupe_report"] | safe }}
+        {% endif %}
+        {% if report.get("call_no_report") %}
+            <h5>Call Number Report:</h5>
+            {{ report["call_no_report"] | safe }}
+        {% endif %}
+        {% if detailed_report %}
+            <h5>Detailed Report:</h5>
+            {{ detailed_report | safe }}
+        {% endif %}
+    {% endif %}

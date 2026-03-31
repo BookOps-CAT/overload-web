@@ -1,30 +1,27 @@
-{% extends 'base.html' %} {% block header %}
-<h2>{{ page_title }}</h2>
-{% endblock %}
-<!-- prettier ignore -->
+{% extends 'base.html' %}
+{% block header %}<h2>{{ page_title }}</h2>{% endblock %}
 {% block content %}
-<section class="pvf-body">
-  {% block pvf_body %}
-  <section class="context-section">
-    <!-- prettier ignore -->
-    {% block pvf_context_source %}{% endblock %}
+  <section class="pvf-body">
+    {% block pvf_body %}
+      <section class="context-section">
+        {% block pvf_context_source %}{% endblock %}
+      </section>
+      <section class="file-source-section">
+        {% block pvf_file_source %}<h5>File Source</h5>{% endblock %}
+      </section>
+      <section class="template-source-section">
+        {% block pvf_template_source %}<h5>Apply Order Template</h5>{% endblock %}
+      </section>
+      {% block pvf_button %}
+        <div class="col">
+          <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
+        </div>
+      {% endblock %}
+    {% endblock %}
   </section>
-  <section class="file-source-section">
-    <!-- prettier ignore -->
-    {% block pvf_file_source %}<h5>File Source</h5>{% endblock %}
+  <section class="reports">
+    <div id="pvf_output">
+      {% block pvf_output %}{% endblock %}
+    </div>
   </section>
-  <section class="template-source-section">
-    {% block pvf_template_source %}<h5>Apply Order Template</h5>{% endblock %}
-  </section>
-  {% block pvf_button %}
-  <div class="col">
-    <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
-  </div>
-  {% endblock %}
-  <!-- prettier ignore -->
-  {% endblock %}
-</section>
-<section class="reports">
-  <div id="pvf_output"> {% block pvf_output %} {% endblock %} </div>
-</section>
 {% endblock %}

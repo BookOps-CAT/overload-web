@@ -1,15 +1,11 @@
 <div class="form-floating">
-  <select
-    class="form-select"
-    hx-get="/api/template"
-    hx-target="#template-form-fields"
-    name="template_id"
-    id="order_template"
-  >
+  <select class="form-select"
+          hx-get="/api/template"
+          hx-target="#template-form-fields"
+          name="template_id"
+          id="order_template">
     <option value="" selected></option>
-    {% for template in templates %}
-    <option value="{{template.id}}">{{template.name}}</option>
-    {%endfor%}
+    {% for template in templates %}<option value="{{ template.id }}">{{ template.name }}</option>{% endfor %}
   </select>
   <div id="template-item" class="row"></div>
   <label for="order_template">Order Templates</label>

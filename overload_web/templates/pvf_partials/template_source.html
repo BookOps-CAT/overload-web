@@ -1,27 +1,33 @@
 <div class="row">
   <div class="col-3">
-    <div id="templates" hx-get="/api/templates" hx-target="#template-list" hx-trigger="load" name="templates"></div>
+    <div id="templates"
+         hx-get="/api/templates"
+         hx-target="#template-list"
+         hx-trigger="load"
+         name="templates"></div>
     <div id="template-list"></div>
   </div>
   <div class="col" id="template-input">
     <div class="accordion" id="accordionExample">
       <div class="accordion-item">
         <h2 class="accordion-header">
-          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
-            Create/Update Order Template
-          </button>
+          <button class="accordion-button"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#collapseOne">Create/Update Order Template</button>
         </h2>
-        <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+        <div id="collapseOne"
+             class="accordion-collapse collapse"
+             data-bs-parent="#accordionExample">
           <div class="accordion-body">
-            <input
-              class="btn-check"
-              hx-get="/htmx/forms/templates"
-              hx-target="#template-form"
-              name="template-source"
-              value="input"
-              id="template-source"
-              hx-trigger="revealed"
-            /><div id="template-form"></div>
+            <input class="btn-check"
+                   hx-get="/htmx/forms/templates"
+                   hx-target="#template-form"
+                   name="template-source"
+                   value="input"
+                   id="template-source"
+                   hx-trigger="revealed" />
+            <div id="template-form"></div>
           </div>
         </div>
       </div>

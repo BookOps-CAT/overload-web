@@ -1,14 +1,14 @@
 {% extends 'pvf_base.html' %}
-<form
-  id="pvf-form"
-  hx-post="/api/order-records/process-vendor-file"
-  hx-encoding="multipart/form-data"
-  hx-target="#pvf_output"
->
-  <!-- prettier ignore -->
-  {% block pvf_context_source %}{% include "forms/disabled_context.html" %}{% endblock %}
-  <!-- prettier ignore -->
-  {% block pvf_file_source %}{{ super() }}{%include "pvf_partials/file_source.html" %}{% endblock %}
-  <!-- prettier ignore -->
-  {% block pvf_button %}{{ super() }}{% endblock%}
-</form>
+<form id="pvf-form"
+      hx-post="/api/order-records/process-vendor-file"
+      hx-encoding="multipart/form-data"
+      hx-target="#pvf_output">
+  {% block pvf_context_source %}
+    {% include "forms/disabled_context.html" %}
+  {% endblock %}
+  {% block pvf_file_source %}
+    {{ super() }}
+    {% include "pvf_partials/file_source.html" %}
+  {% endblock %}
+  {% block pvf_button %}{{ super() }}{% endblock %}
+  </form>

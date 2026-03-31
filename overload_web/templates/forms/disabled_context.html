@@ -1,32 +1,30 @@
 {% import "macros/context.html" as macro %}
-<!-- prettier ignore -->
-{% set record_type = context_fields["record_type"]['options'][record_type]%}
-<!-- prettier ignore -->
-{% set library = context_fields["library"]['options'][library]%}
-<!-- prettier ignore -->
-{% set collection = context_fields["collection"]['options'][collection]%}
+{% set record_type = context_fields["record_type"]['options'][record_type] %}
+{% set library = context_fields["library"]['options'][library] %}
+{% set collection = context_fields["collection"]['options'][collection] %}
 <div id="context-form" class="col">
   <div class="row">
     <div class="col-3" id="record_type_wrapper">
-      {{ macro.context_form_field( "record_type", context_fields["record_type"], display_value=record_type,
-      disabled=True) }}
+      {{ macro.context_form_field("record_type", context_fields["record_type"], display_value=record_type,
+            disabled=True) }}
     </div>
     <div class="col-3" id="library_wrapper">
-      {{ macro.context_form_field( "library", context_fields["library"], display_value=library, disabled=True) }}
+      {{ macro.context_form_field("library", context_fields["library"], display_value=library, disabled=True) }}
     </div>
     <div class="col-3" id="collection-wrapper">
-      {{ macro.context_form_field( "collection", context_fields["collection"], display_value=collection, disabled=True)
+      {{ macro.context_form_field("collection", context_fields["collection"], display_value=collection, disabled=True) 
       }}
     </div>
     <div class="col-2 text-center" id="library-img">
-      <img src="{{ url_for('static', path='images/' ~ library ~ 'Logo.gif') }}" class="img-fluid" />
+      <img src="{{ url_for('static', path='images/' ~ library ~ 'Logo.gif') }}"
+           class="img-fluid" />
     </div>
     <div class="col-1">
       <div class="row">
-        <h3>{{collection}}</h3>
+        <h3>{{ collection }}</h3>
       </div>
       <div class="row">
-        <h3>{{record_type}}</h3>
+        <h3>{{ record_type }}</h3>
       </div>
     </div>
   </div>

@@ -1,32 +1,30 @@
 {% macro select_field(field_id, data, field_input) %}
-<div class="col">
-  <div class="form-floating">
-    <select id="{{field_id}}" class="form-select" name="{{field_id}}">
-      {% if field_input %}
-      <option value=""></option>
-      <option value="{{ field_input }}" selected>{{ field_input }} ({{ data['options'][field_input] }})</option>
-      {% for k, v in data['options'].items() %} {% if k != field_input %}
-      <option value="{{k}}">{{k}} ({{v}})</option>
-      {%endif%} {%endfor%} {% else %}
-      <option value="" selected></option>
-      {% for k, v in data['options'].items() %}
-      <option value="{{k}}">{{k}} ({{v}})</option>
-      {%endfor%} {% endif %}
-    </select>
-    <label for="{{field_id}}">{{data['label']}}</label>
-  </div>
-</div>
-{% endmacro %} {% macro input_field(field_id, data, field_input) %}
-<div class="col">
-  <div class="form-floating">
-    <input
-      id="{{field_id}}"
-      class="form-control"
-      name="{{field_id}}"
-      type="text"
-      value="{{ field_input if field_input else value|e }}"
-    />
-    <label for="{{field_id}}">{{data['label']}}</label>
-  </div>
-</div>
-{% endmacro %}
+  <div class="col">
+    <div class="form-floating">
+      <select id="{{ field_id }}" class="form-select" name="{{ field_id }}">
+        {% if field_input %}
+          <option value=""></option>
+          <option value="{{ field_input }}" selected>{{ field_input }} ({{ data['options'][field_input] }})</option>
+          {% for k, v in data['options'].items() %}
+            {% if k != field_input %}<option value="{{ k }}">{{ k }} ({{ v }})</option>{% endif %} {% endfor %}
+          {% else %}
+            <option value="" selected></option>
+            {% for k, v in data['options'].items() %}<option value="{{ k }}">{{ k }} ({{ v }})</option>{% endfor %}
+          {% endif %}
+        </select>
+        <label for="{{ field_id }}">{{ data['label'] }}</label>
+      </div>
+    </div>
+  {% endmacro %}
+  {% macro input_field(field_id, data, field_input) %}
+    <div class="col">
+      <div class="form-floating">
+        <input id="{{ field_id }}"
+               class="form-control"
+               name="{{ field_id }}"
+               type="text"
+               value="{{ field_input if field_input else value|e }}" />
+        <label for="{{ field_id }}">{{ data['label'] }}</label>
+      </div>
+    </div>
+  {% endmacro %}
