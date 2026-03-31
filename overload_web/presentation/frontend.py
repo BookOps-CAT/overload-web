@@ -77,11 +77,12 @@ def post_context_form(
     )
 
 
-@frontend_router.get("/process/acq", response_class=HTMLResponse)
-def process_acq_records_page(
+@frontend_router.get("/process/{record_type}", response_class=HTMLResponse)
+def process_records_page(
     request: Request,
     library: str,
     collection: str,
+    record_type: str,
     page_title: str = "Process Vendor File",
 ) -> HTMLResponse:
     """
@@ -102,81 +103,11 @@ def process_acq_records_page(
     """
     return request.app.state.templates.TemplateResponse(
         request=request,
-        name="process_acq_records.html",
+        name="process_records.html",
         context={
             "library": library,
             "collection": collection,
-            "record_type": "acq",
-            "page_title": page_title,
-        },
-    )
-
-
-@frontend_router.get("/process/cat", response_class=HTMLResponse)
-def process_cat_records_page(
-    request: Request,
-    library: str,
-    collection: str,
-    page_title: str = "Process Vendor File",
-) -> HTMLResponse:
-    """
-    Renders the 'Process Vendor File' page for the Cataloging workflow.
-
-    Args:
-        request:
-            `FastAPI` request object.
-        library:
-            the library whose records are to be processed as a str
-        collection:
-            the collection whose records are to be processed as a str
-        page_title:
-            optional title to override the default.
-
-    Returns:
-        HTML response for the vendor file page.
-    """
-    return request.app.state.templates.TemplateResponse(
-        request=request,
-        name="process_cat_records.html",
-        context={
-            "library": library,
-            "collection": collection,
-            "record_type": "cat",
-            "page_title": page_title,
-        },
-    )
-
-
-@frontend_router.get("/process/sel", response_class=HTMLResponse)
-def process_sel_records_page(
-    request: Request,
-    library: str,
-    collection: str,
-    page_title: str = "Process Vendor File",
-) -> HTMLResponse:
-    """
-    Renders the 'Process Vendor File' page for the Selection workflow.
-
-    Args:
-        request:
-            `FastAPI` request object.
-        library:
-            the library whose records are to be processed as a str
-        collection:
-            the collection whose records are to be processed as a str
-        page_title:
-            optional title to override the default.
-
-    Returns:
-        HTML response for the vendor file page.
-    """
-    return request.app.state.templates.TemplateResponse(
-        request=request,
-        name="process_sel_records.html",
-        context={
-            "library": library,
-            "collection": collection,
-            "record_type": "sel",
+            "record_type": record_type,
             "page_title": page_title,
         },
     )

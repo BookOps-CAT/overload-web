@@ -5,7 +5,7 @@
               class="form-select"
               name="{{ field_id }}"
               disabled>
-        <option value="{{ display_value }}" selected>{{ display_value }}</option>
+        <option value="{{ display_value }}" selected>{{ context_fields["collection"]['options'][display_value] }}</option>
       </select>
       <input id="{{ field_id }}"
              name="{{ field_id }}"

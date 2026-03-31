@@ -1,7 +1,7 @@
 {% extends 'pvf_base.html' %}
 {% block form_start %}
   <form id="pvf-form"
-        hx-post="/api/order-records/process-vendor-file"
+        hx-post="/api/{{ record_type }}/process-vendor-file"
         hx-encoding="multipart/form-data"
         hx-target="#pvf_output">
   {% endblock %}
@@ -9,13 +9,12 @@
     {% include "forms/disabled_context.html" %}
   {% endblock %}
   {% block pvf_file_source %}
-    {{ super() }}
     {% include "pvf_partials/file_source.html" %}
   {% endblock %}
   {% block pvf_template_source %}
-    {{ super() }}{%
-    include "pvf_partials/template_source.html" %}
+    {% if record_type != "cat" %}
+      {% include "pvf_partials/template_source.html" %}
+    {% endif %}
   {% endblock %}
   {% block pvf_button %}{{ super() }}{% endblock %}
-  {% block form_end %}{{ super() }}{% endblock %}
-  </form>
+  {% block form_end %}</form>{% endblock %}

@@ -1,7 +1,4 @@
 {% import "macros/context.html" as macro %}
-{% set record_type = context_fields["record_type"]['options'][record_type] %}
-{% set library = context_fields["library"]['options'][library] %}
-{% set collection = context_fields["collection"]['options'][collection] %}
 <div id="context-form" class="col">
   <div class="row">
     <div class="col-3" id="library_wrapper">
@@ -24,10 +21,10 @@
     </div>
     <div class="col-1">
       <div class="row">
-        <h3>{{ collection }}</h3>
+        <h3>{{ context_fields["collection"]['options'][collection] }}</h3>
       </div>
       <div class="row">
-        <h3>{{ record_type }}</h3>
+        <h3>{{ context_fields["record_type"]['options'][record_type] }}</h3>
       </div>
     </div>
   </div>

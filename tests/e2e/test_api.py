@@ -82,9 +82,7 @@ class TestApp:
         routes = self.client.app.router.__dict__["routes"]
         route_names = [i.name for i in routes]
         assert "root" in route_names
-        assert "process_acq_records_page" in route_names
-        assert "process_cat_records_page" in route_names
-        assert "process_sel_records_page" in route_names
+        assert "process_records_page" in route_names
 
     def test_home_get(self):
         response = self.client.get("/")
@@ -272,7 +270,7 @@ class TestApp:
         }
         files = {"local_files": ("test.mrc", b"", "application/octet-stream")}
         response = self.client.post(
-            "/api/order-records/process-vendor-file", data=context, files=files
+            f"/api/{record_type}/process-vendor-file", data=context, files=files
         )
         assert response.status_code == 200
 
@@ -302,7 +300,7 @@ class TestApp:
         }
         files = {"remote_file_names": (None, "test.mrc")}
         response = self.client.post(
-            "/api/order-records/process-vendor-file", data=context, files=files
+            f"/api/{record_type}/process-vendor-file", data=context, files=files
         )
         assert response.status_code == 200
 
@@ -320,7 +318,7 @@ class TestApp:
         }
         files = {"local_files": ("test.mrc", b"", "application/octet-stream")}
         response = self.client.post(
-            "/api/full-records/process-vendor-file", data=context, files=files
+            "/api/cat/process-vendor-file", data=context, files=files
         )
         assert response.status_code == 200
 
@@ -339,7 +337,7 @@ class TestApp:
         }
         files = {"remote_file_names": (None, "test.mrc")}
         response = self.client.post(
-            "/api/full-records/process-vendor-file", data=context, files=files
+            "/api/cat/process-vendor-file", data=context, files=files
         )
         assert response.status_code == 200
 
@@ -353,9 +351,7 @@ class TestApp:
         }
         files = {"remote_file_names": (None, "test.mrc")}
         with pytest.raises(ValueError) as exc:
-            self.client.post(
-                "/api/full-records/process-vendor-file", data=context, files=files
-            )
+            self.client.post("/api/cat/process-vendor-file", data=context, files=files)
         assert str(exc.value) == "Invalid library: Foo. Must be 'bpl' or 'nypl'"
 
     @pytest.mark.parametrize("record_type", ["acq", "sel"])
@@ -374,7 +370,7 @@ class TestApp:
         files = {"remote_file_names": (None, "test.mrc")}
         with pytest.raises(ValueError) as exc:
             self.client.post(
-                "/api/order-records/process-vendor-file", data=context, files=files
+                f"/api/{record_type}/process-vendor-file", data=context, files=files
             )
         assert str(exc.value) == "Invalid library: Foo. Must be 'bpl' or 'nypl'"
 
@@ -394,9 +390,7 @@ class TestApp:
         }
         files = {"remote_file_names": (None, "test.mrc")}
         with pytest.raises(clients.BookopsPlatformError) as exc:
-            self.client.post(
-                "/api/full-records/process-vendor-file", data=context, files=files
-            )
+            self.client.post("/api/cat/process-vendor-file", data=context, files=files)
         assert "Trouble connecting: " in str(exc.value)
 
     @pytest.mark.parametrize(
@@ -425,7 +419,7 @@ class TestApp:
         files = {"remote_file_names": (None, "test.mrc")}
         with pytest.raises(clients.BookopsPlatformError) as exc:
             self.client.post(
-                "/api/order-records/process-vendor-file", data=context, files=files
+                f"/api/{record_type}/process-vendor-file", data=context, files=files
             )
         assert "Trouble connecting: " in str(exc.value)
 

@@ -184,8 +184,65 @@ def list_remote_files(
     )
 
 
-@api_router.post("/full-records/process-vendor-file", response_class=HTMLResponse)
-def process_full_records(
+@api_router.post("/acq/process-vendor-file", response_class=HTMLResponse)
+def process_acq_records(
+    request: Request,
+    fetcher: Annotated[Any, Depends(deps.get_fetcher)],
+    marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
+    order_template: Annotated[Any, Depends(dto.from_form(dto.TemplateDataModel))],
+    matchpoints: Annotated[Any, Depends(dto.from_form(dto.MatchpointSchema))],
+    local_files: Annotated[list[UploadFile] | None, Form()] = None,
+    remote_file_names: Annotated[list[str] | None, Form()] = None,
+    vendor: Annotated[str | None, Form()] = None,
+) -> HTMLResponse:
+    """
+    Process one or more files of order-level MARC records.
+
+    Args:
+        marc_engine:
+            a `ports.MarcEnginePort` object used by the command.
+        fetcher:
+            a `ports.BibFetcher` object used by the command.
+        local_files:
+            a list of files from a local upload as `VendorFileModel` objects.
+        remote_files:
+            a list of vendor files from a vendor's SFTP as `VendorFileModel` objects.
+        order_template:
+            an order template loaded from the database or input via an html form.
+        matchpoints:
+            a list of matchpoints loaded from an order template in the database or
+            input via an html form.
+
+    Returns:
+        the processed files and report data wrapped in a `HTMLResponse` object
+
+    """
+    out_files = []
+    all_files = deps.fetch_files(
+        local_files=local_files, remote_file_names=remote_file_names, vendor=vendor
+    )
+    template_data = order_template.model_dump()
+    matchpoints = matchpoints.model_dump()
+    for file in all_files:
+        out_file = ProcessOrderRecords.execute(
+            data=file.content,
+            marc_engine=marc_engine,
+            fetcher=fetcher,
+            template_data=template_data,
+            matchpoints=matchpoints,
+            file_name=file.file_name,
+        )
+        out_files.append(out_file)
+    report = CreateOrderRecordsProcessingReport.execute(out_files)
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name="pvf_partials/pvf_results.html",
+        context={"report": report.__dict__},
+    )
+
+
+@api_router.post("/cat/process-vendor-file", response_class=HTMLResponse)
+def process_cat_records(
     request: Request,
     fetcher: Annotated[Any, Depends(deps.get_fetcher)],
     marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
@@ -230,8 +287,8 @@ def process_full_records(
     )
 
 
-@api_router.post("/order-records/process-vendor-file", response_class=HTMLResponse)
-def process_order_records(
+@api_router.post("/sel/process-vendor-file", response_class=HTMLResponse)
+def process_sel_records(
     request: Request,
     fetcher: Annotated[Any, Depends(deps.get_fetcher)],
     marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
