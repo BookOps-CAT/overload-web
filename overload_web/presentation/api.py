@@ -64,7 +64,7 @@ def create_template(
     saved_template = CreateOrderTemplate.execute(obj=template, repository=repository)
     return request.app.state.templates.TemplateResponse(
         request=request,
-        name="forms/order_template.html",
+        name="forms/template_form.html",
         context={"template": saved_template.__dict__},
     )
 
@@ -154,7 +154,7 @@ def update_template(
     )
     return request.app.state.templates.TemplateResponse(
         request=request,
-        name="forms/order_template.html",
+        name="forms/template_form.html",
         context={"template": template_out},
     )
 

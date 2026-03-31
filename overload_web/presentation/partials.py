@@ -13,7 +13,7 @@ htmx_router = APIRouter(prefix="/htmx", tags=["htmx"])
 def get_template_form(request: Request) -> HTMLResponse:
     """Renders form for creating/editing order templates."""
     return request.app.state.templates.TemplateResponse(
-        request=request, name="forms/order_template.html"
+        request=request, name="forms/template_form.html"
     )
 
 
