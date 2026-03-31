@@ -13,13 +13,11 @@
     {% endblock %}
   </head>
   <body>
-    {% block nav %}
-      <header class="navbar shadow">
-        <div class="container-lg">
-          <a class="navbar-brand" href="{{ url_for("root") }}">{{ application }}</a>
-        </div>
-      </header>
-    {% endblock %}
+    <header class="navbar shadow">
+      <div class="container-lg">
+        {% block nav %}<a class="navbar-brand" href='{{ url_for("root") }}'>{{ application }}</a>{% endblock %}
+      </div>
+    </header>
     <div class="container-lg">
       <section class="page-title">
         {% block header %}{% endblock %}

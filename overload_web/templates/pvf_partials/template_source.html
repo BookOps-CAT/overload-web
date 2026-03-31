@@ -1,4 +1,4 @@
-<div class="row">
+<div class="row my-1">
   <div class="col-3">
     <div id="templates"
          hx-get="/api/templates"
@@ -8,27 +8,21 @@
     <div id="template-list"></div>
   </div>
   <div class="col" id="template-input">
-    <div class="accordion" id="accordionExample">
-      <div class="accordion-item">
-        <h2 class="accordion-header">
-          <button class="accordion-button"
-                  type="button"
-                  data-bs-toggle="collapse"
-                  data-bs-target="#collapseOne">Create/Update Order Template</button>
-        </h2>
-        <div id="collapseOne"
-             class="accordion-collapse collapse"
-             data-bs-parent="#accordionExample">
-          <div class="accordion-body">
-            <input class="btn-check"
-                   hx-get="/htmx/forms/templates"
-                   hx-target="#template-form"
-                   name="template-source"
-                   value="input"
-                   id="template-source"
-                   hx-trigger="revealed" />
-            <div id="template-form"></div>
-          </div>
+    <button class="btn btn-nypl"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#collapse-template">Create/Update Order Template</button>
+    <div class="collapse" id="collapse-template">
+      <div class="card card-body">
+        <div class="form-floating">
+          <input class="btn-check"
+                 hx-get="/htmx/forms/templates"
+                 hx-target="#template-form"
+                 name="template-source"
+                 value="input"
+                 id="template-source"
+                 hx-trigger="revealed" />
+          <div id="template-form"></div>
         </div>
       </div>
     </div>

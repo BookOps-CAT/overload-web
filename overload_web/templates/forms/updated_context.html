@@ -1,19 +1,16 @@
 {% import "macros/context.html" as macro %}
 {% if collection %}
   {% set collection_display = context_fields["collection"]['options'][collection] %}
-  <div class="row">
-    <div id="collection-display" hx-swap-oob="true">
-      <h3>{{ collection_display }}</h3>
-    </div>
+  <div id="collection-display" hx-swap-oob="true">
+    <h3>{{ collection_display }}</h3>
   </div>
 {% endif %}
 {% if record_type %}
   {% set record_type_display = context_fields["record_type"]['options'][record_type] %}
   {% set
   record_type = record_type%}
-  <div class="row">
-    <div id="record_type-display" hx-swap-oob="true">
-      <h3>{{ record_type_display }}</h3>
-    </div>
+  >
+  <div id="record_type-display" hx-swap-oob="true">
+    <h3>{{ record_type_display }}</h3>
   </div>
 {% endif %}

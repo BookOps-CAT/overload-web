@@ -1,41 +1,53 @@
 <div class="row">
-  <div class="col">
-    <button class="btn btn-nypl"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#collapse-local">Local Upload</button>
-    <div class="collapse" id="collapse-local">
-      <div class="card card-body">
-        <h5>Select Files</h5>
-        <input name="vendor" type="hidden" value="" />
-        <input id="local_files"
-               class="form-control"
-               name="local_files"
-               type="file"
-               multiple />
-      </div>
-    </div>
-  </div>
-  <div class="col">
-    <button class="btn btn-nypl"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#collapse-remote">Remote Server</button>
-    <div class="collapse" id="collapse-remote">
-      <div class="card card-body">
-        <div class="form-floating">
-          <select id="vendor"
-                  class="form-select"
-                  name="vendor"
-                  hx-get="/api/remote-files"
-                  hx-target="#file-list"
-                  hx-trigger="change">
-            <option value="" selected></option>
-            {% for id, name in vendors.items() %}<option value="{{ id }}">{{ name }}</option>{% endfor %}
-          </select>
-          <label for="vendor">Select Vendor</label>
+  <div class="col-6">
+    <div class="accordion" id="file-accordion">
+      <div class="accordion-item">
+        <h2 class="accordion-header">
+          <button class="accordion-button"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#collapse-local">Browse Local Files</button>
+        </h2>
+        <div id="collapse-local"
+             class="accordion-collapse collapse"
+             data-bs-parent="#file-accordion">
+          <div class="accordion-body">
+            <h5>Select Files</h5>
+            <input name="vendor" type="hidden" value="" />
+            <input id="local_files"
+                   class="form-control"
+                   name="local_files"
+                   type="file"
+                   multiple />
+          </div>
         </div>
-        <div id="file-list"></div>
+      </div>
+      <div class="accordion-item">
+        <h2 class="accordion-header">
+          <button class="accordion-button"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#collapse-remote">Get Vendor Files</button>
+        </h2>
+        <div id="collapse-remote"
+             class="accordion-collapse collapse"
+             data-bs-parent="#file-accordion">
+          <div class="accordion-body">
+            <div class="form-floating">
+              <select id="vendor"
+                      class="form-select"
+                      name="vendor"
+                      hx-get="/api/remote-files"
+                      hx-target="#file-list"
+                      hx-trigger="change">
+                <option value="" selected></option>
+                {% for id, name in vendors.items() %}<option value="{{ id }}">{{ name }}</option>{% endfor %}
+              </select>
+              <label for="vendor">Select Vendor</label>
+            </div>
+            <div id="file-list"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
