@@ -9,41 +9,6 @@ logger = logging.getLogger(__name__)
 htmx_router = APIRouter(prefix="/htmx", tags=["htmx"])
 
 
-@htmx_router.get("/forms/context", response_class=HTMLResponse)
-def get_context_form(request: Request) -> HTMLResponse:
-    """Renders form for context input."""
-    return request.app.state.templates.TemplateResponse(
-        request=request, name="forms/context.html"
-    )
-
-
-@htmx_router.get("/forms/single-context", response_class=HTMLResponse)
-def get_single_context_form(
-    request: Request,
-    disabled: bool,
-    library: str | None = None,
-    collection: str | None = None,
-    record_type: str | None = None,
-) -> HTMLResponse:
-    """Renders form for context input."""
-    return request.app.state.templates.TemplateResponse(
-        request=request, name="forms/context.html"
-    )
-
-
-@htmx_router.get("/forms/disabled-context", response_class=HTMLResponse)
-def get_disabled_context_form(
-    request: Request, library: str, collection: str, record_type: str
-) -> HTMLResponse:
-    """Renders disabled context input form with selected values."""
-    context = {"library": library, "collection": collection, "record_type": record_type}
-    return request.app.state.templates.TemplateResponse(
-        request=request,
-        name="forms/disabled_context.html",
-        context={"context": context},
-    )
-
-
 @htmx_router.get("/forms/templates", response_class=HTMLResponse)
 def get_template_form(request: Request) -> HTMLResponse:
     """Renders form for creating/editing order templates."""
@@ -58,9 +23,22 @@ def get_collection_field(request: Request, library: str):
         return request.app.state.templates.TemplateResponse(
             name="forms/collection_field.html",
             request=request,
-            context={"disabled": False},
+            context={"disabled": False, "library": library},
         )
 
     return request.app.state.templates.TemplateResponse(
-        name="forms/collection_field.html", request=request, context={"disabled": True}
+        name="forms/collection_field.html",
+        request=request,
+        context={"disabled": True, "library": library},
+    )
+
+
+@htmx_router.get("/forms/update-context", response_class=HTMLResponse)
+def get_updated_context_form(
+    request: Request, record_type: str | None = None, collection: str | None = None
+):
+    return request.app.state.templates.TemplateResponse(
+        name="forms/updated_context.html",
+        request=request,
+        context={"record_type": record_type, "collection": collection},
     )

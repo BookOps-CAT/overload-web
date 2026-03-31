@@ -15,6 +15,9 @@
       <select id="{{ field_id }}"
               class="form-select"
               name="{{ field_id }}"
+              hx-get="/htmx/forms/update-context"
+              hx-trigger="change,load"
+              hx-swap="none"
               required>
         <option value="" selected></option>
         {% for k, v in data['options'].items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}
@@ -30,7 +33,7 @@
             name="{{ field_id }}"
             hx-get="/htmx/forms/collection"
             hx-target="#collection-wrapper"
-            hx-trigger="change"
+            hx-trigger="change,load"
             required>
       <option value="" selected></option>
       {% for k, v in data["options"].items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}

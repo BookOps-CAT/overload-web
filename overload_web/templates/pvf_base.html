@@ -3,21 +3,25 @@
 {% block content %}
   <section class="pvf-body">
     {% block pvf_body %}
-      <section class="context-section">
-        {% block pvf_context_source %}{% endblock %}
-      </section>
-      <section class="file-source-section">
-        {% block pvf_file_source %}<h5>File Source</h5>{% endblock %}
-      </section>
-      <section class="template-source-section">
-        {% block pvf_template_source %}<h5>Apply Order Template</h5>{% endblock %}
-      </section>
-      {% block pvf_button %}
-        <div class="col">
-          <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
-        </div>
+      {% block form_start %}<form>{% endblock %}
+        <section class="context-section">
+          {% block pvf_context_source %}{% endblock %}
+        </section>
+        <section class="file-source-section">
+          {% block pvf_file_source %}{% endblock %}
+        </section>
+        <section class="template-source-section">
+          {% block pvf_template_source %}{% endblock %}
+        </section>
+        <section class="pvf-button-section">
+          {% block pvf_button %}
+            <div class="col">
+              <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
+            </div>
+          {% endblock %}
+        </section>
       {% endblock %}
-    {% endblock %}
+      {% block form_end %}</form>{% endblock %}
   </section>
   <section class="reports">
     <div id="pvf_output">

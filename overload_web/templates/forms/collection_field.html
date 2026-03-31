@@ -1,2 +1,11 @@
 {% import "macros/context.html" as macro %} {{ macro.context_form_field("collection", context_fields["collection"],
  disabled=disabled) }}
+<div class="col-2 text-center" id="library-img" hx-swap-oob="true">
+    {% if library %}
+        <img src="{{ url_for('static', path='images/' ~ library ~ 'Logo.gif') }}"
+             height="500"
+             width="500"
+             class="img-fluid"
+             alt="library logo" />
+    {% endif %}
+</div>

@@ -1,8 +1,10 @@
 {% extends 'pvf_base.html' %}
-<form id="pvf-form"
-      hx-post="/api/order-records/process-vendor-file"
-      hx-encoding="multipart/form-data"
-      hx-target="#pvf_output">
+{% block form_start %}
+  <form id="pvf-form"
+        hx-post="/api/full-records/process-vendor-file"
+        hx-encoding="multipart/form-data"
+        hx-target="#pvf_output">
+  {% endblock %}
   {% block pvf_context_source %}
     {% include "forms/disabled_context.html" %}
   {% endblock %}
@@ -11,4 +13,4 @@
     {% include "pvf_partials/file_source.html" %}
   {% endblock %}
   {% block pvf_button %}{{ super() }}{% endblock %}
-  </form>
+</form>

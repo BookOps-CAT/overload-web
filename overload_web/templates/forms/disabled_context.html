@@ -4,10 +4,6 @@
 {% set collection = context_fields["collection"]['options'][collection] %}
 <div id="context-form" class="col">
   <div class="row">
-    <div class="col-3" id="record_type_wrapper">
-      {{ macro.context_form_field("record_type", context_fields["record_type"], display_value=record_type,
-            disabled=True) }}
-    </div>
     <div class="col-3" id="library_wrapper">
       {{ macro.context_form_field("library", context_fields["library"], display_value=library, disabled=True) }}
     </div>
@@ -15,9 +11,16 @@
       {{ macro.context_form_field("collection", context_fields["collection"], display_value=collection, disabled=True) 
       }}
     </div>
+    <div class="col-3" id="record_type_wrapper">
+      {{ macro.context_form_field("record_type", context_fields["record_type"], display_value=record_type,
+            disabled=True) }}
+    </div>
     <div class="col-2 text-center" id="library-img">
       <img src="{{ url_for('static', path='images/' ~ library ~ 'Logo.gif') }}"
-           class="img-fluid" />
+           height="500"
+           width="500"
+           class="img-fluid"
+           alt="library logo" />
     </div>
     <div class="col-1">
       <div class="row">

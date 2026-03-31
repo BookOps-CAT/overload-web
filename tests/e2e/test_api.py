@@ -429,33 +429,6 @@ class TestApp:
             )
         assert "Trouble connecting: " in str(exc.value)
 
-    def test_htmx_get_context_form(self):
-        response = self.client.get("/htmx/forms/context")
-        assert response.status_code == 200
-        assert list(response.context.keys()) == ["request"]
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [
-            ("nypl", "BL", "full"),
-            ("nypl", "BL", "order_level"),
-            ("nypl", "RL", "full"),
-            ("nypl", "RL", "order_level"),
-            ("bpl", "NONE", "full"),
-            ("bpl", "NONE", "order_level"),
-        ],
-    )
-    def test_htmx_get_disabled_context_form(self, library, collection, record_type):
-        response = self.client.get(
-            f"/htmx/forms/disabled-context?library={library}&collection={collection}&record_type={record_type}"
-        )
-        assert response.status_code == 200
-        assert sorted(list(response.context["context"].keys())) == [
-            "collection",
-            "library",
-            "record_type",
-        ]
-
     def test_htmx_get_template_form(self):
         response = self.client.get("/htmx/forms/templates")
         assert response.status_code == 200
@@ -465,4 +438,30 @@ class TestApp:
     def test_htmx_get_collection_field(self, library):
         response = self.client.get(f"/htmx/forms/collection?library={library}")
         assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == ["disabled", "request"]
+        assert sorted(list(response.context.keys())) == [
+            "disabled",
+            "library",
+            "request",
+        ]
+
+    @pytest.mark.parametrize(
+        "collection, record_type",
+        [
+            ("BL", "full"),
+            ("BL", "order_level"),
+            ("RL", "full"),
+            ("RL", "order_level"),
+            ("NONE", "full"),
+            ("NONE", "order_level"),
+        ],
+    )
+    def test_htmx_get_update_context_form(self, collection, record_type):
+        response = self.client.get(
+            f"/htmx/forms/update-context?collection={collection}&record_type={record_type}"
+        )
+        assert response.status_code == 200
+        assert sorted(list(response.context.keys())) == [
+            "collection",
+            "record_type",
+            "request",
+        ]
