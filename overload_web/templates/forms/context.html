@@ -1,22 +1,28 @@
 {% import "pvf_partials/macros.html" as macro %}
 <div class="row">
-  <div class="col" id="library_wrapper">{{ macro.library_field("library", context_fields["library"]) }}</div>
-  <div class="col" id="collection-wrapper">
-    {{ macro.context_form_field("collection", context_fields["collection"], disabled=False) }}
+  <div class="col" id="library_wrapper">
+    {% block library_wrapper %}{{ macro.library_field("library", context_fields["library"]) }}{% endblock %}
+  </div>
+  <div class="col" id="collection_wrapper">
+    {% block collection_wrapper %}
+      {{ macro.context_form_field("collection", context_fields["collection"], disabled=False) }}
+    {% endblock %}
   </div>
   <div class="col" id="record_type_wrapper">
-    {{ macro.context_form_field("record_type", context_fields["record_type"], disabled=False) }}
+    {% block record_type_wrapper %}
+      {{ macro.context_form_field("record_type", context_fields["record_type"], disabled=False) }}
+    {% endblock %}
   </div>
   <div class="col-2 text-center">
-    <div id="library-img"></div>
+    {% block library_image %}<div id="library-img"></div>{% endblock %}
   </div>
   <div class="col-1 text-center">
-    <div class="row" id="collection-display"></div>
-    <div class="row" id="record_type-display"></div>
+    {% block collection_display %}<div class="row" id="collection_display"></div>{% endblock %}
+    {% block record_type_display %}<div class="row" id="record_type_display"></div>{% endblock %}
   </div>
 </div>
 <div class="row">
   <div class="col">
-    <button class="btn btn-nypl" form="context-form" type="submit">Submit</button>
+    {% block context_button %}<button class="btn btn-nypl" form="context-form" type="submit">Submit</button>{% endblock %}
   </div>
 </div>

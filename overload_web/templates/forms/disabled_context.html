@@ -1,36 +1,24 @@
-{% import "pvf_partials/macros.html" as macro %}
-<div class="row">
-  <div class="col-3" id="library_wrapper">
-    {{ macro.context_form_field("library", context_fields["library"], display_value=library, disabled=True) }}
-  </div>
-  <div class="col-3" id="collection-wrapper">
-    {{ macro.context_form_field("collection", context_fields["collection"], display_value=collection, disabled=True) 
-    }}
-  </div>
-  <div class="col-3" id="record_type_wrapper">
-    {{ macro.context_form_field("record_type", context_fields["record_type"], display_value=record_type,
-        disabled=True) }}
-  </div>
-  <div class="col-2 text-center" id="library-img">
-    <img src="{{ url_for('static', path='images/' ~ library ~ 'Logo.gif') }}"
-         height="auto"
-         width="auto"
-         class="img-fluid"
-         alt="library logo" />
-  </div>
-  <div class="col-1">
-    {% if collection != "None" %}
-      <div class="row">
-        <h3>{{ context_fields["collection"]['options'][collection] }}</h3>
-      </div>
-    {% endif %}
-    <div class="row">
-      <h3>{{ context_fields["record_type"]['options'][record_type] }}</h3>
-    </div>
-  </div>
-</div>
-<div class="row">
-  <div class="col">
-    <a href="/process" class="btn btn-nypl my-3">Edit Library Context</a>
-  </div>
-</div>
+{% extends 'forms/context.html' %}{% import "pvf_partials/macros.html" as macro %}
+{% block library_wrapper %}
+  {{ macro.context_form_field("library", context_fields["library"], display_value=library, disabled=True) }}
+{% endblock %}
+{% block collection_wrapper %}
+  {{ macro.context_form_field("collection", context_fields["collection"], display_value=collection, disabled=True) 
+  }}
+{% endblock %}
+{% block record_type_wrapper %}
+  {{ macro.context_form_field("record_type", context_fields["record_type"], display_value=record_type,
+    disabled=True) }}
+{% endblock %}
+{% block library_image %}
+  <img src="{{ url_for('static', path='images/' ~ library ~ 'Logo.gif') }}"
+       height="auto"
+       width="auto"
+       class="object-fit-scale"
+       alt="library logo" />
+{% endblock %}
+{% if collection != "None" %}
+  {% block collection_display %}<h3>{{ context_fields["collection"]['options'][collection] }}</h3>{% endblock %}
+{% endif %}
+{% block record_type_display %}<h3>{{ context_fields["record_type"]['options'][record_type] }}</h3>{% endblock %}
+{% block context_button %}<a href="/process" class="btn btn-nypl my-3">Edit Library Context</a>{% endblock %}
