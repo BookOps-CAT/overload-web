@@ -19,9 +19,11 @@
          alt="library logo" />
   </div>
   <div class="col-1">
-    <div class="row">
-      <h3>{{ context_fields["collection"]['options'][collection] }}</h3>
-    </div>
+    {% if collection != "None" %}
+      <div class="row">
+        <h3>{{ context_fields["collection"]['options'][collection] }}</h3>
+      </div>
+    {% endif %}
     <div class="row">
       <h3>{{ context_fields["record_type"]['options'][record_type] }}</h3>
     </div>

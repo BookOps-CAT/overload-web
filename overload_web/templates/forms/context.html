@@ -1,20 +1,22 @@
 {% import "macros/context.html" as macro %}
-<div class="col">
-  <div class="row">
-    <div class="col" id="library_wrapper">{{ macro.library_field("library", context_fields["library"]) }}</div>
-    <div class="col" id="collection-wrapper">
-      {{ macro.context_form_field("collection", context_fields["collection"], disabled=False) }}
-    </div>
-    <div class="col" id="record_type_wrapper">
-      {{ macro.context_form_field("record_type", context_fields["record_type"], disabled=False) }}
-    </div>
-    <div class="col-2 text-center">
-      <div id="library-img"></div>
-    </div>
-    <div class="col-1 text-center">
-      <div class="row" id="collection-display"></div>
-      <div class="row" id="record_type-display"></div>
-    </div>
+<div class="row">
+  <div class="col" id="library_wrapper">{{ macro.library_field("library", context_fields["library"]) }}</div>
+  <div class="col" id="collection-wrapper">
+    {{ macro.context_form_field("collection", context_fields["collection"], disabled=False) }}
   </div>
-  <button class="btn btn-nypl" form="context-form" type="submit">Submit</button>
+  <div class="col" id="record_type_wrapper">
+    {{ macro.context_form_field("record_type", context_fields["record_type"], disabled=False) }}
+  </div>
+  <div class="col-2 text-center">
+    <div id="library-img"></div>
+  </div>
+  <div class="col-1 text-center">
+    <div class="row" id="collection-display"></div>
+    <div class="row" id="record_type-display"></div>
+  </div>
+</div>
+<div class="row">
+  <div class="col">
+    <button class="btn btn-nypl" form="context-form" type="submit">Submit</button>
+  </div>
 </div>
