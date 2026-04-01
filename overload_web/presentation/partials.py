@@ -17,28 +17,25 @@ def get_template_form(request: Request) -> HTMLResponse:
     )
 
 
-@htmx_router.get("/forms/collection", response_class=HTMLResponse)
-def get_collection_field(request: Request, library: str):
-    if library == "nypl":
-        return request.app.state.templates.TemplateResponse(
-            name="forms/collection_field.html",
-            request=request,
-            context={"disabled": False, "library": library},
-        )
-
-    return request.app.state.templates.TemplateResponse(
-        name="forms/collection_field.html",
-        request=request,
-        context={"disabled": True, "library": library},
-    )
-
-
 @htmx_router.get("/forms/update-context", response_class=HTMLResponse)
 def get_updated_context_form(
-    request: Request, record_type: str | None = None, collection: str | None = None
+    request: Request,
+    library: str | None = None,
+    record_type: str | None = None,
+    collection: str | None = None,
 ):
+
+    ctx = {
+        "library": library,
+        "record_type": record_type,
+        "collection": collection,
+        "disabled": False,
+    }
+    if library == "bpl":
+        ctx["disabled"] = True
+        return request.app.state.templates.TemplateResponse(
+            name="forms/updated_context.html", request=request, context=ctx
+        )
     return request.app.state.templates.TemplateResponse(
-        name="forms/updated_context.html",
-        request=request,
-        context={"record_type": record_type, "collection": collection},
+        name="forms/updated_context.html", request=request, context=ctx
     )

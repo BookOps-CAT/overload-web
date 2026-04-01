@@ -428,34 +428,26 @@ class TestApp:
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request"]
 
-    @pytest.mark.parametrize("library", ["bpl", "nypl"])
-    def test_htmx_get_collection_field(self, library):
-        response = self.client.get(f"/htmx/forms/collection?library={library}")
-        assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == [
-            "disabled",
-            "library",
-            "request",
-        ]
-
     @pytest.mark.parametrize(
-        "collection, record_type",
+        "library, collection, record_type",
         [
-            ("BL", "full"),
-            ("BL", "order_level"),
-            ("RL", "full"),
-            ("RL", "order_level"),
-            ("NONE", "full"),
-            ("NONE", "order_level"),
+            ("nypl", "BL", "full"),
+            ("nypl", "BL", "order_level"),
+            ("nypl", "RL", "full"),
+            ("nypl", "RL", "order_level"),
+            ("bpl", "NONE", "full"),
+            ("bpl", "NONE", "order_level"),
         ],
     )
-    def test_htmx_get_update_context_form(self, collection, record_type):
+    def test_htmx_get_update_context_form(self, library, collection, record_type):
         response = self.client.get(
-            f"/htmx/forms/update-context?collection={collection}&record_type={record_type}"
+            f"/htmx/forms/update-context?library={library}&collection={collection}&record_type={record_type}"
         )
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == [
             "collection",
+            "disabled",
+            "library",
             "record_type",
             "request",
         ]
