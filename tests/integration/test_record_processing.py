@@ -3,7 +3,7 @@ import pytest
 from overload_web.application.commands.process import (
     CombineMarcFiles,
     ProcessFullRecords,
-    ProcessOrderRecordFiles,
+    ProcessOrderRecords,
 )
 from overload_web.application.services import report_services
 from overload_web.domain.errors import OverloadError
@@ -39,7 +39,7 @@ class TestProcessBatch:
 
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        out = ProcessOrderRecordFiles.execute(
+        out = ProcessOrderRecords.execute(
             {"foo.mrc": marc_data},
             marc_engine=engine,
             fetcher=fake_fetcher,
@@ -80,7 +80,7 @@ class TestProcessBatch:
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
         with pytest.raises(OverloadError) as exc:
-            ProcessOrderRecordFiles.execute(
+            ProcessOrderRecords.execute(
                 {"foo.mrc": marc_data},
                 marc_engine=engine,
                 fetcher=fake_fetcher,
@@ -142,7 +142,7 @@ class TestWriteReport:
         engine = marc_engine.MarcEngine(rules=engine_config)
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        out = ProcessOrderRecordFiles.execute(
+        out = ProcessOrderRecords.execute(
             {"foo.mrc": marc_data},
             marc_engine=engine,
             fetcher=fake_fetcher,

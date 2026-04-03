@@ -4,7 +4,7 @@ from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.application.commands.process import (
     ProcessFullRecords,
-    ProcessOrderRecordFiles,
+    ProcessOrderRecords,
 )
 from overload_web.domain.models import bibs
 from overload_web.infrastructure import clients, template_db
@@ -21,7 +21,7 @@ def processed_records(monkeypatch, stub_report):
         )
 
     monkeypatch.setattr(ProcessFullRecords, "execute", fake_response)
-    monkeypatch.setattr(ProcessOrderRecordFiles, "execute", fake_response)
+    monkeypatch.setattr(ProcessOrderRecords, "execute", fake_response)
 
 
 def fake_sql_session():

@@ -20,7 +20,7 @@ from overload_web.application.commands.order_template import (
 from overload_web.application.commands.process import (
     CombineMarcFiles,
     ProcessFullRecords,
-    ProcessOrderRecordFiles,
+    ProcessOrderRecords,
     SaveProcessedRecords,
 )
 from overload_web.presentation import deps, dto
@@ -220,7 +220,7 @@ def process_acq_records(
     )
     template_data = order_template.model_dump()
     matchpoints = matchpoints.model_dump()
-    processed = ProcessOrderRecordFiles.execute(
+    processed = ProcessOrderRecords.execute(
         batches={f"{i.file_name}": i.content for i in all_files},
         marc_engine=marc_engine,
         fetcher=fetcher,
@@ -334,7 +334,7 @@ def process_sel_records(
     )
     template_data = order_template.model_dump()
     matchpoints = matchpoints.model_dump()
-    processed = ProcessOrderRecordFiles.execute(
+    processed = ProcessOrderRecords.execute(
         batches={f"{i.file_name}": i.content for i in all_files},
         marc_engine=marc_engine,
         fetcher=fetcher,

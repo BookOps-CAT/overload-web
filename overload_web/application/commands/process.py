@@ -87,84 +87,34 @@ class SaveProcessedRecords:
 
 
 class ProcessOrderRecords:
-    """Handles parsing, matching, and analysis of a file of order-level MARC records."""
+    """Handles parsing, matching, and analysis of of order-level MARC records."""
 
     @staticmethod
     def execute(
-        data: bytes,
-        marc_engine: ports.MarcEnginePort,
+        batches: dict[str, bytes],
         fetcher: ports.BibFetcher,
+        marc_engine: ports.MarcEnginePort,
         matchpoints: dict[str, str],
         template_data: dict[str, Any],
-    ) -> list[bibs.DomainBib]:
+    ) -> bibs.ProcessedFileBatch:
         """
-        Process a file of order-level MARC records.
+        Process order-level MARC records.
 
         This service parses order-level MARC records, matches them against Sierra,
         analyzes all bibs that were returned as matches, updates the records with
         required fields, and outputs the updated records and the match analysis.
 
         Args:
-            data:
-                binary MARC data as a `bytes` object.
-            matchpoints:
-                A dictionary containing matchpoints to be used in matching records.
-            template_data:
-                Order template data as a dictionary.
-            file_name:
-                the name of the file being processed.
-            marc_engine:
-                a `ports.MarcEnginePort` object used by the command.
-            fetcher:
-                a `ports.BibFetcher` object used by the command.
-        Returns:
-            A `ProcessedFileBatch` object containing the processed records as bytes
-            objects and the processing statistics
-        """
-        records = marc_services.BibParser.parse_marc_data(
-            data=data, engine=marc_engine, vendor=template_data.get("vendor", "UNKNOWN")
-        )
-        marc_services.BarcodeValidator.ensure_unique(records)
-        for bib in records:
-            matches = match_service.BibMatcher(fetcher).match_order_record(
-                bib, matchpoints=matchpoints
-            )
-            analysis = bib.analyze_matches(candidates=matches)
-            bib.apply_match(analysis)
-            marc_services.BibUpdater.update_record(
-                bib, engine=marc_engine, template_data=template_data
-            )
-        return records
-
-
-class ProcessOrderRecordFiles:
-    """
-    Handles parsing, matching, and analysis of multiple files of
-    order-level MARC records.
-    """
-
-    @staticmethod
-    def execute(
-        batches: dict[str, bytes],
-        marc_engine: ports.MarcEnginePort,
-        fetcher: ports.BibFetcher,
-        matchpoints: dict[str, str],
-        template_data: dict[str, Any],
-    ) -> bibs.ProcessedFileBatch:
-        """
-        Process files of order-level MARC records.
-
-        Args:
             batches:
                 a dictionary containing pairs of file names and associated binary data
+            fetcher:
+                a `ports.BibFetcher` object used by the command.
+            marc_engine:
+                a `ports.MarcEnginePort` object used by the command.
             matchpoints:
                 A dictionary containing matchpoints to be used in matching records.
             template_data:
                 Order template data as a dictionary.
-            marc_engine:
-                a `ports.MarcEnginePort` object used by the command.
-            fetcher:
-                a `ports.BibFetcher` object used by the command.
         Returns:
             A `ProcessedFileBatch` object containing the processed records as bytes
             objects and the processing statistics
@@ -173,20 +123,30 @@ class ProcessOrderRecordFiles:
         out_batches = []
         file_names = []
         for file_name, data in batches.items():
-            out = ProcessOrderRecords.execute(
+            file_names.append(file_name)
+            records = marc_services.BibParser.parse_marc_data(
                 data=data,
-                marc_engine=marc_engine,
-                fetcher=fetcher,
-                template_data=template_data,
-                matchpoints=matchpoints,
+                engine=marc_engine,
+                vendor=template_data.get("vendor", "UNKNOWN"),
             )
-            all_records.extend(out)
+            marc_services.BarcodeValidator.ensure_unique(records)
+            for bib in records:
+                matches = match_service.BibMatcher(fetcher).match_order_record(
+                    bib, matchpoints=matchpoints
+                )
+                analysis = bib.analyze_matches(candidates=matches)
+                bib.apply_match(analysis)
+                marc_services.BibUpdater.update_record(
+                    bib, engine=marc_engine, template_data=template_data
+                )
+            all_records.extend(records)
             out_batches.append(
                 bibs.ProcessedFile(
-                    file_name=file_name, content=marc_services.BibSerializer.write(out)
+                    file_name=file_name,
+                    content=marc_services.BibSerializer.write(records),
                 )
             )
-            file_names.append(file_name)
+
         report = report_services.PVFReporter.create_order_records_report(
             records=all_records, file_names=file_names
         )
