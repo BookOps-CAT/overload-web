@@ -17,7 +17,6 @@ class CreateOrderRecordsProcessingReport:
         all_recs = []
         for file in processed:
             stats["file_names"].append(file.file_name)
-            stats["missing_barcodes"].extend(file.missing_barcodes)
             all_recs.extend(file.records)
             for rec in file.records:
                 for k, v in rec.analysis.__dict__.items():
