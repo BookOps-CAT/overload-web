@@ -112,22 +112,25 @@ class TestReporter:
 def stub_report(sel_bib, sierra_response, record_type):
     analysis = sel_bib.analyze_matches(candidates=[sierra_response])
     sel_bib.apply_match(analysis)
-    return bibs.ProcessingStatistics(
-        file_names=["foo.mrc"],
-        total_files=1,
-        total_records=1,
-        vendor=["BTSERIES"],
-        resource_id=[sel_bib.analysis.resource_id],
-        target_bib_id=[sel_bib.analysis.target_bib_id],
-        duplicate_records=[sel_bib.analysis.duplicate_records],
-        mixed=[sel_bib.analysis.mixed],
-        other=[sel_bib.analysis.other],
-        call_number_match=[sel_bib.analysis.call_number_match],
-        call_number=[sel_bib.call_number],
-        target_call_no=[sel_bib.analysis.target_call_no],
-        target_title=[sel_bib.analysis.target_title],
-        updated_by_vendor=[sel_bib.analysis.updated_by_vendor],
-        action=sel_bib.analysis.action,
+    return bibs.ProcessedFileBatch(
+        files={"foo.mrc": b""},
+        report=bibs.ProcessingStatistics(
+            file_names=["foo.mrc"],
+            total_files=1,
+            total_records=1,
+            vendor=["BTSERIES"],
+            resource_id=[sel_bib.analysis.resource_id],
+            target_bib_id=[sel_bib.analysis.target_bib_id],
+            duplicate_records=[sel_bib.analysis.duplicate_records],
+            mixed=[sel_bib.analysis.mixed],
+            other=[sel_bib.analysis.other],
+            call_number_match=[sel_bib.analysis.call_number_match],
+            call_number=[sel_bib.call_number],
+            target_call_no=[sel_bib.analysis.target_call_no],
+            target_title=[sel_bib.analysis.target_title],
+            updated_by_vendor=[sel_bib.analysis.updated_by_vendor],
+            action=sel_bib.analysis.action,
+        ),
     )
 
 

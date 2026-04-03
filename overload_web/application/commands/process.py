@@ -146,7 +146,6 @@ class ProcessOrderRecords:
                     content=marc_services.BibSerializer.write(records),
                 )
             )
-
         report = report_services.PVFReporter.create_order_records_report(
             records=all_records, file_names=file_names
         )

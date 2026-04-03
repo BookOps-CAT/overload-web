@@ -380,33 +380,30 @@ class ProcessedFile:
     content: bytes
 
 
-@dataclass
 class ProcessedFileBatch:
     """A dataclass representing a batch of processed files and their statistics"""
 
-    files: list[ProcessedFile]
-    report: ProcessingStatistics
-
-
-@dataclass
-class ProcessingStatistics:
-    action: list[str]
-    call_number: list[str]
-    call_number_match: list[str]
-    duplicate_records: list[str]
-    file_names: list[str]
-    mixed: list[str]
-    other: list[str]
-    resource_id: list[str]
-    target_bib_id: list[str]
-    target_call_no: list[str]
-    target_title: list[str]
-    total_files: int
-    total_records: int
-    updated_by_vendor: list[str]
-    vendor: list[str]
-    missing_barcodes: list[str] = field(default_factory=list)
-    processing_integrity: bool = True
+    def __init__(
+        self, files: list[ProcessedFile], report: ProcessingStatistics
+    ) -> None:
+        self.action = report.action
+        self.call_number = report.call_number
+        self.call_number_match = report.call_number_match
+        self.duplicate_records = report.duplicate_records
+        self.file_names = report.file_names
+        self.files = files
+        self.mixed = report.mixed
+        self.other = report.other
+        self.resource_id = report.resource_id
+        self.target_bib_id = report.target_bib_id
+        self.target_call_no = report.target_call_no
+        self.target_title = report.target_title
+        self.total_files = report.total_files
+        self.total_records = report.total_records
+        self.updated_by_vendor = report.updated_by_vendor
+        self.vendor = report.vendor
+        self.missing_barcodes = report.missing_barcodes
+        self.processing_integrity = report.processing_integrity
 
     @property
     def call_number_report_data(self) -> dict[str, list[Any]]:
@@ -434,6 +431,27 @@ class ProcessingStatistics:
     @property
     def vendor_report_data(self) -> dict[str, list[Any]]:
         return {"action": self.action, "vendor": self.vendor}
+
+
+@dataclass
+class ProcessingStatistics:
+    action: list[str | None]
+    call_number: list[str | None]
+    call_number_match: list[bool | None]
+    duplicate_records: list[list[str | None]]
+    file_names: list[str | None]
+    mixed: list[list[str | None]]
+    other: list[list[str | None]]
+    resource_id: list[str | None]
+    target_bib_id: list[str | None]
+    target_call_no: list[str | None]
+    target_title: list[str | None]
+    total_files: int
+    total_records: int
+    updated_by_vendor: list[bool]
+    vendor: list[str | None]
+    missing_barcodes: list[str | None] = field(default_factory=list)
+    processing_integrity: bool = True
 
 
 class RecordType(StrEnum):

@@ -232,7 +232,7 @@ def process_acq_records(
         request=request,
         name="pvf_partials/pvf_results.html",
         context={
-            "report": processed.report.__dict__,
+            "report": processed.__dict__,
             "files": [
                 {"file_name": i.file_name, "bytes": i.content} for i in processed.files
             ],
@@ -286,7 +286,7 @@ def process_cat_records(
         request=request,
         name="pvf_partials/pvf_results.html",
         context={
-            "report": processed.report.__dict__,
+            "report": processed.__dict__,
             "files": [
                 {"file_name": i.file_name, "bytes": i.content} for i in processed.files
             ],
@@ -346,7 +346,7 @@ def process_sel_records(
         request=request,
         name="pvf_partials/pvf_results.html",
         context={
-            "report": processed.report.__dict__,
+            "report": processed.__dict__,
             "files": [
                 {"file_name": i.file_name, "bytes": i.content} for i in processed.files
             ],
