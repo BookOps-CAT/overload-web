@@ -103,7 +103,7 @@ class BibUpdater:
 
 class BibSerializer:
     @staticmethod
-    def write(records: list[bibs.DomainBib]) -> io.BytesIO:
+    def write(records: list[bibs.DomainBib]) -> bytes:
         """
         Serialize `DomainBib` objects into a binary MARC stream.
 
@@ -119,7 +119,8 @@ class BibSerializer:
             logger.info(f"Writing MARC binary for record: {record}")
             io_data.write(record.binary_data)
         io_data.seek(0)
-        return io_data
+        out = io_data.getvalue()
+        return out
 
 
 class Deduplicator:
