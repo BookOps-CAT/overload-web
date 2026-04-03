@@ -12,14 +12,6 @@ Models:
 `TemplateTable`
     The table model that includes all fields within an order template including fields
     that are only required for the template to be saved to the database.
-`_ProcessedOrderMarcFileBase`
-
-`ProcessedOrderMarcFile`
-
-`_ProcessedFullMarcFileBase`
-
-`ProcessedFullMarcFile`
-
 """
 
 from __future__ import annotations
@@ -77,23 +69,3 @@ class TemplateTable(_TemplateTableBase, table=True):
     """
 
     id: int = Field(default=None, primary_key=True, index=True)
-
-
-# class _ProcessedOrderMarcFileBase(SQLModel):
-#     file_name: str = Field(nullable=False)
-#     records: list[bibs.DomainBib] = Field(nullable=False)
-
-
-# class ProcessedOrderMarcFile(_ProcessedOrderMarcFileBase, table=True):
-#     id: int = Field(default=None, primary_key=True, index=True)
-
-
-# class _ProcessedFullMarcFileBase(SQLModel):
-#     merge_records: list[bibs.DomainBib] = Field(default=[], nullable=False)
-#     insert_records: list[bibs.DomainBib] = Field(default=[], nullable=False)
-#     deduplicated_records: list[bibs.DomainBib] = Field(default=[], nullable=False)
-#     missing_barcodes: list[bibs.DomainBib] = Field(default=[], nullable=False)
-
-
-# class ProcessedFullMarcFile(_ProcessedFullMarcFileBase, table=True):
-#     id: int = Field(default=None, primary_key=True, index=True)
