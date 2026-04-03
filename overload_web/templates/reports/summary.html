@@ -1,2 +1,8 @@
 <h3>Output:</h3>
+{% if batch_id %}
+    <h5>Batch ID</h5>
+    <b>{{ batch_id }}</b>
+</br>
+{% endif %}
 {% if report %}{{ report }}{% endif %}
+{% if files %}{{ files }}{% endif %}

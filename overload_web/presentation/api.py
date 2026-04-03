@@ -21,9 +21,9 @@ from overload_web.application.commands.process import (
     CombineMarcFiles,
     ProcessFullRecords,
     ProcessOrderRecords,
+    SaveProcessedFullRecords,
 )
 from overload_web.application.commands.statistics import (
-    CreateFullRecordsProcessingReport,
     CreateOrderRecordsProcessingReport,
 )
 from overload_web.presentation import deps, dto
@@ -246,6 +246,7 @@ def process_cat_records(
     request: Request,
     fetcher: Annotated[Any, Depends(deps.get_fetcher)],
     marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
+    repository: Annotated[Any, Depends(deps.pvf_batch_db)],
     local_files: Annotated[list[UploadFile] | None, Form()] = None,
     remote_file_names: Annotated[list[str] | None, Form()] = None,
     vendor: Annotated[str | None, Form()] = None,
@@ -275,15 +276,22 @@ def process_cat_records(
         data=[i.content for i in all_files], marc_engine=marc_engine
     )
     processed = ProcessFullRecords.execute(
-        data=combined, marc_engine=marc_engine, fetcher=fetcher
+        data=combined,
+        marc_engine=marc_engine,
+        fetcher=fetcher,
+        file_names=[i.file_name for i in all_files],
     )
-    report = CreateFullRecordsProcessingReport.execute(
-        processed, file_names=[i.file_name for i in all_files]
-    )
+    batch = SaveProcessedFullRecords.execute(repo=repository, batch=processed)
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
-        context={"report": report.__dict__},
+        context={
+            "report": processed.report.__dict__,
+            "files": [
+                {"file_name": i.file_name, "bytes": i.records} for i in processed.files
+            ],
+            "batch_id": batch["id"],
+        },
     )
 
 

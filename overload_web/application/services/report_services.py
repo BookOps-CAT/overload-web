@@ -8,9 +8,29 @@ from overload_web.domain.models import bibs, reports
 logger = logging.getLogger(__name__)
 
 
-class CreateOrderRecordsProcessingReport:
+class PVFReporter:
     @staticmethod
-    def execute(
+    def create_full_records_report(
+        records: list[bibs.DomainBib],
+        missing_barcodes: list[str],
+        file_names: list[str],
+    ) -> reports.ProcessingStatistics:
+        stats = defaultdict(list)
+        all_recs = []
+        stats["file_names"].extend(file_names)
+        stats["missing_barcodes"].extend(missing_barcodes)
+        all_recs.extend(records)
+        for rec in all_recs:
+            for k, v in rec.analysis.__dict__.items():
+                stats[k].append(v)
+            stats["vendor"].append(getattr(rec, "vendor", "UNKNOWN"))
+        out: dict[str, Any] = dict(stats)
+        out["total_records"] = len(all_recs)
+        out["total_files"] = len(stats["file_names"])
+        return reports.ProcessingStatistics(**out)
+
+    @staticmethod
+    def create_order_records_report(
         processed: list[bibs.ProcessedMarcFile],
     ) -> reports.ProcessingStatistics:
         stats = defaultdict(list)
@@ -28,9 +48,9 @@ class CreateOrderRecordsProcessingReport:
         return reports.ProcessingStatistics(**out)
 
 
-class WriteReportToSheet:
+class ReportWriter:
     @staticmethod
-    def execute(
+    def write_report_to_google_sheet(
         data: reports.ProcessingStatistics,
         handler: ports.ReportHandler,
         writer: ports.ReportWriter,

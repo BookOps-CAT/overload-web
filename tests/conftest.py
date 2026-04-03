@@ -11,7 +11,7 @@ from bookops_marc import Bib
 from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain.models import bibs, sierra_responses
+from overload_web.domain.models import bibs, reports, sierra_responses
 from overload_web.infrastructure import clients
 from overload_web.infrastructure import marc_engine as engine
 
@@ -731,4 +731,27 @@ def mock_sheet_config_no_creds(monkeypatch, mock_sheet_config):
     monkeypatch.setattr(
         "google.oauth2.credentials.Credentials.from_authorized_user_info",
         lambda *args, **kwargs: None,
+    )
+
+
+@pytest.fixture
+def stub_report():
+    return reports.ProcessingStatistics(
+        action=["insert"],
+        call_number=["Foo"],
+        call_number_match=[True],
+        duplicate_records=[],
+        file_names=["foo.mrc"],
+        mixed=[],
+        other=[],
+        resource_id=["12345"],
+        target_bib_id=["b12345"],
+        target_call_no=["Foo"],
+        target_title=["Bar"],
+        total_files=1,
+        total_records=1,
+        updated_by_vendor=[False],
+        vendor=["Baz"],
+        missing_barcodes=[],
+        processing_integrity=True,
     )

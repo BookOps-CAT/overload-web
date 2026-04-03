@@ -383,6 +383,14 @@ class ProcessedMarcFile:
     missing_barcodes: list[str] = field(default_factory=list)
 
 
+@dataclass
+class ProcessedFile:
+    """A dataclass representing a processed file of records."""
+
+    records: bytes
+    file_name: str
+
+
 class RecordType(StrEnum):
     """Valid values for record type/processing workflow."""
 

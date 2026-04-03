@@ -6,7 +6,7 @@ from overload_web.application.commands.order_template import (
     GetOrderTemplate,
     ListOrderTemplates,
 )
-from overload_web.infrastructure import repository, tables
+from overload_web.infrastructure import template_db
 
 
 @pytest.fixture
@@ -22,7 +22,7 @@ def test_sql_session():
 @pytest.fixture
 def make_template():
     def _make_template(data):
-        template = tables.TemplateTable(**data)
+        template = template_db.TemplateTable(**data)
         return template
 
     return _make_template
@@ -31,10 +31,10 @@ def make_template():
 class TestTemplateService:
     @pytest.fixture
     def repo(self, test_sql_session):
-        return repository.OrderTemplateRepository(session=test_sql_session)
+        return template_db.OrderTemplateRepository(session=test_sql_session)
 
     def test_OrderTemplateRepository(self, test_sql_session):
-        repo = repository.OrderTemplateRepository(session=test_sql_session)
+        repo = template_db.OrderTemplateRepository(session=test_sql_session)
         assert hasattr(repo, "session")
 
     def test_get_template(self, repo):

@@ -1,9 +1,14 @@
+import datetime
 import logging
 from typing import Any
 
 from overload_web.application import ports
-from overload_web.application.services import marc_services, match_service
-from overload_web.domain.models import bibs
+from overload_web.application.services import (
+    marc_services,
+    match_service,
+    report_services,
+)
+from overload_web.domain.models import aggregate, bibs
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +28,11 @@ class ProcessFullRecords:
 
     @staticmethod
     def execute(
-        data: bytes, marc_engine: ports.MarcEnginePort, fetcher: ports.BibFetcher
-    ) -> bibs.ProcessedMarcFile:
+        data: bytes,
+        file_names: list[str],
+        marc_engine: ports.MarcEnginePort,
+        fetcher: ports.BibFetcher,
+    ) -> aggregate.ProcessedFileBatch:
         """
         Process a file of full MARC records.
 
@@ -34,12 +42,14 @@ class ProcessFullRecords:
 
         Args:
             data: binary MARC data as a `bytes` object.
-            file_name: the name of the file being processed.
+            file_names: the list of files being processed.
             marc_engine: a `ports.MarcEnginePort` object used by the command.
             fetcher: a `ports.BibFetcher` object used by the command.
         Returns:
-            A `ProcessedFullMarcFile` object containing the processed records,
-            the file name and the processing statistics
+            # A `ProcessedFullMarcFile` object containing the processed records,
+            # the file name and the processing statistics
+            A dict containing the processing statistics and nested key/value pairs
+            for each file to be output.
         """
         records = marc_services.BibParser.parse_marc_data(data=data, engine=marc_engine)
         marc_services.BarcodeValidator.ensure_unique(records)
@@ -53,8 +63,29 @@ class ProcessFullRecords:
         missing_barcodes = marc_services.BarcodeValidator.ensure_preserved(
             records=records, barcodes=barcodes
         )
-        out = bibs.ProcessedMarcFile(records=records, missing_barcodes=missing_barcodes)
-        return out
+        deduplicated = marc_services.Deduplicator.deduplicate(
+            records=records, engine=marc_engine
+        )
+        file_name = datetime.datetime.today().strftime("%y%m%d")
+        report = report_services.PVFReporter.create_full_records_report(
+            records=records, missing_barcodes=missing_barcodes, file_names=file_names
+        )
+        files = [
+            bibs.ProcessedFile(
+                file_name=f"{file_name}-{k}.mrc",
+                records=marc_services.BibSerializer.write(v),
+            )
+            for k, v in deduplicated.items()
+        ]
+        return aggregate.ProcessedFileBatch(files=files, report=report)
+
+
+class SaveProcessedFullRecords:
+    @staticmethod
+    def execute(
+        repo: ports.SqlRepositoryProtocol, batch: aggregate.ProcessedFileBatch
+    ) -> dict[str, Any]:
+        return repo.save(batch)
 
 
 class ProcessOrderRecords:

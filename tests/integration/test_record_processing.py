@@ -6,7 +6,6 @@ from overload_web.application.commands.process import (
     ProcessOrderRecords,
 )
 from overload_web.application.commands.statistics import (
-    CreateFullRecordsProcessingReport,
     CreateOrderRecordsProcessingReport,
     WriteReportToSheet,
 )
@@ -27,9 +26,10 @@ class TestProcessBatch:
             marc_data = fh.read()
         combined = CombineMarcFiles.execute(data=[marc_data], marc_engine=engine)
         out = ProcessFullRecords.execute(
-            combined, marc_engine=engine, fetcher=fake_fetcher
+            combined, marc_engine=engine, fetcher=fake_fetcher, file_names=["foo.mrc"]
         )
-        assert isinstance(out.records, list)
+        assert isinstance(out.files, list)
+        assert hasattr(out.report, "missing_barcodes")
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
@@ -65,7 +65,10 @@ class TestProcessBatch:
             marc_data = fh.read()
         with pytest.raises(OverloadError) as exc:
             ProcessFullRecords.execute(
-                marc_data, marc_engine=engine, fetcher=fake_fetcher
+                marc_data,
+                marc_engine=engine,
+                fetcher=fake_fetcher,
+                file_names=["foo.mrc"],
             )
         assert "Duplicate barcodes found in file: " in str(exc.value)
 
@@ -112,17 +115,14 @@ class TestWriteReport:
             marc_data = fh.read()
         combined = CombineMarcFiles.execute(data=[marc_data], marc_engine=engine)
         out = ProcessFullRecords.execute(
-            combined, marc_engine=engine, fetcher=fake_fetcher
+            combined, marc_engine=engine, fetcher=fake_fetcher, file_names=["foo.mrc"]
         )
-        assert isinstance(out.records, list)
+        assert isinstance(out.files, list)
         handler = reporter.PandasReportHandler(
             library=library, collection=collection, record_type=record_type
         )
-        report = CreateFullRecordsProcessingReport.execute(
-            processed=out, file_names=["foo.mrc"]
-        )
         writer = reporter.GoogleSheetsReporter()
-        WriteReportToSheet.execute(data=report, handler=handler, writer=writer)
+        WriteReportToSheet.execute(data=out.report, handler=handler, writer=writer)
         assert (
             "Data written to Google Sheet: {'spreadsheetId': 'foo', 'tableRange': 'bar'}"
             in caplog.text

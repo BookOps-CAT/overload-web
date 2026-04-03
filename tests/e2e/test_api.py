@@ -6,14 +6,16 @@ from overload_web.application.commands.process import (
     ProcessFullRecords,
     ProcessOrderRecords,
 )
-from overload_web.domain.models import bibs
-from overload_web.infrastructure import clients, tables
+from overload_web.domain.models import aggregate, bibs
+from overload_web.infrastructure import clients, template_db
 from overload_web.main import app
 from overload_web.presentation import deps
 
 
 @pytest.fixture
-def processed_records(monkeypatch, library, collection, record_type, acq_bib, full_bib):
+def processed_records(
+    monkeypatch, library, collection, record_type, acq_bib, full_bib, stub_report
+):
     candidates = bibs.ClassifiedCandidates([], [], [])
     if record_type == "cat":
         bib = full_bib
@@ -34,14 +36,19 @@ def processed_records(monkeypatch, library, collection, record_type, acq_bib, fu
 
     def fake_full_response(*args, **kwargs):
         full_bib.analysis = analysis
-        return bibs.ProcessedMarcFile(records=[full_bib], missing_barcodes=[])
+        return aggregate.ProcessedFileBatch(
+            files=[bibs.ProcessedFile(records=b"", file_name="foo.mrc")],
+            report=stub_report,
+        )
 
     monkeypatch.setattr(ProcessFullRecords, "execute", fake_full_response)
     monkeypatch.setattr(ProcessOrderRecords, "execute", fake_order_response)
 
 
 def fake_sql_session():
-    template = tables.TemplateTable(name="foo", agent="bar", primary_matchpoint="isbn")
+    template = template_db.TemplateTable(
+        name="foo", agent="bar", primary_matchpoint="isbn"
+    )
     test_engine = create_engine("sqlite:///:memory:")
     SQLModel.metadata.create_all(test_engine)
     with Session(test_engine) as session:

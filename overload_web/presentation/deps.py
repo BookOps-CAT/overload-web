@@ -9,7 +9,13 @@ from fastapi import Depends, Form, UploadFile
 from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.application.commands.file_io import LoadVendorFile
-from overload_web.infrastructure import clients, file_io, marc_engine, repository
+from overload_web.infrastructure import (
+    batch_db,
+    clients,
+    file_io,
+    marc_engine,
+    template_db,
+)
 from overload_web.presentation import dto
 
 logger = logging.getLogger(__name__)
@@ -49,9 +55,16 @@ def get_session(
 
 def order_template_db(
     session: Annotated[Any, Depends(get_session)],
-) -> Generator[repository.OrderTemplateRepository, None, None]:
+) -> Generator[template_db.OrderTemplateRepository, None, None]:
     """Create an order template repository."""
-    yield repository.OrderTemplateRepository(session=session)
+    yield template_db.OrderTemplateRepository(session=session)
+
+
+def pvf_batch_db(
+    session: Annotated[Any, Depends(get_session)],
+) -> Generator[batch_db.PVFBatchRepository, None, None]:
+    """Create an PVFBatch repository."""
+    yield batch_db.PVFBatchRepository(session=session)
 
 
 @runtime_checkable
