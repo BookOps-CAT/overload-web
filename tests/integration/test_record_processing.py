@@ -3,12 +3,9 @@ import pytest
 from overload_web.application.commands.process import (
     CombineMarcFiles,
     ProcessFullRecords,
-    ProcessOrderRecords,
+    ProcessOrderRecordFiles,
 )
-from overload_web.application.commands.statistics import (
-    CreateOrderRecordsProcessingReport,
-    WriteReportToSheet,
-)
+from overload_web.application.services import report_services
 from overload_web.domain.errors import OverloadError
 from overload_web.infrastructure import marc_engine, reporter
 
@@ -42,15 +39,14 @@ class TestProcessBatch:
 
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        out = ProcessOrderRecords.execute(
-            marc_data,
+        out = ProcessOrderRecordFiles.execute(
+            {"foo.mrc": marc_data},
             marc_engine=engine,
             fetcher=fake_fetcher,
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
-            file_name="foo.mrc",
         )
-        assert isinstance(out.records, list)
+        assert isinstance(out.files, list)
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
@@ -84,13 +80,12 @@ class TestProcessBatch:
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
         with pytest.raises(OverloadError) as exc:
-            ProcessOrderRecords.execute(
-                marc_data,
+            ProcessOrderRecordFiles.execute(
+                {"foo.mrc": marc_data},
                 marc_engine=engine,
                 fetcher=fake_fetcher,
                 template_data={"format": "a"},
                 matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
-                file_name="foo.mrc",
             )
         assert "Duplicate barcodes found in file: " in str(exc.value)
 
@@ -122,7 +117,9 @@ class TestWriteReport:
             library=library, collection=collection, record_type=record_type
         )
         writer = reporter.GoogleSheetsReporter()
-        WriteReportToSheet.execute(data=out.report, handler=handler, writer=writer)
+        report_services.ReportWriter.write_report_to_google_sheet(
+            data=out.report, handler=handler, writer=writer
+        )
         assert (
             "Data written to Google Sheet: {'spreadsheetId': 'foo', 'tableRange': 'bar'}"
             in caplog.text
@@ -145,20 +142,20 @@ class TestWriteReport:
         engine = marc_engine.MarcEngine(rules=engine_config)
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        out = ProcessOrderRecords.execute(
-            marc_data,
+        out = ProcessOrderRecordFiles.execute(
+            {"foo.mrc": marc_data},
             marc_engine=engine,
             fetcher=fake_fetcher,
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
-            file_name="foo.mrc",
         )
         handler = reporter.PandasReportHandler(
             library=library, collection=collection, record_type=record_type
         )
-        report = CreateOrderRecordsProcessingReport.execute(processed=[out])
         writer = reporter.GoogleSheetsReporter()
-        WriteReportToSheet.execute(data=report, handler=handler, writer=writer)
+        report_services.ReportWriter.write_report_to_google_sheet(
+            data=out.report, handler=handler, writer=writer
+        )
         assert (
             "Data written to Google Sheet: {'spreadsheetId': 'foo', 'tableRange': 'bar'}"
             in caplog.text

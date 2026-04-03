@@ -20,11 +20,8 @@ from overload_web.application.commands.order_template import (
 from overload_web.application.commands.process import (
     CombineMarcFiles,
     ProcessFullRecords,
-    ProcessOrderRecords,
-    SaveProcessedFullRecords,
-)
-from overload_web.application.commands.statistics import (
-    CreateOrderRecordsProcessingReport,
+    ProcessOrderRecordFiles,
+    SaveProcessedRecords,
 )
 from overload_web.presentation import deps, dto
 
@@ -191,6 +188,7 @@ def process_acq_records(
     marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
     order_template: Annotated[Any, Depends(dto.from_form(dto.TemplateDataModel))],
     matchpoints: Annotated[Any, Depends(dto.from_form(dto.MatchpointSchema))],
+    repository: Annotated[Any, Depends(deps.pvf_batch_db)],
     local_files: Annotated[list[UploadFile] | None, Form()] = None,
     remote_file_names: Annotated[list[str] | None, Form()] = None,
     vendor: Annotated[str | None, Form()] = None,
@@ -217,27 +215,29 @@ def process_acq_records(
         the processed files and report data wrapped in a `HTMLResponse` object
 
     """
-    out_files = []
     all_files = deps.fetch_files(
         local_files=local_files, remote_file_names=remote_file_names, vendor=vendor
     )
     template_data = order_template.model_dump()
     matchpoints = matchpoints.model_dump()
-    for file in all_files:
-        out_file = ProcessOrderRecords.execute(
-            data=file.content,
-            marc_engine=marc_engine,
-            fetcher=fetcher,
-            template_data=template_data,
-            matchpoints=matchpoints,
-            file_name=file.file_name,
-        )
-        out_files.append(out_file)
-    report = CreateOrderRecordsProcessingReport.execute(out_files)
+    processed = ProcessOrderRecordFiles.execute(
+        batches={f"{i.file_name}": i.content for i in all_files},
+        marc_engine=marc_engine,
+        fetcher=fetcher,
+        template_data=template_data,
+        matchpoints=matchpoints,
+    )
+    batch = SaveProcessedRecords.execute(repo=repository, batch=processed)
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
-        context={"report": report.__dict__},
+        context={
+            "report": processed.report.__dict__,
+            "files": [
+                {"file_name": i.file_name, "bytes": i.records} for i in processed.files
+            ],
+            "batch_id": batch["id"],
+        },
     )
 
 
@@ -281,7 +281,7 @@ def process_cat_records(
         fetcher=fetcher,
         file_names=[i.file_name for i in all_files],
     )
-    batch = SaveProcessedFullRecords.execute(repo=repository, batch=processed)
+    batch = SaveProcessedRecords.execute(repo=repository, batch=processed)
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
@@ -302,6 +302,7 @@ def process_sel_records(
     marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
     order_template: Annotated[Any, Depends(dto.from_form(dto.TemplateDataModel))],
     matchpoints: Annotated[Any, Depends(dto.from_form(dto.MatchpointSchema))],
+    repository: Annotated[Any, Depends(deps.pvf_batch_db)],
     local_files: Annotated[list[UploadFile] | None, Form()] = None,
     remote_file_names: Annotated[list[str] | None, Form()] = None,
     vendor: Annotated[str | None, Form()] = None,
@@ -328,25 +329,27 @@ def process_sel_records(
         the processed files and report data wrapped in a `HTMLResponse` object
 
     """
-    out_files = []
     all_files = deps.fetch_files(
         local_files=local_files, remote_file_names=remote_file_names, vendor=vendor
     )
     template_data = order_template.model_dump()
     matchpoints = matchpoints.model_dump()
-    for file in all_files:
-        out_file = ProcessOrderRecords.execute(
-            data=file.content,
-            marc_engine=marc_engine,
-            fetcher=fetcher,
-            template_data=template_data,
-            matchpoints=matchpoints,
-            file_name=file.file_name,
-        )
-        out_files.append(out_file)
-    report = CreateOrderRecordsProcessingReport.execute(out_files)
+    processed = ProcessOrderRecordFiles.execute(
+        batches={f"{i.file_name}": i.content for i in all_files},
+        marc_engine=marc_engine,
+        fetcher=fetcher,
+        template_data=template_data,
+        matchpoints=matchpoints,
+    )
+    batch = SaveProcessedRecords.execute(repo=repository, batch=processed)
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
-        context={"report": report.__dict__},
+        context={
+            "report": processed.report.__dict__,
+            "files": [
+                {"file_name": i.file_name, "bytes": i.records} for i in processed.files
+            ],
+            "batch_id": batch["id"],
+        },
     )

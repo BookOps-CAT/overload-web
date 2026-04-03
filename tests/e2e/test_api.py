@@ -4,7 +4,7 @@ from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.application.commands.process import (
     ProcessFullRecords,
-    ProcessOrderRecords,
+    ProcessOrderRecordFiles,
 )
 from overload_web.domain.models import aggregate, bibs
 from overload_web.infrastructure import clients, template_db
@@ -13,36 +13,15 @@ from overload_web.presentation import deps
 
 
 @pytest.fixture
-def processed_records(
-    monkeypatch, library, collection, record_type, acq_bib, full_bib, stub_report
-):
-    candidates = bibs.ClassifiedCandidates([], [], [])
-    if record_type == "cat":
-        bib = full_bib
-    else:
-        bib = acq_bib
-    analysis = bibs.MatchAnalysis(
-        bibs.CatalogAction.ATTACH,
-        bib.call_number,
-        True,
-        candidates,
-        bib.resource_id,
-        None,
-    )
-
-    def fake_order_response(*args, **kwargs):
-        acq_bib.analysis = analysis
-        return bibs.ProcessedMarcFile(records=[acq_bib], file_name="foo.mrc")
-
-    def fake_full_response(*args, **kwargs):
-        full_bib.analysis = analysis
+def processed_records(monkeypatch, stub_report):
+    def fake_response(*args, **kwargs):
         return aggregate.ProcessedFileBatch(
             files=[bibs.ProcessedFile(records=b"", file_name="foo.mrc")],
             report=stub_report,
         )
 
-    monkeypatch.setattr(ProcessFullRecords, "execute", fake_full_response)
-    monkeypatch.setattr(ProcessOrderRecords, "execute", fake_order_response)
+    monkeypatch.setattr(ProcessFullRecords, "execute", fake_response)
+    monkeypatch.setattr(ProcessOrderRecordFiles, "execute", fake_response)
 
 
 def fake_sql_session():

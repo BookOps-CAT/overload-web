@@ -80,7 +80,7 @@ class ProcessFullRecords:
         return aggregate.ProcessedFileBatch(files=files, report=report)
 
 
-class SaveProcessedFullRecords:
+class SaveProcessedRecords:
     @staticmethod
     def execute(
         repo: ports.SqlRepositoryProtocol, batch: aggregate.ProcessedFileBatch
@@ -89,17 +89,16 @@ class SaveProcessedFullRecords:
 
 
 class ProcessOrderRecords:
-    """Handles parsing, matching, and analysis of order-level MARC records."""
+    """Handles parsing, matching, and analysis of a file of order-level MARC records."""
 
     @staticmethod
     def execute(
         data: bytes,
-        file_name: str,
         marc_engine: ports.MarcEnginePort,
         fetcher: ports.BibFetcher,
         matchpoints: dict[str, str],
         template_data: dict[str, Any],
-    ) -> bibs.ProcessedMarcFile:
+    ) -> list[bibs.DomainBib]:
         """
         Process a file of order-level MARC records.
 
@@ -137,4 +136,60 @@ class ProcessOrderRecords:
             marc_services.BibUpdater.update_record(
                 bib, engine=marc_engine, template_data=template_data
             )
-        return bibs.ProcessedMarcFile(records=records, file_name=file_name)
+        return records
+
+
+class ProcessOrderRecordFiles:
+    """
+    Handles parsing, matching, and analysis of multiple files of
+    order-level MARC records.
+    """
+
+    @staticmethod
+    def execute(
+        batches: dict[str, bytes],
+        marc_engine: ports.MarcEnginePort,
+        fetcher: ports.BibFetcher,
+        matchpoints: dict[str, str],
+        template_data: dict[str, Any],
+    ) -> aggregate.ProcessedFileBatch:
+        """
+        Process files of order-level MARC records.
+
+        Args:
+            batches:
+                a dictionary containing pairs of file names and associated binary data
+            matchpoints:
+                A dictionary containing matchpoints to be used in matching records.
+            template_data:
+                Order template data as a dictionary.
+            marc_engine:
+                a `ports.MarcEnginePort` object used by the command.
+            fetcher:
+                a `ports.BibFetcher` object used by the command.
+        Returns:
+            A `ProcessedOrderMarcFile` object containing the processed records,
+            the file name and the processing statistics
+        """
+        all_records = []
+        out_batches = []
+        file_names = []
+        for file_name, data in batches.items():
+            out = ProcessOrderRecords.execute(
+                data=data,
+                marc_engine=marc_engine,
+                fetcher=fetcher,
+                template_data=template_data,
+                matchpoints=matchpoints,
+            )
+            all_records.extend(out)
+            out_batches.append(
+                bibs.ProcessedFile(
+                    file_name=file_name, records=marc_services.BibSerializer.write(out)
+                )
+            )
+            file_names.append(file_name)
+        report = report_services.PVFReporter.create_order_records_report(
+            records=all_records, file_names=file_names
+        )
+        return aggregate.ProcessedFileBatch(files=out_batches, report=report)

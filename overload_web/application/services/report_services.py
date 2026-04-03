@@ -31,20 +31,17 @@ class PVFReporter:
 
     @staticmethod
     def create_order_records_report(
-        processed: list[bibs.ProcessedMarcFile],
+        records: list[bibs.DomainBib], file_names: list[str]
     ) -> reports.ProcessingStatistics:
         stats = defaultdict(list)
-        all_recs = []
-        for file in processed:
-            stats["file_names"].append(file.file_name)
-            all_recs.extend(file.records)
-            for rec in file.records:
-                for k, v in rec.analysis.__dict__.items():
-                    stats[k].append(v)
-                stats["vendor"].append(rec.vendor)
+        for rec in records:
+            for k, v in rec.analysis.__dict__.items():
+                stats[k].append(v)
+            stats["vendor"].append(rec.vendor)
         out: dict[str, Any] = dict(stats)
-        out["total_records"] = len(all_recs)
-        out["total_files"] = len(stats["file_names"])
+        out["total_records"] = len(records)
+        out["total_files"] = len(file_names)
+        out["file_names"] = file_names
         return reports.ProcessingStatistics(**out)
 
 
