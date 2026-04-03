@@ -234,7 +234,7 @@ def process_acq_records(
         context={
             "report": processed.report.__dict__,
             "files": [
-                {"file_name": i.file_name, "bytes": i.records} for i in processed.files
+                {"file_name": i.file_name, "bytes": i.content} for i in processed.files
             ],
             "batch_id": batch["id"],
         },
@@ -288,7 +288,7 @@ def process_cat_records(
         context={
             "report": processed.report.__dict__,
             "files": [
-                {"file_name": i.file_name, "bytes": i.records} for i in processed.files
+                {"file_name": i.file_name, "bytes": i.content} for i in processed.files
             ],
             "batch_id": batch["id"],
         },
@@ -348,7 +348,7 @@ def process_sel_records(
         context={
             "report": processed.report.__dict__,
             "files": [
-                {"file_name": i.file_name, "bytes": i.records} for i in processed.files
+                {"file_name": i.file_name, "bytes": i.content} for i in processed.files
             ],
             "batch_id": batch["id"],
         },

@@ -1,6 +1,6 @@
 import pytest
 
-from overload_web.domain.models import reports
+from overload_web.domain.models import bibs
 from overload_web.infrastructure import reporter
 
 
@@ -112,7 +112,7 @@ class TestReporter:
 def stub_report(sel_bib, sierra_response, record_type):
     analysis = sel_bib.analyze_matches(candidates=[sierra_response])
     sel_bib.apply_match(analysis)
-    return reports.ProcessingStatistics(
+    return bibs.ProcessingStatistics(
         file_names=["foo.mrc"],
         total_files=1,
         total_records=1,

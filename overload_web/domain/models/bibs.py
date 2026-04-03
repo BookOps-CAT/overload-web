@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any, Protocol
 
@@ -375,19 +375,65 @@ class Order:
 
 
 @dataclass
-class ProcessedMarcFile:
-    """A dataclass representing a processed file of records."""
-
-    records: list[DomainBib]
-    file_name: str | None = None
+class ProcessedFile:
+    file_name: str
+    content: bytes
 
 
 @dataclass
-class ProcessedFile:
-    """A dataclass representing a processed file of records."""
+class ProcessedFileBatch:
+    """A dataclass representing a batch of processed files and their statistics"""
 
-    records: bytes
-    file_name: str
+    files: list[ProcessedFile]
+    report: ProcessingStatistics
+
+
+@dataclass
+class ProcessingStatistics:
+    action: list[str]
+    call_number: list[str]
+    call_number_match: list[str]
+    duplicate_records: list[str]
+    file_names: list[str]
+    mixed: list[str]
+    other: list[str]
+    resource_id: list[str]
+    target_bib_id: list[str]
+    target_call_no: list[str]
+    target_title: list[str]
+    total_files: int
+    total_records: int
+    updated_by_vendor: list[str]
+    vendor: list[str]
+    missing_barcodes: list[str] = field(default_factory=list)
+    processing_integrity: bool = True
+
+    @property
+    def call_number_report_data(self) -> dict[str, list[Any]]:
+        return {
+            "resource_id": self.resource_id,
+            "target_bib_id": self.target_bib_id,
+            "call_number_match": self.call_number_match,
+            "call_number": self.call_number,
+            "target_call_no": self.target_call_no,
+            "duplicate_records": self.duplicate_records,
+            "vendor": self.vendor,
+        }
+
+    @property
+    def duplicate_report_data(self) -> dict[str, list[Any]]:
+        return {
+            "resource_id": self.resource_id,
+            "target_bib_id": self.target_bib_id,
+            "mixed": self.mixed,
+            "other": self.other,
+            "duplicate_records": self.duplicate_records,
+            "vendor": self.vendor,
+        }
+
+    @property
+    def vendor_report_data(self) -> dict[str, list[Any]]:
+        return {"action": self.action, "vendor": self.vendor}
 
 
 class RecordType(StrEnum):

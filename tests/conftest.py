@@ -11,7 +11,7 @@ from bookops_marc import Bib
 from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain.models import bibs, reports, sierra_responses
+from overload_web.domain.models import bibs, sierra_responses
 from overload_web.infrastructure import clients
 from overload_web.infrastructure import marc_engine as engine
 
@@ -736,7 +736,7 @@ def mock_sheet_config_no_creds(monkeypatch, mock_sheet_config):
 
 @pytest.fixture
 def stub_report():
-    return reports.ProcessingStatistics(
+    return bibs.ProcessingStatistics(
         action=["insert"],
         call_number=["Foo"],
         call_number_match=[True],

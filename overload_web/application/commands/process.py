@@ -8,7 +8,7 @@ from overload_web.application.services import (
     match_service,
     report_services,
 )
-from overload_web.domain.models import aggregate, bibs
+from overload_web.domain.models import bibs
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class ProcessFullRecords:
         file_names: list[str],
         marc_engine: ports.MarcEnginePort,
         fetcher: ports.BibFetcher,
-    ) -> aggregate.ProcessedFileBatch:
+    ) -> bibs.ProcessedFileBatch:
         """
         Process a file of full MARC records.
 
@@ -46,10 +46,8 @@ class ProcessFullRecords:
             marc_engine: a `ports.MarcEnginePort` object used by the command.
             fetcher: a `ports.BibFetcher` object used by the command.
         Returns:
-            # A `ProcessedFullMarcFile` object containing the processed records,
-            # the file name and the processing statistics
-            A dict containing the processing statistics and nested key/value pairs
-            for each file to be output.
+            A `ProcessedFileBatch` object containing the processed records as bytes
+            objects and the processing statistics
         """
         records = marc_services.BibParser.parse_marc_data(data=data, engine=marc_engine)
         marc_services.BarcodeValidator.ensure_unique(records)
@@ -73,17 +71,17 @@ class ProcessFullRecords:
         files = [
             bibs.ProcessedFile(
                 file_name=f"{file_name}-{k}.mrc",
-                records=marc_services.BibSerializer.write(v),
+                content=marc_services.BibSerializer.write(v),
             )
             for k, v in deduplicated.items()
         ]
-        return aggregate.ProcessedFileBatch(files=files, report=report)
+        return bibs.ProcessedFileBatch(files=files, report=report)
 
 
 class SaveProcessedRecords:
     @staticmethod
     def execute(
-        repo: ports.SqlRepositoryProtocol, batch: aggregate.ProcessedFileBatch
+        repo: ports.SqlRepositoryProtocol, batch: bibs.ProcessedFileBatch
     ) -> dict[str, Any]:
         return repo.save(batch)
 
@@ -120,8 +118,8 @@ class ProcessOrderRecords:
             fetcher:
                 a `ports.BibFetcher` object used by the command.
         Returns:
-            A `ProcessedOrderMarcFile` object containing the processed records,
-            the file name and the processing statistics
+            A `ProcessedFileBatch` object containing the processed records as bytes
+            objects and the processing statistics
         """
         records = marc_services.BibParser.parse_marc_data(
             data=data, engine=marc_engine, vendor=template_data.get("vendor", "UNKNOWN")
@@ -152,7 +150,7 @@ class ProcessOrderRecordFiles:
         fetcher: ports.BibFetcher,
         matchpoints: dict[str, str],
         template_data: dict[str, Any],
-    ) -> aggregate.ProcessedFileBatch:
+    ) -> bibs.ProcessedFileBatch:
         """
         Process files of order-level MARC records.
 
@@ -168,8 +166,8 @@ class ProcessOrderRecordFiles:
             fetcher:
                 a `ports.BibFetcher` object used by the command.
         Returns:
-            A `ProcessedOrderMarcFile` object containing the processed records,
-            the file name and the processing statistics
+            A `ProcessedFileBatch` object containing the processed records as bytes
+            objects and the processing statistics
         """
         all_records = []
         out_batches = []
@@ -185,11 +183,11 @@ class ProcessOrderRecordFiles:
             all_records.extend(out)
             out_batches.append(
                 bibs.ProcessedFile(
-                    file_name=file_name, records=marc_services.BibSerializer.write(out)
+                    file_name=file_name, content=marc_services.BibSerializer.write(out)
                 )
             )
             file_names.append(file_name)
         report = report_services.PVFReporter.create_order_records_report(
             records=all_records, file_names=file_names
         )
-        return aggregate.ProcessedFileBatch(files=out_batches, report=report)
+        return bibs.ProcessedFileBatch(files=out_batches, report=report)
