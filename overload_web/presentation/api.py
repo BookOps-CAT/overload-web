@@ -19,8 +19,10 @@ from overload_web.application.commands.order_template import (
 )
 from overload_web.application.commands.process import (
     CombineMarcFiles,
+    ProcessDetailedReportData,
     ProcessFullRecords,
     ProcessOrderRecords,
+    ProcessReportData,
     SaveProcessedRecords,
 )
 from overload_web.presentation import deps, dto
@@ -231,13 +233,7 @@ def process_acq_records(
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
-        context={
-            "report": processed.__dict__,
-            "files": [
-                {"file_name": i.file_name, "bytes": i.content} for i in processed.files
-            ],
-            "batch_id": batch["id"],
-        },
+        context={"batch_id": batch["id"]},
     )
 
 
@@ -285,13 +281,7 @@ def process_cat_records(
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
-        context={
-            "report": processed.__dict__,
-            "files": [
-                {"file_name": i.file_name, "bytes": i.content} for i in processed.files
-            ],
-            "batch_id": batch["id"],
-        },
+        context={"batch_id": batch["id"]},
     )
 
 
@@ -345,11 +335,36 @@ def process_sel_records(
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
-        context={
-            "report": processed.__dict__,
-            "files": [
-                {"file_name": i.file_name, "bytes": i.content} for i in processed.files
-            ],
-            "batch_id": batch["id"],
-        },
+        context={"batch_id": batch["id"]},
+    )
+
+
+@api_router.get("/summary-report", response_class=HTMLResponse)
+def get_output_report(
+    request: Request,
+    batch_id: str,
+    record_type: str,
+    handler: Annotated[Any, Depends(deps.get_report_handler)],
+    repository: Annotated[Any, Depends(deps.pvf_batch_db)],
+) -> HTMLResponse:
+    out = ProcessReportData.execute(
+        batch_id=batch_id, handler=handler, repo=repository, record_type=record_type
+    )
+    return request.app.state.templates.TemplateResponse(
+        request=request, name="reports/summary.html", context=out
+    )
+
+
+@api_router.get("/detailed-report", response_class=HTMLResponse)
+def get_detailed_report(
+    request: Request,
+    batch_id: str,
+    handler: Annotated[Any, Depends(deps.get_report_handler)],
+    repository: Annotated[Any, Depends(deps.pvf_batch_db)],
+) -> HTMLResponse:
+    out = ProcessDetailedReportData.execute(
+        batch_id=batch_id, handler=handler, repo=repository
+    )
+    return request.app.state.templates.TemplateResponse(
+        request=request, name="reports/detailed.html", context={"detailed_report": out}
     )

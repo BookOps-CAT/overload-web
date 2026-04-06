@@ -178,6 +178,10 @@ class ReportHandler(Protocol):
     record_type: str
 
     def create_call_number_report(
+        self, report_data: R, record_type: str
+    ) -> dict[str, list[Any]]: ...  # pragma: no branch
+
+    def create_detailed_report(
         self, report_data: R
     ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
@@ -189,20 +193,8 @@ class ReportHandler(Protocol):
         self, report_data: R
     ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
-    def list2dict(
-        self, report_data: list[Any]
-    ) -> dict[str, list[Any]]: ...  # pragma: no branch
-
 
 class ReportWriter(Protocol):
-    def report_to_html(
-        self, report_data: R, classes: list[str]
-    ) -> str: ...  # pragma: no branch
-
-    def summary_report_output(
-        self, report_data: R, classes: list[str]
-    ) -> dict[str, str]: ...  # pragma: no branch
-
     def prep_report(
         self, data: dict[str, list[Any]]
     ) -> list[list[Any]]: ...  # pragma: no branch

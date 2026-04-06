@@ -17,22 +17,24 @@ logger = logging.getLogger(__name__)
 
 
 class PandasReportHandler:
-    def __init__(self, library: str, collection: str | None, record_type: str) -> None:
-        self.library = library
-        self.collection = collection
-        self.record_type = record_type
-
     def create_call_number_report(
-        self, report_data: dict[str, list[Any]]
+        self, report_data: dict[str, list[Any]], record_type: str
     ) -> dict[str, list[Any]] | None:
         df = pd.DataFrame(data=report_data)
         match_df = df[~df["call_number_match"]]
-        if self.record_type == "cat":
+        if record_type == "cat":
             missing_df = df[df["call_number"].isnull() & df["target_call_no"].isnull()]
             match_df = pd.concat([match_df, missing_df])
         if match_df.empty:
             return None
         df_dict = match_df.to_dict("list")
+        return {str(k): v for k, v in df_dict.items()}
+
+    def create_detailed_report(
+        self, report_data: dict[str, list[Any]]
+    ) -> dict[str, list[Any]] | None:
+        df = pd.DataFrame(data=report_data)
+        df_dict = df.to_dict("list")
         return {str(k): v for k, v in df_dict.items()}
 
     def create_duplicate_report(

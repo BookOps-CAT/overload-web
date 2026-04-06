@@ -14,6 +14,7 @@ from overload_web.infrastructure import (
     clients,
     file_io,
     marc_engine,
+    reporter,
     template_db,
 )
 from overload_web.presentation import dto
@@ -149,3 +150,7 @@ def get_marc_engine(
 ) -> Generator[marc_engine.MarcEngine, None, None]:
     """Create a record processing service with injected dependencies."""
     yield marc_engine.MarcEngine(rules=config)
+
+
+def get_report_handler() -> reporter.PandasReportHandler:
+    return reporter.PandasReportHandler()

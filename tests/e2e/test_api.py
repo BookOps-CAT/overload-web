@@ -7,7 +7,7 @@ from overload_web.application.commands.process import (
     ProcessOrderRecords,
 )
 from overload_web.domain.models import bibs
-from overload_web.infrastructure import clients, template_db
+from overload_web.infrastructure import batch_db, clients, template_db
 from overload_web.main import app
 from overload_web.presentation import deps
 
@@ -28,10 +28,32 @@ def fake_sql_session():
     template = template_db.TemplateTable(
         name="foo", agent="bar", primary_matchpoint="isbn"
     )
+    batch = batch_db.PVFBatch(
+        id=1,
+        action=["insert"],
+        call_number=["Foo"],
+        call_number_match=[True],
+        duplicate_records=[[]],
+        file_names=["foo.mrc"],
+        files=[batch_db.ProcessedMarcFileModel(file_name="foo.mrc", records=b"")],
+        mixed=[[]],
+        other=[[]],
+        resource_id=["12345"],
+        target_bib_id=["23456"],
+        target_call_no=["Foo"],
+        target_title=[],
+        total_files=1,
+        total_records=1,
+        updated_by_vendor=[False],
+        vendor=["UNKNOWN"],
+        missing_barcodes=[],
+        processing_integrity=True,
+    )
     test_engine = create_engine("sqlite:///:memory:")
     SQLModel.metadata.create_all(test_engine)
     with Session(test_engine) as session:
         session.add(template)
+        session.add(batch)
         session.commit()
         yield session
     session.close()
@@ -408,6 +430,17 @@ class TestApp:
                 f"/api/{record_type}/process-vendor-file", data=context, files=files
             )
         assert "Trouble connecting: " in str(exc.value)
+
+    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
+    def test_get_output_report(self, record_type):
+        response = self.client.get(
+            f"/api/summary-report?batch_id=1&record_type={record_type}"
+        )
+        assert response.status_code == 200
+
+    def test_get_detailed_report(self):
+        response = self.client.get("/api/detailed-report?batch_id=1")
+        assert response.status_code == 200
 
     def test_htmx_get_template_form(self):
         response = self.client.get("/htmx/forms/templates")

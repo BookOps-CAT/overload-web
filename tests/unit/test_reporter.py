@@ -135,10 +135,8 @@ def stub_report(sel_bib, sierra_response, record_type):
 
 
 @pytest.fixture
-def pandas_handler(library, collection, record_type):
-    return reporter.PandasReportHandler(
-        library=library, collection=collection, record_type=record_type
-    )
+def pandas_handler():
+    return reporter.PandasReportHandler()
 
 
 @pytest.mark.parametrize(
@@ -146,15 +144,15 @@ def pandas_handler(library, collection, record_type):
     [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
 )
 class TestRecordsProcessingReports:
-    def test_call_number_report(self, stub_report, pandas_handler):
+    def test_call_number_report(self, stub_report, pandas_handler, record_type):
         report = pandas_handler.create_call_number_report(
-            stub_report.call_number_report_data
+            stub_report.stats.call_number_report_data, record_type=record_type
         )
         assert report is None
 
     def test_duplicate_report(self, stub_report, pandas_handler):
         report = pandas_handler.create_duplicate_report(
-            stub_report.duplicate_report_data
+            stub_report.stats.duplicate_report_data
         )
         assert report["vendor"] == ["BTSERIES"]
         assert report["resource_id"] == ["9781234567890"]
@@ -164,7 +162,9 @@ class TestRecordsProcessingReports:
         assert report["other"] == [[]]
 
     def test_vendor_report(self, stub_report, pandas_handler):
-        report = pandas_handler.create_vendor_report(stub_report.vendor_report_data)
+        report = pandas_handler.create_vendor_report(
+            stub_report.stats.vendor_report_data
+        )
         assert report["vendor"] == ["BTSERIES"]
         assert report["attach"] == [1]
         assert report["insert"] == [0]

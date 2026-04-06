@@ -113,12 +113,12 @@ class TestWriteReport:
             combined, marc_engine=engine, fetcher=fake_fetcher, file_names=["foo.mrc"]
         )
         assert isinstance(out.files, list)
-        handler = reporter.PandasReportHandler(
-            library=library, collection=collection, record_type=record_type
-        )
         writer = reporter.GoogleSheetsReporter()
         report_services.ReportWriter.write_report_to_google_sheet(
-            data=out, handler=handler, writer=writer
+            data=out.stats,
+            handler=reporter.PandasReportHandler(),
+            writer=writer,
+            record_type=record_type,
         )
         assert (
             "Data written to Google Sheet: {'spreadsheetId': 'foo', 'tableRange': 'bar'}"
@@ -126,9 +126,9 @@ class TestWriteReport:
         )
 
     @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
+        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
     )
+    @pytest.mark.parametrize("record_type", ["acq", "sel"])
     def test_order_service_process_vendor_file(
         self,
         library,
@@ -149,14 +149,33 @@ class TestWriteReport:
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
         )
-        handler = reporter.PandasReportHandler(
-            library=library, collection=collection, record_type=record_type
-        )
         writer = reporter.GoogleSheetsReporter()
         report_services.ReportWriter.write_report_to_google_sheet(
-            data=out, handler=handler, writer=writer
+            data=out.stats,
+            handler=reporter.PandasReportHandler(),
+            writer=writer,
+            record_type=record_type,
         )
         assert (
             "Data written to Google Sheet: {'spreadsheetId': 'foo', 'tableRange': 'bar'}"
             in caplog.text
         )
+
+    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
+    def test_create_output_report(self, record_type, stub_report):
+        out = report_services.PVFReporter.create_output_report(
+            data=stub_report.__dict__,
+            handler=reporter.PandasReportHandler(),
+            record_type=record_type,
+        )
+        assert "vendor_report" in out.keys()
+        assert "dupes_report" in out.keys()
+        assert "call_no_report" in out.keys()
+
+    def test_create_detailed_report(self, stub_report):
+        out = report_services.PVFReporter.create_detailed_report(
+            data=stub_report.__dict__, handler=reporter.PandasReportHandler()
+        )
+        assert "vendor" in out.keys()
+        assert "target_bib_id" in out.keys()
+        assert "resource_id" in out.keys()

@@ -1,0 +1,3 @@
+{% import "pvf_partials/macros.html" as macro %}
+<h5>Detailed Report Data:</h5>
+{% if detailed_report %}{{ macro.report_table(detailed_report) }}{% endif %}

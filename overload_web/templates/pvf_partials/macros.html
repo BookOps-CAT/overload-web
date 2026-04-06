@@ -72,3 +72,23 @@
     </div>
   </div>
 {% endmacro %}
+{% macro report_table(report) %}
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th scope="col">#</th>
+        {% for key in report.keys() %}<th scope="col">{{ key.title() }}</th>{% endfor %}
+      </tr>
+    </thead>
+    <tbody class="table-group-divider">
+      <tr>
+        {% for i in range(report.values() | list | first | length) %}
+          <tr>
+            <th scope="row">{{ loop.index }}</th>
+            {% for key in report.keys() %}<td>{{ report[key][i] }}</td>{% endfor %}
+          </tr>
+        {% endfor %}
+      </tr>
+    </tbody>
+  </table>
+{% endmacro %}

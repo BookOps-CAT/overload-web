@@ -1,14 +1,26 @@
-<div id="report-container">{% include "reports/summary.html" %}</div>
+<h3>Output:</h3>
+<div id="report-container">
+  <h4>Reports</h4>
+  <div id="vendor_report"
+       hx-get="/api/summary-report?batch_id={{ batch_id }}"
+       hx-trigger="load"
+       name="vendor_report"
+       hx-include="[name='record_type']"></div>
+</div>
+<div id="detailed-report-container"></div>
+<div id="save-files-container"></div>
+<div id="report-save-container"></div>
 <div class="row row-cols-3 gy-1 my-2" id="report-buttons">
   <div class="col">
     <button id="detailed-report-button"
-            hx-target="#report-container"
+            hx-get="/api/detailed-report?batch_id={{ batch_id }}"
+            hx-target="#detailed-report-container"
             class="btn btn-nypl">View detailed report</button>
   </div>
   <div class="col">
     <div id="output-file-container">
       <button id="download-files-button"
-              hx-target="#report-container"
+              hx-target="#save-files-container"
               class="btn btn-nypl">Download Files</button>
     </div>
   </div>

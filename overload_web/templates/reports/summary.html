@@ -1,8 +1,30 @@
-<h3>Output:</h3>
-{% if batch_id %}
-    <h5>Batch ID</h5>
-    <b>{{ batch_id }}</b>
+{% import "pvf_partials/macros.html" as macro %}
+<h5>Summary:</h5>
+Total processed files: {{ total_files }}
+</br>
+File names: {{ file_names }}
+</br>
+{% if processing_integrity %}
+    Integrity of processed files:
+</br>
+{{ processing_integrity }}
+{% endif %}
+{% if missing_barcodes %}
+    Missing barcodes: {{ missing_barcodes }}
 </br>
 {% endif %}
-{% if report %}{{ report }}{% endif %}
-{% if files %}{{ files }}{% endif %}
+{% if duplicate_bibs %}Duplicates: {{ duplicate_bibs }}{% endif %}
+<h5>Vendor Breakdown:</h5>
+{{ macro.report_table(vendor_report) }}
+<h5>Duplicates Report:</h5>
+{% if dupes_report %}
+    {{ macro.report_table(dupes_report) }}
+{% else %}
+    <b>All clear!</b>
+{% endif %}
+<h5>Call Number Issues:</h5>
+{% if call_no_report %}
+    {{ macro.report_table(call_no_report) }}
+{% else %}
+    <b>All clear!</b>
+{% endif %}
