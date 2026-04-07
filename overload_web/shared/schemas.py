@@ -12,13 +12,6 @@ class _VendorFile:
 
 
 @dataclass
-class _Matchpoints:
-    primary_matchpoint: str | None = None
-    secondary_matchpoint: str | None = None
-    tertiary_matchpoint: str | None = None
-
-
-@dataclass
 class _TemplateData:
     acquisition_type: str | None = None
     blanket_po: str | None = None

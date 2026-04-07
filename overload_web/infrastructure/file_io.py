@@ -11,9 +11,12 @@ The classes within this module are concrete implementations of the `FileLoader` 
 from __future__ import annotations
 
 import io
+import logging
 import os
 
 from file_retriever import Client, File
+
+logger = logging.getLogger(__name__)
 
 
 class LocalFileLoader:
@@ -26,12 +29,15 @@ class LocalFileLoader:
 
     def list(self, dir: str) -> list[str]:
         """List available files in a local directory."""
-        return os.listdir(dir)
+        files = os.listdir(dir)
+        logger.info(f"Files in {dir}: {files}")
+        return files
 
     def load(self, name: str, dir: str) -> bytes:
         """Load a file from a local directory."""
         with open(os.path.join(dir, name), "rb") as fh:
             file = fh.read()
+        logger.info(f"File loaded: {name}")
         return file
 
 
@@ -48,6 +54,7 @@ class LocalFileWriter:
         path = os.path.join(dir, file_name)
         with open(path, "wb") as f:
             f.write(file)
+        logger.info(f"Writing file to directory: {path}")
         return path
 
 
@@ -64,13 +71,16 @@ class SFTPFileLoader:
 
     def list(self, dir: str) -> list[str]:
         """List files in a remote directory."""
-        return self.client.list_files(remote_dir=dir)
+        files = self.client.list_files(remote_dir=dir)
+        logger.info(f"Files in {dir}: {files}")
+        return files
 
     def load(self, name: str, dir: str) -> bytes:
         """Load a file from a remote directory."""
         file_info = self.client.get_file_info(file_name=name, remote_dir=dir)
         file = self.client.get_file(file=file_info, remote_dir=dir)
         file.file_stream.seek(0)
+        logger.info(f"File loaded: {name}")
         return file.file_stream.read()
 
     @classmethod
@@ -107,4 +117,5 @@ class SFTPFileWriter:
             file_size=0,
         )
         out_file = self.client.put_file(file=converted_file, remote=True, dir=dir)
+        logger.info(f"Writing file to directory: {dir}/{out_file}")
         return getattr(out_file, "file_name", file_name)

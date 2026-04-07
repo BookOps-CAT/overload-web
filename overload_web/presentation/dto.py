@@ -46,8 +46,12 @@ def from_form(model_class: BaseModel):
     return func
 
 
-class MatchpointSchema(BaseModel, schemas._Matchpoints):
+class MatchpointSchema(BaseModel):
     """Pydantic model for serializing/deserializing matchpoints from order templates"""
+
+    primary_matchpoint: str | None = None
+    secondary_matchpoint: str | None = None
+    tertiary_matchpoint: str | None = None
 
 
 class VendorFileModel(BaseModel, schemas._VendorFile):

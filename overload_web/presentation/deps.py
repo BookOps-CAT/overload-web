@@ -8,7 +8,6 @@ from typing import Annotated, Any, BinaryIO, Generator, Protocol, runtime_checka
 from fastapi import Depends, Form, UploadFile
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.application.commands.file_io import LoadVendorFile
 from overload_web.infrastructure import (
     batch_db,
     clients,
@@ -109,10 +108,8 @@ def fetch_files(
         loader = file_io.SFTPFileLoader.create_loader_for_vendor(vendor)
         vendor_dir = os.environ[f"{vendor.upper()}_SRC"]
         for name in remote_file_names:
-            loaded = LoadVendorFile.execute(name=name, dir=vendor_dir, loader=loader)
-            vendor_file = dto.VendorFileModel(
-                file_name=str(loaded.file_name), content=loaded.content
-            )
+            loaded = loader.load(name=name, dir=vendor_dir)
+            vendor_file = dto.VendorFileModel(file_name=name, content=loaded)
             files.append(vendor_file)
 
     return files

@@ -19,7 +19,6 @@ class ListVendorFiles:
             a list of filenames contained within the given directory as strings.
         """
         files = loader.list(dir=dir)
-        logger.info(f"Files in {dir}: {files}")
         return files
 
 
@@ -38,7 +37,6 @@ class LoadVendorFile:
             The loaded file as a `files.VendorFile` object.
         """
         file = loader.load(name=name, dir=dir)
-        logger.info(f"File loaded: {name}")
         return files.VendorFile(file_name=name, content=file)
 
 
@@ -58,5 +56,4 @@ class WriteFile:
             the directory and filename where the file was written.
         """
         out_file = writer.write(file=file, file_name=file_name, dir=dir)
-        logger.info(f"Writing file to directory: {dir}/{out_file}")
         return out_file
