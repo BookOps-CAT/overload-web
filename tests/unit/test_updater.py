@@ -34,9 +34,10 @@ def make_bt_series_full_bib(full_bib, library, collection):
         subfield_list = []
         for k, v in pairs.items():
             subfield_list.append(Subfield(code=k, value=v))
-        bib.add_field(
-            Field(tag="091", indicators=Indicators(" ", " "), subfields=subfield_list)
+        call_no = Field(
+            tag="091", indicators=Indicators(" ", " "), subfields=subfield_list
         )
+        bib.add_field(call_no)
         bib.add_field(
             Field(
                 tag="901",
@@ -44,6 +45,7 @@ def make_bt_series_full_bib(full_bib, library, collection):
                 subfields=[Subfield(code="a", value="BTSERIES")],
             )
         )
+        full_bib.branch_call_number = call_no.value()
         full_bib.binary_data = bib.as_marc()
         full_bib.vendor_info = bibs.VendorInfo(
             name="BT SERIES",

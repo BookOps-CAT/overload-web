@@ -49,10 +49,7 @@ class MarcEngine:
         self.bib_rules = rules.parser_bib_mapping
         self.order_rules = rules.parser_order_mapping
         self.vendor_rules = rules.parser_vendor_mapping
-        self.default_loc = rules.default_loc
-        self.bib_id_tag = rules.bib_id_tag
-        self.marc_order_mapping = rules.marc_order_mapping
-        self._config = rules
+        self.config = rules
 
     def create_bib_from_domain(self, record: DomainBibProtocol) -> Bib:
         """Create a `bookops_marc.Bib` object from a `DomainBib` object"""
@@ -64,12 +61,6 @@ class MarcEngine:
                 "a", ""
             ).startswith("*"):
                 return field
-        return None
-
-    def get_value_of_field(self, tag: str, bib: Bib) -> str | None:
-        """Get the value of the first MARC field for a tag."""
-        if tag in bib:
-            return bib.get_fields(tag)[0].value()
         return None
 
     def get_reader(self, data: bytes | BinaryIO) -> SierraBibReader:

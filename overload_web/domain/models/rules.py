@@ -9,34 +9,29 @@ from overload_web.domain.models import bibs
 logger = logging.getLogger(__name__)
 
 
-class VendorRules:
+class UpdateRules:
     @staticmethod
-    def fields_to_update(
-        record: bibs.DomainBib,
-        context: Any,
-        format: str | None = None,
-        command_tag: Any | None = None,
-        call_no: str | None = None,
+    def acq_fields_to_update(record: bibs.DomainBib, context: Any) -> list[Any]:
+        updates: list[Any] = []
+        updates.extend(
+            FieldRules.update_order_fields(
+                record=record, mapping=context.marc_order_mapping
+            )
+        )
+        updates.append(
+            FieldRules.add_bib_id(bib_id=record.bib_id, tag=context.bib_id_tag)
+        )
+        if context.library == "nypl":
+            updates.append(FieldRules.update_910_field(collection=record.collection))
+        return [i for i in updates if i]
+
+    @staticmethod
+    def cat_fields_to_update(
+        record: bibs.DomainBib, context: Any, call_no: str | None = None
     ) -> list[Any]:
         updates: list[Any] = []
-
-        if context.record_type == "cat":
-            bib_fields = getattr(record.vendor_info, "bib_fields", [])
-            updates.extend(FieldRules.add_vendor_fields(bib_fields=bib_fields))
-        else:
-            updates.extend(
-                FieldRules.update_order_fields(
-                    record=record, mapping=context.marc_order_mapping
-                )
-            )
-            if context.record_type == "sel":
-                updates.append(
-                    FieldRules.add_command_tag(
-                        field=command_tag,
-                        format=format,
-                        default_loc=context.default_loc,
-                    )
-                )
+        bib_fields = getattr(record.vendor_info, "bib_fields", [])
+        updates.extend(FieldRules.add_vendor_fields(bib_fields=bib_fields))
         updates.append(
             FieldRules.add_bib_id(bib_id=record.bib_id, tag=context.bib_id_tag)
         )
@@ -48,6 +43,31 @@ class VendorRules:
                         call_no=call_no, vendor=record.vendor
                     )
                 )
+        return [i for i in updates if i]
+
+    @staticmethod
+    def sel_fields_to_update(
+        record: bibs.DomainBib,
+        context: Any,
+        format: str | None = None,
+        command_tag: Any | None = None,
+    ) -> list[Any]:
+        updates: list[Any] = []
+        updates.extend(
+            FieldRules.update_order_fields(
+                record=record, mapping=context.marc_order_mapping
+            )
+        )
+        updates.append(
+            FieldRules.add_command_tag(
+                field=command_tag, format=format, default_loc=context.default_loc
+            )
+        )
+        updates.append(
+            FieldRules.add_bib_id(bib_id=record.bib_id, tag=context.bib_id_tag)
+        )
+        if context.library == "nypl":
+            updates.append(FieldRules.update_910_field(collection=record.collection))
         return [i for i in updates if i]
 
 

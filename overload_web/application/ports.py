@@ -106,7 +106,10 @@ class MarcEnginePort(Protocol[U, V]):
     record_type: str
     collection: str | None
     vendor_rules: dict[str, Any]
-    _config: Any
+    default_loc: str
+    bib_id_tag: str
+    marc_order_mapping: dict[str, Any]
+    config: Any
 
     def create_bib_from_domain(self, record: U) -> V: ...  # pragma:no branch
 
@@ -119,12 +122,6 @@ class MarcEnginePort(Protocol[U, V]):
     def get_reader(self, data: bytes) -> Iterator: ...  # pragma: no branch
 
     """Instantiate an object that can read MARC binary as an iterator."""
-
-    def get_value_of_field(
-        self, tag: str, bib: V
-    ) -> str | None: ...  # pragma: no branch
-
-    """Get the value of a MARC field by it's tag. Retrieves first field."""
 
     def get_vendor_tags_from_bib(
         self, record: V, tags: dict[str, dict[str, str]]

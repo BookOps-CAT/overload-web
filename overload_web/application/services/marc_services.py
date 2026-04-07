@@ -86,10 +86,8 @@ class BibUpdater:
         record: bibs.DomainBib, engine: ports.MarcEnginePort
     ) -> None:
         bib = engine.create_bib_from_domain(record=record)
-        updates = rules.VendorRules.fields_to_update(
-            record=record,
-            call_no=engine.get_value_of_field(tag="091", bib=bib),
-            context=engine._config,
+        updates = rules.UpdateRules.cat_fields_to_update(
+            record=record, call_no=record.branch_call_number, context=engine.config
         )
         engine.update_fields(field_updates=updates, bib=bib)
         bib.leader = rules.FieldRules.update_leader(bib.leader)
@@ -104,12 +102,17 @@ class BibUpdater:
         record.apply_order_template(template_data)
         bib = engine.create_bib_from_domain(record=record)
 
-        updates = rules.VendorRules.fields_to_update(
-            record=record,
-            format=template_data.get("format"),
-            command_tag=engine.get_command_tag_field(bib),
-            context=engine._config,
-        )
+        if engine.record_type == "acq":
+            updates = rules.UpdateRules.acq_fields_to_update(
+                record=record, context=engine.config
+            )
+        else:
+            updates = rules.UpdateRules.sel_fields_to_update(
+                record=record,
+                context=engine.config,
+                format=template_data.get("format"),
+                command_tag=engine.get_command_tag_field(bib),
+            )
         engine.update_fields(field_updates=updates, bib=bib)
         bib.leader = rules.FieldRules.update_leader(bib.leader)
         record.binary_data = bib.as_marc()

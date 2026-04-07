@@ -78,14 +78,6 @@ class ProcessFullRecords:
         return bibs.ProcessedFileBatch(files=files, report=report)
 
 
-class SaveProcessedRecords:
-    @staticmethod
-    def execute(
-        repo: ports.SqlRepositoryProtocol, batch: bibs.ProcessedFileBatch
-    ) -> dict[str, Any]:
-        return repo.save(batch)
-
-
 class ProcessOrderRecords:
     """Handles parsing, matching, and analysis of of order-level MARC records."""
 
@@ -181,3 +173,11 @@ class ProcessDetailedReportData:
             )
             return dict(report)
         return {}
+
+
+class SaveProcessedRecords:
+    @staticmethod
+    def execute(
+        repo: ports.SqlRepositoryProtocol, batch: bibs.ProcessedFileBatch
+    ) -> dict[str, Any]:
+        return repo.save(batch)
