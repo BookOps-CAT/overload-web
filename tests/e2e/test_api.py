@@ -25,7 +25,7 @@ def processed_records(monkeypatch, stub_report):
 
 
 def fake_sql_session():
-    template = template_db.TemplateTable(
+    template = template_db.TemplateModel(
         name="foo", agent="bar", primary_matchpoint="isbn"
     )
     batch = batch_db.PVFBatch(

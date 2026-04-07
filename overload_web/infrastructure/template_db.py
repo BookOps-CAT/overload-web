@@ -1,18 +1,18 @@
 """A class representing a relational database and associated tables for
-order template (`TemplateTable`) objects.
+order template (`TemplateModel`) objects.
 
 Classes:
 
 `OrderTemplateRepository`
     `SQLModel` implementation of `SqlRepositoryProtocol` for managing
-    `TemplateTable` objects in a SQL database.
+    `TemplateModel` objects in a SQL database.
 
 Models:
 
-`_TemplateTableBase`
+`_TemplateModelBase`
     The base data model used to represent an order template and fields that are shared
     by all models within this module.
-`TemplateTable`
+`TemplateModel`
     The table model that includes all fields within an order template including fields
     that are only required for the template to be saved to the database.
 """
@@ -25,13 +25,13 @@ from sqlmodel import Field, Session, SQLModel, select
 logger = logging.getLogger(__name__)
 
 
-class _TemplateTableBase(SQLModel):
+class _TemplateModelBase(SQLModel):
     """
     A reusable template for applying consistent values to orders.
 
     Attributes:
-        name: the name to be associated with the `TemplateTable` in the database
-        agent: the user who created the `TemplateTable`
+        name: the name to be associated with the `TemplateModel` in the database
+        agent: the user who created the `TemplateModel`
 
     All other fields correspond to those available in the `Order` domain model.
 
@@ -63,19 +63,20 @@ class _TemplateTableBase(SQLModel):
     tertiary_matchpoint: str | None = Field(default=None)
 
 
-class TemplateTable(_TemplateTableBase, table=True):
+class TemplateModel(_TemplateModelBase, table=True):
     """
     A table model representing order templates including all fields required
-    for persistence (i.e., all fields present in a `_TemplateTableBase` object
+    for persistence (i.e., all fields present in a `_TemplateModelBase` object
     with the addition of the unique identifier).
     """
 
+    __tablename__ = "templates"
     id: int = Field(default=None, primary_key=True, index=True)
 
 
 class OrderTemplateRepository:
     """
-    `SQLModel` repository for `TemplateTable` objects.
+    `SQLModel` repository for `TemplateModel` objects.
 
     This class is a concrete implementation of the `SqlRepositoryProtocol` protocol.
 
@@ -96,7 +97,7 @@ class OrderTemplateRepository:
         Returns:
             a `OrderTemplate` instance or `None` if not found.
         """
-        template = self.session.get(TemplateTable, id)
+        template = self.session.get(TemplateModel, id)
         return template.model_dump() if template else None
 
     def list(
@@ -112,19 +113,19 @@ class OrderTemplateRepository:
         Returns:
             a sequence of `OrderTemplate` objects.
         """
-        statement = select(TemplateTable).offset(offset).limit(limit)
+        statement = select(TemplateModel).offset(offset).limit(limit)
         results = self.session.exec(statement)
         all_templates = results.all()
         return [i.model_dump() for i in all_templates]
 
-    def save(self, obj: TemplateTable) -> dict[str, Any]:
+    def save(self, obj: TemplateModel) -> dict[str, Any]:
         """
-        Adds a new `TemplateTable` to the database.
+        Adds a new `TemplateModel` to the database.
 
         Args:
-            obj: the `TemplateTable` object to save.
+            obj: the `TemplateModel` object to save.
         """
-        valid_obj = TemplateTable.model_validate(obj, from_attributes=True)
+        valid_obj = TemplateModel.model_validate(obj, from_attributes=True)
         self.session.add(valid_obj)
         self.session.commit()
         self.session.refresh(valid_obj)
@@ -138,9 +139,9 @@ class OrderTemplateRepository:
             id: the id of the template to be updated
             data: the data to be used to update the existing template.
         Returns:
-            a `TemplateTable` instance or `None` if not found.
+            a `TemplateModel` instance or `None` if not found.
         """
-        template = self.session.get(TemplateTable, id)
+        template = self.session.get(TemplateModel, id)
         if not template:
             logger.error(f"Template '{id}' does not exist")
         else:

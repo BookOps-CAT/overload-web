@@ -22,7 +22,7 @@ def test_sql_session():
 @pytest.fixture
 def make_template():
     def _make_template(data):
-        template = template_db.TemplateTable(**data)
+        template = template_db.TemplateModel(**data)
         return template
 
     return _make_template
