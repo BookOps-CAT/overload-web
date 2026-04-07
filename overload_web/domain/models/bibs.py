@@ -377,59 +377,7 @@ class Order:
 @dataclass
 class ProcessedFile:
     file_name: str
-    content: bytes
-
-
-class ProcessedFileBatch:
-    """A dataclass representing a batch of processed files and their statistics"""
-
-    def __init__(
-        self, files: list[ProcessedFile], report: ProcessingStatistics
-    ) -> None:
-        self.action = report.action
-        self.call_number = report.call_number
-        self.call_number_match = report.call_number_match
-        self.duplicate_records = report.duplicate_records
-        self.file_names = report.file_names
-        self.files = files
-        self.mixed = report.mixed
-        self.other = report.other
-        self.resource_id = report.resource_id
-        self.target_bib_id = report.target_bib_id
-        self.target_call_no = report.target_call_no
-        self.target_title = report.target_title
-        self.total_files = report.total_files
-        self.total_records = report.total_records
-        self.updated_by_vendor = report.updated_by_vendor
-        self.vendor = report.vendor
-        self.missing_barcodes = report.missing_barcodes
-        self.processing_integrity = report.processing_integrity
-
-    @property
-    def report_data(self) -> dict[str, Any]:
-        return {
-            "action": self.action,
-            "call_number": self.call_number,
-            "call_number_match": self.call_number_match,
-            "duplicate_records": self.duplicate_records,
-            "file_names": self.file_names,
-            "mixed": self.mixed,
-            "other": self.other,
-            "resource_id": self.resource_id,
-            "target_bib_id": self.target_bib_id,
-            "target_call_no": self.target_call_no,
-            "target_title": self.target_title,
-            "total_files": self.total_files,
-            "total_records": self.total_records,
-            "updated_by_vendor": self.updated_by_vendor,
-            "vendor": self.vendor,
-            "missing_barcodes": self.missing_barcodes,
-            "processing_integrity": self.processing_integrity,
-        }
-
-    @property
-    def stats(self) -> ProcessingStatistics:
-        return ProcessingStatistics(**self.report_data)
+    records: bytes
 
 
 @dataclass
@@ -494,6 +442,14 @@ class ProcessingStatistics:
     @property
     def vendor_report_data(self) -> dict[str, list[Any]]:
         return {"action": self.action, "vendor": self.vendor}
+
+
+@dataclass
+class ProcessedFileBatch:
+    """A dataclass representing a batch of processed files and their statistics"""
+
+    files: list[ProcessedFile]
+    report: ProcessingStatistics
 
 
 class RecordType(StrEnum):

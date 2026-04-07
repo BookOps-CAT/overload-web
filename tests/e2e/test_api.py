@@ -16,7 +16,7 @@ from overload_web.presentation import deps
 def processed_records(monkeypatch, stub_report):
     def fake_response(*args, **kwargs):
         return bibs.ProcessedFileBatch(
-            files=[bibs.ProcessedFile(content=b"", file_name="foo.mrc")],
+            files=[bibs.ProcessedFile(records=b"", file_name="foo.mrc")],
             report=stub_report,
         )
 
@@ -29,25 +29,27 @@ def fake_sql_session():
         name="foo", agent="bar", primary_matchpoint="isbn"
     )
     batch = batch_db.PVFBatch(
-        id=1,
-        action=["insert"],
-        call_number=["Foo"],
-        call_number_match=[True],
-        duplicate_records=[[]],
-        file_names=["foo.mrc"],
-        files=[batch_db.ProcessedMarcFileModel(file_name="foo.mrc", records=b"")],
-        mixed=[[]],
-        other=[[]],
-        resource_id=["12345"],
-        target_bib_id=["23456"],
-        target_call_no=["Foo"],
-        target_title=[],
-        total_files=1,
-        total_records=1,
-        updated_by_vendor=[False],
-        vendor=["UNKNOWN"],
-        missing_barcodes=[],
-        processing_integrity=True,
+        files=[batch_db.ProcessedFileModel(file_name="foo.mrc", records=b"")],
+        report=batch_db.PVFReportModel(
+            id=1,
+            action=["insert"],
+            call_number=["Foo"],
+            call_number_match=[True],
+            duplicate_records=[[]],
+            file_names=["foo.mrc"],
+            mixed=[[]],
+            other=[[]],
+            resource_id=["12345"],
+            target_bib_id=["23456"],
+            target_call_no=["Foo"],
+            target_title=[],
+            total_files=1,
+            total_records=1,
+            updated_by_vendor=[False],
+            vendor=["UNKNOWN"],
+            missing_barcodes=[],
+            processing_integrity=True,
+        ),
     )
     test_engine = create_engine("sqlite:///:memory:")
     SQLModel.metadata.create_all(test_engine)
@@ -438,9 +440,22 @@ class TestApp:
         )
         assert response.status_code == 200
 
+    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
+    def test_get_output_report_no_data(self, record_type):
+        response = self.client.get(
+            f"/api/summary-report?batch_id=10&record_type={record_type}"
+        )
+        assert response.status_code == 200
+        assert '<th scope="row">' not in response.text
+
     def test_get_detailed_report(self):
         response = self.client.get("/api/detailed-report?batch_id=1")
         assert response.status_code == 200
+
+    def test_get_detailed_report_no_data(self):
+        response = self.client.get("/api/detailed-report?batch_id=10")
+        assert response.status_code == 200
+        assert '<th scope="row">' not in response.text
 
     def test_htmx_get_template_form(self):
         response = self.client.get("/htmx/forms/templates")

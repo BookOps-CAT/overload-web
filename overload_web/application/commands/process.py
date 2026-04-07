@@ -71,7 +71,7 @@ class ProcessFullRecords:
         files = [
             bibs.ProcessedFile(
                 file_name=f"{file_name}-{k}.mrc",
-                content=marc_services.BibSerializer.write(v),
+                records=marc_services.BibSerializer.write(v),
             )
             for k, v in deduplicated.items()
         ]
@@ -143,7 +143,7 @@ class ProcessOrderRecords:
             out_batches.append(
                 bibs.ProcessedFile(
                     file_name=file_name,
-                    content=marc_services.BibSerializer.write(records),
+                    records=marc_services.BibSerializer.write(records),
                 )
             )
         report = report_services.PVFReporter.create_order_records_report(
@@ -162,9 +162,8 @@ class ProcessReportData:
     ) -> dict[str, list[Any]]:
         data = repo.get(batch_id)
         if data:
-            data.pop("id")
             report = report_services.PVFReporter.create_output_report(
-                data=data, handler=handler, record_type=record_type
+                data=data["report"], handler=handler, record_type=record_type
             )
             return dict(report)
         return {}
@@ -177,9 +176,8 @@ class ProcessDetailedReportData:
     ) -> dict[str, list[Any]]:
         data = repo.get(batch_id)
         if data:
-            data.pop("id")
             report = report_services.PVFReporter.create_detailed_report(
-                data=data, handler=handler
+                data=data["report"], handler=handler
             )
             return dict(report)
         return {}

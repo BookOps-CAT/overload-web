@@ -26,7 +26,7 @@ class TestProcessBatch:
             combined, marc_engine=engine, fetcher=fake_fetcher, file_names=["foo.mrc"]
         )
         assert isinstance(out.files, list)
-        assert hasattr(out, "missing_barcodes")
+        assert hasattr(out.report, "missing_barcodes")
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
@@ -115,7 +115,7 @@ class TestWriteReport:
         assert isinstance(out.files, list)
         writer = reporter.GoogleSheetsReporter()
         report_services.ReportWriter.write_report_to_google_sheet(
-            data=out.stats,
+            data=out.report,
             handler=reporter.PandasReportHandler(),
             writer=writer,
             record_type=record_type,
@@ -151,7 +151,7 @@ class TestWriteReport:
         )
         writer = reporter.GoogleSheetsReporter()
         report_services.ReportWriter.write_report_to_google_sheet(
-            data=out.stats,
+            data=out.report,
             handler=reporter.PandasReportHandler(),
             writer=writer,
             record_type=record_type,

@@ -15,7 +15,7 @@ File names: {{ file_names }}
 {% endif %}
 {% if duplicate_bibs %}Duplicates: {{ duplicate_bibs }}{% endif %}
 <h5>Vendor Breakdown:</h5>
-{{ macro.report_table(vendor_report) }}
+{% if vendor_report %}{{ macro.report_table(vendor_report) }}{% endif %}
 <h5>Duplicates Report:</h5>
 {% if dupes_report %}
     {{ macro.report_table(dupes_report) }}
