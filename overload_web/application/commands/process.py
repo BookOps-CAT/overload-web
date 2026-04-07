@@ -56,7 +56,7 @@ class ProcessFullRecords:
             matches = match_service.BibMatcher(fetcher).match_full_record(bib)
             analysis = bib.analyze_matches(candidates=matches)
             bib.apply_match(analysis)
-            marc_services.BibUpdater.update_record(bib, engine=marc_engine)
+            marc_services.BibUpdater.update_full_record(bib, engine=marc_engine)
 
         missing_barcodes = marc_services.BarcodeValidator.ensure_preserved(
             records=records, barcodes=barcodes
@@ -136,7 +136,7 @@ class ProcessOrderRecords:
                 )
                 analysis = bib.analyze_matches(candidates=matches)
                 bib.apply_match(analysis)
-                marc_services.BibUpdater.update_record(
+                marc_services.BibUpdater.update_order_record(
                     bib, engine=marc_engine, template_data=template_data
                 )
             all_records.extend(records)

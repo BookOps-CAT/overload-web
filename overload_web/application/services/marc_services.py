@@ -82,17 +82,31 @@ class BibParser:
 
 class BibUpdater:
     @staticmethod
-    def update_record(
-        record: bibs.DomainBib, engine: ports.MarcEnginePort, **kwargs: Any
+    def update_full_record(
+        record: bibs.DomainBib, engine: ports.MarcEnginePort
     ) -> None:
-        template_data = kwargs.get("template_data", {})
+        bib = engine.create_bib_from_domain(record=record)
+        updates = rules.VendorRules.fields_to_update(
+            record=record,
+            call_no=engine.get_value_of_field(tag="091", bib=bib),
+            context=engine._config,
+        )
+        engine.update_fields(field_updates=updates, bib=bib)
+        bib.leader = rules.FieldRules.update_leader(bib.leader)
+        record.binary_data = bib.as_marc()
+
+    @staticmethod
+    def update_order_record(
+        record: bibs.DomainBib,
+        engine: ports.MarcEnginePort,
+        template_data: dict[str, Any],
+    ) -> None:
         record.apply_order_template(template_data)
         bib = engine.create_bib_from_domain(record=record)
 
         updates = rules.VendorRules.fields_to_update(
             record=record,
             format=template_data.get("format"),
-            call_no=engine.get_value_of_field(tag="091", bib=bib),
             command_tag=engine.get_command_tag_field(bib),
             context=engine._config,
         )
@@ -137,13 +151,13 @@ class Deduplicator:
             else:
                 new.append(record)
         if not new:
-            return {"MERGE": merge, "INSERT": new, "INSERT_DEDUPED": deduped}
+            return {"NEW": merge, "DUP": new, "DEDUPED": deduped}
         logger.debug("Deduping new records")
         new_record_counter = Counter([i.control_number for i in new])
         dupe_recs = [i for i, count in new_record_counter.items() if count > 1]
         if not dupe_recs:
             logger.debug("No duplicates found in file.")
-            return {"MERGE": merge, "INSERT": new, "INSERT_DEDUPED": deduped}
+            return {"NEW": merge, "DUP": new, "DEDUPED": deduped}
         logger.info("Discovered duplicate records in processed file")
 
         processed_dupes = []
@@ -170,7 +184,7 @@ class Deduplicator:
             record.binary_data = base_rec.as_marc()
             processed_dupes.append(record.control_number)
             deduped.append(record)
-        return {"MERGE": merge, "INSERT": new, "INSERT_DEDUPED": deduped}
+        return {"NEW": merge, "DUP": new, "DEDUPED": deduped}
 
 
 class MarcFileMerger:

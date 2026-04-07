@@ -71,9 +71,9 @@ class TestReviewer:
         deduped_bibs = marc_services.Deduplicator.deduplicate(
             records=[full_bib], engine=marc_engine
         )
-        assert len(deduped_bibs["MERGE"]) == 1
-        assert len(deduped_bibs["INSERT"]) == 0
-        assert len(deduped_bibs["INSERT_DEDUPED"]) == 0
+        assert len(deduped_bibs["NEW"]) == 1
+        assert len(deduped_bibs["DUP"]) == 0
+        assert len(deduped_bibs["DEDUPED"]) == 0
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
@@ -84,9 +84,9 @@ class TestReviewer:
         deduped_bibs = marc_services.Deduplicator.deduplicate(
             records=[full_bib], engine=marc_engine
         )
-        assert len(deduped_bibs["MERGE"]) == 0
-        assert len(deduped_bibs["INSERT"]) == 1
-        assert len(deduped_bibs["INSERT_DEDUPED"]) == 0
+        assert len(deduped_bibs["NEW"]) == 0
+        assert len(deduped_bibs["DUP"]) == 1
+        assert len(deduped_bibs["DEDUPED"]) == 0
 
     @pytest.mark.parametrize(
         "library, collection, record_type", [("bpl", "NONE", "cat")]
@@ -99,10 +99,10 @@ class TestReviewer:
         deduped_bibs = marc_services.Deduplicator.deduplicate(
             records=[full_bib, full_bib_add_barcodes], engine=marc_engine
         )
-        assert len(deduped_bibs["MERGE"]) == 0
-        assert len(deduped_bibs["INSERT"]) == 2
-        assert len(deduped_bibs["INSERT_DEDUPED"]) == 1
-        deduped = Bib(deduped_bibs["INSERT_DEDUPED"][0].binary_data, library=library)
+        assert len(deduped_bibs["NEW"]) == 0
+        assert len(deduped_bibs["DUP"]) == 2
+        assert len(deduped_bibs["DEDUPED"]) == 1
+        deduped = Bib(deduped_bibs["DEDUPED"][0].binary_data, library=library)
         assert len(deduped.get_fields("960")) == 2
         assert [i.value() for i in deduped.get_fields("960")] == [
             "333331234567890",
@@ -121,10 +121,10 @@ class TestReviewer:
         deduped_bibs = marc_services.Deduplicator.deduplicate(
             records=[full_bib, full_bib_add_barcodes], engine=marc_engine
         )
-        assert len(deduped_bibs["MERGE"]) == 0
-        assert len(deduped_bibs["INSERT"]) == 2
-        assert len(deduped_bibs["INSERT_DEDUPED"]) == 1
-        deduped = Bib(deduped_bibs["INSERT_DEDUPED"][0].binary_data, library=library)
+        assert len(deduped_bibs["NEW"]) == 0
+        assert len(deduped_bibs["DUP"]) == 2
+        assert len(deduped_bibs["DEDUPED"]) == 1
+        deduped = Bib(deduped_bibs["DEDUPED"][0].binary_data, library=library)
         assert len(deduped.get_fields("949")) == 2
         assert [i.value() for i in deduped.get_fields("949")] == [
             "333331234567890",
@@ -153,9 +153,9 @@ class TestReviewer:
         deduped_bibs = marc_services.Deduplicator.deduplicate(
             records=[full_bib, full_bib_add_barcodes, other_rec], engine=marc_engine
         )
-        assert len(deduped_bibs["MERGE"]) == 0
-        assert len(deduped_bibs["INSERT"]) == 3
-        assert len(deduped_bibs["INSERT_DEDUPED"]) == 3
+        assert len(deduped_bibs["NEW"]) == 0
+        assert len(deduped_bibs["DUP"]) == 3
+        assert len(deduped_bibs["DEDUPED"]) == 3
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
