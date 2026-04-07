@@ -239,7 +239,7 @@ class DomainBib:
 
     def analyze_matches(self, candidates: list[dict[str, Any]]) -> MatchAnalysis:
         classified = self.classify_matches(candidates)
-        analyzer = MatchAnalyzerFactory().make(
+        analyzer = MatchAnalyzerFactory.make(
             library=self.library,
             record_type=self.record_type,
             collection=self.collection,
@@ -294,7 +294,8 @@ class MatchAnalyzer(Protocol):
 class MatchAnalyzerFactory:
     """Create a `MatchAnalyzer` based on `library`, `record_type` and `collection`"""
 
-    def make(self, library: str, record_type: str, collection: str) -> MatchAnalyzer:
+    @staticmethod
+    def make(library: str, record_type: str, collection: str) -> MatchAnalyzer:
         match record_type, library, collection:
             case "cat", "nypl", "BL":
                 return NYPLCatBranchMatchAnalyzer()
