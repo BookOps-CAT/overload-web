@@ -2,12 +2,12 @@
 {{ macro.context_form_field("collection", context_fields["collection"],
 disabled=disabled) }}
 {% if collection %}
-  <div id="collection-display" hx-swap-oob="true">
+  <div id="collection_display" hx-swap-oob="true">
     <h3>{{ context_fields["collection"]['options'][collection] }}</h3>
   </div>
 {% endif %}
 {% if record_type %}
-  <div id="record_type-display" hx-swap-oob="true">
+  <div id="record_type_display" hx-swap-oob="true">
     <h3>{{ context_fields["record_type"]['options'][record_type] }}</h3>
   </div>
 {% endif %}
