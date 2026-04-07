@@ -48,8 +48,8 @@ class PVFBatchRepository:
         self.session = session
 
     def get(self, id: str | int) -> dict[str, Any] | None:
-        template = self.session.get(PVFBatch, id)
-        return template.model_dump() if template else None
+        batch = self.session.get(PVFBatch, id)
+        return batch.model_dump() if batch else None
 
     def save(self, obj: PVFBatch) -> dict[str, Any]:
         valid_obj = PVFBatch.model_validate(obj, from_attributes=True)
