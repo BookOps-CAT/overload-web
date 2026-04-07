@@ -18,31 +18,19 @@ class UpdateRules:
                 record=record, mapping=context.marc_order_mapping
             )
         )
-        updates.append(
-            FieldRules.add_bib_id(bib_id=record.bib_id, tag=context.bib_id_tag)
-        )
+        updates.append(FieldRules.add_bib_id(record=record, tag=context.bib_id_tag))
         if context.library == "nypl":
-            updates.append(FieldRules.update_910_field(collection=record.collection))
+            updates.append(FieldRules.update_910_field(record=record))
         return [i for i in updates if i]
 
     @staticmethod
-    def cat_fields_to_update(
-        record: bibs.DomainBib, context: Any, call_no: str | None = None
-    ) -> list[Any]:
+    def cat_fields_to_update(record: bibs.DomainBib, context: Any) -> list[Any]:
         updates: list[Any] = []
-        bib_fields = getattr(record.vendor_info, "bib_fields", [])
-        updates.extend(FieldRules.add_vendor_fields(bib_fields=bib_fields))
-        updates.append(
-            FieldRules.add_bib_id(bib_id=record.bib_id, tag=context.bib_id_tag)
-        )
+        updates.extend(FieldRules.add_vendor_fields(record=record))
+        updates.append(FieldRules.add_bib_id(record=record, tag=context.bib_id_tag))
         if context.library == "nypl":
-            updates.append(FieldRules.update_910_field(collection=record.collection))
-            if record.collection == "BL" and context.record_type == "cat":
-                updates.append(
-                    FieldRules.update_bt_series_call_no(
-                        call_no=call_no, vendor=record.vendor
-                    )
-                )
+            updates.append(FieldRules.update_910_field(record=record))
+            updates.append(FieldRules.update_bt_series_call_no(record=record))
         return [i for i in updates if i]
 
     @staticmethod
@@ -63,11 +51,9 @@ class UpdateRules:
                 field=command_tag, format=format, default_loc=context.default_loc
             )
         )
-        updates.append(
-            FieldRules.add_bib_id(bib_id=record.bib_id, tag=context.bib_id_tag)
-        )
+        updates.append(FieldRules.add_bib_id(record=record, tag=context.bib_id_tag))
         if context.library == "nypl":
-            updates.append(FieldRules.update_910_field(collection=record.collection))
+            updates.append(FieldRules.update_910_field(record=record))
         return [i for i in updates if i]
 
 
@@ -83,14 +69,14 @@ class MarcFieldUpdate:
 
 class FieldRules:
     @staticmethod
-    def add_bib_id(bib_id: str | None, tag: str) -> MarcFieldUpdate | None:
-        if bib_id:
+    def add_bib_id(record: bibs.DomainBib, tag: str) -> MarcFieldUpdate | None:
+        if record.bib_id:
             return MarcFieldUpdate(
                 delete=True,
                 tag=tag,
                 ind1=" ",
                 ind2=" ",
-                subfields=[{"code": "a", "value": bib_id}],
+                subfields=[{"code": "a", "value": record.bib_id}],
             )
         return None
 
@@ -142,8 +128,9 @@ class FieldRules:
             )
 
     @staticmethod
-    def add_vendor_fields(bib_fields: list[dict[str, Any]]) -> list[MarcFieldUpdate]:
+    def add_vendor_fields(record: bibs.DomainBib) -> list[MarcFieldUpdate]:
         field_objs = []
+        bib_fields = getattr(record.vendor_info, "bib_fields", [])
         for field_data in bib_fields:
             field_objs.append(
                 MarcFieldUpdate(
@@ -162,20 +149,23 @@ class FieldRules:
         return leader[:9] + "a" + leader[10:]
 
     @staticmethod
-    def update_910_field(collection: str) -> MarcFieldUpdate:
+    def update_910_field(record: bibs.DomainBib) -> MarcFieldUpdate:
         return MarcFieldUpdate(
             delete=True,
             tag="910",
             ind1=" ",
             ind2=" ",
-            subfields=[{"code": "a", "value": collection}],
+            subfields=[{"code": "a", "value": record.collection}],
         )
 
     @staticmethod
-    def update_bt_series_call_no(
-        vendor: str | None, call_no: str | None
-    ) -> MarcFieldUpdate | None:
-        if not vendor == "BT SERIES" or not call_no:
+    def update_bt_series_call_no(record: bibs.DomainBib) -> MarcFieldUpdate | None:
+        call_no = record.branch_call_number
+        if (
+            not record.vendor == "BT SERIES"
+            or not call_no
+            or not record.collection == "BL"
+        ):
             return None
         new_subfields = []
         pos = 0

@@ -80,21 +80,21 @@ class BibParser:
         return parsed
 
 
-class BibUpdater:
+class RecordUpdatePolicy:
     @staticmethod
-    def update_full_record(
+    def apply_full_record_updates(
         record: bibs.DomainBib, engine: ports.MarcEnginePort
     ) -> None:
         bib = engine.create_bib_from_domain(record=record)
         updates = rules.UpdateRules.cat_fields_to_update(
-            record=record, call_no=record.branch_call_number, context=engine.config
+            record=record, context=engine.config
         )
         engine.update_fields(field_updates=updates, bib=bib)
         bib.leader = rules.FieldRules.update_leader(bib.leader)
         record.binary_data = bib.as_marc()
 
     @staticmethod
-    def update_order_record(
+    def apply_order_record_updates(
         record: bibs.DomainBib,
         engine: ports.MarcEnginePort,
         template_data: dict[str, Any],
