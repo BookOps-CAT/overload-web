@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
 logger = logging.getLogger(__name__)
-htmx_router = APIRouter(prefix="/htmx", tags=["htmx"])
+htmx_router = APIRouter()
 
 
 @htmx_router.get("/forms/templates", response_class=HTMLResponse)

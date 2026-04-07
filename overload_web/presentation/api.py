@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-from contextlib import asynccontextmanager
-from typing import Annotated, Any, AsyncGenerator
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse
@@ -30,18 +29,7 @@ from overload_web.presentation import deps, dto
 logger = logging.getLogger(__name__)
 
 
-@asynccontextmanager
-async def lifespan(app: APIRouter) -> AsyncGenerator[None, None]:
-    """Create and drop database tables on startup/shutdown."""
-    logger.info("Starting up Overload...")
-    engine = deps.get_engine_with_uri()
-    deps.create_db_and_tables(engine)
-    yield
-    logger.info("Shutting down Overload...")
-    engine.dispose()
-
-
-api_router = APIRouter(prefix="/api", tags=["api"], lifespan=lifespan)
+api_router = APIRouter()
 
 
 @api_router.post("/template", response_class=HTMLResponse)
