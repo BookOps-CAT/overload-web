@@ -51,96 +51,7 @@ class BarcodeValidator:
             raise OverloadError(f"Duplicate barcodes found in file: {dupe_barcodes}")
 
 
-class BibParser:
-    @staticmethod
-    def parse_marc_data(
-        data: bytes, engine: ports.MarcEnginePort, vendor: str | None = "UNKNOWN"
-    ) -> list[bibs.DomainBib]:
-        reader = engine.get_reader(data)
-        parsed = []
-        for record in reader:
-            bib_dict = engine.map_data(obj=record, rules=engine.bib_rules)
-            order_data = [
-                engine.map_data(obj=i, rules=engine.order_rules) for i in record.orders
-            ]
-            bib_dict["orders"] = [bibs.Order(**i) for i in order_data]
-            bib_dict["binary_data"] = record.as_marc()
-            bib_dict["record_type"] = engine.record_type
-            if engine.record_type == "cat":
-                bib_dict["vendor_info"] = bibs.VendorInfo(
-                    **engine.identify_vendor(record=record, rules=engine.vendor_rules)
-                )
-            else:
-                bib_dict["vendor"] = vendor
-            if not bib_dict["collection"]:
-                bib_dict["collection"] = engine.collection
-            bib = bibs.DomainBib(**bib_dict)
-            logger.info(f"Vendor record parsed: {bib}")
-            parsed.append(bib)
-        return parsed
-
-
-class RecordUpdatePolicy:
-    @staticmethod
-    def apply_full_record_updates(
-        record: bibs.DomainBib, engine: ports.MarcEnginePort
-    ) -> None:
-        bib = engine.create_bib_from_domain(record=record)
-        updates = rules.UpdateRules.cat_fields_to_update(
-            record=record, context=engine.config
-        )
-        engine.update_fields(field_updates=updates, bib=bib)
-        bib.leader = rules.FieldRules.update_leader(bib.leader)
-        record.binary_data = bib.as_marc()
-
-    @staticmethod
-    def apply_order_record_updates(
-        record: bibs.DomainBib,
-        engine: ports.MarcEnginePort,
-        template_data: dict[str, Any],
-    ) -> None:
-        record.apply_order_template(template_data)
-        bib = engine.create_bib_from_domain(record=record)
-
-        if engine.record_type == "acq":
-            updates = rules.UpdateRules.acq_fields_to_update(
-                record=record, context=engine.config
-            )
-        else:
-            updates = rules.UpdateRules.sel_fields_to_update(
-                record=record,
-                context=engine.config,
-                format=template_data.get("format"),
-                command_tag=engine.get_command_tag_field(bib),
-            )
-        engine.update_fields(field_updates=updates, bib=bib)
-        bib.leader = rules.FieldRules.update_leader(bib.leader)
-        record.binary_data = bib.as_marc()
-
-
-class BibSerializer:
-    @staticmethod
-    def write(records: list[bibs.DomainBib]) -> bytes:
-        """
-        Serialize `DomainBib` objects into a binary MARC stream.
-
-        Args:
-            records:
-                A list of parsed bibliographic records as `DomainBib` objects.
-
-        Returns:
-            MARC binary as an an in-memory file stream.
-        """
-        io_data = io.BytesIO()
-        for record in records:
-            logger.info(f"Writing MARC binary for record: {record}")
-            io_data.write(record.binary_data)
-        io_data.seek(0)
-        out = io_data.getvalue()
-        return out
-
-
-class Deduplicator:
+class BibDeduplicator:
     @staticmethod
     def deduplicate(
         records: list[bibs.DomainBib], engine: ports.MarcEnginePort
@@ -188,6 +99,95 @@ class Deduplicator:
             processed_dupes.append(record.control_number)
             deduped.append(record)
         return {"NEW": merge, "DUP": new, "DEDUPED": deduped}
+
+
+class BibParser:
+    @staticmethod
+    def parse_marc_data(
+        data: bytes, engine: ports.MarcEnginePort, vendor: str | None = "UNKNOWN"
+    ) -> list[bibs.DomainBib]:
+        reader = engine.get_reader(data)
+        parsed = []
+        for record in reader:
+            bib_dict = engine.map_data(obj=record, rules=engine.bib_rules)
+            order_data = [
+                engine.map_data(obj=i, rules=engine.order_rules) for i in record.orders
+            ]
+            bib_dict["orders"] = [bibs.Order(**i) for i in order_data]
+            bib_dict["binary_data"] = record.as_marc()
+            bib_dict["record_type"] = engine.record_type
+            if engine.record_type == "cat":
+                bib_dict["vendor_info"] = bibs.VendorInfo(
+                    **engine.identify_vendor(record=record, rules=engine.vendor_rules)
+                )
+            else:
+                bib_dict["vendor"] = vendor
+            if not bib_dict["collection"]:
+                bib_dict["collection"] = engine.collection
+            bib = bibs.DomainBib(**bib_dict)
+            logger.info(f"Vendor record parsed: {bib}")
+            parsed.append(bib)
+        return parsed
+
+
+class BibSerializer:
+    @staticmethod
+    def write(records: list[bibs.DomainBib]) -> bytes:
+        """
+        Serialize `DomainBib` objects into a binary MARC stream.
+
+        Args:
+            records:
+                A list of parsed bibliographic records as `DomainBib` objects.
+
+        Returns:
+            MARC binary as an an in-memory file stream.
+        """
+        io_data = io.BytesIO()
+        for record in records:
+            logger.info(f"Writing MARC binary for record: {record}")
+            io_data.write(record.binary_data)
+        io_data.seek(0)
+        out = io_data.getvalue()
+        return out
+
+
+class BibUpdatePolicy:
+    @staticmethod
+    def apply_full_record_updates(
+        record: bibs.DomainBib, engine: ports.MarcEnginePort
+    ) -> None:
+        bib = engine.create_bib_from_domain(record=record)
+        updates = rules.UpdateRules.cat_fields_to_update(
+            record=record, context=engine.config
+        )
+        engine.update_fields(field_updates=updates, bib=bib)
+        bib.leader = rules.FieldRules.update_leader(bib.leader)
+        record.binary_data = bib.as_marc()
+
+    @staticmethod
+    def apply_order_record_updates(
+        record: bibs.DomainBib,
+        engine: ports.MarcEnginePort,
+        template_data: dict[str, Any],
+    ) -> None:
+        record.apply_order_template(template_data)
+        bib = engine.create_bib_from_domain(record=record)
+
+        if engine.record_type == "acq":
+            updates = rules.UpdateRules.acq_fields_to_update(
+                record=record, context=engine.config
+            )
+        else:
+            updates = rules.UpdateRules.sel_fields_to_update(
+                record=record,
+                context=engine.config,
+                format=template_data.get("format"),
+                command_tag=engine.get_command_tag_field(bib),
+            )
+        engine.update_fields(field_updates=updates, bib=bib)
+        bib.leader = rules.FieldRules.update_leader(bib.leader)
+        record.binary_data = bib.as_marc()
 
 
 class MarcFileMerger:

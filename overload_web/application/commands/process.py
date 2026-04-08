@@ -56,14 +56,14 @@ class ProcessFullRecords:
             matches = match_service.BibMatcher(fetcher).match_full_record(bib)
             analysis = bib.analyze_matches(candidates=matches)
             bib.apply_match(analysis)
-            marc_services.RecordUpdatePolicy.apply_full_record_updates(
+            marc_services.BibUpdatePolicy.apply_full_record_updates(
                 bib, engine=marc_engine
             )
 
         missing_barcodes = marc_services.BarcodeValidator.ensure_preserved(
             records=records, barcodes=barcodes
         )
-        deduplicated = marc_services.Deduplicator.deduplicate(
+        deduplicated = marc_services.BibDeduplicator.deduplicate(
             records=records, engine=marc_engine
         )
         file_name = datetime.datetime.today().strftime("%y%m%d")
@@ -130,7 +130,7 @@ class ProcessOrderRecords:
                 )
                 analysis = bib.analyze_matches(candidates=matches)
                 bib.apply_match(analysis)
-                marc_services.RecordUpdatePolicy.apply_order_record_updates(
+                marc_services.BibUpdatePolicy.apply_order_record_updates(
                     bib, engine=marc_engine, template_data=template_data
                 )
             all_records.extend(records)

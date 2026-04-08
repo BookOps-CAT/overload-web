@@ -68,7 +68,7 @@ class TestReviewer:
             full_bib.resource_id,
             full_bib.bib_id,
         )
-        deduped_bibs = marc_services.Deduplicator.deduplicate(
+        deduped_bibs = marc_services.BibDeduplicator.deduplicate(
             records=[full_bib], engine=marc_engine
         )
         assert len(deduped_bibs["NEW"]) == 1
@@ -81,7 +81,7 @@ class TestReviewer:
     )
     def test_dedupe_insert(self, full_bib, marc_engine, stub_analysis):
         full_bib.analysis = stub_analysis
-        deduped_bibs = marc_services.Deduplicator.deduplicate(
+        deduped_bibs = marc_services.BibDeduplicator.deduplicate(
             records=[full_bib], engine=marc_engine
         )
         assert len(deduped_bibs["NEW"]) == 0
@@ -96,7 +96,7 @@ class TestReviewer:
     ):
         full_bib.analysis = stub_analysis
         full_bib_add_barcodes.analysis = stub_analysis
-        deduped_bibs = marc_services.Deduplicator.deduplicate(
+        deduped_bibs = marc_services.BibDeduplicator.deduplicate(
             records=[full_bib, full_bib_add_barcodes], engine=marc_engine
         )
         assert len(deduped_bibs["NEW"]) == 0
@@ -118,7 +118,7 @@ class TestReviewer:
     ):
         full_bib.analysis = stub_analysis
         full_bib_add_barcodes.analysis = stub_analysis
-        deduped_bibs = marc_services.Deduplicator.deduplicate(
+        deduped_bibs = marc_services.BibDeduplicator.deduplicate(
             records=[full_bib, full_bib_add_barcodes], engine=marc_engine
         )
         assert len(deduped_bibs["NEW"]) == 0
@@ -150,7 +150,7 @@ class TestReviewer:
         )
         full_bib.analysis = stub_analysis
         full_bib_add_barcodes.analysis = stub_analysis
-        deduped_bibs = marc_services.Deduplicator.deduplicate(
+        deduped_bibs = marc_services.BibDeduplicator.deduplicate(
             records=[full_bib, full_bib_add_barcodes, other_rec], engine=marc_engine
         )
         assert len(deduped_bibs["NEW"]) == 0

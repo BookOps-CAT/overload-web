@@ -76,7 +76,7 @@ class TestUpdater:
         """Adds bib_id to appropriate tag"""
         full_bib.bib_id = "12345"
         original_bib = Bib(full_bib.binary_data, library=full_bib.library)
-        marc_services.RecordUpdatePolicy.apply_full_record_updates(
+        marc_services.BibUpdatePolicy.apply_full_record_updates(
             record=full_bib, engine=marc_engine
         )
         updated_bib = Bib(full_bib.binary_data, library=full_bib.library)
@@ -98,7 +98,7 @@ class TestUpdater:
             ],
         )
         original_bib = Bib(full_bib.binary_data, library=full_bib.library)
-        marc_services.RecordUpdatePolicy.apply_full_record_updates(
+        marc_services.BibUpdatePolicy.apply_full_record_updates(
             record=full_bib, engine=marc_engine
         )
         assert len(original_bib.get_fields("949")) == 1
@@ -121,7 +121,7 @@ class TestUpdater:
             ],
         )
         original_bib = Bib(full_bib.binary_data, library=full_bib.library)
-        marc_services.RecordUpdatePolicy.apply_full_record_updates(
+        marc_services.BibUpdatePolicy.apply_full_record_updates(
             record=full_bib, engine=marc_engine
         )
         assert len(original_bib.get_fields("949")) == 0
@@ -137,7 +137,7 @@ class TestUpdater:
     def test_update_template_data_acq(self, acq_bib, marc_engine):
         """Updates orders based on template data."""
         original_orders = copy.deepcopy(acq_bib.orders)
-        marc_services.RecordUpdatePolicy.apply_order_record_updates(
+        marc_services.BibUpdatePolicy.apply_order_record_updates(
             acq_bib,
             template_data={"name": "Foo", "order_code_1": "b", "format": "a"},
             engine=marc_engine,
@@ -152,7 +152,7 @@ class TestUpdater:
     def test_update_template_data_sel(self, sel_bib, marc_engine):
         """Updates orders based on template data."""
         original_orders = copy.deepcopy(sel_bib.orders)
-        marc_services.RecordUpdatePolicy.apply_order_record_updates(
+        marc_services.BibUpdatePolicy.apply_order_record_updates(
             sel_bib,
             template_data={"name": "Foo", "order_code_1": "b", "format": "a"},
             engine=marc_engine,
@@ -180,7 +180,7 @@ class TestUpdater:
         """Updates existing command tag with default location."""
         input_bib = bib_with_command_tag(original)
         original_bib = Bib(input_bib.binary_data, library=input_bib.library)
-        marc_services.RecordUpdatePolicy.apply_order_record_updates(
+        marc_services.BibUpdatePolicy.apply_order_record_updates(
             input_bib, template_data={}, engine=marc_engine
         )
         updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
@@ -205,7 +205,7 @@ class TestUpdater:
         """Checks for existing command tag based on format. Updates with default location."""
         input_bib = bib_with_command_tag("*b2=a;")
         original_bib = Bib(input_bib.binary_data, library=input_bib.library)
-        marc_services.RecordUpdatePolicy.apply_order_record_updates(
+        marc_services.BibUpdatePolicy.apply_order_record_updates(
             input_bib, template_data={"format": "a"}, engine=marc_engine
         )
         updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
@@ -231,7 +231,7 @@ class TestUpdater:
     def test_update_no_command_tag_bpl(self, sel_bib, marc_engine, field_count, output):
         """Adds command tag with default location."""
         original_bib = Bib(sel_bib.binary_data, library=sel_bib.library)
-        marc_services.RecordUpdatePolicy.apply_order_record_updates(
+        marc_services.BibUpdatePolicy.apply_order_record_updates(
             sel_bib, template_data={}, engine=marc_engine
         )
         updated_bib = Bib(sel_bib.binary_data, library=sel_bib.library)
@@ -264,7 +264,7 @@ class TestUpdater:
     ):
         input_bib = make_bt_series_full_bib(pairs)
         original_bib = Bib(input_bib.binary_data, library=input_bib.library)
-        marc_services.RecordUpdatePolicy.apply_full_record_updates(
+        marc_services.BibUpdatePolicy.apply_full_record_updates(
             input_bib, engine=marc_engine
         )
         updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
@@ -286,7 +286,7 @@ class TestUpdater:
             {"z": "FOO", "p": "J", "a": "FIC", "c": "SNICKET"}
         )
         with pytest.raises(ValueError) as exc:
-            marc_services.RecordUpdatePolicy.apply_full_record_updates(
+            marc_services.BibUpdatePolicy.apply_full_record_updates(
                 input_bib, engine=marc_engine
             )
         assert (
