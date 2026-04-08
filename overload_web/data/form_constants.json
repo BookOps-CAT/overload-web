@@ -1158,5 +1158,43 @@
     "ingram": "Ingram",
     "sulaiman": "Sulaiman",
     "eastview": "Eastview"
+  },
+  "wc2sierra_fields": {
+    "data_source": {
+      "label": "Data Source",
+      "options": { "id": "ID List", "export": "Sierra Export" }
+    },
+    "library": {
+      "label": "Library System",
+      "options": { "bpl": "BPL", "nypl": "NYPL" }
+    },
+    "collection": {
+      "label": "Collection",
+      "options": { "BL": "Branches", "RL": "Research" }
+    },
+    "action": {
+      "label": "Action",
+      "options": { "upgrade": "Upgrade", "catalog": "Catalog" }
+    },
+    "record_level": {
+      "label": "Record Level",
+      "options": { "1": "Level 1: blank, |, 4", "2": "Level 2 & up: M, K, 7, 1, 2", "3": "Level 3 & up: 3, 8" }
+    },
+    "record_type": {
+      "label": "Record Type",
+      "options": { "any": "Any", "print": "Print", "large_print": "Large print", "dvd": "DVD", "bluray": "Blu-ray" }
+    },
+    "cat_rules": {
+      "label": "Cataloging Rules",
+      "options": { "rda": "RDA only", "any": "Any" }
+    },
+    "cat_source": {
+      "label": "Cataloging Source",
+      "options": { "dlc": "DLC only", "any": "Any" }
+    },
+    "id_type": {
+      "label": "ID Type",
+      "options": { "isbn": "ISBN", "issn": "ISSN", "upc": "UPC", "lccn": "LCCN", "oclc": "OCLC Number" }
+    }
   }
 }

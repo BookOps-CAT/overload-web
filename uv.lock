@@ -1,6 +1,6 @@
 version = 1
 revision = 3
-requires-python = ">=3.12, <4.0"
+requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
     "python_full_version >= '3.14' and sys_platform == 'emscripten'",
@@ -628,7 +628,7 @@ wheels = [
 [[package]]
 name = "file-retriever"
 version = "0.3.0"
-source = { git = "https://github.com/BookOps-CAT/file-retriever?branch=release%2Fv0.3.0#6a04a9c5892f644b1a92698bd4d628555b07af61" }
+source = { git = "https://github.com/BookOps-CAT/file-retriever.git#6a5debb5d4b1fb16bb6a62d3b66e0d2907a5854d" }
 dependencies = [
     { name = "paramiko" },
     { name = "types-paramiko" },
@@ -1080,7 +1080,7 @@ requires-dist = [
     { name = "bookops-nypl-platform", git = "https://github.com/BookOps-CAT/bookops-nypl-platform.git" },
     { name = "bookops-worldcat", specifier = ">=1.1.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.115.6" },
-    { name = "file-retriever", git = "https://github.com/BookOps-CAT/file-retriever?branch=release%2Fv0.3.0" },
+    { name = "file-retriever", git = "https://github.com/BookOps-CAT/file-retriever.git" },
     { name = "google-api-python-client", specifier = ">=2.188.0,<3.0.0" },
     { name = "google-auth-oauthlib", specifier = ">=1.2.4,<2.0.0" },
     { name = "pandas", specifier = ">=3.0.0,<4.0.0" },
