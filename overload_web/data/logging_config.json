@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "disable_existing_loggers": false,
+  "formatters": {
+    "basic": {
+      "format": "%(app)s-%(asctime)s-%(filename)s-%(lineno)d-%(levelname)s-%(message)s",
+      "defaults": { "app": "overload_web" }
+    },
+    "json": {
+      "format": "{\"app\": \"%(name)s\", \"asciTime\": \"%(asctime)s\", \"fileName\": \"%(name)s\", \"lineNo\":\"%(lineno)d\", \"levelName\": \"%(levelname)s\", \"message\": \"%(message)s\"}"
+    }
+  },
+  "handlers": {
+    "stream": {
+      "class": "logging.StreamHandler",
+      "formatter": "basic",
+      "level": "DEBUG"
+    }
+  },
+  "loggers": {
+    "overload_web": {
+      "handlers": ["stream"],
+      "level": "DEBUG",
+      "propagate": true
+    }
+  }
+}
