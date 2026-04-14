@@ -18,7 +18,14 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from overload_web.presentation import api, deps, frontend, partials
+from overload_web.presentation import deps
+from overload_web.presentation.routers import (
+    files,
+    frontend,
+    order_templates,
+    pvf,
+    reports,
+)
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -69,5 +76,7 @@ app.state.templates = get_templates()
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
 app.include_router(frontend.frontend_router)
-app.include_router(api.api_router, prefix="/api")
-app.include_router(partials.htmx_router, prefix="/htmx")
+app.include_router(files.api_router, prefix="/files")
+app.include_router(pvf.api_router, prefix="/pvf")
+app.include_router(order_templates.api_router, prefix="/ot")
+app.include_router(reports.api_router, prefix="/reports")

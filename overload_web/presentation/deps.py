@@ -3,9 +3,11 @@
 import json
 import logging
 import os
+from inspect import Parameter, Signature
 from typing import Annotated, Any, BinaryIO, Generator, Protocol, runtime_checkable
 
-from fastapi import Depends, Form, UploadFile
+from fastapi import Depends, Form
+from pydantic import BaseModel
 from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.infrastructure import (
@@ -82,7 +84,7 @@ def remote_file_loader(vendor: str) -> Generator[file_io.SFTPFileLoader, None, N
 
 
 def fetch_files(
-    local_files: list[UploadFile] | None = None,
+    local_files: list[FileProtocol] | None = None,
     remote_file_names: list[str] | None = None,
     vendor: str | None = None,
 ) -> list[dto.VendorFileModel]:
@@ -151,3 +153,31 @@ def get_marc_engine(
 
 def get_report_handler() -> reporter.PandasReportHandler:
     return reporter.PandasReportHandler()
+
+
+def from_form(model_class: BaseModel):
+    """
+    A generic function used to create an object from an html form.
+    HTML forms can only take data as strings so this class method is
+    needed in order to parse the data into the correct types.
+    """
+    form_fields = []
+    for field_name, model_field in model_class.model_fields.items():
+        annotation = model_field.annotation
+        default = Form(...) if model_field.is_required() else Form(default=None)
+        form_fields.append((field_name, annotation, default))
+
+    def func(**data):
+        return model_class(**data)
+
+    params = [
+        Parameter(
+            name,
+            Parameter.POSITIONAL_OR_KEYWORD,
+            default=default,
+            annotation=annotation,
+        )
+        for name, annotation, default in form_fields
+    ]
+    func.__signature__ = Signature(parameters=params)  # type: ignore[attr-defined]
+    return func

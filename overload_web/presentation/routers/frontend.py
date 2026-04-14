@@ -111,3 +111,27 @@ def process_records_page(
             "page_title": page_title,
         },
     )
+
+
+@frontend_router.get("/forms/update-context", response_class=HTMLResponse)
+def get_updated_context_form(
+    request: Request,
+    library: str | None = None,
+    record_type: str | None = None,
+    collection: str | None = None,
+):
+
+    ctx = {
+        "library": library,
+        "record_type": record_type,
+        "collection": collection,
+        "disabled": False,
+    }
+    if library == "bpl":
+        ctx["disabled"] = True
+        return request.app.state.templates.TemplateResponse(
+            name="forms/updated_context.html", request=request, context=ctx
+        )
+    return request.app.state.templates.TemplateResponse(
+        name="forms/updated_context.html", request=request, context=ctx
+    )

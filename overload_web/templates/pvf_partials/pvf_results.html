@@ -2,7 +2,7 @@
 <div id="summary-report-container">
   <h4>Reports</h4>
   <div id="vendor_report"
-       hx-get="/api/summary-report?batch_id={{ batch_id }}"
+       hx-get="/reports/summary?batch_id={{ batch_id }}"
        hx-trigger="load"
        name="vendor_report"
        hx-include="[name='record_type']"></div>
@@ -13,7 +13,7 @@
 <div class="row row-cols-3 gy-1 my-2" id="report-buttons">
   <div class="col">
     <button id="detailed-report-button"
-            hx-get="/api/detailed-report?batch_id={{ batch_id }}"
+            hx-get="/reports/detailed?batch_id={{ batch_id }}"
             hx-target="#detailed-report-container"
             class="btn btn-nypl">View detailed report</button>
   </div>

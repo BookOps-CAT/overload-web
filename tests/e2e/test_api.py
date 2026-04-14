@@ -201,13 +201,13 @@ class TestApp:
         assert response.context["page_title"] == "Process Vendor File"
 
     def test_api_create_template(self, fake_template_data):
-        response = self.client.post("/api/template", data=fake_template_data)
+        response = self.client.post("/ot/template", data=fake_template_data)
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request", "template"]
         assert response.context["template"].get("id") == 2
 
     def test_api_get_template(self):
-        response = self.client.get("/api/template?template_id=1")
+        response = self.client.get("/ot/template?template_id=1")
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request", "template"]
         assert response.context["template"]["id"] == 1
@@ -216,13 +216,13 @@ class TestApp:
         assert response.context["template"]["primary_matchpoint"] == "isbn"
 
     def test_api_get_template_list(self):
-        response = self.client.get("/api/templates")
+        response = self.client.get("/ot/templates")
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request", "templates"]
 
     def test_api_update_template(self):
         response = self.client.patch(
-            "/api/template",
+            "/ot/template",
             data={
                 "name": "foo",
                 "agent": "bar",
@@ -240,15 +240,15 @@ class TestApp:
 
     def test_api_update_template_not_found(self):
         response = self.client.patch(
-            "/api/template", data={"primary_matchpoint": "upc", "template_id": 3}
+            "/ot/template", data={"primary_matchpoint": "upc", "template_id": 3}
         )
         assert response.status_code == 200
         assert response.context["template"] == {}
 
     def test_api_list_remote_files_get(self):
-        response = self.client.get("/api/remote-files?vendor=foo")
+        response = self.client.get("/files/remote?vendor=foo")
         assert response.status_code == 200
-        assert response.url == f"{self.base_url}/api/remote-files?vendor=foo"
+        assert response.url == f"{self.base_url}/files/remote?vendor=foo"
         assert sorted(list(response.context.keys())) == sorted(
             ["files", "request", "vendor"]
         )
@@ -280,7 +280,7 @@ class TestApp:
         }
         files = {"local_files": ("test.mrc", b"", "application/octet-stream")}
         response = self.client.post(
-            f"/api/{record_type}/process-vendor-file", data=context, files=files
+            f"/pvf/{record_type}/process-vendor-file", data=context, files=files
         )
         assert response.status_code == 200
 
@@ -310,7 +310,7 @@ class TestApp:
         }
         files = {"remote_file_names": (None, "test.mrc")}
         response = self.client.post(
-            f"/api/{record_type}/process-vendor-file", data=context, files=files
+            f"/pvf/{record_type}/process-vendor-file", data=context, files=files
         )
         assert response.status_code == 200
 
@@ -328,7 +328,7 @@ class TestApp:
         }
         files = {"local_files": ("test.mrc", b"", "application/octet-stream")}
         response = self.client.post(
-            "/api/cat/process-vendor-file", data=context, files=files
+            "/pvf/cat/process-vendor-file", data=context, files=files
         )
         assert response.status_code == 200
 
@@ -347,7 +347,7 @@ class TestApp:
         }
         files = {"remote_file_names": (None, "test.mrc")}
         response = self.client.post(
-            "/api/cat/process-vendor-file", data=context, files=files
+            "/pvf/cat/process-vendor-file", data=context, files=files
         )
         assert response.status_code == 200
 
@@ -361,7 +361,7 @@ class TestApp:
         }
         files = {"remote_file_names": (None, "test.mrc")}
         with pytest.raises(ValueError) as exc:
-            self.client.post("/api/cat/process-vendor-file", data=context, files=files)
+            self.client.post("/pvf/cat/process-vendor-file", data=context, files=files)
         assert str(exc.value) == "Invalid library: Foo. Must be 'bpl' or 'nypl'"
 
     @pytest.mark.parametrize("record_type", ["acq", "sel"])
@@ -380,7 +380,7 @@ class TestApp:
         files = {"remote_file_names": (None, "test.mrc")}
         with pytest.raises(ValueError) as exc:
             self.client.post(
-                f"/api/{record_type}/process-vendor-file", data=context, files=files
+                f"/pvf/{record_type}/process-vendor-file", data=context, files=files
             )
         assert str(exc.value) == "Invalid library: Foo. Must be 'bpl' or 'nypl'"
 
@@ -400,7 +400,7 @@ class TestApp:
         }
         files = {"remote_file_names": (None, "test.mrc")}
         with pytest.raises(clients.BookopsPlatformError) as exc:
-            self.client.post("/api/cat/process-vendor-file", data=context, files=files)
+            self.client.post("/pvf/cat/process-vendor-file", data=context, files=files)
         assert "Trouble connecting: " in str(exc.value)
 
     @pytest.mark.parametrize(
@@ -429,36 +429,36 @@ class TestApp:
         files = {"remote_file_names": (None, "test.mrc")}
         with pytest.raises(clients.BookopsPlatformError) as exc:
             self.client.post(
-                f"/api/{record_type}/process-vendor-file", data=context, files=files
+                f"/pvf/{record_type}/process-vendor-file", data=context, files=files
             )
         assert "Trouble connecting: " in str(exc.value)
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
     def test_get_output_report(self, record_type):
         response = self.client.get(
-            f"/api/summary-report?batch_id=1&record_type={record_type}"
+            f"/reports/summary?batch_id=1&record_type={record_type}"
         )
         assert response.status_code == 200
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
     def test_get_output_report_no_data(self, record_type):
         response = self.client.get(
-            f"/api/summary-report?batch_id=10&record_type={record_type}"
+            f"/reports/summary?batch_id=10&record_type={record_type}"
         )
         assert response.status_code == 200
         assert '<th scope="row">' not in response.text
 
     def test_get_detailed_report(self):
-        response = self.client.get("/api/detailed-report?batch_id=1")
+        response = self.client.get("/reports/detailed?batch_id=1")
         assert response.status_code == 200
 
     def test_get_detailed_report_no_data(self):
-        response = self.client.get("/api/detailed-report?batch_id=10")
+        response = self.client.get("/reports/detailed?batch_id=10")
         assert response.status_code == 200
         assert '<th scope="row">' not in response.text
 
-    def test_htmx_get_template_form(self):
-        response = self.client.get("/htmx/forms/templates")
+    def test_get_template_form(self):
+        response = self.client.get("/ot/forms/templates")
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request"]
 
@@ -473,9 +473,9 @@ class TestApp:
             ("bpl", "NONE", "order_level"),
         ],
     )
-    def test_htmx_get_update_context_form(self, library, collection, record_type):
+    def test_get_update_context_form(self, library, collection, record_type):
         response = self.client.get(
-            f"/htmx/forms/update-context?library={library}&collection={collection}&record_type={record_type}"
+            f"/forms/update-context?library={library}&collection={collection}&record_type={record_type}"
         )
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == [

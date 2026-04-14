@@ -7,43 +7,13 @@ to enable compatibility with pydantic while minimizing amount of repeated code.
 from __future__ import annotations
 
 import logging
-from inspect import Parameter, Signature
 from typing import Literal
 
-from fastapi import Form
 from pydantic import BaseModel, field_validator, model_validator
 
 from overload_web.shared import schemas
 
 logger = logging.getLogger(__name__)
-
-
-def from_form(model_class: BaseModel):
-    """
-    A generic function used to create an object from an html form.
-    HTML forms can only take data as strings so this class method is
-    needed in order to parse the data into the correct types.
-    """
-    form_fields = []
-    for field_name, model_field in model_class.model_fields.items():
-        annotation = model_field.annotation
-        default = Form(...) if model_field.is_required() else Form(default=None)
-        form_fields.append((field_name, annotation, default))
-
-    def func(**data):
-        return model_class(**data)
-
-    params = [
-        Parameter(
-            name,
-            Parameter.POSITIONAL_OR_KEYWORD,
-            default=default,
-            annotation=annotation,
-        )
-        for name, annotation, default in form_fields
-    ]
-    func.__signature__ = Signature(parameters=params)  # type: ignore[attr-defined]
-    return func
 
 
 class MatchpointSchema(BaseModel):

@@ -1,7 +1,7 @@
 {% extends 'pvf_home.html' %}
 {% block form_start %}
   <form id="pvf-form"
-        hx-post="/api/{{ record_type }}/process-vendor-file"
+        hx-post="/pvf/{{ record_type }}/process-vendor-file"
         hx-encoding="multipart/form-data"
         hx-target="#pvf_output">
   {% endblock %}
