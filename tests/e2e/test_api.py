@@ -6,7 +6,7 @@ from overload_web.application.commands.process import (
     ProcessFullRecords,
     ProcessOrderRecords,
 )
-from overload_web.domain.models import bibs
+from overload_web.domain.models import reporting
 from overload_web.infrastructure import batch_db, clients, template_db
 from overload_web.main import app
 from overload_web.presentation import deps
@@ -15,8 +15,8 @@ from overload_web.presentation import deps
 @pytest.fixture
 def processed_records(monkeypatch, stub_report):
     def fake_response(*args, **kwargs):
-        return bibs.ProcessedFileBatch(
-            files=[bibs.ProcessedFile(records=b"", file_name="foo.mrc")],
+        return reporting.ProcessedFileBatch(
+            files=[reporting.ProcessedFile(records=b"", file_name="foo.mrc")],
             report=stub_report,
         )
 
