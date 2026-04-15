@@ -254,6 +254,15 @@ class TestApp:
         )
         assert response.context["files"] == ["foo.mrc"]
 
+    @pytest.mark.parametrize("source", ["local", "remote"])
+    def test_get_file_source(self, source):
+        response = self.client.get(f"/files/source?file_source={source}")
+        assert response.status_code == 200
+        assert response.url == f"{self.base_url}/files/source?file_source={source}"
+        assert sorted(list(response.context.keys())) == sorted(
+            ["file_source", "request"]
+        )
+
     @pytest.mark.parametrize(
         "library, collection, record_type",
         [

@@ -1,0 +1,25 @@
+{% if file_source %}
+  <div id="file_input" hx-swap-oob="true">
+    {% if file_source == "remote" %}
+      <div class="form-floating">
+        <select id="vendor"
+                class="form-select"
+                name="vendor"
+                hx-get="/files/remote"
+                hx-target="#file-list"
+                hx-trigger="change">
+          <option value="" selected></option>
+          {% for id, name in vendors.items() %}<option value="{{ id }}">{{ name }}</option>{% endfor %}
+        </select>
+        <label for="vendor">Select Vendor</label>
+      </div>
+      <div id="file-list"></div>
+    {% elif file_source == "local" %}
+      <input id="local_files"
+             class="form-control"
+             name="local_files"
+             type="file"
+             multiple />
+    {% endif %}
+  </div>
+{% endif %}
