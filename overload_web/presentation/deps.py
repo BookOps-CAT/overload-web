@@ -18,13 +18,15 @@ from overload_web.infrastructure import (
     reporter,
     template_db,
 )
-from overload_web.shared import schemas
 
 logger = logging.getLogger(__name__)
 
 
-class VendorFileModel(BaseModel, schemas._VendorFile):
+class VendorFileModel(BaseModel):
     """Pydantic model for serializing/deserializing `VendorFile` domain objects."""
+
+    content: bytes
+    file_name: str
 
 
 def get_engine_with_uri():

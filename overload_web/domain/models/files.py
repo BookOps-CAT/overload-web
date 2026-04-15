@@ -10,11 +10,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from overload_web.shared import schemas
-
 
 @dataclass(kw_only=True)
-class VendorFile(schemas._VendorFile):
+class VendorFile:
     """
     Represents a vendor file.
 

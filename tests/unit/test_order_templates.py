@@ -1,3 +1,5 @@
+import inspect
+
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
 
@@ -6,7 +8,9 @@ from overload_web.application.commands.order_template import (
     GetOrderTemplate,
     ListOrderTemplates,
 )
+from overload_web.domain.models import templates
 from overload_web.infrastructure import template_db
+from overload_web.presentation.routers import order_templates
 
 
 @pytest.fixture
@@ -26,6 +30,42 @@ def make_template():
         return template
 
     return _make_template
+
+
+def test_template_attrs():
+    """
+    _TemplateModelBase, TemplatePatchModel and OrderTemplateBase are the same
+    OrderTemplate and TemplateModel are the same
+
+    """
+    sql_base = [
+        name
+        for name in inspect.signature(template_db._TemplateModelBase).parameters.keys()
+    ]
+    pydantic_patch = [
+        name
+        for name in inspect.signature(
+            order_templates.TemplatePatchModel
+        ).parameters.keys()
+    ]
+    pydantic_create = [
+        name
+        for name in inspect.signature(
+            order_templates.TemplateCreateModel
+        ).parameters.keys()
+    ]
+    domain_base = [
+        name
+        for name in inspect.signature(templates.OrderTemplateBase).parameters.keys()
+    ]
+    template_sql_model = [
+        name for name in inspect.signature(template_db.TemplateModel).parameters.keys()
+    ]
+    template_domain_model = [
+        name for name in inspect.signature(templates.OrderTemplate).parameters.keys()
+    ]
+    assert sql_base == pydantic_patch == domain_base == pydantic_create
+    assert template_sql_model == template_domain_model
 
 
 class TestTemplateService:

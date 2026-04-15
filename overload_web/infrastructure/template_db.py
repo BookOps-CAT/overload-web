@@ -37,9 +37,8 @@ class _TemplateModelBase(SQLModel):
 
     """
 
-    name: str = Field(nullable=False, unique=True, index=True)
-    agent: str = Field(nullable=False, index=True)
     acquisition_type: str | None = Field(default=None)
+    agent: str = Field(nullable=False, index=True)
     blanket_po: str | None = Field(default=None)
     claim_code: str | None = Field(default=None)
     country: str | None = Field(default=None)
@@ -47,6 +46,7 @@ class _TemplateModelBase(SQLModel):
     internal_note: str | None = Field(default=None)
     lang: str | None = Field(default=None)
     material_form: str | None = Field(default=None)
+    name: str = Field(nullable=False, unique=True, index=True)
     order_code_1: str | None = Field(default=None)
     order_code_2: str | None = Field(default=None)
     order_code_3: str | None = Field(default=None)
