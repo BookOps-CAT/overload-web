@@ -23,14 +23,6 @@ class PVFBatch(SQLModel, table=True):
         back_populates="batch", sa_relationship_kwargs={"lazy": "selectin"}
     )
 
-    # @model_serializer
-    # def dump_model(self) -> dict[str, Any]:
-    #     return {
-    #         "id": self.id,
-    #         "files": [f.model_dump() for f in self.files],
-    #         "report": self.report.model_dump(),
-    #     }
-
 
 class PVFReportModel(SQLModel, table=True):
     __tablename__ = "reports"
