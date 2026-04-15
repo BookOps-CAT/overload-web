@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 import itertools
 import logging
-from collections import Counter
+from collections import Counter, defaultdict
 from typing import Any
 
 from overload_web.application import ports
@@ -203,3 +203,40 @@ class MarcFileMerger:
             io_data.write(record.as_marc())
         io_data.seek(0)
         return io_data.getvalue()
+
+
+class PVFReporter:
+    @staticmethod
+    def create_full_records_report(
+        records: list[bibs.DomainBib],
+        missing_barcodes: list[str],
+        file_names: list[str],
+    ) -> dict[str, list[Any]]:
+        stats = defaultdict(list)
+        all_recs = []
+        stats["file_names"].extend(file_names)
+        stats["missing_barcodes"].extend(missing_barcodes)
+        all_recs.extend(records)
+        for rec in all_recs:
+            for k, v in rec.analysis.__dict__.items():
+                stats[k].append(v)
+            stats["vendor"].append(getattr(rec, "vendor", "UNKNOWN"))
+        out: dict[str, Any] = dict(stats)
+        out["total_records"] = len(all_recs)
+        out["total_files"] = len(stats["file_names"])
+        return out
+
+    @staticmethod
+    def create_order_records_report(
+        records: list[bibs.DomainBib], file_names: list[str]
+    ) -> dict[str, list[Any]]:
+        stats = defaultdict(list)
+        for rec in records:
+            for k, v in rec.analysis.__dict__.items():
+                stats[k].append(v)
+            stats["vendor"].append(rec.vendor)
+        out: dict[str, Any] = dict(stats)
+        out["total_records"] = len(records)
+        out["total_files"] = len(file_names)
+        out["file_names"] = file_names
+        return out

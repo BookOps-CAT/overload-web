@@ -18,9 +18,13 @@ from overload_web.infrastructure import (
     reporter,
     template_db,
 )
-from overload_web.presentation import dto
+from overload_web.shared import schemas
 
 logger = logging.getLogger(__name__)
+
+
+class VendorFileModel(BaseModel, schemas._VendorFile):
+    """Pydantic model for serializing/deserializing `VendorFile` domain objects."""
 
 
 def get_engine_with_uri():
@@ -87,7 +91,7 @@ def fetch_files(
     local_files: list[FileProtocol] | None = None,
     remote_file_names: list[str] | None = None,
     vendor: str | None = None,
-) -> list[dto.VendorFileModel]:
+) -> list[VendorFileModel]:
     """Return all files as (filename, bytes)."""
     logger.info(
         "Fetching files to process: local_uploads=%s, remote_files=%s, vendor=%s",
@@ -95,12 +99,12 @@ def fetch_files(
         remote_file_names,
         vendor,
     )
-    files: list[dto.VendorFileModel] = []
+    files: list[VendorFileModel] = []
 
     # Local files
     if local_files:
         for f in local_files:
-            vendor_file = dto.VendorFileModel(
+            vendor_file = VendorFileModel(
                 file_name=str(f.filename), content=f.file.read()
             )
             files.append(vendor_file)
@@ -111,7 +115,7 @@ def fetch_files(
         vendor_dir = os.environ[f"{vendor.upper()}_SRC"]
         for name in remote_file_names:
             loaded = loader.load(name=name, dir=vendor_dir)
-            vendor_file = dto.VendorFileModel(file_name=name, content=loaded)
+            vendor_file = VendorFileModel(file_name=name, content=loaded)
             files.append(vendor_file)
 
     return files

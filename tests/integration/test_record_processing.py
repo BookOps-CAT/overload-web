@@ -26,7 +26,7 @@ class TestProcessBatch:
             combined, marc_engine=engine, fetcher=fake_fetcher, file_names=["foo.mrc"]
         )
         assert isinstance(out.files, list)
-        assert hasattr(out.report, "missing_barcodes")
+        assert out.report.get("missing_barcodes") is not None
 
     @pytest.mark.parametrize(
         "library, collection, record_type",

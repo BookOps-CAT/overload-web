@@ -21,13 +21,10 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import TypeVar
 
 from overload_web.shared import schemas
 
 logger = logging.getLogger(__name__)
-
-T = TypeVar("T")
 
 
 @dataclass(kw_only=True)

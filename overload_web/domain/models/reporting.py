@@ -10,12 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class ProcessedFile:
-    file_name: str
-    records: bytes
-
-
-@dataclass
 class ProcessingStatistics:
     action: list[str | None]
     call_number: list[str | None]
@@ -77,11 +71,3 @@ class ProcessingStatistics:
     @property
     def vendor_report_data(self) -> dict[str, list[Any]]:
         return {"action": self.action, "vendor": self.vendor}
-
-
-@dataclass
-class ProcessedFileBatch:
-    """A dataclass representing a batch of processed files and their statistics"""
-
-    files: list[ProcessedFile]
-    report: ProcessingStatistics

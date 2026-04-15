@@ -7,6 +7,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
 
 from overload_web.application.commands.process import (
     CombineMarcFiles,
@@ -14,9 +15,22 @@ from overload_web.application.commands.process import (
     ProcessOrderRecords,
     SaveProcessedRecords,
 )
-from overload_web.presentation import deps, dto
+from overload_web.presentation import deps
+from overload_web.shared import schemas
 
 logger = logging.getLogger(__name__)
+
+
+class MatchpointSchema(BaseModel):
+    """Pydantic model for serializing/deserializing matchpoints from order templates"""
+
+    primary_matchpoint: str | None = None
+    secondary_matchpoint: str | None = None
+    tertiary_matchpoint: str | None = None
+
+
+class TemplateDataModel(BaseModel, schemas._TemplateData):
+    """Pydantic model for serializing/deserializing order template data"""
 
 
 api_router = APIRouter()
@@ -27,8 +41,8 @@ def process_acq_records(
     request: Request,
     fetcher: Annotated[Any, Depends(deps.get_fetcher)],
     marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
-    order_template: Annotated[Any, Depends(deps.from_form(dto.TemplateDataModel))],
-    matchpoints: Annotated[Any, Depends(deps.from_form(dto.MatchpointSchema))],
+    order_template: Annotated[Any, Depends(deps.from_form(TemplateDataModel))],
+    matchpoints: Annotated[Any, Depends(deps.from_form(MatchpointSchema))],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
     local_files: Annotated[list | None, Form()] = None,
     remote_file_names: Annotated[list | None, Form()] = None,
@@ -129,8 +143,8 @@ def process_sel_records(
     request: Request,
     fetcher: Annotated[Any, Depends(deps.get_fetcher)],
     marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
-    order_template: Annotated[Any, Depends(deps.from_form(dto.TemplateDataModel))],
-    matchpoints: Annotated[Any, Depends(deps.from_form(dto.MatchpointSchema))],
+    order_template: Annotated[Any, Depends(deps.from_form(TemplateDataModel))],
+    matchpoints: Annotated[Any, Depends(deps.from_form(MatchpointSchema))],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
     local_files: Annotated[list | None, Form()] = None,
     remote_file_names: Annotated[list | None, Form()] = None,

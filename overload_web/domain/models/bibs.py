@@ -375,6 +375,20 @@ class Order:
         return out
 
 
+@dataclass
+class ProcessedFile:
+    file_name: str
+    records: bytes
+
+
+@dataclass
+class ProcessedFileBatch:
+    """A dataclass representing a batch of processed files and their statistics"""
+
+    files: list[ProcessedFile]
+    report: dict[str, list[Any]]
+
+
 class RecordType(StrEnum):
     """Valid values for record type/processing workflow."""
 

@@ -7,6 +7,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel, field_validator
 
 from overload_web.application.commands.order_template import (
     CreateOrderTemplate,
@@ -14,9 +15,36 @@ from overload_web.application.commands.order_template import (
     ListOrderTemplates,
     UpdateOrderTemplate,
 )
-from overload_web.presentation import deps, dto
+from overload_web.presentation import deps
+from overload_web.shared import schemas
 
 logger = logging.getLogger(__name__)
+
+
+class TemplatePatchModel(BaseModel, schemas._TemplateBase):
+    """
+    Pydantic model for serializing/deserializing order template data
+    when used to update a template in the database.
+    """
+
+
+class TemplateCreateModel(BaseModel, schemas._TemplateBase):
+    """
+    Pydantic model for serializing/deserializing order template data
+    used when creating a template in the database.
+    """
+
+    name: str
+    agent: str
+    primary_matchpoint: str
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def parse_form_fields(cls, value: str) -> str | None:
+        if not value or value.strip() == "":
+            return None
+        else:
+            return value.strip()
 
 
 api_router = APIRouter()
@@ -25,7 +53,7 @@ api_router = APIRouter()
 @api_router.post("/template", response_class=HTMLResponse)
 def create_template(
     request: Request,
-    template: Annotated[Any, Depends(deps.from_form(dto.TemplateCreateModel))],
+    template: Annotated[Any, Depends(deps.from_form(TemplateCreateModel))],
     repository: Annotated[Any, Depends(deps.order_template_db)],
 ) -> HTMLResponse:
     """
@@ -104,7 +132,7 @@ def get_template_list(
 def update_template(
     request: Request,
     template_id: Annotated[str, Form(...)],
-    template_patch: Annotated[Any, Depends(deps.from_form(dto.TemplatePatchModel))],
+    template_patch: Annotated[Any, Depends(deps.from_form(TemplatePatchModel))],
     repository: Annotated[Any, Depends(deps.order_template_db)],
 ) -> HTMLResponse:
     """

@@ -112,25 +112,22 @@ class TestReporter:
 def stub_report(sel_bib, sierra_response, record_type):
     analysis = sel_bib.analyze_matches(candidates=[sierra_response])
     sel_bib.apply_match(analysis)
-    return reporting.ProcessedFileBatch(
-        files={"foo.mrc": b""},
-        report=reporting.ProcessingStatistics(
-            file_names=["foo.mrc"],
-            total_files=1,
-            total_records=1,
-            vendor=["BTSERIES"],
-            resource_id=[sel_bib.analysis.resource_id],
-            target_bib_id=[sel_bib.analysis.target_bib_id],
-            duplicate_records=[sel_bib.analysis.duplicate_records],
-            mixed=[sel_bib.analysis.mixed],
-            other=[sel_bib.analysis.other],
-            call_number_match=[sel_bib.analysis.call_number_match],
-            call_number=[sel_bib.call_number],
-            target_call_no=[sel_bib.analysis.target_call_no],
-            target_title=[sel_bib.analysis.target_title],
-            updated_by_vendor=[sel_bib.analysis.updated_by_vendor],
-            action=sel_bib.analysis.action,
-        ),
+    return reporting.ProcessingStatistics(
+        file_names=["foo.mrc"],
+        total_files=1,
+        total_records=1,
+        vendor=["BTSERIES"],
+        resource_id=[sel_bib.analysis.resource_id],
+        target_bib_id=[sel_bib.analysis.target_bib_id],
+        duplicate_records=[sel_bib.analysis.duplicate_records],
+        mixed=[sel_bib.analysis.mixed],
+        other=[sel_bib.analysis.other],
+        call_number_match=[sel_bib.analysis.call_number_match],
+        call_number=[sel_bib.call_number],
+        target_call_no=[sel_bib.analysis.target_call_no],
+        target_title=[sel_bib.analysis.target_title],
+        updated_by_vendor=[sel_bib.analysis.updated_by_vendor],
+        action=sel_bib.analysis.action,
     )
 
 
@@ -146,13 +143,13 @@ def pandas_handler():
 class TestRecordsProcessingReports:
     def test_call_number_report(self, stub_report, pandas_handler, record_type):
         report = pandas_handler.create_call_number_report(
-            stub_report.report.call_number_report_data, record_type=record_type
+            stub_report.call_number_report_data, record_type=record_type
         )
         assert report is None
 
     def test_duplicate_report(self, stub_report, pandas_handler):
         report = pandas_handler.create_duplicate_report(
-            stub_report.report.duplicate_report_data
+            stub_report.duplicate_report_data
         )
         assert report["vendor"] == ["BTSERIES"]
         assert report["resource_id"] == ["9781234567890"]
@@ -162,9 +159,7 @@ class TestRecordsProcessingReports:
         assert report["other"] == [[]]
 
     def test_vendor_report(self, stub_report, pandas_handler):
-        report = pandas_handler.create_vendor_report(
-            stub_report.report.vendor_report_data
-        )
+        report = pandas_handler.create_vendor_report(stub_report.vendor_report_data)
         assert report["vendor"] == ["BTSERIES"]
         assert report["attach"] == [1]
         assert report["insert"] == [0]

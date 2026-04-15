@@ -13,7 +13,6 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel, field_validator, model_validator
 
 logger = logging.getLogger(__name__)
-frontend_router = APIRouter(tags=["frontend"])
 
 
 class ProcessingContext(BaseModel):
@@ -38,6 +37,9 @@ class ProcessingContext(BaseModel):
         elif self.library == "bpl" and self.collection:
             raise ValueError("Collection should be `None` for BPL records.")
         return self
+
+
+frontend_router = APIRouter(tags=["frontend"])
 
 
 @frontend_router.get("/", response_class=HTMLResponse)

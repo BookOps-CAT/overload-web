@@ -3,12 +3,8 @@ import logging
 from typing import Any
 
 from overload_web.application import ports
-from overload_web.application.services import (
-    marc_services,
-    match_service,
-    report_services,
-)
-from overload_web.domain.models import reporting
+from overload_web.application.services import marc_services, match_service
+from overload_web.domain.models import bibs
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +28,7 @@ class ProcessFullRecords:
         file_names: list[str],
         marc_engine: ports.MarcEnginePort,
         fetcher: ports.BibFetcher,
-    ) -> reporting.ProcessedFileBatch:
+    ) -> bibs.ProcessedFileBatch:
         """
         Process a file of full MARC records.
 
@@ -67,17 +63,17 @@ class ProcessFullRecords:
             records=records, engine=marc_engine
         )
         file_name = datetime.datetime.today().strftime("%y%m%d")
-        report = report_services.PVFReporter.create_full_records_report(
+        report = marc_services.PVFReporter.create_full_records_report(
             records=records, missing_barcodes=missing_barcodes, file_names=file_names
         )
         files = [
-            reporting.ProcessedFile(
+            bibs.ProcessedFile(
                 file_name=f"{file_name}-{k}.mrc",
                 records=marc_services.BibSerializer.write(v),
             )
             for k, v in deduplicated.items()
         ]
-        return reporting.ProcessedFileBatch(files=files, report=report)
+        return bibs.ProcessedFileBatch(files=files, report=report)
 
 
 class ProcessOrderRecords:
@@ -90,7 +86,7 @@ class ProcessOrderRecords:
         marc_engine: ports.MarcEnginePort,
         matchpoints: dict[str, str],
         template_data: dict[str, Any],
-    ) -> reporting.ProcessedFileBatch:
+    ) -> bibs.ProcessedFileBatch:
         """
         Process order-level MARC records.
 
@@ -135,20 +131,20 @@ class ProcessOrderRecords:
                 )
             all_records.extend(records)
             out_batches.append(
-                reporting.ProcessedFile(
+                bibs.ProcessedFile(
                     file_name=file_name,
                     records=marc_services.BibSerializer.write(records),
                 )
             )
-        report = report_services.PVFReporter.create_order_records_report(
+        report = marc_services.PVFReporter.create_order_records_report(
             records=all_records, file_names=file_names
         )
-        return reporting.ProcessedFileBatch(files=out_batches, report=report)
+        return bibs.ProcessedFileBatch(files=out_batches, report=report)
 
 
 class SaveProcessedRecords:
     @staticmethod
     def execute(
-        repo: ports.SqlRepositoryProtocol, batch: reporting.ProcessedFileBatch
+        repo: ports.SqlRepositoryProtocol, batch: bibs.ProcessedFileBatch
     ) -> dict[str, Any]:
         return repo.save(batch)
