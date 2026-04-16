@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 from overload_web.application import ports
 from overload_web.domain.models import files
@@ -57,3 +58,11 @@ class WriteFile:
         """
         out_file = writer.write(file=file, file_name=file_name, dir=dir)
         return out_file
+
+
+class SaveIncomingFile:
+    @staticmethod
+    def execute(
+        repo: ports.SqlRepositoryProtocol, file: files.VendorFile
+    ) -> dict[str, Any]:
+        return repo.save(file)

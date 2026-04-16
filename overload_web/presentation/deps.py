@@ -75,6 +75,13 @@ def pvf_batch_db(
     yield batch_db.PVFBatchRepository(session=session)
 
 
+# def incoming_file_db(
+#     session: Annotated[Any, Depends(get_session)],
+# ) -> Generator[file_io.IncomingFileRepository, None, None]:
+#     """Create an PVFBatch repository."""
+#     yield file_io.IncomingFileRepository(session=session)
+
+
 @runtime_checkable
 class FileProtocol(Protocol):
     """A protocol representing a FastAPI `UploadFile` object."""

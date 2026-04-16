@@ -119,3 +119,39 @@ class SFTPFileWriter:
         out_file = self.client.put_file(file=converted_file, remote=True, dir=dir)
         logger.info(f"Writing file to directory: {dir}/{out_file}")
         return getattr(out_file, "file_name", file_name)
+
+
+# class IncomingFileBatch(SQLModel, table=True):
+#     __tablename__ = "incoming_file_batches"
+
+#     id: int = Field(default=None, primary_key=True, index=True)
+#     files: list["IncomingFileModel"] = Relationship(
+#         back_populates="batch", sa_relationship_kwargs={"lazy": "selectin"}
+#     )
+
+
+# class IncomingFileModel(SQLModel, table=True):
+#     __tablename__ = "incoming_files"
+#     id: int = Field(default=None, primary_key=True, index=True)
+#     content: bytes = Field(nullable=False)
+#     file_name: str = Field(nullable=False)
+#     batch_id: int = Field(
+#         default=None, foreign_key="incoming_file_batches.id", exclude=True
+#     )
+#     batch: IncomingFileBatch = Relationship(back_populates="files")
+
+
+# class IncomingFileRepository:
+#     def __init__(self, session: Session):
+#         self.session = session
+
+#     def get(self, id: str | int) -> dict[str, Any] | None:
+#         batch = self.session.get(IncomingFileBatch, id)
+#         return batch.model_dump() if batch else None
+
+#     def save(self, obj: IncomingFileBatch) -> dict[str, Any]:
+#         valid_obj = IncomingFileBatch.model_validate(obj, from_attributes=True)
+#         self.session.add(valid_obj)
+#         self.session.commit()
+#         self.session.refresh(valid_obj)
+#         return valid_obj.model_dump()
