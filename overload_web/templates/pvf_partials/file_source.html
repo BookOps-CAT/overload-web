@@ -1,19 +1,19 @@
 <div class="row">
-  <div class="col-4">
-    <h3>Select files</h3>
-    <div class="col" id="incoming_files">
-      <select id="file_source"
-              class="form-select"
-              name="file_source"
-              hx-get="/files/source"
-              hx-target="#file_input"
-              hx-trigger="change,load"
-              required>
-        <option value="" selected></option>
-        <option value="local">Local Files</option>
-        <option value="remote">Vendor Files</option>
-      </select>
-    </div>
-    <div class="col" id="file_input"></div>
+  <h3>Select files</h3>
+  <div class="col-3" id="incoming_files">
+    <select id="file_source"
+            class="form-select"
+            name="file_source"
+            hx-get="/files/source"
+            hx-target="#file_input"
+            hx-trigger="change,load"
+            required>
+      <option value="" selected></option>
+      <option value="local">Local Files</option>
+      <option value="remote">Vendor Files</option>
+    </select>
+  </div>
+  <div class="col-5">
+    <div id="file_input"></div>
   </div>
 </div>
