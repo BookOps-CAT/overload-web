@@ -1,3 +1,5 @@
+"""Application service commands for handling operations with order templates."""
+
 import logging
 from typing import Sequence
 
@@ -23,7 +25,7 @@ class CreateOrderTemplate:
             ValidationError: If the template lacks a name, agent, or primary_matchpoint.
 
         Returns:
-            The saved template as an `OrderTemplate` object.
+            The saved template as an `OrderTemplate` domain object.
         """
         save_template = repository.save(obj=obj)
         return templates.OrderTemplate(**save_template)

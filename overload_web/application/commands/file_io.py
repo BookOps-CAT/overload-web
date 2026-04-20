@@ -1,3 +1,5 @@
+"""Application service commands for file handling."""
+
 import logging
 from typing import Any
 
@@ -14,8 +16,8 @@ class ListVendorFiles:
         List files in a directory.
 
         Args:
-            dir: The directory whose files to list.
-            loader: concrete implementation of `FileLoader` protocol
+            dir: The directory whose files to list as a string.
+            loader: Concrete implementation of `FileLoader` protocol
         Returns:
             a list of filenames contained within the given directory as strings.
         """
@@ -31,8 +33,8 @@ class LoadVendorFile:
 
         Args:
             name: The name of the file as a string.
-            dir: The directory where the file is located.
-            loader: concrete implementation of `FileLoader` protocol
+            dir: The directory where the file is located as a string.
+            loader: Concrete implementation of `FileLoader` protocol.
 
         Returns:
             The loaded file as a `files.VendorFile` object.
@@ -49,9 +51,9 @@ class WriteFile:
 
         Args:
             file: The file content to write as a bytes object.
-            file_name: The name of the file as a str.
-            dir: The directory where the file should be written.
-            writer: concrete implementation of `FileWriter` protocol
+            file_name: The name of the file as a string.
+            dir: The directory where the file should be written as a string.
+            writer: Concrete implementation of `FileWriter` protocol.
 
         Returns:
             the directory and filename where the file was written.
@@ -63,6 +65,20 @@ class WriteFile:
 class SaveIncomingFile:
     @staticmethod
     def execute(
-        repo: ports.SqlRepositoryProtocol, file: files.VendorFile
+        file: files.VendorFile, repo: ports.SqlRepositoryProtocol
     ) -> dict[str, Any]:
+        """
+        Save an incoming file to temporary storage.
+
+
+        Args:
+            file:
+                The file to save as a `files.VendorFile` object.
+            repo:
+                Concrete implementation of the `SqlRepositoryProtocol` for
+                handling vendor files.
+
+        Returns:
+            The file's data as a dictionary.
+        """
         return repo.save(file)
