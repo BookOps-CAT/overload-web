@@ -26,6 +26,8 @@
   </div>
   <div class="col">
     <button id="save-report-button"
+            hx-post="/reports/write?id={{ batch_id }}"
+            hx-include="[name='record_type']"
             hx-target="#report-save-container"
             class="btn btn-nypl">Save Processing Statistics</button>
   </div>

@@ -88,18 +88,36 @@ class TestApp:
     app.dependency_overrides[deps.get_session] = fake_sql_session
     base_url = client.base_url
 
-    def test_root_get(self):
+    def test_files_router_list_remote_files_get(self):
+        response = self.client.get("/files/remote?vendor=foo")
+        assert response.status_code == 200
+        assert response.url == f"{self.base_url}/files/remote?vendor=foo"
+        assert sorted(list(response.context.keys())) == sorted(
+            ["files", "request", "vendor"]
+        )
+        assert response.context["files"] == ["foo.mrc"]
+
+    @pytest.mark.parametrize("source", ["local", "remote"])
+    def test_files_router_get_file_source(self, source):
+        response = self.client.get(f"/files/source?file_source={source}")
+        assert response.status_code == 200
+        assert response.url == f"{self.base_url}/files/source?file_source={source}"
+        assert sorted(list(response.context.keys())) == sorted(
+            ["file_source", "request"]
+        )
+
+    def test_frontend_root_get(self):
         routes = self.client.app.router.__dict__["routes"]
         route_names = [i.name for i in routes]
         assert "root" in route_names
         assert "process_records_page" in route_names
 
-    def test_home_get(self):
+    def test_frontend_home_get(self):
         response = self.client.get("/")
         assert response.status_code == 200
         assert "Overload Web" in response.text
 
-    def test_vendor_file_page_get(self):
+    def test_frontend_vendor_file_page_get(self):
         response = self.client.get("/process")
         assert response.status_code == 200
         assert "Process Vendor File" in response.text
@@ -109,7 +127,7 @@ class TestApp:
     @pytest.mark.parametrize(
         "library, record_type", [("bpl", "acq"), ("bpl", "cat"), ("bpl", "sel")]
     )
-    def test_post_context_form_bpl(self, library, record_type):
+    def test_frontend_post_context_form_bpl(self, library, record_type):
         response = self.client.post(
             "/process",
             data={"library": library, "collection": "", "record_type": record_type},
@@ -132,7 +150,7 @@ class TestApp:
             ("nypl", "RL", "sel"),
         ],
     )
-    def test_post_context_form_nypl(self, library, collection, record_type):
+    def test_frontend_post_context_form_nypl(self, library, collection, record_type):
         response = self.client.post(
             "/process",
             data={
@@ -162,7 +180,9 @@ class TestApp:
             ("bpl", "RL", "sel", "Collection should be `None` for BPL records."),
         ],
     )
-    def test_post_context_form_error(self, library, collection, record_type, msg):
+    def test_frontend_post_context_form_error(
+        self, library, collection, record_type, msg
+    ):
         response = self.client.post(
             "/process",
             data={
@@ -188,7 +208,7 @@ class TestApp:
             ("bpl", "", "acq"),
         ],
     )
-    def test_process_records_get(self, library, collection, record_type):
+    def test_frontend_process_records_get(self, library, collection, record_type):
         response = self.client.get(
             f"/process/{record_type}?library={library}&collection={collection}"
         )
@@ -200,13 +220,42 @@ class TestApp:
         )
         assert response.context["page_title"] == "Process Vendor File"
 
-    def test_api_create_template(self, fake_template_data):
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [
+            ("nypl", "BL", "full"),
+            ("nypl", "BL", "order_level"),
+            ("nypl", "RL", "full"),
+            ("nypl", "RL", "order_level"),
+            ("bpl", "NONE", "full"),
+            ("bpl", "NONE", "order_level"),
+        ],
+    )
+    def test_frontend_get_update_context_form(self, library, collection, record_type):
+        response = self.client.get(
+            f"/forms/update-context?library={library}&collection={collection}&record_type={record_type}"
+        )
+        assert response.status_code == 200
+        assert sorted(list(response.context.keys())) == [
+            "collection",
+            "disabled",
+            "library",
+            "record_type",
+            "request",
+        ]
+
+    def test_ot_router_get_template_form(self):
+        response = self.client.get("/ot/forms/templates")
+        assert response.status_code == 200
+        assert sorted(list(response.context.keys())) == ["request"]
+
+    def test_ot_router_create_template(self, fake_template_data):
         response = self.client.post("/ot/template", data=fake_template_data)
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request", "template"]
         assert response.context["template"].get("id") == 2
 
-    def test_api_get_template(self):
+    def test_ot_router_get_template(self):
         response = self.client.get("/ot/template?template_id=1")
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request", "template"]
@@ -215,12 +264,12 @@ class TestApp:
         assert response.context["template"]["agent"] == "bar"
         assert response.context["template"]["primary_matchpoint"] == "isbn"
 
-    def test_api_get_template_list(self):
+    def test_ot_router_get_template_list(self):
         response = self.client.get("/ot/templates")
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request", "templates"]
 
-    def test_api_update_template(self):
+    def test_ot_router_update_template(self):
         response = self.client.patch(
             "/ot/template",
             data={
@@ -238,30 +287,12 @@ class TestApp:
         assert response.context["template"]["name"] == "foo"
         assert response.context["template"]["agent"] == "bar"
 
-    def test_api_update_template_not_found(self):
+    def test_ot_router_update_template_not_found(self):
         response = self.client.patch(
             "/ot/template", data={"primary_matchpoint": "upc", "template_id": 3}
         )
         assert response.status_code == 200
         assert response.context["template"] == {}
-
-    def test_api_list_remote_files_get(self):
-        response = self.client.get("/files/remote?vendor=foo")
-        assert response.status_code == 200
-        assert response.url == f"{self.base_url}/files/remote?vendor=foo"
-        assert sorted(list(response.context.keys())) == sorted(
-            ["files", "request", "vendor"]
-        )
-        assert response.context["files"] == ["foo.mrc"]
-
-    @pytest.mark.parametrize("source", ["local", "remote"])
-    def test_get_file_source(self, source):
-        response = self.client.get(f"/files/source?file_source={source}")
-        assert response.status_code == 200
-        assert response.url == f"{self.base_url}/files/source?file_source={source}"
-        assert sorted(list(response.context.keys())) == sorted(
-            ["file_source", "request"]
-        )
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
@@ -274,7 +305,7 @@ class TestApp:
             ("bpl", "NONE", "sel"),
         ],
     )
-    def test_api_process_order_records_local(
+    def test_pvf_router_process_order_records_local(
         self, library, collection, record_type, processed_records
     ):
         context = {
@@ -304,7 +335,7 @@ class TestApp:
             ("bpl", "NONE", "sel"),
         ],
     )
-    def test_api_process_order_records_remote(
+    def test_pvf_router_process_order_records_remote(
         self, library, collection, record_type, processed_records
     ):
         context = {
@@ -327,7 +358,7 @@ class TestApp:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_api_process_full_records_local(
+    def test_pvf_router_process_full_records_local(
         self, library, collection, record_type, processed_records
     ):
         context = {
@@ -345,7 +376,7 @@ class TestApp:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_api_process_full_records_remote(
+    def test_pvf_router_process_full_records_remote(
         self, library, collection, record_type, processed_records
     ):
         context = {
@@ -360,7 +391,7 @@ class TestApp:
         )
         assert response.status_code == 200
 
-    def test_api_process_full_records_fetcher_error(self):
+    def test_pvf_router_process_full_records_fetcher_error(self):
         """Tests incorrect library passed to `FetcherFactory` called in `deps.py`"""
         context = {
             "library": "Foo",
@@ -374,7 +405,7 @@ class TestApp:
         assert str(exc.value) == "Invalid library: Foo. Must be 'bpl' or 'nypl'"
 
     @pytest.mark.parametrize("record_type", ["acq", "sel"])
-    def test_api_process_order_records_fetcher_error(self, record_type):
+    def test_pvf_router_process_order_records_fetcher_error(self, record_type):
         """Tests incorrect library passed to `FetcherFactory` called in `deps.py`"""
         context = {
             "library": "Foo",
@@ -397,7 +428,7 @@ class TestApp:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat")],
     )
-    def test_api_process_full_records_platform_error(
+    def test_pvf_router_process_full_records_platform_error(
         self, library, collection, record_type, mock_nypl_session_error
     ):
         """Tests `FetcherFactory` called in `deps.py`"""
@@ -421,7 +452,7 @@ class TestApp:
             ("nypl", "RL", "sel"),
         ],
     )
-    def test_api_process_order_records_platform_error(
+    def test_pvf_router_process_order_records_platform_error(
         self, library, collection, record_type, mock_nypl_session_error
     ):
         """Tests `FetcherFactory` called in `deps.py`"""
@@ -443,54 +474,34 @@ class TestApp:
         assert "Trouble connecting: " in str(exc.value)
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_get_output_report(self, record_type):
+    def test_reports_router_output_report(self, record_type):
         response = self.client.get(
             f"/reports/summary?batch_id=1&record_type={record_type}"
         )
         assert response.status_code == 200
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_get_output_report_no_data(self, record_type):
+    def test_reports_router_get_output_report_no_data(self, record_type):
         response = self.client.get(
             f"/reports/summary?batch_id=10&record_type={record_type}"
         )
         assert response.status_code == 200
         assert '<th scope="row">' not in response.text
 
-    def test_get_detailed_report(self):
+    def test_reports_router_get_detailed_report(self):
         response = self.client.get("/reports/detailed?batch_id=1")
         assert response.status_code == 200
 
-    def test_get_detailed_report_no_data(self):
+    def test_reports_router_get_detailed_report_no_data(self):
         response = self.client.get("/reports/detailed?batch_id=10")
         assert response.status_code == 200
         assert '<th scope="row">' not in response.text
 
-    def test_get_template_form(self):
-        response = self.client.get("/ot/forms/templates")
-        assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == ["request"]
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [
-            ("nypl", "BL", "full"),
-            ("nypl", "BL", "order_level"),
-            ("nypl", "RL", "full"),
-            ("nypl", "RL", "order_level"),
-            ("bpl", "NONE", "full"),
-            ("bpl", "NONE", "order_level"),
-        ],
-    )
-    def test_get_update_context_form(self, library, collection, record_type):
-        response = self.client.get(
-            f"/forms/update-context?library={library}&collection={collection}&record_type={record_type}"
+    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
+    def test_reports_router_write_report_to_google_sheet(
+        self, record_type, mock_sheet_config
+    ):
+        response = self.client.post(
+            "/reports/write?id=1", data={"record_type": record_type}
         )
         assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == [
-            "collection",
-            "disabled",
-            "library",
-            "record_type",
-            "request",
-        ]

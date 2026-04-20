@@ -165,3 +165,7 @@ def get_marc_engine(
 
 def get_report_handler() -> reporter.PandasReportHandler:
     return reporter.PandasReportHandler()
+
+
+def get_report_writer() -> reporter.GoogleSheetsReporter:
+    return reporter.GoogleSheetsReporter()
