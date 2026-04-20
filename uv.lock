@@ -1119,7 +1119,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=3.0.0,<4.0.0" },
     { name = "pandas-stubs", specifier = ">=2.3.3.260113,<3.0.0.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.10,<3.0.0" },
-    { name = "pymarc", specifier = ">=5.2.2" },
+    { name = "pymarc", specifier = ">=5.2.2,<5.3" },
     { name = "sqlalchemy", specifier = ">=2.0.40" },
     { name = "sqlmodel", specifier = ">=0.0.24" },
 ]
@@ -1484,11 +1484,11 @@ wheels = [
 
 [[package]]
 name = "pymarc"
-version = "5.3.1"
+version = "5.2.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/e2/28/8cd999db1c4c6d7e855e7596bc17294829e95e818473afbb655cfa167dd0/pymarc-5.3.1.tar.gz", hash = "sha256:d289233d7298aeae45d976081710391cf21e754f73928132508b8adfe8ea0b49", size = 235395, upload-time = "2025-06-18T13:57:51.3Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3a/b1/88146f15a00daad0898dc5a65070f876e19b9c33ba3c73f00e131b5063d8/pymarc-5.2.3.tar.gz", hash = "sha256:02a151d89c3b36f92bbc92c2e972bcfe91b91fc93529d8862e5f7c292a15c9f0", size = 235135, upload-time = "2024-11-06T22:14:36.474Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ca/ba/058498db9945b4f0b1bbf9d2e3095d3c4c21934946953056b1a0751cc5a1/pymarc-5.3.1-py3-none-any.whl", hash = "sha256:3fcc09f9d51ef27c40f8d215e3219d0f3eb29716a0767e689c4923e38182ad73", size = 160259, upload-time = "2025-06-18T13:57:46.869Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/9d/8835c34430e9bef6f4934e545678261eeae83c2b897fddd1562414dea026/pymarc-5.2.3-py3-none-any.whl", hash = "sha256:9e0b2fff0f97764889fe2af08a93d137e0a46630c006c6330bebf0bdcd52201a", size = 160191, upload-time = "2024-11-06T22:14:34.145Z" },
 ]
 
 [[package]]
@@ -1553,16 +1553,16 @@ wheels = [
 
 [[package]]
 name = "pytest-cov"
-version = "6.3.0"
+version = "7.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "coverage" },
     { name = "pluggy" },
     { name = "pytest" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/30/4c/f883ab8f0daad69f47efdf95f55a66b51a8b939c430dadce0611508d9e99/pytest_cov-6.3.0.tar.gz", hash = "sha256:35c580e7800f87ce892e687461166e1ac2bcb8fb9e13aea79032518d6e503ff2", size = 70398, upload-time = "2025-09-06T15:40:14.361Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b1/51/a849f96e117386044471c8ec2bd6cfebacda285da9525c9106aeb28da671/pytest_cov-7.1.0.tar.gz", hash = "sha256:30674f2b5f6351aa09702a9c8c364f6a01c27aae0c1366ae8016160d1efc56b2", size = 55592, upload-time = "2026-03-21T20:11:16.284Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/80/b4/bb7263e12aade3842b938bc5c6958cae79c5ee18992f9b9349019579da0f/pytest_cov-6.3.0-py3-none-any.whl", hash = "sha256:440db28156d2468cafc0415b4f8e50856a0d11faefa38f30906048fe490f1749", size = 25115, upload-time = "2025-09-06T15:40:12.44Z" },
+    { url = "https://files.pythonhosted.org/packages/9d/7a/d968e294073affff457b041c2be9868a40c1c71f4a35fcc1e45e5493067b/pytest_cov-7.1.0-py3-none-any.whl", hash = "sha256:a0461110b7865f9a271aa1b51e516c9a95de9d696734a2f71e3e78f46e1d4678", size = 22876, upload-time = "2026-03-21T20:11:14.438Z" },
 ]
 
 [[package]]
