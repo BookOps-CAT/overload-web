@@ -1,3 +1,5 @@
+"""Domain models defining rules used to update MARC records during processing."""
+
 from __future__ import annotations
 
 import logging
@@ -9,9 +11,11 @@ from overload_web.domain.models import bibs
 logger = logging.getLogger(__name__)
 
 
-class UpdateRules:
+class AcquisitionUpdates:
+    """Returns a list of fields to be updated in an acq record during processing"""
+
     @staticmethod
-    def acq_fields_to_update(record: bibs.DomainBib, context: Any) -> list[Any]:
+    def field_list(record: bibs.DomainBib, context: Any) -> list[MarcFieldUpdateValues]:
         updates: list[Any] = []
         updates.extend(
             FieldRules.update_order_fields(
@@ -23,8 +27,12 @@ class UpdateRules:
             updates.append(FieldRules.update_910_field(record=record))
         return [i for i in updates if i]
 
+
+class CatalogingUpdates:
+    """Returns a list of fields to be updated in a cat record during processing"""
+
     @staticmethod
-    def cat_fields_to_update(record: bibs.DomainBib, context: Any) -> list[Any]:
+    def field_list(record: bibs.DomainBib, context: Any) -> list[MarcFieldUpdateValues]:
         updates: list[Any] = []
         updates.extend(FieldRules.add_vendor_fields(record=record))
         updates.append(FieldRules.add_bib_id(record=record, tag=context.bib_id_tag))
@@ -33,13 +41,17 @@ class UpdateRules:
             updates.append(FieldRules.update_bt_series_call_no(record=record))
         return [i for i in updates if i]
 
+
+class SelectionUpdates:
+    """Returns a list of fields to be updated in a sel record during processing"""
+
     @staticmethod
-    def sel_fields_to_update(
+    def field_list(
         record: bibs.DomainBib,
         context: Any,
         format: str | None = None,
         command_tag: Any | None = None,
-    ) -> list[Any]:
+    ) -> list[MarcFieldUpdateValues]:
         updates: list[Any] = []
         updates.extend(
             FieldRules.update_order_fields(
@@ -58,7 +70,9 @@ class UpdateRules:
 
 
 @dataclass
-class MarcFieldUpdate:
+class MarcFieldUpdateValues:
+    """Value object used to define updates to be made to a MARC field."""
+
     tag: str
     ind1: str
     ind2: str
@@ -68,10 +82,13 @@ class MarcFieldUpdate:
 
 
 class FieldRules:
+    """Functions that create `MarcFieldUpdateValues` to be used to update MARC fields"""
+
     @staticmethod
-    def add_bib_id(record: bibs.DomainBib, tag: str) -> MarcFieldUpdate | None:
+    def add_bib_id(record: bibs.DomainBib, tag: str) -> MarcFieldUpdateValues | None:
+        """Creates a new bib ID field."""
         if record.bib_id:
-            return MarcFieldUpdate(
+            return MarcFieldUpdateValues(
                 delete=True,
                 tag=tag,
                 ind1=" ",
@@ -83,7 +100,8 @@ class FieldRules:
     @staticmethod
     def add_command_tag(
         format: str | None, default_loc: str | None, field: Any | None
-    ) -> MarcFieldUpdate | None:
+    ) -> MarcFieldUpdateValues | None:
+        """Creates a new or updated command tag field."""
         if not format and not default_loc:
             return None
         if not field:
@@ -93,13 +111,13 @@ class FieldRules:
                     command_tag = f"*b2={format};bn={default_loc};"
                 else:
                     command_tag = f"*b2={format};"
-                return MarcFieldUpdate(
+                return MarcFieldUpdateValues(
                     tag="949",
                     ind1=" ",
                     ind2=" ",
                     subfields=[{"code": "a", "value": command_tag}],
                 )
-            return MarcFieldUpdate(
+            return MarcFieldUpdateValues(
                 tag="949",
                 ind1=" ",
                 ind2=" ",
@@ -111,7 +129,7 @@ class FieldRules:
         if "bn=" in command_tag:
             return None
         elif "bn=" not in command_tag[-1] == ";":
-            return MarcFieldUpdate(
+            return MarcFieldUpdateValues(
                 tag="949",
                 ind1=" ",
                 ind2=" ",
@@ -119,7 +137,7 @@ class FieldRules:
                 original=field,
             )
         else:
-            return MarcFieldUpdate(
+            return MarcFieldUpdateValues(
                 tag="949",
                 ind1=" ",
                 ind2=" ",
@@ -128,12 +146,13 @@ class FieldRules:
             )
 
     @staticmethod
-    def add_vendor_fields(record: bibs.DomainBib) -> list[MarcFieldUpdate]:
+    def add_vendor_fields(record: bibs.DomainBib) -> list[MarcFieldUpdateValues]:
+        """Creates a list of fields for a full MARC record based on `VendorInfo`."""
         field_objs = []
         bib_fields = getattr(record.vendor_info, "bib_fields", [])
         for field_data in bib_fields:
             field_objs.append(
-                MarcFieldUpdate(
+                MarcFieldUpdateValues(
                     tag=field_data["tag"],
                     ind1=field_data["ind1"],
                     ind2=field_data["ind2"],
@@ -146,11 +165,13 @@ class FieldRules:
 
     @staticmethod
     def update_leader(leader: str) -> str:
+        """Updates record leader for UTF-8"""
         return leader[:9] + "a" + leader[10:]
 
     @staticmethod
-    def update_910_field(record: bibs.DomainBib) -> MarcFieldUpdate:
-        return MarcFieldUpdate(
+    def update_910_field(record: bibs.DomainBib) -> MarcFieldUpdateValues:
+        """Adds 910 field for branches or research if applicable."""
+        return MarcFieldUpdateValues(
             delete=True,
             tag="910",
             ind1=" ",
@@ -159,7 +180,10 @@ class FieldRules:
         )
 
     @staticmethod
-    def update_bt_series_call_no(record: bibs.DomainBib) -> MarcFieldUpdate | None:
+    def update_bt_series_call_no(
+        record: bibs.DomainBib,
+    ) -> MarcFieldUpdateValues | None:
+        """Updates call number for B&T Series materials."""
         call_no = record.branch_call_number
         if (
             not record.vendor == "BT SERIES"
@@ -205,14 +229,15 @@ class FieldRules:
                 "Constructed call number does not match original. "
                 f"New={new_call_no}, Original={call_no}"
             )
-        return MarcFieldUpdate(
+        return MarcFieldUpdateValues(
             delete=True, tag="091", ind1=" ", ind2=" ", subfields=new_subfields
         )
 
     @staticmethod
     def update_order_fields(
         record: bibs.DomainBib, mapping: dict[str, Any]
-    ) -> list[MarcFieldUpdate]:
+    ) -> list[MarcFieldUpdateValues]:
+        """Updates order record fields based on template data applied to DomainBib"""
         fields = []
         for order in record.orders:
             order_data = order.map_to_marc(rules=mapping)
@@ -226,6 +251,8 @@ class FieldRules:
                     else:
                         subfields.append({"code": k, "value": str(v)})
                 fields.append(
-                    MarcFieldUpdate(tag=tag, ind1=" ", ind2=" ", subfields=subfields)
+                    MarcFieldUpdateValues(
+                        tag=tag, ind1=" ", ind2=" ", subfields=subfields
+                    )
                 )
         return fields

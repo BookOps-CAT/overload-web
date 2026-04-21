@@ -127,7 +127,7 @@ class MarcEngine:
             bib:
                 A MARC record as a `bookops_marc.Bib` object
             field_updates:
-                A list of updates to make to the record as `rules.MarcFieldUpdate`
+                A list of updates to make to the record as `rules.MarcFieldUpdateValues`
                 objects
 
         Returns:

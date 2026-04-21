@@ -163,9 +163,9 @@ class BibUpdatePolicy:
     def apply_full_record_updates(
         record: bibs.DomainBib, engine: ports.MarcEnginePort
     ) -> None:
-        """Update and add MARC fields to full-level a processed bib record"""
+        """Update and add MARC fields to processed full-level bib record"""
         bib = engine.create_bib_from_domain(record=record)
-        updates = rules.UpdateRules.cat_fields_to_update(
+        updates = rules.CatalogingUpdates.field_list(
             record=record, context=engine.config
         )
         engine.update_fields(field_updates=updates, bib=bib)
@@ -178,16 +178,16 @@ class BibUpdatePolicy:
         engine: ports.MarcEnginePort,
         template_data: dict[str, Any],
     ) -> None:
-        """Update and add MARC fields to order-level a processed bib record"""
+        """Update and add MARC fields to processed order-level bib record"""
         record.apply_order_template(template_data)
         bib = engine.create_bib_from_domain(record=record)
 
         if engine.record_type == "acq":
-            updates = rules.UpdateRules.acq_fields_to_update(
+            updates = rules.AcquisitionUpdates.field_list(
                 record=record, context=engine.config
             )
         else:
-            updates = rules.UpdateRules.sel_fields_to_update(
+            updates = rules.SelectionUpdates.field_list(
                 record=record,
                 context=engine.config,
                 format=template_data.get("format"),
