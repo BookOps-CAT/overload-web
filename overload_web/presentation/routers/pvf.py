@@ -10,7 +10,6 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from overload_web.application.commands.process import (
-    CombineMarcFiles,
     ProcessFullRecords,
     ProcessOrderRecords,
     SaveProcessedRecords,
@@ -198,14 +197,10 @@ def process_cat_records(
     all_files = deps.fetch_files(
         local_files=local_files, remote_file_names=remote_file_names, vendor=vendor
     )
-    combined = CombineMarcFiles.execute(
-        data=[i.content for i in all_files], marc_engine=marc_engine
-    )
     processed = ProcessFullRecords.execute(
-        data=combined,
+        batches={f"{i.file_name}": i.content for i in all_files},
         marc_engine=marc_engine,
         fetcher=fetcher,
-        file_names=[i.file_name for i in all_files],
     )
     batch = SaveProcessedRecords.execute(repo=repository, batch=processed)
     return request.app.state.templates.TemplateResponse(

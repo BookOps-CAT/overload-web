@@ -1,7 +1,6 @@
 import pytest
 
 from overload_web.application.commands.process import (
-    CombineMarcFiles,
     ProcessFullRecords,
     ProcessOrderRecords,
 )
@@ -21,9 +20,8 @@ class TestProcessBatch:
         engine = marc_engine.MarcEngine(rules=engine_config)
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        combined = CombineMarcFiles.execute(data=[marc_data], marc_engine=engine)
         out = ProcessFullRecords.execute(
-            combined, marc_engine=engine, fetcher=fake_fetcher, file_names=["foo.mrc"]
+            batches={"foo.mrc": marc_data}, marc_engine=engine, fetcher=fake_fetcher
         )
         assert isinstance(out.files, list)
         assert out.report.get("missing_barcodes") is not None
@@ -61,10 +59,7 @@ class TestProcessBatch:
             marc_data = fh.read()
         with pytest.raises(OverloadError) as exc:
             ProcessFullRecords.execute(
-                marc_data,
-                marc_engine=engine,
-                fetcher=fake_fetcher,
-                file_names=["foo.mrc"],
+                batches={"foo.mrc": marc_data}, marc_engine=engine, fetcher=fake_fetcher
             )
         assert "Duplicate barcodes found in file: " in str(exc.value)
 
@@ -108,9 +103,8 @@ class TestWriteReport:
         engine = marc_engine.MarcEngine(rules=engine_config)
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        combined = CombineMarcFiles.execute(data=[marc_data], marc_engine=engine)
         out = ProcessFullRecords.execute(
-            combined, marc_engine=engine, fetcher=fake_fetcher, file_names=["foo.mrc"]
+            batches={"foo.mrc": marc_data}, marc_engine=engine, fetcher=fake_fetcher
         )
         assert isinstance(out.files, list)
         writer = reporter.GoogleSheetsReporter()

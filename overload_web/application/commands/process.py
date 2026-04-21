@@ -1,3 +1,5 @@
+"""Application serivce commands for the process vendor file service."""
+
 import datetime
 import logging
 from typing import Any
@@ -9,23 +11,12 @@ from overload_web.domain.models import bibs
 logger = logging.getLogger(__name__)
 
 
-class CombineMarcFiles:
-    """Combine multiple MARC files into one for processing CAT records."""
-
-    @staticmethod
-    def execute(data: list[bytes], marc_engine: ports.MarcEnginePort) -> bytes:
-        return marc_services.MarcFileMerger.combine_marc_files(
-            data=data, engine=marc_engine
-        )
-
-
 class ProcessFullRecords:
     """Handles parsing, matching, and analysis of full MARC records."""
 
     @staticmethod
     def execute(
-        data: bytes,
-        file_names: list[str],
+        batches: dict[str, bytes],
         marc_engine: ports.MarcEnginePort,
         fetcher: ports.BibFetcher,
     ) -> bibs.ProcessedFileBatch:
@@ -37,14 +28,19 @@ class ProcessFullRecords:
         fields, and outputs the updated records and the match analysis.
 
         Args:
-            data: binary MARC data as a `bytes` object.
-            file_names: the list of files being processed.
-            marc_engine: a `ports.MarcEnginePort` object used by the command.
-            fetcher: a `ports.BibFetcher` object used by the command.
+            batches:
+                a dictionary containing pairs of file names and associated binary data
+            marc_engine:
+                a `ports.MarcEnginePort` object used by the command.
+            fetcher:
+                a `ports.BibFetcher` object used by the command.
         Returns:
             A `ProcessedFileBatch` object containing the processed records as bytes
             objects and the processing statistics
         """
+        data = marc_services.MarcFileMerger.combine_marc_files(
+            data=[i for i in batches.values()], engine=marc_engine
+        )
         records = marc_services.BibParser.parse_marc_data(data=data, engine=marc_engine)
         marc_services.BarcodeValidator.ensure_unique(records)
         barcodes = marc_services.BarcodeExtractor.extract_barcodes(records)
@@ -64,7 +60,9 @@ class ProcessFullRecords:
         )
         file_name = datetime.datetime.today().strftime("%y%m%d")
         report = marc_services.PVFReporter.create_full_records_report(
-            records=records, missing_barcodes=missing_barcodes, file_names=file_names
+            records=records,
+            missing_barcodes=missing_barcodes,
+            file_names=[i for i in batches.keys()],
         )
         files = [
             bibs.ProcessedFile(
@@ -145,6 +143,18 @@ class ProcessOrderRecords:
 class SaveProcessedRecords:
     @staticmethod
     def execute(
-        repo: ports.SqlRepositoryProtocol, batch: bibs.ProcessedFileBatch
+        batch: bibs.ProcessedFileBatch, repo: ports.SqlRepositoryProtocol
     ) -> dict[str, Any]:
+        """
+        Save a batch of processed records and processing statistics to local storage.
+
+        Args:
+            batch:
+                A batch of processed records and their processing statistics as a
+                `ProcessedFileBatch` object.
+            repo:
+                a `ports.SqlRepositoryProtocol` object used by the command.
+        Returns:
+            The processed record data and statistics as a dictionary.
+        """
         return repo.save(batch)
