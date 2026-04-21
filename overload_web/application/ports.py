@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 R = TypeVar("R")  # variabe for `ProcessingStatistics` report type
 S = TypeVar("S")  # variable for `BaseSierraResponse` type
 T = TypeVar("T", contravariant=True)  # variable for `OrderTemplate` type
-U = TypeVar("U", contravariant=True)  # variable for `bibs.DomainBib` type
-V = TypeVar("V")  # variable for `bibs.DomainBib` type
+U = TypeVar("U", contravariant=True)  # variable for `DomainBib` contravariant type
+V = TypeVar("V")  # variable for `DomainBib` type
 
 
 @runtime_checkable
