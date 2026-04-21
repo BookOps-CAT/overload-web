@@ -5,7 +5,6 @@ from overload_web.application.commands.process import (
     ProcessOrderRecords,
 )
 from overload_web.application.services import report_services
-from overload_web.domain.errors import OverloadError
 from overload_web.infrastructure import marc_engine, reporter
 
 
@@ -57,7 +56,7 @@ class TestProcessBatch:
 
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        with pytest.raises(OverloadError) as exc:
+        with pytest.raises(ValueError) as exc:
             ProcessFullRecords.execute(
                 batches={"foo.mrc": marc_data}, marc_engine=engine, fetcher=fake_fetcher
             )
@@ -74,7 +73,7 @@ class TestProcessBatch:
 
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
-        with pytest.raises(OverloadError) as exc:
+        with pytest.raises(ValueError) as exc:
             ProcessOrderRecords.execute(
                 {"foo.mrc": marc_data},
                 marc_engine=engine,

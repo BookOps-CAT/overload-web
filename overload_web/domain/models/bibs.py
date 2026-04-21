@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import datetime
+import io
+import itertools
 import logging
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Protocol
@@ -253,6 +256,95 @@ class DomainBib:
 
     def __repr__(self) -> str:
         return f"DomainBib(barcodes: {self.barcodes}, bib_id: {self.bib_id}, branch_call_number: {self.branch_call_number}, collection: {self.collection}, control_number: {self.control_number}, isbn: {self.isbn}, library: {self.library}, oclc_number: {self.oclc_number}, research_call_number: {self.research_call_number}, record_type: {self.record_type}, title: {self.title}, upc: {self.upc}, update_date: {self.update_date}, vendor: {self.vendor})"  # noqa: E501
+
+    @staticmethod
+    def create_full_records_report(
+        records: list[DomainBib], missing_barcodes: list[str], file_names: list[str]
+    ) -> dict[str, list[Any]]:
+        """Generate statistics from a batch of processed full-level records"""
+        stats = defaultdict(list)
+        all_recs = []
+        stats["file_names"].extend(file_names)
+        stats["missing_barcodes"].extend(missing_barcodes)
+        all_recs.extend(records)
+        for rec in all_recs:
+            for k, v in rec.analysis.__dict__.items():
+                stats[k].append(v)
+            stats["vendor"].append(getattr(rec, "vendor", "UNKNOWN"))
+        out: dict[str, Any] = dict(stats)
+        out["total_records"] = len(all_recs)
+        out["total_files"] = len(stats["file_names"])
+        return out
+
+    @staticmethod
+    def create_order_records_report(
+        records: list[DomainBib], file_names: list[str]
+    ) -> dict[str, list[Any]]:
+        """Generate statistics from a batch of processed order-level records"""
+        stats = defaultdict(list)
+        for rec in records:
+            for k, v in rec.analysis.__dict__.items():
+                stats[k].append(v)
+            stats["vendor"].append(rec.vendor)
+        out: dict[str, Any] = dict(stats)
+        out["total_records"] = len(records)
+        out["total_files"] = len(file_names)
+        out["file_names"] = file_names
+        return out
+
+    @staticmethod
+    def extract_barcodes(records: list[DomainBib]) -> list[str]:
+        """Extract all barcodes from a list of `DomainBib` objects"""
+        return list(itertools.chain.from_iterable([i.barcodes for i in records]))
+
+    @staticmethod
+    def ensure_preserved(records: list[DomainBib], barcodes: list[str]) -> list[str]:
+        """Confirm barcodes extracted from a file are present in processed records"""
+        valid = True
+        processed_barcodes = list(
+            itertools.chain.from_iterable([i.barcodes for i in records])
+        )
+        missing_barcodes = set()
+        for barcode in barcodes:
+            if barcode not in processed_barcodes:
+                valid = False
+                missing_barcodes.add(barcode)
+        valid = sorted(barcodes) == sorted(processed_barcodes)
+        logger.debug(
+            f"Integrity validation: {valid}, missing_barcodes: {list(missing_barcodes)}"
+        )
+        if not valid:
+            logger.error(f"Barcodes integrity error: {list(missing_barcodes)}")
+        return list(missing_barcodes)
+
+    @staticmethod
+    def ensure_unique(bibs: list[DomainBib]) -> None:
+        """Confirm barcodes in a file are all unique."""
+        barcodes = list(itertools.chain.from_iterable([i.barcodes for i in bibs]))
+        barcode_counter = Counter(barcodes)
+        dupe_barcodes = [i for i, count in barcode_counter.items() if count > 1]
+        if dupe_barcodes:
+            raise ValueError(f"Duplicate barcodes found in file: {dupe_barcodes}")
+
+    @staticmethod
+    def write(records: list[DomainBib]) -> bytes:
+        """
+        Serialize `DomainBib` objects into a binary MARC stream.
+
+        Args:
+            records:
+                A list of parsed bibliographic records as `DomainBib` objects.
+
+        Returns:
+            MARC binary as an an in-memory file stream.
+        """
+        io_data = io.BytesIO()
+        for record in records:
+            logger.info(f"Writing MARC binary for record: {record}")
+            io_data.write(record.binary_data)
+        io_data.seek(0)
+        out = io_data.getvalue()
+        return out
 
 
 class LibrarySystem(StrEnum):

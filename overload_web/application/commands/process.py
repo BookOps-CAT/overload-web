@@ -42,8 +42,8 @@ class ProcessFullRecords:
             data=[i for i in batches.values()], engine=marc_engine
         )
         records = marc_services.BibParser.parse_marc_data(data=data, engine=marc_engine)
-        marc_services.BarcodeValidator.ensure_unique(records)
-        barcodes = marc_services.BarcodeExtractor.extract_barcodes(records)
+        bibs.DomainBib.ensure_unique(records)
+        barcodes = bibs.DomainBib.extract_barcodes(records)
         for bib in records:
             matches = match_service.BibMatcher(fetcher).match_full_record(bib)
             analysis = bib.analyze_matches(candidates=matches)
@@ -52,22 +52,21 @@ class ProcessFullRecords:
                 bib, engine=marc_engine
             )
 
-        missing_barcodes = marc_services.BarcodeValidator.ensure_preserved(
+        missing_barcodes = bibs.DomainBib.ensure_preserved(
             records=records, barcodes=barcodes
         )
         deduplicated = marc_services.BibDeduplicator.deduplicate(
             records=records, engine=marc_engine
         )
         file_name = datetime.datetime.today().strftime("%y%m%d")
-        report = marc_services.PVFReporter.create_full_records_report(
+        report = bibs.DomainBib.create_full_records_report(
             records=records,
             missing_barcodes=missing_barcodes,
             file_names=[i for i in batches.keys()],
         )
         files = [
             bibs.ProcessedFile(
-                file_name=f"{file_name}-{k}.mrc",
-                records=marc_services.BibSerializer.write(v),
+                file_name=f"{file_name}-{k}.mrc", records=bibs.DomainBib.write(v)
             )
             for k, v in deduplicated.items()
         ]
@@ -117,7 +116,7 @@ class ProcessOrderRecords:
                 engine=marc_engine,
                 vendor=template_data.get("vendor", "UNKNOWN"),
             )
-            marc_services.BarcodeValidator.ensure_unique(records)
+            bibs.DomainBib.ensure_unique(records)
             for bib in records:
                 matches = match_service.BibMatcher(fetcher).match_order_record(
                     bib, matchpoints=matchpoints
@@ -130,11 +129,10 @@ class ProcessOrderRecords:
             all_records.extend(records)
             out_batches.append(
                 bibs.ProcessedFile(
-                    file_name=file_name,
-                    records=marc_services.BibSerializer.write(records),
+                    file_name=file_name, records=bibs.DomainBib.write(records)
                 )
             )
-        report = marc_services.PVFReporter.create_order_records_report(
+        report = bibs.DomainBib.create_order_records_report(
             records=all_records, file_names=file_names
         )
         return bibs.ProcessedFileBatch(files=out_batches, report=report)

@@ -162,7 +162,7 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_validate_cat(self, full_bib, caplog, record_type):
-        marc_services.BarcodeValidator.ensure_preserved([full_bib], ["333331234567890"])
+        bibs.DomainBib.ensure_preserved([full_bib], ["333331234567890"])
         assert len(caplog.records) == 1
         assert (
             caplog.records[0].msg == "Integrity validation: True, missing_barcodes: []"
@@ -172,7 +172,7 @@ class TestReviewer:
         "library, collection, record_type", [("bpl", "NONE", "cat")]
     )
     def test_validate_cat_bpl_960_item(self, full_bib, caplog, collection, record_type):
-        marc_services.BarcodeValidator.ensure_preserved([full_bib], ["333331234567890"])
+        bibs.DomainBib.ensure_preserved([full_bib], ["333331234567890"])
         assert len(caplog.records) == 1
         assert (
             caplog.records[0].msg == "Integrity validation: True, missing_barcodes: []"
@@ -183,7 +183,7 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_validate_missing_barcodes(self, full_bib, caplog, collection, record_type):
-        marc_services.BarcodeValidator.ensure_preserved(
+        bibs.DomainBib.ensure_preserved(
             [full_bib], ["333331234567890", "333330987654321"]
         )
         assert len(caplog.records) == 2

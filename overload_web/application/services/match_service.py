@@ -11,7 +11,6 @@ import logging
 from typing import Any
 
 from overload_web.application import ports
-from overload_web.domain.errors import OverloadError
 from overload_web.domain.models import bibs
 
 logger = logging.getLogger(__name__)
@@ -112,10 +111,10 @@ class BibMatcher:
             responses, or an empty list if no matches were found.
 
         Raises:
-            OverloadError: if the value of a record's `vendor_info` attribute is None.
+            ValueError: if the value of a record's `vendor_info` attribute is None.
         """
         if record.vendor_info is None:
-            raise OverloadError("Vendor index required for cataloging workflow.")
+            raise ValueError("Vendor index required for cataloging workflow.")
         responses: list[dict[str, Any]] = self._match_bib(
             record=record, matchpoints=record.vendor_info.matchpoints
         )

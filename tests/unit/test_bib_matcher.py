@@ -3,7 +3,6 @@ from contextlib import nullcontext as does_not_raise
 import pytest
 
 from overload_web.application.services import match_service
-from overload_web.domain.errors import OverloadError
 from overload_web.domain.models import bibs
 from overload_web.infrastructure import clients
 
@@ -161,7 +160,7 @@ class TestBibMatcher:
         stub_domain_bib.record_type = "cat"
         service = match_service.BibMatcher(fetcher=fake_fetcher)
         assert stub_domain_bib.vendor_info is None
-        with pytest.raises(OverloadError) as exc:
+        with pytest.raises(ValueError) as exc:
             service.match_full_record(stub_domain_bib)
         assert str(exc.value) == "Vendor index required for cataloging workflow."
 

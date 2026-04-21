@@ -3,56 +3,14 @@
 from __future__ import annotations
 
 import io
-import itertools
 import logging
 from collections import Counter, defaultdict
 from typing import Any
 
 from overload_web.application import ports
-from overload_web.domain.errors import OverloadError
 from overload_web.domain.models import bibs, rules
 
 logger = logging.getLogger(__name__)
-
-
-class BarcodeExtractor:
-    @staticmethod
-    def extract_barcodes(records: list[bibs.DomainBib]) -> list[str]:
-        """Extract all barcodes from a list of `DomainBib` objects"""
-        return list(itertools.chain.from_iterable([i.barcodes for i in records]))
-
-
-class BarcodeValidator:
-    @staticmethod
-    def ensure_preserved(
-        records: list[bibs.DomainBib], barcodes: list[str]
-    ) -> list[str]:
-        """Confirm barcodes extracted from a file are present in processed records"""
-        valid = True
-        processed_barcodes = list(
-            itertools.chain.from_iterable([i.barcodes for i in records])
-        )
-        missing_barcodes = set()
-        for barcode in barcodes:
-            if barcode not in processed_barcodes:
-                valid = False
-                missing_barcodes.add(barcode)
-        valid = sorted(barcodes) == sorted(processed_barcodes)
-        logger.debug(
-            f"Integrity validation: {valid}, missing_barcodes: {list(missing_barcodes)}"
-        )
-        if not valid:
-            logger.error(f"Barcodes integrity error: {list(missing_barcodes)}")
-        return list(missing_barcodes)
-
-    @staticmethod
-    def ensure_unique(bibs: list[bibs.DomainBib]) -> None:
-        """Confirm barcodes in a file are all unique."""
-        barcodes = list(itertools.chain.from_iterable([i.barcodes for i in bibs]))
-        barcode_counter = Counter(barcodes)
-        dupe_barcodes = [i for i, count in barcode_counter.items() if count > 1]
-        if dupe_barcodes:
-            raise OverloadError(f"Duplicate barcodes found in file: {dupe_barcodes}")
 
 
 class BibDeduplicator:
@@ -134,28 +92,6 @@ class BibParser:
             logger.info(f"Vendor record parsed: {bib}")
             parsed.append(bib)
         return parsed
-
-
-class BibSerializer:
-    @staticmethod
-    def write(records: list[bibs.DomainBib]) -> bytes:
-        """
-        Serialize `DomainBib` objects into a binary MARC stream.
-
-        Args:
-            records:
-                A list of parsed bibliographic records as `DomainBib` objects.
-
-        Returns:
-            MARC binary as an an in-memory file stream.
-        """
-        io_data = io.BytesIO()
-        for record in records:
-            logger.info(f"Writing MARC binary for record: {record}")
-            io_data.write(record.binary_data)
-        io_data.seek(0)
-        out = io_data.getvalue()
-        return out
 
 
 class BibUpdatePolicy:
