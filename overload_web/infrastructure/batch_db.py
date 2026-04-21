@@ -1,3 +1,25 @@
+"""Adapter module that defines classes and models related to batches of processed files.
+
+Classes:
+
+`PVFBatchRepository`
+    `SQLModel` implementation of `SqlRepositoryProtocol` for managing
+    `PVFBatch` objects in a SQL database.
+
+Models:
+
+`PVFBatch`
+    A pydantic/sqlmodel model that defines a batch containing one or more MARC files
+    and their associated processing statistics.
+
+`PVFReportModel`
+    A pydantic/sqlmodel model that defines processing statistics for a process vendor
+    file workflow.
+
+`ProcessedFileModel`
+    A pydantic/sqlmodel model that defines a processed MARC file.
+"""
+
 import logging
 from typing import Any
 
@@ -25,6 +47,8 @@ class PVFBatch(SQLModel, table=True):
 
 
 class PVFReportModel(SQLModel, table=True):
+    """A table model representing a batch of processing statistics."""
+
     __tablename__ = "reports"
 
     id: int = Field(default=None, primary_key=True, index=True, exclude=True)
@@ -51,6 +75,8 @@ class PVFReportModel(SQLModel, table=True):
 
 
 class ProcessedFileModel(SQLModel, table=True):
+    """A table model representing a processed MARC file."""
+
     __tablename__ = "files"
 
     id: int | None = Field(default=None, primary_key=True, index=True, exclude=True)
@@ -62,10 +88,28 @@ class ProcessedFileModel(SQLModel, table=True):
 
 
 class PVFBatchRepository:
+    """
+    `SQLModel` repository for `PVFBatch` objects.
+
+    This class is a concrete implementation of the `SqlRepositoryProtocol` protocol.
+
+    Args:
+        session: a `sqlmodel.Session`.
+    """
+
     def __init__(self, session: Session):
         self.session = session
 
     def get(self, id: str | int) -> dict[str, Any] | None:
+        """
+        Retrieve a `PVFBatch` object by its ID.
+
+        Args:
+            id: the primary key of the `PVFBatch`.
+
+        Returns:
+            a `PVFBatch` instance as a dictionary or `None` if not found.
+        """
         batch = self.session.get(PVFBatch, id)
         if batch:
             return {
@@ -75,6 +119,15 @@ class PVFBatchRepository:
         return None
 
     def save(self, obj: PVFBatch) -> dict[str, Any]:
+        """
+        Adds a new `PVFBatch` to the database.
+
+        Args:
+            obj: the `PVFBatch` object to save.
+
+        Returns:
+            The `PVFBatch` data as a dictionary.
+        """
         valid_files = [
             ProcessedFileModel.model_validate(i, from_attributes=True)
             for i in obj.files

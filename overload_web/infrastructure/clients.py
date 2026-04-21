@@ -13,14 +13,14 @@ Classes:
 
 `BPLSolrSession`
     concrete implementation of `SierraSessionProtocol` for `bookops_bpl_solr`
+`FetcherFactory`
+    factory class to create `SierraBibFetcher` objects based on library system
+    (i.e. `bpl` or `nypl`).
 `NYPLPlatformSession`
     concrete implementation of `SierraSessionProtocol` for `bookops_nypl_platform`
 `SierraBibFetcher`
     fetches bib records from Sierra and converts them into `BaseSierraResponse` objects
     to be used in determining best match for a `DomainBib` object.
-`FetcherFactory`
-    factory class to create `SierraBibFetcher` objects based on library system
-    (i.e. `bpl` or `nypl`).
 """
 
 from __future__ import annotations
@@ -60,9 +60,9 @@ class FetcherFactory:
 
 class SierraBibFetcher:
     """
-    Fetches bibliographic records from Sierra and converts them into domain-level
-    `BaseSierraResponse` objects for `DomainBib` construction. This class is a concrete
-    implementation of the `BibFetcher` protocol
+    Fetches bibliographic records from Sierra and converts them into dictionaries
+    to be parsed into `BaseSierraResponse` objects for `DomainBib` construction.
+    This class is a concrete implementation of the `BibFetcher` protocol.
     """
 
     def __init__(self, session: SierraSessionProtocol) -> None:
@@ -75,7 +75,19 @@ class SierraBibFetcher:
         self.session = session
 
     def _normalize_oclc(self, id: str | int) -> str:
-        """Normalizes OCLC numbers based on session type."""
+        """
+        Normalizes OCLC numbers based on session type.
+
+        NYPL's Platform API expects that prefixes will be removed. BPL's Solr service
+        expects that the prefix will be present.
+
+        Args:
+            id: the OCLC number as a string or integer.
+
+        Returns:
+            the OCLC number as a string normalized based on requirements for the
+            type of `SierraSessionProtocol` being used.
+        """
         if isinstance(id, int) and isinstance(self.session, NYPLPlatformSession):
             return str(id)
         elif isinstance(id, str) and isinstance(self.session, NYPLPlatformSession):
@@ -198,8 +210,8 @@ class BPLSolrSession(SolrSession):
         """
         Formats Sierra ID numbers.
 
-        Overrides method in parent class that unnecessarily raises
-        errors when the number doesn't look like a Sierra ID.
+        Overrides method in parent class that raises errors when the number
+        doesn't look like a Sierra ID.
 
         Args:
             id: Sierra bib, item, or order number as string or int

@@ -1,3 +1,16 @@
+"""Adapter module that defines a handlers used to create and write processing reports.
+
+Classes:
+
+`PandasReportHandler`
+    Concrete implementation of `ReportHandler` protocol which uses pandas to generate
+    reports from processing statistics.
+
+`GoogleSheetsReporter`
+    Concrete implementation of `ReportWriter` protocol which uses google API client to
+    write processing reports to a Google Sheet.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -17,6 +30,8 @@ logger = logging.getLogger(__name__)
 
 
 class PandasReportHandler:
+    """Create reports for processing workflow using pandas."""
+
     def create_call_number_report(
         self, report_data: dict[str, list[Any]], record_type: str
     ) -> dict[str, list[Any]] | None:

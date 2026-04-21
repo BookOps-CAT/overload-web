@@ -1,4 +1,4 @@
-"""A class representing a relational database and associated tables for
+"""Adapter module that defines a relational database and associated tables for
 order template (`TemplateModel`) objects.
 
 Classes:
@@ -95,7 +95,7 @@ class OrderTemplateRepository:
             id: the primary key of the `OrderTemplate`.
 
         Returns:
-            a `OrderTemplate` instance or `None` if not found.
+            a `OrderTemplate` instance as a dictionary or `None` if not found.
         """
         template = self.session.get(TemplateModel, id)
         return template.model_dump() if template else None
@@ -124,6 +124,9 @@ class OrderTemplateRepository:
 
         Args:
             obj: the `TemplateModel` object to save.
+
+        Returns:
+            The `TemplateModel` data as a dictionary.
         """
         valid_obj = TemplateModel.model_validate(obj, from_attributes=True)
         self.session.add(valid_obj)
