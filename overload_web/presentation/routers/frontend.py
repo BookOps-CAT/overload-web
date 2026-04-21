@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 
 class ProcessingContext(BaseModel):
+    """A model that represents context necessary to determine processing workflow."""
+
     record_type: Literal["acq", "cat", "sel"]
     library: Literal["nypl", "bpl"]
     collection: Literal["BL", "RL", ""] | None
@@ -25,6 +27,7 @@ class ProcessingContext(BaseModel):
     def parse_collection(
         cls, value: Literal["BL", "RL"] | None
     ) -> Literal["BL", "RL"] | None:
+        """Parses value of `collection` param from html forms."""
         if not value:
             return None
         else:
@@ -32,6 +35,7 @@ class ProcessingContext(BaseModel):
 
     @model_validator(mode="after")
     def validate_values(self) -> ProcessingContext:
+        """Ensures `collection` is not passed when processing BPL records."""
         if self.library == "nypl" and not self.collection:
             raise ValueError("Collection is required for NYPL records.")
         elif self.library == "bpl" and self.collection:
@@ -48,11 +52,11 @@ def root(request: Request, page_title: str = "Overload Web") -> HTMLResponse:
     Renders the home page.
 
     Args:
-        request: `FastAPI` request object.
+        request: `FastAPI` Request object.
         page_title: optional title to override the default.
 
     Returns:
-        HTML response for the home page.
+        HTML template response for the home page.
     """
     return request.app.state.templates.TemplateResponse(
         request=request, name="home.html", context={"page_title": page_title}
@@ -66,12 +70,16 @@ def vendor_file_page(
     """
     Renders the 'Process Vendor File' page.
 
+    This is the first page users see after selecting the Process Vendor File tab and
+    it is where they  can input values for `library`, `collection`, and `record_type`
+    in order to determine the correct processing workflow.
+
     Args:
-        request: `FastAPI` request object.
+        request: `FastAPI` Request object.
         page_title: optional title to override the default.
 
     Returns:
-        HTML response for the home page.
+        HTML template response for the 'Process Vendor File' page.
     """
     return request.app.state.templates.TemplateResponse(
         request=request, name="pvf_home.html", context={"page_title": page_title}
@@ -87,15 +95,20 @@ def post_context_form(
     endpoint for file processing. All args are passed to endpoint via an html form.
 
     Args:
-        record_type:
-            the type of record to be processed as a str
-        library:
-            the library whose records are to be processed as a str
-        collection:
-            the collection whose records are to be processed as a str
+        processing_context:
+            A `ProcessingContext` model created from a form.
+
+            This model contains:
+
+                library:
+                    the library whose records are to be processed as a str
+                collection:
+                    the collection whose records are to be processed as a str
+                record_type:
+                    the type of record to be processed as a str
 
     Returns:
-        `RedirectResponse` to appropriate endpoint for record type
+        `RedirectResponse` to the appropriate endpoint based on processing context.
     """
     return RedirectResponse(
         url=f"/process/{processing_context.record_type}?library={processing_context.library}&collection={processing_context.collection}",
@@ -112,15 +125,21 @@ def process_records_page(
     page_title: str = "Process Vendor File",
 ) -> HTMLResponse:
     """
-    Renders the 'Process Vendor File' page for the Acquisitions workflow.
+    Renders the 'Process Vendor File' page based for workflow.
+
+    Takes values passed via a form to the `ProcessingContext` model and renders
+    the appropriate page. The component parts of this page are determined by htmx
+    partials that are rendered based on form inputs.
 
     Args:
         request:
-            `FastAPI` request object.
+            `FastAPI` Request object.
         library:
-            the library whose records are to be processed as a str
+            the library whose records are to be processed as a str.
         collection:
-            the collection whose records are to be processed as a str
+            the collection whose records are to be processed as a str.
+        record_type:
+            the type of record being processed as a str.
         page_title:
             optional title to override the default.
 

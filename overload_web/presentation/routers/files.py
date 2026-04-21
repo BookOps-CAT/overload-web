@@ -1,4 +1,4 @@
-"""API router for Overload Web backend services."""
+"""API router for Overload Web backend file handling services"""
 
 from __future__ import annotations
 
@@ -45,6 +45,7 @@ def list_remote_files(
 
 @api_router.get("/source", response_class=HTMLResponse)
 def get_file_source(request: Request, file_source: str) -> HTMLResponse:
+    """Render the file input partial within the `pvf_file_source` block"""
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="forms/file_input.html",

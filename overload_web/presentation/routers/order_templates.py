@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 
 class TemplatePatchModel(BaseModel):
     """
-    Pydantic model for serializing/deserializing order template data
-    when used to update a template in the database.
+    Pydantic model for serializing/deserializing data used to update
+    an order template in the database.
     """
 
     acquisition_type: str | None = None
@@ -80,6 +80,7 @@ class TemplatePatchModel(BaseModel):
         secondary_matchpoint: str | None = Form(default=None),
         tertiary_matchpoint: str | None = Form(default=None),
     ) -> TemplatePatchModel:
+        """Class model used to create a `TemplatePatchModel` from an html form."""
         return TemplatePatchModel(
             acquisition_type=acquisition_type,
             agent=agent,
@@ -110,8 +111,11 @@ class TemplatePatchModel(BaseModel):
 
 class TemplateCreateModel(TemplatePatchModel):
     """
-    Pydantic model for serializing/deserializing order template data
-    used when creating a template in the database.
+    Pydantic model for serializing/deserializing data used to create
+    an order template in the database.
+
+    Inherits `from_from` class method from `TemplatePatchModel` parent class
+    which is used when creating a new order template from an html form.
     """
 
     name: str
@@ -136,7 +140,7 @@ def create_template(
         repository: a `repository.OrderTemplateRepository` object
 
     Returns:
-        the saved order template wrapped in a `HTMLResponse` object
+        the saved order template as a dict wrapped in an `HTMLResponse` object
     """
     saved_template = CreateOrderTemplate.execute(obj=template, repository=repository)
     return request.app.state.templates.TemplateResponse(
@@ -160,7 +164,7 @@ def get_template(
         repository: a `repository.OrderTemplateRepository` object
 
     Returns:
-        the retrieved order template wrapped in a `HTMLResponse` object
+        the retrieved order template as a dict wrapped in an `HTMLResponse` object
     """
     template = GetOrderTemplate.execute(template_id=template_id, repository=repository)
     template_out = {k: v for k, v in template.__dict__.items() if v} if template else {}
@@ -187,7 +191,7 @@ def get_template_list(
         limit: the maximum number of templates to list
 
     Returns:
-        a list of order templates retrieved from the database wrapped in a
+        a list of order templates retrieved from the database wrapped in an
         `HTMLResponse` object
     """
     template_list = ListOrderTemplates.execute(
@@ -208,7 +212,7 @@ def update_template(
     repository: Annotated[Any, Depends(deps.order_template_db)],
 ) -> HTMLResponse:
     """
-    Apply patch updates to an order templates in the database.
+    Apply patch updates to an order template in the database.
 
     Args:
         repository:
@@ -219,7 +223,7 @@ def update_template(
             data to be updated in the template as an `TemplatePatchModel` object
 
     Returns:
-        the updated order template wrapped in a `HTMLResponse` object
+        the updated order template as a dict wrapped in an `HTMLResponse` object
     """
     updated_template = UpdateOrderTemplate.execute(
         repository=repository, template_id=template_id, obj=template_patch
@@ -238,7 +242,7 @@ def update_template(
 
 @api_router.get("/forms/templates", response_class=HTMLResponse)
 def get_template_form(request: Request) -> HTMLResponse:
-    """Renders form for creating/editing order templates."""
+    """Renders html form used to create/edit order templates."""
     return request.app.state.templates.TemplateResponse(
         request=request, name="forms/template_form.html"
     )

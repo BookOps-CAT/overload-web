@@ -50,7 +50,7 @@ def create_db_and_tables(engine) -> None:
 def get_session(
     engine: Any = Depends(get_engine_with_uri),
 ) -> Generator[Session, None, None]:
-    """Create a new database session. `engine` is injected via Depends.
+    """Create a new database session with and `engine` injected via Depends.
 
     FastAPI will treat `engine` as a dependency instead of a required
     request parameter, avoiding 422 validation errors on endpoints
@@ -100,7 +100,17 @@ def fetch_files(
     remote_file_names: list[str] | None = None,
     vendor: str | None = None,
 ) -> list[VendorFileModel]:
-    """Return all files as (filename, bytes)."""
+    """
+    Return all files as `VendorFileModel` objects.
+
+    Processes both locally uploaded and remote files into `VendorFileModel` objects.
+
+    Args:
+        local_files: a list of FastAPI `UploadFile` objects or None
+        remote_file_names: a list of file names to retrieve from remote storage or None
+        vendor: the vendor whose files are to be retrieved or None
+
+    """
     logger.info(
         "Fetching files to process: local_uploads=%s, remote_files=%s, vendor=%s",
         local_files,
@@ -134,6 +144,21 @@ def get_marc_engine_config(
     collection: Annotated[str, Form(...)],
     record_type: Annotated[str, Form(...)],
 ) -> marc_engine.MarcEngineConfig:
+    """
+    Load MARC processing config from a .json file and create config.
+
+    Config is based on `library`, `collection`, and `record_type` values input
+    into an html Form.
+
+    Args:
+        library: the library whose files are being processed
+        collection: the collection whose files are being processed, if applicable
+        record_type: the workflow being used for this processing session.
+
+    Returns:
+        a `MarcEngineConfig` value object to be used in instantiating a `MarcEngine`
+
+    """
     with open("overload_web/data/mapping_specs.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     return marc_engine.MarcEngineConfig(
@@ -159,13 +184,15 @@ def get_fetcher(
 def get_marc_engine(
     config: Annotated[marc_engine.MarcEngineConfig, Depends(get_marc_engine_config)],
 ) -> Generator[marc_engine.MarcEngine, None, None]:
-    """Create a record processing service with injected dependencies."""
+    """Create a `MarcEngine` service with injected dependencies."""
     yield marc_engine.MarcEngine(rules=config)
 
 
 def get_report_handler() -> reporter.PandasReportHandler:
+    """Return a `PandasReportHandler` in order to generate reports."""
     return reporter.PandasReportHandler()
 
 
 def get_report_writer() -> reporter.GoogleSheetsReporter:
+    """Return a `GoogleSheetsReporter` in order to write stats to a Google Sheet."""
     return reporter.GoogleSheetsReporter()

@@ -1,4 +1,4 @@
-"""API router for Overload Web backend services."""
+"""API router for Overload Web backend services related to reporting"""
 
 from __future__ import annotations
 
@@ -29,6 +29,7 @@ def get_output_report(
     handler: Annotated[Any, Depends(deps.get_report_handler)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
 ) -> HTMLResponse:
+    """Create a dict to be used on the report summary page after pvf workflow."""
     out = CreatePVFOutputReport.execute(
         batch_id=batch_id, handler=handler, repo=repository, record_type=record_type
     )
@@ -44,6 +45,7 @@ def get_detailed_report(
     handler: Annotated[Any, Depends(deps.get_report_handler)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
 ) -> HTMLResponse:
+    """Create a dict to be used on the detailed report stats page after pvf workflow."""
     out = GetDetailedReportData.execute(
         batch_id=batch_id, handler=handler, repo=repository
     )
@@ -61,6 +63,7 @@ def write_report_to_google_sheet(
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
     writer: Annotated[Any, Depends(deps.get_report_writer)],
 ) -> HTMLResponse:
+    """Write call number and duplicate reports to a google sheet."""
     out = WriteOutputReport.execute(
         batch_id=id,
         handler=handler,
