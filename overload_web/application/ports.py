@@ -1,3 +1,5 @@
+"""Protocols defining ports used in application services."""
+
 from __future__ import annotations
 
 import logging
@@ -70,14 +72,14 @@ class FileLoader(Protocol):
         dir: the directory where the file is located
 
     Returns:
-        the specified file as a `VendorFile` object
+        the content of the specified file as a `bytes` object
     """
 
 
 @runtime_checkable
 class FileWriter(Protocol):
     """
-    A protocol for a service which writes .mrc files for use within Overload.
+    A protocol for a service for use within Overload which writes .mrc files.
 
     Implementations may interact with an FTP/SFTP server or a local file directory.
     """
@@ -87,10 +89,11 @@ class FileWriter(Protocol):
     ) -> str: ...  # pragma: no branch
 
     """
-    Write a content to a specific file.
+    Write content to a specific file.
 
     Args:
-        file: the file to write as a `VendorFile` object
+        file: the file content to write as a `bytes` object
+        file_name: the name of the file to be writen
         dir: the directory where the file should be written
 
     Returns:
@@ -158,18 +161,28 @@ class SqlRepositoryProtocol(Protocol[T]):
 
     def get(self, id: str) -> dict[str, Any] | None: ...  # pragma: no branch
 
+    """Get objects from a database."""
+
     def list(
         self, offset: int | None = 0, limit: int | None = 0
     ) -> Sequence[dict[str, Any]]: ...  # pragma: no branch
 
+    """List objects in a database."""
+
     def save(self, obj: T) -> dict[str, Any]: ...  # pragma: no branch
+
+    """Save a new object to a database."""
 
     def update(
         self, id: str, data: T
     ) -> dict[str, Any] | None: ...  # pragma: no branch
 
+    """Update an existing object in a database."""
+
 
 class ReportHandler(Protocol):
+    """A protocol defining a service used to create processing reports."""
+
     library: str
     collection: str | None
     record_type: str
@@ -192,8 +205,14 @@ class ReportHandler(Protocol):
 
 
 class ReportWriter(Protocol):
+    """A protocol defining a service used to write report data."""
+
     def prep_report(
         self, data: dict[str, list[Any]]
     ) -> list[list[Any]]: ...  # pragma: no branch
 
+    """Prep data to write to an external service."""
+
     def write_report(self, data: list[list[Any]]) -> None: ...  # pragma: no branch
+
+    """Write report data to an external service."""

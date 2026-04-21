@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ProcessingStatistics:
+    """A value object representing a statistics for a batch of processed files"""
+
     action: list[str | None]
     call_number: list[str | None]
     call_number_match: list[bool | None]

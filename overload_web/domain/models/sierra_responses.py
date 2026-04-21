@@ -1,4 +1,4 @@
-"""Domain models that define responses from Sierra"""
+"""Domain models that define responses from Sierra."""
 
 from __future__ import annotations
 

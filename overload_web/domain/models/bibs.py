@@ -31,6 +31,7 @@ class ClassifiedCandidates:
 
     @property
     def duplicates(self) -> list[str]:
+        """A list of bib IDs for all matched records."""
         duplicates: list[str] = []
         if len(self.matched) > 1:
             return [i.bib_id for i in self.matched]
@@ -75,35 +76,35 @@ class DomainBib:
         Args:
             binary_data:
                 The marc record as a byte literal or `bytes` object
+            collection:
+                The collection to whom the record belongs as an enum
+                (`Collection`), str or None.
+            library:
+                The library to whom the record belongs as an enum
+                (`LibrarySystem`), str, or None.
+            record_type:
+                The workflow two whom this record belongs as an enum
+                (`RecordType`), str, or None.
+            title:
+                The title associated with the record as a string.
             barcodes:
                 The list of barcodes associated with the bib record as strings.
             bib_id:
                 The record's sierra bib ID as a string.
             branch_call_number:
                 The branch call number for the record, if present.
-            collection:
-                The collection to whom the record belongs as an enum (`Collection`)
-                or str.
             control_number:
                 The record's control number as a string, if present.
             isbn:
                 The ISBN for the title as a string, if present.
-            library:
-                The library to whom the record belongs as an enum (`LibrarySystem`)
-                or str.
             oclc_number:
                 OCLC number(s) identifying the record as a string or list of strings,
                 if present.
             orders:
                 The list of orders associated with the record as `Order` domain objects.
-            record_type:
-                The workflow two whom this record belongs as an enum (`RecordType`)
-                or str.
             research_call_number:
                 The research call number for the record as a string or list of strings,
                 if present.
-            title:
-                The title associated with the record as a string.
             upc:
                 The UPC number associated with the record, if present.
             update_date:
@@ -136,6 +137,7 @@ class DomainBib:
 
     @property
     def analysis(self) -> MatchAnalysis:
+        """`MatchAnalysis` obj assigned bib after matching. Only present after match."""
         if self._analysis is None:
             raise AttributeError("MatchAnalysis has not been assigned to the DomainBib")
         return self._analysis
@@ -176,6 +178,17 @@ class DomainBib:
         if self.update_date:
             return datetime.datetime.strptime(self.update_date, "%Y%m%d%H%M%S.%f")
         return None
+
+    def analyze_matches(self, candidates: list[dict[str, Any]]) -> MatchAnalysis:
+        """Analyze a batch of candidates from Sierra to identify the best match"""
+        classified = self.classify_matches(candidates)
+        analyzer = MatchAnalyzerFactory.make(
+            library=self.library,
+            record_type=self.record_type,
+            collection=self.collection,
+        )
+        logger.info(f"Analyzing matches with {analyzer.__class__.__name__}")
+        return analyzer.analyze(record=self, candidates=classified)
 
     def apply_match(self, analysis: MatchAnalysis) -> None:
         """
@@ -228,6 +241,10 @@ class DomainBib:
     def determine_catalog_action(
         self, candidate: sierra_responses.BaseSierraResponse
     ) -> tuple[CatalogAction, bool]:
+        """
+        Determine whether to insert, attach, or overlay a bib record in Sierra
+        based on matches
+        """
         if candidate.cat_source == "inhouse":
             return CatalogAction.ATTACH, False
         if not self.update_datetime or candidate.update_datetime > self.update_datetime:
@@ -236,16 +253,6 @@ class DomainBib:
 
     def __repr__(self) -> str:
         return f"DomainBib(barcodes: {self.barcodes}, bib_id: {self.bib_id}, branch_call_number: {self.branch_call_number}, collection: {self.collection}, control_number: {self.control_number}, isbn: {self.isbn}, library: {self.library}, oclc_number: {self.oclc_number}, research_call_number: {self.research_call_number}, record_type: {self.record_type}, title: {self.title}, upc: {self.upc}, update_date: {self.update_date}, vendor: {self.vendor})"  # noqa: E501
-
-    def analyze_matches(self, candidates: list[dict[str, Any]]) -> MatchAnalysis:
-        classified = self.classify_matches(candidates)
-        analyzer = MatchAnalyzerFactory.make(
-            library=self.library,
-            record_type=self.record_type,
-            collection=self.collection,
-        )
-        logger.info(f"Analyzing matches with {analyzer.__class__.__name__}")
-        return analyzer.analyze(record=self, candidates=classified)
 
 
 class LibrarySystem(StrEnum):
@@ -377,6 +384,8 @@ class Order:
 
 @dataclass
 class ProcessedFile:
+    """A value object representing a processed file of MARC records"""
+
     file_name: str
     records: bytes
 
