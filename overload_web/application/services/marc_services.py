@@ -1,3 +1,5 @@
+"""Application services for interacting with DomainBib objects during processing."""
+
 from __future__ import annotations
 
 import io
@@ -25,6 +27,7 @@ class BarcodeValidator:
     def ensure_preserved(
         records: list[bibs.DomainBib], barcodes: list[str]
     ) -> list[str]:
+        """Confirm barcodes extracted from a file are present in processed records"""
         valid = True
         processed_barcodes = list(
             itertools.chain.from_iterable([i.barcodes for i in records])
@@ -44,6 +47,7 @@ class BarcodeValidator:
 
     @staticmethod
     def ensure_unique(bibs: list[bibs.DomainBib]) -> None:
+        """Confirm barcodes in a file are all unique."""
         barcodes = list(itertools.chain.from_iterable([i.barcodes for i in bibs]))
         barcode_counter = Counter(barcodes)
         dupe_barcodes = [i for i, count in barcode_counter.items() if count > 1]
@@ -56,6 +60,7 @@ class BibDeduplicator:
     def deduplicate(
         records: list[bibs.DomainBib], engine: ports.MarcEnginePort
     ) -> dict[str, list[bibs.DomainBib]]:
+        """Review and deduplicate a batch of processed full-level MARC records."""
         merge: list[bibs.DomainBib] = []
         new: list[bibs.DomainBib] = []
         deduped: list[bibs.DomainBib] = []
@@ -106,6 +111,7 @@ class BibParser:
     def parse_marc_data(
         data: bytes, engine: ports.MarcEnginePort, vendor: str | None = "UNKNOWN"
     ) -> list[bibs.DomainBib]:
+        """Parse MARC binary to a list of `DomainBib` domain objects."""
         reader = engine.get_reader(data)
         parsed = []
         for record in reader:
@@ -157,6 +163,7 @@ class BibUpdatePolicy:
     def apply_full_record_updates(
         record: bibs.DomainBib, engine: ports.MarcEnginePort
     ) -> None:
+        """Update and add MARC fields to full-level a processed bib record"""
         bib = engine.create_bib_from_domain(record=record)
         updates = rules.UpdateRules.cat_fields_to_update(
             record=record, context=engine.config
@@ -171,6 +178,7 @@ class BibUpdatePolicy:
         engine: ports.MarcEnginePort,
         template_data: dict[str, Any],
     ) -> None:
+        """Update and add MARC fields to order-level a processed bib record"""
         record.apply_order_template(template_data)
         bib = engine.create_bib_from_domain(record=record)
 
@@ -193,6 +201,7 @@ class BibUpdatePolicy:
 class MarcFileMerger:
     @staticmethod
     def combine_marc_files(data: list[bytes], engine: ports.MarcEnginePort) -> bytes:
+        """Combine multiple bytes objects (ie. MARC files) into one for processing."""
         records = []
         for batch in data:
             reader = engine.get_reader(batch)
@@ -206,6 +215,8 @@ class MarcFileMerger:
 
 
 class PVFReporter:
+    """Generate statistics from a batch of processed records to use in reporting."""
+
     @staticmethod
     def create_full_records_report(
         records: list[bibs.DomainBib],

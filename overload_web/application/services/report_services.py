@@ -1,3 +1,5 @@
+"""Application services to use when reporting on process vendor file services."""
+
 import logging
 from typing import Any
 
@@ -12,6 +14,7 @@ class PVFReporter:
     def create_output_report(
         data: dict[str, Any], handler: ports.ReportHandler, record_type: str
     ) -> dict[str, Any]:
+        """Create processing report based on data from a saved `ProcessedFileBatch`"""
         stats = reporting.ProcessingStatistics(**data)
         out = {
             "total_records": data["total_records"],
@@ -44,6 +47,7 @@ class PVFReporter:
     def create_detailed_report(
         data: dict[str, Any], handler: ports.ReportHandler
     ) -> dict[str, Any]:
+        """Create detailed processing report based an output report."""
         stats = reporting.ProcessingStatistics(**data)
         return handler.create_detailed_report(report_data=stats.detailed_report_data)
 
@@ -56,6 +60,7 @@ class ReportWriter:
         writer: ports.ReportWriter,
         record_type: str,
     ) -> None:
+        """Write processing data to a google sheet."""
         stats = reporting.ProcessingStatistics(**data)
         call_no = handler.create_call_number_report(
             report_data=stats.call_number_report_data, record_type=record_type

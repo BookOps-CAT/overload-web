@@ -1,6 +1,6 @@
-"""Domain service for matching incoming records against ports.
+"""Application service for matching incoming records against ports.
 
-This module defines the `BibMatcher`, a domain service responsible for
+This module defines the `BibMatcher`, an application service responsible for
 finding duplicate records in Sierra for a `DomainBib`. Matching is based on
 specific identifiers such as OCLC number, ISBN, or Sierra Bib ID.
 """
@@ -34,7 +34,9 @@ class BibMatcher:
         Initialize the match service with a fetcher.
 
         Args:
-            fetcher: An injected `ports.BibFetcher` that retrieves candidate bibs.
+            fetcher:
+                An injected `ports.BibFetcher` that retrieves candidate bibs
+                from Sierra.
         """
         self.fetcher = fetcher
 
@@ -80,7 +82,7 @@ class BibMatcher:
         self, record: bibs.DomainBib, matchpoints: dict[str, str]
     ) -> list[dict[str, Any]]:
         """
-        Match an order-level bibliographic record against ports.
+        Match an order-level bibliographic record against Sierra.
 
         Args:
             record:
@@ -99,7 +101,7 @@ class BibMatcher:
 
     def match_full_record(self, record: bibs.DomainBib) -> list[dict[str, Any]]:
         """
-        Match a full-level bibliographic record against ports.
+        Match a full-level bibliographic record against Sierra.
 
         Args:
             record:
