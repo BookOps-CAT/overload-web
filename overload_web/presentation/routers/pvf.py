@@ -1,4 +1,4 @@
-"""API router for Overload Web process vendor file services."""
+"""API router for Overload Web backend MARC file processing services."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from overload_web.presentation import deps
 logger = logging.getLogger(__name__)
 
 
-class MatchpointSchema(BaseModel):
+class MatchpointsModel(BaseModel):
     """Pydantic model for serializing/deserializing matchpoints from order templates"""
 
     primary_matchpoint: str | None = None
@@ -32,8 +32,9 @@ class MatchpointSchema(BaseModel):
         primary_matchpoint: str | None = Form(default=None),
         secondary_matchpoint: str | None = Form(default=None),
         tertiary_matchpoint: str | None = Form(default=None),
-    ) -> MatchpointSchema:
-        return MatchpointSchema(
+    ) -> MatchpointsModel:
+        """Class method used to create a `MatchpointsModel` object from an html form"""
+        return MatchpointsModel(
             primary_matchpoint=primary_matchpoint,
             secondary_matchpoint=secondary_matchpoint,
             tertiary_matchpoint=tertiary_matchpoint,
@@ -41,7 +42,8 @@ class MatchpointSchema(BaseModel):
 
 
 class TemplateDataModel(BaseModel):
-    """Pydantic model for serializing/deserializing order template data"""
+    """Pydantic model for serializing/deserializing order template data
+    when it is used in a processing workflow"""
 
     acquisition_type: str | None = None
     blanket_po: str | None = None
@@ -86,6 +88,7 @@ class TemplateDataModel(BaseModel):
         vendor_notes: str | None = Form(default=None),
         vendor_title_no: str | None = Form(default=None),
     ) -> TemplateDataModel:
+        """Class method used to create a `TemplateDataModel` object from an html form"""
         return TemplateDataModel(
             acquisition_type=acquisition_type,
             blanket_po=blanket_po,
@@ -116,35 +119,39 @@ api_router = APIRouter()
 def process_acq_records(
     request: Request,
     fetcher: Annotated[Any, Depends(deps.get_fetcher)],
-    marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
     order_template: Annotated[Any, Depends(TemplateDataModel.from_form)],
-    matchpoints: Annotated[Any, Depends(MatchpointSchema.from_form)],
+    marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
+    matchpoints: Annotated[Any, Depends(MatchpointsModel.from_form)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
     local_files: Annotated[list | None, Form()] = None,
     remote_file_names: Annotated[list | None, Form()] = None,
     vendor: Annotated[str | None, Form()] = None,
 ) -> HTMLResponse:
     """
-    Process one or more files of order-level MARC records.
+    Process one or more files of order-level MARC records using the acq workflow.
 
     Args:
-        marc_engine:
-            a `ports.MarcEnginePort` object used by the command.
         fetcher:
-            a `ports.BibFetcher` object used by the command.
-        local_files:
-            a list of files from a local upload as `VendorFileModel` objects.
-        remote_files:
-            a list of vendor files from a vendor's SFTP as `VendorFileModel` objects.
+            a `ports.BibFetcher` object used by application service.
         order_template:
             an order template loaded from the database or input via an html form.
+        marc_engine:
+            a `ports.MarcEnginePort` object used by application service.
         matchpoints:
             a list of matchpoints loaded from an order template in the database or
             input via an html form.
+        repository:
+            a `repository.PVFBatchRepository` object where the processed files and
+            their associated statistics will be saved.
+        local_files:
+            a list of files from a local upload as `UploadFile` objects.
+        remote_file_names:
+            a list of names of files to be retrieved from a vendor's SFTP as strings.
+        vendor:
+            the vendor whose remote files are to be retrieved as a str.
 
     Returns:
-        the processed files and report data wrapped in a `HTMLResponse` object
-
+        the ID for the processed files and stats wrapped in an `HTMLResponse` object
     """
     all_files = deps.fetch_files(
         local_files=local_files, remote_file_names=remote_file_names, vendor=vendor
@@ -177,22 +184,25 @@ def process_cat_records(
     vendor: Annotated[str | None, Form()] = None,
 ) -> HTMLResponse:
     """
-    Process one or more files of full-level MARC records.
+    Process one or more files of full-level MARC records using the cat workflow.
 
     Args:
-        marc_engine:
-            a `ports.MarcEnginePort` object used by the command.
         fetcher:
-            a `ports.BibFetcher` object used by the command.
+            a `ports.BibFetcher` object used by application service.
+        marc_engine:
+            a `ports.MarcEnginePort` object used by application service.
+        repository:
+            a `repository.PVFBatchRepository` object where the processed files and
+            their associated statistics will be saved.
         local_files:
-            a list of files from a local upload as `VendorFileModel` objects.
-        remote_files:
-            a list of vendor files from a vendor's SFTP as `VendorFileModel` objects.
+            a list of files from a local upload as `UploadFile` objects.
+        remote_file_names:
+            a list of names of files to be retrieved from a vendor's SFTP as strings.
         vendor:
-            the vendor whose files are being processed as a string.
-    Returns:
-        the processed files and report data wrapped in a `HTMLResponse` object
+            the vendor whose remote files are to be retrieved as a str.
 
+    Returns:
+        the ID for the processed files and stats wrapped in an `HTMLResponse` object
     """
     all_files = deps.fetch_files(
         local_files=local_files, remote_file_names=remote_file_names, vendor=vendor
@@ -214,35 +224,39 @@ def process_cat_records(
 def process_sel_records(
     request: Request,
     fetcher: Annotated[Any, Depends(deps.get_fetcher)],
-    marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
     order_template: Annotated[Any, Depends(TemplateDataModel.from_form)],
-    matchpoints: Annotated[Any, Depends(MatchpointSchema.from_form)],
+    marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
+    matchpoints: Annotated[Any, Depends(MatchpointsModel.from_form)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
     local_files: Annotated[list | None, Form()] = None,
     remote_file_names: Annotated[list | None, Form()] = None,
     vendor: Annotated[str | None, Form()] = None,
 ) -> HTMLResponse:
     """
-    Process one or more files of order-level MARC records.
+    Process one or more files of order-level MARC records using the sel workflow.
 
     Args:
-        marc_engine:
-            a `ports.MarcEnginePort` object used by the command.
         fetcher:
-            a `ports.BibFetcher` object used by the command.
-        local_files:
-            a list of files from a local upload as `VendorFileModel` objects.
-        remote_files:
-            a list of vendor files from a vendor's SFTP as `VendorFileModel` objects.
+            a `ports.BibFetcher` object used by application service.
         order_template:
             an order template loaded from the database or input via an html form.
+        marc_engine:
+            a `ports.MarcEnginePort` object used by application service.
         matchpoints:
             a list of matchpoints loaded from an order template in the database or
             input via an html form.
+        repository:
+            a `repository.PVFBatchRepository` object where the processed files and
+            their associated statistics will be saved.
+        local_files:
+            a list of files from a local upload as `UploadFile` objects.
+        remote_file_names:
+            a list of names of files to be retrieved from a vendor's SFTP as strings.
+        vendor:
+            the vendor whose remote files are to be retrieved as a str.
 
     Returns:
-        the processed files and report data wrapped in a `HTMLResponse` object
-
+        the ID for the processed files and stats wrapped in an `HTMLResponse` object
     """
     all_files = deps.fetch_files(
         local_files=local_files, remote_file_names=remote_file_names, vendor=vendor
