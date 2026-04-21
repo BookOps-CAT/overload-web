@@ -1,3 +1,25 @@
+"""Adapter module defining classes used to parse and update MARC records.
+
+Includes wrapper that allows for MARC records to be translated from pymarc/bookops_marc
+objects to domain objects. The `MarcEngine` service also updates and extracts values
+from fields.
+
+Protocols:
+
+`DomainBibProtocol`
+    A protocol that defines a `DomainBib` used in this application. Defined in order
+    to not have infrastructure layer dependent on domain layer.
+
+Classes:
+
+`MarcEngineConfig`
+    Configuration data used to determine MARC record processing. Loaded from a .json
+    file and input via an html form in the presentation layer.
+`MarcEngine`
+    Interact with binary MARC data using `bookops_marc` and `pymarc`. Uses config data
+    to determine field mapping and processing workflows.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -17,15 +39,15 @@ class DomainBibProtocol(Protocol):
 
 @dataclass(frozen=True)
 class MarcEngineConfig:
-    marc_order_mapping: dict[str, Any]
-    default_loc: str | None
     bib_id_tag: str
-    library: str
-    record_type: str
     collection: str | None
+    default_loc: str | None
+    library: str
+    marc_order_mapping: dict[str, Any]
     parser_bib_mapping: dict[str, Any]
     parser_order_mapping: dict[str, Any]
     parser_vendor_mapping: dict[str, Any]
+    record_type: str
 
 
 class MarcEngine:
@@ -33,7 +55,7 @@ class MarcEngine:
 
     def __init__(self, rules: MarcEngineConfig) -> None:
         """
-        Initialize `MarcEngine` using a set of marc mapping rules.
+        Initialize `MarcEngine` using a set of marc mapping rules and workflow inputs.
 
         This class is a concrete implementation of the `MarcEnginePort` protocol.
 
@@ -41,7 +63,8 @@ class MarcEngine:
             rules:
                 A `MarcEngineConfig` object containing vendor identification
                 rules, rules to use when mapping MARC records to domain objects, library
-                and record type. Parsed from `/overload_web/data/mapping_specs.json`.
+                and record type. Parsed from `/overload_web/data/mapping_specs.json` and
+                values input by user for `library`, `collection`, and `record_type`.
         """
         self.library = rules.library
         self.collection = rules.collection
@@ -53,7 +76,7 @@ class MarcEngine:
 
     def create_bib_from_domain(self, record: DomainBibProtocol) -> Bib:
         """Create a `bookops_marc.Bib` object from a `DomainBib` object"""
-        return Bib(record.binary_data, library=record.library)  # type: ignore
+        return Bib(data=record.binary_data, library=record.library)  # type: ignore
 
     def get_command_tag_field(self, bib: Bib) -> Field | None:
         for field in bib.get_fields("949", []):
