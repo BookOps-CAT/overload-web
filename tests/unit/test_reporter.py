@@ -1,5 +1,6 @@
 import pytest
 
+from overload_web.application.services import report_services
 from overload_web.domain.models import reporting
 from overload_web.infrastructure import reporter
 
@@ -165,3 +166,21 @@ class TestRecordsProcessingReports:
         assert report["insert"] == [0]
         assert report["update"] == [0]
         assert report["total"] == [1]
+
+    def test_create_detailed_report(self, stub_report):
+        out = report_services.PVFReporter.create_detailed_report(
+            data=stub_report.__dict__, handler=reporter.PandasReportHandler()
+        )
+        assert "vendor" in out.keys()
+        assert "target_bib_id" in out.keys()
+        assert "resource_id" in out.keys()
+
+    def test_create_output_report(self, record_type, stub_report):
+        out = report_services.PVFReporter.create_output_report(
+            data=stub_report.__dict__,
+            handler=reporter.PandasReportHandler(),
+            record_type=record_type,
+        )
+        assert "vendor_report" in out.keys()
+        assert "dupes_report" in out.keys()
+        assert "call_no_report" in out.keys()

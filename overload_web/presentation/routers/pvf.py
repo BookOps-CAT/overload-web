@@ -12,7 +12,6 @@ from pydantic import BaseModel
 from overload_web.application.commands.process import (
     ProcessFullRecords,
     ProcessOrderRecords,
-    SaveProcessedRecords,
 )
 from overload_web.presentation import deps
 
@@ -164,12 +163,12 @@ def process_acq_records(
         fetcher=fetcher,
         template_data=template_data,
         matchpoints=matchpoints,
+        repo=repository,
     )
-    batch = SaveProcessedRecords.execute(repo=repository, batch=processed)
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
-        context={"batch_id": batch["id"]},
+        context={"batch_id": processed["id"]},
     )
 
 
@@ -211,12 +210,12 @@ def process_cat_records(
         batches={f"{i.file_name}": i.content for i in all_files},
         marc_engine=marc_engine,
         fetcher=fetcher,
+        repo=repository,
     )
-    batch = SaveProcessedRecords.execute(repo=repository, batch=processed)
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
-        context={"batch_id": batch["id"]},
+        context={"batch_id": processed["id"]},
     )
 
 
@@ -269,10 +268,10 @@ def process_sel_records(
         fetcher=fetcher,
         template_data=template_data,
         matchpoints=matchpoints,
+        repo=repository,
     )
-    batch = SaveProcessedRecords.execute(repo=repository, batch=processed)
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
-        context={"batch_id": batch["id"]},
+        context={"batch_id": processed["id"]},
     )

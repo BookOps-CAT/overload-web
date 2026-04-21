@@ -19,7 +19,8 @@ class ProcessFullRecords:
         batches: dict[str, bytes],
         marc_engine: ports.MarcEnginePort,
         fetcher: ports.BibFetcher,
-    ) -> bibs.ProcessedFileBatch:
+        repo: ports.SqlRepositoryProtocol,
+    ) -> dict[str, Any]:
         """
         Process a file of full MARC records.
 
@@ -34,9 +35,11 @@ class ProcessFullRecords:
                 a `ports.MarcEnginePort` object used by the command.
             fetcher:
                 a `ports.BibFetcher` object used by the command.
+            repo:
+                a `ports.SqlRepositoryProtocol` object used by the command.
         Returns:
-            A `ProcessedFileBatch` object containing the processed records as bytes
-            objects and the processing statistics
+            A dictionary representing the processed files that were saved as a
+            `ProcessedFileBatch` object in the db.
         """
         data = marc_services.MarcFileMerger.combine_marc_files(
             data=[i for i in batches.values()], engine=marc_engine
@@ -70,7 +73,8 @@ class ProcessFullRecords:
             )
             for k, v in deduplicated.items()
         ]
-        return bibs.ProcessedFileBatch(files=files, report=report)
+        processed_batch = bibs.ProcessedFileBatch(files=files, report=report)
+        return repo.save(processed_batch)
 
 
 class ProcessOrderRecords:
@@ -82,8 +86,9 @@ class ProcessOrderRecords:
         fetcher: ports.BibFetcher,
         marc_engine: ports.MarcEnginePort,
         matchpoints: dict[str, str],
+        repo: ports.SqlRepositoryProtocol,
         template_data: dict[str, Any],
-    ) -> bibs.ProcessedFileBatch:
+    ) -> dict[str, Any]:
         """
         Process order-level MARC records.
 
@@ -100,11 +105,13 @@ class ProcessOrderRecords:
                 a `ports.MarcEnginePort` object used by the command.
             matchpoints:
                 A dictionary containing matchpoints to be used in matching records.
+            repo:
+                a `ports.SqlRepositoryProtocol` object used by the command.
             template_data:
                 Order template data as a dictionary.
         Returns:
-            A `ProcessedFileBatch` object containing the processed records as bytes
-            objects and the processing statistics
+            A dictionary representing the processed files that were saved as a
+            `ProcessedFileBatch` object in the db.
         """
         all_records = []
         out_batches = []
@@ -135,24 +142,5 @@ class ProcessOrderRecords:
         report = bibs.DomainBib.create_order_records_report(
             records=all_records, file_names=file_names
         )
-        return bibs.ProcessedFileBatch(files=out_batches, report=report)
-
-
-class SaveProcessedRecords:
-    @staticmethod
-    def execute(
-        batch: bibs.ProcessedFileBatch, repo: ports.SqlRepositoryProtocol
-    ) -> dict[str, Any]:
-        """
-        Save a batch of processed records and processing statistics to local storage.
-
-        Args:
-            batch:
-                A batch of processed records and their processing statistics as a
-                `ProcessedFileBatch` object.
-            repo:
-                a `ports.SqlRepositoryProtocol` object used by the command.
-        Returns:
-            The processed record data and statistics as a dictionary.
-        """
-        return repo.save(batch)
+        processed_batch = bibs.ProcessedFileBatch(files=out_batches, report=report)
+        return repo.save(processed_batch)
