@@ -259,35 +259,33 @@ class DomainBib:
 
     @staticmethod
     def create_full_records_report(
-        records: list[DomainBib], missing_barcodes: list[str], file_names: list[str]
+        analysis: list[MatchAnalysis],
+        missing_barcodes: list[str],
+        file_names: list[str],
     ) -> dict[str, list[Any]]:
         """Generate statistics from a batch of processed full-level records"""
         stats = defaultdict(list)
-        all_recs = []
         stats["file_names"].extend(file_names)
         stats["missing_barcodes"].extend(missing_barcodes)
-        all_recs.extend(records)
-        for rec in all_recs:
-            for k, v in rec.analysis.__dict__.items():
+        for rec in analysis:
+            for k, v in rec.__dict__.items():
                 stats[k].append(v)
-            stats["vendor"].append(getattr(rec, "vendor", "UNKNOWN"))
         out: dict[str, Any] = dict(stats)
-        out["total_records"] = len(all_recs)
+        out["total_records"] = len(analysis)
         out["total_files"] = len(stats["file_names"])
         return out
 
     @staticmethod
     def create_order_records_report(
-        records: list[DomainBib], file_names: list[str]
+        analysis: list[MatchAnalysis], file_names: list[str]
     ) -> dict[str, list[Any]]:
         """Generate statistics from a batch of processed order-level records"""
         stats = defaultdict(list)
-        for rec in records:
-            for k, v in rec.analysis.__dict__.items():
+        for rec in analysis:
+            for k, v in rec.__dict__.items():
                 stats[k].append(v)
-            stats["vendor"].append(rec.vendor)
         out: dict[str, Any] = dict(stats)
-        out["total_records"] = len(records)
+        out["total_records"] = len(analysis)
         out["total_files"] = len(file_names)
         out["file_names"] = file_names
         return out
@@ -370,6 +368,7 @@ class MatchAnalysis:
         target_call_no: str | None = None,
         target_title: str | None = None,
         updated_by_vendor: bool = False,
+        vendor: str | None = "UNKNOWN",
     ) -> None:
         self.action = action
         self.call_number = call_number
@@ -382,6 +381,7 @@ class MatchAnalysis:
         self.target_call_no = target_call_no
         self.target_title = target_title
         self.updated_by_vendor = updated_by_vendor
+        self.vendor = vendor
 
 
 class MatchAnalyzer(Protocol):
@@ -523,6 +523,7 @@ class AcquisitionsMatchAnalyzer(MatchAnalyzer):
             target_bib_id=record.bib_id,
             target_call_no=record.branch_call_number,
             target_title=record.title,
+            vendor=record.vendor,
         )
 
 
@@ -544,6 +545,7 @@ class BPLCatMatchAnalyzer(MatchAnalyzer):
                 target_bib_id=record.bib_id,
                 target_call_no=record.branch_call_number,
                 target_title=record.title,
+                vendor=record.vendor,
             )
         for candidate in candidates.matched:
             if candidate.branch_call_number:
@@ -559,6 +561,7 @@ class BPLCatMatchAnalyzer(MatchAnalyzer):
                         target_call_no=candidate.branch_call_number,
                         target_title=candidate.title,
                         updated_by_vendor=updated,
+                        vendor=record.vendor,
                     )
 
         fallback = candidates.matched[-1]
@@ -573,6 +576,7 @@ class BPLCatMatchAnalyzer(MatchAnalyzer):
             call_number=record.call_number,
             resource_id=record.resource_id,
             classified=candidates,
+            vendor=record.vendor,
         )
 
 
@@ -588,6 +592,7 @@ class NYPLCatResearchMatchAnalyzer(MatchAnalyzer):
                 call_number=record.call_number,
                 resource_id=record.resource_id,
                 classified=candidates,
+                vendor=record.vendor,
             )
         for candidate in candidates.matched:
             if candidate.research_call_number:
@@ -602,6 +607,7 @@ class NYPLCatResearchMatchAnalyzer(MatchAnalyzer):
                     call_number=record.call_number,
                     resource_id=record.resource_id,
                     classified=candidates,
+                    vendor=record.vendor,
                 )
         last = candidates.matched[-1]
         return MatchAnalysis(
@@ -613,6 +619,7 @@ class NYPLCatResearchMatchAnalyzer(MatchAnalyzer):
             call_number=record.call_number,
             resource_id=record.resource_id,
             classified=candidates,
+            vendor=record.vendor,
         )
 
 
@@ -628,6 +635,7 @@ class NYPLCatBranchMatchAnalyzer(MatchAnalyzer):
                 call_number=record.call_number,
                 resource_id=record.resource_id,
                 classified=candidates,
+                vendor=record.vendor,
             )
         for candidate in candidates.matched:
             if (
@@ -645,6 +653,7 @@ class NYPLCatBranchMatchAnalyzer(MatchAnalyzer):
                     call_number=record.call_number,
                     resource_id=record.resource_id,
                     classified=candidates,
+                    vendor=record.vendor,
                 )
 
         fallback = candidates.matched[-1]
@@ -659,6 +668,7 @@ class NYPLCatBranchMatchAnalyzer(MatchAnalyzer):
             call_number=record.call_number,
             resource_id=record.resource_id,
             classified=candidates,
+            vendor=record.vendor,
         )
 
 
@@ -674,6 +684,7 @@ class SelectionMatchAnalyzer(MatchAnalyzer):
                 call_number=record.call_number,
                 resource_id=record.resource_id,
                 classified=candidates,
+                vendor=record.vendor,
             )
         for candidate in candidates.matched:
             if candidate.branch_call_number:
@@ -692,6 +703,7 @@ class SelectionMatchAnalyzer(MatchAnalyzer):
                     call_number=record.call_number,
                     resource_id=record.resource_id,
                     classified=candidates,
+                    vendor=record.vendor,
                 )
         fallback = candidates.matched[-1]
         return MatchAnalysis(
@@ -703,4 +715,5 @@ class SelectionMatchAnalyzer(MatchAnalyzer):
             call_number=record.call_number,
             resource_id=record.resource_id,
             classified=candidates,
+            vendor=record.vendor,
         )

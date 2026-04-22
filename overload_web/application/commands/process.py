@@ -47,12 +47,13 @@ class ProcessFullRecords:
         records = marc_services.BibParser.parse_marc_data(data=data, engine=marc_engine)
         bibs.DomainBib.validate_unique_barcodes(records)
         barcodes = bibs.DomainBib.extract_barcodes(records)
+        report_data = []
         for bib in records:
             matches = match_service.BibMatcher(fetcher).match_full_record(bib)
             analysis = bib.analyze_matches(candidates=matches)
             bib.apply_match(analysis)
             marc_services.BibUpdater.apply_full_record_updates(bib, engine=marc_engine)
-
+            report_data.append(analysis)
         missing_barcodes = bibs.DomainBib.validate_preserved_barcodes(
             records=records, barcodes=barcodes
         )
@@ -61,7 +62,7 @@ class ProcessFullRecords:
         )
         file_name = datetime.datetime.today().strftime("%y%m%d")
         report = bibs.DomainBib.create_full_records_report(
-            records=records,
+            analysis=report_data,
             missing_barcodes=missing_barcodes,
             file_names=[i for i in batches.keys()],
         )
@@ -111,9 +112,10 @@ class ProcessOrderRecords:
             A dictionary representing the processed files that were saved as a
             `ProcessedFileBatch` object in the db.
         """
-        all_records = []
+
         out_batches = []
         file_names = []
+        report_data = []
         for file_name, data in batches.items():
             file_names.append(file_name)
             records = marc_services.BibParser.parse_marc_data(
@@ -131,14 +133,14 @@ class ProcessOrderRecords:
                 marc_services.BibUpdater.apply_order_record_updates(
                     bib, engine=marc_engine, template_data=template_data
                 )
-            all_records.extend(records)
+                report_data.append(analysis)
             out_batches.append(
                 bibs.ProcessedFile(
                     file_name=file_name, records=bibs.DomainBib.write(records)
                 )
             )
         report = bibs.DomainBib.create_order_records_report(
-            records=all_records, file_names=file_names
+            analysis=report_data, file_names=file_names
         )
         processed_batch = bibs.ProcessedFileBatch(files=out_batches, report=report)
         return repo.save(processed_batch)
