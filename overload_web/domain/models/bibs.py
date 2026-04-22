@@ -298,7 +298,9 @@ class DomainBib:
         return list(itertools.chain.from_iterable([i.barcodes for i in records]))
 
     @staticmethod
-    def ensure_preserved(records: list[DomainBib], barcodes: list[str]) -> list[str]:
+    def validate_preserved_barcodes(
+        records: list[DomainBib], barcodes: list[str]
+    ) -> list[str]:
         """Confirm barcodes extracted from a file are present in processed records"""
         valid = True
         processed_barcodes = list(
@@ -318,7 +320,7 @@ class DomainBib:
         return list(missing_barcodes)
 
     @staticmethod
-    def ensure_unique(bibs: list[DomainBib]) -> None:
+    def validate_unique_barcodes(bibs: list[DomainBib]) -> None:
         """Confirm barcodes in a file are all unique."""
         barcodes = list(itertools.chain.from_iterable([i.barcodes for i in bibs]))
         barcode_counter = Counter(barcodes)

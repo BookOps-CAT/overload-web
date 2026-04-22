@@ -94,7 +94,7 @@ class BibParser:
         return parsed
 
 
-class BibUpdatePolicy:
+class BibUpdater:
     @staticmethod
     def apply_full_record_updates(
         record: bibs.DomainBib, engine: ports.MarcEnginePort

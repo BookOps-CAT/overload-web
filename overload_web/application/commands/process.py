@@ -45,17 +45,15 @@ class ProcessFullRecords:
             data=[i for i in batches.values()], engine=marc_engine
         )
         records = marc_services.BibParser.parse_marc_data(data=data, engine=marc_engine)
-        bibs.DomainBib.ensure_unique(records)
+        bibs.DomainBib.validate_unique_barcodes(records)
         barcodes = bibs.DomainBib.extract_barcodes(records)
         for bib in records:
             matches = match_service.BibMatcher(fetcher).match_full_record(bib)
             analysis = bib.analyze_matches(candidates=matches)
             bib.apply_match(analysis)
-            marc_services.BibUpdatePolicy.apply_full_record_updates(
-                bib, engine=marc_engine
-            )
+            marc_services.BibUpdater.apply_full_record_updates(bib, engine=marc_engine)
 
-        missing_barcodes = bibs.DomainBib.ensure_preserved(
+        missing_barcodes = bibs.DomainBib.validate_preserved_barcodes(
             records=records, barcodes=barcodes
         )
         deduplicated = marc_services.BibDeduplicator.deduplicate(
@@ -123,14 +121,14 @@ class ProcessOrderRecords:
                 engine=marc_engine,
                 vendor=template_data.get("vendor", "UNKNOWN"),
             )
-            bibs.DomainBib.ensure_unique(records)
+            bibs.DomainBib.validate_unique_barcodes(records)
             for bib in records:
                 matches = match_service.BibMatcher(fetcher).match_order_record(
                     bib, matchpoints=matchpoints
                 )
                 analysis = bib.analyze_matches(candidates=matches)
                 bib.apply_match(analysis)
-                marc_services.BibUpdatePolicy.apply_order_record_updates(
+                marc_services.BibUpdater.apply_order_record_updates(
                     bib, engine=marc_engine, template_data=template_data
                 )
             all_records.extend(records)
