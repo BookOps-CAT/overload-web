@@ -31,8 +31,9 @@ logger = logging.getLogger(__name__)
 class PVFBatch(SQLModel, table=True):
     """
     A table model representing a one or more MARC files and their associated
-    processing statistics for a single `ProcessOrderRecords` or `ProcessFullRecords`
-    command. This represents the aggregate for the process vendor file workflow.
+    processing statistics for a single `ProcessAcquisitionsRecords`,
+    `ProcessCatalogingRecords`, or `ProcessSelectionRecords` command. This
+    represents the aggregate for the process vendor file workflow.
     """
 
     __tablename__ = "batches"

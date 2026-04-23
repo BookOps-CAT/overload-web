@@ -136,18 +136,18 @@ class DomainBib:
         self.update_date = update_date
         self.vendor_info = vendor_info
         self.vendor = vendor if not vendor_info else vendor_info.name
-        self._analysis: MatchAnalysis | None = None
+        self._action: CatalogAction | None = None
 
     @property
-    def analysis(self) -> MatchAnalysis:
-        """`MatchAnalysis` obj assigned bib after matching. Only present after match."""
-        if self._analysis is None:
-            raise AttributeError("MatchAnalysis has not been assigned to the DomainBib")
-        return self._analysis
+    def action(self) -> CatalogAction:
+        """`CatalogAction` obj assigned bib after analysis. Only present after match."""
+        if self._action is None:
+            raise AttributeError("CatalogAction has not been assigned to the DomainBib")
+        return self._action
 
-    @analysis.setter
-    def analysis(self, value) -> None:
-        self._analysis = value
+    @action.setter
+    def action(self, value) -> None:
+        self._action = value
 
     @property
     def call_number(self) -> str | None:
@@ -205,7 +205,7 @@ class DomainBib:
         """
         if analysis.target_bib_id and self.bib_id is None:
             self.bib_id = analysis.target_bib_id
-        self._analysis = analysis
+        self._action = analysis.action
 
     def apply_order_template(self, template_data: dict[str, Any]) -> None:
         """

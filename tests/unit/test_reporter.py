@@ -33,6 +33,32 @@ def mock_sheet_auth_error(monkeypatch):
     monkeypatch.setattr("googleapiclient.discovery.build_from_document", mock_error)
 
 
+@pytest.fixture
+def stub_report():
+    return reporting.ProcessingStatistics(
+        file_names=["foo.mrc"],
+        total_files=1,
+        total_records=1,
+        vendor=["BTSERIES"],
+        resource_id=["9781234567890"],
+        target_bib_id=["12345"],
+        duplicate_records=[[]],
+        mixed=[[]],
+        other=[[]],
+        call_number_match=[False],
+        call_number=["Foo"],
+        target_call_no=["Bar"],
+        target_title=["Baz"],
+        updated_by_vendor=[False],
+        action="attach",
+    )
+
+
+@pytest.fixture
+def pandas_handler():
+    return reporter.PandasReportHandler()
+
+
 class TestReporter:
     def test_configure_sheet(self, mock_sheet_config):
         handler = reporter.GoogleSheetsReporter()
@@ -72,10 +98,6 @@ class TestReporter:
         with pytest.raises(ValueError):
             reporter.GoogleSheetsReporter()
 
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
-    )
     def test_write_report(self, mock_sheet_config, stub_report, caplog):
         google_handler = reporter.GoogleSheetsReporter()
         google_handler.write_report(stub_report)
@@ -84,10 +106,6 @@ class TestReporter:
             in caplog.text
         )
 
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
-    )
     def test_write_data_to_sheet_timeout_error(
         self, mock_sheet_config, mock_sheet_timeout_error, stub_report, caplog
     ):
@@ -96,10 +114,6 @@ class TestReporter:
         assert "Unable to send data to google sheet:" in caplog.text
         assert "Data not written to sheet." in caplog.text
 
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
-    )
     def test_write_data_to_sheet_auth_error(
         self, mock_sheet_config, mock_sheet_auth_error, stub_report, caplog
     ):
@@ -109,42 +123,17 @@ class TestReporter:
         assert "Data not written to sheet." in caplog.text
 
 
-@pytest.fixture
-def stub_report(sel_bib, sierra_response, record_type):
-    analysis = sel_bib.analyze_matches(candidates=[sierra_response])
-    sel_bib.apply_match(analysis)
-    return reporting.ProcessingStatistics(
-        file_names=["foo.mrc"],
-        total_files=1,
-        total_records=1,
-        vendor=["BTSERIES"],
-        resource_id=[sel_bib.analysis.resource_id],
-        target_bib_id=[sel_bib.analysis.target_bib_id],
-        duplicate_records=[sel_bib.analysis.duplicate_records],
-        mixed=[sel_bib.analysis.mixed],
-        other=[sel_bib.analysis.other],
-        call_number_match=[sel_bib.analysis.call_number_match],
-        call_number=[sel_bib.call_number],
-        target_call_no=[sel_bib.analysis.target_call_no],
-        target_title=[sel_bib.analysis.target_title],
-        updated_by_vendor=[sel_bib.analysis.updated_by_vendor],
-        action=sel_bib.analysis.action,
-    )
-
-
-@pytest.fixture
-def pandas_handler():
-    return reporter.PandasReportHandler()
-
-
-@pytest.mark.parametrize(
-    "library, collection, record_type",
-    [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
-)
 class TestRecordsProcessingReports:
-    def test_call_number_report(self, stub_report, pandas_handler, record_type):
+    def test_call_number_report(self, stub_report, pandas_handler):
         report = pandas_handler.create_call_number_report(
-            stub_report.call_number_report_data, record_type=record_type
+            stub_report.call_number_report_data, record_type="sel"
+        )
+        assert report is not None
+
+    def test_call_number_report_no_issues(self, stub_report, pandas_handler):
+        stub_report.call_number_match = [True]
+        report = pandas_handler.create_call_number_report(
+            stub_report.call_number_report_data, record_type="sel"
         )
         assert report is None
 
@@ -175,11 +164,11 @@ class TestRecordsProcessingReports:
         assert "target_bib_id" in out.keys()
         assert "resource_id" in out.keys()
 
-    def test_create_output_report(self, record_type, stub_report):
+    def test_create_output_report(self, stub_report):
         out = report_services.PVFReporter.create_output_report(
             data=stub_report.__dict__,
             handler=reporter.PandasReportHandler(),
-            record_type=record_type,
+            record_type="sel",
         )
         assert "vendor_report" in out.keys()
         assert "dupes_report" in out.keys()

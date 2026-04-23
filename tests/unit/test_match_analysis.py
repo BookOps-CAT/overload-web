@@ -84,10 +84,10 @@ class TestCandidateClassifier:
     @pytest.mark.parametrize(
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
     )
-    def test_analysis_attr(self, acq_bib):
+    def test_action_attr(self, acq_bib):
         with pytest.raises(AttributeError) as exc:
-            acq_bib.analysis
-        assert str(exc.value) == "MatchAnalysis has not been assigned to the DomainBib"
+            acq_bib.action
+        assert str(exc.value) == "CatalogAction has not been assigned to the DomainBib"
 
 
 class TestSelectionMatchAnalyzer:
@@ -324,7 +324,7 @@ class TestNYPLCatResearchMatchAnalyzer:
                 "ind1": "8",
                 "ind2": " ",
                 "subfields": [{"content": "Bar", "tag": "a"}],
-            },
+            }
         ]
         nypl_data["updatedDate"] = date
         response = sierra_responses.NYPLPlatformResponse(data=nypl_data)

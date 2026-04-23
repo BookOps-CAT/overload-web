@@ -42,32 +42,13 @@ def full_bib_add_barcodes(full_bib, library):
     return new_full_bib
 
 
-@pytest.fixture
-def stub_analysis(full_bib):
-    return bibs.MatchAnalysis(
-        bibs.CatalogAction.INSERT,
-        full_bib.call_number,
-        True,
-        bibs.ClassifiedCandidates([], [], []),
-        full_bib.resource_id,
-        full_bib.bib_id,
-    )
-
-
 class TestReviewer:
     @pytest.mark.parametrize(
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_dedupe_attach(self, full_bib, marc_engine):
-        full_bib.analysis = bibs.MatchAnalysis(
-            bibs.CatalogAction.ATTACH,
-            full_bib.call_number,
-            True,
-            bibs.ClassifiedCandidates([], [], []),
-            full_bib.resource_id,
-            full_bib.bib_id,
-        )
+        full_bib.action = bibs.CatalogAction.ATTACH
         deduped_bibs = marc_services.BibDeduplicator.deduplicate(
             records=[full_bib], engine=marc_engine
         )
@@ -79,8 +60,8 @@ class TestReviewer:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_dedupe_insert(self, full_bib, marc_engine, stub_analysis):
-        full_bib.analysis = stub_analysis
+    def test_dedupe_insert(self, full_bib, marc_engine):
+        full_bib.action = bibs.CatalogAction.INSERT
         deduped_bibs = marc_services.BibDeduplicator.deduplicate(
             records=[full_bib], engine=marc_engine
         )
@@ -91,11 +72,9 @@ class TestReviewer:
     @pytest.mark.parametrize(
         "library, collection, record_type", [("bpl", "NONE", "cat")]
     )
-    def test_dedupe_bpl(
-        self, library, full_bib, full_bib_add_barcodes, marc_engine, stub_analysis
-    ):
-        full_bib.analysis = stub_analysis
-        full_bib_add_barcodes.analysis = stub_analysis
+    def test_dedupe_bpl(self, library, full_bib, full_bib_add_barcodes, marc_engine):
+        full_bib.action = bibs.CatalogAction.INSERT
+        full_bib_add_barcodes.action = bibs.CatalogAction.INSERT
         deduped_bibs = marc_services.BibDeduplicator.deduplicate(
             records=[full_bib, full_bib_add_barcodes], engine=marc_engine
         )
@@ -114,10 +93,10 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat")],
     )
     def test_dedupe_deduped_nypl(
-        self, library, full_bib, full_bib_add_barcodes, marc_engine, stub_analysis
+        self, library, full_bib, full_bib_add_barcodes, marc_engine
     ):
-        full_bib.analysis = stub_analysis
-        full_bib_add_barcodes.analysis = stub_analysis
+        full_bib.action = bibs.CatalogAction.INSERT
+        full_bib_add_barcodes.action = bibs.CatalogAction.INSERT
         deduped_bibs = marc_services.BibDeduplicator.deduplicate(
             records=[full_bib, full_bib_add_barcodes], engine=marc_engine
         )
@@ -135,21 +114,12 @@ class TestReviewer:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_dedupe_other_recs(
-        self, full_bib, full_bib_add_barcodes, stub_analysis, marc_engine
-    ):
+    def test_dedupe_other_recs(self, full_bib, full_bib_add_barcodes, marc_engine):
         other_rec = copy.deepcopy(full_bib)
         other_rec.control_number = "123456789"
-        other_rec.analysis = bibs.MatchAnalysis(
-            bibs.CatalogAction.INSERT,
-            full_bib.call_number,
-            True,
-            bibs.ClassifiedCandidates([], [], []),
-            full_bib.resource_id,
-            None,
-        )
-        full_bib.analysis = stub_analysis
-        full_bib_add_barcodes.analysis = stub_analysis
+        other_rec.action = bibs.CatalogAction.INSERT
+        full_bib.action = bibs.CatalogAction.INSERT
+        full_bib_add_barcodes.action = bibs.CatalogAction.INSERT
         deduped_bibs = marc_services.BibDeduplicator.deduplicate(
             records=[full_bib, full_bib_add_barcodes, other_rec], engine=marc_engine
         )

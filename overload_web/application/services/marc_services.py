@@ -23,7 +23,7 @@ class BibDeduplicator:
         new: list[bibs.DomainBib] = []
         deduped: list[bibs.DomainBib] = []
         for record in records:
-            if record.analysis and record.analysis.action == bibs.CatalogAction.ATTACH:
+            if record.action and record.action == bibs.CatalogAction.ATTACH:
                 merge.append(record)
             else:
                 new.append(record)
@@ -96,7 +96,7 @@ class BibParser:
 
 class BibUpdater:
     @staticmethod
-    def apply_full_record_updates(
+    def apply_cataloging_updates(
         record: bibs.DomainBib, engine: ports.MarcEnginePort
     ) -> None:
         """Update and add MARC fields to processed full-level bib record"""
@@ -109,7 +109,7 @@ class BibUpdater:
         record.binary_data = bib.as_marc()
 
     @staticmethod
-    def apply_order_record_updates(
+    def apply_acquisition_updates(
         record: bibs.DomainBib,
         engine: ports.MarcEnginePort,
         template_data: dict[str, Any],
@@ -117,18 +117,28 @@ class BibUpdater:
         """Update and add MARC fields to processed order-level bib record"""
         record.apply_order_template(template_data)
         bib = engine.create_bib_from_domain(record=record)
+        updates = rules.AcquisitionUpdates.field_list(
+            record=record, context=engine.config
+        )
+        engine.update_fields(field_updates=updates, bib=bib)
+        bib.leader = rules.FieldRules.update_leader(bib.leader)
+        record.binary_data = bib.as_marc()
 
-        if engine.record_type == "acq":
-            updates = rules.AcquisitionUpdates.field_list(
-                record=record, context=engine.config
-            )
-        else:
-            updates = rules.SelectionUpdates.field_list(
-                record=record,
-                context=engine.config,
-                format=template_data.get("format"),
-                command_tag=engine.get_command_tag_field(bib),
-            )
+    @staticmethod
+    def apply_selection_updates(
+        record: bibs.DomainBib,
+        engine: ports.MarcEnginePort,
+        template_data: dict[str, Any],
+    ) -> None:
+        """Update and add MARC fields to processed order-level bib record"""
+        record.apply_order_template(template_data)
+        bib = engine.create_bib_from_domain(record=record)
+        updates = rules.SelectionUpdates.field_list(
+            record=record,
+            context=engine.config,
+            format=template_data.get("format"),
+            command_tag=engine.get_command_tag_field(bib),
+        )
         engine.update_fields(field_updates=updates, bib=bib)
         bib.leader = rules.FieldRules.update_leader(bib.leader)
         record.binary_data = bib.as_marc()

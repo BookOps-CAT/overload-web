@@ -3,8 +3,9 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.application.commands.process import (
-    ProcessFullRecords,
-    ProcessOrderRecords,
+    ProcessAcquisitionsRecords,
+    ProcessCatalogingRecords,
+    ProcessSelectionRecords,
 )
 from overload_web.infrastructure import batch_db, clients, template_db
 from overload_web.main import app
@@ -16,8 +17,9 @@ def processed_records(monkeypatch, stub_report):
     def fake_response(*args, **kwargs):
         return {"id": "1"}
 
-    monkeypatch.setattr(ProcessFullRecords, "execute", fake_response)
-    monkeypatch.setattr(ProcessOrderRecords, "execute", fake_response)
+    monkeypatch.setattr(ProcessAcquisitionsRecords, "execute", fake_response)
+    monkeypatch.setattr(ProcessCatalogingRecords, "execute", fake_response)
+    monkeypatch.setattr(ProcessSelectionRecords, "execute", fake_response)
 
 
 def fake_sql_session():

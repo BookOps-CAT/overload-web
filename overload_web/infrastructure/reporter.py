@@ -169,7 +169,7 @@ class GoogleSheetsReporter:
             "values": data,
         }
         try:
-            service = build("sheets", "v4", credentials=creds)
+            service = build("sheets", "v4", credentials=creds, cache_discovery=False)
             result = (
                 service.spreadsheets()
                 .values()

@@ -10,8 +10,9 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from overload_web.application.commands.process import (
-    ProcessFullRecords,
-    ProcessOrderRecords,
+    ProcessAcquisitionsRecords,
+    ProcessCatalogingRecords,
+    ProcessSelectionRecords,
 )
 from overload_web.presentation import deps
 
@@ -155,14 +156,12 @@ def process_acq_records(
     all_files = deps.fetch_files(
         local_files=local_files, remote_file_names=remote_file_names, vendor=vendor
     )
-    template_data = order_template.model_dump()
-    matchpoints = matchpoints.model_dump()
-    processed = ProcessOrderRecords.execute(
+    processed = ProcessAcquisitionsRecords.execute(
         batches={f"{i.file_name}": i.content for i in all_files},
         marc_engine=marc_engine,
         fetcher=fetcher,
-        template_data=template_data,
-        matchpoints=matchpoints,
+        template_data=order_template.model_dump(),
+        matchpoints=matchpoints.model_dump(),
         repo=repository,
     )
     return request.app.state.templates.TemplateResponse(
@@ -206,7 +205,7 @@ def process_cat_records(
     all_files = deps.fetch_files(
         local_files=local_files, remote_file_names=remote_file_names, vendor=vendor
     )
-    processed = ProcessFullRecords.execute(
+    processed = ProcessCatalogingRecords.execute(
         batches={f"{i.file_name}": i.content for i in all_files},
         marc_engine=marc_engine,
         fetcher=fetcher,
@@ -260,14 +259,12 @@ def process_sel_records(
     all_files = deps.fetch_files(
         local_files=local_files, remote_file_names=remote_file_names, vendor=vendor
     )
-    template_data = order_template.model_dump()
-    matchpoints = matchpoints.model_dump()
-    processed = ProcessOrderRecords.execute(
+    processed = ProcessSelectionRecords.execute(
         batches={f"{i.file_name}": i.content for i in all_files},
         marc_engine=marc_engine,
         fetcher=fetcher,
-        template_data=template_data,
-        matchpoints=matchpoints,
+        template_data=order_template.model_dump(),
+        matchpoints=matchpoints.model_dump(),
         repo=repository,
     )
     return request.app.state.templates.TemplateResponse(
