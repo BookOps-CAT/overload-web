@@ -1,6 +1,6 @@
 """`FastAPI` application entry point.
 
-Initializes the `FastAPI` app and registers backend and frontend routers.
+Initializes the `FastAPI` app and registers all routers.
 """
 
 from __future__ import annotations
