@@ -10,7 +10,7 @@ from overload_web.application.commands.order_template import (
 )
 from overload_web.domain.models import templates
 from overload_web.infrastructure import template_db
-from overload_web.presentation.routers import order_templates
+from overload_web.presentation import schemas
 
 
 @pytest.fixture
@@ -43,16 +43,11 @@ def test_template_attrs():
         for name in inspect.signature(template_db._TemplateModelBase).parameters.keys()
     ]
     pydantic_patch = [
-        name
-        for name in inspect.signature(
-            order_templates.TemplatePatchModel
-        ).parameters.keys()
+        name for name in inspect.signature(schemas.TemplatePatchModel).parameters.keys()
     ]
     pydantic_create = [
         name
-        for name in inspect.signature(
-            order_templates.TemplateCreateModel
-        ).parameters.keys()
+        for name in inspect.signature(schemas.TemplateCreateModel).parameters.keys()
     ]
     domain_base = [
         name
