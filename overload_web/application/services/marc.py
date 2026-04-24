@@ -24,7 +24,7 @@ class BibDeduplicator:
         new: list[bibs.DomainBib] = []
         deduped: list[bibs.DomainBib] = []
         for record in records:
-            if record.action and record.action == bibs.CatalogAction.ATTACH:
+            if record.action and record.action == "attach":
                 merge.append(record)
             else:
                 new.append(record)

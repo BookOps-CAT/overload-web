@@ -148,6 +148,10 @@ class MarcEnginePort(Protocol[U, V]):
 
     """Update record in place"""
 
+    def write(self, records: list[V]) -> bytes: ...  # pragma:no branch
+
+    """Write DomainBib objects to binary."""
+
 
 @runtime_checkable
 class SqlRepositoryProtocol(Protocol[T]):

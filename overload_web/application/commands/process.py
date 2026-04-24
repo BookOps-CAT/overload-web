@@ -5,7 +5,7 @@ import logging
 from typing import Any
 
 from overload_web.application import ports
-from overload_web.application.services import marc, match_service
+from overload_web.application.services import bib_processing, marc, match_service
 from overload_web.domain.models import bibs
 
 logger = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ class ProcessAcquisitionsRecords:
             records = marc.BibParser.parse_marc_data(
                 data=data, engine=marc_engine, vendor=vendor
             )
-            bibs.DomainBib.validate_unique_barcodes(records)
+            bib_processing.validate_unique_barcodes(records)
             for bib in records:
                 matches = matcher.match_order_record(bib, matchpoints=matchpoints)
                 analysis = bib.analyze_matches(candidates=matches)
@@ -68,10 +68,10 @@ class ProcessAcquisitionsRecords:
                 )
                 report_data.append(analysis)
             processed = bibs.ProcessedFile(
-                file_name=file_name, records=bibs.DomainBib.write(records)
+                file_name=file_name, records=marc_engine.write(records)
             )
             out_batches.append(processed)
-        report = bibs.DomainBib.create_order_records_report(
+        report = bib_processing.create_order_records_report(
             analysis=report_data, file_names=file_names
         )
         processed_batch = bibs.ProcessedFileBatch(files=out_batches, report=report)
@@ -112,8 +112,8 @@ class ProcessCatalogingRecords:
         content = list(batches.values())
         data = marc.MarcFileMerger.combine_marc_files(data=content, engine=marc_engine)
         records = marc.BibParser.parse_marc_data(data=data, engine=marc_engine)
-        bibs.DomainBib.validate_unique_barcodes(records)
-        barcodes = bibs.DomainBib.extract_barcodes(records)
+        bib_processing.validate_unique_barcodes(records)
+        barcodes = bib_processing.extract_barcodes(records)
         report_data = []
         matcher = match_service.BibMatcher(fetcher)
         for bib in records:
@@ -122,21 +122,21 @@ class ProcessCatalogingRecords:
             bib.apply_match(analysis)
             marc.BibUpdater.apply_cataloging_updates(bib, engine=marc_engine)
             report_data.append(analysis)
-        missing_barcodes = bibs.DomainBib.validate_preserved_barcodes(
+        missing_barcodes = bib_processing.validate_preserved_barcodes(
             records=records, barcodes=barcodes
         )
         deduplicated = marc.BibDeduplicator.deduplicate(
             records=records, engine=marc_engine
         )
         file_name = datetime.datetime.today().strftime("%y%m%d")
-        report = bibs.DomainBib.create_full_records_report(
+        report = bib_processing.create_full_records_report(
             analysis=report_data,
             missing_barcodes=missing_barcodes,
             file_names=file_names,
         )
         files = [
             bibs.ProcessedFile(
-                file_name=f"{file_name}-{k}.mrc", records=bibs.DomainBib.write(v)
+                file_name=f"{file_name}-{k}.mrc", records=marc_engine.write(v)
             )
             for k, v in deduplicated.items()
         ]
@@ -191,7 +191,7 @@ class ProcessSelectionRecords:
             records = marc.BibParser.parse_marc_data(
                 data=data, engine=marc_engine, vendor=vendor
             )
-            bibs.DomainBib.validate_unique_barcodes(records)
+            bib_processing.validate_unique_barcodes(records)
             for bib in records:
                 matches = matcher.match_order_record(bib, matchpoints=matchpoints)
                 analysis = bib.analyze_matches(candidates=matches)
@@ -201,10 +201,10 @@ class ProcessSelectionRecords:
                 )
                 report_data.append(analysis)
             processed = bibs.ProcessedFile(
-                file_name=file_name, records=bibs.DomainBib.write(records)
+                file_name=file_name, records=marc_engine.write(records)
             )
             out_batches.append(processed)
-        report = bibs.DomainBib.create_order_records_report(
+        report = bib_processing.create_order_records_report(
             analysis=report_data, file_names=file_names
         )
         processed_batch = bibs.ProcessedFileBatch(files=out_batches, report=report)

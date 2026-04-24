@@ -4,7 +4,7 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.application.services import marc
+from overload_web.application.services import bib_processing, marc
 from overload_web.domain.models import bibs
 
 
@@ -132,7 +132,7 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_validate_cat(self, full_bib, caplog, record_type):
-        bibs.DomainBib.validate_preserved_barcodes([full_bib], ["333331234567890"])
+        bib_processing.validate_preserved_barcodes([full_bib], ["333331234567890"])
         assert len(caplog.records) == 1
         assert (
             caplog.records[0].msg == "Integrity validation: True, missing_barcodes: []"
@@ -142,7 +142,7 @@ class TestReviewer:
         "library, collection, record_type", [("bpl", "NONE", "cat")]
     )
     def test_validate_cat_bpl_960_item(self, full_bib, caplog, collection, record_type):
-        bibs.DomainBib.validate_preserved_barcodes([full_bib], ["333331234567890"])
+        bib_processing.validate_preserved_barcodes([full_bib], ["333331234567890"])
         assert len(caplog.records) == 1
         assert (
             caplog.records[0].msg == "Integrity validation: True, missing_barcodes: []"
@@ -153,7 +153,7 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_validate_missing_barcodes(self, full_bib, caplog, collection, record_type):
-        bibs.DomainBib.validate_preserved_barcodes(
+        bib_processing.validate_preserved_barcodes(
             [full_bib], ["333331234567890", "333330987654321"]
         )
         assert len(caplog.records) == 2

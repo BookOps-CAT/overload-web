@@ -22,6 +22,7 @@ Classes:
 
 from __future__ import annotations
 
+import io
 import logging
 from dataclasses import dataclass
 from typing import Any, BinaryIO, Protocol
@@ -192,3 +193,22 @@ class MarcEngine:
             if alt_match:
                 return info
         return rules["UNKNOWN"]
+
+    def write(self, records: list[DomainBibProtocol]) -> bytes:
+        """
+        Serialize `DomainBib` objects into a binary MARC stream.
+
+        Args:
+            records:
+                A list `DomainBib` objects.
+
+        Returns:
+            MARC binary as an an in-memory file stream.
+        """
+        io_data = io.BytesIO()
+        for record in records:
+            logger.info(f"Writing MARC binary for record: {record}")
+            io_data.write(record.binary_data)
+        io_data.seek(0)
+        out = io_data.getvalue()
+        return out
