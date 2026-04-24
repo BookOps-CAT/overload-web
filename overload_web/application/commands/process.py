@@ -5,7 +5,7 @@ import logging
 from typing import Any
 
 from overload_web.application import ports
-from overload_web.application.services import marc_services, match_service
+from overload_web.application.services import marc, match_service
 from overload_web.domain.models import bibs
 
 logger = logging.getLogger(__name__)
@@ -52,27 +52,25 @@ class ProcessAcquisitionsRecords:
         file_names = []
         report_data = []
         matcher = match_service.BibMatcher(fetcher)
+        vendor = template_data.get("vendor", "UNKNOWN")
         for file_name, data in batches.items():
             file_names.append(file_name)
-            records = marc_services.BibParser.parse_marc_data(
-                data=data,
-                engine=marc_engine,
-                vendor=template_data.get("vendor", "UNKNOWN"),
+            records = marc.BibParser.parse_marc_data(
+                data=data, engine=marc_engine, vendor=vendor
             )
             bibs.DomainBib.validate_unique_barcodes(records)
             for bib in records:
                 matches = matcher.match_order_record(bib, matchpoints=matchpoints)
                 analysis = bib.analyze_matches(candidates=matches)
                 bib.apply_match(analysis)
-                marc_services.BibUpdater.apply_acquisition_updates(
+                marc.BibUpdater.apply_acquisition_updates(
                     bib, engine=marc_engine, template_data=template_data
                 )
                 report_data.append(analysis)
-            out_batches.append(
-                bibs.ProcessedFile(
-                    file_name=file_name, records=bibs.DomainBib.write(records)
-                )
+            processed = bibs.ProcessedFile(
+                file_name=file_name, records=bibs.DomainBib.write(records)
             )
+            out_batches.append(processed)
         report = bibs.DomainBib.create_order_records_report(
             analysis=report_data, file_names=file_names
         )
@@ -112,10 +110,8 @@ class ProcessCatalogingRecords:
         """
         file_names = list(batches.keys())
         content = list(batches.values())
-        data = marc_services.MarcFileMerger.combine_marc_files(
-            data=content, engine=marc_engine
-        )
-        records = marc_services.BibParser.parse_marc_data(data=data, engine=marc_engine)
+        data = marc.MarcFileMerger.combine_marc_files(data=content, engine=marc_engine)
+        records = marc.BibParser.parse_marc_data(data=data, engine=marc_engine)
         bibs.DomainBib.validate_unique_barcodes(records)
         barcodes = bibs.DomainBib.extract_barcodes(records)
         report_data = []
@@ -124,12 +120,12 @@ class ProcessCatalogingRecords:
             matches = matcher.match_full_record(bib)
             analysis = bib.analyze_matches(candidates=matches)
             bib.apply_match(analysis)
-            marc_services.BibUpdater.apply_cataloging_updates(bib, engine=marc_engine)
+            marc.BibUpdater.apply_cataloging_updates(bib, engine=marc_engine)
             report_data.append(analysis)
         missing_barcodes = bibs.DomainBib.validate_preserved_barcodes(
             records=records, barcodes=barcodes
         )
-        deduplicated = marc_services.BibDeduplicator.deduplicate(
+        deduplicated = marc.BibDeduplicator.deduplicate(
             records=records, engine=marc_engine
         )
         file_name = datetime.datetime.today().strftime("%y%m%d")
@@ -189,27 +185,25 @@ class ProcessSelectionRecords:
         file_names = []
         report_data = []
         matcher = match_service.BibMatcher(fetcher)
+        vendor = template_data.get("vendor", "UNKNOWN")
         for file_name, data in batches.items():
             file_names.append(file_name)
-            records = marc_services.BibParser.parse_marc_data(
-                data=data,
-                engine=marc_engine,
-                vendor=template_data.get("vendor", "UNKNOWN"),
+            records = marc.BibParser.parse_marc_data(
+                data=data, engine=marc_engine, vendor=vendor
             )
             bibs.DomainBib.validate_unique_barcodes(records)
             for bib in records:
                 matches = matcher.match_order_record(bib, matchpoints=matchpoints)
                 analysis = bib.analyze_matches(candidates=matches)
                 bib.apply_match(analysis)
-                marc_services.BibUpdater.apply_selection_updates(
+                marc.BibUpdater.apply_selection_updates(
                     bib, engine=marc_engine, template_data=template_data
                 )
                 report_data.append(analysis)
-            out_batches.append(
-                bibs.ProcessedFile(
-                    file_name=file_name, records=bibs.DomainBib.write(records)
-                )
+            processed = bibs.ProcessedFile(
+                file_name=file_name, records=bibs.DomainBib.write(records)
             )
+            out_batches.append(processed)
         report = bibs.DomainBib.create_order_records_report(
             analysis=report_data, file_names=file_names
         )

@@ -4,7 +4,7 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.application.services import marc_services
+from overload_web.application.services import marc
 
 
 @pytest.fixture
@@ -35,9 +35,7 @@ def stub_bib(library, collection) -> Bib:
         Field(
             tag="949",
             indicators=Indicators(" ", "1"),
-            subfields=[
-                Subfield(code="i", value="333331234567890"),
-            ],
+            subfields=[Subfield(code="i", value="333331234567890")],
         )
     )
     bib.add_field(
@@ -84,9 +82,7 @@ class TestParser:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_parse_full(self, marc_engine, stub_bib, collection, record_type, caplog):
-        records = marc_services.BibParser.parse_marc_data(
-            stub_bib.as_marc(), engine=marc_engine
-        )
+        records = marc.BibParser.parse_marc_data(stub_bib.as_marc(), engine=marc_engine)
         assert len(records) == 1
         assert records[0].library == marc_engine.library
         assert records[0].collection == collection
@@ -113,9 +109,7 @@ class TestParser:
                 subfields=[Subfield(code="a", value=value)],
             )
         )
-        records = marc_services.BibParser.parse_marc_data(
-            stub_bib.as_marc(), engine=marc_engine
-        )
+        records = marc.BibParser.parse_marc_data(stub_bib.as_marc(), engine=marc_engine)
         assert len(records) == 1
         assert records[0].vendor_info is not None
         assert records[0].vendor_info.name == "BT SERIES"
@@ -134,9 +128,7 @@ class TestParser:
     def test_parse_order_level(
         self, marc_engine, stub_bib, collection, record_type, caplog
     ):
-        records = marc_services.BibParser.parse_marc_data(
-            stub_bib.as_marc(), engine=marc_engine
-        )
+        records = marc.BibParser.parse_marc_data(stub_bib.as_marc(), engine=marc_engine)
         assert len(records) == 1
         assert records[0].library == marc_engine.library
         assert records[0].collection == collection
@@ -161,9 +153,7 @@ class TestParser:
     )
     def test_parse_update_datetime(self, marc_engine, stub_bib):
         stub_bib.add_field(Field(tag="005", data="20200101010000.0"))
-        records = marc_services.BibParser.parse_marc_data(
-            stub_bib.as_marc(), engine=marc_engine
-        )
+        records = marc.BibParser.parse_marc_data(stub_bib.as_marc(), engine=marc_engine)
         assert len(records) == 1
         assert records[0].update_date == "20200101010000.0"
         assert records[0].update_datetime == datetime.datetime(2020, 1, 1, 1, 0, 0, 0)

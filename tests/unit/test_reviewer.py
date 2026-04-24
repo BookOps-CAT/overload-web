@@ -4,7 +4,7 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.application.services import marc_services
+from overload_web.application.services import marc
 from overload_web.domain.models import bibs
 
 
@@ -49,7 +49,7 @@ class TestReviewer:
     )
     def test_dedupe_attach(self, full_bib, marc_engine):
         full_bib.action = bibs.CatalogAction.ATTACH
-        deduped_bibs = marc_services.BibDeduplicator.deduplicate(
+        deduped_bibs = marc.BibDeduplicator.deduplicate(
             records=[full_bib], engine=marc_engine
         )
         assert len(deduped_bibs["NEW"]) == 1
@@ -62,7 +62,7 @@ class TestReviewer:
     )
     def test_dedupe_insert(self, full_bib, marc_engine):
         full_bib.action = bibs.CatalogAction.INSERT
-        deduped_bibs = marc_services.BibDeduplicator.deduplicate(
+        deduped_bibs = marc.BibDeduplicator.deduplicate(
             records=[full_bib], engine=marc_engine
         )
         assert len(deduped_bibs["NEW"]) == 0
@@ -75,7 +75,7 @@ class TestReviewer:
     def test_dedupe_bpl(self, library, full_bib, full_bib_add_barcodes, marc_engine):
         full_bib.action = bibs.CatalogAction.INSERT
         full_bib_add_barcodes.action = bibs.CatalogAction.INSERT
-        deduped_bibs = marc_services.BibDeduplicator.deduplicate(
+        deduped_bibs = marc.BibDeduplicator.deduplicate(
             records=[full_bib, full_bib_add_barcodes], engine=marc_engine
         )
         assert len(deduped_bibs["NEW"]) == 0
@@ -97,7 +97,7 @@ class TestReviewer:
     ):
         full_bib.action = bibs.CatalogAction.INSERT
         full_bib_add_barcodes.action = bibs.CatalogAction.INSERT
-        deduped_bibs = marc_services.BibDeduplicator.deduplicate(
+        deduped_bibs = marc.BibDeduplicator.deduplicate(
             records=[full_bib, full_bib_add_barcodes], engine=marc_engine
         )
         assert len(deduped_bibs["NEW"]) == 0
@@ -120,7 +120,7 @@ class TestReviewer:
         other_rec.action = bibs.CatalogAction.INSERT
         full_bib.action = bibs.CatalogAction.INSERT
         full_bib_add_barcodes.action = bibs.CatalogAction.INSERT
-        deduped_bibs = marc_services.BibDeduplicator.deduplicate(
+        deduped_bibs = marc.BibDeduplicator.deduplicate(
             records=[full_bib, full_bib_add_barcodes, other_rec], engine=marc_engine
         )
         assert len(deduped_bibs["NEW"]) == 0

@@ -4,7 +4,7 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.application.services import marc_services
+from overload_web.application.services import marc
 from overload_web.domain.models import bibs
 
 
@@ -71,7 +71,7 @@ class TestUpdaterAcqRecords:
     def test_update_with_template_data(self, acq_bib, marc_engine):
         """Updates orders based on template data."""
         original_orders = copy.deepcopy(acq_bib.orders)
-        marc_services.BibUpdater.apply_acquisition_updates(
+        marc.BibUpdater.apply_acquisition_updates(
             acq_bib,
             template_data={"name": "Foo", "order_code_1": "b", "format": "a"},
             engine=marc_engine,
@@ -87,7 +87,7 @@ class TestUpdaterAcqRecords:
         """Checks for existing command tag based on format. Updates with default location."""
         input_bib = bib_with_command_tag("*b2=a;")
         original_bib = Bib(input_bib.binary_data, library=input_bib.library)
-        marc_services.BibUpdater.apply_acquisition_updates(
+        marc.BibUpdater.apply_acquisition_updates(
             input_bib, template_data={"format": "a"}, engine=marc_engine
         )
         updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
@@ -116,9 +116,7 @@ class TestUpdaterCatRecords:
         """Adds bib_id to appropriate tag"""
         full_bib.bib_id = "12345"
         original_bib = Bib(full_bib.binary_data, library=full_bib.library)
-        marc_services.BibUpdater.apply_cataloging_updates(
-            record=full_bib, engine=marc_engine
-        )
+        marc.BibUpdater.apply_cataloging_updates(record=full_bib, engine=marc_engine)
         updated_bib = Bib(full_bib.binary_data, library=full_bib.library)
         assert len(original_bib.get_fields(tag)) == 0
         assert len(updated_bib.get_fields(tag)) == 1
@@ -138,9 +136,7 @@ class TestUpdaterCatRecords:
             ],
         )
         original_bib = Bib(full_bib.binary_data, library=full_bib.library)
-        marc_services.BibUpdater.apply_cataloging_updates(
-            record=full_bib, engine=marc_engine
-        )
+        marc.BibUpdater.apply_cataloging_updates(record=full_bib, engine=marc_engine)
         assert len(original_bib.get_fields("949")) == 1
         assert (
             len(Bib(full_bib.binary_data, library=full_bib.library).get_fields("949"))
@@ -161,9 +157,7 @@ class TestUpdaterCatRecords:
             ],
         )
         original_bib = Bib(full_bib.binary_data, library=full_bib.library)
-        marc_services.BibUpdater.apply_cataloging_updates(
-            record=full_bib, engine=marc_engine
-        )
+        marc.BibUpdater.apply_cataloging_updates(record=full_bib, engine=marc_engine)
         assert len(original_bib.get_fields("949")) == 0
         assert (
             len(Bib(full_bib.binary_data, library=full_bib.library).get_fields("949"))
@@ -192,7 +186,7 @@ class TestUpdaterCatRecords:
     ):
         input_bib = make_bt_series_full_bib(pairs)
         original_bib = Bib(input_bib.binary_data, library=input_bib.library)
-        marc_services.BibUpdater.apply_cataloging_updates(input_bib, engine=marc_engine)
+        marc.BibUpdater.apply_cataloging_updates(input_bib, engine=marc_engine)
         updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
         assert updated_bib.get_fields("091")[0].value() == " ".join(
             [i for i in pairs.values()]
@@ -212,9 +206,7 @@ class TestUpdaterCatRecords:
             {"z": "FOO", "p": "J", "a": "FIC", "c": "SNICKET"}
         )
         with pytest.raises(ValueError) as exc:
-            marc_services.BibUpdater.apply_cataloging_updates(
-                input_bib, engine=marc_engine
-            )
+            marc.BibUpdater.apply_cataloging_updates(input_bib, engine=marc_engine)
         assert (
             str(exc.value)
             == "Constructed call number does not match original. New=FIC SNICKET, Original=FOO J FIC SNICKET"
@@ -229,7 +221,7 @@ class TestUpdaterSelRecords:
     def test_update_template_data(self, sel_bib, marc_engine):
         """Updates orders based on template data."""
         original_orders = copy.deepcopy(sel_bib.orders)
-        marc_services.BibUpdater.apply_selection_updates(
+        marc.BibUpdater.apply_selection_updates(
             sel_bib,
             template_data={"name": "Foo", "order_code_1": "b", "format": "a"},
             engine=marc_engine,
@@ -257,7 +249,7 @@ class TestUpdaterSelRecords:
         """Updates existing command tag with default location."""
         input_bib = bib_with_command_tag(original)
         original_bib = Bib(input_bib.binary_data, library=input_bib.library)
-        marc_services.BibUpdater.apply_selection_updates(
+        marc.BibUpdater.apply_selection_updates(
             input_bib, template_data={}, engine=marc_engine
         )
         updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
@@ -282,7 +274,7 @@ class TestUpdaterSelRecords:
         """Checks for existing command tag based on format. Updates with default location."""
         input_bib = bib_with_command_tag("*b2=a;")
         original_bib = Bib(input_bib.binary_data, library=input_bib.library)
-        marc_services.BibUpdater.apply_selection_updates(
+        marc.BibUpdater.apply_selection_updates(
             input_bib, template_data={"format": "a"}, engine=marc_engine
         )
         updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
@@ -308,7 +300,7 @@ class TestUpdaterSelRecords:
     def test_update_no_command_tag_bpl(self, sel_bib, marc_engine, field_count, output):
         """Adds command tag with default location."""
         original_bib = Bib(sel_bib.binary_data, library=sel_bib.library)
-        marc_services.BibUpdater.apply_selection_updates(
+        marc.BibUpdater.apply_selection_updates(
             sel_bib, template_data={}, engine=marc_engine
         )
         updated_bib = Bib(sel_bib.binary_data, library=sel_bib.library)
