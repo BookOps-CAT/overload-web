@@ -69,9 +69,6 @@ class MarcEngine:
         self.library = rules.library
         self.collection = rules.collection
         self.record_type = rules.record_type
-        self.bib_rules = rules.parser_bib_mapping
-        self.order_rules = rules.parser_order_mapping
-        self.vendor_rules = rules.parser_vendor_mapping
         self.config = rules
 
     def create_bib_from_domain(self, record: DomainBibProtocol) -> Bib:

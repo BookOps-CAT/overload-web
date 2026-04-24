@@ -15,8 +15,11 @@ class AcquisitionUpdates:
     """Returns a list of fields to be updated in an acq record during processing"""
 
     @staticmethod
-    def field_list(record: bibs.DomainBib, context: Any) -> list[MarcFieldUpdateValues]:
+    def field_list(
+        record: bibs.DomainBib, context: Any, template_data: dict[str, Any]
+    ) -> list[MarcFieldUpdateValues]:
         updates: list[Any] = []
+        record.apply_order_template(template_data)
         updates.extend(
             FieldRules.update_order_fields(
                 record=record, mapping=context.marc_order_mapping
@@ -49,10 +52,12 @@ class SelectionUpdates:
     def field_list(
         record: bibs.DomainBib,
         context: Any,
+        template_data: dict[str, Any],
         format: str | None = None,
         command_tag: Any | None = None,
     ) -> list[MarcFieldUpdateValues]:
         updates: list[Any] = []
+        record.apply_order_template(template_data)
         updates.extend(
             FieldRules.update_order_fields(
                 record=record, mapping=context.marc_order_mapping

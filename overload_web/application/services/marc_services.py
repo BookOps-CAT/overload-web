@@ -73,16 +73,21 @@ class BibParser:
         reader = engine.get_reader(data)
         parsed = []
         for record in reader:
-            bib_dict = engine.map_data(obj=record, rules=engine.bib_rules)
+            bib_dict = engine.map_data(
+                obj=record, rules=engine.config.parser_bib_mapping
+            )
             order_data = [
-                engine.map_data(obj=i, rules=engine.order_rules) for i in record.orders
+                engine.map_data(obj=i, rules=engine.config.parser_order_mapping)
+                for i in record.orders
             ]
             bib_dict["orders"] = [bibs.Order(**i) for i in order_data]
             bib_dict["binary_data"] = record.as_marc()
             bib_dict["record_type"] = engine.record_type
             if engine.record_type == "cat":
                 bib_dict["vendor_info"] = bibs.VendorInfo(
-                    **engine.identify_vendor(record=record, rules=engine.vendor_rules)
+                    **engine.identify_vendor(
+                        record=record, rules=engine.config.parser_vendor_mapping
+                    )
                 )
             else:
                 bib_dict["vendor"] = vendor
@@ -115,10 +120,9 @@ class BibUpdater:
         template_data: dict[str, Any],
     ) -> None:
         """Update and add MARC fields to processed order-level bib record"""
-        record.apply_order_template(template_data)
         bib = engine.create_bib_from_domain(record=record)
         updates = rules.AcquisitionUpdates.field_list(
-            record=record, context=engine.config
+            record=record, context=engine.config, template_data=template_data
         )
         engine.update_fields(field_updates=updates, bib=bib)
         bib.leader = rules.FieldRules.update_leader(bib.leader)
@@ -131,13 +135,13 @@ class BibUpdater:
         template_data: dict[str, Any],
     ) -> None:
         """Update and add MARC fields to processed order-level bib record"""
-        record.apply_order_template(template_data)
         bib = engine.create_bib_from_domain(record=record)
         updates = rules.SelectionUpdates.field_list(
             record=record,
             context=engine.config,
             format=template_data.get("format"),
             command_tag=engine.get_command_tag_field(bib),
+            template_data=template_data,
         )
         engine.update_fields(field_updates=updates, bib=bib)
         bib.leader = rules.FieldRules.update_leader(bib.leader)
