@@ -36,9 +36,9 @@ class MatchpointsModel(BaseModel):
 class ProcessingContext(BaseModel):
     """A model that represents context necessary to determine processing workflow."""
 
-    record_type: Literal["acq", "cat", "sel"]
-    library: Literal["nypl", "bpl"]
     collection: Literal["BL", "RL", ""] | None
+    library: Literal["nypl", "bpl"]
+    record_type: Literal["acq", "cat", "sel"]
 
     @field_validator("collection", mode="before")
     @classmethod
@@ -59,6 +59,18 @@ class ProcessingContext(BaseModel):
         elif self.library == "bpl" and self.collection:
             raise ValueError("Collection should be `None` for BPL records.")
         return self
+
+    @classmethod
+    def from_form(
+        self,
+        collection: Literal["BL", "RL", ""] | None = Form(None),
+        library: Literal["nypl", "bpl"] = Form(...),
+        record_type: Literal["acq", "cat", "sel"] = Form(...),
+    ) -> ProcessingContext:
+        """Class method used to create a `ProcessingContext` object from an html form"""
+        return ProcessingContext(
+            collection=collection, library=library, record_type=record_type
+        )
 
 
 class TemplateDataModel(BaseModel):

@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.application.commands.process import (
@@ -203,8 +204,8 @@ class TestApp:
             ("nypl", "BL", "sel"),
             ("nypl", "RL", "acq"),
             ("nypl", "RL", "sel"),
-            ("bpl", "NONE", "acq"),
-            ("bpl", "NONE", "sel"),
+            ("bpl", "", "acq"),
+            ("bpl", "", "sel"),
         ],
     )
     def test_pvf_router_process_order_records_local(
@@ -233,8 +234,8 @@ class TestApp:
             ("nypl", "BL", "sel"),
             ("nypl", "RL", "acq"),
             ("nypl", "RL", "sel"),
-            ("bpl", "NONE", "acq"),
-            ("bpl", "NONE", "sel"),
+            ("bpl", "", "acq"),
+            ("bpl", "", "sel"),
         ],
     )
     def test_pvf_router_process_order_records_remote(
@@ -258,7 +259,7 @@ class TestApp:
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "", "cat")],
     )
     def test_pvf_router_process_full_records_local(
         self, library, collection, record_type, processed_records
@@ -276,7 +277,7 @@ class TestApp:
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "", "cat")],
     )
     def test_pvf_router_process_full_records_remote(
         self, library, collection, record_type, processed_records
@@ -305,6 +306,51 @@ class TestApp:
         with pytest.raises(ValueError) as exc:
             self.client.post("/pvf/cat/process-vendor-file", data=context, files=files)
         assert str(exc.value) == "Invalid library: Foo. Must be 'bpl' or 'nypl'"
+
+    @pytest.mark.parametrize(
+        "library, record_type", [("nypl", "acq"), ("nypl", "cat"), ("nypl", "sel")]
+    )
+    def test_pvf_router_process_nypl_collection_error(self, library, record_type):
+        """Tests incorrect collection passed to `ProcessingContext` called in `deps.py`"""
+        context = {
+            "library": library,
+            "collection": "",
+            "record_type": record_type,
+            "vendor": "FOO",
+        }
+        files = {"remote_file_names": (None, "test.mrc")}
+        with pytest.raises(ValidationError) as exc:
+            self.client.post(
+                f"/pvf/{record_type}/process-vendor-file", data=context, files=files
+            )
+        assert (
+            exc.value.errors()[0]["msg"]
+            == "Value error, Collection is required for NYPL records."
+        )
+
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [("bpl", "BL", "acq"), ("bpl", "BL", "cat"), ("bpl", "BL", "sel")],
+    )
+    def test_pvf_router_process_bpl_collection_error(
+        self, library, collection, record_type
+    ):
+        """Tests incorrect collection passed to `ProcessingContext` called in `deps.py`"""
+        context = {
+            "library": library,
+            "collection": collection,
+            "record_type": record_type,
+            "vendor": "FOO",
+        }
+        files = {"remote_file_names": (None, "test.mrc")}
+        with pytest.raises(ValidationError) as exc:
+            self.client.post(
+                f"/pvf/{record_type}/process-vendor-file", data=context, files=files
+            )
+        assert (
+            exc.value.errors()[0]["msg"]
+            == "Value error, Collection should be `None` for BPL records."
+        )
 
     @pytest.mark.parametrize("record_type", ["acq", "sel"])
     def test_pvf_router_process_order_records_fetcher_error(self, record_type):

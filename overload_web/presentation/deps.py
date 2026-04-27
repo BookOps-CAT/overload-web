@@ -17,6 +17,7 @@ from overload_web.infrastructure import (
     reporter,
     template_db,
 )
+from overload_web.presentation import schemas
 
 logger = logging.getLogger(__name__)
 
@@ -139,41 +140,6 @@ def fetch_files(
     return files
 
 
-def get_marc_engine_config(
-    library: Annotated[str, Form(...)],
-    record_type: Annotated[str, Form(...)],
-    collection: str | None = Form(None),
-) -> marc_engine.MarcEngineConfig:
-    """
-    Load MARC processing config from a .json file and create config.
-
-    Config is based on `library`, `collection`, and `record_type` values input
-    into an html Form.
-
-    Args:
-        library: the library whose files are being processed
-        collection: the collection whose files are being processed, if applicable
-        record_type: the workflow being used for this processing session.
-
-    Returns:
-        a `MarcEngineConfig` value object to be used in instantiating a `MarcEngine`
-
-    """
-    with open("overload_web/data/mapping_specs.json", "r", encoding="utf-8") as fh:
-        constants = json.load(fh)
-    return marc_engine.MarcEngineConfig(
-        marc_order_mapping=constants["marc_order_mapping"],
-        default_loc=constants["default_locations"][library].get(collection),
-        bib_id_tag=constants["bib_id_tag"][library],
-        library=library,
-        record_type=record_type,
-        collection=collection,
-        parser_bib_mapping=constants["bib_domain_mapping"],
-        parser_order_mapping=constants["order_domain_mapping"],
-        parser_vendor_mapping=constants["vendor_info_options"][library],
-    )
-
-
 def get_fetcher(
     library: Annotated[str, Form(...)],
 ) -> Generator[clients.SierraBibFetcher, None, None]:
@@ -182,9 +148,26 @@ def get_fetcher(
 
 
 def get_marc_engine(
-    config: Annotated[marc_engine.MarcEngineConfig, Depends(get_marc_engine_config)],
+    context: Annotated[
+        schemas.ProcessingContext, Depends(schemas.ProcessingContext.from_form)
+    ],
 ) -> Generator[marc_engine.MarcEngine, None, None]:
     """Create a `MarcEngine` service with injected dependencies."""
+    with open("overload_web/data/mapping_specs.json", "r", encoding="utf-8") as fh:
+        constants = json.load(fh)
+    config = marc_engine.MarcEngineConfig(
+        marc_order_mapping=constants["marc_order_mapping"],
+        default_loc=constants["default_locations"][context.library].get(
+            context.collection
+        ),
+        bib_id_tag=constants["bib_id_tag"][context.library],
+        library=context.library,
+        record_type=context.record_type,
+        collection=context.collection,
+        parser_bib_mapping=constants["bib_domain_mapping"],
+        parser_order_mapping=constants["order_domain_mapping"],
+        parser_vendor_mapping=constants["vendor_info_options"][context.library],
+    )
     yield marc_engine.MarcEngine(rules=config)
 
 
