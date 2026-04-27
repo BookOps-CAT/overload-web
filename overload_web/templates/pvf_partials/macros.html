@@ -1,23 +1,25 @@
-{% macro context_form_field(field_id, data, disabled=False, display_value="") %}
+{% macro collection_form_field(field_id, data, disabled=False, display_value="") %}
   <div class="form-floating">
     {% if disabled %}
       <select id="{{ field_id }}"
               class="form-select"
               name="{{ field_id }}"
               disabled>
-        <option value="{{ display_value }}" selected>{{ context_fields[field_id]['options'][display_value] }}</option>
+        <option value="" selected></option>
       </select>
       <input id="{{ field_id }}"
              name="{{ field_id }}"
              type="hidden"
-             value="{{ display_value }}" />
+             form="pvf-form"
+             value="" />
     {% else %}
       <select id="{{ field_id }}"
               class="form-select"
               name="{{ field_id }}"
-              hx-get="/forms/update-context"
-              hx-trigger="change,load"
+              hx-get="/forms/update-collection"
+              hx-trigger="change,load[collection.value !='']"
               hx-swap="none"
+              form="pvf-form"
               required>
         <option value="" selected></option>
         {% for k, v in data['options'].items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}
@@ -26,14 +28,31 @@
     <label for="{{ field_id }}">{{ data['label'] }}</label>
   </div>
 {% endmacro %}
+{% macro record_type_field(field_id, data) %}
+  <div class="form-floating">
+    <select id="{{ field_id }}"
+            class="form-select"
+            name="{{ field_id }}"
+            hx-get="/forms/update-record-type"
+            hx-trigger="change,load"
+            form="pvf-form"
+            hx-swap="none"
+            required>
+      <option value="" selected></option>
+      {% for k, v in data['options'].items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}
+    </select>
+    <label for="{{ field_id }}">{{ data['label'] }}</label>
+  </div>
+{% endmacro %}
 {% macro library_field(field_id, data) %}
   <div class="form-floating">
     <select id="{{ field_id }}"
             class="form-select"
             name="{{ field_id }}"
-            hx-get="/forms/update-context"
+            hx-get="/forms/update-library"
             hx-target="#collection_wrapper"
             hx-trigger="change,load"
+            form="pvf-form"
             required>
       <option value="" selected></option>
       {% for k, v in data["options"].items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}

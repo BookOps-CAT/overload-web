@@ -108,7 +108,7 @@ class TestApp:
         routes = self.client.app.router.__dict__["routes"]
         route_names = [i.name for i in routes]
         assert "root" in route_names
-        assert "process_records_page" in route_names
+        assert "vendor_file_page" in route_names
 
     def test_frontend_home_get(self):
         response = self.client.get("/")
@@ -122,125 +122,29 @@ class TestApp:
         assert response.url == f"{self.base_url}/process"
         assert response.context["page_title"] == "Process Vendor File"
 
-    @pytest.mark.parametrize(
-        "library, record_type", [("bpl", "acq"), ("bpl", "cat"), ("bpl", "sel")]
-    )
-    def test_frontend_post_context_form_bpl(self, library, record_type):
-        response = self.client.post(
-            "/process",
-            data={"library": library, "collection": "", "record_type": record_type},
-        )
-        assert response.status_code == 200
-        assert "Process Vendor File" in response.text
-        assert (
-            response.url
-            == f"{self.base_url}/process/{record_type}?library={library}&collection=None"
-        )
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [
-            ("nypl", "BL", "acq"),
-            ("nypl", "BL", "cat"),
-            ("nypl", "BL", "sel"),
-            ("nypl", "RL", "acq"),
-            ("nypl", "RL", "cat"),
-            ("nypl", "RL", "sel"),
-        ],
-    )
-    def test_frontend_post_context_form_nypl(self, library, collection, record_type):
-        response = self.client.post(
-            "/process",
-            data={
-                "library": library,
-                "collection": collection,
-                "record_type": record_type,
-            },
-        )
-        assert response.status_code == 200
-        assert "Process Vendor File" in response.text
-        assert (
-            response.url
-            == f"{self.base_url}/process/{record_type}?library={library}&collection={collection.strip()}"
-        )
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type, msg",
-        [
-            ("nypl", "", "acq", "Collection is required for NYPL records."),
-            ("nypl", "", "cat", "Collection is required for NYPL records."),
-            ("nypl", "", "sel", "Collection is required for NYPL records."),
-            ("bpl", "BL", "acq", "Collection should be `None` for BPL records."),
-            ("bpl", "BL", "cat", "Collection should be `None` for BPL records."),
-            ("bpl", "BL", "sel", "Collection should be `None` for BPL records."),
-            ("bpl", "RL", "acq", "Collection should be `None` for BPL records."),
-            ("bpl", "RL", "cat", "Collection should be `None` for BPL records."),
-            ("bpl", "RL", "sel", "Collection should be `None` for BPL records."),
-        ],
-    )
-    def test_frontend_post_context_form_error(
-        self, library, collection, record_type, msg
-    ):
-        response = self.client.post(
-            "/process",
-            data={
-                "library": library,
-                "collection": collection,
-                "record_type": record_type,
-            },
-        )
-        assert response.status_code == 422
-        assert msg in response.text
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [
-            ("nypl", "BL", "cat"),
-            ("nypl", "BL", "sel"),
-            ("nypl", "BL", "acq"),
-            ("nypl", "RL", "cat"),
-            ("nypl", "RL", "sel"),
-            ("nypl", "RL", "acq"),
-            ("bpl", "", "cat"),
-            ("bpl", "", "sel"),
-            ("bpl", "", "acq"),
-        ],
-    )
-    def test_frontend_process_records_get(self, library, collection, record_type):
-        response = self.client.get(
-            f"/process/{record_type}?library={library}&collection={collection}"
-        )
-        assert response.status_code == 200
-        assert "Process Vendor File" in response.text
-        assert (
-            response.url
-            == f"{self.base_url}/process/{record_type}?library={library}&collection={collection}"
-        )
-        assert response.context["page_title"] == "Process Vendor File"
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [
-            ("nypl", "BL", "full"),
-            ("nypl", "BL", "order_level"),
-            ("nypl", "RL", "full"),
-            ("nypl", "RL", "order_level"),
-            ("bpl", "NONE", "full"),
-            ("bpl", "NONE", "order_level"),
-        ],
-    )
-    def test_frontend_get_update_context_form(self, library, collection, record_type):
-        response = self.client.get(
-            f"/forms/update-context?library={library}&collection={collection}&record_type={record_type}"
-        )
+    @pytest.mark.parametrize("library", ["nypl", "bpl"])
+    def test_frontend_get_library_context_update(self, library):
+        response = self.client.get(f"/forms/update-library?library={library}")
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == [
-            "collection",
             "disabled",
             "library",
-            "record_type",
             "request",
         ]
+
+    @pytest.mark.parametrize("collection", ["BL", "RL", "NONE"])
+    def test_frontend_get_collection_context_update(self, collection):
+        response = self.client.get(f"/forms/update-collection?collection={collection}")
+        assert response.status_code == 200
+        assert sorted(list(response.context.keys())) == ["collection", "request"]
+
+    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
+    def test_frontend_get_record_type_context_update(self, record_type):
+        response = self.client.get(
+            f"/forms/update-record-type?record_type={record_type}"
+        )
+        assert response.status_code == 200
+        assert sorted(list(response.context.keys())) == ["record_type", "request"]
 
     def test_ot_router_get_template_form(self):
         response = self.client.get("/ot/forms/templates")

@@ -141,8 +141,8 @@ def fetch_files(
 
 def get_marc_engine_config(
     library: Annotated[str, Form(...)],
-    collection: Annotated[str, Form(...)],
     record_type: Annotated[str, Form(...)],
+    collection: str | None = Form(None),
 ) -> marc_engine.MarcEngineConfig:
     """
     Load MARC processing config from a .json file and create config.

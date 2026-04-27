@@ -7,10 +7,8 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
-
-from overload_web.presentation import schemas
+from fastapi import APIRouter, Request
+from fastapi.responses import HTMLResponse
 
 logger = logging.getLogger(__name__)
 
@@ -54,101 +52,36 @@ def vendor_file_page(
         HTML template response for the 'Process Vendor File' page.
     """
     return request.app.state.templates.TemplateResponse(
-        request=request, name="pvf_home.html", context={"page_title": page_title}
+        request=request, name="process_records.html", context={"page_title": page_title}
     )
 
 
-@frontend_router.post("/process", response_class=HTMLResponse)
-def post_context_form(
-    processing_context: schemas.ProcessingContext = Form(),
-) -> RedirectResponse:
-    """
-    Takes input from form in `pvf_home.html` and redirects to appropriate
-    endpoint for file processing. All args are passed to endpoint via an html form.
-
-    Args:
-        processing_context:
-            A `ProcessingContext` model created from a form.
-
-            This model contains:
-
-                library:
-                    the library whose records are to be processed as a str
-                collection:
-                    the collection whose records are to be processed as a str
-                record_type:
-                    the type of record to be processed as a str
-
-    Returns:
-        `RedirectResponse` to the appropriate endpoint based on processing context.
-    """
-    return RedirectResponse(
-        url=f"/process/{processing_context.record_type}?library={processing_context.library}&collection={processing_context.collection}",
-        status_code=303,
-    )
-
-
-@frontend_router.get("/process/{record_type}", response_class=HTMLResponse)
-def process_records_page(
-    request: Request,
-    library: str,
-    collection: str,
-    record_type: str,
-    page_title: str = "Process Vendor File",
-) -> HTMLResponse:
-    """
-    Renders the 'Process Vendor File' page based for workflow.
-
-    Takes values passed via a form to the `ProcessingContext` model and renders
-    the appropriate page. The component parts of this page are determined by htmx
-    partials that are rendered based on form inputs.
-
-    Args:
-        request:
-            `FastAPI` Request object.
-        library:
-            the library whose records are to be processed as a str.
-        collection:
-            the collection whose records are to be processed as a str.
-        record_type:
-            the type of record being processed as a str.
-        page_title:
-            optional title to override the default.
-
-    Returns:
-        HTML response for the vendor file page.
-    """
-    return request.app.state.templates.TemplateResponse(
-        request=request,
-        name="process_records.html",
-        context={
-            "library": library,
-            "collection": collection,
-            "record_type": record_type,
-            "page_title": page_title,
-        },
-    )
-
-
-@frontend_router.get("/forms/update-context", response_class=HTMLResponse)
-def get_updated_context_form(
-    request: Request,
-    library: str | None = None,
-    record_type: str | None = None,
-    collection: str | None = None,
-):
-
-    ctx = {
-        "library": library,
-        "record_type": record_type,
-        "collection": collection,
-        "disabled": False,
-    }
+@frontend_router.get("/forms/update-library", response_class=HTMLResponse)
+def get_library_context_update(request: Request, library: str):
+    ctx = {"library": library, "disabled": False}
     if library == "bpl":
         ctx["disabled"] = True
         return request.app.state.templates.TemplateResponse(
-            name="forms/updated_context.html", request=request, context=ctx
+            name="forms/library_context.html", request=request, context=ctx
         )
     return request.app.state.templates.TemplateResponse(
-        name="forms/updated_context.html", request=request, context=ctx
+        name="forms/library_context.html", request=request, context=ctx
+    )
+
+
+@frontend_router.get("/forms/update-collection", response_class=HTMLResponse)
+def get_collection_context_update(request: Request, collection: str | None):
+    return request.app.state.templates.TemplateResponse(
+        name="forms/collection_context.html",
+        request=request,
+        context={"collection": collection},
+    )
+
+
+@frontend_router.get("/forms/update-record-type", response_class=HTMLResponse)
+def get_record_type_context_update(request: Request, record_type: str):
+    return request.app.state.templates.TemplateResponse(
+        name="forms/record_type_context.html",
+        request=request,
+        context={"record_type": record_type},
     )

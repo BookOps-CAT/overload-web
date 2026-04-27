@@ -1,22 +1,32 @@
-{% extends 'pvf_home.html' %}
-{% block form_start %}
-  <form id="pvf-form"
-        hx-post="/pvf/{{ record_type }}/process-vendor-file"
-        hx-encoding="multipart/form-data"
-        hx-target="#pvf_output">
-  {% endblock %}
-  {% block pvf_context_source %}
-    {% include "forms/disabled_context.html" %}
-  {% endblock %}
-  {% block pvf_file_source %}
-    {% include "pvf_partials/file_source.html" %}
-  {% endblock %}
-  {% block pvf_template_source %}
-    {% if record_type != "cat" %}
-      {% include "pvf_partials/template_source.html" %}
-    {% endif %}
-  {% endblock %}
-  {% block pvf_button %}
-    {% include "pvf_partials/pvf_button.html" %}
-  {% endblock %}
-  {% block form_end %}</form>{% endblock %}
+{% extends 'base.html' %}
+{% block header %}<h2>{{ page_title }}</h2>{% endblock %}
+{% block content %}
+    <section class="pvf-body">
+        {% block pvf_body %}
+            {% block form_tag %}<div id="pvf-form"></div>{% endblock %}
+            <section class="context-section">
+                {% block pvf_context_source %}
+                    {% include "pvf_partials/context_source.html" %}
+                {% endblock %}
+            </section>
+            <section class="file-source-section">
+                {% block pvf_file_source %}<div id="file_source_swap"></div>{% endblock %}
+            </section>
+            <section class="template-source-section">
+                {% block pvf_template_source %}<div id="template_source_swap"></div>{% endblock %}
+            </section>
+            <section class="pvf-button-section">
+                <div class="row">
+                    <div class="col-2">
+                        <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
+                    </div>
+                </div>
+            </section>
+        {% endblock %}
+    </section>
+    <section class="reports">
+        <div id="pvf_output">
+            {% block pvf_output %}{% endblock %}
+        </div>
+    </section>
+{% endblock %}

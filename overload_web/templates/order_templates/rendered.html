@@ -4,8 +4,8 @@
 {% endif %}
 <h5>Template Input</h5>
 <div class="row row-cols-3 gy-1 my-2">
-  {{ macro.input_field('name', {'label': 'Name'}, template.get('name') ) }} {{ macro.input_field('agent', {'label':
-   'User'}, template.get('agent') ) }}
+  {{ macro.input_field('name', {'label': 'Name'}, template.get('name') ) }}
+  {{ macro.input_field('agent', {'label': 'User'}, template.get('agent') ) }}
   <div class="col">
     <div class="form-floating">
       {% if template %}
