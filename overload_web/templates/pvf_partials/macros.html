@@ -44,7 +44,10 @@
 {% macro select_field(field_id, data, field_input) %}
   <div class="col">
     <div class="form-floating">
-      <select id="{{ field_id }}" class="form-select" name="{{ field_id }}">
+      <select id="{{ field_id }}"
+              form="pvf-form"
+              class="form-select"
+              name="{{ field_id }}">
         {% if field_input %}
           <option value=""></option>
           <option value="{{ field_input }}" selected>{{ field_input }} ({{ data['options'][field_input] }})</option>
@@ -67,6 +70,7 @@
              class="form-control"
              name="{{ field_id }}"
              type="text"
+             form="pvf-form"
              value="{{ field_input if field_input else value|e }}" />
       <label for="{{ field_id }}">{{ data['label'] }}</label>
     </div>

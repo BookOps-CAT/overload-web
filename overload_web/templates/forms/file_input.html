@@ -5,6 +5,7 @@
         <select id="vendor"
                 class="form-select"
                 name="vendor"
+                form="pvf-form"
                 hx-get="/files/remote"
                 hx-target="#file_list"
                 hx-trigger="change">
@@ -17,6 +18,7 @@
     {% elif file_source == "local" %}
       <div class="col-6">
         <input id="local_files"
+               form="pvf-form"
                class="form-control"
                name="local_files"
                type="file"
