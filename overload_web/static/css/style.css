@@ -41,3 +41,23 @@
   background-color: var(--nypl-brand-color);
   color: white;
 }
+.card-apps {
+  height: 100%;
+  box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
+  border: 1px solid rgba(0,0,0,.125);
+  border-radius: 0.25rem;
+}
+.card-apps .card-body {
+  padding: 1rem;
+}
+.card-apps .card-title {
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+.card-apps .card-text {
+  color: #6c757d;
+}
+.card-apps-wrapper {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}

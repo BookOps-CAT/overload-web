@@ -1,7 +1,7 @@
 {% import "pvf_partials/macros.html" as macro %}
 {% if collection %}
   <div id="collection_display" hx-swap-oob="true">
-    <h3>{{ context_fields["collection"]['options'][collection] }}</h3>
+    <h4>{{ context_fields["collection"]['options'][collection] }}</h4>
   </div>
 {% else %}
   <div id="collection_display" hx-swap-oob="true"></div>

@@ -1,6 +1,6 @@
 {% if record_type %}
     <div id="record_type_display" hx-swap-oob="true">
-        <h3>{{ context_fields["record_type"]['options'][record_type] }}</h3>
+        <h4>{{ context_fields["record_type"]['options'][record_type] }}</h4>
     </div>
     <form id="pvf-form"
           hx-post="/pvf/{{ record_type }}/process-vendor-file"
