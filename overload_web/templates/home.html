@@ -1,33 +1,11 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %}{% from "pvf_partials/macros.html" import app_card %}
 {% block header %}<h2>BookOps Cataloging Department toolbox</h2>{% endblock %}
 {% block content %}
   <div class="row row-cols-1 row-cols-lg-3">
-    <div class="col py-1">
-      <div class="card">
-        <div class="card-body">
-          <h4 class="card-title">Get Bib</h4>
-          <p class="card-text">Get bib record from Sierra</p>
-          <a class="stretched-link" href="#"></a>
-        </div>
-      </div>
+    <div class="col card-apps-wrapper">{{ app_card('Get Bib', 'Get bib record from Sierra') }}</div>
+    <div class="col card-apps-wrapper">
+      {{ app_card('Process Vendor File', 'Process files from a vendor', url_for("vendor_file_page") ) }}
     </div>
-    <div class="col py-1">
-      <div class="card">
-        <div class="card-body">
-          <h4 class="card-title">Process Vendor File</h4>
-          <p class="card-text">Process files from a vendor</p>
-          <a class="stretched-link" href='{{ url_for("vendor_file_page") }}'></a>
-        </div>
-      </div>
-    </div>
-    <div class="col py-1">
-      <div class="card">
-        <div class="card-body">
-          <h4 class="card-title">Worldcat2Sierra</h4>
-          <p class="card-text">Search for Sierra records in WorldCat</p>
-          <a class="stretched-link" href="#"></a>
-        </div>
-      </div>
-    </div>
+    <div class="col card-apps-wrapper">{{ app_card('Worldcat2Sierra', 'Search for Sierra records in WorldCat') }}</div>
   </div>
 {% endblock %}
