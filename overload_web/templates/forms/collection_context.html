@@ -5,6 +5,6 @@
   </div>
 {% else %}
   <div id="collection_display" hx-swap-oob="true"></div>
-  {{ macro.collection_form_field("collection", context_fields["collection"],
+  {{ macro.collection_field("collection", context_fields["collection"],
     disabled=disabled) }}
 {% endif %}

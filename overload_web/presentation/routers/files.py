@@ -41,13 +41,3 @@ def list_remote_files(
         name="forms/remote_list.html",
         context={"files": files, "vendor": vendor},
     )
-
-
-@api_router.get("/source", response_class=HTMLResponse)
-def get_file_source(request: Request, file_source: str) -> HTMLResponse:
-    """Render the file input partial within the file_source block"""
-    return request.app.state.templates.TemplateResponse(
-        request=request,
-        name="forms/file_input.html",
-        context={"file_source": file_source},
-    )

@@ -1,4 +1,4 @@
-{% macro collection_form_field(field_id, data, disabled=False, display_value="") %}
+{% macro collection_field(field_id, data, disabled=False, display_value="") %}
   <div class="form-floating">
     {% if disabled %}
       <select id="{{ field_id }}"
@@ -122,5 +122,17 @@
       <p class="card-text">{{ text }}</p>
       <a class="stretched-link" href="{{ href }}"></a>
     </div>
+  </div>
+{% endmacro %}
+{% macro card(title=None) %}
+  <div class="card h-100 shadow-sm rounded-3">
+    {% if title %}
+      <div class="card-body">
+        <h5 class="card-title">{{ title }}</h5>
+        {{ caller() }}
+      </div>
+    {% else %}
+      {{ caller() }}
+    {% endif %}
   </div>
 {% endmacro %}
