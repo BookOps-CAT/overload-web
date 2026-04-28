@@ -5,12 +5,12 @@ Total processed files: {{ total_files }}
 File names: {{ file_names }}
 </br>
 {% if processing_integrity %}
-    Integrity of processed files:
+  Integrity of processed files:
 </br>
 {{ processing_integrity }}
 {% endif %}
 {% if missing_barcodes %}
-    Missing barcodes: {{ missing_barcodes }}
+  Missing barcodes: {{ missing_barcodes }}
 </br>
 {% endif %}
 {% if duplicate_bibs %}Duplicates: {{ duplicate_bibs }}{% endif %}
@@ -18,13 +18,13 @@ File names: {{ file_names }}
 {% if vendor_report %}{{ macro.report_table(vendor_report) }}{% endif %}
 <h5>Duplicates Report:</h5>
 {% if dupes_report %}
-    {{ macro.report_table(dupes_report) }}
+  {{ macro.report_table(dupes_report) }}
 {% else %}
-    <b>All clear!</b>
+  <b>All clear!</b>
 {% endif %}
 <h5>Call Number Issues:</h5>
 {% if call_no_report %}
-    {{ macro.report_table(call_no_report) }}
+  {{ macro.report_table(call_no_report) }}
 {% else %}
-    <b>All clear!</b>
+  <b>All clear!</b>
 {% endif %}

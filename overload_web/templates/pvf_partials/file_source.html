@@ -1,48 +1,50 @@
-<div class="container py-3">
-  <div class="row g-4">
-    <div class="col-md-6">
-      <div class="card h-100 shadow-sm rounded-3">
-        <div class="card-body">
-          <h5 class="card-title">Local Files</h5>
-          <p class="text-muted">Upload from your computer</p>
-          <input id="local_files"
-                 form="pvf-form"
-                 class="form-control mb-3"
-                 name="local_files"
-                 type="file"
-                 multiple />
-          <div class="border rounded p-3 text-center bg-light">Drag & drop files here</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-6">
-      <div class="card h-100 shadow-sm rounded-3">
-        <div class="card-body">
-          <h5 class="card-title">Get Files from Vendor</h5>
-          <p class="text-muted">Browse vendor server files</p>
-          <div class="form-floating col-6">
-            <select id="vendor"
-                    class="form-select"
-                    name="vendor"
-                    form="pvf-form"
-                    hx-get="/files/remote"
-                    hx-target="#file_list"
-                    hx-trigger="change">
-              <option value="" selected></option>
-              {% for id, name in vendors.items() %}<option value="{{ id }}">{{ name }}</option>{% endfor %}
-            </select>
-            <label for="vendor">Vendors</label>
-          </div>
-          <div id="file_list"></div>
-        </div>
+<div class="row p-3">
+  <div class="col-6">
+    <div class="card h-100 shadow-sm rounded-3">
+      <div class="card-body">
+        <h5 class="card-title">Local Files</h5>
+        <p class="text-muted">Upload from your computer</p>
+        <input id="local_files"
+               form="pvf-form"
+               class="form-control mb-3"
+               name="local_files"
+               type="file"
+               multiple />
+        <div class="border rounded p-3 text-center bg-light">Drag & drop files here</div>
       </div>
     </div>
   </div>
-  <div class="card mt-4 shadow-sm rounded-3">
-    <div class="card-body">
-      <h5 class="card-title">Selected Files</h5>
-      <div id="selected-files">
-        <p class="text-muted">No files selected</p>
+  <div class="col-6">
+    <div class="card h-100 shadow-sm rounded-3">
+      <div class="card-body">
+        <h5 class="card-title">Get Files from Vendor</h5>
+        <p class="text-muted">Browse vendor server</p>
+        <div class="form-floating col-6">
+          <select id="vendor"
+                  class="form-select"
+                  name="vendor"
+                  form="pvf-form"
+                  hx-get="/files/remote"
+                  hx-target="#file_list"
+                  hx-trigger="change">
+            <option value="" selected></option>
+            {% for id, name in vendors.items() %}<option value="{{ id }}">{{ name }}</option>{% endfor %}
+          </select>
+          <label for="vendor">Vendors</label>
+        </div>
+        <div id="file_list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row p-3">
+  <div class="col">
+    <div class="card shadow-sm rounded-3">
+      <div class="card-body">
+        <h5 class="card-title">Selected Files</h5>
+        <div id="selected-files">
+          <p class="text-muted">No files selected</p>
+        </div>
       </div>
     </div>
   </div>

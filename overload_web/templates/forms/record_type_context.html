@@ -1,19 +1,19 @@
 {% if record_type %}
-    <div id="record_type_display" hx-swap-oob="true">
-        <h4>{{ context_fields["record_type"]['options'][record_type] }}</h4>
-    </div>
-    <form id="pvf-form"
-          hx-post="/pvf/{{ record_type }}/process-vendor-file"
-          hx-encoding="multipart/form-data"
-          hx-target="#pvf_output"
-          hx-swap-oob="true"
-          autocomplete="off">
-    </form>
-    <div id="template_source_swap" hx-swap-oob="true">
-        {% if record_type != "cat" %}
-            {% include "pvf_partials/template_source.html" %}
-        {% endif %}
-    </div>
+  <div id="record_type_display" hx-swap-oob="true">
+    <h4>{{ context_fields["record_type"]['options'][record_type] }}</h4>
+  </div>
+  <form id="pvf-form"
+        hx-post="/pvf/{{ record_type }}/process-vendor-file"
+        hx-encoding="multipart/form-data"
+        hx-target="#pvf_output"
+        hx-swap-oob="true"
+        autocomplete="off">
+  </form>
+  <div id="template_source_swap" hx-swap-oob="true">
+    {% if record_type != "cat" %}
+      {% include "pvf_partials/template_source.html" %}
+    {% endif %}
+  </div>
 {% else %}
-    <div id="record_type_display" hx-swap-oob="true"></div>
+  <div id="record_type_display" hx-swap-oob="true"></div>
 {% endif %}

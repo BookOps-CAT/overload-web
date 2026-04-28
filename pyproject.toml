@@ -80,3 +80,6 @@ disallow_untyped_defs = false
 
 [tool.fastapi]
 entrypoint = "overload_web.main:app"
+
+ [tool.djlint]
+ indent = 2
