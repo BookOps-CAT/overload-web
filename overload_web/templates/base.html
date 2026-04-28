@@ -14,11 +14,11 @@
   </head>
   <body>
     <header class="navbar shadow">
-      <div class="container-lg">
+      <div class="container">
         {% block nav %}<a class="navbar-brand" href='{{ url_for("root") }}'>{{ application }}</a>{% endblock %}
       </div>
     </header>
-    <div class="container-lg">
+    <div class="container">
       <section class="page-title">
         {% block header %}{% endblock %}
       </section>

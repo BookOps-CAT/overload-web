@@ -1,16 +1,39 @@
 {% import "pvf_partials/macros.html" as macro %}
-<div class="row">
-  <div class="col" id="library_wrapper">
-    {% block library_wrapper %}{{ macro.library_field("library", context_fields["library"]) }}{% endblock %}
-  </div>
-  <div class="col" id="collection_wrapper">
-    {% block collection_wrapper %}
-      {{ macro.collection_form_field("collection", context_fields["collection"], disabled=False) }}
-    {% endblock %}
-  </div>
-  <div class="col" id="record_type_wrapper">
-    {% block record_type_wrapper %}
-      {{ macro.record_type_field("record_type", context_fields["record_type"]) }}
-    {% endblock %}
+<div class="container py-3">
+  <div class="row g-4">
+    <div class="col-8">
+      <div class="card h-100 shadow-sm rounded-3">
+        <div class="card-body">
+          <div class="row">
+            <div class="col" id="library_wrapper">
+              {% block library_wrapper %}{{ macro.library_field("library", context_fields["library"]) }}{% endblock %}
+            </div>
+            <div class="col" id="collection_wrapper">
+              {% block collection_wrapper %}
+                {{ macro.collection_form_field("collection", context_fields["collection"], disabled=False) }}
+              {% endblock %}
+            </div>
+            <div class="col" id="record_type_wrapper">
+              {% block record_type_wrapper %}
+                {{ macro.record_type_field("record_type", context_fields["record_type"]) }}
+              {% endblock %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-2 text-center align-self-center">
+      <div class="row">
+        {% block library_image %}<div id="library-img"></div>{% endblock %}
+      </div>
+    </div>
+    <div class="col-2 text-center align-self-center">
+      <div class="row">
+        <div class="col">
+          {% block collection_display %}<div class="row" id="collection_display"></div>{% endblock %}
+          {% block record_type_display %}<div class="row" id="record_type_display"></div>{% endblock %}
+        </div>
+      </div>
+    </div>
   </div>
 </div>

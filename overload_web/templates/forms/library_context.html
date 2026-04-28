@@ -7,11 +7,9 @@
          class="object-fit-scale"
          alt="library logo" />
   </div>
-  <div id="file_source_swap" hx-swap-oob="true">{% include "pvf_partials/file_source.html" %}</div>
   {% if library == "bpl" %}<div id="collection_display" hx-swap-oob="true"></div>{% endif %}
 {% else %}
   <div id="library-img" hx-swap-oob="true"></div>
-  <div id="file_source_swap" hx-swap-oob="true"></div>
 {% endif %}
 {{ macro.collection_form_field("collection", context_fields["collection"],
 disabled=disabled) }}
