@@ -6,6 +6,7 @@ Serves HTML pages for Overload Web's user interface.
 from __future__ import annotations
 
 import logging
+import uuid
 
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
@@ -42,7 +43,8 @@ def vendor_file_page(
 
     This is the first page users see after selecting the Process Vendor File tab and
     it is where they  can input values for `library`, `collection`, and `record_type`
-    in order to determine the correct processing workflow.
+    in order to determine the correct processing workflow. This also generates a
+    `workflow_id` to be used while uploading and processing files.
 
     Args:
         request: `FastAPI` Request object.
@@ -51,8 +53,11 @@ def vendor_file_page(
     Returns:
         HTML template response for the 'Process Vendor File' page.
     """
+    workflow_id = str(uuid.uuid4())
     return request.app.state.templates.TemplateResponse(
-        request=request, name="process_records.html", context={"page_title": page_title}
+        request=request,
+        name="process_records.html",
+        context={"page_title": page_title, "workflow_id": workflow_id},
     )
 
 

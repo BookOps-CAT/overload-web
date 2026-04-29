@@ -103,11 +103,11 @@ class BaseSierraResponse(ABC):
 
     @property
     @abstractmethod
-    def update_date(self) -> str: ...  # pragma: no branch
+    def update_date(self) -> str | None: ...  # pragma: no branch
 
     @property
     @abstractmethod
-    def update_datetime(self) -> datetime.datetime: ...  # pragma: no branch
+    def update_datetime(self) -> datetime.datetime | None: ...  # pragma: no branch
 
     @property
     @abstractmethod
@@ -193,12 +193,14 @@ class BPLSolrResponse(BaseSierraResponse):
         return list(set([i for i in upcs if i]))
 
     @property
-    def update_date(self) -> str:
-        return self._data["ss_marc_tag_005"]
+    def update_date(self) -> str | None:
+        return self._data.get("ss_marc_tag_005")
 
     @property
-    def update_datetime(self) -> datetime.datetime:
-        return datetime.datetime.strptime(self.update_date, "%Y%m%d%H%M%S.%f")
+    def update_datetime(self) -> datetime.datetime | None:
+        if self.update_date:
+            return datetime.datetime.strptime(self.update_date, "%Y%m%d%H%M%S.%f")
+        return None
 
     @property
     def var_fields(self) -> list[dict[str, Any]]:
@@ -344,12 +346,14 @@ class NYPLPlatformResponse(BaseSierraResponse):
         return list(set([i for i in upcs if i]))
 
     @property
-    def update_date(self) -> str:
-        return self._data["updatedDate"]
+    def update_date(self) -> str | None:
+        return self._data.get("updatedDate")
 
     @property
-    def update_datetime(self) -> datetime.datetime:
-        return datetime.datetime.strptime(self.update_date, "%Y-%m-%dT%H:%M:%S")
+    def update_datetime(self) -> datetime.datetime | None:
+        if self.update_date:
+            return datetime.datetime.strptime(self.update_date, "%Y-%m-%dT%H:%M:%S")
+        return None
 
     @property
     def var_fields(self) -> list[dict[str, Any]]:

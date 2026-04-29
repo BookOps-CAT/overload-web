@@ -3,9 +3,12 @@
     <div class="col">
       <div class="form-check">
         <input class="form-check-input"
-               name="remote_file_names"
+               hx-post="/files/ftp/select?vendor={{ vendor }}"
+               name="remote_file"
                style="color: #d52828"
+               hx-target="#selected-files"
                type="checkbox"
+               hx-include="#workflow_id, #vendor"
                form="pvf-form"
                value="{{ file }}" />
         <label class="form-check-label" for="{{ file }}">{{ file }}</label>

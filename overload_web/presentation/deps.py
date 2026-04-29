@@ -1,14 +1,16 @@
 """Dependency injection functions."""
 
+from __future__ import annotations
+
 import json
 import logging
 import os
-from typing import Annotated, Any, BinaryIO, Generator, Protocol, runtime_checkable
+from typing import Annotated, Any, Generator
 
 from fastapi import Depends, Form
-from pydantic import BaseModel
 from sqlmodel import Session, SQLModel, create_engine
 
+from overload_web.application.commands.file_io import LoadAllWorkflowFiles
 from overload_web.infrastructure import (
     batch_db,
     clients,
@@ -20,13 +22,6 @@ from overload_web.infrastructure import (
 from overload_web.presentation import schemas
 
 logger = logging.getLogger(__name__)
-
-
-class VendorFileModel(BaseModel):
-    """Pydantic model for serializing/deserializing `VendorFile` domain objects."""
-
-    content: bytes
-    file_name: str
 
 
 def get_engine_with_uri():
@@ -75,69 +70,20 @@ def pvf_batch_db(
     yield batch_db.PVFBatchRepository(session=session)
 
 
-# def incoming_file_db(
-#     session: Annotated[Any, Depends(get_session)],
-# ) -> Generator[file_io.IncomingFileRepository, None, None]:
-#     """Create an PVFBatch repository."""
-#     yield file_io.IncomingFileRepository(session=session)
+def incoming_file_db(
+    session: Annotated[Any, Depends(get_session)],
+) -> Generator[file_io.IncomingFileRepository, None, None]:
+    """Create an PVFBatch repository."""
+    yield file_io.IncomingFileRepository(session=session)
 
 
-@runtime_checkable
-class FileProtocol(Protocol):
-    """A protocol representing a FastAPI `UploadFile` object."""
-
-    filename: str | None
-    content_type: str
-    file: BinaryIO
+def local_file_storage() -> file_io.LocalFileStorage:
+    return file_io.LocalFileStorage()
 
 
 def remote_file_loader(vendor: str) -> Generator[file_io.SFTPFileLoader, None, None]:
     """Create an SFTP file loader service."""
     yield file_io.SFTPFileLoader.create_loader_for_vendor(vendor=vendor)
-
-
-def fetch_files(
-    local_files: list[FileProtocol] | None = None,
-    remote_file_names: list[str] | None = None,
-    vendor: str | None = None,
-) -> list[VendorFileModel]:
-    """
-    Return all files as `VendorFileModel` objects.
-
-    Processes both locally uploaded and remote files into `VendorFileModel` objects.
-
-    Args:
-        local_files: a list of FastAPI `UploadFile` objects or None
-        remote_file_names: a list of file names to retrieve from remote storage or None
-        vendor: the vendor whose files are to be retrieved or None
-
-    """
-    logger.info(
-        "Fetching files to process: local_uploads=%s, remote_files=%s, vendor=%s",
-        local_files,
-        remote_file_names,
-        vendor,
-    )
-    files: list[VendorFileModel] = []
-
-    # Local files
-    if local_files:
-        for f in local_files:
-            vendor_file = VendorFileModel(
-                file_name=str(f.filename), content=f.file.read()
-            )
-            files.append(vendor_file)
-
-    # Remote files
-    if remote_file_names and vendor:
-        loader = file_io.SFTPFileLoader.create_loader_for_vendor(vendor)
-        vendor_dir = os.environ[f"{vendor.upper()}_SRC"]
-        for name in remote_file_names:
-            loaded = loader.load(name=name, dir=vendor_dir)
-            vendor_file = VendorFileModel(file_name=name, content=loaded)
-            files.append(vendor_file)
-
-    return files
 
 
 def get_fetcher(
@@ -179,3 +125,11 @@ def get_report_handler() -> reporter.PandasReportHandler:
 def get_report_writer() -> reporter.GoogleSheetsReporter:
     """Return a `GoogleSheetsReporter` in order to write stats to a Google Sheet."""
     return reporter.GoogleSheetsReporter()
+
+
+def load_files(
+    workflow_id: str = Form(...), repo: Any = Depends(incoming_file_db)
+) -> list:
+    return LoadAllWorkflowFiles.execute(
+        workflow_id=workflow_id, storage=file_io.LocalFileStorage(), repo=repo
+    )

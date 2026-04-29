@@ -13,10 +13,31 @@ from __future__ import annotations
 import io
 import logging
 import os
+from pathlib import Path
+from typing import Any, BinaryIO, Sequence
 
 from file_retriever import Client, File
+from sqlmodel import Field, Session, SQLModel, select
 
 logger = logging.getLogger(__name__)
+
+
+class LocalFileStorage:
+    def __init__(self, base_path: str = "temp/uploads"):
+        self.base_path = Path(base_path)
+        self.base_path.mkdir(exist_ok=True)
+        logger.info(f"Local file storage location: {self.base_path}")
+
+    def save(self, id: str, filename: str, content: bytes) -> str:
+        path = self.base_path / f"{id}_{filename}"
+
+        with open(path, "wb") as f:
+            f.write(content)
+
+        return str(path)
+
+    def load(self, reference: str) -> BinaryIO:
+        return open(reference, "rb")
 
 
 class LocalFileLoader:
@@ -121,37 +142,73 @@ class SFTPFileWriter:
         return getattr(out_file, "file_name", file_name)
 
 
-# class IncomingFileBatch(SQLModel, table=True):
-#     __tablename__ = "incoming_file_batches"
-
-#     id: int = Field(default=None, primary_key=True, index=True)
-#     files: list["IncomingFileModel"] = Relationship(
-#         back_populates="batch", sa_relationship_kwargs={"lazy": "selectin"}
-#     )
-
-
-# class IncomingFileModel(SQLModel, table=True):
-#     __tablename__ = "incoming_files"
-#     id: int = Field(default=None, primary_key=True, index=True)
-#     content: bytes = Field(nullable=False)
-#     file_name: str = Field(nullable=False)
-#     batch_id: int = Field(
-#         default=None, foreign_key="incoming_file_batches.id", exclude=True
-#     )
-#     batch: IncomingFileBatch = Relationship(back_populates="files")
+class IncomingFileModel(SQLModel, table=True):
+    __tablename__ = "incoming_files"
+    id: str = Field(default=None, primary_key=True, index=True)
+    filename: str = Field(nullable=False)
+    workflow_id: str = Field(nullable=False, index=True)
+    source: str = Field(nullable=False)
+    reference: str = Field(nullable=False)
 
 
-# class IncomingFileRepository:
-#     def __init__(self, session: Session):
-#         self.session = session
+class IncomingFileRepository:
+    def __init__(self, session: Session):
+        self.session = session
 
-#     def get(self, id: str | int) -> dict[str, Any] | None:
-#         batch = self.session.get(IncomingFileBatch, id)
-#         return batch.model_dump() if batch else None
+    def delete(self, id: str | int) -> None:
+        """
+        Delete an `IncomingFileModel` object from the workflow's list of files.
 
-#     def save(self, obj: IncomingFileBatch) -> dict[str, Any]:
-#         valid_obj = IncomingFileBatch.model_validate(obj, from_attributes=True)
-#         self.session.add(valid_obj)
-#         self.session.commit()
-#         self.session.refresh(valid_obj)
-#         return valid_obj.model_dump()
+        Args:
+            id: the ID of the file to delete.
+
+        Returns:
+            None
+        """
+        statement = select(IncomingFileModel).where(IncomingFileModel.id == id)
+        self.session.exec(statement)
+
+    def get(self, id: str | int) -> dict[str, Any] | None:
+        """
+        Retrieve an `IncomingFileModel` object by its ID.
+
+        Args:
+            id: the primary key of the `IncomingFileModel`.
+
+        Returns:
+            a `IncomingFileModel` instance as a dictionary or `None` if not found.
+        """
+        file = self.session.get(IncomingFileModel, id)
+        return file.model_dump() if file else None
+
+    def list(self, workflow_id: str | int) -> Sequence[dict[str, Any]]:
+        """
+        Retrieve all `IncomingFileModel` objects in the database.
+
+        Args:
+            workflow_id: the `workflow_id` whose files to retrieve.
+
+        Returns:
+            a sequence of `IncomingFileModel` objects.
+        """
+        statement = select(IncomingFileModel).where(
+            IncomingFileModel.workflow_id == workflow_id
+        )
+        results = self.session.exec(statement).all()
+        return [i.model_dump() for i in results]
+
+    def save(self, obj: IncomingFileModel) -> dict[str, Any]:
+        """
+        Adds a new `IncomingFileModel` to the database.
+
+        Args:
+            obj: the `IncomingFileModel` object to save.
+
+        Returns:
+            The `IncomingFileModel` data as a dictionary.
+        """
+        valid_obj = IncomingFileModel.model_validate(obj, from_attributes=True)
+        self.session.add(valid_obj)
+        self.session.commit()
+        self.session.refresh(valid_obj)
+        return valid_obj.model_dump()

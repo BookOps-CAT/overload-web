@@ -89,7 +89,7 @@ class OrderTemplateRepository:
 
     def get(self, id: str | int) -> dict[str, Any] | None:
         """
-        Retrieve a `OrderTemplate` object by its ID.
+        Retrieve an `OrderTemplate` object by its ID.
 
         Args:
             id: the primary key of the `OrderTemplate`.

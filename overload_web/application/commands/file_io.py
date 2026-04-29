@@ -1,7 +1,7 @@
 """Application service commands for file handling."""
 
 import logging
-from typing import Any
+import uuid
 
 from overload_web.application import ports
 from overload_web.domain.models import files
@@ -62,23 +62,59 @@ class WriteFile:
         return out_file
 
 
-class SaveIncomingFile:
+class UploadFileToWorkflow:
+    def __init__(
+        self, storage: ports.FileStorage, repo: ports.SqlRepositoryProtocol
+    ) -> None:
+        self.storage = storage
+        self.repo = repo
+
+    def execute(self, workflow_id: str, filename: str, content: bytes) -> None:
+        file_id = str(uuid.uuid4())
+
+        reference = self.storage.save(id=file_id, filename=filename, content=content)
+
+        file = files.IncomingFile(
+            id=file_id,
+            workflow_id=workflow_id,
+            filename=filename,
+            source="local",
+            reference=reference,
+        )
+        self.repo.save(file)
+
+
+class LoadAllWorkflowFiles:
     @staticmethod
     def execute(
-        file: files.VendorFile, repo: ports.SqlRepositoryProtocol
-    ) -> dict[str, Any]:
+        workflow_id: str, storage: ports.FileStorage, repo: ports.SqlRepositoryProtocol
+    ) -> list:
+        file_list = repo.list(workflow_id)
+        vendor_files = [
+            files.VendorFile(
+                file_name=i["filename"], content=storage.load(i["reference"])
+            )
+            for i in file_list
+        ]
+        logger.info(f"Loading all files for workflow {workflow_id}: {vendor_files}.")
+        return vendor_files
+
+
+class DeleteFileFromWorkflow:
+    @staticmethod
+    def execute(id: str, repo: ports.SqlRepositoryProtocol) -> None:
         """
-        Save an incoming file to temporary storage.
+        Delete an incoming file from the workflow's list of files.
 
 
         Args:
             file:
-                The file to save as a `files.VendorFile` object.
+                The file to save as a `files.IncomingFile` object.
             repo:
                 Concrete implementation of the `SqlRepositoryProtocol` for
                 handling vendor files.
 
         Returns:
-            The file's data as a dictionary.
+            None
         """
-        return repo.save(file)
+        repo.delete(id)

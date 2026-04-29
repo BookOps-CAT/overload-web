@@ -199,7 +199,7 @@ class TestApp:
             ("bpl", "", "sel"),
         ],
     )
-    def test_pvf_router_process_order_records_local(
+    def test_pvf_router_process_order_records(
         self, library, collection, record_type, processed_records
     ):
         context = {
@@ -211,40 +211,10 @@ class TestApp:
             "name": "foo",
             "agent": "bar",
             "id": 1,
+            "workflow_id": "1234",
         }
-        files = {"local_files": ("test.mrc", b"", "application/octet-stream")}
         response = self.client.post(
-            f"/pvf/{record_type}/process-vendor-file", data=context, files=files
-        )
-        assert response.status_code == 200
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [
-            ("nypl", "BL", "acq"),
-            ("nypl", "BL", "sel"),
-            ("nypl", "RL", "acq"),
-            ("nypl", "RL", "sel"),
-            ("bpl", "", "acq"),
-            ("bpl", "", "sel"),
-        ],
-    )
-    def test_pvf_router_process_order_records_remote(
-        self, library, collection, record_type, processed_records
-    ):
-        context = {
-            "library": library,
-            "collection": collection,
-            "record_type": record_type,
-            "vendor": "FOO",
-            "primary_matchpoint": "isbn",
-            "name": "foo",
-            "agent": "bar",
-            "id": 1,
-        }
-        files = {"remote_file_names": (None, "test.mrc")}
-        response = self.client.post(
-            f"/pvf/{record_type}/process-vendor-file", data=context, files=files
+            f"/pvf/{record_type}/process-vendor-file", data=context
         )
         assert response.status_code == 200
 
@@ -252,37 +222,16 @@ class TestApp:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "", "cat")],
     )
-    def test_pvf_router_process_full_records_local(
+    def test_pvf_router_process_full_records(
         self, library, collection, record_type, processed_records
     ):
         context = {
             "library": library,
             "collection": collection,
             "record_type": record_type,
+            "workflow_id": "1234",
         }
-        files = {"local_files": ("test.mrc", b"", "application/octet-stream")}
-        response = self.client.post(
-            "/pvf/cat/process-vendor-file", data=context, files=files
-        )
-        assert response.status_code == 200
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "", "cat")],
-    )
-    def test_pvf_router_process_full_records_remote(
-        self, library, collection, record_type, processed_records
-    ):
-        context = {
-            "library": library,
-            "collection": collection,
-            "record_type": record_type,
-            "vendor": "FOO",
-        }
-        files = {"remote_file_names": (None, "test.mrc")}
-        response = self.client.post(
-            "/pvf/cat/process-vendor-file", data=context, files=files
-        )
+        response = self.client.post("/pvf/cat/process-vendor-file", data=context)
         assert response.status_code == 200
 
     def test_pvf_router_process_full_records_fetcher_error(self):
@@ -292,10 +241,10 @@ class TestApp:
             "collection": "BL",
             "record_type": "cat",
             "vendor": "FOO",
+            "workflow_id": "1234",
         }
-        files = {"remote_file_names": (None, "test.mrc")}
         with pytest.raises(ValueError) as exc:
-            self.client.post("/pvf/cat/process-vendor-file", data=context, files=files)
+            self.client.post("/pvf/cat/process-vendor-file", data=context)
         assert str(exc.value) == "Invalid library: Foo. Must be 'bpl' or 'nypl'"
 
     @pytest.mark.parametrize(
@@ -308,12 +257,10 @@ class TestApp:
             "collection": "",
             "record_type": record_type,
             "vendor": "FOO",
+            "workflow_id": "1234",
         }
-        files = {"remote_file_names": (None, "test.mrc")}
         with pytest.raises(ValidationError) as exc:
-            self.client.post(
-                f"/pvf/{record_type}/process-vendor-file", data=context, files=files
-            )
+            self.client.post(f"/pvf/{record_type}/process-vendor-file", data=context)
         assert (
             exc.value.errors()[0]["msg"]
             == "Value error, Collection is required for NYPL records."
@@ -332,12 +279,10 @@ class TestApp:
             "collection": collection,
             "record_type": record_type,
             "vendor": "FOO",
+            "workflow_id": "1234",
         }
-        files = {"remote_file_names": (None, "test.mrc")}
         with pytest.raises(ValidationError) as exc:
-            self.client.post(
-                f"/pvf/{record_type}/process-vendor-file", data=context, files=files
-            )
+            self.client.post(f"/pvf/{record_type}/process-vendor-file", data=context)
         assert (
             exc.value.errors()[0]["msg"]
             == "Value error, Collection should be `None` for BPL records."
@@ -355,12 +300,11 @@ class TestApp:
             "name": "foo",
             "agent": "bar",
             "id": 1,
+            "workflow_id": "1234",
         }
-        files = {"remote_file_names": (None, "test.mrc")}
+
         with pytest.raises(ValueError) as exc:
-            self.client.post(
-                f"/pvf/{record_type}/process-vendor-file", data=context, files=files
-            )
+            self.client.post(f"/pvf/{record_type}/process-vendor-file", data=context)
         assert str(exc.value) == "Invalid library: Foo. Must be 'bpl' or 'nypl'"
 
     @pytest.mark.parametrize(
@@ -376,10 +320,11 @@ class TestApp:
             "collection": collection,
             "record_type": record_type,
             "vendor": "FOO",
+            "workflow_id": "1234",
         }
-        files = {"remote_file_names": (None, "test.mrc")}
+
         with pytest.raises(clients.BookopsPlatformError) as exc:
-            self.client.post("/pvf/cat/process-vendor-file", data=context, files=files)
+            self.client.post("/pvf/cat/process-vendor-file", data=context)
         assert "Trouble connecting: " in str(exc.value)
 
     @pytest.mark.parametrize(
@@ -404,12 +349,10 @@ class TestApp:
             "name": "foo",
             "agent": "bar",
             "id": 1,
+            "workflow_id": "1234",
         }
-        files = {"remote_file_names": (None, "test.mrc")}
         with pytest.raises(clients.BookopsPlatformError) as exc:
-            self.client.post(
-                f"/pvf/{record_type}/process-vendor-file", data=context, files=files
-            )
+            self.client.post(f"/pvf/{record_type}/process-vendor-file", data=context)
         assert "Trouble connecting: " in str(exc.value)
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])

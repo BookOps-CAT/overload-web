@@ -1,34 +1,46 @@
-<h3>Output:</h3>
-<div id="summary-report-container">
-  <h4>Reports</h4>
-  <div id="vendor_report"
-       hx-get="/reports/summary?batch_id={{ batch_id }}"
-       hx-trigger="load"
-       name="vendor_report"
-       hx-include="[name='record_type']"></div>
-</div>
-<div id="detailed-report-container"></div>
-<div id="save-files-container"></div>
-<div id="report-save-container"></div>
-<div class="row row-cols-3" id="report-buttons">
+<div class="row p-3">
   <div class="col">
-    <button id="detailed-report-button"
-            hx-get="/reports/detailed?batch_id={{ batch_id }}"
-            hx-target="#detailed-report-container"
-            class="btn btn-nypl">View detailed report</button>
-  </div>
-  <div class="col">
-    <div id="output-file-container">
-      <button id="download-files-button"
-              hx-target="#save-files-container"
-              class="btn btn-nypl">Download Files</button>
+    <div id="summary-report-container">
+      <div id="vendor_report"
+           hx-get="/reports/summary?batch_id={{ batch_id }}"
+           hx-trigger="load"
+           name="vendor_report"
+           hx-include="[name='record_type']"></div>
+    </div>
+    <div id="detailed-report-container"></div>
+    <div id="save-files-container"></div>
+    <div id="report-save-container"></div>
+    <div class="row row-cols-3" id="report-buttons">
+      <div class="col">
+        <button id="detailed-report-button"
+                hx-get="/reports/detailed?batch_id={{ batch_id }}"
+                hx-target="#detailed-report-container"
+                class="btn btn-nypl">View detailed report</button>
+      </div>
+      <div class="col">
+        <div id="output-file-container">
+          <button id="download-files-button"
+                  hx-target="#save-files-container"
+                  class="btn btn-nypl">Download Files</button>
+        </div>
+      </div>
+      <div class="col">
+        <button id="save-report-button"
+                hx-post="/reports/write?id={{ batch_id }}"
+                hx-include="[name='record_type']"
+                hx-target="#report-save-container"
+                class="btn btn-nypl">Save Processing Statistics</button>
+      </div>
     </div>
   </div>
-  <div class="col">
-    <button id="save-report-button"
-            hx-post="/reports/write?id={{ batch_id }}"
-            hx-include="[name='record_type']"
-            hx-target="#report-save-container"
-            class="btn btn-nypl">Save Processing Statistics</button>
+</div>
+<div class="pvf-button-section">
+  <div class="row p-3">
+    <div class="col">
+      <button id="pvf-button"
+              class="btn btn-nypl"
+              href='{{ url_for("vendor_file_page") }}'
+              type="submit">Reset form</button>
+    </div>
   </div>
 </div>

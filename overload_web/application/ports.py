@@ -3,7 +3,15 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Iterator, Protocol, Sequence, TypeVar, runtime_checkable
+from typing import (
+    Any,
+    BinaryIO,
+    Iterator,
+    Protocol,
+    Sequence,
+    TypeVar,
+    runtime_checkable,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +48,14 @@ class BibFetcher(Protocol[S]):
     Returns:
         a list of `BaseSierraResponse` objects representing candidate matches.
     """
+
+
+@runtime_checkable
+class FileStorage(Protocol):
+    def load(self, reference: str) -> BinaryIO: ...  # pragma: no branch
+    def save(
+        self, id: str, filename: str, content: bytes
+    ) -> str: ...  # pragma: no branch
 
 
 @runtime_checkable
@@ -162,6 +178,10 @@ class SqlRepositoryProtocol(Protocol[T]):
     """
 
     session: Any
+
+    def delete(self, id: str) -> None: ...  # pragma: no branch
+
+    """Delete an object from a database."""
 
     def get(self, id: str) -> dict[str, Any] | None: ...  # pragma: no branch
 

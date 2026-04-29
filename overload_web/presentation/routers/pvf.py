@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
 from overload_web.application.commands.process import (
@@ -29,9 +29,7 @@ def process_acq_records(
     marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
     matchpoints: Annotated[Any, Depends(schemas.MatchpointsModel.from_form)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
-    local_files: Annotated[list | None, Form()] = None,
-    remote_file_names: Annotated[list | None, Form()] = None,
-    vendor: Annotated[str | None, Form()] = None,
+    files: Annotated[Any, Depends(deps.load_files)],
 ) -> HTMLResponse:
     """
     Process one or more files of order-level MARC records using the acq workflow.
@@ -49,21 +47,14 @@ def process_acq_records(
         repository:
             a `repository.PVFBatchRepository` object where the processed files and
             their associated statistics will be saved.
-        local_files:
-            a list of files from a local upload as `UploadFile` objects.
-        remote_file_names:
-            a list of names of files to be retrieved from a vendor's SFTP as strings.
-        vendor:
-            the vendor whose remote files are to be retrieved as a str.
+        files:
+            a list of files to be processed.
 
     Returns:
         the ID for the processed files and stats wrapped in an `HTMLResponse` object
     """
-    all_files = deps.fetch_files(
-        local_files=local_files, remote_file_names=remote_file_names, vendor=vendor
-    )
     processed = ProcessAcquisitionsRecords.execute(
-        batches={f"{i.file_name}": i.content for i in all_files},
+        batches={f"{i.file_name}": i.content for i in files},
         marc_engine=marc_engine,
         fetcher=fetcher,
         template_data=order_template.model_dump(),
@@ -83,9 +74,7 @@ def process_cat_records(
     fetcher: Annotated[Any, Depends(deps.get_fetcher)],
     marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
-    local_files: Annotated[list | None, Form()] = None,
-    remote_file_names: Annotated[list | None, Form()] = None,
-    vendor: Annotated[str | None, Form()] = None,
+    files: Annotated[Any, Depends(deps.load_files)],
 ) -> HTMLResponse:
     """
     Process one or more files of full-level MARC records using the cat workflow.
@@ -98,21 +87,14 @@ def process_cat_records(
         repository:
             a `repository.PVFBatchRepository` object where the processed files and
             their associated statistics will be saved.
-        local_files:
-            a list of files from a local upload as `UploadFile` objects.
-        remote_file_names:
-            a list of names of files to be retrieved from a vendor's SFTP as strings.
-        vendor:
-            the vendor whose remote files are to be retrieved as a str.
+        files:
+            a list of files to be processed.
 
     Returns:
         the ID for the processed files and stats wrapped in an `HTMLResponse` object
     """
-    all_files = deps.fetch_files(
-        local_files=local_files, remote_file_names=remote_file_names, vendor=vendor
-    )
     processed = ProcessCatalogingRecords.execute(
-        batches={f"{i.file_name}": i.content for i in all_files},
+        batches={f"{i.file_name}": i.content for i in files},
         marc_engine=marc_engine,
         fetcher=fetcher,
         repo=repository,
@@ -132,9 +114,7 @@ def process_sel_records(
     marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
     matchpoints: Annotated[Any, Depends(schemas.MatchpointsModel.from_form)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
-    local_files: Annotated[list | None, Form()] = None,
-    remote_file_names: Annotated[list | None, Form()] = None,
-    vendor: Annotated[str | None, Form()] = None,
+    files: Annotated[Any, Depends(deps.load_files)],
 ) -> HTMLResponse:
     """
     Process one or more files of order-level MARC records using the sel workflow.
@@ -152,21 +132,14 @@ def process_sel_records(
         repository:
             a `repository.PVFBatchRepository` object where the processed files and
             their associated statistics will be saved.
-        local_files:
-            a list of files from a local upload as `UploadFile` objects.
-        remote_file_names:
-            a list of names of files to be retrieved from a vendor's SFTP as strings.
-        vendor:
-            the vendor whose remote files are to be retrieved as a str.
+        files:
+            a list of files to be processed.
 
     Returns:
         the ID for the processed files and stats wrapped in an `HTMLResponse` object
     """
-    all_files = deps.fetch_files(
-        local_files=local_files, remote_file_names=remote_file_names, vendor=vendor
-    )
     processed = ProcessSelectionRecords.execute(
-        batches={f"{i.file_name}": i.content for i in all_files},
+        batches={f"{i.file_name}": i.content for i in files},
         marc_engine=marc_engine,
         fetcher=fetcher,
         template_data=order_template.model_dump(),

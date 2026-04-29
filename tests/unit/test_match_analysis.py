@@ -313,6 +313,7 @@ class TestNYPLCatResearchMatchAnalyzer:
         [
             ("2025-01-01T01:00:00", "overlay", True),
             ("2020-01-01T01:00:00", "attach", False),
+            (None, "attach", False),
         ],
     )
     def test_analyze_vendor_record(
@@ -403,7 +404,11 @@ class TestBPLCatMatchAnalyzer:
 
     @pytest.mark.parametrize(
         "date, action",
-        [("20250101010000.0", "overlay"), ("20200101010000.0", "attach")],
+        [
+            ("20250101010000.0", "overlay"),
+            ("20200101010000.0", "attach"),
+            (None, "attach"),
+        ],
     )
     def test_analyze_vendor_record(self, full_bib, date, action, caplog):
         data = {

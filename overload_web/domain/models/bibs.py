@@ -247,7 +247,9 @@ class DomainBib:
         """
         if candidate.cat_source == "inhouse":
             return CatalogAction.ATTACH, False
-        if not self.update_datetime or candidate.update_datetime > self.update_datetime:
+        if candidate.update_datetime and (
+            not self.update_datetime or candidate.update_datetime > self.update_datetime
+        ):
             return CatalogAction.OVERLAY, True
         return CatalogAction.ATTACH, False
 

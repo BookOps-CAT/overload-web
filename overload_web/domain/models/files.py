@@ -23,3 +23,12 @@ class VendorFile:
 
     content: bytes
     file_name: str
+
+
+@dataclass(kw_only=True)
+class IncomingFile:
+    id: str
+    filename: str
+    workflow_id: str
+    source: str
+    reference: str

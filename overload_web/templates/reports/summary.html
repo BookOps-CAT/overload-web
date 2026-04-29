@@ -1,30 +1,35 @@
 {% import "pvf_partials/macros.html" as macro %}
-<h5>Summary:</h5>
-Total processed files: {{ total_files }}
-</br>
-File names: {{ file_names }}
-</br>
-{% if processing_integrity %}
-  Integrity of processed files:
-</br>
-{{ processing_integrity }}
-{% endif %}
-{% if missing_barcodes %}
-  Missing barcodes: {{ missing_barcodes }}
-</br>
-{% endif %}
-{% if duplicate_bibs %}Duplicates: {{ duplicate_bibs }}{% endif %}
-<h5>Vendor Breakdown:</h5>
-{% if vendor_report %}{{ macro.report_table(vendor_report) }}{% endif %}
-<h5>Duplicates Report:</h5>
-{% if dupes_report %}
-  {{ macro.report_table(dupes_report) }}
-{% else %}
-  <b>All clear!</b>
-{% endif %}
-<h5>Call Number Issues:</h5>
-{% if call_no_report %}
-  {{ macro.report_table(call_no_report) }}
-{% else %}
-  <b>All clear!</b>
-{% endif %}
+<div class="card h-100 shadow-sm rounded-3">
+  <div class="card-body">
+    <h5 class="card-title">Processing Summary:</h5>
+    <p class="card-text">Total processed files: {{ total_files }}</p>
+    <p class="card-text">File names: {{ file_names }}</p>
+    {% if processing_integrity %}
+      <p class="card-text">Integrity of processed files: {{ processing_integrity }}</p>
+    {% endif %}
+    {% if missing_barcodes %}<p class="card-text">Missing barcodes: {{ missing_barcodes }}</p>{% endif %}
+    {% if duplicate_bibs %}<p class="card-text">Duplicates: {{ duplicate_bibs }}</p>{% endif %}
+  </div>
+  <ul class="list-group list-group-flush">
+    <li class="list-group-item">
+      <h5>Vendor Breakdown:</h5>
+      {% if vendor_report %}{{ macro.report_table(vendor_report) }}{% endif %}
+    </li>
+    <li class="list-group-item">
+      <h5>Duplicates Report:</h5>
+      {% if dupes_report %}
+        {{ macro.report_table(dupes_report) }}
+      {% else %}
+        <b>All clear!</b>
+      {% endif %}
+    </li>
+    <li class="list-group-item">
+      <h5>Call Number Issues:</h5>
+      {% if call_no_report %}
+        {{ macro.report_table(call_no_report) }}
+      {% else %}
+        <b>All clear!</b>
+      {% endif %}
+    </li>
+  </ul>
+</div>

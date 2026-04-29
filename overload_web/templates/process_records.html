@@ -19,18 +19,16 @@
           <section class="template-source-section">
             {% block pvf_template_source %}<div id="template_source_swap"></div>{% endblock %}
           </section>
-          <section class="pvf-button-section">
-            <div class="row p-3">
-              <div class="col">
-                <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
+          <div id="pvf_output">
+            {% block pvf_output %}{% endblock %}
+            <div class="pvf-button-section">
+              <div class="row p-3">
+                <div class="col">
+                  <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
+                </div>
               </div>
             </div>
-          </section>
-          <section class="reports">
-            <div id="pvf_output">
-              {% block pvf_output %}{% endblock %}
-            </div>
-          </section>
+          </div>
         </div>
       </div>
     </div>

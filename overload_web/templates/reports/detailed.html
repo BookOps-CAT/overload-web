@@ -1,3 +1,7 @@
 {% import "pvf_partials/macros.html" as macro %}
-<h5>Detailed Report Data:</h5>
-{% if detailed_report %}{{ macro.report_table(detailed_report) }}{% endif %}
+<div class="card h-100 shadow-sm rounded-3">
+  <div class="card-body">
+    <h5 class="card-title">Detailed Report Data:</h5>
+    {% if detailed_report %}{{ macro.report_table(detailed_report) }}{% endif %}
+  </div>
+</div>

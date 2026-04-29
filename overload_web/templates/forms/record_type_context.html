@@ -7,7 +7,8 @@
         hx-encoding="multipart/form-data"
         hx-target="#pvf_output"
         hx-swap-oob="true"
-        autocomplete="off">
+        autocomplete="off"
+        hx-on::after-request="if(event.detail.successful) this.reset()">
   </form>
   <div id="template_source_swap" hx-swap-oob="true">
     {% if record_type != "cat" %}
