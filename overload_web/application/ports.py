@@ -3,15 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import (
-    Any,
-    BinaryIO,
-    Iterator,
-    Protocol,
-    Sequence,
-    TypeVar,
-    runtime_checkable,
-)
+from typing import Any, Iterator, Protocol, Sequence, TypeVar, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
@@ -52,10 +44,33 @@ class BibFetcher(Protocol[S]):
 
 @runtime_checkable
 class FileStorage(Protocol):
-    def load(self, reference: str) -> BinaryIO: ...  # pragma: no branch
+    def load(self, reference: str) -> bytes: ...  # pragma: no branch
+
+    """
+    Load a file.
+
+    Args:
+        reference: the path to the file
+
+    Returns:
+        the content of the specified file as a `bytes` object
+    """
+
     def save(
         self, id: str, filename: str, content: bytes
     ) -> str: ...  # pragma: no branch
+
+    """
+    Save a file to a location on storage.
+
+    Args:
+        id: the workflow_id for the file.
+        filename: the name of the file.
+        content: the content of the file as a bytes object.
+
+    Returns:
+        the path where the file was saved as a string
+    """
 
 
 @runtime_checkable
@@ -191,7 +206,13 @@ class SqlRepositoryProtocol(Protocol[T]):
         self, offset: int | None = 0, limit: int | None = 0
     ) -> Sequence[dict[str, Any]]: ...  # pragma: no branch
 
-    """List objects in a database."""
+    """List all objects in a database."""
+
+    def list_by_id(
+        self, id: str | int
+    ) -> Sequence[dict[str, Any]]: ...  # pragma: no branch
+
+    """List all objects in a database filtering by a specific id."""
 
     def save(self, obj: T) -> dict[str, Any]: ...  # pragma: no branch
 

@@ -89,7 +89,7 @@ class LoadAllWorkflowFiles:
     def execute(
         workflow_id: str, storage: ports.FileStorage, repo: ports.SqlRepositoryProtocol
     ) -> list[files.VendorFile]:
-        file_list = repo.list(workflow_id)
+        file_list = repo.list_by_id(workflow_id)
         vendor_files = [
             files.VendorFile(
                 file_name=i["filename"], content=storage.load(i["reference"])

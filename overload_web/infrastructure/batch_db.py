@@ -133,7 +133,7 @@ class PVFBatchRepository:
             ProcessedFileModel.model_validate(i, from_attributes=True)
             for i in obj.files
         ]
-        valid_stats = PVFReportModel(**obj.report)
+        valid_stats = PVFReportModel.model_validate(obj.report, from_attributes=True)
         valid_batch = PVFBatch(files=valid_files, report=valid_stats)
         self.session.add(valid_batch)
         self.session.commit()

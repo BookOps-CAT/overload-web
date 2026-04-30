@@ -14,7 +14,7 @@ import io
 import logging
 import os
 from pathlib import Path
-from typing import Any, BinaryIO, Sequence
+from typing import Any, Sequence
 
 from file_retriever import Client, File
 from sqlmodel import Field, Session, SQLModel, select
@@ -36,8 +36,10 @@ class LocalFileStorage:
 
         return str(path)
 
-    def load(self, reference: str) -> BinaryIO:
-        return open(reference, "rb")
+    def load(self, reference: str) -> bytes:
+        with open(reference, "rb") as fh:
+            file = fh.read()
+        return file
 
 
 class LocalFileLoader:
@@ -181,21 +183,20 @@ class IncomingFileRepository:
         file = self.session.get(IncomingFileModel, id)
         return file.model_dump() if file else None
 
-    def list(self, workflow_id: str | int) -> Sequence[dict[str, Any]]:
+    def list_by_id(self, id: str | int) -> Sequence[dict[str, Any]]:
         """
         Retrieve all `IncomingFileModel` objects in the database.
 
         Args:
-            workflow_id: the `workflow_id` whose files to retrieve.
+            id: the `workflow_id` whose files to retrieve.
 
         Returns:
             a sequence of `IncomingFileModel` objects.
         """
-        statement = select(IncomingFileModel).where(
-            IncomingFileModel.workflow_id == workflow_id
-        )
-        results = self.session.exec(statement).all()
-        return [i.model_dump() for i in results]
+        statement = select(IncomingFileModel).where(IncomingFileModel.workflow_id == id)
+        results = self.session.exec(statement)
+        all_files = results.all()
+        return [i.model_dump() for i in all_files]
 
     def save(self, obj: IncomingFileModel) -> dict[str, Any]:
         """

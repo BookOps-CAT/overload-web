@@ -62,7 +62,7 @@ async def select_ftp_file(
     UploadFileToWorkflow(storage=storage, repo=repository).execute(
         workflow_id=workflow_id, filename=remote_file, content=file_content.content
     )
-    selected = repository.list(workflow_id)
+    selected = repository.list_by_id(workflow_id)
     return request.app.state.templates.TemplateResponse(
         name="pvf_partials/selected_files.html",
         request=request,
@@ -82,7 +82,7 @@ async def upload_file(
     UploadFileToWorkflow(storage=storage, repo=repository).execute(
         workflow_id=workflow_id, filename=str(file.filename), content=file.file.read()
     )
-    selected = repository.list(workflow_id)
+    selected = repository.list_by_id(workflow_id)
     logger.info(f"Current file list: {selected}")
     return request.app.state.templates.TemplateResponse(
         name="pvf_partials/selected_files.html",
@@ -99,7 +99,7 @@ async def remove_file(
     workflow_id: str = Form(),
 ):
     DeleteFileFromWorkflow.execute(id=file_id, repo=repository)
-    selected = repository.list(workflow_id)
+    selected = repository.list_by_id(workflow_id)
     logger.info(f"Current file list: {selected}")
     return request.app.state.templates.TemplateResponse(
         "pvf_partials/selected_files.html", {"request": request, "files": selected}

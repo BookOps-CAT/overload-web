@@ -7,7 +7,7 @@ import logging
 from collections import Counter, defaultdict
 from typing import Any
 
-from overload_web.domain.models import bibs
+from overload_web.domain.models import bibs, reporting
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ def create_full_records_report(
     analysis: list[bibs.MatchAnalysis],
     missing_barcodes: list[str],
     file_names: list[str],
-) -> dict[str, list[Any]]:
+) -> reporting.ProcessingStatistics:
     """Generate statistics from a batch of processed full-level records"""
     stats = defaultdict(list)
     stats["file_names"].extend(file_names)
@@ -27,12 +27,12 @@ def create_full_records_report(
     out: dict[str, Any] = dict(stats)
     out["total_records"] = len(analysis)
     out["total_files"] = len(stats["file_names"])
-    return out
+    return reporting.ProcessingStatistics(**out)
 
 
 def create_order_records_report(
     analysis: list[bibs.MatchAnalysis], file_names: list[str]
-) -> dict[str, list[Any]]:
+) -> reporting.ProcessingStatistics:
     """Generate statistics from a batch of processed order-level records"""
     stats = defaultdict(list)
     for rec in analysis:
@@ -42,7 +42,7 @@ def create_order_records_report(
     out["total_records"] = len(analysis)
     out["total_files"] = len(file_names)
     out["file_names"] = file_names
-    return out
+    return reporting.ProcessingStatistics(**out)
 
 
 def extract_barcodes(records: list[bibs.DomainBib]) -> list[str]:
