@@ -168,7 +168,10 @@ class IncomingFileRepository:
             None
         """
         statement = select(IncomingFileModel).where(IncomingFileModel.id == id)
-        self.session.exec(statement)
+        results = self.session.exec(statement)
+        file = results.one()
+        self.session.delete(file)
+        self.session.commit()
 
     def get(self, id: str | int) -> dict[str, Any] | None:
         """

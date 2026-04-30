@@ -94,13 +94,15 @@ async def upload_file(
 @api_router.post("/remove", response_class=HTMLResponse)
 async def remove_file(
     request: Request,
-    file_id: str,
     repository: Annotated[Any, Depends(deps.incoming_file_db)],
+    file_id: str = Form(),
     workflow_id: str = Form(),
 ):
     DeleteFileFromWorkflow.execute(id=file_id, repo=repository)
     selected = repository.list_by_id(workflow_id)
     logger.info(f"Current file list: {selected}")
     return request.app.state.templates.TemplateResponse(
-        "pvf_partials/selected_files.html", {"request": request, "files": selected}
+        name="pvf_partials/selected_files.html",
+        request=request,
+        context={"files": selected},
     )

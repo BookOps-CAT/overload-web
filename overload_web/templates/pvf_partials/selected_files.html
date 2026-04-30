@@ -2,21 +2,20 @@
   <div class="list-group">
     {% for f in files %}
       <div class="list-group-item d-flex justify-content-between align-items-center">
-        <div>
-          <strong>{{ f.filename }}</strong>
-          <br>
-          <small class="text-muted">
-            {% if f.source == "local" %}
-              Local file
-            {% else %}
-              FTP file
-            {% endif %}
-          </small>
-        </div>
+        <input type="hidden" name="file_id" id="file_id" value="{{ f.id }}">
+        <strong>{{ f.filename }}</strong>
+        <br>
+        <small class="text-muted">
+          {% if f.source == "local" %}
+            Local file
+          {% else %}
+            FTP file
+          {% endif %}
+        </small>
         <button class="btn btn-sm btn-outline-danger"
                 hx-post="/files/remove"
-                hx-vals='{"id": "{{ f.id }}"}'
                 hx-target="#selected-files"
+                hx-include="#workflow_id, #file_id"
                 hx-swap="outerHTML">Remove</button>
       </div>
     {% endfor %}
