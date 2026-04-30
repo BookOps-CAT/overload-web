@@ -4,8 +4,8 @@
        form="pvf-form"
        value="{{ workflow_id }}">
 <div class="row p-3">
-  <div class="col-6">
-    <div class="card h-100 shadow-sm rounded-3">
+  <div class="col-4">
+    <div class="card card-apps">
       <div class="card-body">
         <h5 class="card-title">Local Files</h5>
         <p class="text-muted">Upload from your computer</p>
@@ -24,8 +24,8 @@
       </div>
     </div>
   </div>
-  <div class="col-6">
-    <div class="card h-100 shadow-sm rounded-3">
+  <div class="col-4">
+    <div class="card card-apps">
       <div class="card-body">
         <h5 class="card-title">FTP Files</h5>
         <p class="text-muted">Browse vendor files</p>
@@ -46,10 +46,8 @@
       </div>
     </div>
   </div>
-</div>
-<div class="row p-3">
   <div class="col">
-    <div class="card shadow-sm rounded-3">
+    <div class="card card-apps">
       <div class="card-body">
         <h5 class="card-title">Selected Files</h5>
         <div id="selected-files" hx-swap="outerHTML">{% include "pvf_partials/selected_files.html" %}</div>

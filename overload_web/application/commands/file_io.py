@@ -88,7 +88,7 @@ class LoadAllWorkflowFiles:
     @staticmethod
     def execute(
         workflow_id: str, storage: ports.FileStorage, repo: ports.SqlRepositoryProtocol
-    ) -> list:
+    ) -> list[files.VendorFile]:
         file_list = repo.list(workflow_id)
         vendor_files = [
             files.VendorFile(

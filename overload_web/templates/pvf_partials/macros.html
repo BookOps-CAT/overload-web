@@ -124,15 +124,3 @@
     </div>
   </div>
 {% endmacro %}
-{% macro card(title=None) %}
-  <div class="card card-app">
-    {% if title %}
-      <div class="card-body">
-        <h5 class="card-title">{{ title }}</h5>
-        {{ caller() }}
-      </div>
-    {% else %}
-      {{ caller() }}
-    {% endif %}
-  </div>
-{% endmacro %}

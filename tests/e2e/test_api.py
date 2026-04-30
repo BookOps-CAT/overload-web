@@ -8,6 +8,7 @@ from overload_web.application.commands.process import (
     ProcessCatalogingRecords,
     ProcessSelectionRecords,
 )
+from overload_web.domain.models import files
 from overload_web.infrastructure import batch_db, clients, template_db
 from overload_web.main import app
 from overload_web.presentation import deps
@@ -61,6 +62,10 @@ def fake_sql_session():
     test_engine.dispose()
 
 
+def fake_storage():
+    return [files.VendorFile(content=b"", file_name="foo.mrc")]
+
+
 def test_api_startup(monkeypatch):
     def fake_engine(*args, **kwargs):
         return create_engine("sqlite:///:memory:")
@@ -85,6 +90,7 @@ def test_deps():
 class TestApp:
     client = TestClient(app)
     app.dependency_overrides[deps.get_session] = fake_sql_session
+    app.dependency_overrides[deps.load_files] = fake_storage
     base_url = client.base_url
 
     def test_files_router_list_remote_files_get(self):
