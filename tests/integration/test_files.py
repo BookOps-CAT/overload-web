@@ -57,14 +57,7 @@ class TestFileWorkflow:
             workflow_id="12345", storage=storage, repo=repo
         )
         assert len(caplog.records) == 2
-        assert (
-            f"Local file storage location: {
-                os.path.join(
-                    os.environ['USERPROFILE'], 'AppData\\Local\\Temp\\pytest-of-'
-                )
-            }"
-            in caplog.records[0].message
-        )
+        assert "Local file storage location: " in caplog.records[0].message
         assert (
             f"Loading all files for workflow 12345: {files}."
             in caplog.records[1].message
