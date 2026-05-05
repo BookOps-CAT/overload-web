@@ -173,19 +173,6 @@ class IncomingFileRepository:
         self.session.delete(file)
         self.session.commit()
 
-    def get(self, id: str | int) -> dict[str, Any] | None:
-        """
-        Retrieve an `IncomingFileModel` object by its ID.
-
-        Args:
-            id: the primary key of the `IncomingFileModel`.
-
-        Returns:
-            a `IncomingFileModel` instance as a dictionary or `None` if not found.
-        """
-        file = self.session.get(IncomingFileModel, id)
-        return file.model_dump() if file else None
-
     def list_by_id(self, id: str | int) -> Sequence[dict[str, Any]]:
         """
         Retrieve all `IncomingFileModel` objects in the database.

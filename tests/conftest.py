@@ -2,7 +2,6 @@ import copy
 import datetime
 import io
 import json
-import logging
 from typing import Any
 
 import pytest
@@ -27,10 +26,6 @@ def get_constants() -> dict[str, Any]:
 @pytest.fixture(autouse=True)
 def test_setup(caplog, monkeypatch):
     caplog.set_level("DEBUG")
-    logger = logging.getLogger("overload_web")
-    for handler in logger.handlers:
-        if not isinstance(handler, logging.StreamHandler):
-            logger.removeHandler(handler)
     monkeypatch.setenv("NYPL_PLATFORM_CLIENT", "foo")
     monkeypatch.setenv("NYPL_PLATFORM_SECRET", "bar")
     monkeypatch.setenv("NYPL_PLATFORM_OAUTH", "baz")

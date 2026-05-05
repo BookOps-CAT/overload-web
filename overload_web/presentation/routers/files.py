@@ -60,7 +60,10 @@ async def select_ftp_file(
     vendor_dir = os.environ[f"{ftp.client.name.upper()}_SRC"]
     file_content = LoadVendorFile.execute(name=remote_file, dir=vendor_dir, loader=ftp)
     UploadFileToWorkflow(storage=storage, repo=repository).execute(
-        workflow_id=workflow_id, filename=remote_file, content=file_content.content
+        workflow_id=workflow_id,
+        filename=remote_file,
+        content=file_content.content,
+        source="ftp",
     )
     selected = repository.list_by_id(workflow_id)
     return request.app.state.templates.TemplateResponse(
@@ -80,7 +83,10 @@ async def upload_file(
 ):
 
     UploadFileToWorkflow(storage=storage, repo=repository).execute(
-        workflow_id=workflow_id, filename=str(file.filename), content=file.file.read()
+        workflow_id=workflow_id,
+        filename=str(file.filename),
+        content=file.file.read(),
+        source="local",
     )
     selected = repository.list_by_id(workflow_id)
     logger.info(f"Current file list: {selected}")

@@ -69,19 +69,20 @@ class UploadFileToWorkflow:
         self.storage = storage
         self.repo = repo
 
-    def execute(self, workflow_id: str, filename: str, content: bytes) -> None:
+    def execute(
+        self, workflow_id: str, filename: str, content: bytes, source: str
+    ) -> None:
         file_id = str(uuid.uuid4())
-
         reference = self.storage.save(id=file_id, filename=filename, content=content)
-
         file = files.IncomingFile(
             id=file_id,
             workflow_id=workflow_id,
             filename=filename,
-            source="local",
+            source=source,
             reference=reference,
         )
         self.repo.save(file)
+        logger.info(f"File added to workflow {workflow_id}: {file}.")
 
 
 class LoadAllWorkflowFiles:
