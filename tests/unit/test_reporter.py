@@ -62,41 +62,46 @@ def pandas_handler():
 class TestReporter:
     def test_configure_sheet(self, mock_sheet_config):
         handler = reporter.GoogleSheetsReporter()
-        assert handler.creds.token == "foo"
-        assert handler.creds.valid is True
-        assert handler.creds.expired is False
-        assert handler.creds.refresh_token is not None
+        creds = handler.configure_sheet()
+        assert creds.token == "foo"
+        assert creds.valid is True
+        assert creds.expired is False
+        assert creds.refresh_token is not None
 
     def test_configure_sheet_expired(self, mock_sheet_config_expired_creds):
         handler = reporter.GoogleSheetsReporter()
-        assert handler.creds.token == "foo"
-        assert handler.creds.valid is True
-        assert handler.creds.expired is False
-        assert handler.creds.refresh_token is not None
+        creds = handler.configure_sheet()
+        assert creds.token == "foo"
+        assert creds.valid is True
+        assert creds.expired is False
+        assert creds.refresh_token is not None
 
     def test_configure_sheet_generate_new_creds(
         self, mock_sheet_config_no_creds, caplog
     ):
         handler = reporter.GoogleSheetsReporter()
-        assert handler.creds.token == "foo"
-        assert handler.creds.valid is True
-        assert handler.creds.expired is False
-        assert handler.creds.refresh_token is not None
+        creds = handler.configure_sheet()
+        assert creds.token == "foo"
+        assert creds.valid is True
+        assert creds.expired is False
+        assert creds.refresh_token is not None
         assert "API token not found. Running credential config flow." in caplog.text
 
     def test_configure_sheet_no_creds(self, mock_sheet_config_no_creds, caplog):
         handler = reporter.GoogleSheetsReporter()
-        assert handler.creds.token == "foo"
-        assert handler.creds.valid is True
-        assert handler.creds.expired is False
-        assert handler.creds.refresh_token is not None
+        creds = handler.configure_sheet()
+        assert creds.token == "foo"
+        assert creds.valid is True
+        assert creds.expired is False
+        assert creds.refresh_token is not None
         assert "API token not found. Running credential config flow." in caplog.text
 
     def test_configure_sheet_invalid_creds(
         self, mock_sheet_config_invalid_creds, caplog
     ):
+        handler = reporter.GoogleSheetsReporter()
         with pytest.raises(ValueError):
-            reporter.GoogleSheetsReporter()
+            handler.configure_sheet()
 
     def test_write_report(self, mock_sheet_config, stub_report, caplog):
         google_handler = reporter.GoogleSheetsReporter()

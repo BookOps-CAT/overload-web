@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 api_router = APIRouter()
 
 
-@api_router.get("/remote", response_class=HTMLResponse)
+@api_router.get("/remote/list", response_class=HTMLResponse)
 def list_remote_files(
     request: Request,
     vendor: str,
@@ -48,7 +48,7 @@ def list_remote_files(
     )
 
 
-@api_router.post("/ftp/select", response_class=HTMLResponse)
+@api_router.post("/remote/select", response_class=HTMLResponse)
 async def select_ftp_file(
     request: Request,
     repository: Annotated[Any, Depends(deps.incoming_file_db)],

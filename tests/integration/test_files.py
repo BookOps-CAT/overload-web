@@ -77,6 +77,9 @@ class TestFileWorkflow:
     def test_delete_file(self, test_session):
         repo = file_io.IncomingFileRepository(session=test_session)
         DeleteFileFromWorkflow.execute(id="1", repo=repo)
+        files = repo.list_by_id(id="12345")
+        assert len(files) == 1
+        assert files[0]["filename"] == "bar.mrc"
 
 
 class TestLocalFiles:

@@ -82,9 +82,6 @@ class PandasReportHandler:
 
 
 class GoogleSheetsReporter:
-    def __init__(self) -> None:
-        self.creds = self.configure_sheet()
-
     def configure_sheet(self) -> Credentials:
         """
         Get or update credentials for google sheets API and save token to file.

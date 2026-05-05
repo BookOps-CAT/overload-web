@@ -3,13 +3,8 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.application.commands.process import (
-    ProcessAcquisitionsRecords,
-    ProcessCatalogingRecords,
-    ProcessSelectionRecords,
-)
 from overload_web.domain.models import files
-from overload_web.infrastructure import batch_db, clients, template_db
+from overload_web.infrastructure import batch_db, clients, file_io, template_db
 from overload_web.main import app
 from overload_web.presentation import deps
 
@@ -19,9 +14,29 @@ def processed_records(monkeypatch, stub_report):
     def fake_response(*args, **kwargs):
         return {"id": "1"}
 
-    monkeypatch.setattr(ProcessAcquisitionsRecords, "execute", fake_response)
-    monkeypatch.setattr(ProcessCatalogingRecords, "execute", fake_response)
-    monkeypatch.setattr(ProcessSelectionRecords, "execute", fake_response)
+    monkeypatch.setattr(
+        "overload_web.application.commands.process.ProcessAcquisitionsRecords.execute",
+        fake_response,
+    )
+    monkeypatch.setattr(
+        "overload_web.application.commands.process.ProcessCatalogingRecords.execute",
+        fake_response,
+    )
+    monkeypatch.setattr(
+        "overload_web.application.commands.process.ProcessSelectionRecords.execute",
+        fake_response,
+    )
+
+
+@pytest.fixture
+def fake_reporter(monkeypatch):
+    def null_response(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(
+        "overload_web.application.services.report_services.ReportWriter.write_report_to_google_sheet",
+        null_response,
+    )
 
 
 def fake_sql_session():
@@ -51,11 +66,15 @@ def fake_sql_session():
             processing_integrity=True,
         ),
     )
+    file = file_io.IncomingFileModel(
+        id="1", filename="foo.mrc", workflow_id="123", source="ftp", reference="foo.mrc"
+    )
     test_engine = create_engine("sqlite:///:memory:")
     SQLModel.metadata.create_all(test_engine)
     with Session(test_engine) as session:
         session.add(template)
         session.add(batch)
+        session.add(file)
         session.commit()
         yield session
     session.close()
@@ -94,9 +113,9 @@ class TestApp:
     base_url = client.base_url
 
     def test_files_router_list_remote_files_get(self):
-        response = self.client.get("/files/remote?vendor=foo")
+        response = self.client.get("/files/remote/list?vendor=foo")
         assert response.status_code == 200
-        assert response.url == f"{self.base_url}/files/remote?vendor=foo"
+        assert response.url == f"{self.base_url}/files/remote/list?vendor=foo"
         assert sorted(list(response.context.keys())) == sorted(
             ["files", "request", "vendor"]
         )
@@ -105,13 +124,11 @@ class TestApp:
     def test_frontend_root_get(self):
         routes = self.client.app.router.__dict__["routes"]
         route_names = [i.name for i in routes]
-        assert "root" in route_names
-        assert "vendor_file_page" in route_names
-
-    def test_frontend_home_get(self):
         response = self.client.get("/")
         assert response.status_code == 200
         assert "Overload Web" in response.text
+        assert "root" in route_names
+        assert "vendor_file_page" in route_names
 
     def test_frontend_vendor_file_page_get(self):
         response = self.client.get("/process")
@@ -387,7 +404,7 @@ class TestApp:
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
     def test_reports_router_write_report_to_google_sheet(
-        self, record_type, mock_sheet_config
+        self, record_type, fake_reporter
     ):
         response = self.client.post(
             "/reports/write?id=1", data={"record_type": record_type}
