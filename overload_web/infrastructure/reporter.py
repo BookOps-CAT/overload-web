@@ -93,10 +93,7 @@ class GoogleSheetsReporter:
             google.oauth2.credentials.Credentials: Credentials object for
             google sheet API.
         """
-        scopes = [
-            "https://www.googleapis.com/auth/spreadsheets",
-            "https://www.googleapis.com/auth/accounts.reauth",
-        ]
+        scopes = ["https://www.googleapis.com/auth/spreadsheets"]
         token_uri = "https://oauth2.googleapis.com/token"
 
         creds_dict = {

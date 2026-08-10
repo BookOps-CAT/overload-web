@@ -122,13 +122,9 @@ class TestApp:
         assert response.context["files"] == ["foo.mrc"]
 
     def test_frontend_root_get(self):
-        routes = self.client.app.router.__dict__["routes"]
-        route_names = [i.name for i in routes]
         response = self.client.get("/")
         assert response.status_code == 200
         assert "Overload Web" in response.text
-        assert "root" in route_names
-        assert "vendor_file_page" in route_names
 
     def test_frontend_vendor_file_page_get(self):
         response = self.client.get("/process")

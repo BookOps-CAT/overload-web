@@ -77,7 +77,7 @@ class MarcEngine:
         return Bib(data=record.binary_data, library=record.library)  # type: ignore
 
     def get_command_tag_field(self, bib: Bib) -> Field | None:
-        for field in bib.get_fields("949", []):
+        for field in bib.get_fields("949"):
             if field.indicators == Indicators(" ", " ") and field.get(
                 "a", ""
             ).startswith("*"):
