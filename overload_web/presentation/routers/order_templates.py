@@ -14,7 +14,7 @@ from overload_web.application.commands.order_template import (
     ListOrderTemplates,
     UpdateOrderTemplate,
 )
-from overload_web.presentation import deps, schemas
+from overload_web.presentation import deps
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ api_router = APIRouter()
 @api_router.post("/template", response_class=HTMLResponse)
 def create_template(
     request: Request,
-    template: Annotated[Any, Depends(schemas.TemplateCreateModel.from_form)],
+    template: Annotated[Any, Depends(deps.TemplateCreateModel.from_form)],
     repository: Annotated[Any, Depends(deps.order_template_db)],
 ) -> HTMLResponse:
     """
@@ -104,7 +104,7 @@ def get_template_list(
 def update_template(
     request: Request,
     template_id: Annotated[str, Form(...)],
-    template_patch: Annotated[Any, Depends(schemas.TemplatePatchModel.from_form)],
+    template_patch: Annotated[Any, Depends(deps.TemplatePatchModel.from_form)],
     repository: Annotated[Any, Depends(deps.order_template_db)],
 ) -> HTMLResponse:
     """

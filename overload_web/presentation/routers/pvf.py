@@ -13,7 +13,7 @@ from overload_web.application.commands.process import (
     ProcessCatalogingRecords,
     ProcessSelectionRecords,
 )
-from overload_web.presentation import deps, schemas
+from overload_web.presentation import deps
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +25,9 @@ api_router = APIRouter()
 def process_acq_records(
     request: Request,
     fetcher: Annotated[Any, Depends(deps.get_fetcher)],
-    order_template: Annotated[Any, Depends(schemas.TemplateDataModel.from_form)],
+    order_template: Annotated[Any, Depends(deps.TemplateDataModel.from_form)],
     marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
-    matchpoints: Annotated[Any, Depends(schemas.MatchpointsModel.from_form)],
+    matchpoints: Annotated[Any, Depends(deps.MatchpointsModel.from_form)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
     files: Annotated[Any, Depends(deps.load_files)],
 ) -> HTMLResponse:
@@ -110,9 +110,9 @@ def process_cat_records(
 def process_sel_records(
     request: Request,
     fetcher: Annotated[Any, Depends(deps.get_fetcher)],
-    order_template: Annotated[Any, Depends(schemas.TemplateDataModel.from_form)],
+    order_template: Annotated[Any, Depends(deps.TemplateDataModel.from_form)],
     marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
-    matchpoints: Annotated[Any, Depends(schemas.MatchpointsModel.from_form)],
+    matchpoints: Annotated[Any, Depends(deps.MatchpointsModel.from_form)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
     files: Annotated[Any, Depends(deps.load_files)],
 ) -> HTMLResponse:
