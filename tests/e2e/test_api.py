@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
@@ -86,9 +88,14 @@ def fake_storage():
 
 
 @pytest.fixture
-def mock_temp_storage(mocker):
+def mock_temp_storage(monkeypatch, mocker, tmp_path):
     m = mocker.mock_open(read_data="")
     mocker.patch("overload_web.infrastructure.file_io.open", m)
+
+    def mock_mkdir(*args, **kwargs):
+        return tmp_path
+
+    monkeypatch.setattr(Path, "mkdir", mock_mkdir)
 
 
 def test_api_startup(monkeypatch):
