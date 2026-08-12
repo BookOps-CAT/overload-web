@@ -1154,7 +1154,10 @@
     "unknown": "Unknown",
     "BT": "BT",
     "midwest": "Midwest",
-    "amalivre": "Amalivre",
+    "amalivre_rl": "Amalivre Research",
+    "amalivre_lpa": "Amalivre LPA",
+    "amalivre_sasb": "Amalivre SASB",
+    "amalivre_schomburg": "Amalivre Schomburg",
     "ingram": "Ingram",
     "sulaiman": "Sulaiman",
     "eastview": "Eastview"
