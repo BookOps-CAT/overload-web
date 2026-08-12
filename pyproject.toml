@@ -86,3 +86,19 @@ entrypoint = "overload_web.main:app"
 
 [tool.djlint]
 indent = 2
+
+[tool.pydeps]
+cluster = true
+no_show = true
+pylib = false
+exclude_exact = [
+    "overload_web.application",
+    "overload_web.application.commands",
+    "overload_web.application.ports",
+    "overload_web.application.services",
+    "overload_web.domain",
+    "overload_web.domain.models",
+    "overload_web.infrastructure",
+    "overload_web.presentation",
+    "overload_web.presentation.routers"
+]
