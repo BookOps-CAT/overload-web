@@ -68,16 +68,20 @@ class TestFileWorkflow:
         path = tmp_path / "temp"
         repo = file_io.IncomingFileRepository(session=test_session)
         storage = file_io.LocalFileStorage(base_path=path)
-        UploadFileToWorkflow(storage=storage, repo=repo).execute(
-            workflow_id="12345", filename="qux.mrc", content=b"", source=source
+        UploadFileToWorkflow.execute(
+            workflow_id="12345",
+            filename="qux.mrc",
+            content=b"",
+            source=source,
+            storage=storage,
+            repo=repo,
         )
         assert "File added to workflow 12345: IncomingFile(id=" in caplog.text
         assert "Local file storage location: " in caplog.text
 
     def test_delete_file(self, test_session):
         repo = file_io.IncomingFileRepository(session=test_session)
-        DeleteFileFromWorkflow.execute(id="1", repo=repo)
-        files = repo.list_by_id(id="12345")
+        files = DeleteFileFromWorkflow.execute(id="1", repo=repo, workflow_id="12345")
         assert len(files) == 1
         assert files[0]["filename"] == "bar.mrc"
 

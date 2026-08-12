@@ -2,6 +2,7 @@
 
 import logging
 import uuid
+from typing import Any, Sequence
 
 from overload_web.application import ports
 from overload_web.domain.models import files
@@ -63,17 +64,40 @@ class WriteFile:
 
 
 class UploadFileToWorkflow:
-    def __init__(
-        self, storage: ports.FileStorage, repo: ports.SqlRepositoryProtocol
-    ) -> None:
-        self.storage = storage
-        self.repo = repo
-
+    @staticmethod
     def execute(
-        self, workflow_id: str, filename: str, content: bytes, source: str
-    ) -> None:
+        workflow_id: str,
+        filename: str,
+        content: bytes,
+        source: str,
+        storage: ports.FileStorage,
+        repo: ports.SqlRepositoryProtocol,
+    ) -> Sequence[dict[str, Any]]:
+        """
+        Uploads a file for a workflow.
+
+
+        Args:
+            workflow_id:
+                The id of the workflow to which the file belongs.
+            filename:
+                The name of the file as a str.
+            content:
+                The content of the file as a bytes object
+            source:
+                The source of the file (ie. either `local` or `ftp`)
+            storage:
+                Concrete implementation of the `FileStorage` for
+                handling vendor files.
+            repo:
+                Concrete implementation of the `SqlRepositoryProtocol` for
+                handling vendor files.
+
+        Returns:
+            The list of files for workflow as a list of `VendorFile` objects.
+        """
         file_id = str(uuid.uuid4())
-        reference = self.storage.save(id=file_id, filename=filename, content=content)
+        reference = storage.save(id=file_id, filename=filename, content=content)
         file = files.IncomingFile(
             id=file_id,
             workflow_id=workflow_id,
@@ -81,8 +105,9 @@ class UploadFileToWorkflow:
             source=source,
             reference=reference,
         )
-        self.repo.save(file)
+        repo.save(file)
         logger.info(f"File added to workflow {workflow_id}: {file}.")
+        return repo.list_by_id(workflow_id)
 
 
 class LoadAllWorkflowFiles:
@@ -90,6 +115,22 @@ class LoadAllWorkflowFiles:
     def execute(
         workflow_id: str, storage: ports.FileStorage, repo: ports.SqlRepositoryProtocol
     ) -> list[files.VendorFile]:
+        """
+        Loads all files for a workflow.
+
+
+        Args:
+            workflow_id:
+                The id of the workflow whose files are to be loaded.
+            repo:
+                Concrete implementation of the `SqlRepositoryProtocol` for
+                handling vendor files.
+            storage:
+                Concrete implementation of the `FileStorage` for
+                handling vendor files.
+        Returns:
+            The list of files for workflow as a list of `VendorFile` objects.
+        """
         file_list = repo.list_by_id(workflow_id)
         vendor_files = [
             files.VendorFile(
@@ -103,19 +144,24 @@ class LoadAllWorkflowFiles:
 
 class DeleteFileFromWorkflow:
     @staticmethod
-    def execute(id: str, repo: ports.SqlRepositoryProtocol) -> None:
+    def execute(
+        id: str, workflow_id: str, repo: ports.SqlRepositoryProtocol
+    ) -> Sequence[dict[str, Any]]:
         """
         Delete an incoming file from the workflow's list of files.
 
 
         Args:
-            file:
-                The file to save as a `files.IncomingFile` object.
+            id:
+                The id to the file to remove from the workflow as a str.
+            workflow_id:
+                The id of the workflow to which the file belongs.
             repo:
                 Concrete implementation of the `SqlRepositoryProtocol` for
                 handling vendor files.
 
         Returns:
-            None
+            The list of files remaining for the workflow as a list of dictionaries.
         """
         repo.delete(id)
+        return repo.list_by_id(workflow_id)

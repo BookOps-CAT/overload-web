@@ -85,6 +85,12 @@ def fake_storage():
     return [files.VendorFile(content=b"", file_name="foo.mrc")]
 
 
+@pytest.fixture
+def mock_temp_storage(mocker):
+    m = mocker.mock_open(read_data="")
+    mocker.patch("overload_web.infrastructure.file_io.open", m)
+
+
 def test_api_startup(monkeypatch):
     def fake_engine(*args, **kwargs):
         return create_engine("sqlite:///:memory:")
@@ -105,7 +111,7 @@ def test_deps():
     engine.dispose()
 
 
-@pytest.mark.usefixtures("mock_session", "mock_sftp_client")
+@pytest.mark.usefixtures("mock_session", "mock_sftp_client", "mock_temp_storage")
 class TestApp:
     client = TestClient(app)
     app.dependency_overrides[deps.get_session] = fake_sql_session
@@ -120,6 +126,42 @@ class TestApp:
             ["files", "request", "vendor"]
         )
         assert response.context["files"] == ["foo.mrc"]
+
+    def test_files_select_ftp_file(self):
+        response = self.client.post(
+            "/files/remote/select?vendor=foo",
+            data={"remote_file": "bar.mrc", "workflow_id": 1},
+        )
+        print(response.content)
+        assert response.status_code == 200
+        assert response.url == f"{self.base_url}/files/remote/select?vendor=foo"
+        assert sorted(list(response.context.keys())) == sorted(["files", "request"])
+        assert len(response.context["files"]) == 1
+        assert response.context["files"][0]["filename"] == "bar.mrc"
+        assert response.context["files"][0]["source"] == "ftp"
+
+    def test_files_upload_file(self):
+        response = self.client.post(
+            "/files/upload",
+            data={"workflow_id": 1, "vendor": None},
+            files={"file": ("baz.mrc", b"", "text/plain")},
+        )
+        print(response.content)
+        assert response.status_code == 200
+        assert response.url == f"{self.base_url}/files/upload"
+        assert sorted(list(response.context.keys())) == sorted(["files", "request"])
+        assert len(response.context["files"]) == 1
+        assert response.context["files"][0]["filename"] == "baz.mrc"
+        assert response.context["files"][0]["source"] == "local"
+
+    def test_files_remove_file(self):
+        response = self.client.post(
+            "/files/remove", data={"workflow_id": 1, "file_id": 1}
+        )
+        assert response.status_code == 200
+        assert response.url == f"{self.base_url}/files/remove"
+        assert sorted(list(response.context.keys())) == sorted(["files", "request"])
+        assert response.context["files"] == []
 
     def test_frontend_root_get(self):
         response = self.client.get("/")

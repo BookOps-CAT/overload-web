@@ -49,23 +49,24 @@ def list_remote_files(
 
 
 @api_router.post("/remote/select", response_class=HTMLResponse)
-async def select_ftp_file(
+def select_ftp_file(
     request: Request,
     repository: Annotated[Any, Depends(deps.incoming_file_db)],
     storage: Annotated[Any, Depends(deps.local_file_storage)],
     ftp: Annotated[Any, Depends(deps.remote_file_loader)],
-    workflow_id: str = Form(),
-    remote_file: str = Form(),
+    workflow_id: Annotated[str, Form(...)],
+    remote_file: Annotated[str, Form(...)],
 ):
     vendor_dir = os.environ[f"{ftp.client.name.upper()}_SRC"]
     file_content = LoadVendorFile.execute(name=remote_file, dir=vendor_dir, loader=ftp)
-    UploadFileToWorkflow(storage=storage, repo=repository).execute(
+    selected = UploadFileToWorkflow.execute(
         workflow_id=workflow_id,
         filename=remote_file,
         content=file_content.content,
         source="ftp",
+        storage=storage,
+        repo=repository,
     )
-    selected = repository.list_by_id(workflow_id)
     return request.app.state.templates.TemplateResponse(
         name="pvf_partials/selected_files.html",
         request=request,
@@ -74,21 +75,21 @@ async def select_ftp_file(
 
 
 @api_router.post("/upload", response_class=HTMLResponse)
-async def upload_file(
+def upload_file(
     request: Request,
     file: UploadFile,
     repository: Annotated[Any, Depends(deps.incoming_file_db)],
     storage: Annotated[Any, Depends(deps.local_file_storage)],
-    workflow_id: str = Form(),
+    workflow_id: Annotated[str, Form(...)],
 ):
-
-    UploadFileToWorkflow(storage=storage, repo=repository).execute(
+    selected = UploadFileToWorkflow.execute(
         workflow_id=workflow_id,
         filename=str(file.filename),
         content=file.file.read(),
         source="local",
+        storage=storage,
+        repo=repository,
     )
-    selected = repository.list_by_id(workflow_id)
     logger.info(f"Current file list: {selected}")
     return request.app.state.templates.TemplateResponse(
         name="pvf_partials/selected_files.html",
@@ -98,14 +99,15 @@ async def upload_file(
 
 
 @api_router.post("/remove", response_class=HTMLResponse)
-async def remove_file(
+def remove_file(
     request: Request,
     repository: Annotated[Any, Depends(deps.incoming_file_db)],
-    file_id: str = Form(),
-    workflow_id: str = Form(),
+    file_id: Annotated[str, Form(...)],
+    workflow_id: Annotated[str, Form(...)],
 ):
-    DeleteFileFromWorkflow.execute(id=file_id, repo=repository)
-    selected = repository.list_by_id(workflow_id)
+    selected = DeleteFileFromWorkflow.execute(
+        id=file_id, repo=repository, workflow_id=workflow_id
+    )
     logger.info(f"Current file list: {selected}")
     return request.app.state.templates.TemplateResponse(
         name="pvf_partials/selected_files.html",
