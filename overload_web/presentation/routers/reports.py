@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
 from overload_web.application.commands.reporting import (
@@ -58,7 +58,7 @@ def get_detailed_report(
 def save_processing_statistics(
     request: Request,
     batch_id: str,
-    record_type: Annotated[str, Form()],
+    record_type: str,
     handler: Annotated[Any, Depends(deps.get_report_handler)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
     writer: Annotated[Any, Depends(deps.get_report_writer)],

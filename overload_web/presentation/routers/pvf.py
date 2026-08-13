@@ -64,7 +64,7 @@ def process_acq_records(
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
-        context={"batch_id": processed["id"]},
+        context={"batch_id": processed["id"], "record_type": "acq"},
     )
 
 
@@ -102,7 +102,7 @@ def process_cat_records(
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
-        context={"batch_id": processed["id"]},
+        context={"batch_id": processed["id"], "record_type": "cat"},
     )
 
 
@@ -149,5 +149,5 @@ def process_sel_records(
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/pvf_results.html",
-        context={"batch_id": processed["id"]},
+        context={"batch_id": processed["id"], "record_type": "sel"},
     )

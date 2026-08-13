@@ -2,10 +2,9 @@
   <div class="col">
     <div id="summary-report-container">
       <div id="vendor_report"
-           hx-get="/reports/summary?batch_id={{ batch_id }}"
+           hx-get="/reports/summary?batch_id={{ batch_id }}&record_type={{ record_type }}"
            hx-trigger="load"
-           name="vendor_report"
-           hx-include="[name='record_type']"></div>
+           name="vendor_report"></div>
     </div>
     <div id="detailed-report-container"></div>
     <div id="save-files-container"></div>
@@ -26,8 +25,7 @@
       </div>
       <div class="col">
         <button id="save-report-button"
-                hx-post="/reports/write?batch_id={{ batch_id }}"
-                hx-include="[name='record_type']"
+                hx-post="/reports/write?batch_id={{ batch_id }}&record_type={{ record_type }}"
                 hx-target="#report-save-container"
                 class="btn btn-nypl">Save Processing Statistics</button>
       </div>

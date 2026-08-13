@@ -452,6 +452,6 @@ class TestApp:
         self, record_type, fake_reporter
     ):
         response = self.client.post(
-            "/reports/write?batch_id=1", data={"record_type": record_type}
+            f"/reports/write?batch_id=1&record_type={record_type}"
         )
         assert response.status_code == 200
