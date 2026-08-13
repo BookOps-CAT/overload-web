@@ -74,45 +74,9 @@ class SierraBibFetcher:
         """
         self.session = session
 
-    def _normalize_oclc(self, id: str | int) -> str:
-        """
-        Normalizes OCLC numbers based on session type.
-
-        NYPL's Platform API expects that prefixes will be removed. BPL's Solr service
-        expects that the prefix will be present.
-
-        Args:
-            id: the OCLC number as a string or integer.
-
-        Returns:
-            the OCLC number as a string normalized based on requirements for the
-            type of `SierraSessionProtocol` being used.
-        """
-        if isinstance(id, int) and isinstance(self.session, NYPLPlatformSession):
-            return str(id)
-        elif isinstance(id, str) and isinstance(self.session, NYPLPlatformSession):
-            return str(int(id.lower().strip("()oclnm")))
-        else:
-            id_lower = str(id).lower()
-            if (
-                id_lower.startswith("ocm")
-                or id_lower.startswith("ocn")
-                or id_lower.startswith("on")
-            ):
-                return id_lower
-            else:
-                num = str(int(id_lower.strip("()oclnm")))
-                value_length = len(num)
-                if value_length <= 8 and value_length >= 1:
-                    return f"ocm{str(int(num)).zfill(8)}"
-                elif value_length == 9:
-                    return f"ocn{str(int(num))}"
-                else:
-                    return f"on{str(int(num))}"
-
     def get_bibs_by_id(self, value: str | int, key: str) -> list[dict[str, Any]]:
         """
-        Retrieves bib records by a specific matchpoint (e.g., isbn, oclc_number)
+        Retrieves bib records by a specific matchpoint (e.g., isbn, control_number)
 
         Args:
             value: identifier to search by.
@@ -123,7 +87,7 @@ class SierraBibFetcher:
         """
         match_methods = {
             "bib_id": self.session._get_bibs_by_bib_id,
-            "oclc_number": self.session._get_bibs_by_oclc_number,
+            "control_number": self.session._get_bibs_by_control_number,
             "isbn": self.session._get_bibs_by_isbn,
             "issn": self.session._get_bibs_by_issn,
             "upc": self.session._get_bibs_by_upc,
@@ -139,8 +103,6 @@ class SierraBibFetcher:
         if value is None:
             logger.debug(f"Skipping Sierra query on {key} with missing value.")
             return bibs
-        if key == "oclc_number":
-            value = self._normalize_oclc(value)
         try:
             logger.debug(
                 f"Querying Sierra with {self.session.__class__.__name__} "
@@ -171,7 +133,7 @@ class SierraSessionProtocol(Protocol):
     def _get_bibs_by_issn(
         self, value: str | int
     ) -> requests.Response: ...  # pragma: no branch
-    def _get_bibs_by_oclc_number(
+    def _get_bibs_by_control_number(
         self, value: str | int
     ) -> requests.Response: ...  # pragma: no branch
     def _get_bibs_by_upc(
@@ -238,8 +200,8 @@ class BPLSolrSession(SolrSession):
         """*Currently not implemented* Search BPL Solr by issn."""
         raise NotImplementedError("Search by ISSN not implemented in BPL Solr")
 
-    def _get_bibs_by_oclc_number(self, value: str | int) -> requests.Response:
-        """Search BPL Solr by oclc_number."""
+    def _get_bibs_by_control_number(self, value: str | int) -> requests.Response:
+        """Search BPL Solr by control_number."""
         return self.search_controlNo(str(value), default_response_fields=False)
 
     def _get_bibs_by_upc(self, value: str | int) -> requests.Response:
@@ -308,8 +270,8 @@ class NYPLPlatformSession(PlatformSession):
         """*Currently not implemented* Search NYPL Platform by issn."""
         raise NotImplementedError("Search by ISSN not implemented in NYPL Platform")
 
-    def _get_bibs_by_oclc_number(self, value: str | int) -> requests.Response:
-        """Search NYPL Platform by oclc_number."""
+    def _get_bibs_by_control_number(self, value: str | int) -> requests.Response:
+        """Search NYPL Platform by control_number."""
         return self.search_controlNos(str(value))
 
     def _get_bibs_by_upc(self, value: str | int) -> requests.Response:

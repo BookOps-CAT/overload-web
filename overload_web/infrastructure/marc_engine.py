@@ -149,18 +149,21 @@ class MarcEngine:
 
     def map_data(self, obj: Any, rules: dict[str, Any]) -> dict[str, Any]:
         """
-        Build a dictionary representing a `DomainBib` object from a
-        `bookops_marc.Bib` object and a set of mapping rules.
+        Build a dictionary representing a `DomainBib` or `Order ` object
+        from a `bookops_marc.Bib` object and a set of mapping rules.
 
         Args:
-            record: MARC record represented as a `bookops_marc.Bib` object.
+            obj: MARC record represented as a `bookops_marc.Bib` or `bookops_marc.Order`
+            object.
 
         Returns:
-            a dictionary containing a mapping between a `bookops_marc.Bib` object
-            and a `DomainBib` object.
+            a dictionary containing a mapping between a `bookops_marc` object
+            and a domain object.
         """
         out: dict[str, Any] = {}
 
+        if isinstance(obj, Bib):
+            obj.normalize_oclc_control_number()
         for k, v in rules.items():
             # OCLC Numbers have to be normalized from a dictionary
             if v == "oclc_nos":

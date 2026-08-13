@@ -1085,7 +1085,7 @@
         "isbn": "020",
         "bib_id": "Sierra ID",
         "upc": "024",
-        "oclc_number": "001"
+        "control_number": "001"
       }
     },
     "secondary_matchpoint": {
@@ -1094,7 +1094,7 @@
         "isbn": "020",
         "bib_id": "Sierra ID",
         "upc": "024",
-        "oclc_number": "001"
+        "control_number": "001"
       }
     },
     "tertiary_matchpoint": {
@@ -1103,7 +1103,7 @@
         "isbn": "020",
         "bib_id": "Sierra ID",
         "upc": "024",
-        "oclc_number": "001"
+        "control_number": "001"
       }
     }
   },

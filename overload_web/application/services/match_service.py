@@ -54,7 +54,7 @@ class BibMatcher:
                 `DomainBib` object.
             matchpoints:
                 a dictionary containing matchpoints and their priority e.g.
-                `{"primary_matchpoint": "isbn", "secondary_matchpoint": "oclc_number"}`
+                `{"primary_matchpoint": "isbn", "secondary_matchpoint": "bib_id"}`
         Returns:
             A list of the record's matches as dictionaries representing Sierra
             responses, or an empty list if no matches were found.
@@ -66,11 +66,6 @@ class BibMatcher:
             value = getattr(record, matchpoint, None)
             if not value:
                 continue
-            elif isinstance(value, list):
-                for v in value:
-                    candidates = self.fetcher.get_bibs_by_id(value=v, key=matchpoint)
-                    if candidates:
-                        return candidates
             else:
                 candidates = self.fetcher.get_bibs_by_id(value=value, key=matchpoint)
                 if candidates:

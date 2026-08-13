@@ -16,12 +16,12 @@ def stub_domain_bib(library, collection):
         title="Foo",
         record_type="acq",
         binary_data=b"",
-        oclc_number=["12345", "67890"],
+        control_number="12345",
     )
 
 
 class TestSierraBibFetcher:
-    @pytest.mark.parametrize("match", ["upc", "isbn"])
+    @pytest.mark.parametrize("match", ["bib_id", "upc", "isbn", "control_number"])
     def test_get_bibs_by_id_bpl(self, mock_session, match, caplog):
         fetcher = clients.SierraBibFetcher(session=clients.BPLSolrSession())
         fetcher.get_bibs_by_id(value="123456789", key=match)
@@ -36,24 +36,7 @@ class TestSierraBibFetcher:
         with does_not_raise():
             fetcher.get_bibs_by_id(value=id, key="bib_id")
 
-    @pytest.mark.parametrize(
-        "num, norm",
-        [
-            ("on1234567890", "on1234567890"),
-            ("123456789", "ocn123456789"),
-            (123, "ocm00000123"),
-            ("1234567890", "on1234567890"),
-        ],
-    )
-    def test_get_bibs_by_oclc_number_bpl(self, mock_session, num, norm, caplog):
-        fetcher = clients.SierraBibFetcher(session=clients.BPLSolrSession())
-        fetcher.get_bibs_by_id(value=num, key="oclc_number")
-        assert (
-            caplog.records[0].msg
-            == f"Querying Sierra with BPLSolrSession on oclc_number with value: {norm}."
-        )
-
-    @pytest.mark.parametrize("match", ["bib_id", "upc", "isbn", "oclc_number"])
+    @pytest.mark.parametrize("match", ["bib_id", "upc", "isbn", "control_number"])
     def test_get_bibs_by_id_nypl(self, mock_session, match, caplog):
         fetcher = clients.SierraBibFetcher(session=clients.NYPLPlatformSession())
         fetcher.get_bibs_by_id(value="123456789", key=match)
@@ -68,23 +51,6 @@ class TestSierraBibFetcher:
         with does_not_raise():
             fetcher.get_bibs_by_id(value=id, key="bib_id")
 
-    @pytest.mark.parametrize(
-        "num, norm",
-        [
-            ("on1234567890", "1234567890"),
-            ("ocn123456789", "123456789"),
-            ("ocm00000123", "123"),
-            (123, "123"),
-        ],
-    )
-    def test_get_bibs_by_oclc_number_nypl(self, mock_session, num, norm, caplog):
-        fetcher = clients.SierraBibFetcher(session=clients.NYPLPlatformSession())
-        fetcher.get_bibs_by_id(value=num, key="oclc_number")
-        assert (
-            caplog.records[0].msg
-            == f"Querying Sierra with NYPLPlatformSession on oclc_number with value: {norm}."
-        )
-
     def test_get_bibs_by_id_invalid_matchpoint(self, mock_session, caplog):
         fetcher = clients.SierraBibFetcher(session=mock_session)
         with pytest.raises(ValueError) as exc:
@@ -92,7 +58,9 @@ class TestSierraBibFetcher:
         assert "Unsupported query matchpoint: 'bar'" in caplog.text
         assert "Invalid matchpoint: 'bar'. Available matchpoints are:" in str(exc.value)
 
-    @pytest.mark.parametrize("match", ["bib_id", "upc", "isbn", "oclc_number", "issn"])
+    @pytest.mark.parametrize(
+        "match", ["bib_id", "upc", "isbn", "control_number", "issn"]
+    )
     def test_get_bibs_by_id_no_value_passed(self, match, mock_session, caplog):
         fetcher = clients.SierraBibFetcher(session=mock_session)
         bibs = fetcher.get_bibs_by_id(value=None, key=match)
@@ -130,7 +98,7 @@ class TestSierraBibFetcher:
 class TestBibMatcher:
     @pytest.mark.parametrize(
         "matchpoints",
-        [{"primary_matchpoint": "isbn"}, {"primary_matchpoint": "oclc_number"}],
+        [{"primary_matchpoint": "isbn"}, {"primary_matchpoint": "control_number"}],
     )
     def test_match_full(self, fake_fetcher, stub_domain_bib, matchpoints):
         stub_domain_bib.vendor_info = bibs.VendorInfo(
@@ -143,7 +111,7 @@ class TestBibMatcher:
 
     @pytest.mark.parametrize(
         "matchpoints",
-        [{"primary_matchpoint": "isbn"}, {"primary_matchpoint": "oclc_number"}],
+        [{"primary_matchpoint": "isbn"}, {"primary_matchpoint": "control_number"}],
     )
     def test_match_full_no_candidates(
         self, fake_fetcher_no_matches, stub_domain_bib, matchpoints

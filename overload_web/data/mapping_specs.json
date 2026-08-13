@@ -80,7 +80,7 @@
         "vendor_tags": { "primary": { "901": { "code": "a", "value": "BTSERIES" } } },
         "matchpoints": {
           "primary_matchpoint": "isbn",
-          "secondary_matchpoint": "oclc_number"
+          "secondary_matchpoint": "control_number"
         },
         "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }]
       },
@@ -126,7 +126,7 @@
           }
         },
         "matchpoints": {
-          "primary_matchpoint": "oclc_number",
+          "primary_matchpoint": "control_number",
           "secondary_matchpoint": "isbn",
           "tertiary_matchpoint": "upc"
         },
@@ -141,7 +141,7 @@
           }
         },
         "matchpoints": {
-          "primary_matchpoint": "oclc_number",
+          "primary_matchpoint": "control_number",
           "secondary_matchpoint": "isbn",
           "tertiary_matchpoint": "upc"
         },
@@ -157,7 +157,7 @@
           }
         },
         "matchpoints": {
-          "primary_matchpoint": "oclc_number",
+          "primary_matchpoint": "control_number",
           "secondary_matchpoint": "isbn",
           "tertiary_matchpoint": "upc"
         },
@@ -173,7 +173,7 @@
           }
         },
         "matchpoints": {
-          "primary_matchpoint": "oclc_number",
+          "primary_matchpoint": "control_number",
           "secondary_matchpoint": "isbn",
           "tertiary_matchpoint": "upc"
         },
@@ -183,7 +183,7 @@
         "name": "AMALIVRE",
         "vendor_tags": { "primary": { "901": { "code": "a", "value": "AUXAM" } } },
         "matchpoints": {
-          "primary_matchpoint": "oclc_number",
+          "primary_matchpoint": "control_number",
           "secondary_matchpoint": "isbn"
         },
         "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }]
@@ -192,7 +192,7 @@
         "name": "INGRAM",
         "vendor_tags": { "primary": { "901": { "code": "a", "value": "INGRAM" } } },
         "matchpoints": {
-          "primary_matchpoint": "oclc_number",
+          "primary_matchpoint": "control_number",
           "secondary_matchpoint": "isbn"
         },
         "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }]
@@ -201,7 +201,7 @@
         "name": "Sulaiman",
         "vendor_tags": { "primary": { "037": { "code": "b", "value": "Sulaiman" } } },
         "matchpoints": {
-          "primary_matchpoint": "oclc_number",
+          "primary_matchpoint": "control_number",
           "secondary_matchpoint": "isbn"
         },
         "bib_fields": [
@@ -214,7 +214,7 @@
         "vendor_tags": { "primary": {} },
         "matchpoints": {
           "primary_matchpoint": "isbn",
-          "secondary_matchpoint": "oclc_number"
+          "secondary_matchpoint": "control_number"
         },
         "bib_fields": []
       }
@@ -226,7 +226,7 @@
         "matchpoints": {
           "primary_matchpoint": "bib_id",
           "secondary_matchpoint": "isbn",
-          "tertiary_matchpoint": "oclc_number"
+          "tertiary_matchpoint": "control_number"
         },
         "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }]
       },

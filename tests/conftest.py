@@ -566,7 +566,7 @@ def full_bib(library, collection):
             bib_fields=[],
             matchpoints={
                 "primary_matchpoint": "isbn",
-                "secondary_matchpoint": "oclc_number",
+                "secondary_matchpoint": "control_number",
             },
         ),
     )

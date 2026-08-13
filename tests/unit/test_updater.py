@@ -51,7 +51,7 @@ def make_bt_series_full_bib(full_bib, library, collection):
             name="BT SERIES",
             matchpoints={
                 "primary_matchpoint": "isbn",
-                "secondary_matchpoint": "oclc_number",
+                "secondary_matchpoint": "control_number",
             },
             bib_fields=[
                 {"tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;"}
@@ -130,7 +130,7 @@ class TestUpdaterCatRecords:
         full_bib.vendor = "INGRAM"
         full_bib.vendor_info = bibs.VendorInfo(
             name="INGRAM",
-            matchpoints={"primary_matchpoint": "oclc_number"},
+            matchpoints={"primary_matchpoint": "control_number"},
             bib_fields=[
                 {"tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;"}
             ],
@@ -151,7 +151,7 @@ class TestUpdaterCatRecords:
         full_bib.vendor = "INGRAM"
         full_bib.vendor_info = bibs.VendorInfo(
             name="INGRAM",
-            matchpoints={"primary_matchpoint": "oclc_number"},
+            matchpoints={"primary_matchpoint": "control_number"},
             bib_fields=[
                 {"tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;"}
             ],
