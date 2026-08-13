@@ -19,14 +19,14 @@ def create_full_records_report(
 ) -> reporting.ProcessingStatistics:
     """Generate statistics from a batch of processed full-level records"""
     stats = defaultdict(list)
-    stats["file_names"].extend(file_names)
-    stats["missing_barcodes"].extend(missing_barcodes)
     for rec in analysis:
         for k, v in rec.__dict__.items():
             stats[k].append(v)
     out: dict[str, Any] = dict(stats)
     out["total_records"] = len(analysis)
     out["total_files"] = len(stats["file_names"])
+    out["file_names"] = file_names
+    out["missing_barcodes"] = missing_barcodes
     return reporting.ProcessingStatistics(**out)
 
 

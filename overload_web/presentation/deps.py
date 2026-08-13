@@ -362,7 +362,8 @@ def get_report_writer() -> reporter.GoogleSheetsReporter:
 
 
 def load_files(
-    workflow_id: str = Form(...), repo: Any = Depends(incoming_file_db)
+    workflow_id: Annotated[str, Form(...)],
+    repo: Annotated[Any, Depends(incoming_file_db)],
 ) -> list:
     return LoadAllWorkflowFiles.execute(
         workflow_id=workflow_id, storage=file_io.LocalFileStorage(), repo=repo

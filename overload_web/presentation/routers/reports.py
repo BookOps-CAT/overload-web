@@ -57,7 +57,7 @@ def get_detailed_report(
 @api_router.post("/write", response_class=HTMLResponse)
 def write_report_to_google_sheet(
     request: Request,
-    id: str,
+    batch_id: str,
     record_type: Annotated[str, Form()],
     handler: Annotated[Any, Depends(deps.get_report_handler)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
@@ -65,7 +65,7 @@ def write_report_to_google_sheet(
 ) -> HTMLResponse:
     """Write call number and duplicate reports to a google sheet."""
     out = WriteOutputReport.execute(
-        batch_id=id,
+        batch_id=batch_id,
         handler=handler,
         repo=repository,
         writer=writer,
