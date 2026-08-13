@@ -55,7 +55,7 @@ def get_detailed_report(
 
 
 @api_router.post("/write", response_class=HTMLResponse)
-def write_report_to_google_sheet(
+def save_processing_statistics(
     request: Request,
     batch_id: str,
     record_type: Annotated[str, Form()],
@@ -63,7 +63,7 @@ def write_report_to_google_sheet(
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
     writer: Annotated[Any, Depends(deps.get_report_writer)],
 ) -> HTMLResponse:
-    """Write call number and duplicate reports to a google sheet."""
+    """Save processing statistics reports (call number and dupes) to a google sheet."""
     out = WriteOutputReport.execute(
         batch_id=batch_id,
         handler=handler,
