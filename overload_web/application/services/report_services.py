@@ -62,13 +62,12 @@ class ReportWriter:
     ) -> None:
         """Write processing data to a google sheet."""
         stats = reporting.ProcessingStatistics(**data)
-        call_no = handler.create_call_number_report(
+        call_no_report = handler.create_call_number_report(
             report_data=stats.call_number_report_data, record_type=record_type
         )
-        dupes = handler.create_duplicate_report(report_data=stats.duplicate_report_data)
-        if call_no:
-            prepped_data = writer.prep_report(data=call_no)
+        if call_no_report:
+            prepped_data = writer.prep_report(data=call_no_report)
             writer.write_report(prepped_data)
-        duplicates_report = handler.create_duplicate_report(dupes)
-        prepped_data = writer.prep_report(data=duplicates_report)
+        dupes_report = handler.create_duplicate_report(stats.duplicate_report_data)
+        prepped_data = writer.prep_report(data=dupes_report)
         writer.write_report(prepped_data)
