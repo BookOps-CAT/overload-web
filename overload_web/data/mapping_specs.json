@@ -82,33 +82,25 @@
           "primary_matchpoint": "isbn",
           "secondary_matchpoint": "oclc_number"
         },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }]
       },
       "BT PARADE": {
         "name": "BT PARADE",
         "vendor_tags": { "primary": { "901": { "code": "a", "value": "PARADE" } } },
         "matchpoints": { "primary_matchpoint": "isbn" },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }]
       },
       "BT ROMANCE": {
         "name": "BT ROMANCE",
         "vendor_tags": { "primary": { "901": { "code": "a", "value": "BTROMAN" } } },
         "matchpoints": { "primary_matchpoint": "isbn" },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }]
       },
       "BT URBAN": {
         "name": "BT URBAN",
         "vendor_tags": { "primary": { "901": { "code": "a", "value": "BTURBN" } } },
         "matchpoints": { "primary_matchpoint": "isbn" },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }]
       },
       "BT ODC": {
         "name": "BT ODC",
@@ -117,17 +109,13 @@
           "primary_matchpoint": "bib_id",
           "secondary_matchpoint": "isbn"
         },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }]
       },
       "BT LEASED": {
         "name": "BT LEASED",
         "vendor_tags": { "primary": { "901": { "code": "a", "value": "LEASED" } } },
         "matchpoints": { "primary_matchpoint": "isbn" },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }]
       },
       "Midwest DVD": {
         "name": "Midwest DVD",
@@ -142,9 +130,7 @@
           "secondary_matchpoint": "isbn",
           "tertiary_matchpoint": "upc"
         },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=v;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=v;" }]
       },
       "Midwest Blu-ray": {
         "name": "Midwest Blu-ray",
@@ -159,9 +145,7 @@
           "secondary_matchpoint": "isbn",
           "tertiary_matchpoint": "upc"
         },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=b;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=b;" }]
       },
       "Midwest CD": {
         "name": "Midwest CD",
@@ -177,9 +161,7 @@
           "secondary_matchpoint": "isbn",
           "tertiary_matchpoint": "upc"
         },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=y;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=y;" }]
       },
       "Midwest Audio": {
         "name": "Midwest Audio",
@@ -195,9 +177,7 @@
           "secondary_matchpoint": "isbn",
           "tertiary_matchpoint": "upc"
         },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=u;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=u;" }]
       },
       "AMALIVRE": {
         "name": "AMALIVRE",
@@ -206,9 +186,7 @@
           "primary_matchpoint": "oclc_number",
           "secondary_matchpoint": "isbn"
         },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }]
       },
       "INGRAM": {
         "name": "INGRAM",
@@ -217,9 +195,7 @@
           "primary_matchpoint": "oclc_number",
           "secondary_matchpoint": "isbn"
         },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }]
       },
       "Sulaiman": {
         "name": "Sulaiman",
@@ -252,9 +228,7 @@
           "secondary_matchpoint": "isbn",
           "tertiary_matchpoint": "oclc_number"
         },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }]
       },
       "BT CLS": {
         "name": "BT CLS",
@@ -264,9 +238,7 @@
           "secondary_matchpoint": "isbn",
           "tertiary_matchpoint": "022"
         },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }]
       },
       "BT SERIES": {
         "name": "BT SERIES",
@@ -275,9 +247,7 @@
           "alternate": { "947": { "code": "a", "value": "B&amp;T SERIES" } }
         },
         "matchpoints": { "primary_matchpoint": "isbn" },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }]
       },
       "BT ROMANCE": {
         "name": "BT ROMANCE",
@@ -286,9 +256,7 @@
           "alternate": { "947": { "code": "a", "value": "B&amp;T ROMANCE" } }
         },
         "matchpoints": { "primary_matchpoint": "isbn" },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }]
       },
       "BT URBAN": {
         "name": "BT URBAN",
@@ -297,9 +265,7 @@
           "alternate": { "947": { "code": "a", "value": "B&amp;T URBAN" } }
         },
         "matchpoints": { "primary_matchpoint": "isbn" },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }]
       },
       "BT LEASE": {
         "name": "BT LEASE",
@@ -308,9 +274,7 @@
           "alternate": { "947": { "code": "a", "value": "B&amp;T LEASE" } }
         },
         "matchpoints": { "primary_matchpoint": "isbn" },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }]
       },
       "BT PBP": {
         "name": "BT PBP",
@@ -319,9 +283,7 @@
           "alternate": { "947": { "code": "a", "value": "B&amp;T PBP" } }
         },
         "matchpoints": { "primary_matchpoint": "isbn" },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;" }]
       },
       "Midwest DVD": {
         "name": "Midwest DVD",
@@ -335,9 +297,7 @@
           "primary_matchpoint": "bib_id",
           "secondary_matchpoint": "isbn"
         },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=h;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=h;" }]
       },
       "Midwest Audio": {
         "name": "Midwest Audio",
@@ -351,9 +311,7 @@
           "primary_matchpoint": "bib_id",
           "secondary_matchpoint": "isbn"
         },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=i;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=i;" }]
       },
       "Midwest CD": {
         "name": "Midwest CD",
@@ -367,9 +325,7 @@
           "primary_matchpoint": "bib_id",
           "secondary_matchpoint": "isbn"
         },
-        "bib_fields": [
-          { "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=j;" }
-        ]
+        "bib_fields": [{ "tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=j;" }]
       },
       "UNKNOWN": {
         "name": "UNKNOWN",
