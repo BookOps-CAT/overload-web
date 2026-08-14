@@ -63,7 +63,7 @@ class ProcessAcquisitionsRecords:
                 matches = matcher.match_order_record(bib, matchpoints=matchpoints)
                 analysis = bib.analyze_matches(candidates=matches)
                 bib.apply_match(analysis)
-                marc.BibUpdater.apply_acquisition_updates(
+                marc.BibUpdater.update_acquisition_record(
                     bib, engine=marc_engine, template_data=template_data
                 )
                 report_data.append(analysis)
@@ -120,7 +120,7 @@ class ProcessCatalogingRecords:
             matches = matcher.match_full_record(bib)
             analysis = bib.analyze_matches(candidates=matches)
             bib.apply_match(analysis)
-            marc.BibUpdater.apply_cataloging_updates(bib, engine=marc_engine)
+            marc.BibUpdater.update_cataloging_record(bib, engine=marc_engine)
             report_data.append(analysis)
         missing_barcodes = bib_processing.validate_preserved_barcodes(
             records=records, barcodes=barcodes
@@ -196,7 +196,7 @@ class ProcessSelectionRecords:
                 matches = matcher.match_order_record(bib, matchpoints=matchpoints)
                 analysis = bib.analyze_matches(candidates=matches)
                 bib.apply_match(analysis)
-                marc.BibUpdater.apply_selection_updates(
+                marc.BibUpdater.update_selection_record(
                     bib, engine=marc_engine, template_data=template_data
                 )
                 report_data.append(analysis)
