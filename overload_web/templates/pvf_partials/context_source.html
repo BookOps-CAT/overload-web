@@ -1,22 +1,20 @@
 {% import "pvf_partials/macros.html" as macro %}
-<div class="row p-3">
+<div class="card card-app">
   <div class="col-8">
-    <div class="card card-app">
-      <div class="card-body">
-        <div class="row">
-          <div class="col" id="library_wrapper">
-            {% block library_wrapper %}{{ macro.library_field("library", context_fields["library"]) }}{% endblock %}
-          </div>
-          <div class="col" id="collection_wrapper">
-            {% block collection_wrapper %}
-              {{ macro.collection_field("collection", context_fields["collection"], disabled=False) }}
-            {% endblock %}
-          </div>
-          <div class="col" id="record_type_wrapper">
-            {% block record_type_wrapper %}
-              {{ macro.record_type_field("record_type", context_fields["record_type"]) }}
-            {% endblock %}
-          </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col" id="library_wrapper">
+          {% block library_wrapper %}{{ macro.library_field("library", context_fields["library"]) }}{% endblock %}
+        </div>
+        <div class="col" id="collection_wrapper">
+          {% block collection_wrapper %}
+            {{ macro.collection_field("collection", context_fields["collection"], disabled=False) }}
+          {% endblock %}
+        </div>
+        <div class="col" id="record_type_wrapper">
+          {% block record_type_wrapper %}
+            {{ macro.record_type_field("record_type", context_fields["record_type"]) }}
+          {% endblock %}
         </div>
       </div>
     </div>
