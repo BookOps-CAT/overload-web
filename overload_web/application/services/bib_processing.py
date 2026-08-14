@@ -54,14 +54,12 @@ def validate_preserved_barcodes(
     records: list[bibs.DomainBib], barcodes: list[str]
 ) -> list[str]:
     """Confirm barcodes extracted from a file are present in processed records"""
-    valid = True
     processed_barcodes = list(
         itertools.chain.from_iterable([i.barcodes for i in records])
     )
     missing_barcodes = set()
     for barcode in barcodes:
         if barcode not in processed_barcodes:
-            valid = False
             missing_barcodes.add(barcode)
     valid = sorted(barcodes) == sorted(processed_barcodes)
     logger.debug(
