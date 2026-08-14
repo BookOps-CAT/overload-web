@@ -293,6 +293,22 @@ class MatchAnalysis:
         self.updated_by_vendor = updated_by_vendor
         self.vendor = vendor
 
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "action": self.action,
+            "call_number": self.call_number,
+            "call_number_match": self.call_number_match,
+            "duplicate_records": self.duplicate_records,
+            "mixed": self.mixed,
+            "other": self.other,
+            "resource_id": self.resource_id,
+            "target_bib_id": self.target_bib_id,
+            "target_call_no": self.target_call_no,
+            "target_title": self.target_title,
+            "updated_by_vendor": self.updated_by_vendor,
+            "vendor": self.vendor,
+        }
+
 
 class MatchAnalyzer(Protocol):
     """Review matches identified by the `BibMatcher` service."""
@@ -384,22 +400,6 @@ class Order:
                 tag_dict[k] = getattr(self, v)
             out[key] = tag_dict
         return out
-
-
-@dataclass
-class ProcessedFile:
-    """A value object representing a processed file of MARC records"""
-
-    file_name: str
-    records: bytes
-
-
-@dataclass
-class ProcessedFileBatch:
-    """A dataclass representing a batch of processed files and their statistics"""
-
-    files: list[ProcessedFile]
-    report: dict[str, list[Any]]
 
 
 class RecordType(StrEnum):

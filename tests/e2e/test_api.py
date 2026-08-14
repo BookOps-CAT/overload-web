@@ -122,7 +122,6 @@ def test_deps():
 class TestApp:
     client = TestClient(app)
     app.dependency_overrides[deps.get_session] = fake_sql_session
-    app.dependency_overrides[deps.load_files] = fake_storage
     base_url = client.base_url
 
     def test_files_router_list_remote_files_get(self):

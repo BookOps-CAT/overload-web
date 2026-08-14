@@ -11,7 +11,6 @@ from fastapi import Depends, Form
 from pydantic import BaseModel, field_validator, model_validator
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.application.commands.file_io import LoadAllWorkflowFiles
 from overload_web.infrastructure import (
     batch_db,
     clients,
@@ -359,12 +358,3 @@ def get_report_handler() -> reporter.PandasReportHandler:
 def get_report_writer() -> reporter.GoogleSheetsReporter:
     """Return a `GoogleSheetsReporter` in order to write stats to a Google Sheet."""
     return reporter.GoogleSheetsReporter()
-
-
-def load_files(
-    workflow_id: Annotated[str, Form(...)],
-    repo: Annotated[Any, Depends(incoming_file_db)],
-) -> list:
-    return LoadAllWorkflowFiles.execute(
-        workflow_id=workflow_id, storage=file_io.LocalFileStorage(), repo=repo
-    )

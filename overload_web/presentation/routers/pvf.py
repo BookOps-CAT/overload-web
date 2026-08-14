@@ -5,9 +5,10 @@ from __future__ import annotations
 import logging
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse
 
+from overload_web.application.commands.file_io import LoadAllWorkflowFiles
 from overload_web.application.commands.process import (
     ProcessAcquisitionsRecords,
     ProcessCatalogingRecords,
@@ -21,6 +22,16 @@ logger = logging.getLogger(__name__)
 api_router = APIRouter()
 
 
+def load_files(
+    workflow_id: Annotated[str, Form(...)],
+    repo: Annotated[Any, Depends(deps.incoming_file_db)],
+    storage: Annotated[Any, Depends(deps.local_file_storage)],
+) -> list:
+    return LoadAllWorkflowFiles.execute(
+        workflow_id=workflow_id, storage=storage, repo=repo
+    )
+
+
 @api_router.post("/acq/process-vendor-file", response_class=HTMLResponse)
 def process_acq_records(
     request: Request,
@@ -29,7 +40,7 @@ def process_acq_records(
     marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
     matchpoints: Annotated[Any, Depends(deps.MatchpointsModel.from_form)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
-    files: Annotated[Any, Depends(deps.load_files)],
+    files: Annotated[Any, Depends(load_files)],
 ) -> HTMLResponse:
     """
     Process one or more files of order-level MARC records using the acq workflow.
@@ -74,7 +85,7 @@ def process_cat_records(
     fetcher: Annotated[Any, Depends(deps.get_fetcher)],
     marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
-    files: Annotated[Any, Depends(deps.load_files)],
+    files: Annotated[Any, Depends(load_files)],
 ) -> HTMLResponse:
     """
     Process one or more files of full-level MARC records using the cat workflow.
@@ -114,7 +125,7 @@ def process_sel_records(
     marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
     matchpoints: Annotated[Any, Depends(deps.MatchpointsModel.from_form)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
-    files: Annotated[Any, Depends(deps.load_files)],
+    files: Annotated[Any, Depends(load_files)],
 ) -> HTMLResponse:
     """
     Process one or more files of order-level MARC records using the sel workflow.

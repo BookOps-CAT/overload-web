@@ -10,6 +10,22 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class ProcessedFile:
+    """A value object representing a processed file of MARC records"""
+
+    file_name: str
+    records: bytes
+
+
+@dataclass
+class ProcessedFileBatch:
+    """A dataclass representing a batch of processed files and their statistics"""
+
+    files: list[ProcessedFile]
+    report: ProcessingStatistics
+
+
+@dataclass
 class ProcessingStatistics:
     """A value object representing a statistics for a batch of processed files"""
 
