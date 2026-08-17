@@ -1,10 +1,6 @@
 {% import "macros/pvf.html" as macro %}
-{% if collection %}
-  <div id="collection_display" hx-swap-oob="true">
+<div id="collection_display" hx-swap-oob="true">
+  {% if collection %}
     <h4>{{ context_fields["collection"]['options'][collection] }}</h4>
-  </div>
-{% else %}
-  <div id="collection_display" hx-swap-oob="true"></div>
-  {{ macro.collection_field("collection", context_fields["collection"],
-    disabled=disabled) }}
-{% endif %}
+  {% endif %}
+</div>
