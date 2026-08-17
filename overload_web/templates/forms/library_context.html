@@ -1,4 +1,4 @@
-{% import "pvf_partials/macros.html" as macro %}
+{% import "macros/pvf.html" as macro %}
 {% if library %}
   <div id="library-img" hx-swap-oob="true">
     <img src="{{ url_for('static', path='images/' ~ library ~ 'Logo.gif') }}"
@@ -12,4 +12,4 @@
   <div id="library-img" hx-swap-oob="true"></div>
 {% endif %}
 {{ macro.collection_field("collection", context_fields["collection"],
-disabled=disabled) }}
+  disabled=disabled) }}

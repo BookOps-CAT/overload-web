@@ -2,21 +2,21 @@
 {% block header %}<h2>{{ page_title }}</h2>{% endblock %}
 {% block content %}
   <div id="pvf-form"></div>
-  <section class="context-section-card">
-    {% include "pvf_partials/context_source.html" %}
-  </section>
-  <section class="file-source-section">
+  <div class="row row-cols-1">
+    <div id="context-section">{% include "pvf_partials/context_source.html" %}</div>
+  </div>
+  <div id="file-source-section" class="row row-cols-3 align-items-stretch">
     {% include "pvf_partials/file_source.html" %}
-  </section>
-  <section class="template-source-section">
-    <div id="template_source_swap"></div>
-  </section>
-  <div id="pvf_output">
-    <div class="pvf-button-section">
-      <div class="row p-3">
-        <div class="col">
-          <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
-        </div>
+  </div>
+  <div class="row row-cols-1">
+    <div id="template-source-section">
+      <div id="template_source_swap"></div>
+    </div>
+  </div>
+  <div class="row row-cols-1">
+    <div id="pvf_output">
+      <div class="row">
+        <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
       </div>
     </div>
   </div>

@@ -2,12 +2,15 @@
   --page-title-padding-top: 40px;
   --page-title-padding-bottom: 24px;
   --nypl-brand-color: #d52828;
+  --card-box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
+  --card-border: 1px solid rgba(0,0,0,.125);
+  --card-border-radius: 0.25rem;
 }
 
 .navbar {
   background-color: var(--nypl-brand-color);
   color: white;
-  padding-top: 40px;
+  padding-top: var(--page-title-padding-top);
   padding-bottom: 10px;
 }
 .navbar .navbar-brand {
@@ -43,9 +46,9 @@
 }
 .card-apps {
   height: 100%;
-  box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
-  border: 1px solid rgba(0,0,0,.125);
-  border-radius: 0.25rem;
+  box-shadow: var(--card-box-shadow);
+  border: var(--card-border);
+  border-radius: var(--card-border-radius);
 }
 .card-apps .card-body {
   padding: 1rem;
@@ -60,4 +63,19 @@
 .card-apps-wrapper {
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
+}
+.pvf-card {
+  height: 100%;
+  box-shadow: var(--card-box-shadow);
+  border: var(--card-border);
+  border-radius: var(--card-border-radius);
+}
+.context-card {
+  height: 100%;
+  box-shadow: var(--card-box-shadow);
+  border: var(--card-border);
+  border-radius: var(--card-border-radius);
+}
+.context-card .card-body {
+  padding: 1rem;
 }
