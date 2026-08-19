@@ -25,7 +25,7 @@
     </div>
   </div>
 </div>
-<h5>Order Fixed Fields</h5>
+<h5 class="mb-2 mt-1">Order Fixed Fields</h5>
 <div class="row row-cols-3">
   {% for field_id, field_data in fixed_fields.items() %}
     <div class="col">
@@ -34,7 +34,7 @@
     </div>
   {% endfor %}
 </div>
-<h5>Order Variable Fields</h5>
+<h5 class="mb-2 mt-1">Order Variable Fields</h5>
 <div class="row row-cols-3">
   {% for field_id, field_data in var_fields.items() %}
     <div class="col">
@@ -43,11 +43,11 @@
     </div>
   {% endfor %}
 </div>
-<h5>Sierra Bib Format</h5>
+<h5 class="mb-2 mt-1">Sierra Bib Format</h5>
 <div class="row row-cols-3">
   <div class="col">{{ macro.select_field('material_form', bib_formats, template.get('material_form')) }}</div>
 </div>
-<h5>Sierra Matchpoints</h5>
+<h5 class="mb-2 mt-1">Sierra Matchpoints</h5>
 <div class="row row-cols-3">
   {% for field_id, field_data in matchpoints.items() %}
     <div class="col">
