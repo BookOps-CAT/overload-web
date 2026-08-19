@@ -1,15 +1,13 @@
 {% import "macros/pvf.html" as macro %}
-<div class="card">
-  <div class="card-body">
-    <h5 class="card-title">Processing Summary:</h5>
-    <p class="card-text">Total processed files: {{ total_files }}</p>
-    <p class="card-text">File names: {{ file_names }}</p>
-    {% if processing_integrity %}
-      <p class="card-text">Integrity of processed files: {{ processing_integrity }}</p>
-    {% endif %}
-    {% if missing_barcodes %}<p class="card-text">Missing barcodes: {{ missing_barcodes }}</p>{% endif %}
-    {% if duplicate_bibs %}<p class="card-text">Duplicates: {{ duplicate_bibs }}</p>{% endif %}
-  </div>
+<div class="card w-100 p-3">
+  <h5 class="card-title">Processing Summary:</h5>
+  <p class="card-text">Total processed files: {{ total_files }}</p>
+  <p class="card-text">File names: {{ file_names }}</p>
+  {% if processing_integrity %}
+    <p class="card-text">Integrity of processed files: {{ processing_integrity }}</p>
+  {% endif %}
+  {% if missing_barcodes %}<p class="card-text">Missing barcodes: {{ missing_barcodes }}</p>{% endif %}
+  {% if duplicate_bibs %}<p class="card-text">Duplicates: {{ duplicate_bibs }}</p>{% endif %}
   <ul class="list-group list-group-flush">
     <li class="list-group-item">
       <h5>Vendor Breakdown:</h5>

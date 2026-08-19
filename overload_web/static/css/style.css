@@ -44,7 +44,11 @@
   background-color: var(--nypl-brand-color);
   color: white;
 }
-.card-apps-wrapper {
+.app-cards-wrapper {
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
 }
+.context-card {
+  min-height: 150px;
+}
+

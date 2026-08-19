@@ -10,7 +10,7 @@
         autocomplete="off"
         hx-on::after-request="if(event.detail.successful) this.reset()">
   </form>
-  <div id="template_source_swap" hx-swap-oob="true">
+  <div id="template-source-section" hx-swap-oob="true">
     {% if record_type != "cat" %}
       {% include "pvf_partials/template_source.html" %}
     {% endif %}
