@@ -1,12 +1,12 @@
 {% import "macros/pvf.html" as macro %}
 <div class="card context-card">
   <div class="card-body d-flex align-items-center">
-    <div class="row align-items-center g-3 w-100">
-      <div class="col" id="library_wrapper">{{ macro.library_field("library", context_fields["library"]) }}</div>
-      <div class="col" id="collection_wrapper">
+    <div class="row g-3 w-100">
+      <div class="col align-self-center" id="library_wrapper">{{ macro.library_field("library", context_fields["library"]) }}</div>
+      <div class="col align-self-center" id="collection_wrapper">
         {{ macro.collection_field("collection", context_fields["collection"], disabled=False) }}
       </div>
-      <div class="col" id="record_type_wrapper">
+      <div class="col align-self-center" id="record_type_wrapper">
         {{ macro.record_type_field("record_type", context_fields["record_type"]) }}
       </div>
       <div class="col-2 text-center align-self-center">
