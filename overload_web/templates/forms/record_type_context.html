@@ -5,7 +5,7 @@
   <form id="pvf-form"
         hx-post="/pvf/{{ record_type }}/process-vendor-file"
         hx-encoding="multipart/form-data"
-        hx-target="#pvf-output"
+        hx-target="#pvf_output"
         hx-swap-oob="true"
         autocomplete="off"
         hx-on::after-request="if(event.detail.successful) this.reset()">
