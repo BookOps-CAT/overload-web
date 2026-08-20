@@ -1,7 +1,7 @@
 {
   "context_fields": {
     "record_type": {
-      "label": "Record Type",
+      "label": "Department",
       "options": { "acq": "Acquisitions", "cat": "Cataloging", "sel": "Selection" }
     },
     "library": {

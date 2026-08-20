@@ -1,5 +1,12 @@
 {% import "macros/pvf.html" as macro %}
-<div class="card w-100 p-3">
-  <h5 class="card-title">Detailed Report Data:</h5>
-  {% if detailed_report %}{{ macro.report_table(detailed_report) }}{% endif %}
-</div>
+{% if detailed_report %}
+  <div class="card w-100 p-3">
+    <h5 class="card-title">Detailed Report Data:</h5>
+    {{ macro.report_table(detailed_report) }}
+  </div>
+{% endif %}
+{% if written_report %}
+  <div id="report-save-container">
+    <h5>Report data saved!</h5>
+  </div>
+{% endif %}

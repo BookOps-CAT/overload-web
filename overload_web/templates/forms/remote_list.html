@@ -1,18 +1,14 @@
-<div class="row row-cols">
+<div class="d-flex d-flex justify-content-around flex-wrap">
   {% for file in files %}
-    <div class="col">
-      <div class="form-check">
-        <input class="form-check-input"
-               hx-post="/files/remote/select?vendor={{ vendor }}"
-               name="remote_file"
-               style="color: #d52828"
-               hx-target="#selected-files"
-               type="checkbox"
-               hx-include="#workflow_id, #vendor"
-               form="pvf-form"
-               value="{{ file }}" />
-        <label class="form-check-label" for="{{ file }}">{{ file }}</label>
-      </div>
+    <div class="form-check">
+      <input class="form-check-input"
+             hx-post="/files/remote/select?vendor={{ vendor }}"
+             hx-target="#selected-files"
+             type="checkbox"
+             hx-include="#workflow_id, #vendor"
+             form="pvf-form"
+             value="{{ file }}" />
+      <label class="form-check-label" for="{{ file }}">{{ file }}</label>
     </div>
   {% endfor %}
   <input name="vendor" type="hidden" value="{{ vendor }}" />

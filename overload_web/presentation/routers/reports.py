@@ -64,7 +64,7 @@ def save_processing_statistics(
     writer: Annotated[Any, Depends(deps.get_report_writer)],
 ) -> HTMLResponse:
     """Save processing statistics reports (call number and dupes) to a google sheet."""
-    out = WriteOutputReport.execute(
+    WriteOutputReport.execute(
         batch_id=batch_id,
         handler=handler,
         repo=repository,
@@ -72,5 +72,5 @@ def save_processing_statistics(
         record_type=record_type,
     )
     return request.app.state.templates.TemplateResponse(
-        request=request, name="reports/detailed.html", context={"detailed_report": out}
+        request=request, name="reports/detailed.html", context={"written_report": True}
     )

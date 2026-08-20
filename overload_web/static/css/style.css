@@ -51,4 +51,7 @@
 .context-card {
   min-height: 150px;
 }
+.checkbox-grid {
+  max-height: 450px;
+}
 
