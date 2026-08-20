@@ -1,0 +1,42 @@
+{% import "macros/pvf.html" as macro %}
+<div id="library-img" hx-swap-oob="true">
+  {% if library %}
+    <img src="{{ url_for('static', path='images/' ~ library ~ 'Logo.gif') }}"
+         height="auto"
+         width="auto"
+         class="object-fit-scale"
+         alt="library logo" />
+  {% endif %}
+</div>
+<div id="collection-display" hx-swap-oob="true">
+  {% if collection %}
+    <h4>{{ context_fields["collection"]['options'][collection] }}</h4>
+  {% endif %}
+</div>
+<div id="record-type-display" hx-swap-oob="true">
+  {% if record_type %}
+    <h4>{{ context_fields["record_type"]['options'][record_type] }}</h4>
+  {% endif %}
+</div>
+<div id="template-source-section" hx-swap-oob="true">
+  {% if template_form_enabled %}
+    {% include "pvf_partials/template_source.html" %}
+  {% endif %}
+</div>
+{% if record_type %}
+  <form id="pvf-form"
+        hx-post="/pvf/{{ record_type }}/process-vendor-file"
+        hx-encoding="multipart/form-data"
+        hx-target="#pvf_output"
+        hx-swap-oob="true"
+        autocomplete="off"
+        hx-on::after-request="if(event.detail.successful) this.reset()">
+  </form>
+{% endif %}
+{% if collection_disabled or not collection %}
+  <div id="collection_wrapper"
+       hx-swap-oob="true"
+       class="col align-self-center">
+    {{ macro.context_select("collection", context_fields["collection"], disabled=collection_disabled) }}
+  </div>
+{% endif %}

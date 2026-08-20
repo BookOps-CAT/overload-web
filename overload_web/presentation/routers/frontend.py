@@ -61,32 +61,25 @@ def vendor_file_page(
     )
 
 
-@frontend_router.get("/forms/update-library", response_class=HTMLResponse)
-def get_library_context_update(request: Request, library: str):
-    ctx = {"library": library, "disabled": False}
-    if library == "bpl":
-        ctx["disabled"] = True
-        return request.app.state.templates.TemplateResponse(
-            name="forms/library_context.html", request=request, context=ctx
-        )
-    return request.app.state.templates.TemplateResponse(
-        name="forms/library_context.html", request=request, context=ctx
-    )
+@frontend_router.get("/forms/update-context", response_class=HTMLResponse)
+def get_context_update(
+    request: Request, library: str = "", collection: str = "", record_type: str = ""
+):
+    collection_disabled = library == "bpl"
 
+    template_form_enabled = record_type in ["acq", "sel"]
 
-@frontend_router.get("/forms/update-collection", response_class=HTMLResponse)
-def get_collection_context_update(request: Request, collection: str | None):
+    if collection_disabled:
+        collection = ""
+
     return request.app.state.templates.TemplateResponse(
-        name="forms/collection_context.html",
+        name="pvf_partials/context_updates.html",
         request=request,
-        context={"collection": collection},
-    )
-
-
-@frontend_router.get("/forms/update-record-type", response_class=HTMLResponse)
-def get_record_type_context_update(request: Request, record_type: str):
-    return request.app.state.templates.TemplateResponse(
-        name="forms/record_type_context.html",
-        request=request,
-        context={"record_type": record_type},
+        context={
+            "library": library,
+            "collection": collection,
+            "record_type": record_type,
+            "collection_disabled": collection_disabled,
+            "template_form_enabled": template_form_enabled,
+        },
     )

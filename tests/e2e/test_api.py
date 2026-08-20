@@ -182,28 +182,43 @@ class TestApp:
         assert response.context["page_title"] == "Process Vendor File"
 
     @pytest.mark.parametrize("library", ["nypl", "bpl"])
-    def test_frontend_get_library_context_update(self, library):
-        response = self.client.get(f"/forms/update-library?library={library}")
+    def test_frontend_get_context_update_library(self, library):
+        response = self.client.get(f"/forms/update-context?library={library}")
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == [
-            "disabled",
+            "collection",
+            "collection_disabled",
             "library",
+            "record_type",
             "request",
+            "template_form_enabled",
         ]
 
-    @pytest.mark.parametrize("collection", ["BL", "RL", "NONE"])
-    def test_frontend_get_collection_context_update(self, collection):
-        response = self.client.get(f"/forms/update-collection?collection={collection}")
+    @pytest.mark.parametrize("collection", ["BL", "RL", ""])
+    def test_frontend_get_context_update_collection(self, collection):
+        response = self.client.get(f"/forms/update-context?collection={collection}")
         assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == ["collection", "request"]
+        assert sorted(list(response.context.keys())) == [
+            "collection",
+            "collection_disabled",
+            "library",
+            "record_type",
+            "request",
+            "template_form_enabled",
+        ]
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_frontend_get_record_type_context_update(self, record_type):
-        response = self.client.get(
-            f"/forms/update-record-type?record_type={record_type}"
-        )
+    def test_frontend_get_context_update_record_type(self, record_type):
+        response = self.client.get(f"/forms/update-context?record_type={record_type}")
         assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == ["record_type", "request"]
+        assert sorted(list(response.context.keys())) == [
+            "collection",
+            "collection_disabled",
+            "library",
+            "record_type",
+            "request",
+            "template_form_enabled",
+        ]
 
     def test_ot_router_get_template_form(self):
         response = self.client.get("/ot/forms/templates")
