@@ -50,13 +50,8 @@
 }
 .context-card {
   min-height: 150px;
-  display: flex;
-  width: 100%;
-  gap: 1rem;
 }
-.checkbox-grid {
-  max-height: 450px;
-}
-.context {
+.context-card .card-body {
   display: flex;
+  align-items: center;
 }

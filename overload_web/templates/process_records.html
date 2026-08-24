@@ -3,12 +3,11 @@
 {% block content %}
   <div id="pvf-form"></div>
   <div class="d-flex flex-column gap-3">
-    <div id="context-section">{% include "pvf_partials/context_source.html" %}</div>
-    <div id="file-source-section"
-         class="d-flex flex-column flex-md-row gap-3 align-items-stretch">
+    <div id="context-section" class="d-flex flex-column">{% include "pvf_partials/context_source.html" %}</div>
+    <div id="file-source-section" class="d-flex flex-column flex-md-row gap-3">
       {% include "pvf_partials/file_source.html" %}
     </div>
-    <div id="template-source-section"></div>
+    <div id="template-source-section"  class="d-flex flex-column"></div>
     <div id="pvf_output">
       <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
     </div>
