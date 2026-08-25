@@ -1,8 +1,9 @@
-<div class="d-flex d-flex justify-content-around flex-wrap">
+<div class="d-flex justify-content-around flex-wrap">
   {% for file in files %}
     <div class="form-check">
       <input class="form-check-input"
              hx-post="/files/remote/select?vendor={{ vendor }}"
+             name="remote_file"
              hx-target="#selected-files"
              type="checkbox"
              hx-include="#workflow_id, #vendor"
