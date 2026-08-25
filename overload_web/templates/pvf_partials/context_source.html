@@ -1,21 +1,19 @@
 {% import "macros/pvf.html" as macro %}
-<div class="card context-card">
-  <div class="card-body">
-    <div class="row align-items-center w-100"
-         hx-get="/forms/update-context"
-         hx-trigger="change from:.context-card select, load"
-         hx-include="closest .context-card"
-         hx-swap="none">
-      <div class="col" id="library_wrapper">{{ macro.context_select("library", context_fields["library"]) }}</div>
-      <div class="col" id="collection_wrapper">{{ macro.context_select("collection", context_fields["collection"]) }}</div>
-      <div class="col" id="record_type_wrapper">{{ macro.context_select("record_type", context_fields["record_type"]) }}</div>
-      <div class="col-2 text-center">
-        <div id="library-img"></div>
-      </div>
-      <div class="col-2 text-center">
-        <div id="collection-display" class="mb-1"></div>
-        <div id="record-type-display"></div>
-      </div>
+<div class="context-card">
+  <div class="row align-items-center context-row"
+       hx-get="/forms/update-context"
+       hx-trigger="change from:.context-card select, load"
+       hx-include="closest .context-card"
+       hx-swap="none">
+    <div class="col" id="library_wrapper">{{ macro.context_select("library", context_fields["library"]) }}</div>
+    <div class="col" id="collection_wrapper">{{ macro.context_select("collection", context_fields["collection"]) }}</div>
+    <div class="col" id="record_type_wrapper">{{ macro.context_select("record_type", context_fields["record_type"]) }}</div>
+    <div class="col-2 d-flex image-container">
+      <div id="library-img" class="dynamic-img"></div>
+    </div>
+    <div class="col-2 d-flex flex-column text-center">
+      <div id="collection-display" class="mb-1"></div>
+      <div id="record-type-display"></div>
     </div>
   </div>
 </div>

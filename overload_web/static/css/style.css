@@ -44,10 +44,17 @@
   background-color: var(--nypl-brand-color);
   color: white;
 }
-.context-card {
+.context-row {
   min-height: 150px;
 }
-.context-card .card-body {
-  display: flex;
+.image-container {
+  height: 150px; 
+  overflow: hidden;
   align-items: center;
+  justify-content: center;
+}
+.dynamic-img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
 }
