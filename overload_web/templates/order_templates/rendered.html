@@ -2,31 +2,23 @@
 {% if not template %}
   {% set template = {} %}
 {% endif %}
-<div class="row row-cols-3">
+<div class="row row-cols-4 g-2">
   <div class="col">{{ macro.input_field('name', {'label': 'Name'}, template.get('name')) }}</div>
   <div class="col">{{ macro.input_field('agent', {'label': 'User'}, template.get('agent')) }}</div>
   <div class="col">
     <div class="form-floating">
-      {% if template %}
-        <input id="id"
-               class="form-control"
-               name="id"
-               type="hidden"
-               form="pvf-form"
-               value='{{ template.get("id") }}' />
-      {% endif %}
       <input id="id"
              class="form-control"
              name="id"
-             type="text"
-             value="{{ template.get('id', '') }}"
-             disabled />
-      <label for="id">Template ID</label>
+             type="hidden"
+             form="pvf-form"
+             {% if not template %}disabled{% endif %}
+             value='{{ template.get("id") }}' />
     </div>
   </div>
 </div>
 <h5 class="mb-2 mt-1">Order Fixed Fields</h5>
-<div class="row row-cols-3">
+<div class="row row-cols-4 g-2">
   {% for field_id, field_data in fixed_fields.items() %}
     <div class="col">
       {{ macro.select_field(field_id, field_data,
@@ -35,7 +27,7 @@
   {% endfor %}
 </div>
 <h5 class="mb-2 mt-1">Order Variable Fields</h5>
-<div class="row row-cols-3">
+<div class="row row-cols-4 g-2">
   {% for field_id, field_data in var_fields.items() %}
     <div class="col">
       {{ macro.input_field(field_id, field_data,
@@ -43,16 +35,22 @@
     </div>
   {% endfor %}
 </div>
-<h5 class="mb-2 mt-1">Sierra Bib Format</h5>
-<div class="row row-cols-3">
-  <div class="col">{{ macro.select_field('material_form', bib_formats, template.get('material_form')) }}</div>
-</div>
-<h5 class="mb-2 mt-1">Sierra Matchpoints</h5>
-<div class="row row-cols-3">
-  {% for field_id, field_data in matchpoints.items() %}
-    <div class="col">
-      {{ macro.select_field(field_id, field_data,
-        template.get(field_id)) }}
+<div class="row g-2">
+  <div class="col-3">
+    <h5 class="mb-2 mt-1">Sierra Bib Format</h5>
+    <div class="row g-2">
+      <div class="col">{{ macro.select_field('material_form', bib_formats, template.get('material_form')) }}</div>
     </div>
-  {% endfor %}
+  </div>
+  <div class="col-9">
+    <h5 class="mb-2 mt-1">Sierra Matchpoints</h5>
+    <div class="row g-2">
+      {% for field_id, field_data in matchpoints.items() %}
+        <div class="col">
+          {{ macro.select_field(field_id, field_data,
+            template.get(field_id)) }}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
 </div>
