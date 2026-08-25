@@ -14,8 +14,19 @@
   </head>
   <body>
     <header class="navbar shadow">
-      <div class="container">
-        {% block nav %}<a class="navbar-brand" href='{{ url_for("root") }}'>{{ application }}</a>{% endblock %}
+      <div class="container library-logo">
+        {% block nav %}
+          <a class="navbar-brand align-self-end" href='{{ url_for("root") }}'>{{ application }}</a>
+          <div class="d-flex flex-row justify-content-end align-items-center">
+            <div class="p-3">
+              <div id="library-img"></div>
+            </div>
+            <div class="p-3 text-center">
+              <div id="collection-display" class="mb-1"></div>
+              <div id="record-type-display"></div>
+            </div>
+          </div>
+        {% endblock %}
       </div>
     </header>
     <div class="container">

@@ -1,14 +1,14 @@
 {% import "macros/pvf.html" as macro %}
 <div id="library-img" hx-swap-oob="true">
   {% if library %}
-    <img src="{{ url_for('static', path='images/' ~ library ~ 'Logo.gif') }}"
+    <img src="{{ url_for('static', path='images/' ~ library ~ 'Logo.png') }}"
          height="auto"
          width="auto"
          class="object-fit-scale"
          alt="library logo" />
   {% endif %}
 </div>
-<div id="collection-display" hx-swap-oob="true">
+<div id="collection-display" class="mb-1" hx-swap-oob="true">
   {% if collection %}
     <h4>{{ context_fields["collection"]['options'][collection] }}</h4>
   {% endif %}
@@ -34,9 +34,7 @@
   </form>
 {% endif %}
 {% if collection_disabled or not collection %}
-  <div id="collection_wrapper"
-       hx-swap-oob="true"
-       class="col align-self-center">
+  <div id="collection-select" hx-swap-oob="true" class="w-100">
     {{ macro.context_select("collection", context_fields["collection"], disabled=collection_disabled) }}
   </div>
 {% endif %}

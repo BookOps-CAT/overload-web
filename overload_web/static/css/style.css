@@ -1,16 +1,12 @@
 :root {
   --page-title-padding-top: 40px;
-  --page-title-padding-bottom: 24px;
+  --page-title-padding-bottom: 10px;
   --nypl-brand-color: #d52828;
-  --card-box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
-  --card-border: 1px solid rgba(0,0,0,.125);
-  --card-border-radius: 0.25rem;
 }
 
 .navbar {
   background-color: var(--nypl-brand-color);
   color: white;
-  padding-top: var(--page-title-padding-top);
   padding-bottom: 10px;
 }
 .navbar .navbar-brand {
@@ -44,17 +40,6 @@
   background-color: var(--nypl-brand-color);
   color: white;
 }
-.context-row {
+.library-logo {
   min-height: 150px;
-}
-.image-container {
-  height: 150px; 
-  overflow: hidden;
-  align-items: center;
-  justify-content: center;
-}
-.dynamic-img {
-  max-height: 100%;
-  max-width: 100%;
-  object-fit: contain;
 }
