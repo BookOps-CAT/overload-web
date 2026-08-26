@@ -1163,10 +1163,6 @@
     "eastview": "Eastview"
   },
   "wc2sierra_fields": {
-    "data_source": {
-      "label": "Data Source",
-      "options": { "id": "ID List", "export": "Sierra Export" }
-    },
     "library": {
       "label": "Library System",
       "options": { "bpl": "BPL", "nypl": "NYPL" }
@@ -1174,10 +1170,6 @@
     "collection": {
       "label": "Collection",
       "options": { "BL": "Branches", "RL": "Research" }
-    },
-    "action": {
-      "label": "Action",
-      "options": { "upgrade": "Upgrade", "catalog": "Catalog" }
     },
     "record_level": {
       "label": "Record Level",
@@ -1187,6 +1179,10 @@
       "label": "Record Type",
       "options": { "any": "Any", "print": "Print", "large_print": "Large print", "dvd": "DVD", "bluray": "Blu-ray" }
     },
+    "action": {
+      "label": "Action",
+      "options": { "upgrade": "Upgrade", "catalog": "Catalog" }
+    },
     "cat_rules": {
       "label": "Cataloging Rules",
       "options": { "rda": "RDA only", "any": "Any" }
@@ -1194,6 +1190,10 @@
     "cat_source": {
       "label": "Cataloging Source",
       "options": { "dlc": "DLC only", "any": "Any" }
+    },
+    "data_source": {
+      "label": "Data Source",
+      "options": { "id": "ID List", "export": "Sierra Export" }
     },
     "id_type": {
       "label": "ID Type",

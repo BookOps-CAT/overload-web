@@ -110,7 +110,7 @@ class SierraBibFetcher:
             )
             response = match_methods[key](value)
         except (BookopsPlatformError, BookopsSolrError) as exc:
-            logger.error(f"{exc.__class__.__name__} while running Sierra queries. ")
+            logger.error(f"{exc.__class__.__name__} while running Sierra queries.")
             raise
         bibs.extend(self.session._parse_response(response))
         return bibs
