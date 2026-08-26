@@ -66,6 +66,7 @@ def get_templates() -> Jinja2Templates:
     templates.env.globals["bib_formats"] = constants["material_form"]
     templates.env.globals["context_fields"] = constants["context_fields"]
     templates.env.globals["vendors"] = constants["vendors"]
+    templates.env.globals["wc2sierra_fields"] = constants["wc2sierra_fields"]
     templates.env.globals["application"] = "Overload Web"
     return templates
 
