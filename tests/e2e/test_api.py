@@ -47,30 +47,27 @@ def fake_sql_session():
     )
     batch = batch_db.PVFBatch(
         files=[batch_db.ProcessedFileModel(file_name="foo.mrc", records=b"")],
-        report=batch_db.PVFReportModel(
-            id=1,
-            processing_statistics=[
-                {
-                    "action": "insert",
-                    "call_number": "Foo",
-                    "call_number_match": True,
-                    "duplicate_records": [],
-                    "mixed": [],
-                    "other": [],
-                    "resource_id": "12345",
-                    "target_bib_id": "23456",
-                    "target_call_no": "Foo",
-                    "target_title": None,
-                    "updated_by_vendor": False,
-                    "vendor": "UNKNOWN",
-                }
-            ],
-            file_names=["foo.mrc"],
-            total_files=1,
-            total_records=1,
-            missing_barcodes=[],
-            processing_integrity=True,
-        ),
+        processing_statistics=[
+            {
+                "action": "insert",
+                "call_number": "Foo",
+                "call_number_match": True,
+                "duplicate_records": [],
+                "mixed": [],
+                "other": [],
+                "resource_id": "12345",
+                "target_bib_id": "23456",
+                "target_call_no": "Foo",
+                "target_title": None,
+                "updated_by_vendor": False,
+                "vendor": "UNKNOWN",
+            }
+        ],
+        file_names=["foo.mrc"],
+        total_files=1,
+        total_records=1,
+        missing_barcodes=[],
+        processing_integrity=True,
     )
     file = file_io.IncomingFileModel(
         id="1", filename="foo.mrc", workflow_id="123", source="ftp", reference="foo.mrc"

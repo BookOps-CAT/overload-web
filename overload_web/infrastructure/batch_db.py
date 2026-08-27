@@ -12,10 +12,6 @@ Models:
     A pydantic/sqlmodel model that defines a batch containing one or more MARC files
     and their associated processing statistics.
 
-`PVFReportModel`
-    A pydantic/sqlmodel model that defines processing statistics for a process vendor
-    file workflow.
-
 `ProcessedFileModel`
     A pydantic/sqlmodel model that defines a processed MARC file.
 """
@@ -44,26 +40,12 @@ class PVFBatch(SQLModel, table=True):
     files: list["ProcessedFileModel"] = Relationship(
         back_populates="batch", sa_relationship_kwargs={"lazy": "selectin"}
     )
-    report: "PVFReportModel" = Relationship(
-        back_populates="batch", sa_relationship_kwargs={"lazy": "selectin"}
-    )
-
-
-class PVFReportModel(SQLModel, table=True):
-    """A table model representing a batch of processing statistics."""
-
-    __tablename__ = "reports"
-
-    id: int = Field(default=None, primary_key=True, index=True, exclude=True)
     processing_statistics: list[dict[str, Any]] = Field(sa_column=Column(JSON))
     file_names: list[str | None] = Field(sa_column=Column(JSON))
     total_files: int
     total_records: int
     missing_barcodes: list[str | None] | None = Field(sa_column=Column(JSON))
     processing_integrity: bool | None
-
-    batch_id: int = Field(default=None, foreign_key="batches.id", exclude=True)
-    batch: PVFBatch = Relationship(back_populates="report")
 
 
 class ProcessedFileModel(SQLModel, table=True):
@@ -104,17 +86,14 @@ class PVFBatchRepository:
         """
         batch = self.session.get(PVFBatch, id)
         if batch:
-            report = batch.report
             return {
                 "files": [f.model_dump() for f in batch.files],
-                "report": {
-                    "processing_statistics": report.processing_statistics,
-                    "file_names": report.file_names,
-                    "total_files": report.total_files,
-                    "total_records": report.total_records,
-                    "missing_barcodes": report.missing_barcodes,
-                    "processing_integrity": report.processing_integrity,
-                },
+                "processing_statistics": batch.processing_statistics,
+                "file_names": batch.file_names,
+                "total_files": batch.total_files,
+                "total_records": batch.total_records,
+                "missing_barcodes": batch.missing_barcodes,
+                "processing_integrity": batch.processing_integrity,
             }
         return None
 
@@ -132,15 +111,15 @@ class PVFBatchRepository:
             ProcessedFileModel.model_validate(i, from_attributes=True)
             for i in obj.files
         ]
-        valid_stats = PVFReportModel(
-            processing_statistics=obj.report.records,
-            file_names=obj.report.file_names,
-            total_files=obj.report.total_files,
-            total_records=obj.report.total_records,
-            missing_barcodes=obj.report.missing_barcodes,
-            processing_integrity=obj.report.processing_integrity,
+        valid_batch = PVFBatch(
+            files=valid_files,
+            processing_statistics=obj.processing_statistics,
+            file_names=obj.file_names,
+            total_files=obj.total_files,
+            total_records=obj.total_records,
+            missing_barcodes=obj.missing_barcodes,
+            processing_integrity=obj.processing_integrity,
         )
-        valid_batch = PVFBatch(files=valid_files, report=valid_stats)
         self.session.add(valid_batch)
         self.session.commit()
         self.session.refresh(valid_batch)

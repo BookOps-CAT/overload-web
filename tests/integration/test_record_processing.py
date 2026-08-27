@@ -18,57 +18,51 @@ from overload_web.infrastructure import batch_db, marc_engine, reporter
 def test_session():
     batch1 = batch_db.PVFBatch(
         files=[batch_db.ProcessedFileModel(file_name="foo.mrc", records=b"")],
-        report=batch_db.PVFReportModel(
-            id=1,
-            processing_statistics=[
-                {
-                    "action": "insert",
-                    "call_number": "Foo",
-                    "call_number_match": False,
-                    "duplicate_records": [],
-                    "mixed": [],
-                    "other": [],
-                    "resource_id": "12345",
-                    "target_bib_id": "23456",
-                    "target_call_no": "Foo",
-                    "target_title": None,
-                    "updated_by_vendor": False,
-                    "vendor": "UNKNOWN",
-                }
-            ],
-            file_names=["foo.mrc"],
-            total_files=1,
-            total_records=1,
-            missing_barcodes=[],
-            processing_integrity=True,
-        ),
+        processing_statistics=[
+            {
+                "action": "insert",
+                "call_number": "Foo",
+                "call_number_match": False,
+                "duplicate_records": [],
+                "mixed": [],
+                "other": [],
+                "resource_id": "12345",
+                "target_bib_id": "23456",
+                "target_call_no": "Foo",
+                "target_title": None,
+                "updated_by_vendor": False,
+                "vendor": "UNKNOWN",
+            }
+        ],
+        file_names=["foo.mrc"],
+        total_files=1,
+        total_records=1,
+        missing_barcodes=[],
+        processing_integrity=True,
     )
     batch2 = batch_db.PVFBatch(
         files=[batch_db.ProcessedFileModel(file_name="bar.mrc", records=b"")],
-        report=batch_db.PVFReportModel(
-            id=2,
-            processing_statistics=[
-                {
-                    "action": "insert",
-                    "call_number": "Foo",
-                    "call_number_match": True,
-                    "duplicate_records": [],
-                    "mixed": [],
-                    "other": [],
-                    "resource_id": "12345",
-                    "target_bib_id": "23456",
-                    "target_call_no": "Foo",
-                    "target_title": None,
-                    "updated_by_vendor": False,
-                    "vendor": "UNKNOWN",
-                }
-            ],
-            file_names=["foo.mrc"],
-            total_files=1,
-            total_records=1,
-            missing_barcodes=[],
-            processing_integrity=True,
-        ),
+        processing_statistics=[
+            {
+                "action": "insert",
+                "call_number": "Foo",
+                "call_number_match": True,
+                "duplicate_records": [],
+                "mixed": [],
+                "other": [],
+                "resource_id": "12345",
+                "target_bib_id": "23456",
+                "target_call_no": "Foo",
+                "target_title": None,
+                "updated_by_vendor": False,
+                "vendor": "UNKNOWN",
+            }
+        ],
+        file_names=["foo.mrc"],
+        total_files=1,
+        total_records=1,
+        missing_barcodes=[],
+        processing_integrity=True,
     )
     test_engine = create_engine("sqlite:///:memory:")
     SQLModel.metadata.create_all(test_engine)

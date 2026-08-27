@@ -733,7 +733,7 @@ def mock_sheet_config_no_creds(monkeypatch, mock_sheet_config):
 @pytest.fixture
 def stub_report():
     return reporting.ProcessingStatistics(
-        records=[
+        processing_statistics=[
             {
                 "action": "insert",
                 "call_number": "Foo",
@@ -748,10 +748,5 @@ def stub_report():
                 "updated_by_vendor": False,
                 "vendor": "Baz",
             }
-        ],
-        file_names=["foo.mrc"],
-        total_files=1,
-        total_records=1,
-        missing_barcodes=[],
-        processing_integrity=True,
+        ]
     )

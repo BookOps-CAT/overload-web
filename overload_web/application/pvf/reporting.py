@@ -29,10 +29,9 @@ class CreatePVFOutputReport:
         """
         data = repo.get(batch_id)
         if data:
-            report = report_services.PVFReporter.create_output_report(
-                data=data["report"], record_type=record_type
+            return report_services.PVFReporter.create_output_report(
+                data=data, record_type=record_type
             )
-            return dict(report)
         return {}
 
 
@@ -54,7 +53,7 @@ class GetDetailedReportData:
         """
         data = repo.get(batch_id)
         if data:
-            return data["report"]["processing_statistics"]
+            return data["processing_statistics"]
         return []
 
 
@@ -84,5 +83,5 @@ class WriteOutputReport:
         data = repo.get(batch_id)
         if data:
             report_services.ReportWriter.write_report_to_google_sheet(
-                data=data["report"], writer=writer, record_type=record_type
+                data=data, writer=writer, record_type=record_type
             )

@@ -78,10 +78,9 @@ class ProcessAcquisitionsRecords:
                 file_name=file_name, records=marc_engine.write(records)
             )
             out_batches.append(processed)
-        report = reporting.ProcessingStatistics.create_order_records_report(
-            analysis=report_data, file_names=file_names
+        processed_batch = reporting.ProcessedFileBatch(
+            files=out_batches, processing_statistics=report_data, file_names=file_names
         )
-        processed_batch = reporting.ProcessedFileBatch(files=out_batches, report=report)
         return repo.save(processed_batch)
 
 
@@ -137,18 +136,18 @@ class ProcessCatalogingRecords:
             records=records, engine=marc_engine
         )
         file_name = datetime.datetime.today().strftime("%y%m%d")
-        report = reporting.ProcessingStatistics.create_full_records_report(
-            analysis=report_data,
-            missing_barcodes=missing_barcodes,
-            file_names=file_names,
-        )
         files = [
             reporting.ProcessedFile(
                 file_name=f"{file_name}-{k}.mrc", records=marc_engine.write(v)
             )
             for k, v in deduplicated.items()
         ]
-        processed_batch = reporting.ProcessedFileBatch(files=files, report=report)
+        processed_batch = reporting.ProcessedFileBatch(
+            files=files,
+            processing_statistics=report_data,
+            file_names=file_names,
+            missing_barcodes=missing_barcodes,
+        )
         return repo.save(processed_batch)
 
 
@@ -213,8 +212,7 @@ class ProcessSelectionRecords:
                 file_name=file_name, records=marc_engine.write(records)
             )
             out_batches.append(processed)
-        report = reporting.ProcessingStatistics.create_order_records_report(
-            analysis=report_data, file_names=file_names
+        processed_batch = reporting.ProcessedFileBatch(
+            files=out_batches, processing_statistics=report_data, file_names=file_names
         )
-        processed_batch = reporting.ProcessedFileBatch(files=out_batches, report=report)
         return repo.save(processed_batch)
