@@ -52,18 +52,16 @@
     <thead>
       <tr>
         <th scope="col">#</th>
-        {% for key in report.keys() %}<th scope="col">{{ " ".join(key.title().split("_")) }}</th>{% endfor %}
+        {% for key in report[0].keys() %}<th scope="col">{{ " ".join(key.title().split("_")) }}</th>{% endfor %}
       </tr>
     </thead>
     <tbody class="table-group-divider">
-      <tr>
-        {% for i in range(report.values() | list | first | length) %}
-          <tr>
-            <th scope="row">{{ loop.index }}</th>
-            {% for key in report.keys() %}<td>{{ report[key][i] }}</td>{% endfor %}
-          </tr>
-        {% endfor %}
-      </tr>
+      {% for row in report %}
+        <tr>
+          <th scope="row">{{ loop.index }}</th>
+          {% for value in row.values() %}<td>{{ value }}</td>{% endfor %}
+        </tr>
+      {% endfor %}
     </tbody>
   </table>
 {% endmacro %}

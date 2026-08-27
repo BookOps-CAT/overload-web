@@ -5,7 +5,6 @@ from typing import Any
 
 from overload_web.application import ports
 from overload_web.application.pvf import report_services
-from overload_web.domain.pvf import reporting
 
 logger = logging.getLogger(__name__)
 
@@ -13,19 +12,14 @@ logger = logging.getLogger(__name__)
 class CreatePVFOutputReport:
     @staticmethod
     def execute(
-        batch_id: str,
-        handler: ports.ReportHandler,
-        record_type: str,
-        repo: ports.SqlRepositoryProtocol,
-    ) -> dict[str, list[Any]]:
+        batch_id: str, record_type: str, repo: ports.SqlRepositoryProtocol
+    ) -> dict[str, Any]:
         """
         Create a report summary for a batch of processed records.
 
         Args:
             batch_id:
                 The ID for the `ProcessedFileBatch` object in the database.
-            handler:
-                a `ports.ReportHandler` object used by the command.
             record_type:
                 The record type for the operation as a string.
             repo:
@@ -36,7 +30,7 @@ class CreatePVFOutputReport:
         data = repo.get(batch_id)
         if data:
             report = report_services.PVFReporter.create_output_report(
-                data=data["report"], handler=handler, record_type=record_type
+                data=data["report"], record_type=record_type
             )
             return dict(report)
         return {}
@@ -46,15 +40,13 @@ class GetDetailedReportData:
     @staticmethod
     def execute(
         batch_id: str, repo: ports.SqlRepositoryProtocol
-    ) -> dict[str, list[Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Create a detailed processing report for a batch of processed records.
 
         Args:
             batch_id:
                 The ID for the `ProcessedFileBatch` object in the database.
-            handler:
-                a `ports.ReportHandler` object used by the command.
             repo:
                 a `ports.SqlRepositoryProtocol` object used by the command.
         Returns:
@@ -62,16 +54,14 @@ class GetDetailedReportData:
         """
         data = repo.get(batch_id)
         if data:
-            stats = reporting.ProcessingStatistics(**data["report"])
-            return stats.detailed_report_data
-        return {}
+            return data["report"]["processing_statistics"]
+        return []
 
 
 class WriteOutputReport:
     @staticmethod
     def execute(
         batch_id: str,
-        handler: ports.ReportHandler,
         record_type: str,
         repo: ports.SqlRepositoryProtocol,
         writer: ports.ReportWriter,
@@ -82,8 +72,6 @@ class WriteOutputReport:
         Args:
             batch_id:
                 The ID for the `ProcessedFileBatch` object in the database.
-            handler:
-                a `ports.ReportHandler` object used by the command.
             record_type:
                 The record type for the operation as a string.
             repo:
@@ -96,8 +84,5 @@ class WriteOutputReport:
         data = repo.get(batch_id)
         if data:
             report_services.ReportWriter.write_report_to_google_sheet(
-                data=data["report"],
-                handler=handler,
-                writer=writer,
-                record_type=record_type,
+                data=data["report"], writer=writer, record_type=record_type
             )

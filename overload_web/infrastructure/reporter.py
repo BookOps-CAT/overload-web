@@ -2,9 +2,9 @@
 
 Classes:
 
-`PandasReportHandler`
-    Concrete implementation of `ReportHandler` protocol which uses pandas to generate
-    reports from processing statistics.
+`ReportHandler`
+    Concrete implementation of `ReportHandler` protocol which generates reports from
+    processing statistics.
 
 `GoogleSheetsReporter`
     Concrete implementation of `ReportWriter` protocol which uses google API client to
@@ -15,10 +15,8 @@ from __future__ import annotations
 
 import logging
 import os
-from collections import defaultdict
 from typing import Any
 
-import pandas as pd
 from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -27,51 +25,6 @@ from googleapiclient.discovery import build  # type: ignore
 from googleapiclient.errors import HttpError  # type: ignore
 
 logger = logging.getLogger(__name__)
-
-
-class PandasReportHandler:
-    """Create reports for processing workflow using pandas."""
-
-    def create_call_number_report(
-        self, report_data: dict[str, list[Any]], record_type: str
-    ) -> dict[str, list[Any]] | None:
-        df = pd.DataFrame(data=report_data)
-        match_df = df[~df["call_number_match"]]
-        if record_type == "cat":
-            missing_df = df[df["call_number"].isnull() & df["target_call_no"].isnull()]
-            match_df = pd.concat([match_df, missing_df])
-        if match_df.empty:
-            return None
-        df_dict = match_df.to_dict("list")
-        return {str(k): v for k, v in df_dict.items()}
-
-    def create_duplicate_report(
-        self, report_data: dict[str, list[Any]]
-    ) -> dict[str, list[Any]]:
-        df = pd.DataFrame(data=report_data)
-        filtered_df = df[
-            df["duplicate_records"].notnull()
-            | df["mixed"].notnull()
-            | df["other"].notnull()
-        ]
-        df_dict = filtered_df.to_dict("list")
-        return {str(k): v for k, v in df_dict.items()}
-
-    def create_vendor_report(
-        self, report_data: dict[str, list[str]]
-    ) -> dict[str, list[Any]]:
-        df = pd.DataFrame(data=report_data)
-        vendor_data = defaultdict(list)
-        for vendor, content in df.groupby("vendor"):
-            attach = content[content["action"] == "attach"]["action"].count()
-            insert = content[content["action"] == "insert"]["action"].count()
-            update = content[content["action"] == "overlay"]["action"].count()
-            vendor_data["vendor"].append(vendor)
-            vendor_data["attach"].append(attach)
-            vendor_data["insert"].append(insert)
-            vendor_data["update"].append(update)
-            vendor_data["total"].append(attach + insert + update)
-        return vendor_data
 
 
 class GoogleSheetsReporter:
@@ -124,7 +77,7 @@ class GoogleSheetsReporter:
         except (ValueError, RefreshError) as e:
             raise e
 
-    def prep_report(self, data: dict[str, list[Any]]) -> list[list[str]]:
+    def prep_report(self, data: list[dict[str, Any]]) -> list[list[str]]:
         """
         Prep output for google sheet.
 
@@ -134,9 +87,13 @@ class GoogleSheetsReporter:
         Returns:
             The data to be writte as a list of lists
         """
-        df = pd.DataFrame(data=data, dtype="str")
-        df.fillna("", inplace=True)
-        return df.values.tolist()
+        if not data:
+            return []
+        headers = list(data[0])
+        return [
+            ["" if row.get(header) is None else str(row[header]) for header in headers]
+            for row in data
+        ]
 
     def write_report(self, data: list[list[str]]) -> None:
         """

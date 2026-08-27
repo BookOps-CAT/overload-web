@@ -26,12 +26,11 @@ def get_output_report(
     request: Request,
     batch_id: str,
     record_type: str,
-    handler: Annotated[Any, Depends(deps.get_report_handler)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
 ) -> HTMLResponse:
     """Create a dict to be used on the report summary page after pvf workflow."""
     out = CreatePVFOutputReport.execute(
-        batch_id=batch_id, handler=handler, repo=repository, record_type=record_type
+        batch_id=batch_id, repo=repository, record_type=record_type
     )
     return request.app.state.templates.TemplateResponse(
         request=request, name="reports/summary.html", context=out
@@ -56,17 +55,12 @@ def save_processing_statistics(
     request: Request,
     batch_id: str,
     record_type: str,
-    handler: Annotated[Any, Depends(deps.get_report_handler)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
     writer: Annotated[Any, Depends(deps.get_report_writer)],
 ) -> HTMLResponse:
     """Save processing statistics reports (call number and dupes) to a google sheet."""
     WriteOutputReport.execute(
-        batch_id=batch_id,
-        handler=handler,
-        repo=repository,
-        writer=writer,
-        record_type=record_type,
+        batch_id=batch_id, repo=repository, writer=writer, record_type=record_type
     )
     return request.app.state.templates.TemplateResponse(
         request=request, name="reports/detailed.html", context={"written_report": True}

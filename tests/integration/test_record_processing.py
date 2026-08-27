@@ -20,21 +20,25 @@ def test_session():
         files=[batch_db.ProcessedFileModel(file_name="foo.mrc", records=b"")],
         report=batch_db.PVFReportModel(
             id=1,
-            action=["insert"],
-            call_number=["Foo"],
-            call_number_match=[False],
-            duplicate_records=[[]],
+            processing_statistics=[
+                {
+                    "action": "insert",
+                    "call_number": "Foo",
+                    "call_number_match": False,
+                    "duplicate_records": [],
+                    "mixed": [],
+                    "other": [],
+                    "resource_id": "12345",
+                    "target_bib_id": "23456",
+                    "target_call_no": "Foo",
+                    "target_title": None,
+                    "updated_by_vendor": False,
+                    "vendor": "UNKNOWN",
+                }
+            ],
             file_names=["foo.mrc"],
-            mixed=[[]],
-            other=[[]],
-            resource_id=["12345"],
-            target_bib_id=["23456"],
-            target_call_no=["Foo"],
-            target_title=[],
             total_files=1,
             total_records=1,
-            updated_by_vendor=[False],
-            vendor=["UNKNOWN"],
             missing_barcodes=[],
             processing_integrity=True,
         ),
@@ -43,21 +47,25 @@ def test_session():
         files=[batch_db.ProcessedFileModel(file_name="bar.mrc", records=b"")],
         report=batch_db.PVFReportModel(
             id=2,
-            action=["insert"],
-            call_number=["Foo"],
-            call_number_match=[True],
-            duplicate_records=[[]],
+            processing_statistics=[
+                {
+                    "action": "insert",
+                    "call_number": "Foo",
+                    "call_number_match": True,
+                    "duplicate_records": [],
+                    "mixed": [],
+                    "other": [],
+                    "resource_id": "12345",
+                    "target_bib_id": "23456",
+                    "target_call_no": "Foo",
+                    "target_title": None,
+                    "updated_by_vendor": False,
+                    "vendor": "UNKNOWN",
+                }
+            ],
             file_names=["foo.mrc"],
-            mixed=[[]],
-            other=[[]],
-            resource_id=["12345"],
-            target_bib_id=["23456"],
-            target_call_no=["Foo"],
-            target_title=[],
             total_files=1,
             total_records=1,
-            updated_by_vendor=[False],
-            vendor=["UNKNOWN"],
             missing_barcodes=[],
             processing_integrity=True,
         ),
@@ -218,25 +226,45 @@ class TestReportCommands:
     ):
         repo = batch_db.PVFBatchRepository(session=test_session)
         out = CreatePVFOutputReport.execute(
-            batch_id="1",
-            handler=reporter.PandasReportHandler(),
-            record_type=record_type,
-            repo=repo,
+            batch_id="1", record_type=record_type, repo=repo
         )
         assert "total_records" in out.keys()
         assert "file_names" in out.keys()
         assert "total_files" in out.keys()
+        assert out == {
+            "total_records": 1,
+            "file_names": ["foo.mrc"],
+            "total_files": 1,
+            "vendor_report": [
+                {"vendor": "UNKNOWN", "attach": 0, "insert": 1, "update": 0, "total": 1}
+            ],
+            "dupes_report": [],
+            "call_no_report": [
+                {
+                    "vendor": "UNKNOWN",
+                    "resource_id": "12345",
+                    "call_number": "Foo",
+                    "target_bib_id": "23456",
+                    "target_call_no": "Foo",
+                    "call_number_match": False,
+                    "duplicate_records": [],
+                }
+            ],
+            "missing_barcodes": [],
+            "processing_integrity": True,
+        }
 
     def test_get_detailed_report_data(self, mock_sheet_config, caplog, test_session):
         repo = batch_db.PVFBatchRepository(session=test_session)
         out = GetDetailedReportData.execute(batch_id="1", repo=repo)
-        assert sorted([i for i in out.keys()]) == sorted(
+        assert sorted(out[0].keys()) == sorted(
             [
                 "vendor",
                 "resource_id",
                 "action",
                 "target_bib_id",
                 "updated_by_vendor",
+                "target_title",
                 "call_number_match",
                 "call_number",
                 "target_call_no",
@@ -253,7 +281,6 @@ class TestReportCommands:
         repo = batch_db.PVFBatchRepository(session=test_session)
         WriteOutputReport.execute(
             batch_id="1",
-            handler=reporter.PandasReportHandler(),
             record_type=record_type,
             repo=repo,
             writer=reporter.GoogleSheetsReporter(),
@@ -275,7 +302,6 @@ class TestReportCommands:
         repo = batch_db.PVFBatchRepository(session=test_session)
         WriteOutputReport.execute(
             batch_id=2,
-            handler=reporter.PandasReportHandler(),
             record_type=record_type,
             repo=repo,
             writer=reporter.GoogleSheetsReporter(),
@@ -293,7 +319,6 @@ class TestReportCommands:
         repo = batch_db.PVFBatchRepository(session=test_session_no_records)
         WriteOutputReport.execute(
             batch_id=2,
-            handler=reporter.PandasReportHandler(),
             record_type=record_type,
             repo=repo,
             writer=reporter.GoogleSheetsReporter(),

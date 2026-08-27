@@ -17,7 +17,7 @@ class CatalogAction(StrEnum):
     """Valid values for a cataloging action."""
 
     ATTACH = "attach"
-    OVERLAY = "overlay"
+    UPDATE = "update"
     INSERT = "insert"
 
 
@@ -241,7 +241,7 @@ class DomainBib:
         self, candidate: sierra_responses.BaseSierraResponse
     ) -> tuple[CatalogAction, bool]:
         """
-        Determine whether to insert, attach, or overlay a bib record in Sierra
+        Determine whether to insert, attach, or overlay/update a bib record in Sierra
         based on matches
         """
         if candidate.cat_source == "inhouse":
@@ -249,7 +249,7 @@ class DomainBib:
         if candidate.update_datetime and (
             not self.update_datetime or candidate.update_datetime > self.update_datetime
         ):
-            return CatalogAction.OVERLAY, True
+            return CatalogAction.UPDATE, True
         return CatalogAction.ATTACH, False
 
     def __repr__(self) -> str:
@@ -521,7 +521,7 @@ class NYPLCatResearchMatchAnalyzer(MatchAnalyzer):
         last = candidates.matched[-1]
         return MatchAnalysis(
             call_number_match=False,
-            action=CatalogAction.OVERLAY,
+            action=CatalogAction.UPDATE,
             target_bib_id=last.bib_id,
             target_title=last.title,
             target_call_no=None,

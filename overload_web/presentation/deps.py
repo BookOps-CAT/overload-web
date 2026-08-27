@@ -350,11 +350,6 @@ def get_marc_engine(
     yield marc_engine.MarcEngine(rules=config)
 
 
-def get_report_handler() -> reporter.PandasReportHandler:
-    """Return a `PandasReportHandler` in order to generate reports."""
-    return reporter.PandasReportHandler()
-
-
 def get_report_writer() -> reporter.GoogleSheetsReporter:
     """Return a `GoogleSheetsReporter` in order to write stats to a Google Sheet."""
     return reporter.GoogleSheetsReporter()

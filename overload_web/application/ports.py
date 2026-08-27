@@ -225,31 +225,11 @@ class SqlRepositoryProtocol(Protocol[T]):
     """Update an existing object in a database."""
 
 
-class ReportHandler(Protocol):
-    """A protocol defining a service used to create processing reports."""
-
-    library: str
-    collection: str | None
-    record_type: str
-
-    def create_call_number_report(
-        self, report_data: R, record_type: str
-    ) -> dict[str, list[Any]]: ...  # pragma: no branch
-
-    def create_duplicate_report(
-        self, report_data: R
-    ) -> dict[str, list[Any]]: ...  # pragma: no branch
-
-    def create_vendor_report(
-        self, report_data: R
-    ) -> dict[str, list[Any]]: ...  # pragma: no branch
-
-
 class ReportWriter(Protocol):
     """A protocol defining a service used to write report data."""
 
     def prep_report(
-        self, data: dict[str, list[Any]]
+        self, data: list[dict[str, Any]]
     ) -> list[list[Any]]: ...  # pragma: no branch
 
     """Prep data to write to an external service."""

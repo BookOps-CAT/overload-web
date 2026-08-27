@@ -230,7 +230,7 @@ class TestNYPLCatBranchMatchAnalyzer:
     @pytest.mark.parametrize(
         "date, action, updated",
         [
-            ("2025-01-01T01:00:00", "overlay", True),
+            ("2025-01-01T01:00:00", "update", True),
             ("2020-01-01T01:00:00", "attach", False),
         ],
     )
@@ -302,7 +302,7 @@ class TestNYPLCatResearchMatchAnalyzer:
     @pytest.mark.parametrize(
         "date, action, updated",
         [
-            ("2025-01-01T01:00:00", "overlay", True),
+            ("2025-01-01T01:00:00", "update", True),
             ("2020-01-01T01:00:00", "attach", False),
             (None, "attach", False),
         ],
@@ -340,7 +340,7 @@ class TestNYPLCatResearchMatchAnalyzer:
         result = full_bib.analyze_matches(candidates=[sierra_response])
         assert full_bib.bib_id is None
         assert result.target_bib_id == "12345"
-        assert result.action == "overlay"
+        assert result.action == "update"
         assert result.mixed == []
         assert result.other == []
         assert result.duplicate_records == []
@@ -389,7 +389,7 @@ class TestBPLCatMatchAnalyzer:
     @pytest.mark.parametrize(
         "date, action",
         [
-            ("20250101010000.0", "overlay"),
+            ("20250101010000.0", "update"),
             ("20200101010000.0", "attach"),
             (None, "attach"),
         ],
@@ -416,5 +416,5 @@ class TestBPLCatMatchAnalyzer:
         }
         result = full_bib.analyze_matches(candidates=[data])
         assert result.target_bib_id == "34567"
-        assert result.action == "overlay"
+        assert result.action == "update"
         assert result.call_number_match is False

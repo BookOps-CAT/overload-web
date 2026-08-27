@@ -25,6 +25,8 @@ from typing import Any
 
 from sqlmodel import JSON, Column, Field, Relationship, Session, SQLModel
 
+from overload_web.domain.pvf import reporting
+
 logger = logging.getLogger(__name__)
 
 
@@ -53,21 +55,10 @@ class PVFReportModel(SQLModel, table=True):
     __tablename__ = "reports"
 
     id: int = Field(default=None, primary_key=True, index=True, exclude=True)
-    action: list[str | None] = Field(sa_column=Column(JSON))
-    call_number: list[str | None] = Field(sa_column=Column(JSON))
-    call_number_match: list[bool | None] = Field(sa_column=Column(JSON))
-    duplicate_records: list[list[str | None]] = Field(sa_column=Column(JSON))
+    processing_statistics: list[dict[str, Any]] = Field(sa_column=Column(JSON))
     file_names: list[str | None] = Field(sa_column=Column(JSON))
-    mixed: list[list[str | None]] = Field(sa_column=Column(JSON))
-    other: list[list[str | None]] = Field(sa_column=Column(JSON))
-    resource_id: list[str | None] = Field(sa_column=Column(JSON))
-    target_bib_id: list[str | None] = Field(sa_column=Column(JSON))
-    target_call_no: list[str | None] = Field(sa_column=Column(JSON))
-    target_title: list[str | None] = Field(sa_column=Column(JSON))
     total_files: int
     total_records: int
-    updated_by_vendor: list[bool | None] = Field(sa_column=Column(JSON))
-    vendor: list[str | None] = Field(sa_column=Column(JSON))
     missing_barcodes: list[str | None] | None = Field(sa_column=Column(JSON))
     processing_integrity: bool | None
 
@@ -113,13 +104,21 @@ class PVFBatchRepository:
         """
         batch = self.session.get(PVFBatch, id)
         if batch:
+            report = batch.report
             return {
                 "files": [f.model_dump() for f in batch.files],
-                "report": batch.report.model_dump(),
+                "report": {
+                    "processing_statistics": report.processing_statistics,
+                    "file_names": report.file_names,
+                    "total_files": report.total_files,
+                    "total_records": report.total_records,
+                    "missing_barcodes": report.missing_barcodes,
+                    "processing_integrity": report.processing_integrity,
+                },
             }
         return None
 
-    def save(self, obj: PVFBatch) -> dict[str, Any]:
+    def save(self, obj: reporting.ProcessedFileBatch) -> dict[str, Any]:
         """
         Adds a new `PVFBatch` to the database.
 
@@ -133,7 +132,14 @@ class PVFBatchRepository:
             ProcessedFileModel.model_validate(i, from_attributes=True)
             for i in obj.files
         ]
-        valid_stats = PVFReportModel.model_validate(obj.report, from_attributes=True)
+        valid_stats = PVFReportModel(
+            processing_statistics=obj.report.records,
+            file_names=obj.report.file_names,
+            total_files=obj.report.total_files,
+            total_records=obj.report.total_records,
+            missing_barcodes=obj.report.missing_barcodes,
+            processing_integrity=obj.report.processing_integrity,
+        )
         valid_batch = PVFBatch(files=valid_files, report=valid_stats)
         self.session.add(valid_batch)
         self.session.commit()
