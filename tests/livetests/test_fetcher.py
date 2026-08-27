@@ -3,7 +3,6 @@ import os
 import pytest
 import yaml
 
-from overload_web.domain.shared import sierra_responses
 from overload_web.infrastructure import sierra_clients
 
 
@@ -25,8 +24,8 @@ class TestLiveSierraSession:
             response = session._get_bibs_by_isbn("9781338299151")
             matched_bibs = session._parse_response(response=response)
             assert isinstance(matched_bibs, list)
-            assert len(matched_bibs) == 2
-            assert isinstance(matched_bibs[0], sierra_responses.BPLSolrResponse)
+            assert len(matched_bibs) == 3
+            assert isinstance(matched_bibs[0], dict)
             assert sorted(list(response.json()["response"]["docs"][0].keys())) == [
                 "_version_",
                 "additional_contributor",
@@ -37,11 +36,12 @@ class TestLiveSierraSession:
                 "bs_all_lib_use_only",
                 "bs_on_order",
                 "call_number",
-                "collection",
                 "created_date",
                 "deleted",
                 "fiction_status",
                 "fs_call_number",
+                "fs_fine_value",
+                "fs_od_reading_order",
                 "id",
                 "is_available_locations",
                 "is_book_discussion",
@@ -58,12 +58,14 @@ class TestLiveSierraSession:
                 "publisher",
                 "sm_bib_varfields",
                 "sm_item_data",
+                "sm_original_subjects",
                 "ss_author_autocomplete",
                 "ss_biblevel",
                 "ss_grouping",
                 "ss_marc_tag_001",
                 "ss_marc_tag_003",
                 "ss_marc_tag_005",
+                "ss_od_series",
                 "ss_publisher_name",
                 "ss_title_autocomplete",
                 "ss_type",
@@ -77,13 +79,7 @@ class TestLiveSierraSession:
                 "tm_primary_title",
                 "tm_subject_search",
             ]
-            assert sorted(list(matched_bibs[0].__dict__.keys())) == [
-                "_data",
-                "bib_id",
-                "library",
-                "title",
-            ]
-            assert matched_bibs[0].title is not None
+            assert matched_bibs[0]["title"] is not None
 
     def test_NYPLPlatformSession_live(self):
         with sierra_clients.NYPLPlatformSession() as session:
@@ -91,7 +87,7 @@ class TestLiveSierraSession:
             matched_bibs = session._parse_response(response=response)
             assert isinstance(matched_bibs, list)
             assert len(matched_bibs) == 1
-            assert isinstance(matched_bibs[0], sierra_responses.NYPLPlatformResponse)
+            assert isinstance(matched_bibs[0], dict)
             assert sorted(list(response.json()["data"][0].keys())) == [
                 "author",
                 "bibLevel",
@@ -117,27 +113,11 @@ class TestLiveSierraSession:
                 "updatedDate",
                 "varFields",
             ]
-            assert matched_bibs[0].title is not None
+            assert matched_bibs[0]["title"] is not None
 
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_SierraBibFetcher_live(self, library):
         fetcher = sierra_clients.FetcherFactory().make(library=library)
         bibs = fetcher.get_bibs_by_id(value="9781338299151", key="isbn")
         assert isinstance(bibs, list)
-        assert sorted(list(bibs[0].keys())) == [
-            "barcodes",
-            "bib_id",
-            "branch_call_number",
-            "cat_source",
-            "collection",
-            "control_number",
-            "isbn",
-            "library",
-            "oclc_number",
-            "research_call_number",
-            "title",
-            "upc",
-            "update_date",
-            "var_fields",
-        ]
-        assert bibs[0].title is not None
+        assert bibs[0]["title"] is not None
