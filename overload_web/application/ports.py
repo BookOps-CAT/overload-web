@@ -236,10 +236,6 @@ class ReportHandler(Protocol):
         self, report_data: R, record_type: str
     ) -> dict[str, list[Any]]: ...  # pragma: no branch
 
-    def create_detailed_report(
-        self, report_data: R
-    ) -> dict[str, list[Any]]: ...  # pragma: no branch
-
     def create_duplicate_report(
         self, report_data: R
     ) -> dict[str, list[Any]]: ...  # pragma: no branch

@@ -229,9 +229,7 @@ class TestReportCommands:
 
     def test_get_detailed_report_data(self, mock_sheet_config, caplog, test_session):
         repo = batch_db.PVFBatchRepository(session=test_session)
-        out = GetDetailedReportData.execute(
-            batch_id="1", handler=reporter.PandasReportHandler(), repo=repo
-        )
+        out = GetDetailedReportData.execute(batch_id="1", repo=repo)
         assert sorted([i for i in out.keys()]) == sorted(
             [
                 "vendor",

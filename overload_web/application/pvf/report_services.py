@@ -26,30 +26,17 @@ class PVFReporter:
             report_data=stats.call_number_report_data, record_type=record_type
         )
         dupes = handler.create_duplicate_report(report_data=stats.duplicate_report_data)
-        if record_type == "cat":
-            out.update(
-                {
-                    "missing_barcodes": data["missing_barcodes"],
-                    "processing_integrity": data["processing_integrity"],
-                }
-            )
         out.update(
             {
                 "vendor_report": vendor,
                 "dupes_report": dupes,
                 "call_no_report": call_no,
                 "duplicate_bibs": None,
+                "missing_barcodes": data["missing_barcodes"],
+                "processing_integrity": data["processing_integrity"],
             }
         )
         return out
-
-    @staticmethod
-    def create_detailed_report(
-        data: dict[str, Any], handler: ports.ReportHandler
-    ) -> dict[str, Any]:
-        """Create detailed processing report based an output report."""
-        stats = reporting.ProcessingStatistics(**data)
-        return handler.create_detailed_report(report_data=stats.detailed_report_data)
 
 
 class ReportWriter:

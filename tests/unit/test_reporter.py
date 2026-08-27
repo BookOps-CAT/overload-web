@@ -50,7 +50,7 @@ def stub_report():
         target_call_no=["Bar"],
         target_title=["Baz"],
         updated_by_vendor=[False],
-        action="attach",
+        action=["attach"],
     )
 
 
@@ -133,7 +133,15 @@ class TestRecordsProcessingReports:
         report = pandas_handler.create_call_number_report(
             stub_report.call_number_report_data, record_type="sel"
         )
-        assert report is not None
+        assert report == {
+            "call_number": ["Foo"],
+            "call_number_match": [False],
+            "duplicate_records": [[]],
+            "resource_id": ["9781234567890"],
+            "target_bib_id": ["12345"],
+            "target_call_no": ["Bar"],
+            "vendor": ["BTSERIES"],
+        }
 
     def test_call_number_report_no_issues(self, stub_report, pandas_handler):
         stub_report.call_number_match = [True]
@@ -161,14 +169,6 @@ class TestRecordsProcessingReports:
         assert report["update"] == [0]
         assert report["total"] == [1]
 
-    def test_create_detailed_report(self, stub_report):
-        out = report_services.PVFReporter.create_detailed_report(
-            data=stub_report.__dict__, handler=reporter.PandasReportHandler()
-        )
-        assert "vendor" in out.keys()
-        assert "target_bib_id" in out.keys()
-        assert "resource_id" in out.keys()
-
     def test_create_output_report(self, stub_report):
         out = report_services.PVFReporter.create_output_report(
             data=stub_report.__dict__,
@@ -178,3 +178,35 @@ class TestRecordsProcessingReports:
         assert "vendor_report" in out.keys()
         assert "dupes_report" in out.keys()
         assert "call_no_report" in out.keys()
+        assert out == {
+            "total_records": 1,
+            "file_names": ["foo.mrc"],
+            "total_files": 1,
+            "vendor_report": {
+                "vendor": ["BTSERIES"],
+                "attach": [1],
+                "insert": [0],
+                "update": [0],
+                "total": [1],
+            },
+            "dupes_report": {
+                "vendor": ["BTSERIES"],
+                "resource_id": ["9781234567890"],
+                "target_bib_id": ["12345"],
+                "duplicate_records": [[]],
+                "mixed": [[]],
+                "other": [[]],
+            },
+            "call_no_report": {
+                "vendor": ["BTSERIES"],
+                "resource_id": ["9781234567890"],
+                "call_number": ["Foo"],
+                "target_bib_id": ["12345"],
+                "target_call_no": ["Bar"],
+                "call_number_match": [False],
+                "duplicate_records": [[]],
+            },
+            "duplicate_bibs": None,
+            "missing_barcodes": [],
+            "processing_integrity": True,
+        }

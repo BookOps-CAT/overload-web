@@ -45,13 +45,6 @@ class PandasReportHandler:
         df_dict = match_df.to_dict("list")
         return {str(k): v for k, v in df_dict.items()}
 
-    def create_detailed_report(
-        self, report_data: dict[str, list[Any]]
-    ) -> dict[str, list[Any]] | None:
-        df = pd.DataFrame(data=report_data)
-        df_dict = df.to_dict("list")
-        return {str(k): v for k, v in df_dict.items()}
-
     def create_duplicate_report(
         self, report_data: dict[str, list[Any]]
     ) -> dict[str, list[Any]]:

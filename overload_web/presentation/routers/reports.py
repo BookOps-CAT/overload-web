@@ -42,13 +42,10 @@ def get_output_report(
 def get_detailed_report(
     request: Request,
     batch_id: str,
-    handler: Annotated[Any, Depends(deps.get_report_handler)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
 ) -> HTMLResponse:
     """Create a dict to be used on the detailed report stats page after pvf workflow."""
-    out = GetDetailedReportData.execute(
-        batch_id=batch_id, handler=handler, repo=repository
-    )
+    out = GetDetailedReportData.execute(batch_id=batch_id, repo=repository)
     return request.app.state.templates.TemplateResponse(
         request=request, name="reports/detailed.html", context={"detailed_report": out}
     )

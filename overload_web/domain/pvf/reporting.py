@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -62,17 +63,17 @@ class ProcessingStatistics:
     @property
     def detailed_report_data(self) -> dict[str, list[Any]]:
         return {
-            "vendor": self.vendor,
-            "resource_id": self.resource_id,
             "action": self.action,
-            "target_bib_id": self.target_bib_id,
-            "updated_by_vendor": self.updated_by_vendor,
-            "call_number_match": self.call_number_match,
             "call_number": self.call_number,
-            "target_call_no": self.target_call_no,
+            "call_number_match": self.call_number_match,
             "duplicate_records": self.duplicate_records,
             "mixed": self.mixed,
             "other": self.other,
+            "resource_id": self.resource_id,
+            "target_bib_id": self.target_bib_id,
+            "target_call_no": self.target_call_no,
+            "updated_by_vendor": self.updated_by_vendor,
+            "vendor": self.vendor,
         }
 
     @property
@@ -89,3 +90,37 @@ class ProcessingStatistics:
     @property
     def vendor_report_data(self) -> dict[str, list[Any]]:
         return {"action": self.action, "vendor": self.vendor}
+
+    @classmethod
+    def create_full_records_report(
+        cls,
+        analysis: list[dict[str, Any]],
+        missing_barcodes: list[str],
+        file_names: list[str],
+    ) -> ProcessingStatistics:
+        """Generate statistics from a batch of processed full-level records"""
+        stats = defaultdict(list)
+        for rec in analysis:
+            for k, v in rec.items():
+                stats[k].append(v)
+        out: dict[str, Any] = dict(stats)
+        out["total_records"] = len(analysis)
+        out["total_files"] = len(stats["file_names"])
+        out["file_names"] = file_names
+        out["missing_barcodes"] = missing_barcodes
+        return cls(**out)
+
+    @classmethod
+    def create_order_records_report(
+        cls, analysis: list[dict[str, Any]], file_names: list[str]
+    ) -> ProcessingStatistics:
+        """Generate statistics from a batch of processed order-level records"""
+        stats = defaultdict(list)
+        for rec in analysis:
+            for k, v in rec.items():
+                stats[k].append(v)
+        out: dict[str, Any] = dict(stats)
+        out["total_records"] = len(analysis)
+        out["total_files"] = len(file_names)
+        out["file_names"] = file_names
+        return cls(**out)

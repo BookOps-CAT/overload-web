@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 from overload_web.application import ports
-from overload_web.application.pvf import bib_processing, marc, match_service
+from overload_web.application.pvf import marc, match_service
 from overload_web.domain.pvf import reporting
 
 logger = logging.getLogger(__name__)
@@ -65,7 +65,7 @@ class ProcessAcquisitionsRecords:
                 data=data, engine=marc_engine, vendor=vendor
             )
             original_barcodes = extract_nested_list([i.barcodes for i in records])
-            bib_processing.validate_unique_barcodes(original_barcodes)
+            marc.BarcodeValidator.validate_unique_barcodes(original_barcodes)
             for bib in records:
                 matches = matcher.match_order_record(bib, matchpoints=matchpoints)
                 analysis = bib.analyze_matches(candidates=matches)
@@ -78,7 +78,7 @@ class ProcessAcquisitionsRecords:
                 file_name=file_name, records=marc_engine.write(records)
             )
             out_batches.append(processed)
-        report = bib_processing.create_order_records_report(
+        report = reporting.ProcessingStatistics.create_order_records_report(
             analysis=report_data, file_names=file_names
         )
         processed_batch = reporting.ProcessedFileBatch(files=out_batches, report=report)
@@ -120,7 +120,7 @@ class ProcessCatalogingRecords:
         data = marc.MarcFileMerger.combine_marc_files(data=content, engine=marc_engine)
         records = marc.BibParser.parse_marc_data(data=data, engine=marc_engine)
         original_barcodes = extract_nested_list([i.barcodes for i in records])
-        bib_processing.validate_unique_barcodes(original_barcodes)
+        marc.BarcodeValidator.validate_unique_barcodes(original_barcodes)
         report_data = []
         matcher = match_service.BibMatcher(fetcher)
         for bib in records:
@@ -130,14 +130,14 @@ class ProcessCatalogingRecords:
             marc.BibUpdater.update_cataloging_record(bib, engine=marc_engine)
             report_data.append(analysis.to_dict())
         processed_barcodes = extract_nested_list([i.barcodes for i in records])
-        missing_barcodes = bib_processing.validate_preserved_barcodes(
+        missing_barcodes = marc.BarcodeValidator.validate_preserved_barcodes(
             processed_barcodes=processed_barcodes, original_barcodes=original_barcodes
         )
         deduplicated = marc.BibDeduplicator.deduplicate(
             records=records, engine=marc_engine
         )
         file_name = datetime.datetime.today().strftime("%y%m%d")
-        report = bib_processing.create_full_records_report(
+        report = reporting.ProcessingStatistics.create_full_records_report(
             analysis=report_data,
             missing_barcodes=missing_barcodes,
             file_names=file_names,
@@ -200,7 +200,7 @@ class ProcessSelectionRecords:
                 data=data, engine=marc_engine, vendor=vendor
             )
             original_barcodes = extract_nested_list([i.barcodes for i in records])
-            bib_processing.validate_unique_barcodes(original_barcodes)
+            marc.BarcodeValidator.validate_unique_barcodes(original_barcodes)
             for bib in records:
                 matches = matcher.match_order_record(bib, matchpoints=matchpoints)
                 analysis = bib.analyze_matches(candidates=matches)
@@ -213,7 +213,7 @@ class ProcessSelectionRecords:
                 file_name=file_name, records=marc_engine.write(records)
             )
             out_batches.append(processed)
-        report = bib_processing.create_order_records_report(
+        report = reporting.ProcessingStatistics.create_order_records_report(
             analysis=report_data, file_names=file_names
         )
         processed_batch = reporting.ProcessedFileBatch(files=out_batches, report=report)

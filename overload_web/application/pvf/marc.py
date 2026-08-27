@@ -162,3 +162,30 @@ class MarcFileMerger:
             io_data.write(record.as_marc())
         io_data.seek(0)
         return io_data.getvalue()
+
+
+class BarcodeValidator:
+    @staticmethod
+    def validate_unique_barcodes(barcodes: list[str]) -> None:
+        """Confirm barcodes in a file are all unique."""
+        barcode_counter = Counter(barcodes)
+        dupe_barcodes = [i for i, count in barcode_counter.items() if count > 1]
+        if dupe_barcodes:
+            raise ValueError(f"Duplicate barcodes found in file: {dupe_barcodes}")
+
+    @staticmethod
+    def validate_preserved_barcodes(
+        processed_barcodes: list[str], original_barcodes: list[str]
+    ) -> list[str]:
+        """Confirm barcodes extracted from a file are present in processed records"""
+        missing_barcodes = set()
+        for barcode in original_barcodes:
+            if barcode not in processed_barcodes:
+                missing_barcodes.add(barcode)
+        valid = sorted(original_barcodes) == sorted(processed_barcodes)
+        logger.debug(
+            f"Integrity validation: {valid}, missing_barcodes: {list(missing_barcodes)}"
+        )
+        if not valid:
+            logger.error(f"Barcodes integrity error: {list(missing_barcodes)}")
+        return list(missing_barcodes)

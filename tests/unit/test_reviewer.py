@@ -4,7 +4,7 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.application.pvf import bib_processing, marc
+from overload_web.application.pvf import marc
 from overload_web.domain.pvf import bibs
 
 
@@ -132,7 +132,7 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_validate_cat(self, full_bib, caplog, record_type):
-        bib_processing.validate_preserved_barcodes(
+        marc.BarcodeValidator.validate_preserved_barcodes(
             full_bib.barcodes, ["333331234567890"]
         )
         assert len(caplog.records) == 1
@@ -144,7 +144,7 @@ class TestReviewer:
         "library, collection, record_type", [("bpl", "NONE", "cat")]
     )
     def test_validate_cat_bpl_960_item(self, full_bib, caplog, collection, record_type):
-        bib_processing.validate_preserved_barcodes(
+        marc.BarcodeValidator.validate_preserved_barcodes(
             full_bib.barcodes, ["333331234567890"]
         )
         assert len(caplog.records) == 1
@@ -157,7 +157,7 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_validate_missing_barcodes(self, full_bib, caplog, collection, record_type):
-        bib_processing.validate_preserved_barcodes(
+        marc.BarcodeValidator.validate_preserved_barcodes(
             full_bib.barcodes, ["333331234567890", "333330987654321"]
         )
         assert len(caplog.records) == 2

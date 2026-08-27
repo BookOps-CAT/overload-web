@@ -5,6 +5,7 @@ from typing import Any
 
 from overload_web.application import ports
 from overload_web.application.pvf import report_services
+from overload_web.domain.pvf import reporting
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class CreatePVFOutputReport:
 class GetDetailedReportData:
     @staticmethod
     def execute(
-        batch_id: str, handler: ports.ReportHandler, repo: ports.SqlRepositoryProtocol
+        batch_id: str, repo: ports.SqlRepositoryProtocol
     ) -> dict[str, list[Any]]:
         """
         Create a detailed processing report for a batch of processed records.
@@ -61,10 +62,8 @@ class GetDetailedReportData:
         """
         data = repo.get(batch_id)
         if data:
-            report = report_services.PVFReporter.create_detailed_report(
-                data=data["report"], handler=handler
-            )
-            return dict(report)
+            stats = reporting.ProcessingStatistics(**data["report"])
+            return stats.detailed_report_data
         return {}
 
 
