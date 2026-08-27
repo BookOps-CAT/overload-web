@@ -5,7 +5,7 @@ import uuid
 from typing import Any, Sequence
 
 from overload_web.application import ports
-from overload_web.domain.models import files
+from overload_web.domain.shared import files
 
 logger = logging.getLogger(__name__)
 

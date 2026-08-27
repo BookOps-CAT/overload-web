@@ -8,7 +8,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
-from overload_web.application.commands.reporting import (
+from overload_web.application.pvf.reporting import (
     CreatePVFOutputReport,
     GetDetailedReportData,
     WriteOutputReport,

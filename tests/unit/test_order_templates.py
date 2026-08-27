@@ -3,12 +3,12 @@ import inspect
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.application.commands.order_template import (
+from overload_web.application.pvf.template_handling import (
     CreateOrderTemplate,
     GetOrderTemplate,
     ListOrderTemplates,
 )
-from overload_web.domain.models import templates
+from overload_web.domain.pvf import order_templates
 from overload_web.infrastructure import template_db
 from overload_web.presentation import deps
 
@@ -50,13 +50,16 @@ def test_template_attrs():
     ]
     domain_base = [
         name
-        for name in inspect.signature(templates.OrderTemplateBase).parameters.keys()
+        for name in inspect.signature(
+            order_templates.OrderTemplateBase
+        ).parameters.keys()
     ]
     template_sql_model = [
         name for name in inspect.signature(template_db.TemplateModel).parameters.keys()
     ]
     template_domain_model = [
-        name for name in inspect.signature(templates.OrderTemplate).parameters.keys()
+        name
+        for name in inspect.signature(order_templates.OrderTemplate).parameters.keys()
     ]
     assert sql_base == pydantic_patch == domain_base == pydantic_create
     assert template_sql_model == template_domain_model

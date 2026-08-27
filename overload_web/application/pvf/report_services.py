@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 from overload_web.application import ports
-from overload_web.domain.models import reporting
+from overload_web.domain.pvf import reporting
 
 logger = logging.getLogger(__name__)
 

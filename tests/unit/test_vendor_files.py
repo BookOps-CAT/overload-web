@@ -1,10 +1,10 @@
 from overload_web.application import ports
-from overload_web.application.commands.file_io import (
+from overload_web.application.pvf.file_handling import (
     ListVendorFiles,
     LoadVendorFile,
     WriteFile,
 )
-from overload_web.domain.models import files
+from overload_web.domain.shared import files
 
 
 class StubFileLoader(ports.FileLoader):

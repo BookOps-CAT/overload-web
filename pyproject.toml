@@ -95,9 +95,12 @@ exclude_exact = [
     "overload_web.application",
     "overload_web.application.commands",
     "overload_web.application.ports",
+    "overload_web.application.pvf",
     "overload_web.application.services",
     "overload_web.domain",
-    "overload_web.domain.models",
+    "overload_web.domain.pvf",
+    "overload_web.domain.shared",
+    "overload_web.domain.wc2s",
     "overload_web.infrastructure",
     "overload_web.presentation",
     "overload_web.presentation.routers"

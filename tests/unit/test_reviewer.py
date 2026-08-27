@@ -4,8 +4,8 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.application.services import bib_processing, marc
-from overload_web.domain.models import bibs
+from overload_web.application.pvf import bib_processing, marc
+from overload_web.domain.pvf import bibs
 
 
 @pytest.fixture

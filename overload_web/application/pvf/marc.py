@@ -8,8 +8,7 @@ from collections import Counter
 from typing import Any
 
 from overload_web.application import ports
-from overload_web.application.services import marc_updates
-from overload_web.domain.models import bibs
+from overload_web.domain.pvf import bibs, cataloging_rules
 
 logger = logging.getLogger(__name__)
 
@@ -107,11 +106,11 @@ class BibUpdater:
     ) -> None:
         """Update and add MARC fields to processed full-level bib record"""
         bib = engine.create_bib_from_domain(record=record)
-        updates = marc_updates.CatalogingUpdates.field_list(
+        updates = cataloging_rules.CatalogingUpdates.field_list(
             record=record, context=engine.config
         )
         engine.update_fields(field_updates=updates, bib=bib)
-        bib.leader = marc_updates.FieldRules.update_leader(bib.leader)
+        bib.leader = cataloging_rules.FieldRules.update_leader(bib.leader)
         record.binary_data = bib.as_marc()
 
     @staticmethod
@@ -122,11 +121,11 @@ class BibUpdater:
     ) -> None:
         """Update and add MARC fields to processed order-level bib record"""
         bib = engine.create_bib_from_domain(record=record)
-        updates = marc_updates.AcquisitionUpdates.field_list(
+        updates = cataloging_rules.AcquisitionUpdates.field_list(
             record=record, context=engine.config, template_data=template_data
         )
         engine.update_fields(field_updates=updates, bib=bib)
-        bib.leader = marc_updates.FieldRules.update_leader(bib.leader)
+        bib.leader = cataloging_rules.FieldRules.update_leader(bib.leader)
         record.binary_data = bib.as_marc()
 
     @staticmethod
@@ -137,7 +136,7 @@ class BibUpdater:
     ) -> None:
         """Update and add MARC fields to processed order-level bib record"""
         bib = engine.create_bib_from_domain(record=record)
-        updates = marc_updates.SelectionUpdates.field_list(
+        updates = cataloging_rules.SelectionUpdates.field_list(
             record=record,
             context=engine.config,
             format=template_data.get("format"),
@@ -145,7 +144,7 @@ class BibUpdater:
             template_data=template_data,
         )
         engine.update_fields(field_updates=updates, bib=bib)
-        bib.leader = marc_updates.FieldRules.update_leader(bib.leader)
+        bib.leader = cataloging_rules.FieldRules.update_leader(bib.leader)
         record.binary_data = bib.as_marc()
 
 

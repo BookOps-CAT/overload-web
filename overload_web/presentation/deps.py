@@ -13,10 +13,10 @@ from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.infrastructure import (
     batch_db,
-    clients,
     file_io,
     marc_engine,
     reporter,
+    sierra_clients,
     template_db,
 )
 
@@ -323,9 +323,9 @@ def remote_file_loader(vendor: str) -> Generator[file_io.SFTPFileLoader, None, N
 
 def get_fetcher(
     library: Annotated[str, Form(...)],
-) -> Generator[clients.SierraBibFetcher, None, None]:
+) -> Generator[sierra_clients.SierraBibFetcher, None, None]:
     """Create a Sierra bib fetcher service for a library."""
-    yield clients.FetcherFactory().make(library)
+    yield sierra_clients.FetcherFactory().make(library)
 
 
 def get_marc_engine(

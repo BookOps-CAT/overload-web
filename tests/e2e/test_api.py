@@ -5,8 +5,8 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.domain.models import files
-from overload_web.infrastructure import batch_db, clients, file_io, template_db
+from overload_web.domain.shared import files
+from overload_web.infrastructure import batch_db, file_io, sierra_clients, template_db
 from overload_web.main import app
 from overload_web.presentation import deps
 
@@ -17,15 +17,15 @@ def processed_records(monkeypatch, stub_report):
         return {"id": "1"}
 
     monkeypatch.setattr(
-        "overload_web.application.commands.process.ProcessAcquisitionsRecords.execute",
+        "overload_web.application.pvf.process.ProcessAcquisitionsRecords.execute",
         fake_response,
     )
     monkeypatch.setattr(
-        "overload_web.application.commands.process.ProcessCatalogingRecords.execute",
+        "overload_web.application.pvf.process.ProcessCatalogingRecords.execute",
         fake_response,
     )
     monkeypatch.setattr(
-        "overload_web.application.commands.process.ProcessSelectionRecords.execute",
+        "overload_web.application.pvf.process.ProcessSelectionRecords.execute",
         fake_response,
     )
 
@@ -36,7 +36,7 @@ def fake_reporter(monkeypatch):
         return None
 
     monkeypatch.setattr(
-        "overload_web.application.services.report_services.ReportWriter.write_report_to_google_sheet",
+        "overload_web.application.pvf.report_services.ReportWriter.write_report_to_google_sheet",
         null_response,
     )
 
@@ -405,7 +405,7 @@ class TestApp:
             "workflow_id": "1234",
         }
 
-        with pytest.raises(clients.BookopsPlatformError) as exc:
+        with pytest.raises(sierra_clients.BookopsPlatformError) as exc:
             self.client.post("/pvf/cat/process-vendor-file", data=context)
         assert "Trouble connecting: " in str(exc.value)
 
@@ -433,7 +433,7 @@ class TestApp:
             "id": 1,
             "workflow_id": "1234",
         }
-        with pytest.raises(clients.BookopsPlatformError) as exc:
+        with pytest.raises(sierra_clients.BookopsPlatformError) as exc:
             self.client.post(f"/pvf/{record_type}/process-vendor-file", data=context)
         assert "Trouble connecting: " in str(exc.value)
 

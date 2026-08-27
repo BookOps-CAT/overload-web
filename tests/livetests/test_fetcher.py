@@ -3,8 +3,8 @@ import os
 import pytest
 import yaml
 
-from overload_web.domain.models import sierra_responses
-from overload_web.infrastructure import clients
+from overload_web.domain.shared import sierra_responses
+from overload_web.infrastructure import sierra_clients
 
 
 @pytest.fixture
@@ -21,7 +21,7 @@ def live_creds() -> None:
 @pytest.mark.usefixtures("live_creds")
 class TestLiveSierraSession:
     def test_BPLSolrSession_live(self):
-        with clients.BPLSolrSession() as session:
+        with sierra_clients.BPLSolrSession() as session:
             response = session._get_bibs_by_isbn("9781338299151")
             matched_bibs = session._parse_response(response=response)
             assert isinstance(matched_bibs, list)
@@ -86,7 +86,7 @@ class TestLiveSierraSession:
             assert matched_bibs[0].title is not None
 
     def test_NYPLPlatformSession_live(self):
-        with clients.NYPLPlatformSession() as session:
+        with sierra_clients.NYPLPlatformSession() as session:
             response = session._get_bibs_by_isbn("9781338299151")
             matched_bibs = session._parse_response(response=response)
             assert isinstance(matched_bibs, list)
@@ -121,7 +121,7 @@ class TestLiveSierraSession:
 
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_SierraBibFetcher_live(self, library):
-        fetcher = clients.FetcherFactory().make(library=library)
+        fetcher = sierra_clients.FetcherFactory().make(library=library)
         bibs = fetcher.get_bibs_by_id(value="9781338299151", key="isbn")
         assert isinstance(bibs, list)
         assert sorted(list(bibs[0].keys())) == [

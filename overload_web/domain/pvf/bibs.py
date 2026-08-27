@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Protocol
 
-from overload_web.domain.models import sierra_responses
+from overload_web.domain.shared import sierra_responses
 
 logger = logging.getLogger(__name__)
 
@@ -187,7 +187,6 @@ class DomainBib:
             record_type=self.record_type,
             collection=self.collection,
         )
-        logger.info(f"Analyzing matches with {analyzer.__class__.__name__}")
         return analyzer.analyze(record=self, candidates=classified)
 
     def apply_match(self, analysis: MatchAnalysis) -> None:

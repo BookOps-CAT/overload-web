@@ -10,9 +10,10 @@ from bookops_marc import Bib
 from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain.models import bibs, reporting, sierra_responses
-from overload_web.infrastructure import clients
+from overload_web.domain.pvf import bibs, reporting
+from overload_web.domain.shared import sierra_responses
 from overload_web.infrastructure import marc_engine as engine
+from overload_web.infrastructure import sierra_clients
 
 
 @pytest.fixture(scope="session")
@@ -109,7 +110,7 @@ class FakeSierraResponse(sierra_responses.BaseSierraResponse):
         return [{"020": self._data["id"]}]
 
 
-class FakeSierraSession(clients.SierraSessionProtocol):
+class FakeSierraSession(sierra_clients.SierraSessionProtocol):
     def _get_credentials(self):
         return "foo"
 
@@ -151,7 +152,7 @@ def mock_session(monkeypatch):
 @pytest.fixture
 def mock_bpl_session_error(monkeypatch, mock_session):
     def mock_error(*args, **kwargs):
-        raise clients.BookopsSolrError
+        raise sierra_clients.BookopsSolrError
 
     monkeypatch.setattr(FakeSierraSession, "_get_bibs_by_isbn", mock_error)
     return FakeSierraSession()
@@ -160,7 +161,7 @@ def mock_bpl_session_error(monkeypatch, mock_session):
 @pytest.fixture
 def mock_nypl_session_error(monkeypatch, mock_session):
     def mock_error(*args, **kwargs):
-        raise clients.BookopsPlatformError
+        raise sierra_clients.BookopsPlatformError
 
     def mock_nypl_error(*args, **kwargs):
         raise requests.exceptions.Timeout
@@ -616,7 +617,7 @@ def fake_fetcher(monkeypatch, sierra_response):
         return [sierra_response]
 
     monkeypatch.setattr(FakeSierraSession, "_parse_response", fake_response)
-    return clients.SierraBibFetcher(session=FakeSierraSession())
+    return sierra_clients.SierraBibFetcher(session=FakeSierraSession())
 
 
 @pytest.fixture
@@ -625,7 +626,7 @@ def fake_fetcher_no_matches(monkeypatch):
         return []
 
     monkeypatch.setattr(FakeSierraSession, "_parse_response", fake_response)
-    return clients.SierraBibFetcher(session=FakeSierraSession())
+    return sierra_clients.SierraBibFetcher(session=FakeSierraSession())
 
 
 @pytest.fixture

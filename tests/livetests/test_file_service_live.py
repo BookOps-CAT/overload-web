@@ -4,7 +4,7 @@ import pytest
 import yaml
 from file_retriever import Client
 
-from overload_web.domain.models import files
+from overload_web.domain.shared import files
 from overload_web.infrastructure import file_io
 
 

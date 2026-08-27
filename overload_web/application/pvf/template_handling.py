@@ -4,7 +4,7 @@ import logging
 from typing import Sequence
 
 from overload_web.application import ports
-from overload_web.domain.models import templates
+from overload_web.domain.pvf import order_templates
 
 logger = logging.getLogger(__name__)
 
@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 class CreateOrderTemplate:
     @staticmethod
     def execute(
-        repository: ports.SqlRepositoryProtocol, obj: templates.OrderTemplateBase
-    ) -> templates.OrderTemplate:
+        repository: ports.SqlRepositoryProtocol, obj: order_templates.OrderTemplateBase
+    ) -> order_templates.OrderTemplate:
         """
         Save an order template.
 
@@ -28,14 +28,14 @@ class CreateOrderTemplate:
             The saved template as an `OrderTemplate` domain object.
         """
         save_template = repository.save(obj=obj)
-        return templates.OrderTemplate(**save_template)
+        return order_templates.OrderTemplate(**save_template)
 
 
 class GetOrderTemplate:
     @staticmethod
     def execute(
         repository: ports.SqlRepositoryProtocol, template_id: str
-    ) -> templates.OrderTemplate | None:
+    ) -> order_templates.OrderTemplate | None:
         """
         Retrieve an order template by its ID.
 
@@ -48,7 +48,7 @@ class GetOrderTemplate:
         """
         data = repository.get(id=template_id)
         if data:
-            return templates.OrderTemplate(**data)
+            return order_templates.OrderTemplate(**data)
         return None
 
 
@@ -58,7 +58,7 @@ class ListOrderTemplates:
         repository: ports.SqlRepositoryProtocol,
         offset: int | None = 0,
         limit: int | None = 20,
-    ) -> Sequence[templates.OrderTemplate]:
+    ) -> Sequence[order_templates.OrderTemplate]:
         """
         Retrieve a list of templates in the database.
 
@@ -71,7 +71,7 @@ class ListOrderTemplates:
             A list of `OrderTemplate` objects.
         """
         template_list = repository.list(offset=offset, limit=limit)
-        return [templates.OrderTemplate(**i) for i in template_list]
+        return [order_templates.OrderTemplate(**i) for i in template_list]
 
 
 class UpdateOrderTemplate:
@@ -79,8 +79,8 @@ class UpdateOrderTemplate:
     def execute(
         repository: ports.SqlRepositoryProtocol,
         template_id: str,
-        obj: templates.OrderTemplateBase,
-    ) -> templates.OrderTemplate | None:
+        obj: order_templates.OrderTemplateBase,
+    ) -> order_templates.OrderTemplate | None:
         """
         Update an existing order template.
 
@@ -95,5 +95,5 @@ class UpdateOrderTemplate:
         """
         data = repository.update(id=template_id, data=obj)
         if data:
-            return templates.OrderTemplate(**data)
+            return order_templates.OrderTemplate(**data)
         return None

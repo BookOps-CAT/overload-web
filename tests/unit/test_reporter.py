@@ -1,7 +1,7 @@
 import pytest
 
-from overload_web.application.services import report_services
-from overload_web.domain.models import reporting
+from overload_web.application.pvf import report_services
+from overload_web.domain.pvf import reporting
 from overload_web.infrastructure import reporter
 
 

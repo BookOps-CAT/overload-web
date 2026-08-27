@@ -9,7 +9,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse
 
-from overload_web.application.commands.file_io import (
+from overload_web.application.pvf.file_handling import (
     DeleteFileFromWorkflow,
     ListVendorFiles,
     LoadVendorFile,

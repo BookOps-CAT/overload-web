@@ -1,12 +1,12 @@
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.application.commands.process import (
+from overload_web.application.pvf.process import (
     ProcessAcquisitionsRecords,
     ProcessCatalogingRecords,
     ProcessSelectionRecords,
 )
-from overload_web.application.commands.reporting import (
+from overload_web.application.pvf.reporting import (
     CreatePVFOutputReport,
     GetDetailedReportData,
     WriteOutputReport,

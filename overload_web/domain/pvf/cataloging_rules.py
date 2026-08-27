@@ -6,7 +6,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
-from overload_web.domain.models import bibs
+from overload_web.domain.pvf import bibs
 
 logger = logging.getLogger(__name__)
 

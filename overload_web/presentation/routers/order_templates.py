@@ -8,7 +8,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse
 
-from overload_web.application.commands.order_template import (
+from overload_web.application.pvf.template_handling import (
     CreateOrderTemplate,
     GetOrderTemplate,
     ListOrderTemplates,
