@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Protocol
 
-from overload_web.domain.shared import sierra_responses
+from overload_web.domain.shared import context, sierra_responses
 
 logger = logging.getLogger(__name__)
 
@@ -38,24 +38,15 @@ class ClassifiedCandidates:
         return duplicates
 
 
-class Collection(StrEnum):
-    """Valid values for NYPL and BPL collections"""
-
-    BRANCH = "BL"
-    RESEARCH = "RL"
-    MIXED = "MIXED"
-    NONE = "NONE"
-
-
 class DomainBib:
     """A domain entity representing a bib record and its associated order data."""
 
     def __init__(
         self,
         binary_data: bytes,
-        collection: Collection | str | None,
-        library: LibrarySystem | str,
-        record_type: RecordType | str,
+        collection: context.Collection | str | None,
+        library: context.LibrarySystem | str,
+        record_type: context.RecordType | str,
         title: str,
         barcodes: list[str] = [],
         bib_id: str | None = None,
@@ -120,14 +111,14 @@ class DomainBib:
         self.bib_id = bib_id
         self.binary_data = binary_data
         self.branch_call_number = branch_call_number
-        self.collection = Collection(str(collection).upper())
+        self.collection = context.Collection(str(collection).upper())
         self.control_number = control_number
         self.isbn = isbn
-        self.library = LibrarySystem(library)
+        self.library = context.LibrarySystem(library)
         self.oclc_number = oclc_number
         self.orders = orders
         self.research_call_number = research_call_number
-        self.record_type = RecordType(record_type)
+        self.record_type = context.RecordType(record_type)
         self.title = title
         self.upc = upc
         self.update_date = update_date
@@ -254,13 +245,6 @@ class DomainBib:
 
     def __repr__(self) -> str:
         return f"DomainBib(barcodes: {self.barcodes}, bib_id: {self.bib_id}, branch_call_number: {self.branch_call_number}, collection: {self.collection}, control_number: {self.control_number}, isbn: {self.isbn}, library: {self.library}, oclc_number: {self.oclc_number}, research_call_number: {self.research_call_number}, record_type: {self.record_type}, title: {self.title}, upc: {self.upc}, update_date: {self.update_date}, vendor: {self.vendor})"  # noqa: E501
-
-
-class LibrarySystem(StrEnum):
-    """Valid values for library system"""
-
-    BPL = "bpl"
-    NYPL = "nypl"
 
 
 class MatchAnalysis:
@@ -426,14 +410,6 @@ class ProcessedFileBatch:
         self.total_records = len(processing_statistics)
         self.missing_barcodes = missing_barcodes
         self.processing_integrity = missing_barcodes in [[], None]
-
-
-class RecordType(StrEnum):
-    """Valid values for record type/processing workflow."""
-
-    ACQUISITIONS = "acq"
-    CATALOGING = "cat"
-    SELECTION = "sel"
 
 
 @dataclass

@@ -225,6 +225,7 @@ class SqlRepositoryProtocol(Protocol[T]):
     """Update an existing object in a database."""
 
 
+@runtime_checkable
 class ReportWriter(Protocol):
     """A protocol defining a service used to write report data."""
 
@@ -237,3 +238,16 @@ class ReportWriter(Protocol):
     def write_report(self, data: list[list[Any]]) -> None: ...  # pragma: no branch
 
     """Write report data to an external service."""
+
+
+@runtime_checkable
+class OCLCBibFetcher(Protocol[S]):
+    def get_brief_bibs_by_id(
+        self, index: str, value: str | int, format: str | None = None
+    ) -> list[S]: ...  # pragma: no branch
+
+    def get_full_bibs_by_id(self, value: str | int) -> bytes: ...  # pragma: no branch
+
+    def get_full_bib_json_by_id(
+        self, value: str
+    ) -> dict[str, Any]: ...  # pragma: no branch

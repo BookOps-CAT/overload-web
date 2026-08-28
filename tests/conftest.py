@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 import requests
 from bookops_marc import Bib
+from bookops_worldcat.errors import BookopsWorldcatError
 from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 
@@ -49,10 +50,17 @@ def test_setup(caplog, monkeypatch):
 
 
 class MockHTTPResponse:
-    def __init__(self, status_code: int, ok: bool, _json: dict):
+    def __init__(
+        self, status_code: int, ok: bool, _json: dict, _content: bytes | None = None
+    ):
         self.status_code = status_code
         self.ok = ok
         self._json = _json
+        self._content = _content
+
+    @property
+    def content(self):
+        return self._content
 
     def json(self):
         return self._json
@@ -750,3 +758,62 @@ def stub_report():
             }
         ]
     )
+
+
+@pytest.fixture
+def mock_wc_session(monkeypatch):
+    def response(*args, **kwargs):
+        json = {
+            "numberOfRecords": 1,
+            "briefRecords": [
+                {
+                    "oclcNumber": "1103229133",
+                    "title": "Foo: bar",
+                    "creator": "Baz",
+                    "language": "eng",
+                    "generalFormat": "Book",
+                    "specificFormat": "PrintBook",
+                    "isbns": ["9781470398842"],
+                    "catalogingInfo": {
+                        "catalogingAgency": "DLC",
+                        "transcribingAgency": "DLC",
+                        "catalogingLanguage": "eng",
+                        "levelOfCataloging": " ",
+                    },
+                }
+            ],
+            "date": {"replaceDate": "260901"},
+        }
+        return MockHTTPResponse(status_code=200, ok=True, _json=json, _content=b"")
+
+    def token_response(*args, **kwargs):
+        token_json = {
+            "access_token": "foo",
+            "expires_at": "2020-08-23 01:00:00Z",
+            "token_type": "bearer",
+        }
+        return MockHTTPResponse(status_code=200, ok=True, _json=token_json)
+
+    monkeypatch.setattr("requests.Session.send", response)
+    monkeypatch.setattr("requests.post", token_response)
+
+
+@pytest.fixture
+def mock_wc_session_error(monkeypatch, mock_wc_session):
+    def worldcat_error(*args, **kwargs):
+        raise BookopsWorldcatError
+
+    def token_response(*args, **kwargs):
+        now = datetime.datetime.now(tz=datetime.UTC)
+        new_expiration = now + datetime.timedelta(hours=1)
+        token_json = {
+            "access_token": "foo",
+            "expires_at": datetime.datetime.strftime(
+                new_expiration, "%Y-%m-%d %H:%M:%SZ"
+            ),
+            "token_type": "bearer",
+        }
+        return MockHTTPResponse(status_code=200, ok=True, _json=token_json)
+
+    monkeypatch.setattr("requests.Session.send", worldcat_error)
+    monkeypatch.setattr("requests.post", token_response)

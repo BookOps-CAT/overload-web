@@ -1187,7 +1187,7 @@
       "label": "Cataloging Rules",
       "options": { "rda": "RDA only", "any": "Any" }
     },
-    "cat_source": {
+    "cat_agency": {
       "label": "Cataloging Source",
       "options": { "dlc": "DLC only", "any": "Any" }
     },
