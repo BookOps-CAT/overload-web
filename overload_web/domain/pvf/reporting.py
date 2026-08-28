@@ -10,33 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class ProcessedFile:
-    """A value object representing a processed file of MARC records"""
-
-    file_name: str
-    records: bytes
-
-
-class ProcessedFileBatch:
-    """A dataclass representing a batch of processed files and their statistics"""
-
-    def __init__(
-        self,
-        processing_statistics: list[dict[str, Any]],
-        file_names: list[str],
-        files: list[ProcessedFile],
-        missing_barcodes: list[str] | None = None,
-    ) -> None:
-        self.files = files
-        self.processing_statistics = processing_statistics
-        self.file_names = file_names
-        self.total_files = len(file_names)
-        self.total_records = len(processing_statistics)
-        self.missing_barcodes = missing_barcodes
-        self.processing_integrity = missing_barcodes in [[], None]
-
-
-@dataclass
 class ProcessingStatistics:
     """A value object representing a statistics for a batch of processed files"""
 

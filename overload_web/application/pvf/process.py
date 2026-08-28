@@ -7,7 +7,7 @@ from typing import Any
 
 from overload_web.application import ports
 from overload_web.application.pvf import marc, match_service
-from overload_web.domain.pvf import reporting
+from overload_web.domain.pvf import bibs
 
 logger = logging.getLogger(__name__)
 
@@ -70,15 +70,15 @@ class ProcessAcquisitionsRecords:
                 matches = matcher.match_order_record(bib, matchpoints=matchpoints)
                 analysis = bib.analyze_matches(candidates=matches)
                 bib.apply_match(analysis)
-                marc.BibUpdater.update_acquisition_record(
+                marc.BibUpdater.update_acq_record(
                     bib, engine=marc_engine, template_data=template_data
                 )
                 report_data.append(analysis.to_dict())
-            processed = reporting.ProcessedFile(
+            processed = bibs.ProcessedFile(
                 file_name=file_name, records=marc_engine.write(records)
             )
             out_batches.append(processed)
-        processed_batch = reporting.ProcessedFileBatch(
+        processed_batch = bibs.ProcessedFileBatch(
             files=out_batches, processing_statistics=report_data, file_names=file_names
         )
         return repo.save(processed_batch)
@@ -126,7 +126,7 @@ class ProcessCatalogingRecords:
             matches = matcher.match_full_record(bib)
             analysis = bib.analyze_matches(candidates=matches)
             bib.apply_match(analysis)
-            marc.BibUpdater.update_cataloging_record(bib, engine=marc_engine)
+            marc.BibUpdater.update_cat_record(bib, engine=marc_engine)
             report_data.append(analysis.to_dict())
         processed_barcodes = extract_nested_list([i.barcodes for i in records])
         missing_barcodes = marc.BarcodeValidator.validate_preserved_barcodes(
@@ -137,12 +137,12 @@ class ProcessCatalogingRecords:
         )
         file_name = datetime.datetime.today().strftime("%y%m%d")
         files = [
-            reporting.ProcessedFile(
+            bibs.ProcessedFile(
                 file_name=f"{file_name}-{k}.mrc", records=marc_engine.write(v)
             )
             for k, v in deduplicated.items()
         ]
-        processed_batch = reporting.ProcessedFileBatch(
+        processed_batch = bibs.ProcessedFileBatch(
             files=files,
             processing_statistics=report_data,
             file_names=file_names,
@@ -204,15 +204,15 @@ class ProcessSelectionRecords:
                 matches = matcher.match_order_record(bib, matchpoints=matchpoints)
                 analysis = bib.analyze_matches(candidates=matches)
                 bib.apply_match(analysis)
-                marc.BibUpdater.update_selection_record(
+                marc.BibUpdater.update_sel_record(
                     bib, engine=marc_engine, template_data=template_data
                 )
                 report_data.append(analysis.to_dict())
-            processed = reporting.ProcessedFile(
+            processed = bibs.ProcessedFile(
                 file_name=file_name, records=marc_engine.write(records)
             )
             out_batches.append(processed)
-        processed_batch = reporting.ProcessedFileBatch(
+        processed_batch = bibs.ProcessedFileBatch(
             files=out_batches, processing_statistics=report_data, file_names=file_names
         )
         return repo.save(processed_batch)

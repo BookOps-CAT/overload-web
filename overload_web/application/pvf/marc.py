@@ -101,9 +101,7 @@ class BibParser:
 
 class BibUpdater:
     @staticmethod
-    def update_cataloging_record(
-        record: bibs.DomainBib, engine: ports.MarcEnginePort
-    ) -> None:
+    def update_cat_record(record: bibs.DomainBib, engine: ports.MarcEnginePort) -> None:
         """Update and add MARC fields to processed full-level bib record"""
         bib = engine.create_bib_from_domain(record=record)
         updates = cataloging_rules.CatalogingUpdates.field_list(
@@ -114,7 +112,7 @@ class BibUpdater:
         record.binary_data = bib.as_marc()
 
     @staticmethod
-    def update_acquisition_record(
+    def update_acq_record(
         record: bibs.DomainBib,
         engine: ports.MarcEnginePort,
         template_data: dict[str, Any],
@@ -129,7 +127,7 @@ class BibUpdater:
         record.binary_data = bib.as_marc()
 
     @staticmethod
-    def update_selection_record(
+    def update_sel_record(
         record: bibs.DomainBib,
         engine: ports.MarcEnginePort,
         template_data: dict[str, Any],

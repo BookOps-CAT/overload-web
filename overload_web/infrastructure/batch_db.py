@@ -21,8 +21,6 @@ from typing import Any
 
 from sqlmodel import JSON, Column, Field, Relationship, Session, SQLModel
 
-from overload_web.domain.pvf import reporting
-
 logger = logging.getLogger(__name__)
 
 
@@ -97,7 +95,7 @@ class PVFBatchRepository:
             }
         return None
 
-    def save(self, obj: reporting.ProcessedFileBatch) -> dict[str, Any]:
+    def save(self, obj: PVFBatch) -> dict[str, Any]:
         """
         Adds a new `PVFBatch` to the database.
 
