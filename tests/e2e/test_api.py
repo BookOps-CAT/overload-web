@@ -230,6 +230,13 @@ class TestApp:
             "template_form_enabled",
         ]
 
+    def test_frontend_wc2sierra_page_get(self):
+        response = self.client.get("/wc2sierra")
+        assert response.status_code == 200
+        assert "WorldCat2Sierra" in response.text
+        assert response.url == f"{self.base_url}/wc2sierra"
+        assert response.context["page_title"] == "WorldCat2Sierra"
+
     def test_ot_router_get_template_form(self):
         response = self.client.get("/ot/forms/templates")
         assert response.status_code == 200

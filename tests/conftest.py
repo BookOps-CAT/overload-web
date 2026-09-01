@@ -47,6 +47,10 @@ def test_setup(caplog, monkeypatch):
     monkeypatch.setenv("GOOGLE_SHEET_CLIENT_SECRET", "qux")
     monkeypatch.setenv("GOOGLE_SHEET_NAME", "sheet")
     monkeypatch.setenv("GOOGLE_SHEET_ID", "id")
+    monkeypatch.setenv("NYPL_WORLDCAT_CLIENT", "foo")
+    monkeypatch.setenv("NYPL_WORLDCAT_SECRET", "bar")
+    monkeypatch.setenv("BPL_WORLDCAT_CLIENT", "foo")
+    monkeypatch.setenv("BPL_WORLDCAT_SECRET", "bar")
 
 
 class MockHTTPResponse:
