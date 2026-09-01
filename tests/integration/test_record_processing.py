@@ -11,7 +11,7 @@ from overload_web.application.pvf.reporting import (
     GetDetailedReportData,
     WriteOutputReport,
 )
-from overload_web.infrastructure import batch_db, marc_engine, reporter
+from overload_web.infrastructure import batch_db, marc_engine, read_marc, reporter
 
 
 @pytest.fixture(scope="class")
@@ -86,7 +86,7 @@ class TestProcessCommands:
     ):
         repo = batch_db.PVFBatchRepository(session=test_session)
         engine = marc_engine.MarcEngine(rules=engine_config)
-        reader_writer = marc_engine.MarcReaderWriter(library=library)
+        reader_writer = read_marc.MarcReaderWriter(library=library)
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
         out = ProcessCatalogingRecords.execute(
@@ -106,7 +106,7 @@ class TestProcessCommands:
         self, library, fake_fetcher, engine_config, test_session
     ):
         engine = marc_engine.MarcEngine(rules=engine_config)
-        reader_writer = marc_engine.MarcReaderWriter(library=library)
+        reader_writer = read_marc.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -129,7 +129,7 @@ class TestProcessCommands:
         self, library, fake_fetcher, engine_config, test_session
     ):
         engine = marc_engine.MarcEngine(rules=engine_config)
-        reader_writer = marc_engine.MarcReaderWriter(library=library)
+        reader_writer = read_marc.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -152,7 +152,7 @@ class TestProcessCommands:
         self, library, fake_fetcher, engine_config, test_session
     ):
         engine = marc_engine.MarcEngine(rules=engine_config)
-        reader_writer = marc_engine.MarcReaderWriter(library=library)
+        reader_writer = read_marc.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -174,7 +174,7 @@ class TestProcessCommands:
         self, library, fake_fetcher, engine_config, test_session
     ):
         engine = marc_engine.MarcEngine(rules=engine_config)
-        reader_writer = marc_engine.MarcReaderWriter(library=library)
+        reader_writer = read_marc.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -198,7 +198,7 @@ class TestProcessCommands:
         self, library, fake_fetcher, engine_config, test_session
     ):
         engine = marc_engine.MarcEngine(rules=engine_config)
-        reader_writer = marc_engine.MarcReaderWriter(library=library)
+        reader_writer = read_marc.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()

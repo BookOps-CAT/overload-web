@@ -14,7 +14,7 @@ from pymarc import Field, Indicators, Subfield
 from overload_web.domain.pvf import bibs, reporting
 from overload_web.domain.shared import sierra_responses
 from overload_web.infrastructure import marc_engine as engine
-from overload_web.infrastructure import oclc, sierra_clients
+from overload_web.infrastructure import oclc, read_marc, sierra_clients
 
 
 @pytest.fixture(scope="session")
@@ -664,8 +664,8 @@ def marc_engine(engine_config) -> engine.MarcEngine:
 
 
 @pytest.fixture
-def marc_reader_writer(library) -> engine.MarcReaderWriter:
-    return engine.MarcReaderWriter(library=library)
+def marc_reader_writer(library) -> read_marc.MarcReaderWriter:
+    return read_marc.MarcReaderWriter(library=library)
 
 
 class MockCreds:

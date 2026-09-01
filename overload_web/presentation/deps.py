@@ -16,6 +16,7 @@ from overload_web.infrastructure import (
     file_io,
     marc_engine,
     oclc,
+    read_marc,
     reporter,
     sierra_clients,
     template_db,
@@ -481,9 +482,9 @@ def get_marc_engine(
 
 def get_marc_reader(
     context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
-) -> Generator[marc_engine.MarcReaderWriter, None, None]:
+) -> Generator[read_marc.MarcReaderWriter, None, None]:
     """Create a `MarcReaderWriter` service with injected dependencies."""
-    yield marc_engine.MarcReaderWriter(library=context.library)
+    yield read_marc.MarcReaderWriter(library=context.library)
 
 
 def oclc_fetcher(
