@@ -1,35 +1,5 @@
 {
-  "marc_order_mapping": {
-    "960": {
-      "c": "order_code_1",
-      "d": "order_code_2",
-      "e": "order_code_3",
-      "f": "order_code_4",
-      "g": "format",
-      "i": "order_type",
-      "k": "project_code",
-      "m": "status",
-      "o": "copies",
-      "q": "create_date",
-      "s": "price",
-      "t": "locations",
-      "u": "fund",
-      "v": "vendor_code",
-      "w": "lang",
-      "x": "country",
-      "z": "order_id"
-    },
-    "961": {
-      "d": "internal_note",
-      "f": "selector_note",
-      "h": "vendor_notes",
-      "i": "vendor_title_no",
-      "m": "blanket_po"
-    }
-  },
-  "bib_id_tag": { "nypl": "945", "bpl": "907" },
-  "default_locations": { "nypl": { "BL": "zzzzz", "RL": "xxx" }, "bpl": {} },
-  "bib_domain_mapping": {
+  "bib_mapping": {
     "barcodes": "barcodes",
     "bib_id": "sierra_bib_id",
     "branch_call_number": "branch_call_no",
@@ -43,7 +13,7 @@
     "upc": "upc_number",
     "update_date": { "tag": "005" }
   },
-  "order_domain_mapping": {
+  "order_mapping": {
     "audience": "audn",
     "branches": "branches",
     "copies": "copies",
@@ -74,7 +44,7 @@
       "m": "blanket_po"
     }
   },
-  "vendor_info_options": {
+  "vendor_rules": {
     "nypl": {
       "BT SERIES": {
         "name": "BT SERIES",

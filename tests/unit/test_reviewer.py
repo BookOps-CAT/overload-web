@@ -47,10 +47,10 @@ class TestReviewer:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_dedupe_attach(self, full_bib, marc_engine):
+    def test_dedupe_attach(self, full_bib, updater_engine):
         full_bib.action = bibs.CatalogAction.ATTACH
         deduped_bibs = marc.BibDeduplicator.deduplicate(
-            records=[full_bib], engine=marc_engine
+            records=[full_bib], engine=updater_engine
         )
         assert len(deduped_bibs["NEW"]) == 1
         assert len(deduped_bibs["DUP"]) == 0
@@ -60,10 +60,10 @@ class TestReviewer:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_dedupe_insert(self, full_bib, marc_engine):
+    def test_dedupe_insert(self, full_bib, updater_engine):
         full_bib.action = bibs.CatalogAction.INSERT
         deduped_bibs = marc.BibDeduplicator.deduplicate(
-            records=[full_bib], engine=marc_engine
+            records=[full_bib], engine=updater_engine
         )
         assert len(deduped_bibs["NEW"]) == 0
         assert len(deduped_bibs["DUP"]) == 1
@@ -72,11 +72,11 @@ class TestReviewer:
     @pytest.mark.parametrize(
         "library, collection, record_type", [("bpl", "NONE", "cat")]
     )
-    def test_dedupe_bpl(self, library, full_bib, full_bib_add_barcodes, marc_engine):
+    def test_dedupe_bpl(self, library, full_bib, full_bib_add_barcodes, updater_engine):
         full_bib.action = bibs.CatalogAction.INSERT
         full_bib_add_barcodes.action = bibs.CatalogAction.INSERT
         deduped_bibs = marc.BibDeduplicator.deduplicate(
-            records=[full_bib, full_bib_add_barcodes], engine=marc_engine
+            records=[full_bib, full_bib_add_barcodes], engine=updater_engine
         )
         assert len(deduped_bibs["NEW"]) == 0
         assert len(deduped_bibs["DUP"]) == 2
@@ -93,12 +93,12 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat")],
     )
     def test_dedupe_deduped_nypl(
-        self, library, full_bib, full_bib_add_barcodes, marc_engine
+        self, library, full_bib, full_bib_add_barcodes, updater_engine
     ):
         full_bib.action = bibs.CatalogAction.INSERT
         full_bib_add_barcodes.action = bibs.CatalogAction.INSERT
         deduped_bibs = marc.BibDeduplicator.deduplicate(
-            records=[full_bib, full_bib_add_barcodes], engine=marc_engine
+            records=[full_bib, full_bib_add_barcodes], engine=updater_engine
         )
         assert len(deduped_bibs["NEW"]) == 0
         assert len(deduped_bibs["DUP"]) == 2
@@ -114,14 +114,14 @@ class TestReviewer:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_dedupe_other_recs(self, full_bib, full_bib_add_barcodes, marc_engine):
+    def test_dedupe_other_recs(self, full_bib, full_bib_add_barcodes, updater_engine):
         other_rec = copy.deepcopy(full_bib)
         other_rec.control_number = "123456789"
         other_rec.action = bibs.CatalogAction.INSERT
         full_bib.action = bibs.CatalogAction.INSERT
         full_bib_add_barcodes.action = bibs.CatalogAction.INSERT
         deduped_bibs = marc.BibDeduplicator.deduplicate(
-            records=[full_bib, full_bib_add_barcodes, other_rec], engine=marc_engine
+            records=[full_bib, full_bib_add_barcodes, other_rec], engine=updater_engine
         )
         assert len(deduped_bibs["NEW"]) == 0
         assert len(deduped_bibs["DUP"]) == 3

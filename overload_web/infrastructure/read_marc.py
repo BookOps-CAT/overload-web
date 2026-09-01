@@ -1,8 +1,4 @@
-"""Adapter module defining classes used to parse and update MARC records.
-
-Includes wrapper that allows for MARC records to be translated from pymarc/bookops_marc
-objects to domain objects. The `MarcEngine` service also updates and extracts values
-from fields.
+"""Adapter module defining classes used to read MARC records.
 
 Protocols:
 
@@ -15,9 +11,8 @@ Classes:
 `MarcEngineConfig`
     Configuration data used to determine MARC record processing. Loaded from a .json
     file and input via an html form in the presentation layer.
-`MarcEngine`
-    Interact with binary MARC data using `bookops_marc` and `pymarc`. Uses config data
-    to determine field mapping and processing workflows.
+`MarcReaderWriter`
+    Read binary MARC data using `bookops_marc`.
 """
 
 from __future__ import annotations

@@ -5,7 +5,7 @@ from __future__ import annotations
 import io
 import logging
 from collections import Counter
-from typing import Any
+from typing import Any, Iterator
 
 from overload_web.application import ports
 from overload_web.domain.pvf import bibs, cataloging_rules
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class BibDeduplicator:
     @staticmethod
     def deduplicate(
-        records: list[bibs.DomainBib], engine: ports.MarcEnginePort
+        records: list[bibs.DomainBib], engine: ports.MarcUpdateEnginePort
     ) -> dict[str, list[bibs.DomainBib]]:
         """Review and deduplicate a batch of processed full-level MARC records."""
         merge: list[bibs.DomainBib] = []
@@ -64,38 +64,35 @@ class BibDeduplicator:
         return {"NEW": merge, "DUP": new, "DEDUPED": deduped}
 
 
+class BibReader:
+    @staticmethod
+    def read_marc_data(data: bytes, reader_port: ports.ReaderWriter) -> Iterator:
+        """Parse MARC binary into an iterator."""
+        return reader_port.get_reader(data)
+
+
 class BibParser:
     @staticmethod
     def parse_marc_data(
-        data: bytes,
-        reader_port: ports.ReaderWriter,
-        engine: ports.MarcEnginePort,
+        reader: Iterator,
+        parser: ports.MarcParsingEnginePort,
         vendor: str | None = "UNKNOWN",
     ) -> list[bibs.DomainBib]:
         """Parse MARC binary to a list of `DomainBib` domain objects."""
-        reader = reader_port.get_reader(data)
         parsed = []
         for record in reader:
-            bib_dict = engine.map_data(
-                obj=record, rules=engine.config.parser_bib_mapping
-            )
-            order_data = [
-                engine.map_data(obj=i, rules=engine.config.parser_order_mapping)
-                for i in record.orders
-            ]
+            bib_dict = parser.map_bib_data(obj=record)
+            order_data = [parser.map_order_data(obj=i) for i in record.orders]
             bib_dict["orders"] = [bibs.Order(**i) for i in order_data]
             bib_dict["binary_data"] = record.as_marc()
-            bib_dict["record_type"] = engine.record_type
-            if engine.record_type == "cat":
-                bib_dict["vendor_info"] = bibs.VendorInfo(
-                    **engine.identify_vendor(
-                        record=record, rules=engine.config.parser_vendor_mapping
-                    )
-                )
+            bib_dict["record_type"] = parser.record_type
+            if parser.record_type == "cat":
+                vendor_info = parser.identify_vendor(record=record)
+                bib_dict["vendor_info"] = bibs.VendorInfo(**vendor_info)
             else:
                 bib_dict["vendor"] = vendor
             if not bib_dict["collection"]:
-                bib_dict["collection"] = engine.collection
+                bib_dict["collection"] = parser.collection
             bib = bibs.DomainBib(**bib_dict)
             logger.info(f"Vendor record parsed: {bib}")
             parsed.append(bib)
@@ -104,7 +101,9 @@ class BibParser:
 
 class BibUpdater:
     @staticmethod
-    def update_cat_record(record: bibs.DomainBib, engine: ports.MarcEnginePort) -> None:
+    def update_cat_record(
+        record: bibs.DomainBib, engine: ports.MarcUpdateEnginePort
+    ) -> None:
         """Update and add MARC fields to processed full-level bib record"""
         bib = engine.create_bib_from_domain(record=record)
         updates = cataloging_rules.CatalogingUpdates.field_list(
@@ -117,7 +116,7 @@ class BibUpdater:
     @staticmethod
     def update_acq_record(
         record: bibs.DomainBib,
-        engine: ports.MarcEnginePort,
+        engine: ports.MarcUpdateEnginePort,
         template_data: dict[str, Any],
     ) -> None:
         """Update and add MARC fields to processed order-level bib record"""
@@ -132,7 +131,7 @@ class BibUpdater:
     @staticmethod
     def update_sel_record(
         record: bibs.DomainBib,
-        engine: ports.MarcEnginePort,
+        engine: ports.MarcUpdateEnginePort,
         template_data: dict[str, Any],
     ) -> None:
         """Update and add MARC fields to processed order-level bib record"""

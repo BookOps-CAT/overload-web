@@ -24,7 +24,8 @@ class ProcessAcquisitionsRecords:
     def execute(
         batches: dict[str, bytes],
         fetcher: ports.BibFetcher,
-        marc_engine: ports.MarcEnginePort,
+        marc_engine: ports.MarcUpdateEnginePort,
+        marc_parser: ports.MarcParsingEnginePort,
         matchpoints: dict[str, str],
         reader_writer: ports.ReaderWriter,
         repo: ports.SqlRepositoryProtocol,
@@ -44,6 +45,8 @@ class ProcessAcquisitionsRecords:
                 a `ports.BibFetcher` object used by the command.
             marc_engine:
                 a `ports.MarcEnginePort` object used by the command.
+            marc_parser:
+                a `ports.MarcParsingEnginePort` object used by the command.
             matchpoints:
                 A dictionary containing matchpoints to be used in matching records.
             reader_writer:
@@ -64,8 +67,9 @@ class ProcessAcquisitionsRecords:
         vendor = template_data.get("vendor", "UNKNOWN")
         for file_name, data in batches.items():
             file_names.append(file_name)
+            reader = marc.BibReader.read_marc_data(data=data, reader_port=reader_writer)
             records = marc.BibParser.parse_marc_data(
-                data=data, engine=marc_engine, vendor=vendor, reader_port=reader_writer
+                parser=marc_parser, reader=reader, vendor=vendor
             )
             original_barcodes = extract_nested_list([i.barcodes for i in records])
             marc.BarcodeValidator.validate_unique_barcodes(original_barcodes)
@@ -93,7 +97,8 @@ class ProcessCatalogingRecords:
     @staticmethod
     def execute(
         batches: dict[str, bytes],
-        marc_engine: ports.MarcEnginePort,
+        marc_engine: ports.MarcUpdateEnginePort,
+        marc_parser: ports.MarcParsingEnginePort,
         reader_writer: ports.ReaderWriter,
         fetcher: ports.BibFetcher,
         repo: ports.SqlRepositoryProtocol,
@@ -112,6 +117,8 @@ class ProcessCatalogingRecords:
                 a `ports.BibFetcher` object used by the command.
             marc_engine:
                 a `ports.MarcEnginePort` object used by the command.
+            marc_parser:
+                a `ports.MarcParsingEnginePort` object used by the command.
             repo:
                 a `ports.SqlRepositoryProtocol` object used by the command.
             reader_writer:
@@ -125,9 +132,8 @@ class ProcessCatalogingRecords:
         data = marc.MarcFileMerger.combine_marc_files(
             data=content, reader_port=reader_writer
         )
-        records = marc.BibParser.parse_marc_data(
-            data=data, engine=marc_engine, reader_port=reader_writer
-        )
+        reader = marc.BibReader.read_marc_data(data=data, reader_port=reader_writer)
+        records = marc.BibParser.parse_marc_data(parser=marc_parser, reader=reader)
         original_barcodes = extract_nested_list([i.barcodes for i in records])
         marc.BarcodeValidator.validate_unique_barcodes(original_barcodes)
         report_data = []
@@ -168,7 +174,8 @@ class ProcessSelectionRecords:
     def execute(
         batches: dict[str, bytes],
         fetcher: ports.BibFetcher,
-        marc_engine: ports.MarcEnginePort,
+        marc_engine: ports.MarcUpdateEnginePort,
+        marc_parser: ports.MarcParsingEnginePort,
         matchpoints: dict[str, str],
         reader_writer: ports.ReaderWriter,
         repo: ports.SqlRepositoryProtocol,
@@ -188,6 +195,8 @@ class ProcessSelectionRecords:
                 a `ports.BibFetcher` object used by the command.
             marc_engine:
                 a `ports.MarcEnginePort` object used by the command.
+            marc_parser:
+                a `ports.MarcParsingEnginePort` object used by the command.
             matchpoints:
                 A dictionary containing matchpoints to be used in matching records.
             reader_writer:
@@ -208,8 +217,9 @@ class ProcessSelectionRecords:
         vendor = template_data.get("vendor", "UNKNOWN")
         for file_name, data in batches.items():
             file_names.append(file_name)
+            reader = marc.BibReader.read_marc_data(data=data, reader_port=reader_writer)
             records = marc.BibParser.parse_marc_data(
-                data=data, engine=marc_engine, vendor=vendor, reader_port=reader_writer
+                parser=marc_parser, reader=reader, vendor=vendor
             )
             original_barcodes = extract_nested_list([i.barcodes for i in records])
             marc.BarcodeValidator.validate_unique_barcodes(original_barcodes)

@@ -82,10 +82,10 @@ class TestProcessCommands:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_cat_service_process_vendor_file(
-        self, library, fake_fetcher, engine_config, test_session
+        self, library, fake_fetcher, engine_config, test_session, parser_engine
     ):
         repo = batch_db.PVFBatchRepository(session=test_session)
-        engine = marc_engine.MarcEngine(rules=engine_config)
+        engine = marc_engine.MarcUpdateEngine(rules=engine_config)
         reader_writer = read_marc.MarcReaderWriter(library=library)
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -95,6 +95,7 @@ class TestProcessCommands:
             reader_writer=reader_writer,
             fetcher=fake_fetcher,
             repo=repo,
+            marc_parser=parser_engine,
         )
         assert out["id"] is not None
 
@@ -103,9 +104,9 @@ class TestProcessCommands:
         [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
     )
     def test_sel_service_process_vendor_file(
-        self, library, fake_fetcher, engine_config, test_session
+        self, library, fake_fetcher, engine_config, test_session, parser_engine
     ):
-        engine = marc_engine.MarcEngine(rules=engine_config)
+        engine = marc_engine.MarcUpdateEngine(rules=engine_config)
         reader_writer = read_marc.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
@@ -118,6 +119,7 @@ class TestProcessCommands:
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
             repo=repo,
+            marc_parser=parser_engine,
         )
         assert out["id"] is not None
 
@@ -126,9 +128,9 @@ class TestProcessCommands:
         [("nypl", "BL", "acq"), ("nypl", "RL", "acq"), ("bpl", "NONE", "acq")],
     )
     def test_acq_service_process_vendor_file(
-        self, library, fake_fetcher, engine_config, test_session
+        self, library, fake_fetcher, engine_config, test_session, parser_engine
     ):
-        engine = marc_engine.MarcEngine(rules=engine_config)
+        engine = marc_engine.MarcUpdateEngine(rules=engine_config)
         reader_writer = read_marc.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
@@ -141,6 +143,7 @@ class TestProcessCommands:
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
             repo=repo,
+            marc_parser=parser_engine,
         )
         assert out["id"] is not None
 
@@ -149,9 +152,9 @@ class TestProcessCommands:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_cat_service_process_vendor_file_dupes(
-        self, library, fake_fetcher, engine_config, test_session
+        self, library, fake_fetcher, engine_config, test_session, parser_engine
     ):
-        engine = marc_engine.MarcEngine(rules=engine_config)
+        engine = marc_engine.MarcUpdateEngine(rules=engine_config)
         reader_writer = read_marc.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
@@ -163,6 +166,7 @@ class TestProcessCommands:
                 reader_writer=reader_writer,
                 fetcher=fake_fetcher,
                 repo=repo,
+                marc_parser=parser_engine,
             )
         assert "Duplicate barcodes found in file: " in str(exc.value)
 
@@ -171,9 +175,9 @@ class TestProcessCommands:
         [("nypl", "BL", "acq"), ("nypl", "RL", "acq"), ("bpl", "NONE", "acq")],
     )
     def test_acq_service_process_vendor_file_dupes(
-        self, library, fake_fetcher, engine_config, test_session
+        self, library, fake_fetcher, engine_config, test_session, parser_engine
     ):
-        engine = marc_engine.MarcEngine(rules=engine_config)
+        engine = marc_engine.MarcUpdateEngine(rules=engine_config)
         reader_writer = read_marc.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
@@ -187,6 +191,7 @@ class TestProcessCommands:
                 template_data={"format": "a"},
                 matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
                 repo=repo,
+                marc_parser=parser_engine,
             )
         assert "Duplicate barcodes found in file: " in str(exc.value)
 
@@ -195,9 +200,9 @@ class TestProcessCommands:
         [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
     )
     def test_sel_service_process_vendor_file_dupes(
-        self, library, fake_fetcher, engine_config, test_session
+        self, library, fake_fetcher, engine_config, test_session, parser_engine
     ):
-        engine = marc_engine.MarcEngine(rules=engine_config)
+        engine = marc_engine.MarcUpdateEngine(rules=engine_config)
         reader_writer = read_marc.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
@@ -211,6 +216,7 @@ class TestProcessCommands:
                 template_data={"format": "a"},
                 matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
                 repo=repo,
+                marc_parser=parser_engine,
             )
         assert "Duplicate barcodes found in file: " in str(exc.value)
 

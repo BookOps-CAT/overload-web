@@ -460,8 +460,8 @@ def get_fetcher(
 
 def get_marc_engine(
     context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
-) -> Generator[marc_engine.MarcEngine, None, None]:
-    """Create a `MarcEngine` service with injected dependencies."""
+) -> Generator[marc_engine.MarcUpdateEngine, None, None]:
+    """Create a `MarcUpdateEngine` service with injected dependencies."""
     with open("overload_web/data/mapping_specs.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     config = marc_engine.MarcEngineConfig(
@@ -477,7 +477,23 @@ def get_marc_engine(
         parser_order_mapping=constants["order_domain_mapping"],
         parser_vendor_mapping=constants["vendor_info_options"][context.library],
     )
-    yield marc_engine.MarcEngine(rules=config)
+    yield marc_engine.MarcUpdateEngine(rules=config)
+
+
+def get_marc_parsing_engine(
+    context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
+) -> Generator[marc_engine.MarcParsingEngine, None, None]:
+    """Create a `MarcParsingEngine` service with injected dependencies."""
+    with open("overload_web/data/parsing_rules.json", "r", encoding="utf-8") as fh:
+        constants = json.load(fh)
+    yield marc_engine.MarcParsingEngine(
+        library=context.library,
+        record_type=context.record_type,
+        collection=context.collection,
+        bib_mapping=constants["bib_mapping"],
+        order_mapping=constants["order_mapping"],
+        vendor_mapping=constants["vendor_rules"],
+    )
 
 
 def get_marc_reader(

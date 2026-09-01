@@ -138,16 +138,36 @@ class FileWriter(Protocol):
 
 
 @runtime_checkable
-class MarcEnginePort(Protocol[U, V]):
-    bib_rules: dict[str, Any]
+class MarcParsingEnginePort(Protocol):
     library: str
-    order_rules: dict[str, Any]
     record_type: str
     collection: str | None
+    bib_mapping: str
+    order_mapping: dict[str, Any]
     vendor_rules: dict[str, Any]
-    default_loc: str
-    bib_id_tag: str
-    marc_order_mapping: dict[str, Any]
+
+    def match_vendor_tags_from_bib(
+        self, record: V, tags: dict[str, dict[str, str]]
+    ) -> bool: ...  # pragma:no branch
+
+    def identify_vendor(self, record: V) -> dict[str, Any]: ...  # pragma: no branch
+
+    """Determine the vendor who created a `bookops_marc.Bib` record."""
+
+    def map_bib_data(self, obj: V) -> dict[str, Any]: ...  # pragma: no branch
+
+    """Map an bib to a dictionary following a set of rules."""
+
+    def map_order_data(self, obj: V) -> dict[str, Any]: ...  # pragma: no branch
+
+    """Map an order to a dictionary following a set of rules."""
+
+
+@runtime_checkable
+class MarcUpdateEnginePort(Protocol[U, V]):
+    library: str
+    record_type: str
+    collection: str | None
     config: Any
 
     def create_bib_from_domain(self, record: U) -> V: ...  # pragma:no branch
@@ -157,22 +177,6 @@ class MarcEnginePort(Protocol[U, V]):
     def get_command_tag_field(self, bib: V) -> Any | None: ...  # pragma: no branch
 
     """Get the Sierra command tag from a bib record if present."""
-
-    def get_vendor_tags_from_bib(
-        self, record: V, tags: dict[str, dict[str, str]]
-    ) -> bool: ...  # pragma:no branch
-
-    def identify_vendor(
-        self, record: V, rules: dict[str, Any]
-    ) -> dict[str, Any]: ...  # pragma: no branch
-
-    """Determine the vendor who created a `bookops_marc.Bib` record."""
-
-    def map_data(
-        self, obj: Any, rules: dict[str, Any]
-    ) -> dict[str, Any]: ...  # pragma: no branch
-
-    """Map an object to a dictionary following a set of rules."""
 
     def update_fields(
         self, field_updates: list[Any], bib: V

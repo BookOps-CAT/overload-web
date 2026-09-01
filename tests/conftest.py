@@ -25,6 +25,14 @@ def get_constants() -> dict[str, Any]:
     return constants
 
 
+@pytest.fixture(scope="session")
+def parsing_rules() -> dict[str, Any]:
+    """Retrieve processing constants from JSON file."""
+    with open("overload_web/data/parsing_rules.json", "r", encoding="utf-8") as fh:
+        constants = json.load(fh)
+    return constants
+
+
 @pytest.fixture(autouse=True)
 def test_setup(caplog, monkeypatch):
     caplog.set_level("DEBUG")
@@ -659,8 +667,22 @@ def engine_config(
 
 
 @pytest.fixture
-def marc_engine(engine_config) -> engine.MarcEngine:
-    return engine.MarcEngine(rules=engine_config)
+def updater_engine(engine_config) -> engine.MarcUpdateEngine:
+    return engine.MarcUpdateEngine(rules=engine_config)
+
+
+@pytest.fixture
+def parser_engine(
+    library, record_type, collection, parsing_rules
+) -> engine.MarcParsingEngine:
+    return engine.MarcParsingEngine(
+        order_mapping=parsing_rules["order_mapping"],
+        library=library,
+        record_type=record_type,
+        collection=collection,
+        bib_mapping=parsing_rules["bib_mapping"],
+        vendor_mapping=parsing_rules["vendor_rules"],
+    )
 
 
 @pytest.fixture
