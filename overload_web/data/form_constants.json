@@ -1163,19 +1163,11 @@
     "eastview": "Eastview"
   },
   "wc2sierra_fields": {
-    "library": {
-      "label": "Library System",
-      "options": { "bpl": "BPL", "nypl": "NYPL" }
-    },
-    "collection": {
-      "label": "Collection",
-      "options": { "BL": "Branches", "RL": "Research" }
-    },
     "record_level": {
       "label": "Record Level",
       "options": { "1": "Level 1: blank, |, 4", "2": "Level 2 & up: M, K, 7, 1, 2", "3": "Level 3 & up: 3, 8" }
     },
-    "record_type": {
+    "material_type": {
       "label": "Record Type",
       "options": { "any": "Any", "print": "Print", "large_print": "Large print", "dvd": "DVD", "bluray": "Blu-ray" }
     },
@@ -1185,11 +1177,11 @@
     },
     "cat_rules": {
       "label": "Cataloging Rules",
-      "options": { "rda": "RDA only", "any": "Any" }
+      "options": { "RDA": "RDA only", "any": "Any" }
     },
     "cat_agency": {
       "label": "Cataloging Source",
-      "options": { "dlc": "DLC only", "any": "Any" }
+      "options": { "DLC": "DLC only", "any": "Any" }
     },
     "data_source": {
       "label": "Data Source",
@@ -1197,7 +1189,7 @@
     },
     "id_type": {
       "label": "ID Type",
-      "options": { "isbn": "ISBN", "issn": "ISSN", "upc": "UPC", "lccn": "LCCN", "oclc": "OCLC Number" }
+      "options": { "isbn": "ISBN", "issn": "ISSN", "upc": "UPC", "lccn": "LCCN", "oclc_number": "OCLC Number" }
     }
   }
 }

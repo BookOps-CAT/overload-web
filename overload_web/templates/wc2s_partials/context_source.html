@@ -1,0 +1,19 @@
+{% import "macros/wc2s.html" as macro %}
+<div class="context-block">
+  <div class="row row-cols-4 g-2">
+    <div class="col">
+      <div id="library-select"
+           hx-get="/update-context?workflow=wc2s"
+           hx-trigger="change from:.context-block select, load"
+           hx-include="closest .context-block"
+           hx-swap="none">{{ macro.context_select("library", context_fields["library"]) }}</div>
+    </div>
+    <div class="col">
+      <div id="collection-select"
+           hx-get="/update-context?workflow=wc2s"
+           hx-trigger="change from:.context-block select, load"
+           hx-include="closest .context-block"
+           hx-swap="none">{{ macro.context_select("collection", context_fields["collection"]) }}</div>
+    </div>
+  </div>
+</div>

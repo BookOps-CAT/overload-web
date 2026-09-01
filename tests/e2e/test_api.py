@@ -183,8 +183,11 @@ class TestApp:
         assert response.context["page_title"] == "Process Vendor File"
 
     @pytest.mark.parametrize("library", ["nypl", "bpl"])
-    def test_frontend_get_context_update_library(self, library):
-        response = self.client.get(f"/forms/update-context?library={library}")
+    @pytest.mark.parametrize("workflow", ["pvf", "wc2s"])
+    def test_frontend_get_context_update_library(self, library, workflow):
+        response = self.client.get(
+            f"/update-context?workflow={workflow}&library={library}"
+        )
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == [
             "collection",
@@ -196,8 +199,11 @@ class TestApp:
         ]
 
     @pytest.mark.parametrize("collection", ["BL", "RL", ""])
-    def test_frontend_get_context_update_collection(self, collection):
-        response = self.client.get(f"/forms/update-context?collection={collection}")
+    @pytest.mark.parametrize("workflow", ["pvf", "wc2s"])
+    def test_frontend_get_context_update_collection(self, collection, workflow):
+        response = self.client.get(
+            f"/update-context?workflow={workflow}&collection={collection}"
+        )
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == [
             "collection",
@@ -209,8 +215,11 @@ class TestApp:
         ]
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_frontend_get_context_update_record_type(self, record_type):
-        response = self.client.get(f"/forms/update-context?record_type={record_type}")
+    @pytest.mark.parametrize("workflow", ["pvf", "wc2s"])
+    def test_frontend_get_context_update_record_type(self, record_type, workflow):
+        response = self.client.get(
+            f"/update-context?workflow={workflow}&record_type={record_type}"
+        )
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == [
             "collection",

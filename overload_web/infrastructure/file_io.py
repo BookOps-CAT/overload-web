@@ -4,7 +4,7 @@ Local and FTP/SFTP file I/O implementations for Overload.
 This module contains classes to load files from and write files to local
 directories and remote FTP/SFTP servers. The classes that interact with remote
 directories within this module use the BookOps/file-retriever library.
-The classes within this module are concrete implementations of the `FileLoader` and
+The classes within this module are concrete implementations of the `FileRetriever` and
 `FileWriter` protocols within the domain model.
 """
 
@@ -42,11 +42,11 @@ class LocalFileStorage:
         return file
 
 
-class LocalFileLoader:
+class LocalFileRetriever:
     """
     Loads files from the local filesystem.
 
-    This class implements the `FileLoader` protocol by listing and loading file
+    This class implements the `FileRetriever` protocol by listing and loading file
     contents from a specific directory on a local computer.
     """
 
@@ -56,7 +56,7 @@ class LocalFileLoader:
         logger.info(f"Files in {dir}: {files}")
         return files
 
-    def load(self, name: str, dir: str) -> bytes:
+    def download(self, name: str, dir: str) -> bytes:
         """Load a file from a local directory."""
         with open(os.path.join(dir, name), "rb") as fh:
             file = fh.read()
@@ -81,11 +81,11 @@ class LocalFileWriter:
         return path
 
 
-class SFTPFileLoader:
+class SFTPFileRetriever:
     """
     Loads files from a remote FTP/SFTP server.
 
-    Implements the `FileLoader` protocol using the file-retriever library
+    Implements the `FileRetriever` protocol using the file-retriever library
     to connect to an FTP/SFTP server.
     """
 
@@ -98,7 +98,7 @@ class SFTPFileLoader:
         logger.info(f"Files in {dir}: {files}")
         return files
 
-    def load(self, name: str, dir: str) -> bytes:
+    def download(self, name: str, dir: str) -> bytes:
         """Load a file from a remote directory."""
         file_info = self.client.get_file_info(file_name=name, remote_dir=dir)
         file = self.client.get_file(file=file_info, remote_dir=dir)
@@ -107,8 +107,8 @@ class SFTPFileLoader:
         return file.file_stream.read()
 
     @classmethod
-    def create_loader_for_vendor(cls, vendor: str) -> SFTPFileLoader:
-        """Create an `SFTPFileLoader` for a specific vendor based on envars."""
+    def create_retriever_for_vendor(cls, vendor: str) -> SFTPFileRetriever:
+        """Create an `SFTPFileRetriever` for a specific vendor based on envars."""
         client = Client(
             name=vendor.upper(),
             username=os.environ[f"{vendor.upper()}_USER"],
@@ -116,7 +116,7 @@ class SFTPFileLoader:
             host=os.environ[f"{vendor.upper()}_HOST"],
             port=os.environ[f"{vendor.upper()}_PORT"],
         )
-        return SFTPFileLoader(client=client)
+        return SFTPFileRetriever(client=client)
 
 
 class SFTPFileWriter:

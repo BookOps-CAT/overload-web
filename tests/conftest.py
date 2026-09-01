@@ -14,7 +14,7 @@ from pymarc import Field, Indicators, Subfield
 from overload_web.domain.pvf import bibs, reporting
 from overload_web.domain.shared import sierra_responses
 from overload_web.infrastructure import marc_engine as engine
-from overload_web.infrastructure import sierra_clients
+from overload_web.infrastructure import oclc, sierra_clients
 
 
 @pytest.fixture(scope="session")
@@ -761,7 +761,7 @@ def stub_report():
 
 
 @pytest.fixture
-def mock_wc_session(monkeypatch):
+def mock_wc_session(library, monkeypatch):
     def response(*args, **kwargs):
         json = {
             "numberOfRecords": 1,
@@ -796,6 +796,7 @@ def mock_wc_session(monkeypatch):
 
     monkeypatch.setattr("requests.Session.send", response)
     monkeypatch.setattr("requests.post", token_response)
+    return FakeOCLCSession()
 
 
 @pytest.fixture
@@ -817,3 +818,52 @@ def mock_wc_session_error(monkeypatch, mock_wc_session):
 
     monkeypatch.setattr("requests.Session.send", worldcat_error)
     monkeypatch.setattr("requests.post", token_response)
+    return FakeOCLCSession()
+
+
+class FakeOCLCSession:
+    def _get_credentials(self):
+        return "foo"
+
+    def _check_authorization(self):
+        pass
+
+    def _parse_brief_record_response(self, response: requests.Response):
+        return [
+            {
+                "oclcNumber": "12345678",
+                "date": "2020",
+                "title": "Foo.",
+                "creator": "Bar",
+                "language": "eng",
+                "generalFormat": "Book",
+                "specificFormat": "PrintBook",
+                "isbns": [],
+                "mergedOclcNumbers": [],
+                "catalogingInfo": {
+                    "catalogingAgency": "N$T",
+                    "transcribingAgency": "N$T",
+                    "catalogingLanguage": "eng",
+                    "levelOfCataloging": "7",
+                },
+            }
+        ]
+
+    def _prepare_and_send_request(self, request: requests.Request):
+        pass
+
+    def _brief_bibs_get_by_id(self, params: dict[str, Any]):
+        pass
+
+    def _full_bib_get_by_id(self, value: str | int):
+        return MockHTTPResponse(status_code=200, ok=True, _json={}, _content=b"")
+
+    def _full_bib_json_get_by_id(self, oclc_number: str):
+        return MockHTTPResponse(
+            status_code=200, ok=True, _json={"date": {"replaceDate": "200801"}}
+        )
+
+
+@pytest.fixture
+def fake_oclc_fetcher():
+    return oclc.WorldcatFetcher(session=FakeOCLCSession())

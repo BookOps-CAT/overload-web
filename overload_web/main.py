@@ -25,6 +25,7 @@ from overload_web.presentation.routers import (
     order_templates,
     pvf,
     reports,
+    wc2s,
 )
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -81,3 +82,4 @@ app.include_router(files.api_router, prefix="/files")
 app.include_router(pvf.api_router, prefix="/pvf")
 app.include_router(order_templates.api_router, prefix="/ot")
 app.include_router(reports.api_router, prefix="/reports")
+app.include_router(wc2s.api_router, prefix="/wc2s")

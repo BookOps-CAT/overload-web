@@ -88,20 +88,20 @@ class TestFileWorkflow:
 
 class TestLocalFiles:
     def test_local_objs(self):
-        loader = file_io.LocalFileLoader()
+        retriever = file_io.LocalFileRetriever()
         writer = file_io.LocalFileWriter()
-        assert isinstance(loader, ports.FileLoader)
+        assert isinstance(retriever, ports.FileRetriever)
         assert isinstance(writer, ports.FileWriter)
 
-    def test_local_load(self, tmp_path, tmp_files):
-        loader = file_io.LocalFileLoader()
-        loaded_file = loader.load("foo.mrc", dir=tmp_path)
+    def test_local_download(self, tmp_path, tmp_files):
+        retriever = file_io.LocalFileRetriever()
+        loaded_file = retriever.download("foo.mrc", dir=tmp_path)
         assert "333331234567890".encode() in loaded_file
         assert "foo.mrc" in os.listdir(tmp_path)
 
     def test_local_list(self, tmp_path, tmp_files):
-        loader = file_io.LocalFileLoader()
-        file_list = loader.list(dir=tmp_path)
+        retriever = file_io.LocalFileRetriever()
+        file_list = retriever.list(dir=tmp_path)
         assert len(file_list) == 2
         assert "foo.mrc" in file_list
 
@@ -114,13 +114,13 @@ class TestLocalFiles:
         assert "foo.mrc" in os.listdir(tmp_path)
         assert "333331234567890".encode() in open(new_file, "rb").read()
 
-    def test_sftp_loader(self, mock_sftp_client):
-        loader = file_io.SFTPFileLoader(client=mock_sftp_client)
-        assert isinstance(loader, ports.FileLoader)
-        assert hasattr(loader, "list")
-        assert hasattr(loader, "load")
-        assert loader.client.name == "FOO"
-        assert isinstance(loader, ports.FileLoader)
+    def test_sftp_retriever(self, mock_sftp_client):
+        retriever = file_io.SFTPFileRetriever(client=mock_sftp_client)
+        assert isinstance(retriever, ports.FileRetriever)
+        assert hasattr(retriever, "list")
+        assert hasattr(retriever, "download")
+        assert retriever.client.name == "FOO"
+        assert isinstance(retriever, ports.FileRetriever)
 
     def test_sftp_writer(self, mock_sftp_client):
         writer = file_io.SFTPFileWriter(client=mock_sftp_client)
@@ -130,14 +130,14 @@ class TestLocalFiles:
         assert isinstance(writer, ports.FileWriter)
 
     def test_sftp_list(self, mock_sftp_client):
-        loader = file_io.SFTPFileLoader(client=mock_sftp_client)
-        file_list = loader.list(dir="test")
+        retriever = file_io.SFTPFileRetriever(client=mock_sftp_client)
+        file_list = retriever.list(dir="test")
         assert len(file_list) == 1
         assert file_list[0] == "foo.mrc"
 
-    def test_sftp_load(self, mock_sftp_client):
-        loader = file_io.SFTPFileLoader(client=mock_sftp_client)
-        file = loader.load(name="foo.mrc", dir="test")
+    def test_sftp_download(self, mock_sftp_client):
+        retriever = file_io.SFTPFileRetriever(client=mock_sftp_client)
+        file = retriever.download(name="foo.mrc", dir="test")
         assert file == b""
 
     def test_sftp_write(self, mock_sftp_client):

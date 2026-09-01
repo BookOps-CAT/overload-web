@@ -7,15 +7,13 @@ from typing import Any, Iterator, Protocol, Sequence, TypeVar, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
-R = TypeVar("R")  # variabe for `ProcessingStatistics` report type
-S = TypeVar("S")  # variable for `BaseSierraResponse` type
-T = TypeVar("T", contravariant=True)  # variable for `OrderTemplate` type
+T = TypeVar("T", contravariant=True)  # variable for `SQLModel` type
 U = TypeVar("U", contravariant=True)  # variable for `DomainBib` contravariant type
 V = TypeVar("V")  # variable for `DomainBib` type
 
 
 @runtime_checkable
-class BibFetcher(Protocol[S]):
+class BibFetcher(Protocol):
     """
     Protocol for a service that searches Sierra for bib records based on an identifier.
 
@@ -28,7 +26,7 @@ class BibFetcher(Protocol[S]):
 
     def get_bibs_by_id(
         self, value: str | int, key: str
-    ) -> list[S]: ...  # pragma: no branch
+    ) -> list[dict[str, Any]]: ...  # pragma: no branch
 
     """
     Retrieve candidate bib records that match a key-value pair.
@@ -38,12 +36,53 @@ class BibFetcher(Protocol[S]):
         key: The field name corresponding to the identifier (eg. "isbn").
 
     Returns:
-        a list of `BaseSierraResponse` objects representing candidate matches.
+        a list of dictionaries representing candidate matches.
+    """
+
+
+@runtime_checkable
+class FileRetriever(Protocol):
+    """
+    A protocol for a service which retrieves files for use within Overload.
+
+    Implementations may interact with an FTP/SFTP server or a local file directory.
+    """
+
+    def list(self, dir: str) -> list[str]: ...  # pragma: no branch
+
+    """
+    List available files.
+
+    Args:
+        dir: the directory whose files to list
+
+    Returns:
+        a list of file names as strings
+    """
+
+    def download(self, name: str, dir: str) -> bytes: ...  # pragma: no branch
+
+    """
+    Download the content of a specific file.
+
+    Args:
+        name: the name of the file to load
+        dir: the directory where the file is located
+
+    Returns:
+        the content of the specified file as a `bytes` object
     """
 
 
 @runtime_checkable
 class FileStorage(Protocol):
+    """
+    A protocol for a service which saves files to storage and loads them for processing
+    within Overload.
+
+    Implementations may interact with an FTP/SFTP server or a local file directory.
+    """
+
     def load(self, reference: str) -> bytes: ...  # pragma: no branch
 
     """
@@ -74,43 +113,9 @@ class FileStorage(Protocol):
 
 
 @runtime_checkable
-class FileLoader(Protocol):
-    """
-    A protocol for a service which loads .mrc files for use within Overload.
-
-    Implementations may interact with an FTP/SFTP server or a local file directory.
-    """
-
-    def list(self, dir: str) -> list[str]: ...  # pragma: no branch
-
-    """
-    List available files.
-
-    Args:
-        dir: the directory whose files to list
-
-    Returns:
-        a list of file names as strings
-    """
-
-    def load(self, name: str, dir: str) -> bytes: ...  # pragma: no branch
-
-    """
-    Load the content of a specific file.
-
-    Args:
-        name: the name of the file to load
-        dir: the directory where the file is located
-
-    Returns:
-        the content of the specified file as a `bytes` object
-    """
-
-
-@runtime_checkable
 class FileWriter(Protocol):
     """
-    A protocol for a service for use within Overload which writes .mrc files.
+    A protocol for a service for use within Overload which writes files.
 
     Implementations may interact with an FTP/SFTP server or a local file directory.
     """
@@ -241,13 +246,21 @@ class ReportWriter(Protocol):
 
 
 @runtime_checkable
-class OCLCBibFetcher(Protocol[S]):
+class OCLCBibFetcher(Protocol):
+    """Interface for interactions with OCLC Metadata/Search APIs."""
+
     def get_brief_bibs_by_id(
-        self, index: str, value: str | int, format: str | None = None
-    ) -> list[S]: ...  # pragma: no branch
+        self, params: dict[str, Any]
+    ) -> list[dict[str, Any]]: ...  # pragma: no branch
+
+    """Search for brief bib resource using specified parameters."""
 
     def get_full_bibs_by_id(self, value: str | int) -> bytes: ...  # pragma: no branch
+
+    """Retrieve for full MARC record as a bytes object for a given ID."""
 
     def get_full_bib_json_by_id(
         self, value: str
     ) -> dict[str, Any]: ...  # pragma: no branch
+
+    """Retrieve for full MARC record as a json object for a given ID."""

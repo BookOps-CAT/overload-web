@@ -7,7 +7,7 @@ from overload_web.application.pvf.file_handling import (
 from overload_web.domain.shared import files
 
 
-class StubFileLoader(ports.FileLoader):
+class StubFileRetriever(ports.FileRetriever):
     def __init__(self) -> None:
         pass
 
@@ -17,14 +17,14 @@ class StubFileWriter(ports.FileWriter):
         pass
 
 
-class FakeFileLoader(StubFileLoader):
+class FakeFileRetriever(StubFileRetriever):
     def __init__(self) -> None:
         pass
 
     def list(self, dir: str) -> list[str]:
         return ["foo.mrc"]
 
-    def load(self, name: str, dir: str) -> bytes:
+    def download(self, name: str, dir: str) -> bytes:
         return b""
 
 
@@ -37,21 +37,23 @@ class FakeFileWriter(StubFileWriter):
 
 
 class TestFileTransferServices:
-    loader = FakeFileLoader()
+    retriever = FakeFileRetriever()
 
     def test_service_protocols(self):
         assert LoadVendorFile.execute(
-            name="foo.mrc", dir="foo", loader=StubFileLoader()
+            name="foo.mrc", dir="foo", retriever=StubFileRetriever()
         ) == files.VendorFile(content=None, file_name="foo.mrc")
-        assert ListVendorFiles.execute(dir="foo", loader=StubFileLoader()) is None
+        assert ListVendorFiles.execute(dir="foo", retriever=StubFileRetriever()) is None
 
     def test_list_files(self):
-        file_list = ListVendorFiles.execute(dir="foo", loader=self.loader)
+        file_list = ListVendorFiles.execute(dir="foo", retriever=self.retriever)
         assert len(file_list) == 1
         assert file_list[0] == "foo.mrc"
 
     def test_load_file(self):
-        file = LoadVendorFile.execute(name="foo.mrc", dir="foo", loader=self.loader)
+        file = LoadVendorFile.execute(
+            name="foo.mrc", dir="foo", retriever=self.retriever
+        )
         assert file.file_name == "foo.mrc"
         assert file.content == b""
 

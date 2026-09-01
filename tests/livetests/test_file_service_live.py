@@ -24,14 +24,14 @@ class TestLiveLocalFiles:
                 os.remove(os.path.join(self.test_dir, file))
             os.rmdir(self.test_dir)
 
-    def test_load(self, setup_dirs):
-        loader = file_io.LocalFileLoader()
-        loaded_file = loader.load("test_bib.mrc", dir=self.test_dir)
+    def test_download(self, setup_dirs):
+        retriever = file_io.LocalFileRetriever()
+        loaded_file = retriever.download("test_bib.mrc", dir=self.test_dir)
         assert loaded_file[0:8] == b"02741pam"
 
     def test_list(self, setup_dirs):
-        loader = file_io.LocalFileLoader()
-        files = loader.list(dir=self.test_dir)
+        retriever = file_io.LocalFileRetriever()
+        files = retriever.list(dir=self.test_dir)
         assert len(files) == 1
         assert files[0] == "test_bib.mrc"
 
@@ -84,12 +84,12 @@ class TestSFTPFiles:
         assert outfile == "test_bib.mrc"
 
     def test_list(self, live_test_client):
-        loader = file_io.SFTPFileLoader(client=live_test_client)
-        file_list = loader.list(dir=self.test_dir)
+        retriever = file_io.SFTPFileRetriever(client=live_test_client)
+        file_list = retriever.list(dir=self.test_dir)
         assert len(file_list) == 1
         assert file_list[0] == "test_bib.mrc"
 
-    def test_load(self, live_test_client):
-        loader = file_io.SFTPFileLoader(client=live_test_client)
-        file = loader.load(name="test_bib.mrc", dir=self.test_dir)
+    def test_download(self, live_test_client):
+        retriever = file_io.SFTPFileRetriever(client=live_test_client)
+        file = retriever.download(name="test_bib.mrc", dir=self.test_dir)
         assert file[0:8] == b"02741pam"

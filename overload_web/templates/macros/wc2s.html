@@ -1,0 +1,39 @@
+{% macro context_select(field_id, data, disabled=False) %}
+  <div class="form-floating">
+    <select id="{{ field_id }}"
+            class="form-select"
+            name="{{ field_id }}"
+            {% if disabled %}disabled{% endif %}
+            form="wc2s-form"
+            autocomplete="off"
+            required>
+      <option value="" selected></option>
+      {% for k, v in data['options'].items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}
+    </select>
+    <label for="{{ field_id }}">{{ data['label'] }}</label>
+    {% if disabled %}
+      <input type="hidden" name="{{ field_id }}"  form="wc2s-form" value="" />
+    {% endif %}
+  </div>
+{% endmacro %}
+{% macro select_field(field_id, data, field_input) %}
+  <div class="form-floating">
+    <select id="{{ field_id }}"
+            form="wc2s-form"
+            class="form-select"
+            name="{{ field_id }}"
+            autocomplete="off">
+      {% if field_input %}
+        <option value=""></option>
+        <option value="{{ field_input }}" selected>{{ field_input }} ({{ data['options'][field_input] }})</option>
+        {% for k, v in data['options'].items() %}
+          {% if k != field_input %}<option value="{{ k }}">{{ k }} ({{ v }})</option>{% endif %}
+        {% endfor %}
+      {% else %}
+        <option value="" selected></option>
+        {% for k, v in data['options'].items() %}<option value="{{ k }}">{{ k }} ({{ v }})</option>{% endfor %}
+      {% endif %}
+    </select>
+    <label for="{{ field_id }}">{{ data['label'] }}</label>
+  </div>
+{% endmacro %}

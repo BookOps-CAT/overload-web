@@ -1,7 +1,7 @@
 {% import "macros/pvf.html" as macro %}
 <div class="context-block">
   <div class="d-flex flex-column flex-md-row gap-2"
-       hx-get="/forms/update-context"
+       hx-get="/update-context?workflow=pvf"
        hx-trigger="change from:.context-block select, load"
        hx-include="closest .context-block"
        hx-swap="none">

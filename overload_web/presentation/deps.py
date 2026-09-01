@@ -7,7 +7,7 @@ import logging
 import os
 from typing import Annotated, Any, Generator, Literal
 
-from fastapi import Depends, Form
+from fastapi import Depends, Form, UploadFile
 from pydantic import BaseModel, field_validator, model_validator
 from sqlmodel import Session, SQLModel, create_engine
 
@@ -15,6 +15,7 @@ from overload_web.infrastructure import (
     batch_db,
     file_io,
     marc_engine,
+    oclc,
     reporter,
     sierra_clients,
     template_db,
@@ -259,6 +260,132 @@ class TemplateCreateModel(TemplatePatchModel):
     primary_matchpoint: str
 
 
+class UserCriteria(BaseModel):
+    id_type: Literal["isbn", "issn", "lccn", "upc", "oclc_number"]
+    library: Literal["nypl", "bpl"]
+    collection: Literal["BL", "RL", ""] | None
+    material_type: Literal["any", "bluray", "dvd", "large_print", "print"]
+    action: Literal["catalog", "upgrade"]
+    record_level: Literal["1", "2", "3"]
+    required_cat_agency: Literal["DLC", "any"] | None = None
+    required_cataloging_rules: Literal["RDA", "any"] | None = None
+    data_source: str | None = None
+
+    @field_validator("collection", mode="before")
+    @classmethod
+    def parse_collection(
+        cls, value: Literal["BL", "RL"] | None
+    ) -> Literal["BL", "RL"] | None:
+        """Parses value of `collection` param from html forms."""
+        if not value:
+            return None
+        else:
+            return value
+
+    @classmethod
+    def from_form(
+        self,
+        id_type: Literal["isbn", "issn", "lccn", "upc", "oclc_number"] = Form(...),
+        library: Literal["nypl", "bpl"] = Form(...),
+        collection: Literal["BL", "RL", ""] | None = Form(None),
+        material_type: Literal["any", "bluray", "dvd", "large_print", "print"] = Form(
+            ...
+        ),
+        action: Literal["catalog", "upgrade"] = Form(...),
+        record_level: Literal["1", "2", "3"] = Form(...),
+        cat_agency: Literal["DLC", "any"] | None = Form(default=None),
+        cat_rules: Literal["RDA", "any"] | None = Form(default=None),
+        data_source: Literal["id", "export"] | None = Form(default=None),
+    ) -> UserCriteria:
+        return UserCriteria(
+            id_type=id_type,
+            library=library,
+            collection=collection,
+            material_type=material_type,
+            action=action,
+            record_level=record_level,
+            required_cat_agency=cat_agency,
+            required_cataloging_rules=cat_rules,
+            data_source=data_source,
+        )
+
+
+class SourceDataModel(BaseModel):
+    id: str
+    id_type: Literal["isbn", "issn", "lccn", "upc", "oclc_number"]
+    library: Literal["nypl", "bpl"]
+    collection: Literal["BL", "RL", ""] | None
+    material_type: Literal["any", "bluray", "dvd", "large_print", "print"]
+    action: Literal["catalog", "upgrade"]
+    record_level: Literal["1", "2", "3"]
+    required_cat_agency: Literal["DLC", "any"] | None = None
+    required_cataloging_rules: Literal["RDA", "any"] | None = None
+    data_source: str | None = None
+    update_date: str | None = None
+
+    @field_validator("collection", mode="before")
+    @classmethod
+    def parse_collection(
+        cls, value: Literal["BL", "RL"] | None
+    ) -> Literal["BL", "RL"] | None:
+        """Parses value of `collection` param from html forms."""
+        if not value:
+            return None
+        else:
+            return value
+
+    def from_form(
+        self,
+        file: UploadFile,
+        id: str = Form(...),
+        id_type: Literal["isbn", "issn", "lccn", "upc", "oclc_number"] = Form(...),
+        library: Literal["nypl", "bpl"] = Form(...),
+        collection: Literal["BL", "RL", ""] | None = Form(None),
+        material_type: Literal["any", "bluray", "dvd", "large_print", "print"] = Form(
+            ...
+        ),
+        action: Literal["catalog", "upgrade"] = Form(...),
+        record_level: Literal["1", "2", "3"] = Form(...),
+        cat_agency: Literal["DLC", "any"] | None = Form(default=None),
+        cat_rules: Literal["RDA", "any"] | None = Form(default=None),
+        data_source: Literal["id", "export"] | None = Form(default=None),
+    ) -> list[SourceDataModel]:
+        lines = file.file.readlines()
+        if data_source == "export":
+            split_data = [i.decode("utf-8").strip("\r\n").split(",") for i in lines]
+            return [
+                SourceDataModel(
+                    id_type=id_type,
+                    id=i[0],
+                    library=library,
+                    collection=collection,
+                    material_type=material_type,
+                    action=action,
+                    record_level=record_level,
+                    required_cat_agency=cat_agency,
+                    required_cataloging_rules=cat_rules,
+                    data_source=data_source,
+                    update_date=i[1],
+                )
+                for i in split_data
+            ]
+        return [
+            SourceDataModel(
+                id_type=id_type,
+                id=i.decode("utf-8").strip("\r\n"),
+                library=library,
+                collection=collection,
+                material_type=material_type,
+                action=action,
+                record_level=record_level,
+                required_cat_agency=cat_agency,
+                required_cataloging_rules=cat_rules,
+                data_source=data_source,
+            )
+            for i in lines
+        ]
+
+
 def get_engine_with_uri():
     """Get the Postgres database URI from environment variables."""
     db_type = os.environ.get("DB_TYPE", "sqlite")
@@ -316,9 +443,11 @@ def local_file_storage() -> file_io.LocalFileStorage:
     return file_io.LocalFileStorage()
 
 
-def remote_file_loader(vendor: str) -> Generator[file_io.SFTPFileLoader, None, None]:
-    """Create an SFTP file loader service."""
-    yield file_io.SFTPFileLoader.create_loader_for_vendor(vendor=vendor)
+def remote_file_retriever(
+    vendor: str,
+) -> Generator[file_io.SFTPFileRetriever, None, None]:
+    """Create an SFTP file retriever service."""
+    yield file_io.SFTPFileRetriever.create_retriever_for_vendor(vendor=vendor)
 
 
 def get_fetcher(
@@ -348,6 +477,17 @@ def get_marc_engine(
         parser_vendor_mapping=constants["vendor_info_options"][context.library],
     )
     yield marc_engine.MarcEngine(rules=config)
+
+
+def oclc_fetcher(
+    user_criteria: Annotated[UserCriteria, Depends(UserCriteria.from_form)],
+) -> Generator[oclc.WorldcatFetcher, None, None]:
+    yield oclc.WorldcatFetcher(session=oclc.OclcSession(library=user_criteria.library))
+
+
+def load_wc2s_file(file: UploadFile) -> list:
+    lines = file.file.readlines()
+    return [{"id": i, "id_type": "isbn"} for i in lines]
 
 
 def get_report_writer() -> reporter.GoogleSheetsReporter:

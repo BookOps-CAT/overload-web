@@ -2,10 +2,6 @@
 
 Classes:
 
-`ReportHandler`
-    Concrete implementation of `ReportHandler` protocol which generates reports from
-    processing statistics.
-
 `GoogleSheetsReporter`
     Concrete implementation of `ReportWriter` protocol which uses google API client to
     write processing reports to a Google Sheet.

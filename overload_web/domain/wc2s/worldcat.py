@@ -58,19 +58,14 @@ class BriefRecordResult:
     def update_datetime(self) -> datetime.datetime | None:
         """Creates `datetime.datetime` object from `update_date` string."""
         if self.update_date:
-            return datetime.datetime.strptime(self.update_date, "%Y%m%d%H%M%S.%f")
+            return datetime.datetime.strptime(self.update_date, "%y%m%d")
         return None
 
 
 @dataclass
-class Identifier:
-    id_type: IdType
-    value: str
-
-
-@dataclass
 class UpgradeItem:
-    identifier: Identifier
+    id: str
+    id_type: IdType
     status: MatchStatus
     matched_oclc: str | None = None
 
@@ -80,7 +75,8 @@ class SourceData:
     """A domain model representing a Worldcat2Sierra query."""
 
     collection: context.Collection | None
-    id: Identifier
+    id: str
+    id_type: IdType
     library: context.LibrarySystem
     material_type: MaterialType
     action: Action
@@ -142,14 +138,17 @@ class RecordEvaluator:
     ) -> list[UpgradeItem]:
         out = []
         for response in responses:
+            print(source.update_datetime)
+            print(response.update_datetime)
             if (
                 source.update_datetime
                 and response.update_datetime
-                and response.update_datetime > source.update_datetime
+                and source.update_datetime > response.update_datetime
             ):
                 out.append(
                     UpgradeItem(
-                        identifier=source.id,
+                        id=source.id,
+                        id_type=source.id_type,
                         status=MatchStatus.FAILED_GLOBAL_CRITERIA,
                         matched_oclc=response.oclc_number,
                     )
@@ -157,7 +156,8 @@ class RecordEvaluator:
             elif response.cat_level not in self.valid_cat_levels:
                 out.append(
                     UpgradeItem(
-                        identifier=source.id,
+                        id=source.id,
+                        id_type=source.id_type,
                         status=MatchStatus.FAILED_USER_CRITERIA,
                         matched_oclc=response.oclc_number,
                     )
@@ -165,7 +165,8 @@ class RecordEvaluator:
             else:
                 out.append(
                     UpgradeItem(
-                        identifier=source.id,
+                        id=source.id,
+                        id_type=source.id_type,
                         status=MatchStatus.MATCHED,
                         matched_oclc=response.oclc_number,
                     )

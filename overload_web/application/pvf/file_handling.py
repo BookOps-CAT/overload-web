@@ -12,35 +12,37 @@ logger = logging.getLogger(__name__)
 
 class ListVendorFiles:
     @staticmethod
-    def execute(dir: str, loader: ports.FileLoader) -> list[str]:
+    def execute(dir: str, retriever: ports.FileRetriever) -> list[str]:
         """
         List files in a directory.
 
         Args:
             dir: The directory whose files to list as a string.
-            loader: Concrete implementation of `FileLoader` protocol
+            retriever: Concrete implementation of `FileRetriever` protocol
         Returns:
             a list of filenames contained within the given directory as strings.
         """
-        files = loader.list(dir=dir)
+        files = retriever.list(dir=dir)
         return files
 
 
 class LoadVendorFile:
     @staticmethod
-    def execute(name: str, dir: str, loader: ports.FileLoader) -> files.VendorFile:
+    def execute(
+        name: str, dir: str, retriever: ports.FileRetriever
+    ) -> files.VendorFile:
         """
         Load a file from a directory.
 
         Args:
             name: The name of the file as a string.
             dir: The directory where the file is located as a string.
-            loader: Concrete implementation of `FileLoader` protocol.
+            retriever: Concrete implementation of `FileRetriever` protocol.
 
         Returns:
             The loaded file as a `files.VendorFile` object.
         """
-        file = loader.load(name=name, dir=dir)
+        file = retriever.download(name=name, dir=dir)
         return files.VendorFile(file_name=name, content=file)
 
 

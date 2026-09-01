@@ -1,0 +1,11 @@
+{% import "macros/wc2s.html" as macro %}
+<div class="col">
+  <div class="card w-100 p-3">
+    <h5 class="card-title">MARC Rules</h5>
+    <div class="row row-cols-3 g-2">
+      {% for field_id, field_data in wc2sierra_fields.items() %}
+        <div class="col">{{ macro.select_field(field_id, field_data) }}</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>

@@ -32,21 +32,24 @@ class WorldcatMatcher:
         for response in responses:
             bib_json = self.fetcher.get_full_bib_json_by_id(value=response.oclc_number)
             response.update_date = bib_json["date"].get(
-                "replaceDate", bib_json["date"]["createDate"]
+                "replaceDate", bib_json["date"].get("createDate")
             )
         return responses
 
     def match_record(self, source: worldcat.SourceData) -> list[worldcat.UpgradeItem]:
         evaluator = worldcat.RecordEvaluator(source.record_level)
-        index = self.ID_INDEX[source.id.id_type]
-        format = self.MATERIAL_TYPE_MAPPING.get(source.material_type)
+        payload = {
+            "q": f"{self.ID_INDEX[source.id_type]}={source.id}",
+            "inCatalogLanguage": "eng",
+            "catalogSource": source.required_cat_agency,
+            "itemSubType": self.MATERIAL_TYPE_MAPPING.get(source.material_type),
+            "limit": 50,
+        }
         responses = self.fetcher.get_brief_bibs_by_id(
-            value=source.id.value, index=index, format=format
+            params={k: v for k, v in payload.items() if v}
         )
-        parsed_responses = evaluator.parse_responses(responses=responses)
+        parsed = evaluator.parse_responses(responses=responses)
         if source.update_date and source.action == "upgrade":
-            parsed_responses = self.get_update_date(parsed_responses)
-        filtered_brief_bibs = evaluator.filter_brief_bibs(
-            responses=parsed_responses, source=source
-        )
-        return filtered_brief_bibs
+            parsed = self.get_update_date(parsed)
+        filtered = evaluator.filter_brief_bibs(responses=parsed, source=source)
+        return filtered
