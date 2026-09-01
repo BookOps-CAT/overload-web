@@ -29,7 +29,7 @@ class CreatePVFOutputReport:
         """
         data = repo.get(batch_id)
         if data:
-            stats = reporting.ProcessingStatistics(data["processing_statistics"])
+            stats = reporting.ProcessingStatistics(data["stats"])
             return {
                 "total_records": data["total_records"],
                 "file_names": data["file_names"],
@@ -63,7 +63,7 @@ class GetDetailedReportData:
         """
         data = repo.get(batch_id)
         if data:
-            return data["processing_statistics"]
+            return data["stats"]
         return []
 
 
@@ -92,7 +92,7 @@ class WriteOutputReport:
         """
         data = repo.get(batch_id)
         if data:
-            stats = reporting.ProcessingStatistics(data["processing_statistics"])
+            stats = reporting.ProcessingStatistics(data["stats"])
             call_no_report = stats.create_call_number_report(record_type=record_type)
             if call_no_report:
                 prepped_data = writer.prep_report(data=call_no_report)

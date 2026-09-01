@@ -21,9 +21,7 @@ class AcquisitionUpdates:
         updates: list[Any] = []
         record.apply_order_template(template_data)
         updates.extend(
-            FieldRules.update_order_fields(
-                record=record, mapping=context.marc_order_mapping
-            )
+            FieldRules.update_order_fields(record=record, mapping=context.order_mapping)
         )
         updates.append(FieldRules.add_bib_id(record=record, tag=context.bib_id_tag))
         if context.library == "nypl":
@@ -59,9 +57,7 @@ class SelectionUpdates:
         updates: list[Any] = []
         record.apply_order_template(template_data)
         updates.extend(
-            FieldRules.update_order_fields(
-                record=record, mapping=context.marc_order_mapping
-            )
+            FieldRules.update_order_fields(record=record, mapping=context.order_mapping)
         )
         updates.append(
             FieldRules.add_command_tag(
@@ -116,24 +112,20 @@ class FieldRules:
                     command_tag = f"*b2={format};bn={default_loc};"
                 else:
                     command_tag = f"*b2={format};"
-                return MarcFieldUpdateValues(
-                    tag="949",
-                    ind1=" ",
-                    ind2=" ",
-                    subfields=[{"code": "a", "value": command_tag}],
-                )
+            else:
+                command_tag = f"*bn={default_loc};"
             return MarcFieldUpdateValues(
                 tag="949",
                 ind1=" ",
                 ind2=" ",
-                subfields=[{"code": "a", "value": f"*bn={default_loc};"}],
+                subfields=[{"code": "a", "value": command_tag}],
             )
         if not default_loc:
             return None
         command_tag = field["a"].strip()
         if "bn=" in command_tag:
             return None
-        elif "bn=" not in command_tag[-1] == ";":
+        elif "bn=" not in command_tag and command_tag[-1] == ";":
             return MarcFieldUpdateValues(
                 tag="949",
                 ind1=" ",

@@ -38,7 +38,7 @@ class PVFBatch(SQLModel, table=True):
     files: list["ProcessedFileModel"] = Relationship(
         back_populates="batch", sa_relationship_kwargs={"lazy": "selectin"}
     )
-    processing_statistics: list[dict[str, Any]] = Field(sa_column=Column(JSON))
+    stats: list[dict[str, Any]] = Field(sa_column=Column(JSON))
     file_names: list[str | None] = Field(sa_column=Column(JSON))
     total_files: int
     total_records: int
@@ -86,7 +86,7 @@ class PVFBatchRepository:
         if batch:
             return {
                 "files": [f.model_dump() for f in batch.files],
-                "processing_statistics": batch.processing_statistics,
+                "stats": batch.stats,
                 "file_names": batch.file_names,
                 "total_files": batch.total_files,
                 "total_records": batch.total_records,
@@ -111,7 +111,7 @@ class PVFBatchRepository:
         ]
         valid_batch = PVFBatch(
             files=valid_files,
-            processing_statistics=obj.processing_statistics,
+            stats=obj.stats,
             file_names=obj.file_names,
             total_files=obj.total_files,
             total_records=obj.total_records,

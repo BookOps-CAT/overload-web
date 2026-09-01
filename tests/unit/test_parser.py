@@ -91,7 +91,7 @@ class TestParser:
         caplog,
     ):
         reader = marc.BibReader.read_marc_data(
-            stub_bib.as_marc(), reader_port=marc_reader_writer
+            stub_bib.as_marc(), marc_reader=marc_reader_writer
         )
         records = marc.BibParser.parse_marc_data(parser=parser_engine, reader=reader)
         assert len(records) == 1
@@ -121,7 +121,7 @@ class TestParser:
             )
         )
         reader = marc.BibReader.read_marc_data(
-            stub_bib.as_marc(), reader_port=marc_reader_writer
+            stub_bib.as_marc(), marc_reader=marc_reader_writer
         )
         records = marc.BibParser.parse_marc_data(parser=parser_engine, reader=reader)
         assert len(records) == 1
@@ -149,7 +149,7 @@ class TestParser:
         caplog,
     ):
         reader = marc.BibReader.read_marc_data(
-            stub_bib.as_marc(), reader_port=marc_reader_writer
+            stub_bib.as_marc(), marc_reader=marc_reader_writer
         )
         records = marc.BibParser.parse_marc_data(parser=parser_engine, reader=reader)
         assert len(records) == 1
@@ -177,7 +177,7 @@ class TestParser:
     def test_parse_update_datetime(self, parser_engine, marc_reader_writer, stub_bib):
         stub_bib.add_field(Field(tag="005", data="20200101010000.0"))
         reader = marc.BibReader.read_marc_data(
-            stub_bib.as_marc(), reader_port=marc_reader_writer
+            stub_bib.as_marc(), marc_reader=marc_reader_writer
         )
         records = marc.BibParser.parse_marc_data(parser=parser_engine, reader=reader)
         assert len(records) == 1

@@ -47,7 +47,7 @@ def fake_sql_session():
     )
     batch = batch_db.PVFBatch(
         files=[batch_db.ProcessedFileModel(file_name="foo.mrc", records=b"")],
-        processing_statistics=[
+        stats=[
             {
                 "action": "insert",
                 "call_number": "Foo",

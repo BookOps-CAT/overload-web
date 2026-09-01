@@ -20,7 +20,7 @@ from overload_web.infrastructure import oclc, read_marc, sierra_clients
 @pytest.fixture(scope="session")
 def get_constants() -> dict[str, Any]:
     """Retrieve processing constants from JSON file."""
-    with open("overload_web/data/mapping_specs.json", "r", encoding="utf-8") as fh:
+    with open("overload_web/data/update_rules.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     return constants
 
@@ -654,15 +654,12 @@ def engine_config(
     library, record_type, collection, get_constants
 ) -> engine.MarcEngineConfig:
     return engine.MarcEngineConfig(
-        marc_order_mapping=get_constants["marc_order_mapping"],
+        order_mapping=get_constants["order_mapping"],
         default_loc=get_constants["default_locations"][library].get(collection),
         bib_id_tag=get_constants["bib_id_tag"][library],
         library=library,
         record_type=record_type,
         collection=collection,
-        parser_bib_mapping=get_constants["bib_domain_mapping"],
-        parser_order_mapping=get_constants["order_domain_mapping"],
-        parser_vendor_mapping=get_constants["vendor_info_options"][library],
     )
 
 
@@ -772,7 +769,7 @@ def mock_sheet_config_no_creds(monkeypatch, mock_sheet_config):
 @pytest.fixture
 def stub_report():
     return reporting.ProcessingStatistics(
-        processing_statistics=[
+        stats=[
             {
                 "action": "insert",
                 "call_number": "Foo",

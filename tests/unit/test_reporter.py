@@ -35,7 +35,7 @@ def mock_sheet_auth_error(monkeypatch):
 @pytest.fixture
 def stub_report():
     return reporting.ProcessingStatistics(
-        processing_statistics=[
+        stats=[
             {
                 "vendor": "BTSERIES",
                 "resource_id": "9781234567890",
@@ -154,14 +154,14 @@ class TestProcessingStatistics:
         ]
 
     def test_call_number_report_no_issues(self, stub_report):
-        stub_report.processing_statistics[0]["call_number_match"] = True
+        stub_report.stats[0]["call_number_match"] = True
         report = stub_report.create_call_number_report("sel")
         assert report is None
 
     def test_call_number_reportcat_missing_call_number(self, stub_report):
-        stub_report.processing_statistics[0]["call_number"] = None
-        stub_report.processing_statistics[0]["target_call_no"] = None
-        stub_report.processing_statistics[0]["call_number_match"] = True
+        stub_report.stats[0]["call_number"] = None
+        stub_report.stats[0]["target_call_no"] = None
+        stub_report.stats[0]["call_number_match"] = True
         report = stub_report.create_call_number_report("cat")
         assert report == [
             {
@@ -176,7 +176,7 @@ class TestProcessingStatistics:
         ]
 
     def test_duplicate_report(self, stub_report):
-        stub_report.processing_statistics[0]["duplicate_records"] = ["3456"]
+        stub_report.stats[0]["duplicate_records"] = ["3456"]
         report = stub_report.create_duplicate_report()
         assert report == [
             {

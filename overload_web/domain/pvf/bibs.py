@@ -398,16 +398,16 @@ class ProcessedFileBatch:
 
     def __init__(
         self,
-        processing_statistics: list[dict[str, Any]],
+        stats: list[dict[str, Any]],
         file_names: list[str],
         files: list[ProcessedFile],
         missing_barcodes: list[str] | None = None,
     ) -> None:
         self.files = files
-        self.processing_statistics = processing_statistics
+        self.stats = stats
         self.file_names = file_names
         self.total_files = len(file_names)
-        self.total_records = len(processing_statistics)
+        self.total_records = len(stats)
         self.missing_barcodes = missing_barcodes
         self.processing_integrity = missing_barcodes in [[], None]
 

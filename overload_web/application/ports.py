@@ -168,7 +168,7 @@ class MarcUpdateEnginePort(Protocol[U, V]):
     library: str
     record_type: str
     collection: str | None
-    config: Any
+    config: dict[str, Any]
 
     def create_bib_from_domain(self, record: U) -> V: ...  # pragma:no branch
 

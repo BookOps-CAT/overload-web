@@ -47,10 +47,7 @@ class MarcEngineConfig:
     collection: str | None
     default_loc: str | None
     library: str
-    marc_order_mapping: dict[str, Any]
-    parser_bib_mapping: dict[str, Any]
-    parser_order_mapping: dict[str, Any]
-    parser_vendor_mapping: dict[str, Any]
+    order_mapping: dict[str, Any]
     record_type: str
 
 
@@ -70,9 +67,6 @@ class MarcUpdateEngine:
                 and record type. Parsed from `/overload_web/data/mapping_specs.json` and
                 values input by user for `library`, `collection`, and `record_type`.
         """
-        self.library = rules.library
-        self.collection = rules.collection
-        self.record_type = rules.record_type
         self.config = rules
 
     def create_bib_from_domain(self, record: DomainBibProtocol) -> Bib:

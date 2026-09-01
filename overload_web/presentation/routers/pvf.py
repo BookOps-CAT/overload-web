@@ -75,7 +75,8 @@ def process_acq_records(
         template_data=order_template.model_dump(),
         matchpoints=matchpoints.model_dump(),
         repo=repository,
-        reader_writer=marc_reader,
+        marc_reader=marc_reader,
+        marc_parser=marc_parser,
     )
     return request.app.state.templates.TemplateResponse(
         request=request,
@@ -118,7 +119,8 @@ def process_cat_records(
         marc_engine=marc_engine,
         fetcher=fetcher,
         repo=repository,
-        reader_writer=marc_reader,
+        marc_reader=marc_reader,
+        marc_parser=marc_parser,
     )
     return request.app.state.templates.TemplateResponse(
         request=request,
@@ -170,7 +172,8 @@ def process_sel_records(
         template_data=order_template.model_dump(),
         matchpoints=matchpoints.model_dump(),
         repo=repository,
-        reader_writer=marc_reader,
+        marc_reader=marc_reader,
+        marc_parser=marc_parser,
     )
     return request.app.state.templates.TemplateResponse(
         request=request,

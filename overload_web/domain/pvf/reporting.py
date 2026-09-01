@@ -13,13 +13,13 @@ logger = logging.getLogger(__name__)
 class ProcessingStatistics:
     """A value object representing a statistics for a batch of processed files"""
 
-    processing_statistics: list[dict[str, Any]]
+    stats: list[dict[str, Any]]
 
     def create_call_number_report(
         self, record_type: str
     ) -> list[dict[str, Any]] | None:
         out_report = []
-        for row in self.processing_statistics:
+        for row in self.stats:
             row_report = {
                 "vendor": row["vendor"],
                 "resource_id": row["resource_id"],
@@ -43,7 +43,7 @@ class ProcessingStatistics:
 
     def create_duplicate_report(self) -> list[dict[str, Any]]:
         out = []
-        for row in self.processing_statistics:
+        for row in self.stats:
             if row["duplicate_records"] or row["mixed"] or row["other"]:
                 out.append(
                     {
@@ -59,7 +59,7 @@ class ProcessingStatistics:
 
     def create_vendor_report(self) -> list[dict[str, Any]]:
         vendor_data: dict[str, dict[str, Any]] = {}
-        for row in self.processing_statistics:
+        for row in self.stats:
             vendor = row["vendor"]
             summary = vendor_data.setdefault(
                 vendor, {"vendor": vendor, "attach": 0, "insert": 0, "update": 0}

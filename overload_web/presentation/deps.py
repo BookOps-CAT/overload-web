@@ -462,10 +462,10 @@ def get_marc_engine(
     context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
 ) -> Generator[marc_engine.MarcUpdateEngine, None, None]:
     """Create a `MarcUpdateEngine` service with injected dependencies."""
-    with open("overload_web/data/mapping_specs.json", "r", encoding="utf-8") as fh:
+    with open("overload_web/data/update_rules.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     config = marc_engine.MarcEngineConfig(
-        marc_order_mapping=constants["marc_order_mapping"],
+        order_mapping=constants["order_mapping"],
         default_loc=constants["default_locations"][context.library].get(
             context.collection
         ),
@@ -473,9 +473,6 @@ def get_marc_engine(
         library=context.library,
         record_type=context.record_type,
         collection=context.collection,
-        parser_bib_mapping=constants["bib_domain_mapping"],
-        parser_order_mapping=constants["order_domain_mapping"],
-        parser_vendor_mapping=constants["vendor_info_options"][context.library],
     )
     yield marc_engine.MarcUpdateEngine(rules=config)
 

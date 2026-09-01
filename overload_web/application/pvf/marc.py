@@ -66,9 +66,9 @@ class BibDeduplicator:
 
 class BibReader:
     @staticmethod
-    def read_marc_data(data: bytes, reader_port: ports.ReaderWriter) -> Iterator:
+    def read_marc_data(data: bytes, marc_reader: ports.ReaderWriter) -> Iterator:
         """Parse MARC binary into an iterator."""
-        return reader_port.get_reader(data)
+        return marc_reader.get_reader(data)
 
 
 class BibParser:
@@ -91,7 +91,7 @@ class BibParser:
                 bib_dict["vendor_info"] = bibs.VendorInfo(**vendor_info)
             else:
                 bib_dict["vendor"] = vendor
-            if not bib_dict["collection"]:
+            if not bib_dict.get("collection"):
                 bib_dict["collection"] = parser.collection
             bib = bibs.DomainBib(**bib_dict)
             logger.info(f"Vendor record parsed: {bib}")
@@ -101,32 +101,20 @@ class BibParser:
 
 class BibUpdater:
     @staticmethod
-    def update_cat_record(
-        record: bibs.DomainBib, engine: ports.MarcUpdateEnginePort
-    ) -> None:
-        """Update and add MARC fields to processed full-level bib record"""
-        bib = engine.create_bib_from_domain(record=record)
-        updates = cataloging_rules.CatalogingUpdates.field_list(
-            record=record, context=engine.config
+    def get_acq_updates(
+        record: bibs.DomainBib, config: Any, template_data: dict[str, Any]
+    ) -> list:
+        """Get list of MARC fields to update in processed acq bib record"""
+        return cataloging_rules.AcquisitionUpdates.field_list(
+            record=record, context=config, template_data=template_data
         )
-        engine.update_fields(field_updates=updates, bib=bib)
-        bib.leader = cataloging_rules.FieldRules.update_leader(bib.leader)
-        record.binary_data = bib.as_marc()
 
     @staticmethod
-    def update_acq_record(
-        record: bibs.DomainBib,
-        engine: ports.MarcUpdateEnginePort,
-        template_data: dict[str, Any],
-    ) -> None:
-        """Update and add MARC fields to processed order-level bib record"""
-        bib = engine.create_bib_from_domain(record=record)
-        updates = cataloging_rules.AcquisitionUpdates.field_list(
-            record=record, context=engine.config, template_data=template_data
+    def get_cat_updates(record: bibs.DomainBib, config: Any) -> list:
+        """Get list of MARC fields to update in processed full-level bib record"""
+        return cataloging_rules.CatalogingUpdates.field_list(
+            record=record, context=config
         )
-        engine.update_fields(field_updates=updates, bib=bib)
-        bib.leader = cataloging_rules.FieldRules.update_leader(bib.leader)
-        record.binary_data = bib.as_marc()
 
     @staticmethod
     def update_sel_record(
@@ -134,7 +122,7 @@ class BibUpdater:
         engine: ports.MarcUpdateEnginePort,
         template_data: dict[str, Any],
     ) -> None:
-        """Update and add MARC fields to processed order-level bib record"""
+        """Update and add MARC fields to sel bib record"""
         bib = engine.create_bib_from_domain(record=record)
         updates = cataloging_rules.SelectionUpdates.field_list(
             record=record,
@@ -147,14 +135,24 @@ class BibUpdater:
         bib.leader = cataloging_rules.FieldRules.update_leader(bib.leader)
         record.binary_data = bib.as_marc()
 
+    @staticmethod
+    def update_record(
+        record: bibs.DomainBib, engine: ports.MarcUpdateEnginePort, updates: list
+    ) -> None:
+        """Update and add MARC fields to bib record"""
+        bib = engine.create_bib_from_domain(record=record)
+        engine.update_fields(field_updates=updates, bib=bib)
+        bib.leader = cataloging_rules.FieldRules.update_leader(bib.leader)
+        record.binary_data = bib.as_marc()
+
 
 class MarcFileMerger:
     @staticmethod
-    def combine_marc_files(data: list[bytes], reader_port: ports.ReaderWriter) -> bytes:
+    def combine_marc_files(data: list[bytes], marc_reader: ports.ReaderWriter) -> bytes:
         """Combine multiple bytes objects (ie. MARC files) into one for processing."""
         records = []
         for batch in data:
-            reader = reader_port.get_reader(batch)
+            reader = marc_reader.get_reader(batch)
             for record in reader:
                 records.append(record)
         io_data = io.BytesIO()
@@ -166,7 +164,7 @@ class MarcFileMerger:
 
 class BarcodeValidator:
     @staticmethod
-    def validate_unique_barcodes(barcodes: list[str]) -> None:
+    def validate_unique(barcodes: list[str]) -> None:
         """Confirm barcodes in a file are all unique."""
         barcode_counter = Counter(barcodes)
         dupe_barcodes = [i for i, count in barcode_counter.items() if count > 1]
@@ -174,7 +172,7 @@ class BarcodeValidator:
             raise ValueError(f"Duplicate barcodes found in file: {dupe_barcodes}")
 
     @staticmethod
-    def validate_preserved_barcodes(
+    def validate_preserved(
         processed_barcodes: list[str], original_barcodes: list[str]
     ) -> list[str]:
         """Confirm barcodes extracted from a file are present in processed records"""

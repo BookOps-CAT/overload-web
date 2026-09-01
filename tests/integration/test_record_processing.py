@@ -18,7 +18,7 @@ from overload_web.infrastructure import batch_db, marc_engine, read_marc, report
 def test_session():
     batch1 = batch_db.PVFBatch(
         files=[batch_db.ProcessedFileModel(file_name="foo.mrc", records=b"")],
-        processing_statistics=[
+        stats=[
             {
                 "action": "insert",
                 "call_number": "Foo",
@@ -42,7 +42,7 @@ def test_session():
     )
     batch2 = batch_db.PVFBatch(
         files=[batch_db.ProcessedFileModel(file_name="bar.mrc", records=b"")],
-        processing_statistics=[
+        stats=[
             {
                 "action": "insert",
                 "call_number": "Foo",
@@ -86,13 +86,13 @@ class TestProcessCommands:
     ):
         repo = batch_db.PVFBatchRepository(session=test_session)
         engine = marc_engine.MarcUpdateEngine(rules=engine_config)
-        reader_writer = read_marc.MarcReaderWriter(library=library)
+        marc_reader = read_marc.MarcReaderWriter(library=library)
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
         out = ProcessCatalogingRecords.execute(
             batches={"foo.mrc": marc_data},
             marc_engine=engine,
-            reader_writer=reader_writer,
+            marc_reader=marc_reader,
             fetcher=fake_fetcher,
             repo=repo,
             marc_parser=parser_engine,
@@ -107,7 +107,7 @@ class TestProcessCommands:
         self, library, fake_fetcher, engine_config, test_session, parser_engine
     ):
         engine = marc_engine.MarcUpdateEngine(rules=engine_config)
-        reader_writer = read_marc.MarcReaderWriter(library=library)
+        marc_reader = read_marc.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -115,7 +115,7 @@ class TestProcessCommands:
             {"foo.mrc": marc_data},
             marc_engine=engine,
             fetcher=fake_fetcher,
-            reader_writer=reader_writer,
+            marc_reader=marc_reader,
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
             repo=repo,
@@ -131,7 +131,7 @@ class TestProcessCommands:
         self, library, fake_fetcher, engine_config, test_session, parser_engine
     ):
         engine = marc_engine.MarcUpdateEngine(rules=engine_config)
-        reader_writer = read_marc.MarcReaderWriter(library=library)
+        marc_reader = read_marc.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -139,7 +139,7 @@ class TestProcessCommands:
             {"foo.mrc": marc_data},
             marc_engine=engine,
             fetcher=fake_fetcher,
-            reader_writer=reader_writer,
+            marc_reader=marc_reader,
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
             repo=repo,
@@ -155,7 +155,7 @@ class TestProcessCommands:
         self, library, fake_fetcher, engine_config, test_session, parser_engine
     ):
         engine = marc_engine.MarcUpdateEngine(rules=engine_config)
-        reader_writer = read_marc.MarcReaderWriter(library=library)
+        marc_reader = read_marc.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -163,7 +163,7 @@ class TestProcessCommands:
             ProcessCatalogingRecords.execute(
                 batches={"foo.mrc": marc_data},
                 marc_engine=engine,
-                reader_writer=reader_writer,
+                marc_reader=marc_reader,
                 fetcher=fake_fetcher,
                 repo=repo,
                 marc_parser=parser_engine,
@@ -178,7 +178,7 @@ class TestProcessCommands:
         self, library, fake_fetcher, engine_config, test_session, parser_engine
     ):
         engine = marc_engine.MarcUpdateEngine(rules=engine_config)
-        reader_writer = read_marc.MarcReaderWriter(library=library)
+        marc_reader = read_marc.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -187,7 +187,7 @@ class TestProcessCommands:
                 {"foo.mrc": marc_data},
                 marc_engine=engine,
                 fetcher=fake_fetcher,
-                reader_writer=reader_writer,
+                marc_reader=marc_reader,
                 template_data={"format": "a"},
                 matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
                 repo=repo,
@@ -203,7 +203,7 @@ class TestProcessCommands:
         self, library, fake_fetcher, engine_config, test_session, parser_engine
     ):
         engine = marc_engine.MarcUpdateEngine(rules=engine_config)
-        reader_writer = read_marc.MarcReaderWriter(library=library)
+        marc_reader = read_marc.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -212,7 +212,7 @@ class TestProcessCommands:
                 {"foo.mrc": marc_data},
                 marc_engine=engine,
                 fetcher=fake_fetcher,
-                reader_writer=reader_writer,
+                marc_reader=marc_reader,
                 template_data={"format": "a"},
                 matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
                 repo=repo,
