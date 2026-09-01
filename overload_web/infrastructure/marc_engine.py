@@ -84,10 +84,6 @@ class MarcEngine:
                 return field
         return None
 
-    def get_reader(self, data: bytes | BinaryIO) -> SierraBibReader:
-        """Instantiate a `SierraBibReader` to read MARC binary data."""
-        return SierraBibReader(data, library=self.library)
-
     def get_vendor_tags_from_bib(
         self, record: Bib, tags: dict[str, dict[str, str]]
     ) -> bool:
@@ -196,6 +192,25 @@ class MarcEngine:
             if alt_match:
                 return info
         return rules["UNKNOWN"]
+
+
+class MarcReaderWriter:
+    """Interacts with binary MARC data using `bookops_marc`."""
+
+    def __init__(self, library: str) -> None:
+        """
+        Initialize `MarcReaderWriter` for a given library.
+
+        This class is a concrete implementation of the `ReaderWriter` protocol.
+
+        Args:
+            library: the library whose records are being read/written
+        """
+        self.library = library
+
+    def get_reader(self, data: bytes | BinaryIO) -> SierraBibReader:
+        """Instantiate a `SierraBibReader` to read MARC binary data."""
+        return SierraBibReader(data, library=self.library)
 
     def write(self, records: list[DomainBibProtocol]) -> bytes:
         """

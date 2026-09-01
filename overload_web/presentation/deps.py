@@ -479,6 +479,13 @@ def get_marc_engine(
     yield marc_engine.MarcEngine(rules=config)
 
 
+def get_marc_reader(
+    context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
+) -> Generator[marc_engine.MarcReaderWriter, None, None]:
+    """Create a `MarcReaderWriter` service with injected dependencies."""
+    yield marc_engine.MarcReaderWriter(library=context.library)
+
+
 def oclc_fetcher(
     user_criteria: Annotated[UserCriteria, Depends(UserCriteria.from_form)],
 ) -> Generator[oclc.WorldcatFetcher, None, None]:

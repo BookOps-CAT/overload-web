@@ -38,6 +38,7 @@ def process_acq_records(
     fetcher: Annotated[Any, Depends(deps.get_fetcher)],
     order_template: Annotated[Any, Depends(deps.TemplateDataModel.from_form)],
     marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
+    marc_reader: Annotated[Any, Depends(deps.get_marc_reader)],
     matchpoints: Annotated[Any, Depends(deps.MatchpointsModel.from_form)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
     files: Annotated[Any, Depends(load_files)],
@@ -52,6 +53,8 @@ def process_acq_records(
             an order template loaded from the database or input via an html form.
         marc_engine:
             a `ports.MarcEnginePort` object used by application service.
+        marc_reader:
+            a `ports.ReaderWriter` object used by application service.
         matchpoints:
             a list of matchpoints loaded from an order template in the database or
             input via an html form.
@@ -71,6 +74,7 @@ def process_acq_records(
         template_data=order_template.model_dump(),
         matchpoints=matchpoints.model_dump(),
         repo=repository,
+        reader_writer=marc_reader,
     )
     return request.app.state.templates.TemplateResponse(
         request=request,
@@ -84,6 +88,7 @@ def process_cat_records(
     request: Request,
     fetcher: Annotated[Any, Depends(deps.get_fetcher)],
     marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
+    marc_reader: Annotated[Any, Depends(deps.get_marc_reader)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
     files: Annotated[Any, Depends(load_files)],
 ) -> HTMLResponse:
@@ -95,6 +100,8 @@ def process_cat_records(
             a `ports.BibFetcher` object used by application service.
         marc_engine:
             a `ports.MarcEnginePort` object used by application service.
+        marc_reader:
+            a `ports.ReaderWriter` object used by application service.
         repository:
             a `repository.PVFBatchRepository` object where the processed files and
             their associated statistics will be saved.
@@ -109,6 +116,7 @@ def process_cat_records(
         marc_engine=marc_engine,
         fetcher=fetcher,
         repo=repository,
+        reader_writer=marc_reader,
     )
     return request.app.state.templates.TemplateResponse(
         request=request,
@@ -123,6 +131,7 @@ def process_sel_records(
     fetcher: Annotated[Any, Depends(deps.get_fetcher)],
     order_template: Annotated[Any, Depends(deps.TemplateDataModel.from_form)],
     marc_engine: Annotated[Any, Depends(deps.get_marc_engine)],
+    marc_reader: Annotated[Any, Depends(deps.get_marc_reader)],
     matchpoints: Annotated[Any, Depends(deps.MatchpointsModel.from_form)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
     files: Annotated[Any, Depends(load_files)],
@@ -137,6 +146,8 @@ def process_sel_records(
             an order template loaded from the database or input via an html form.
         marc_engine:
             a `ports.MarcEnginePort` object used by application service.
+        marc_reader:
+            a `ports.ReaderWriter` object used by application service.
         matchpoints:
             a list of matchpoints loaded from an order template in the database or
             input via an html form.
@@ -156,6 +167,7 @@ def process_sel_records(
         template_data=order_template.model_dump(),
         matchpoints=matchpoints.model_dump(),
         repo=repository,
+        reader_writer=marc_reader,
     )
     return request.app.state.templates.TemplateResponse(
         request=request,

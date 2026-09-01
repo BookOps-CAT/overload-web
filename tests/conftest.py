@@ -663,6 +663,11 @@ def marc_engine(engine_config) -> engine.MarcEngine:
     return engine.MarcEngine(rules=engine_config)
 
 
+@pytest.fixture
+def marc_reader_writer(library) -> engine.MarcReaderWriter:
+    return engine.MarcReaderWriter(library=library)
+
+
 class MockCreds:
     def __init__(self):
         self.token = "foo"

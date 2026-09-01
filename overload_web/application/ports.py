@@ -158,10 +158,6 @@ class MarcEnginePort(Protocol[U, V]):
 
     """Get the Sierra command tag from a bib record if present."""
 
-    def get_reader(self, data: bytes) -> Iterator: ...  # pragma: no branch
-
-    """Instantiate an object that can read MARC binary as an iterator."""
-
     def get_vendor_tags_from_bib(
         self, record: V, tags: dict[str, dict[str, str]]
     ) -> bool: ...  # pragma:no branch
@@ -183,10 +179,6 @@ class MarcEnginePort(Protocol[U, V]):
     ) -> None: ...  # pragma:no branch
 
     """Update record in place"""
-
-    def write(self, records: list[V]) -> bytes: ...  # pragma:no branch
-
-    """Write DomainBib objects to binary."""
 
 
 @runtime_checkable
@@ -264,3 +256,18 @@ class OCLCBibFetcher(Protocol):
     ) -> dict[str, Any]: ...  # pragma: no branch
 
     """Retrieve for full MARC record as a json object for a given ID."""
+
+
+@runtime_checkable
+class ReaderWriter(Protocol):
+    """Interface for interactions with MARC data."""
+
+    library: str
+
+    def get_reader(self, data: bytes) -> Iterator: ...  # pragma: no branch
+
+    """Instantiate an object that can read MARC binary as an iterator."""
+
+    def write(self, records: list[U]) -> bytes: ...  # pragma:no branch
+
+    """Write `DomainBib` objects to single binary object."""

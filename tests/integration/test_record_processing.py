@@ -86,11 +86,13 @@ class TestProcessCommands:
     ):
         repo = batch_db.PVFBatchRepository(session=test_session)
         engine = marc_engine.MarcEngine(rules=engine_config)
+        reader_writer = marc_engine.MarcReaderWriter(library=library)
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
         out = ProcessCatalogingRecords.execute(
             batches={"foo.mrc": marc_data},
             marc_engine=engine,
+            reader_writer=reader_writer,
             fetcher=fake_fetcher,
             repo=repo,
         )
@@ -104,6 +106,7 @@ class TestProcessCommands:
         self, library, fake_fetcher, engine_config, test_session
     ):
         engine = marc_engine.MarcEngine(rules=engine_config)
+        reader_writer = marc_engine.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -111,6 +114,7 @@ class TestProcessCommands:
             {"foo.mrc": marc_data},
             marc_engine=engine,
             fetcher=fake_fetcher,
+            reader_writer=reader_writer,
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
             repo=repo,
@@ -125,6 +129,7 @@ class TestProcessCommands:
         self, library, fake_fetcher, engine_config, test_session
     ):
         engine = marc_engine.MarcEngine(rules=engine_config)
+        reader_writer = marc_engine.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -132,6 +137,7 @@ class TestProcessCommands:
             {"foo.mrc": marc_data},
             marc_engine=engine,
             fetcher=fake_fetcher,
+            reader_writer=reader_writer,
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
             repo=repo,
@@ -146,6 +152,7 @@ class TestProcessCommands:
         self, library, fake_fetcher, engine_config, test_session
     ):
         engine = marc_engine.MarcEngine(rules=engine_config)
+        reader_writer = marc_engine.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -153,6 +160,7 @@ class TestProcessCommands:
             ProcessCatalogingRecords.execute(
                 batches={"foo.mrc": marc_data},
                 marc_engine=engine,
+                reader_writer=reader_writer,
                 fetcher=fake_fetcher,
                 repo=repo,
             )
@@ -166,6 +174,7 @@ class TestProcessCommands:
         self, library, fake_fetcher, engine_config, test_session
     ):
         engine = marc_engine.MarcEngine(rules=engine_config)
+        reader_writer = marc_engine.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -174,6 +183,7 @@ class TestProcessCommands:
                 {"foo.mrc": marc_data},
                 marc_engine=engine,
                 fetcher=fake_fetcher,
+                reader_writer=reader_writer,
                 template_data={"format": "a"},
                 matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
                 repo=repo,
@@ -188,6 +198,7 @@ class TestProcessCommands:
         self, library, fake_fetcher, engine_config, test_session
     ):
         engine = marc_engine.MarcEngine(rules=engine_config)
+        reader_writer = marc_engine.MarcReaderWriter(library=library)
         repo = batch_db.PVFBatchRepository(session=test_session)
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
@@ -196,6 +207,7 @@ class TestProcessCommands:
                 {"foo.mrc": marc_data},
                 marc_engine=engine,
                 fetcher=fake_fetcher,
+                reader_writer=reader_writer,
                 template_data={"format": "a"},
                 matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
                 repo=repo,

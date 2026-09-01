@@ -110,7 +110,7 @@ class TestWorldcatFetcher:
 class TestWorldcatMatcher:
     def test_match_record(self, fake_oclc_fetcher, stub_source_data):
         service = oclc_matcher.WorldcatMatcher(fetcher=fake_oclc_fetcher)
-        candidates = service.match_record(stub_source_data)
+        candidates = service.get_record_matches(stub_source_data)
         assert len(candidates) == 1
         assert candidates[0] == worldcat.UpgradeItem(
             id=stub_source_data.id,
@@ -124,7 +124,7 @@ class TestWorldcatMatcher:
     ):
         stub_source_data.record_level = "1"
         service = oclc_matcher.WorldcatMatcher(fetcher=fake_oclc_fetcher)
-        candidates = service.match_record(stub_source_data)
+        candidates = service.get_record_matches(stub_source_data)
         assert len(candidates) == 1
         assert candidates[0] == worldcat.UpgradeItem(
             id=stub_source_data.id,
@@ -139,7 +139,7 @@ class TestWorldcatMatcher:
         stub_source_data.update_date = "20260101000100.0"
         stub_source_data.action = worldcat.Action.UPGRADE
         service = oclc_matcher.WorldcatMatcher(fetcher=fake_oclc_fetcher)
-        candidates = service.match_record(stub_source_data)
+        candidates = service.get_record_matches(stub_source_data)
         assert len(candidates) == 1
         assert candidates[0] == worldcat.UpgradeItem(
             id=stub_source_data.id,

@@ -18,6 +18,6 @@ class MatchSierraRecords2Worldcat:
         out = []
         matcher = oclc_matcher.WorldcatMatcher(fetcher)
         for record in source_data:
-            matched = matcher.match_record(source=record)
+            matched = matcher.get_record_matches(source=record)
             out.append(matched)
         return [i.__dict__ for i in out]
