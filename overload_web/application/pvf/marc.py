@@ -117,23 +117,19 @@ class BibUpdater:
         )
 
     @staticmethod
-    def update_sel_record(
+    def get_sel_updates(
         record: bibs.DomainBib,
-        engine: ports.MarcUpdateEnginePort,
+        config: Any,
+        command_tag: Any,
         template_data: dict[str, Any],
-    ) -> None:
+    ) -> list:
         """Update and add MARC fields to sel bib record"""
-        bib = engine.create_bib_from_domain(record=record)
-        updates = cataloging_rules.SelectionUpdates.field_list(
+        return cataloging_rules.SelectionUpdates.field_list(
             record=record,
-            context=engine.config,
-            format=template_data.get("format"),
-            command_tag=engine.get_command_tag_field(bib),
+            context=config,
             template_data=template_data,
+            command_tag=command_tag,
         )
-        engine.update_fields(field_updates=updates, bib=bib)
-        bib.leader = cataloging_rules.FieldRules.update_leader(bib.leader)
-        record.binary_data = bib.as_marc()
 
     @staticmethod
     def update_record(

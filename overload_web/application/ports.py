@@ -178,6 +178,10 @@ class MarcUpdateEnginePort(Protocol[U, V]):
 
     """Get the Sierra command tag from a bib record if present."""
 
+    def get_command_tag(self, bib: V) -> Any | None: ...  # pragma: no branch
+
+    """Get the Sierra command tag from a bib record if present."""
+
     def update_fields(
         self, field_updates: list[Any], bib: V
     ) -> None: ...  # pragma:no branch

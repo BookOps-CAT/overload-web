@@ -51,6 +51,7 @@ class DomainBib:
         barcodes: list[str] = [],
         bib_id: str | None = None,
         branch_call_number: str | None = None,
+        command_tag: str | None = None,
         control_number: str | None = None,
         isbn: str | None = None,
         oclc_number: str | list[str] | None = None,
@@ -84,6 +85,8 @@ class DomainBib:
                 The record's sierra bib ID as a string.
             branch_call_number:
                 The branch call number for the record, if present.
+            command_tag:
+                The command tag from an incoming record if present.
             control_number:
                 The record's control number as a string, if present.
             isbn:
@@ -112,6 +115,7 @@ class DomainBib:
         self.binary_data = binary_data
         self.branch_call_number = branch_call_number
         self.collection = context.Collection(str(collection).upper())
+        self.command_tag = command_tag
         self.control_number = control_number
         self.isbn = isbn
         self.library = context.LibrarySystem(library)
@@ -258,10 +262,10 @@ class MatchAnalysis:
         classified: ClassifiedCandidates,
         resource_id: str | None,
         target_bib_id: str | None,
+        vendor: str | None,
         target_call_no: str | None = None,
         target_title: str | None = None,
         updated_by_vendor: bool = False,
-        vendor: str | None = "UNKNOWN",
     ) -> None:
         self.action = action
         self.call_number = call_number

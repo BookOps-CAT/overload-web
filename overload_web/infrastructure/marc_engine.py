@@ -73,6 +73,15 @@ class MarcUpdateEngine:
         """Create a `bookops_marc.Bib` object from a `DomainBib` object"""
         return Bib(data=record.binary_data, library=record.library)  # type: ignore
 
+    def get_command_tag(self, record: DomainBibProtocol) -> str | None:
+        bib = Bib(data=record.binary_data, library=record.library)  # type: ignore
+        for field in bib.get_fields("949"):
+            if field.indicators == Indicators(" ", " ") and field.get(
+                "a", ""
+            ).startswith("*"):
+                return field.get("a", "")
+        return None
+
     def get_command_tag_field(self, bib: Bib) -> Field | None:
         for field in bib.get_fields("949"):
             if field.indicators == Indicators(" ", " ") and field.get(
@@ -96,10 +105,10 @@ class MarcUpdateEngine:
             None. The record's fields are updated in place.
         """
         for update in field_updates:
-            if update.delete:
+            if update.delete_tag:
                 bib.remove_fields(update.tag)
-            if update.original:
-                bib.remove_field(update.original)
+            if update.delete_original:
+                bib.remove_field(self.get_command_tag_field(bib))
             bib.add_ordered_field(
                 Field(
                     tag=update.tag,

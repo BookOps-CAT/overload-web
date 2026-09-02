@@ -26,8 +26,8 @@ class ProcessAcquisitionsRecords:
         fetcher: ports.BibFetcher,
         marc_engine: ports.MarcUpdateEnginePort,
         marc_parser: ports.MarcParsingEnginePort,
-        matchpoints: dict[str, str],
         marc_reader: ports.ReaderWriter,
+        matchpoints: dict[str, str],
         repo: ports.SqlRepositoryProtocol,
         template_data: dict[str, Any],
     ) -> dict[str, Any]:
@@ -47,14 +47,14 @@ class ProcessAcquisitionsRecords:
                 a `ports.MarcEnginePort` object used by the command.
             marc_parser:
                 a `ports.MarcParsingEnginePort` object used by the command.
-            matchpoints:
-                A dictionary containing matchpoints to be used in matching records.
             marc_reader:
                 a `ports.ReaderWriter` object used by the command.
+            matchpoints:
+                A dictionary containing matchpoints to be used in matching records.
             repo:
                 a `ports.SqlRepositoryProtocol` object used by the command.
             template_data:
-                Order template data as a dictionary.
+                order template data as a dictionary.
         Returns:
             A dictionary representing the processed files that were saved as a
             `ProcessedFileBatch` object in the db.
@@ -102,10 +102,10 @@ class ProcessCatalogingRecords:
     @staticmethod
     def execute(
         batches: dict[str, bytes],
+        fetcher: ports.BibFetcher,
         marc_engine: ports.MarcUpdateEnginePort,
         marc_parser: ports.MarcParsingEnginePort,
         marc_reader: ports.ReaderWriter,
-        fetcher: ports.BibFetcher,
         repo: ports.SqlRepositoryProtocol,
     ) -> dict[str, Any]:
         """
@@ -124,10 +124,10 @@ class ProcessCatalogingRecords:
                 a `ports.MarcEnginePort` object used by the command.
             marc_parser:
                 a `ports.MarcParsingEnginePort` object used by the command.
-            repo:
-                a `ports.SqlRepositoryProtocol` object used by the command.
             marc_reader:
                 a `ports.ReaderWriter` object used by the command.
+            repo:
+                a `ports.SqlRepositoryProtocol` object used by the command.
         Returns:
             A dictionary representing the processed files that were saved as a
             `ProcessedFileBatch` object in the db.
@@ -239,18 +239,15 @@ class ProcessSelectionRecords:
                 matches = matcher.match_order_record(bib, matchpoints=matchpoints)
                 analysis = bib.analyze_matches(candidates=matches)
                 bib.apply_match(analysis)
-                marc.BibUpdater.update_sel_record(
-                    record=bib, template_data=template_data, engine=marc_engine
+                update_fields = marc.BibUpdater.get_sel_updates(
+                    record=bib,
+                    config=marc_engine.config,
+                    template_data=template_data,
+                    command_tag=marc_engine.get_command_tag(bib),
                 )
-                # update_fields = marc.BibUpdater.get_sel_updates(
-                #     bib,
-                #     config=marc_engine.config,
-                #     template_data=template_data,
-                #     command_tag=marc_engine.get_command_tag_field(bib=bib),
-                # )
-                # marc.BibUpdater.update_record(
-                #     bib, engine=marc_engine, updates=update_fields
-                # )
+                marc.BibUpdater.update_record(
+                    bib, engine=marc_engine, updates=update_fields
+                )
                 report_data.append(analysis.to_dict())
             processed = bibs.ProcessedFile(
                 file_name=file_name, records=marc_reader.write(records)
