@@ -59,9 +59,7 @@ class SelectionUpdates:
         order_mapping: dict[str, Any],
         record: bibs.DomainBib,
         template_data: dict[str, Any],
-        command_tag: Any | None = None,
         default_loc: str | None = None,
-        format: str | None = None,
     ) -> list[MarcFieldUpdateValues]:
         updates: list[Any] = []
         record.apply_order_template(template_data)
@@ -70,7 +68,9 @@ class SelectionUpdates:
         )
         updates.append(
             FieldRules.add_command_tag(
-                command_tag=command_tag, format=format, default_loc=default_loc
+                fields=record.parsed_fields,
+                format=template_data.get("format"),
+                default_loc=default_loc,
             )
         )
         updates.append(FieldRules.add_bib_id(record=record, tag=bib_id_tag))
@@ -82,8 +82,7 @@ class SelectionUpdates:
 @dataclass
 class TargetFieldCriteria:
     tag: str
-    ind1: str
-    ind2: str
+    indicators: tuple[str, str]
     subfield_code: str
     subfield_starts_with: str | None = None
 
@@ -118,50 +117,73 @@ class FieldRules:
 
     @staticmethod
     def add_command_tag(
-        format: str | None, default_loc: str | None, command_tag: str | None
+        format: str | None, default_loc: str | None, fields: list[bibs.ParsedField]
     ) -> MarcFieldUpdateValues | None:
         """Creates a new or updated command tag field."""
         if not format and not default_loc:
             return None
+        command_tag: str | None = None
+        for field in fields:
+            if field.tag == "949" and field.indicators == (" ", " "):
+                for subfield in field.subfields:
+                    if subfield.code == "a" and subfield.value.startswith("*"):
+                        command_tag = subfield.value.strip()
+                        if "bn=" in command_tag:
+                            return None
+                        else:
+                            break
         if not command_tag:
-            if format:
-                command = f"*b2={format};"
-                if default_loc:
-                    command = f"*b2={format};bn={default_loc};"
-                else:
-                    command = f"*b2={format};"
+            if not format:
+                command_tag = f"*bn={default_loc};"
+            elif format and not default_loc:
+                command_tag = f"*b2={format};"
             else:
-                command = f"*bn={default_loc};"
+                command_tag = f"*b2={format};bn={default_loc};"
             return MarcFieldUpdateValues(
                 tag="949",
                 ind1=" ",
                 ind2=" ",
-                subfields=[{"code": "a", "value": command}],
+                subfields=[{"code": "a", "value": command_tag}],
             )
-        if not default_loc:
+        if command_tag and not default_loc:
             return None
-        command = command_tag.strip()
-        if "bn=" in command:
-            return None
-        target_to_delete = TargetFieldCriteria(
-            tag="949", ind1=" ", ind2=" ", subfield_code="a", subfield_starts_with="*"
+        return MarcFieldUpdateValues(
+            tag="949",
+            ind1=" ",
+            ind2=" ",
+            subfields=[
+                {
+                    "code": "a",
+                    "value": f"{command_tag.removesuffix(';')};bn={default_loc};",
+                }
+            ],
+            target_to_delete=TargetFieldCriteria(
+                tag="949",
+                indicators=(" ", " "),
+                subfield_code="a",
+                subfield_starts_with="*",
+            ),
         )
-        if "bn=" not in command and command[-1] == ";":
-            return MarcFieldUpdateValues(
-                tag="949",
-                ind1=" ",
-                ind2=" ",
-                subfields=[{"code": "a", "value": f"{command}bn={default_loc};"}],
-                target_to_delete=target_to_delete,
-            )
-        else:
-            return MarcFieldUpdateValues(
-                tag="949",
-                ind1=" ",
-                ind2=" ",
-                subfields=[{"code": "a", "value": f"{command};bn={default_loc};"}],
-                target_to_delete=target_to_delete,
-            )
+
+    @staticmethod
+    def add_item_fields(
+        items: list[bibs.ParsedField], ind2: str, tag: str
+    ) -> list[MarcFieldUpdateValues]:
+        """Creates list of new item records to add to a record"""
+        new_items = []
+        for item in items:
+            if item.indicators == (" ", ind2):
+                new_items.append(
+                    MarcFieldUpdateValues(
+                        tag=tag,
+                        ind1=" ",
+                        ind2=ind2,
+                        subfields=[
+                            {"code": i.code, "value": i.value} for i in item.subfields
+                        ],
+                    )
+                )
+        return new_items
 
     @staticmethod
     def add_vendor_fields(record: bibs.DomainBib) -> list[MarcFieldUpdateValues]:

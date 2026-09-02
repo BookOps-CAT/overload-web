@@ -41,39 +41,21 @@ class DomainBibProtocol(Protocol):
 class MarcUpdateEngine:
     """Interacts with binary MARC data using `bookops_marc`."""
 
-    def create_bib_from_domain(self, record: DomainBibProtocol) -> Bib:
-        """Create a `bookops_marc.Bib` object from a `DomainBib` object"""
-        return Bib(data=record.binary_data, library=record.library)  # type: ignore
-
-    def get_command_tag(self, record: DomainBibProtocol) -> str | None:
-        bib = Bib(data=record.binary_data, library=record.library)  # type: ignore
-        for field in bib.get_fields("949"):
-            if field.indicators == Indicators(" ", " ") and field.get(
-                "a", ""
-            ).startswith("*"):
-                return field.get("a", "")
-        return None
-
-    def get_command_tag_field(self, bib: Bib) -> Field | None:
-        for field in bib.get_fields("949"):
-            if field.indicators == Indicators(" ", " ") and field.get(
-                "a", ""
-            ).startswith("*"):
+    def _find_specific_field(self, bib: Bib, criteria: Any) -> Field | None:
+        """Find a field based on generic domain criteria."""
+        for field in bib.get_fields(criteria.tag):
+            subfield = field.get(criteria.subfield_code, "")
+            if (
+                (field.indicator1, field.indicator2) == criteria.indicators
+                and criteria.subfield_starts_with
+                and subfield.startswith(criteria.subfield_starts_with)
+            ):
                 return field
         return None
 
-    def _find_specific_field(self, bib: Bib, criteria: Any) -> Field | None:
-        """Helper to find a field based on generic domain criteria."""
-        for field in bib.get_fields(criteria.tag):
-            if field.indicator1 != criteria.ind1 or field.indicator2 != criteria.ind2:
-                continue
-            sf_val = field.get(criteria.subfield_code, "")
-            if criteria.subfield_starts_with and not sf_val.startswith(
-                criteria.subfield_starts_with
-            ):
-                continue
-            return field
-        return None
+    def create_bib_from_domain(self, record: DomainBibProtocol) -> Bib:
+        """Create a `bookops_marc.Bib` object from a `DomainBib` object"""
+        return Bib(data=record.binary_data, library=record.library)  # type: ignore
 
     def update_fields(self, field_updates: list[Any], bib: Bib) -> None:
         """
@@ -92,7 +74,7 @@ class MarcUpdateEngine:
         for update in field_updates:
             if update.delete_all_by_tag:
                 bib.remove_fields(update.delete_all_by_tag)
-            if update.target_to_delete:
+            if update.target_to_delete is not None:
                 to_delete = self._find_specific_field(bib, update.target_to_delete)
                 bib.remove_field(to_delete)
             bib.add_ordered_field(
@@ -206,6 +188,22 @@ class MarcParsingEngine:
             # most attrs have 1:1 mapping between `Bib` and `DomainBib`
             else:
                 out[k] = getattr(obj, v)
+        parsed_fields: list[dict[str, Any]] = []
+        for field in obj.get_fields():
+            if field.is_control_field():
+                parsed_fields.append({"tag": field.tag, "value": field.data})
+            else:
+                parsed_fields.append(
+                    {
+                        "tag": field.tag,
+                        "indicators": (field.indicator1, field.indicator2),
+                        "subfields": [
+                            {"code": sf.code, "value": sf.value}
+                            for sf in field.subfields
+                        ],
+                    }
+                )
+        out["parsed_fields"] = parsed_fields
         return out
 
     def map_order_data(self, obj: Order) -> dict[str, Any]:

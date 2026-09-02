@@ -138,8 +138,6 @@ class RecordEvaluator:
     ) -> list[UpgradeItem]:
         out = []
         for response in responses:
-            print(source.update_datetime)
-            print(response.update_datetime)
             if (
                 source.update_datetime
                 and response.update_datetime

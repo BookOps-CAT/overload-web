@@ -166,6 +166,10 @@ class MarcParsingEnginePort(Protocol):
 
     """Map an order to a dictionary following a set of rules."""
 
+    def parse_fields(self, obj: V) -> list[dict[str, Any]]: ...  # pragma: no branch
+
+    """Map all marc fields to a list of dictionarys."""
+
     def write(self, records: list[U]) -> bytes: ...  # pragma:no branch
 
     """Write `DomainBib` objects to single binary object."""
@@ -181,14 +185,6 @@ class MarcUpdateEnginePort(Protocol[U, V]):
     def create_bib_from_domain(self, record: U) -> V: ...  # pragma:no branch
 
     """Create a `bookops_marc.Bib` object from a `DomainBib` object"""
-
-    def get_command_tag_field(self, bib: V) -> Any | None: ...  # pragma: no branch
-
-    """Get the Sierra command tag from a bib record if present."""
-
-    def get_command_tag(self, bib: V) -> Any | None: ...  # pragma: no branch
-
-    """Get the Sierra command tag from a bib record if present."""
 
     def update_fields(
         self, field_updates: list[Any], bib: V

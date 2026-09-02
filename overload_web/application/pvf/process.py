@@ -1,7 +1,6 @@
 """Application serivce commands for the process vendor file service."""
 
 import datetime
-import itertools
 import logging
 from typing import Any
 
@@ -10,11 +9,6 @@ from overload_web.application.pvf import marc, match_service
 from overload_web.domain.pvf import bibs
 
 logger = logging.getLogger(__name__)
-
-
-def extract_nested_list(list_items: list[Any]) -> list[str]:
-    """Extract all barcodes from a list of `DomainBib` objects"""
-    return list(itertools.chain.from_iterable(list_items))
 
 
 class ProcessAcquisitionsRecords:
@@ -71,8 +65,7 @@ class ProcessAcquisitionsRecords:
             records = marc.BibParser.parse_marc_data(
                 parser=marc_parser, data=data, vendor=vendor
             )
-            original_barcodes = extract_nested_list([i.barcodes for i in records])
-            marc.BarcodeValidator.validate_unique(original_barcodes)
+            bibs.BarcodeValidator.validate_unique(records=records)
             for bib in records:
                 matches = matcher.match_order_record(bib, matchpoints=matchpoints)
                 analysis = bib.analyze_matches(candidates=matches)
@@ -134,8 +127,7 @@ class ProcessCatalogingRecords:
             data=content, marc_reader=marc_parser
         )
         records = marc.BibParser.parse_marc_data(parser=marc_parser, data=data)
-        original_barcodes = extract_nested_list([i.barcodes for i in records])
-        marc.BarcodeValidator.validate_unique(original_barcodes)
+        original_barcodes = bibs.BarcodeValidator.validate_unique(records=records)
         report_data = []
         matcher = match_service.BibMatcher(fetcher)
         updater = marc.BibUpdater(**marc_update_rules)
@@ -146,9 +138,8 @@ class ProcessCatalogingRecords:
             update_fields = updater.get_cat_updates(bib)
             updater.update_record(bib, engine=marc_updater, updates=update_fields)
             report_data.append(analysis.to_dict())
-        processed_barcodes = extract_nested_list([i.barcodes for i in records])
-        missing_barcodes = marc.BarcodeValidator.validate_preserved(
-            processed_barcodes=processed_barcodes, original_barcodes=original_barcodes
+        missing_barcodes = bibs.BarcodeValidator.validate_preserved(
+            processed_records=records, original_barcodes=original_barcodes
         )
         deduplicated = marc.BibDeduplicator.deduplicate(
             records=records, engine=marc_updater
@@ -223,16 +214,13 @@ class ProcessSelectionRecords:
             records = marc.BibParser.parse_marc_data(
                 parser=marc_parser, data=data, vendor=vendor
             )
-            original_barcodes = extract_nested_list([i.barcodes for i in records])
-            marc.BarcodeValidator.validate_unique(original_barcodes)
+            bibs.BarcodeValidator.validate_unique(records=records)
             for bib in records:
                 matches = matcher.match_order_record(bib, matchpoints=matchpoints)
                 analysis = bib.analyze_matches(candidates=matches)
                 bib.apply_match(analysis)
                 update_fields = updater.get_sel_updates(
-                    record=bib,
-                    template_data=template_data,
-                    command_tag=marc_updater.get_command_tag(bib),
+                    record=bib, template_data=template_data
                 )
                 updater.update_record(bib, engine=marc_updater, updates=update_fields)
                 report_data.append(analysis.to_dict())

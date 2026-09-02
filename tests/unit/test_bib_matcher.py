@@ -17,6 +17,7 @@ def stub_domain_bib(library, collection):
         record_type="acq",
         binary_data=b"",
         control_number="12345",
+        parsed_fields=[],
     )
 
 

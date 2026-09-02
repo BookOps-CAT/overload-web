@@ -139,7 +139,6 @@ class TestApp:
             "/files/remote/select?vendor=foo",
             data={"remote_file": "bar.mrc", "workflow_id": 1},
         )
-        print(response.content)
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/files/remote/select?vendor=foo"
         assert sorted(list(response.context.keys())) == sorted(["files", "request"])
@@ -153,7 +152,6 @@ class TestApp:
             data={"workflow_id": 1, "vendor": None},
             files={"file": ("baz.mrc", b"", "text/plain")},
         )
-        print(response.content)
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/files/upload"
         assert sorted(list(response.context.keys())) == sorted(["files", "request"])

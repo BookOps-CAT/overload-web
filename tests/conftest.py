@@ -364,7 +364,7 @@ def stub_bib(library, collection) -> Bib:
 
 
 @pytest.fixture
-def acq_bib(collection, library):
+def acq_bib(collection, library, stub_bib):
     order = bibs.Order(
         locations=["agj0y"],
         audience=["j"],
@@ -392,101 +392,7 @@ def acq_bib(collection, library):
         vendor_title_no=None,
         blanket_po="baz",
     )
-    bib = Bib()
-    bib.leader = "00000cam  2200517 i 4500"
-    bib.library = library
-    bib.add_field(Field(tag="005", data="20200101010000.0"))
-    bib.add_field(
-        Field(
-            tag="020",
-            indicators=Indicators(" ", " "),
-            subfields=[Subfield(code="a", value="9781234567890")],
-        )
-    )
-    if library == "bpl":
-        bib.add_field(
-            Field(
-                tag="037",
-                indicators=Indicators(" ", " "),
-                subfields=[
-                    Subfield(code="a", value="123"),
-                    Subfield(code="b", value="OverDrive, Inc."),
-                ],
-            )
-        )
-        bib.add_field(
-            Field(
-                tag="099",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value="Foo")],
-            )
-        )
-    else:
-        if collection == "BL":
-            bib.add_field(
-                Field(
-                    tag="091",
-                    indicators=Indicators(" ", " "),
-                    subfields=[Subfield(code="a", value="Foo")],
-                )
-            )
-        else:
-            bib.add_field(
-                Field(
-                    tag="852",
-                    indicators=Indicators("8", " "),
-                    subfields=[Subfield(code="a", value="Foo")],
-                )
-            )
-        bib.add_field(
-            Field(
-                tag="910",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value=collection)],
-            )
-        )
-    bib.add_field(
-        Field(
-            tag="949",
-            indicators=Indicators(" ", "1"),
-            subfields=[Subfield(code="i", value="333331234567890")],
-        )
-    )
-    bib.add_field(
-        Field(
-            tag="960",
-            indicators=Indicators(" ", " "),
-            subfields=[
-                Subfield(code="c", value=order.order_code_1),
-                Subfield(code="d", value=order.order_code_2),
-                Subfield(code="e", value=order.order_code_3),
-                Subfield(code="f", value=order.order_code_4),
-                Subfield(code="g", value=order.format),
-                Subfield(code="i", value=order.order_type),
-                Subfield(code="m", value=order.status),
-                Subfield(code="o", value=order.copies),
-                Subfield(code="q", value=order.create_date),
-                Subfield(code="s", value=order.price),
-                Subfield(code="t", value=order.locations[0]),
-                Subfield(code="u", value=order.fund),
-                Subfield(code="v", value=order.vendor_code),
-                Subfield(code="w", value=order.lang),
-                Subfield(code="x", value=order.country),
-                Subfield(code="z", value=order.order_id),
-            ],
-        )
-    )
-    bib.add_field(
-        Field(
-            tag="961",
-            indicators=Indicators(" ", " "),
-            subfields=[
-                Subfield(code="d", value=order.internal_note),
-                Subfield(code="f", value=order.selector_note),
-                Subfield(code="m", value=order.blanket_po),
-            ],
-        )
-    )
+    bib = copy.deepcopy(stub_bib)
     domain_bib = bibs.DomainBib(
         library=library,
         collection=collection,
@@ -500,6 +406,13 @@ def acq_bib(collection, library):
         barcodes=["333331234567890"],
         orders=[order],
         update_date="20200101010000.0",
+        parsed_fields=[
+            bibs.ParsedField(
+                tag="020",
+                indicators=(" ", " "),
+                subfields=[bibs.ParsedSubfield(code="a", value="9781234567890")],
+            )
+        ],
     )
     return domain_bib
 
@@ -590,6 +503,13 @@ def full_bib(library, collection):
                 "secondary_matchpoint": "control_number",
             },
         ),
+        parsed_fields=[
+            bibs.ParsedField(
+                tag="020",
+                indicators=(" ", " "),
+                subfields=[bibs.ParsedSubfield(code="a", value="9781234567890")],
+            )
+        ],
     )
     return domain_bib
 

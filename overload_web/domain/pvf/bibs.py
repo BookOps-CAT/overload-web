@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import datetime
+import itertools
 import logging
+from collections import Counter
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Protocol
@@ -46,6 +48,7 @@ class DomainBib:
         binary_data: bytes,
         collection: context.Collection | str | None,
         library: context.LibrarySystem | str,
+        parsed_fields: list[ParsedField],
         record_type: context.RecordType | str,
         title: str,
         barcodes: list[str] = [],
@@ -121,6 +124,7 @@ class DomainBib:
         self.library = context.LibrarySystem(library)
         self.oclc_number = oclc_number
         self.orders = orders
+        self.parsed_fields = parsed_fields
         self.research_call_number = research_call_number
         self.record_type = context.RecordType(record_type)
         self.title = title
@@ -389,6 +393,31 @@ class Order:
         return out
 
 
+@dataclass(frozen=True)
+class ParsedSubfield:
+    """A pure Python representation of a MARC subfield."""
+
+    code: str
+    value: str
+
+
+class ParsedField:
+    def __init__(
+        self,
+        tag: str,
+        indicators: tuple[str, str] | None = None,
+        subfields: list[ParsedSubfield] | list[dict[str, str]] = [],
+        value: str | None = None,
+    ):
+        self.tag = tag
+        self.indicators = indicators
+        self.subfields = [
+            i if isinstance(i, ParsedSubfield) else ParsedSubfield(**i)
+            for i in subfields
+        ]
+        self.value = value
+
+
 @dataclass
 class ProcessedFile:
     """A value object representing a processed file of MARC records"""
@@ -633,3 +662,36 @@ class SelectionMatchAnalyzer(MatchAnalyzer):
             classified=candidates,
             vendor=record.vendor,
         )
+
+
+class BarcodeValidator:
+    @staticmethod
+    def validate_unique(records: list[DomainBib]) -> list[str]:
+        """Confirm barcodes in a file are all unique."""
+        barcodes = list(itertools.chain.from_iterable([i.barcodes for i in records]))
+        barcode_counter = Counter(barcodes)
+        dupe_barcodes = [i for i, count in barcode_counter.items() if count > 1]
+        if dupe_barcodes:
+            raise ValueError(f"Duplicate barcodes found in file: {dupe_barcodes}")
+        return barcodes
+
+    @classmethod
+    def validate_preserved(
+        cls, processed_records: list[DomainBib], original_barcodes: list[str]
+    ) -> list[str]:
+        """Confirm barcodes extracted from a file are present in processed records"""
+        missing_barcodes = set()
+        processed_barcodes = list(
+            itertools.chain.from_iterable([i.barcodes for i in processed_records])
+        )
+        for barcode in original_barcodes:
+            if barcode not in processed_barcodes:
+                missing_barcodes.add(barcode)
+        missing_barcodes = set(original_barcodes) - set(processed_barcodes)
+        valid = len(missing_barcodes) == 0
+        logger.debug(
+            f"Integrity validation: {valid}, missing_barcodes: {list(missing_barcodes)}"
+        )
+        if not valid:
+            logger.error(f"Barcodes integrity error: {list(missing_barcodes)}")
+        return list(missing_barcodes)

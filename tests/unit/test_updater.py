@@ -22,6 +22,13 @@ def bib_with_command_tag(sel_bib):
             )
         )
         bib.binary_data = record.as_marc()
+        bib.parsed_fields.append(
+            bibs.ParsedField(
+                tag="949",
+                indicators=(" ", " "),
+                subfields=[bibs.ParsedSubfield(code="a", value=value)],
+            )
+        )
         return bib
 
     return create_match_result
@@ -245,9 +252,7 @@ class TestUpdaterSelRecords:
         original_orders = copy.deepcopy(sel_bib.orders)
         updater = marc.BibUpdater(**update_rules)
         updates = updater.get_sel_updates(
-            sel_bib,
-            template_data={"name": "Foo", "order_code_1": "b", "format": "a"},
-            command_tag=self.ENGINE.get_command_tag(sel_bib),
+            sel_bib, template_data={"name": "Foo", "order_code_1": "b", "format": "a"}
         )
         updater.update_record(sel_bib, engine=self.ENGINE, updates=updates)
         assert [i.order_code_1 for i in original_orders] == ["j"]
@@ -274,11 +279,7 @@ class TestUpdaterSelRecords:
         input_bib = bib_with_command_tag(original)
         original_bib = Bib(input_bib.binary_data, library=input_bib.library)
         updater = marc.BibUpdater(**update_rules)
-        updates = updater.get_sel_updates(
-            input_bib,
-            template_data={},
-            command_tag=self.ENGINE.get_command_tag(input_bib),
-        )
+        updates = updater.get_sel_updates(input_bib, template_data={})
         updater.update_record(input_bib, engine=self.ENGINE, updates=updates)
         updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
         assert [i.value() for i in original_bib.get_fields("949")] == [
@@ -298,27 +299,14 @@ class TestUpdaterSelRecords:
             ("bpl", "NONE", "sel", "*b2=a;"),
         ],
     )
-    def test_update_check_command_tag(self, update_rules, sel_bib, output):
+    def test_update_check_command_tag(self, update_rules, bib_with_command_tag, output):
         """Checks for existing command tag based on format. Updates with default location."""
-        bib = copy.deepcopy(sel_bib)
-        record = Bib(sel_bib.binary_data, library=sel_bib.library)
-        record.add_ordered_field(
-            Field(
-                tag="949",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value="*b2=a;")],
-            )
-        )
-        bib.binary_data = record.as_marc()
-        original_bib = Bib(bib.binary_data, library=bib.library)
+        input_bib = bib_with_command_tag("*b2=a;")
+        original_bib = Bib(input_bib.binary_data, library=input_bib.library)
         updater = marc.BibUpdater(**update_rules)
-        updates = updater.get_sel_updates(
-            bib,
-            template_data={"format": "a"},
-            command_tag=self.ENGINE.get_command_tag(bib),
-        )
-        updater.update_record(bib, engine=self.ENGINE, updates=updates)
-        updated_bib = Bib(bib.binary_data, library=bib.library)
+        updates = updater.get_sel_updates(input_bib, template_data={"format": "a"})
+        updater.update_record(input_bib, engine=self.ENGINE, updates=updates)
+        updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
         assert len(updated_bib.get_fields("949")) == 2
         assert len(original_bib.get_fields("949")) == 2
         assert [i.value() for i in original_bib.get_fields("949")] == [
@@ -344,9 +332,7 @@ class TestUpdaterSelRecords:
         """Adds command tag with default location."""
         original_bib = Bib(sel_bib.binary_data, library=sel_bib.library)
         updater = marc.BibUpdater(**update_rules)
-        updates = updater.get_sel_updates(
-            sel_bib, template_data={}, command_tag=self.ENGINE.get_command_tag(sel_bib)
-        )
+        updates = updater.get_sel_updates(sel_bib, template_data={})
         updater.update_record(sel_bib, engine=self.ENGINE, updates=updates)
         updated_bib = Bib(sel_bib.binary_data, library=sel_bib.library)
         assert len(updated_bib.get_fields("949")) == field_count

@@ -125,7 +125,7 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_validate_preserved(self, full_bib, caplog, record_type):
-        marc.BarcodeValidator.validate_preserved(full_bib.barcodes, ["333331234567890"])
+        bibs.BarcodeValidator.validate_preserved([full_bib], ["333331234567890"])
         assert len(caplog.records) == 1
         assert (
             caplog.records[0].msg == "Integrity validation: True, missing_barcodes: []"
@@ -137,7 +137,7 @@ class TestReviewer:
     def test_validate_preserved_bpl_960_item(
         self, full_bib, caplog, collection, record_type
     ):
-        marc.BarcodeValidator.validate_preserved(full_bib.barcodes, ["333331234567890"])
+        bibs.BarcodeValidator.validate_preserved([full_bib], ["333331234567890"])
         assert len(caplog.records) == 1
         assert (
             caplog.records[0].msg == "Integrity validation: True, missing_barcodes: []"
@@ -150,8 +150,8 @@ class TestReviewer:
     def test_validate_preserved_missing_barcodes(
         self, full_bib, caplog, collection, record_type
     ):
-        marc.BarcodeValidator.validate_preserved(
-            full_bib.barcodes, ["333331234567890", "333330987654321"]
+        bibs.BarcodeValidator.validate_preserved(
+            [full_bib], ["333331234567890", "333330987654321"]
         )
         assert len(caplog.records) == 2
         assert (
