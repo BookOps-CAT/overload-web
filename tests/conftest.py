@@ -14,7 +14,7 @@ from pymarc import Field, Indicators, Subfield
 from overload_web.domain.pvf import bibs, reporting
 from overload_web.domain.shared import sierra_responses
 from overload_web.infrastructure import marc_engine as engine
-from overload_web.infrastructure import oclc, read_marc, sierra_clients
+from overload_web.infrastructure import oclc, sierra_clients
 
 
 @pytest.fixture(scope="session")
@@ -650,22 +650,15 @@ def fake_fetcher_no_matches(monkeypatch):
 
 
 @pytest.fixture
-def engine_config(
-    library, record_type, collection, get_constants
-) -> engine.MarcEngineConfig:
-    return engine.MarcEngineConfig(
-        order_mapping=get_constants["order_mapping"],
-        default_loc=get_constants["default_locations"][library].get(collection),
-        bib_id_tag=get_constants["bib_id_tag"][library],
-        library=library,
-        record_type=record_type,
-        collection=collection,
-    )
-
-
-@pytest.fixture
-def updater_engine(engine_config) -> engine.MarcUpdateEngine:
-    return engine.MarcUpdateEngine(rules=engine_config)
+def update_rules(library, record_type, collection, get_constants) -> dict[str, Any]:
+    return {
+        "order_mapping": get_constants["order_mapping"],
+        "default_loc": get_constants["default_locations"][library].get(collection),
+        "bib_id_tag": get_constants["bib_id_tag"][library],
+        "library": library,
+        "record_type": record_type,
+        "collection": collection,
+    }
 
 
 @pytest.fixture
@@ -680,11 +673,6 @@ def parser_engine(
         bib_mapping=parsing_rules["bib_mapping"],
         vendor_mapping=parsing_rules["vendor_rules"],
     )
-
-
-@pytest.fixture
-def marc_reader_writer(library) -> read_marc.MarcReaderWriter:
-    return read_marc.MarcReaderWriter(library=library)
 
 
 class MockCreds:

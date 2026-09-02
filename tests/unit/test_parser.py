@@ -81,19 +81,10 @@ class TestParser:
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
-    def test_parse_full(
-        self,
-        parser_engine,
-        marc_reader_writer,
-        stub_bib,
-        collection,
-        record_type,
-        caplog,
-    ):
-        reader = marc.BibReader.read_marc_data(
-            stub_bib.as_marc(), marc_reader=marc_reader_writer
+    def test_parse_full(self, parser_engine, stub_bib, collection, record_type, caplog):
+        records = marc.BibParser.parse_marc_data(
+            parser=parser_engine, data=stub_bib.as_marc()
         )
-        records = marc.BibParser.parse_marc_data(parser=parser_engine, reader=reader)
         assert len(records) == 1
         assert records[0].library == parser_engine.library
         assert records[0].collection == collection
@@ -111,7 +102,7 @@ class TestParser:
         ],
     )
     def test_parse_full_with_vendor_data(
-        self, parser_engine, marc_reader_writer, stub_bib, tag, value, caplog
+        self, parser_engine, stub_bib, tag, value, caplog
     ):
         stub_bib.add_field(
             Field(
@@ -120,10 +111,9 @@ class TestParser:
                 subfields=[Subfield(code="a", value=value)],
             )
         )
-        reader = marc.BibReader.read_marc_data(
-            stub_bib.as_marc(), marc_reader=marc_reader_writer
+        records = marc.BibParser.parse_marc_data(
+            parser=parser_engine, data=stub_bib.as_marc()
         )
-        records = marc.BibParser.parse_marc_data(parser=parser_engine, reader=reader)
         assert len(records) == 1
         assert records[0].vendor_info is not None
         assert records[0].vendor_info.name == "BT SERIES"
@@ -140,18 +130,11 @@ class TestParser:
         ],
     )
     def test_parse_order_level(
-        self,
-        parser_engine,
-        marc_reader_writer,
-        stub_bib,
-        collection,
-        record_type,
-        caplog,
+        self, parser_engine, stub_bib, collection, record_type, caplog
     ):
-        reader = marc.BibReader.read_marc_data(
-            stub_bib.as_marc(), marc_reader=marc_reader_writer
+        records = marc.BibParser.parse_marc_data(
+            parser=parser_engine, data=stub_bib.as_marc()
         )
-        records = marc.BibParser.parse_marc_data(parser=parser_engine, reader=reader)
         assert len(records) == 1
         assert records[0].library == parser_engine.library
         assert records[0].collection == collection
@@ -174,12 +157,11 @@ class TestParser:
             ("bpl", "NONE", "sel"),
         ],
     )
-    def test_parse_update_datetime(self, parser_engine, marc_reader_writer, stub_bib):
+    def test_parse_update_datetime(self, parser_engine, stub_bib):
         stub_bib.add_field(Field(tag="005", data="20200101010000.0"))
-        reader = marc.BibReader.read_marc_data(
-            stub_bib.as_marc(), marc_reader=marc_reader_writer
+        records = marc.BibParser.parse_marc_data(
+            parser=parser_engine, data=stub_bib.as_marc()
         )
-        records = marc.BibParser.parse_marc_data(parser=parser_engine, reader=reader)
         assert len(records) == 1
         assert records[0].update_date == "20200101010000.0"
         assert records[0].update_datetime == datetime.datetime(2020, 1, 1, 1, 0, 0, 0)

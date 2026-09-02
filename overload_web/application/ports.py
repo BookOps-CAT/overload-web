@@ -146,6 +146,10 @@ class MarcParsingEnginePort(Protocol):
     order_mapping: dict[str, Any]
     vendor_rules: dict[str, Any]
 
+    def get_reader(self, data: bytes) -> Iterator: ...  # pragma: no branch
+
+    """Instantiate an object that can read MARC binary as an iterator."""
+
     def match_vendor_tags_from_bib(
         self, record: V, tags: dict[str, dict[str, str]]
     ) -> bool: ...  # pragma:no branch
@@ -161,6 +165,10 @@ class MarcParsingEnginePort(Protocol):
     def map_order_data(self, obj: V) -> dict[str, Any]: ...  # pragma: no branch
 
     """Map an order to a dictionary following a set of rules."""
+
+    def write(self, records: list[U]) -> bytes: ...  # pragma:no branch
+
+    """Write `DomainBib` objects to single binary object."""
 
 
 @runtime_checkable
@@ -264,18 +272,3 @@ class OCLCBibFetcher(Protocol):
     ) -> dict[str, Any]: ...  # pragma: no branch
 
     """Retrieve for full MARC record as a json object for a given ID."""
-
-
-@runtime_checkable
-class ReaderWriter(Protocol):
-    """Interface for interactions with MARC data."""
-
-    library: str
-
-    def get_reader(self, data: bytes) -> Iterator: ...  # pragma: no branch
-
-    """Instantiate an object that can read MARC binary as an iterator."""
-
-    def write(self, records: list[U]) -> bytes: ...  # pragma:no branch
-
-    """Write `DomainBib` objects to single binary object."""

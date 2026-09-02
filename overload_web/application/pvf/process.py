@@ -24,9 +24,9 @@ class ProcessAcquisitionsRecords:
     def execute(
         batches: dict[str, bytes],
         fetcher: ports.BibFetcher,
-        marc_engine: ports.MarcUpdateEnginePort,
+        marc_updater: ports.MarcUpdateEnginePort,
         marc_parser: ports.MarcParsingEnginePort,
-        marc_reader: ports.ReaderWriter,
+        marc_update_rules: dict[str, Any],
         matchpoints: dict[str, str],
         repo: ports.SqlRepositoryProtocol,
         template_data: dict[str, Any],
@@ -43,12 +43,12 @@ class ProcessAcquisitionsRecords:
                 a dictionary containing pairs of file names and associated binary data
             fetcher:
                 a `ports.BibFetcher` object used by the command.
-            marc_engine:
-                a `ports.MarcEnginePort` object used by the command.
             marc_parser:
                 a `ports.MarcParsingEnginePort` object used by the command.
-            marc_reader:
-                a `ports.ReaderWriter` object used by the command.
+            marc_updater:
+                a `ports.MarcUpdateEnginePort` object used by the command.
+            marc_update_rules:
+                a dictionary containing cataloging rules for MARC updates.
             matchpoints:
                 A dictionary containing matchpoints to be used in matching records.
             repo:
@@ -64,14 +64,12 @@ class ProcessAcquisitionsRecords:
         file_names = []
         report_data = []
         matcher = match_service.BibMatcher(fetcher)
+        updater = marc.BibUpdater(**marc_update_rules)
         vendor = template_data.get("vendor", "UNKNOWN")
         for file_name, data in batches.items():
             file_names.append(file_name)
-            data_reader = marc.BibReader.read_marc_data(
-                data=data, marc_reader=marc_reader
-            )
             records = marc.BibParser.parse_marc_data(
-                parser=marc_parser, reader=data_reader, vendor=vendor
+                parser=marc_parser, data=data, vendor=vendor
             )
             original_barcodes = extract_nested_list([i.barcodes for i in records])
             marc.BarcodeValidator.validate_unique(original_barcodes)
@@ -79,15 +77,13 @@ class ProcessAcquisitionsRecords:
                 matches = matcher.match_order_record(bib, matchpoints=matchpoints)
                 analysis = bib.analyze_matches(candidates=matches)
                 bib.apply_match(analysis)
-                update_fields = marc.BibUpdater.get_acq_updates(
-                    bib, config=marc_engine.config, template_data=template_data
+                update_fields = updater.get_acq_updates(
+                    bib, template_data=template_data
                 )
-                marc.BibUpdater.update_record(
-                    bib, engine=marc_engine, updates=update_fields
-                )
+                updater.update_record(bib, engine=marc_updater, updates=update_fields)
                 report_data.append(analysis.to_dict())
             processed = bibs.ProcessedFile(
-                file_name=file_name, records=marc_reader.write(records)
+                file_name=file_name, records=marc_parser.write(records)
             )
             out_batches.append(processed)
         processed_batch = bibs.ProcessedFileBatch(
@@ -103,9 +99,9 @@ class ProcessCatalogingRecords:
     def execute(
         batches: dict[str, bytes],
         fetcher: ports.BibFetcher,
-        marc_engine: ports.MarcUpdateEnginePort,
+        marc_updater: ports.MarcUpdateEnginePort,
         marc_parser: ports.MarcParsingEnginePort,
-        marc_reader: ports.ReaderWriter,
+        marc_update_rules: dict[str, Any],
         repo: ports.SqlRepositoryProtocol,
     ) -> dict[str, Any]:
         """
@@ -120,12 +116,12 @@ class ProcessCatalogingRecords:
                 a dictionary containing pairs of file names and associated binary data
             fetcher:
                 a `ports.BibFetcher` object used by the command.
-            marc_engine:
-                a `ports.MarcEnginePort` object used by the command.
             marc_parser:
                 a `ports.MarcParsingEnginePort` object used by the command.
-            marc_reader:
-                a `ports.ReaderWriter` object used by the command.
+            marc_updater:
+                a `ports.MarcUpdateEnginePort` object used by the command.
+            marc_update_rules:
+                a dictionary containing cataloging rules for MARC updates.
             repo:
                 a `ports.SqlRepositoryProtocol` object used by the command.
         Returns:
@@ -135,36 +131,32 @@ class ProcessCatalogingRecords:
         file_names = list(batches.keys())
         content = list(batches.values())
         data = marc.MarcFileMerger.combine_marc_files(
-            data=content, marc_reader=marc_reader
+            data=content, marc_reader=marc_parser
         )
-        data_reader = marc.BibReader.read_marc_data(data=data, marc_reader=marc_reader)
-        records = marc.BibParser.parse_marc_data(parser=marc_parser, reader=data_reader)
+        records = marc.BibParser.parse_marc_data(parser=marc_parser, data=data)
         original_barcodes = extract_nested_list([i.barcodes for i in records])
         marc.BarcodeValidator.validate_unique(original_barcodes)
         report_data = []
         matcher = match_service.BibMatcher(fetcher)
+        updater = marc.BibUpdater(**marc_update_rules)
         for bib in records:
             matches = matcher.match_full_record(bib)
             analysis = bib.analyze_matches(candidates=matches)
             bib.apply_match(analysis)
-            update_fields = marc.BibUpdater.get_cat_updates(
-                bib, config=marc_engine.config
-            )
-            marc.BibUpdater.update_record(
-                bib, engine=marc_engine, updates=update_fields
-            )
+            update_fields = updater.get_cat_updates(bib)
+            updater.update_record(bib, engine=marc_updater, updates=update_fields)
             report_data.append(analysis.to_dict())
         processed_barcodes = extract_nested_list([i.barcodes for i in records])
         missing_barcodes = marc.BarcodeValidator.validate_preserved(
             processed_barcodes=processed_barcodes, original_barcodes=original_barcodes
         )
         deduplicated = marc.BibDeduplicator.deduplicate(
-            records=records, engine=marc_engine
+            records=records, engine=marc_updater
         )
         file_name = datetime.datetime.today().strftime("%y%m%d")
         files = [
             bibs.ProcessedFile(
-                file_name=f"{file_name}-{k}.mrc", records=marc_reader.write(v)
+                file_name=f"{file_name}-{k}.mrc", records=marc_parser.write(v)
             )
             for k, v in deduplicated.items()
         ]
@@ -184,10 +176,10 @@ class ProcessSelectionRecords:
     def execute(
         batches: dict[str, bytes],
         fetcher: ports.BibFetcher,
-        marc_engine: ports.MarcUpdateEnginePort,
+        marc_updater: ports.MarcUpdateEnginePort,
         marc_parser: ports.MarcParsingEnginePort,
         matchpoints: dict[str, str],
-        marc_reader: ports.ReaderWriter,
+        marc_update_rules: dict[str, Any],
         repo: ports.SqlRepositoryProtocol,
         template_data: dict[str, Any],
     ) -> dict[str, Any]:
@@ -203,14 +195,14 @@ class ProcessSelectionRecords:
                 a dictionary containing pairs of file names and associated binary data
             fetcher:
                 a `ports.BibFetcher` object used by the command.
-            marc_engine:
-                a `ports.MarcEnginePort` object used by the command.
             marc_parser:
                 a `ports.MarcParsingEnginePort` object used by the command.
+            marc_updater:
+                a `ports.MarcUpdateEnginePort` object used by the command.
+            marc_update_rules:
+                a dictionary containing cataloging rules for MARC updates.
             matchpoints:
                 A dictionary containing matchpoints to be used in matching records.
-            marc_reader:
-                a `ports.ReaderWriter` object used by the command.
             repo:
                 a `ports.SqlRepositoryProtocol` object used by the command.
             template_data:
@@ -224,14 +216,12 @@ class ProcessSelectionRecords:
         file_names = []
         report_data = []
         matcher = match_service.BibMatcher(fetcher)
+        updater = marc.BibUpdater(**marc_update_rules)
         vendor = template_data.get("vendor", "UNKNOWN")
         for file_name, data in batches.items():
             file_names.append(file_name)
-            data_reader = marc.BibReader.read_marc_data(
-                data=data, marc_reader=marc_reader
-            )
             records = marc.BibParser.parse_marc_data(
-                parser=marc_parser, reader=data_reader, vendor=vendor
+                parser=marc_parser, data=data, vendor=vendor
             )
             original_barcodes = extract_nested_list([i.barcodes for i in records])
             marc.BarcodeValidator.validate_unique(original_barcodes)
@@ -239,18 +229,15 @@ class ProcessSelectionRecords:
                 matches = matcher.match_order_record(bib, matchpoints=matchpoints)
                 analysis = bib.analyze_matches(candidates=matches)
                 bib.apply_match(analysis)
-                update_fields = marc.BibUpdater.get_sel_updates(
+                update_fields = updater.get_sel_updates(
                     record=bib,
-                    config=marc_engine.config,
                     template_data=template_data,
-                    command_tag=marc_engine.get_command_tag(bib),
+                    command_tag=marc_updater.get_command_tag(bib),
                 )
-                marc.BibUpdater.update_record(
-                    bib, engine=marc_engine, updates=update_fields
-                )
+                updater.update_record(bib, engine=marc_updater, updates=update_fields)
                 report_data.append(analysis.to_dict())
             processed = bibs.ProcessedFile(
-                file_name=file_name, records=marc_reader.write(records)
+                file_name=file_name, records=marc_parser.write(records)
             )
             out_batches.append(processed)
         processed_batch = bibs.ProcessedFileBatch(

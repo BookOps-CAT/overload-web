@@ -5,7 +5,7 @@ from __future__ import annotations
 import io
 import logging
 from collections import Counter
-from typing import Any, Iterator
+from typing import Any
 
 from overload_web.application import ports
 from overload_web.domain.pvf import bibs, cataloging_rules
@@ -64,22 +64,14 @@ class BibDeduplicator:
         return {"NEW": merge, "DUP": new, "DEDUPED": deduped}
 
 
-class BibReader:
-    @staticmethod
-    def read_marc_data(data: bytes, marc_reader: ports.ReaderWriter) -> Iterator:
-        """Parse MARC binary into an iterator."""
-        return marc_reader.get_reader(data)
-
-
 class BibParser:
     @staticmethod
     def parse_marc_data(
-        reader: Iterator,
-        parser: ports.MarcParsingEnginePort,
-        vendor: str | None = "UNKNOWN",
+        data: bytes, parser: ports.MarcParsingEnginePort, vendor: str | None = "UNKNOWN"
     ) -> list[bibs.DomainBib]:
         """Parse MARC binary to a list of `DomainBib` domain objects."""
         parsed = []
+        reader = parser.get_reader(data)
         for record in reader:
             bib_dict = parser.map_bib_data(obj=record)
             order_data = [parser.map_order_data(obj=i) for i in record.orders]
@@ -100,40 +92,65 @@ class BibParser:
 
 
 class BibUpdater:
-    @staticmethod
+    def __init__(
+        self,
+        bib_id_tag: str,
+        collection: str | None,
+        default_loc: str | None,
+        library: str,
+        order_mapping: dict[str, Any],
+        record_type: str,
+    ) -> None:
+        self.bib_id_tag = bib_id_tag
+        self.collection = collection
+        self.default_loc = default_loc
+        self.library = library
+        self.order_mapping = order_mapping
+        self.record_type = record_type
+
     def get_acq_updates(
-        record: bibs.DomainBib, config: Any, template_data: dict[str, Any]
-    ) -> list:
+        self, record: bibs.DomainBib, template_data: dict[str, Any]
+    ) -> list[cataloging_rules.MarcFieldUpdateValues]:
         """Get list of MARC fields to update in processed acq bib record"""
         return cataloging_rules.AcquisitionUpdates.field_list(
-            record=record, context=config, template_data=template_data
+            record=record,
+            bib_id_tag=self.bib_id_tag,
+            library=self.library,
+            order_mapping=self.order_mapping,
+            template_data=template_data,
         )
 
-    @staticmethod
-    def get_cat_updates(record: bibs.DomainBib, config: Any) -> list:
+    def get_cat_updates(
+        self, record: bibs.DomainBib
+    ) -> list[cataloging_rules.MarcFieldUpdateValues]:
         """Get list of MARC fields to update in processed full-level bib record"""
         return cataloging_rules.CatalogingUpdates.field_list(
-            record=record, context=config
+            record=record, bib_id_tag=self.bib_id_tag, library=self.library
         )
 
-    @staticmethod
     def get_sel_updates(
+        self,
         record: bibs.DomainBib,
-        config: Any,
-        command_tag: Any,
         template_data: dict[str, Any],
-    ) -> list:
+        command_tag: str | None = None,
+    ) -> list[cataloging_rules.MarcFieldUpdateValues]:
         """Update and add MARC fields to sel bib record"""
         return cataloging_rules.SelectionUpdates.field_list(
             record=record,
-            context=config,
+            bib_id_tag=self.bib_id_tag,
+            default_loc=self.default_loc,
+            library=self.library,
+            order_mapping=self.order_mapping,
+            format=template_data.get("format"),
             template_data=template_data,
             command_tag=command_tag,
         )
 
-    @staticmethod
     def update_record(
-        record: bibs.DomainBib, engine: ports.MarcUpdateEnginePort, updates: list
+        self,
+        record: bibs.DomainBib,
+        engine: ports.MarcUpdateEnginePort,
+        updates: list[cataloging_rules.MarcFieldUpdateValues],
     ) -> None:
         """Update and add MARC fields to bib record"""
         bib = engine.create_bib_from_domain(record=record)
@@ -144,7 +161,9 @@ class BibUpdater:
 
 class MarcFileMerger:
     @staticmethod
-    def combine_marc_files(data: list[bytes], marc_reader: ports.ReaderWriter) -> bytes:
+    def combine_marc_files(
+        data: list[bytes], marc_reader: ports.MarcParsingEnginePort
+    ) -> bytes:
         """Combine multiple bytes objects (ie. MARC files) into one for processing."""
         records = []
         for batch in data:

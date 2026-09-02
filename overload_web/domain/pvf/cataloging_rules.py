@@ -16,15 +16,19 @@ class AcquisitionUpdates:
 
     @staticmethod
     def field_list(
-        record: bibs.DomainBib, context: Any, template_data: dict[str, Any]
+        bib_id_tag: str,
+        library: str,
+        order_mapping: dict[str, Any],
+        record: bibs.DomainBib,
+        template_data: dict[str, Any],
     ) -> list[MarcFieldUpdateValues]:
         updates: list[Any] = []
         record.apply_order_template(template_data)
         updates.extend(
-            FieldRules.update_order_fields(record=record, mapping=context.order_mapping)
+            FieldRules.update_order_fields(record=record, mapping=order_mapping)
         )
-        updates.append(FieldRules.add_bib_id(record=record, tag=context.bib_id_tag))
-        if context.library == "nypl":
+        updates.append(FieldRules.add_bib_id(record=record, tag=bib_id_tag))
+        if library == "nypl":
             updates.append(FieldRules.update_910_field(record=record))
         return [i for i in updates if i]
 
@@ -33,11 +37,13 @@ class CatalogingUpdates:
     """Returns a list of fields to be updated in a cat record during processing"""
 
     @staticmethod
-    def field_list(record: bibs.DomainBib, context: Any) -> list[MarcFieldUpdateValues]:
+    def field_list(
+        bib_id_tag: str, library: str, record: bibs.DomainBib
+    ) -> list[MarcFieldUpdateValues]:
         updates: list[Any] = []
         updates.extend(FieldRules.add_vendor_fields(record=record))
-        updates.append(FieldRules.add_bib_id(record=record, tag=context.bib_id_tag))
-        if context.library == "nypl":
+        updates.append(FieldRules.add_bib_id(record=record, tag=bib_id_tag))
+        if library == "nypl":
             updates.append(FieldRules.update_910_field(record=record))
             updates.append(FieldRules.update_bt_series_call_no(record=record))
         return [i for i in updates if i]
@@ -48,26 +54,38 @@ class SelectionUpdates:
 
     @staticmethod
     def field_list(
+        bib_id_tag: str,
+        library: str,
+        order_mapping: dict[str, Any],
         record: bibs.DomainBib,
-        context: Any,
         template_data: dict[str, Any],
-        format: str | None = None,
         command_tag: Any | None = None,
+        default_loc: str | None = None,
+        format: str | None = None,
     ) -> list[MarcFieldUpdateValues]:
         updates: list[Any] = []
         record.apply_order_template(template_data)
         updates.extend(
-            FieldRules.update_order_fields(record=record, mapping=context.order_mapping)
+            FieldRules.update_order_fields(record=record, mapping=order_mapping)
         )
         updates.append(
             FieldRules.add_command_tag(
-                field=command_tag, format=format, default_loc=context.default_loc
+                command_tag=command_tag, format=format, default_loc=default_loc
             )
         )
-        updates.append(FieldRules.add_bib_id(record=record, tag=context.bib_id_tag))
-        if context.library == "nypl":
+        updates.append(FieldRules.add_bib_id(record=record, tag=bib_id_tag))
+        if library == "nypl":
             updates.append(FieldRules.update_910_field(record=record))
         return [i for i in updates if i]
+
+
+@dataclass
+class TargetFieldCriteria:
+    tag: str
+    ind1: str
+    ind2: str
+    subfield_code: str
+    subfield_starts_with: str | None = None
 
 
 @dataclass
@@ -78,8 +96,8 @@ class MarcFieldUpdateValues:
     ind1: str
     ind2: str
     subfields: list[dict[str, str]]
-    delete_tag: bool = False
-    delete_original: bool = False
+    delete_all_by_tag: bool = False
+    target_to_delete: TargetFieldCriteria | None = None
 
 
 class FieldRules:
@@ -90,7 +108,7 @@ class FieldRules:
         """Creates a new bib ID field."""
         if record.bib_id:
             return MarcFieldUpdateValues(
-                delete_tag=True,
+                delete_all_by_tag=True,
                 tag=tag,
                 ind1=" ",
                 ind2=" ",
@@ -100,46 +118,49 @@ class FieldRules:
 
     @staticmethod
     def add_command_tag(
-        format: str | None, default_loc: str | None, field: Any | None
+        format: str | None, default_loc: str | None, command_tag: str | None
     ) -> MarcFieldUpdateValues | None:
         """Creates a new or updated command tag field."""
         if not format and not default_loc:
             return None
-        if not field:
+        if not command_tag:
             if format:
-                command_tag = f"*b2={format};"
+                command = f"*b2={format};"
                 if default_loc:
-                    command_tag = f"*b2={format};bn={default_loc};"
+                    command = f"*b2={format};bn={default_loc};"
                 else:
-                    command_tag = f"*b2={format};"
+                    command = f"*b2={format};"
             else:
-                command_tag = f"*bn={default_loc};"
+                command = f"*bn={default_loc};"
             return MarcFieldUpdateValues(
                 tag="949",
                 ind1=" ",
                 ind2=" ",
-                subfields=[{"code": "a", "value": command_tag}],
+                subfields=[{"code": "a", "value": command}],
             )
         if not default_loc:
             return None
-        command_tag = field.strip()
-        if "bn=" in command_tag:
+        command = command_tag.strip()
+        if "bn=" in command:
             return None
-        elif "bn=" not in command_tag and command_tag[-1] == ";":
+        target_to_delete = TargetFieldCriteria(
+            tag="949", ind1=" ", ind2=" ", subfield_code="a", subfield_starts_with="*"
+        )
+        if "bn=" not in command and command[-1] == ";":
             return MarcFieldUpdateValues(
                 tag="949",
                 ind1=" ",
                 ind2=" ",
-                subfields=[{"code": "a", "value": f"{command_tag}bn={default_loc};"}],
-                delete_original=True,
+                subfields=[{"code": "a", "value": f"{command}bn={default_loc};"}],
+                target_to_delete=target_to_delete,
             )
         else:
             return MarcFieldUpdateValues(
                 tag="949",
                 ind1=" ",
                 ind2=" ",
-                subfields=[{"code": "a", "value": f"{command_tag};bn={default_loc};"}],
-                delete_original=True,
+                subfields=[{"code": "a", "value": f"{command};bn={default_loc};"}],
+                target_to_delete=target_to_delete,
             )
 
     @staticmethod
@@ -169,7 +190,7 @@ class FieldRules:
     def update_910_field(record: bibs.DomainBib) -> MarcFieldUpdateValues:
         """Adds 910 field for branches or research if applicable."""
         return MarcFieldUpdateValues(
-            delete_tag=True,
+            delete_all_by_tag=True,
             tag="910",
             ind1=" ",
             ind2=" ",
@@ -227,7 +248,11 @@ class FieldRules:
                 f"New={new_call_no}, Original={call_no}"
             )
         return MarcFieldUpdateValues(
-            delete_tag=True, tag="091", ind1=" ", ind2=" ", subfields=new_subfields
+            delete_all_by_tag=True,
+            tag="091",
+            ind1=" ",
+            ind2=" ",
+            subfields=new_subfields,
         )
 
     @staticmethod

@@ -12,9 +12,6 @@ Protocols:
 
 Classes:
 
-`MarcEngineConfig`
-    Configuration data used to determine MARC record processing. Loaded from a .json
-    file and input via an html form in the presentation layer.
 `MarcParserEngine`
     Parse binary MARC data using `bookops_marc` and `pymarc`. Uses config data
     to determine field mapping and processing workflows.
@@ -25,11 +22,11 @@ Classes:
 
 from __future__ import annotations
 
+import io
 import logging
-from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any, BinaryIO, Protocol
 
-from bookops_marc import Bib
+from bookops_marc import Bib, SierraBibReader
 from bookops_marc.models import Order
 from pymarc import Field, Indicators, Subfield
 
@@ -41,33 +38,8 @@ class DomainBibProtocol(Protocol):
     binary_data: bytes
 
 
-@dataclass(frozen=True)
-class MarcEngineConfig:
-    bib_id_tag: str
-    collection: str | None
-    default_loc: str | None
-    library: str
-    order_mapping: dict[str, Any]
-    record_type: str
-
-
 class MarcUpdateEngine:
     """Interacts with binary MARC data using `bookops_marc`."""
-
-    def __init__(self, rules: MarcEngineConfig) -> None:
-        """
-        Initialize `MarcUpdateEngine` using a set of mapping rules and workflow inputs.
-
-        This class is a concrete implementation of the `MarcUpdateEnginePort` protocol.
-
-        Args:
-            rules:
-                A `MarcEngineConfig` object containing vendor identification
-                rules, rules to use when mapping MARC records to domain objects, library
-                and record type. Parsed from `/overload_web/data/mapping_specs.json` and
-                values input by user for `library`, `collection`, and `record_type`.
-        """
-        self.config = rules
 
     def create_bib_from_domain(self, record: DomainBibProtocol) -> Bib:
         """Create a `bookops_marc.Bib` object from a `DomainBib` object"""
@@ -90,6 +62,19 @@ class MarcUpdateEngine:
                 return field
         return None
 
+    def _find_specific_field(self, bib: Bib, criteria: Any) -> Field | None:
+        """Helper to find a field based on generic domain criteria."""
+        for field in bib.get_fields(criteria.tag):
+            if field.indicator1 != criteria.ind1 or field.indicator2 != criteria.ind2:
+                continue
+            sf_val = field.get(criteria.subfield_code, "")
+            if criteria.subfield_starts_with and not sf_val.startswith(
+                criteria.subfield_starts_with
+            ):
+                continue
+            return field
+        return None
+
     def update_fields(self, field_updates: list[Any], bib: Bib) -> None:
         """
         Update a bibliographic record.
@@ -105,14 +90,15 @@ class MarcUpdateEngine:
             None. The record's fields are updated in place.
         """
         for update in field_updates:
-            if update.delete_tag:
-                bib.remove_fields(update.tag)
-            if update.delete_original:
-                bib.remove_field(self.get_command_tag_field(bib))
+            if update.delete_all_by_tag:
+                bib.remove_fields(update.delete_all_by_tag)
+            if update.target_to_delete:
+                to_delete = self._find_specific_field(bib, update.target_to_delete)
+                bib.remove_field(to_delete)
             bib.add_ordered_field(
                 Field(
                     tag=update.tag,
-                    indicators=Indicators(update.ind1, update.ind1),
+                    indicators=Indicators(update.ind1, update.ind2),
                     subfields=[
                         Subfield(code=i["code"], value=i["value"])
                         for i in update.subfields
@@ -159,6 +145,10 @@ class MarcParsingEngine:
         self.bib_mapping = bib_mapping
         self.order_mapping = order_mapping
         self.vendor_mapping = vendor_mapping
+
+    def get_reader(self, data: bytes | BinaryIO) -> SierraBibReader:
+        """Instantiate a `SierraBibReader` to read MARC binary data."""
+        return SierraBibReader(data, library=self.library)
 
     def match_vendor_tags_from_bib(
         self, record: Bib, tags: dict[str, dict[str, str]]
@@ -255,3 +245,22 @@ class MarcParsingEngine:
             if alt_match:
                 return info
         return self.vendor_mapping[record.library]["UNKNOWN"]
+
+    def write(self, records: list[DomainBibProtocol]) -> bytes:
+        """
+        Serialize `DomainBib` objects into a binary MARC stream.
+
+        Args:
+            records:
+                A list `DomainBib` objects.
+
+        Returns:
+            MARC binary as an an in-memory file stream.
+        """
+        io_data = io.BytesIO()
+        for record in records:
+            logger.info(f"Writing MARC binary for record: {record}")
+            io_data.write(record.binary_data)
+        io_data.seek(0)
+        out = io_data.getvalue()
+        return out

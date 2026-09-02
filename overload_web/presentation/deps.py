@@ -16,35 +16,12 @@ from overload_web.infrastructure import (
     file_io,
     marc_engine,
     oclc,
-    read_marc,
     reporter,
     sierra_clients,
     template_db,
 )
 
 logger = logging.getLogger(__name__)
-
-
-class MatchpointsModel(BaseModel):
-    """Pydantic model for serializing/deserializing matchpoints from order templates"""
-
-    primary_matchpoint: str | None = None
-    secondary_matchpoint: str | None = None
-    tertiary_matchpoint: str | None = None
-
-    @classmethod
-    def from_form(
-        self,
-        primary_matchpoint: str | None = Form(default=None),
-        secondary_matchpoint: str | None = Form(default=None),
-        tertiary_matchpoint: str | None = Form(default=None),
-    ) -> MatchpointsModel:
-        """Class method used to create a `MatchpointsModel` object from an html form"""
-        return MatchpointsModel(
-            primary_matchpoint=primary_matchpoint,
-            secondary_matchpoint=secondary_matchpoint,
-            tertiary_matchpoint=tertiary_matchpoint,
-        )
 
 
 class ProcessingContext(BaseModel):
@@ -85,6 +62,37 @@ class ProcessingContext(BaseModel):
         return ProcessingContext(
             collection=collection, library=library, record_type=record_type
         )
+
+
+class MatchpointsModel(BaseModel):
+    """Pydantic model for serializing/deserializing matchpoints from order templates"""
+
+    primary_matchpoint: str | None = None
+    secondary_matchpoint: str | None = None
+    tertiary_matchpoint: str | None = None
+
+    @classmethod
+    def from_form(
+        self,
+        primary_matchpoint: str | None = Form(default=None),
+        secondary_matchpoint: str | None = Form(default=None),
+        tertiary_matchpoint: str | None = Form(default=None),
+    ) -> MatchpointsModel:
+        """Class method used to create a `MatchpointsModel` object from an html form"""
+        return MatchpointsModel(
+            primary_matchpoint=primary_matchpoint,
+            secondary_matchpoint=secondary_matchpoint,
+            tertiary_matchpoint=tertiary_matchpoint,
+        )
+
+
+class MarcUpdateRulesModel(BaseModel):
+    bib_id_tag: str
+    collection: str | None
+    default_loc: str | None
+    library: str
+    order_mapping: dict[str, Any]
+    record_type: str
 
 
 class TemplateDataModel(BaseModel):
@@ -458,13 +466,18 @@ def get_fetcher(
     yield sierra_clients.FetcherFactory().make(library)
 
 
-def get_marc_engine(
+def get_marc_engine() -> Generator[marc_engine.MarcUpdateEngine, None, None]:
+    """Create a `MarcUpdateEngine` service with injected dependencies."""
+    yield marc_engine.MarcUpdateEngine()
+
+
+def get_marc_update_rules(
     context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
-) -> Generator[marc_engine.MarcUpdateEngine, None, None]:
+) -> MarcUpdateRulesModel:
     """Create a `MarcUpdateEngine` service with injected dependencies."""
     with open("overload_web/data/update_rules.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
-    config = marc_engine.MarcEngineConfig(
+    return MarcUpdateRulesModel(
         order_mapping=constants["order_mapping"],
         default_loc=constants["default_locations"][context.library].get(
             context.collection
@@ -474,7 +487,6 @@ def get_marc_engine(
         record_type=context.record_type,
         collection=context.collection,
     )
-    yield marc_engine.MarcUpdateEngine(rules=config)
 
 
 def get_marc_parsing_engine(
@@ -491,13 +503,6 @@ def get_marc_parsing_engine(
         order_mapping=constants["order_mapping"],
         vendor_mapping=constants["vendor_rules"],
     )
-
-
-def get_marc_reader(
-    context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
-) -> Generator[read_marc.MarcReaderWriter, None, None]:
-    """Create a `MarcReaderWriter` service with injected dependencies."""
-    yield read_marc.MarcReaderWriter(library=context.library)
 
 
 def oclc_fetcher(
