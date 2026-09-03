@@ -5,8 +5,8 @@ import logging
 from typing import Any
 
 from overload_web.application import ports
-from overload_web.application.pvf import marc, match_service
-from overload_web.domain.pvf import bibs
+from overload_web.application.pvf import marc, match_service, update
+from overload_web.domain.pvf import batch
 
 logger = logging.getLogger(__name__)
 
@@ -58,28 +58,30 @@ class ProcessAcquisitionsRecords:
         file_names = []
         report_data = []
         matcher = match_service.BibMatcher(fetcher)
-        updater = marc.BibUpdater(**marc_update_rules)
+        updater = update.BibUpdater(**marc_update_rules)
         vendor = template_data.get("vendor", "UNKNOWN")
         for file_name, data in batches.items():
             file_names.append(file_name)
             records = marc.BibParser.parse_marc_data(
                 parser=marc_parser, data=data, vendor=vendor
             )
-            bibs.BarcodeValidator.validate_unique(records=records)
+            batch.BarcodeValidator.validate_unique(records=records)
             for bib in records:
                 matches = matcher.match_order_record(bib, matchpoints=matchpoints)
-                analysis = bib.analyze_matches(candidates=matches)
-                bib.apply_match(analysis)
+                analysis = matcher.process_matches(bib=bib, matches=matches)
+                bib.apply_match(
+                    target_bib_id=analysis.target_bib_id, action=analysis.action
+                )
                 update_fields = updater.get_acq_updates(
                     bib, template_data=template_data
                 )
                 updater.update_record(bib, engine=marc_updater, updates=update_fields)
                 report_data.append(analysis.to_dict())
-            processed = bibs.ProcessedFile(
+            processed = batch.ProcessedFile(
                 file_name=file_name, records=marc_parser.write(records)
             )
             out_batches.append(processed)
-        processed_batch = bibs.ProcessedFileBatch(
+        processed_batch = batch.ProcessedFileBatch(
             files=out_batches, stats=report_data, file_names=file_names
         )
         return repo.save(processed_batch)
@@ -123,22 +125,22 @@ class ProcessCatalogingRecords:
         """
         file_names = list(batches.keys())
         content = list(batches.values())
-        data = marc.MarcFileMerger.combine_marc_files(
-            data=content, marc_reader=marc_parser
-        )
+        data = marc.BibParser.combine_marc_files(data=content, marc_reader=marc_parser)
         records = marc.BibParser.parse_marc_data(parser=marc_parser, data=data)
-        original_barcodes = bibs.BarcodeValidator.validate_unique(records=records)
+        original_barcodes = batch.BarcodeValidator.validate_unique(records=records)
         report_data = []
         matcher = match_service.BibMatcher(fetcher)
-        updater = marc.BibUpdater(**marc_update_rules)
+        updater = update.BibUpdater(**marc_update_rules)
         for bib in records:
             matches = matcher.match_full_record(bib)
-            analysis = bib.analyze_matches(candidates=matches)
-            bib.apply_match(analysis)
+            analysis = matcher.process_matches(bib=bib, matches=matches)
+            bib.apply_match(
+                target_bib_id=analysis.target_bib_id, action=analysis.action
+            )
             update_fields = updater.get_cat_updates(bib)
             updater.update_record(bib, engine=marc_updater, updates=update_fields)
             report_data.append(analysis.to_dict())
-        missing_barcodes = bibs.BarcodeValidator.validate_preserved(
+        missing_barcodes = batch.BarcodeValidator.validate_preserved(
             processed_records=records, original_barcodes=original_barcodes
         )
         deduplicated = marc.BibDeduplicator.deduplicate(
@@ -146,12 +148,12 @@ class ProcessCatalogingRecords:
         )
         file_name = datetime.datetime.today().strftime("%y%m%d")
         files = [
-            bibs.ProcessedFile(
+            batch.ProcessedFile(
                 file_name=f"{file_name}-{k}.mrc", records=marc_parser.write(v)
             )
             for k, v in deduplicated.items()
         ]
-        processed_batch = bibs.ProcessedFileBatch(
+        processed_batch = batch.ProcessedFileBatch(
             files=files,
             stats=report_data,
             file_names=file_names,
@@ -207,28 +209,30 @@ class ProcessSelectionRecords:
         file_names = []
         report_data = []
         matcher = match_service.BibMatcher(fetcher)
-        updater = marc.BibUpdater(**marc_update_rules)
+        updater = update.BibUpdater(**marc_update_rules)
         vendor = template_data.get("vendor", "UNKNOWN")
         for file_name, data in batches.items():
             file_names.append(file_name)
             records = marc.BibParser.parse_marc_data(
                 parser=marc_parser, data=data, vendor=vendor
             )
-            bibs.BarcodeValidator.validate_unique(records=records)
+            batch.BarcodeValidator.validate_unique(records=records)
             for bib in records:
                 matches = matcher.match_order_record(bib, matchpoints=matchpoints)
-                analysis = bib.analyze_matches(candidates=matches)
-                bib.apply_match(analysis)
+                analysis = matcher.process_matches(bib=bib, matches=matches)
+                bib.apply_match(
+                    target_bib_id=analysis.target_bib_id, action=analysis.action
+                )
                 update_fields = updater.get_sel_updates(
                     record=bib, template_data=template_data
                 )
                 updater.update_record(bib, engine=marc_updater, updates=update_fields)
                 report_data.append(analysis.to_dict())
-            processed = bibs.ProcessedFile(
+            processed = batch.ProcessedFile(
                 file_name=file_name, records=marc_parser.write(records)
             )
             out_batches.append(processed)
-        processed_batch = bibs.ProcessedFileBatch(
+        processed_batch = batch.ProcessedFileBatch(
             files=out_batches, stats=report_data, file_names=file_names
         )
         return repo.save(processed_batch)

@@ -11,10 +11,9 @@ from bookops_worldcat.errors import BookopsWorldcatError
 from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain.pvf import bibs
-from overload_web.domain.shared import sierra_responses
-from overload_web.infrastructure import marc_engine as engine
-from overload_web.infrastructure import oclc, reporter, sierra_clients
+from overload_web.domain.pvf import models
+from overload_web.domain.shared import fields, sierra_responses
+from overload_web.infrastructure import marc_engine, oclc, reporter, sierra_clients
 
 
 @pytest.fixture(scope="session")
@@ -364,7 +363,7 @@ def stub_bib(library, collection) -> Bib:
 
 @pytest.fixture
 def acq_bib(collection, library, stub_bib):
-    order = bibs.Order(
+    order = models.Order(
         locations=["agj0y"],
         audience=["j"],
         branches=["ag"],
@@ -392,7 +391,7 @@ def acq_bib(collection, library, stub_bib):
         blanket_po="baz",
     )
     bib = copy.deepcopy(stub_bib)
-    domain_bib = bibs.DomainBib(
+    domain_bib = models.DomainBib(
         library=library,
         collection=collection,
         isbn="9781234567890",
@@ -406,10 +405,10 @@ def acq_bib(collection, library, stub_bib):
         orders=[order],
         update_date="20200101010000.0",
         parsed_fields=[
-            bibs.ParsedField(
+            fields.ParsedField(
                 tag="020",
                 indicators=(" ", " "),
-                subfields=[bibs.ParsedSubfield(code="a", value="9781234567890")],
+                subfields=[fields.ParsedSubfield(code="a", value="9781234567890")],
             )
         ],
     )
@@ -482,7 +481,7 @@ def full_bib(library, collection):
                 subfields=[Subfield(code="i", value="333331234567890")],
             )
         )
-    domain_bib = bibs.DomainBib(
+    domain_bib = models.DomainBib(
         library=library,
         collection=collection,
         isbn="9781234567890",
@@ -494,7 +493,7 @@ def full_bib(library, collection):
         barcodes=["333331234567890"],
         orders=[],
         update_date="20200101010000.0",
-        vendor_info=bibs.VendorInfo(
+        vendor_info=models.VendorInfo(
             name="UNKNOWN",
             bib_fields=[],
             matchpoints={
@@ -503,10 +502,10 @@ def full_bib(library, collection):
             },
         ),
         parsed_fields=[
-            bibs.ParsedField(
+            fields.ParsedField(
                 tag="020",
                 indicators=(" ", " "),
-                subfields=[bibs.ParsedSubfield(code="a", value="9781234567890")],
+                subfields=[fields.ParsedSubfield(code="a", value="9781234567890")],
             )
         ],
     )
@@ -583,8 +582,8 @@ def update_rules(library, record_type, collection, get_constants) -> dict[str, A
 @pytest.fixture
 def parser_engine(
     library, record_type, collection, parsing_rules
-) -> engine.MarcParsingEngine:
-    return engine.MarcParsingEngine(
+) -> marc_engine.MarcParsingEngine:
+    return marc_engine.MarcParsingEngine(
         order_mapping=parsing_rules["order_mapping"],
         library=library,
         record_type=record_type,

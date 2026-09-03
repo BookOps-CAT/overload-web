@@ -1,4 +1,4 @@
-"""Domain models defining rules used to update MARC records during processing."""
+"""Domain models that define bib records, order records, and their component parts."""
 
 from __future__ import annotations
 
@@ -6,77 +6,10 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
-from overload_web.domain.pvf import bibs
+from overload_web.domain.pvf import models
+from overload_web.domain.shared import fields
 
 logger = logging.getLogger(__name__)
-
-
-class AcquisitionUpdates:
-    """Returns a list of fields to be updated in an acq record during processing"""
-
-    @staticmethod
-    def field_list(
-        bib_id_tag: str,
-        library: str,
-        order_mapping: dict[str, Any],
-        record: bibs.DomainBib,
-        template_data: dict[str, Any],
-    ) -> list[MarcFieldUpdateValues]:
-        updates: list[Any] = []
-        record.apply_order_template(template_data)
-        updates.extend(
-            FieldRules.update_order_fields(record=record, mapping=order_mapping)
-        )
-        updates.append(FieldRules.add_bib_id(record=record, tag=bib_id_tag))
-        if library == "nypl":
-            updates.append(FieldRules.update_910_field(record=record))
-        return [i for i in updates if i]
-
-
-class CatalogingUpdates:
-    """Returns a list of fields to be updated in a cat record during processing"""
-
-    @staticmethod
-    def field_list(
-        bib_id_tag: str, library: str, record: bibs.DomainBib
-    ) -> list[MarcFieldUpdateValues]:
-        updates: list[Any] = []
-        updates.extend(FieldRules.add_vendor_fields(record=record))
-        updates.append(FieldRules.add_bib_id(record=record, tag=bib_id_tag))
-        if library == "nypl":
-            updates.append(FieldRules.update_910_field(record=record))
-            updates.append(FieldRules.update_bt_series_call_no(record=record))
-        return [i for i in updates if i]
-
-
-class SelectionUpdates:
-    """Returns a list of fields to be updated in a sel record during processing"""
-
-    @staticmethod
-    def field_list(
-        bib_id_tag: str,
-        library: str,
-        order_mapping: dict[str, Any],
-        record: bibs.DomainBib,
-        template_data: dict[str, Any],
-        default_loc: str | None = None,
-    ) -> list[MarcFieldUpdateValues]:
-        updates: list[Any] = []
-        record.apply_order_template(template_data)
-        updates.extend(
-            FieldRules.update_order_fields(record=record, mapping=order_mapping)
-        )
-        updates.append(
-            FieldRules.add_command_tag(
-                fields=record.parsed_fields,
-                format=template_data.get("format"),
-                default_loc=default_loc,
-            )
-        )
-        updates.append(FieldRules.add_bib_id(record=record, tag=bib_id_tag))
-        if library == "nypl":
-            updates.append(FieldRules.update_910_field(record=record))
-        return [i for i in updates if i]
 
 
 @dataclass
@@ -103,7 +36,7 @@ class FieldRules:
     """Functions that create `MarcFieldUpdateValues` to be used to update MARC fields"""
 
     @staticmethod
-    def add_bib_id(record: bibs.DomainBib, tag: str) -> MarcFieldUpdateValues | None:
+    def add_bib_id(record: models.DomainBib, tag: str) -> MarcFieldUpdateValues | None:
         """Creates a new bib ID field."""
         if record.bib_id:
             return MarcFieldUpdateValues(
@@ -117,7 +50,7 @@ class FieldRules:
 
     @staticmethod
     def add_command_tag(
-        format: str | None, default_loc: str | None, fields: list[bibs.ParsedField]
+        format: str | None, default_loc: str | None, fields: list[fields.ParsedField]
     ) -> MarcFieldUpdateValues | None:
         """Creates a new or updated command tag field."""
         if not format and not default_loc:
@@ -167,7 +100,7 @@ class FieldRules:
 
     @staticmethod
     def add_item_fields(
-        items: list[bibs.ParsedField], ind2: str, tag: str
+        items: list[fields.ParsedField], ind2: str, tag: str
     ) -> list[MarcFieldUpdateValues]:
         """Creates list of new item records to add to a record"""
         new_items = []
@@ -186,7 +119,7 @@ class FieldRules:
         return new_items
 
     @staticmethod
-    def add_vendor_fields(record: bibs.DomainBib) -> list[MarcFieldUpdateValues]:
+    def add_vendor_fields(record: models.DomainBib) -> list[MarcFieldUpdateValues]:
         """Creates a list of fields for a full MARC record based on `VendorInfo`."""
         field_objs = []
         bib_fields = getattr(record.vendor_info, "bib_fields", [])
@@ -209,7 +142,7 @@ class FieldRules:
         return leader[:9] + "a" + leader[10:]
 
     @staticmethod
-    def update_910_field(record: bibs.DomainBib) -> MarcFieldUpdateValues:
+    def update_910_field(record: models.DomainBib) -> MarcFieldUpdateValues:
         """Adds 910 field for branches or research if applicable."""
         return MarcFieldUpdateValues(
             delete_all_by_tag=True,
@@ -221,7 +154,7 @@ class FieldRules:
 
     @staticmethod
     def update_bt_series_call_no(
-        record: bibs.DomainBib,
+        record: models.DomainBib,
     ) -> MarcFieldUpdateValues | None:
         """Updates call number for B&T Series materials."""
         call_no = record.branch_call_number
@@ -279,7 +212,7 @@ class FieldRules:
 
     @staticmethod
     def update_order_fields(
-        record: bibs.DomainBib, mapping: dict[str, Any]
+        record: models.DomainBib, mapping: dict[str, Any]
     ) -> list[MarcFieldUpdateValues]:
         """Updates order record fields based on template data applied to DomainBib"""
         fields = []

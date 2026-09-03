@@ -5,7 +5,7 @@ from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
 from overload_web.application.pvf import marc
-from overload_web.domain.pvf import bibs
+from overload_web.domain.pvf import batch, models
 from overload_web.infrastructure import marc_engine
 
 
@@ -50,7 +50,7 @@ class TestReviewer:
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
     )
     def test_dedupe_attach(self, full_bib):
-        full_bib.action = bibs.CatalogAction.ATTACH
+        full_bib.action = models.CatalogAction.ATTACH
         deduped_bibs = marc.BibDeduplicator.deduplicate(
             records=[full_bib], engine=self.ENGINE
         )
@@ -62,7 +62,7 @@ class TestReviewer:
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
     )
     def test_dedupe_insert(self, full_bib):
-        full_bib.action = bibs.CatalogAction.INSERT
+        full_bib.action = models.CatalogAction.INSERT
         deduped_bibs = marc.BibDeduplicator.deduplicate(
             records=[full_bib], engine=self.ENGINE
         )
@@ -72,8 +72,8 @@ class TestReviewer:
 
     @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
     def test_dedupe_bpl(self, library, full_bib, full_bib_add_barcodes):
-        full_bib.action = bibs.CatalogAction.INSERT
-        full_bib_add_barcodes.action = bibs.CatalogAction.INSERT
+        full_bib.action = models.CatalogAction.INSERT
+        full_bib_add_barcodes.action = models.CatalogAction.INSERT
         deduped_bibs = marc.BibDeduplicator.deduplicate(
             records=[full_bib, full_bib_add_barcodes], engine=self.ENGINE
         )
@@ -89,8 +89,8 @@ class TestReviewer:
 
     @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
     def test_dedupe_deduped_nypl(self, library, full_bib, full_bib_add_barcodes):
-        full_bib.action = bibs.CatalogAction.INSERT
-        full_bib_add_barcodes.action = bibs.CatalogAction.INSERT
+        full_bib.action = models.CatalogAction.INSERT
+        full_bib_add_barcodes.action = models.CatalogAction.INSERT
         deduped_bibs = marc.BibDeduplicator.deduplicate(
             records=[full_bib, full_bib_add_barcodes], engine=self.ENGINE
         )
@@ -110,9 +110,9 @@ class TestReviewer:
     def test_dedupe_other_recs(self, full_bib, full_bib_add_barcodes):
         other_rec = copy.deepcopy(full_bib)
         other_rec.control_number = "123456789"
-        other_rec.action = bibs.CatalogAction.INSERT
-        full_bib.action = bibs.CatalogAction.INSERT
-        full_bib_add_barcodes.action = bibs.CatalogAction.INSERT
+        other_rec.action = models.CatalogAction.INSERT
+        full_bib.action = models.CatalogAction.INSERT
+        full_bib_add_barcodes.action = models.CatalogAction.INSERT
         deduped_bibs = marc.BibDeduplicator.deduplicate(
             records=[full_bib, full_bib_add_barcodes, other_rec], engine=self.ENGINE
         )
@@ -125,7 +125,7 @@ class TestReviewer:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_validate_preserved(self, full_bib, caplog, record_type):
-        bibs.BarcodeValidator.validate_preserved([full_bib], ["333331234567890"])
+        batch.BarcodeValidator.validate_preserved([full_bib], ["333331234567890"])
         assert len(caplog.records) == 1
         assert (
             caplog.records[0].msg == "Integrity validation: True, missing_barcodes: []"
@@ -137,7 +137,7 @@ class TestReviewer:
     def test_validate_preserved_bpl_960_item(
         self, full_bib, caplog, collection, record_type
     ):
-        bibs.BarcodeValidator.validate_preserved([full_bib], ["333331234567890"])
+        batch.BarcodeValidator.validate_preserved([full_bib], ["333331234567890"])
         assert len(caplog.records) == 1
         assert (
             caplog.records[0].msg == "Integrity validation: True, missing_barcodes: []"
@@ -150,7 +150,7 @@ class TestReviewer:
     def test_validate_preserved_missing_barcodes(
         self, full_bib, caplog, collection, record_type
     ):
-        bibs.BarcodeValidator.validate_preserved(
+        batch.BarcodeValidator.validate_preserved(
             [full_bib], ["333331234567890", "333330987654321"]
         )
         assert len(caplog.records) == 2
