@@ -81,7 +81,7 @@ class GoogleSheetsReporter:
             data: dictionary containing report data to be written.
 
         Returns:
-            The data to be writte as a list of lists
+            The data to be written as a list of lists
         """
         if not data:
             return []
