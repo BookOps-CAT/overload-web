@@ -1,79 +1,9 @@
 import datetime
 
 import pytest
-from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
 from overload_web.application.pvf import marc
-
-
-@pytest.fixture
-def stub_bib(library, collection) -> Bib:
-    bib = Bib()
-    bib.leader = "00000cam  2200517 i 4500"
-    bib.library = library
-    if library == "bpl":
-        bib.add_field(
-            Field(
-                tag="037",
-                indicators=Indicators(" ", " "),
-                subfields=[
-                    Subfield(code="a", value="123"),
-                    Subfield(code="b", value="OverDrive, Inc."),
-                ],
-            )
-        )
-    else:
-        bib.add_field(
-            Field(
-                tag="910",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value=collection)],
-            )
-        )
-    bib.add_field(
-        Field(
-            tag="949",
-            indicators=Indicators(" ", "1"),
-            subfields=[Subfield(code="i", value="333331234567890")],
-        )
-    )
-    bib.add_field(
-        Field(
-            tag="960",
-            indicators=Indicators(" ", " "),
-            subfields=[
-                Subfield(code="c", value="j"),
-                Subfield(code="d", value="c"),
-                Subfield(code="e", value="d"),
-                Subfield(code="f", value="a"),
-                Subfield(code="g", value="b"),
-                Subfield(code="i", value="l"),
-                Subfield(code="m", value="o"),
-                Subfield(code="o", value="13"),
-                Subfield(code="q", value="01-01-25"),
-                Subfield(code="s", value="{{dollar}}13.20"),
-                Subfield(code="t", value="agj0y"),
-                Subfield(code="u", value="lease"),
-                Subfield(code="v", value="btlea"),
-                Subfield(code="w", value="eng"),
-                Subfield(code="x", value="xxu"),
-                Subfield(code="z", value=".o10000010"),
-            ],
-        )
-    )
-    bib.add_field(
-        Field(
-            tag="961",
-            indicators=Indicators(" ", " "),
-            subfields=[
-                Subfield(code="d", value="foo"),
-                Subfield(code="f", value="bar"),
-                Subfield(code="m", value="baz"),
-            ],
-        )
-    )
-    return bib
 
 
 class TestParser:

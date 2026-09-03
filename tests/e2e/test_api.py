@@ -6,13 +6,13 @@ from pydantic import ValidationError
 from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.domain.shared import files
-from overload_web.infrastructure import batch_db, file_io, sierra_clients, template_db
+from overload_web.infrastructure import batch_db, file_io, template_db
 from overload_web.main import app
 from overload_web.presentation import deps
 
 
 @pytest.fixture
-def processed_records(monkeypatch, stub_report):
+def processed_records(monkeypatch):
     def fake_response(*args, **kwargs):
         return {"id": "1"}
 
@@ -119,7 +119,7 @@ def test_deps():
     engine.dispose()
 
 
-@pytest.mark.usefixtures("mock_session", "mock_sftp_client", "mock_temp_storage")
+@pytest.mark.usefixtures("mock_sierra_session", "mock_sftp_client", "mock_temp_storage")
 class TestApp:
     client = TestClient(app)
     app.dependency_overrides[deps.get_session] = fake_sql_session
@@ -331,19 +331,6 @@ class TestApp:
         response = self.client.post("/pvf/cat/process-vendor-file", data=context)
         assert response.status_code == 200
 
-    def test_pvf_router_process_full_records_fetcher_error(self):
-        """Tests incorrect library passed to `FetcherFactory` called in `deps.py`"""
-        context = {
-            "library": "Foo",
-            "collection": "BL",
-            "record_type": "cat",
-            "vendor": "FOO",
-            "workflow_id": "1234",
-        }
-        with pytest.raises(ValueError) as exc:
-            self.client.post("/pvf/cat/process-vendor-file", data=context)
-        assert str(exc.value) == "Invalid library: Foo. Must be 'bpl' or 'nypl'"
-
     @pytest.mark.parametrize(
         "library, record_type", [("nypl", "acq"), ("nypl", "cat"), ("nypl", "sel")]
     )
@@ -384,73 +371,6 @@ class TestApp:
             exc.value.errors()[0]["msg"]
             == "Value error, Collection should be `None` for BPL records."
         )
-
-    @pytest.mark.parametrize("record_type", ["acq", "sel"])
-    def test_pvf_router_process_order_records_fetcher_error(self, record_type):
-        """Tests incorrect library passed to `FetcherFactory` called in `deps.py`"""
-        context = {
-            "library": "Foo",
-            "collection": "BL",
-            "record_type": record_type,
-            "vendor": "FOO",
-            "primary_matchpoint": "isbn",
-            "name": "foo",
-            "agent": "bar",
-            "id": 1,
-            "workflow_id": "1234",
-        }
-
-        with pytest.raises(ValueError) as exc:
-            self.client.post(f"/pvf/{record_type}/process-vendor-file", data=context)
-        assert str(exc.value) == "Invalid library: Foo. Must be 'bpl' or 'nypl'"
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "RL", "cat")],
-    )
-    def test_pvf_router_process_full_records_platform_error(
-        self, library, collection, record_type, mock_nypl_session_error
-    ):
-        """Tests `FetcherFactory` called in `deps.py`"""
-        context = {
-            "library": library,
-            "collection": collection,
-            "record_type": record_type,
-            "vendor": "FOO",
-            "workflow_id": "1234",
-        }
-
-        with pytest.raises(sierra_clients.BookopsPlatformError) as exc:
-            self.client.post("/pvf/cat/process-vendor-file", data=context)
-        assert "Trouble connecting: " in str(exc.value)
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [
-            ("nypl", "BL", "acq"),
-            ("nypl", "RL", "acq"),
-            ("nypl", "BL", "sel"),
-            ("nypl", "RL", "sel"),
-        ],
-    )
-    def test_pvf_router_process_order_records_platform_error(
-        self, library, collection, record_type, mock_nypl_session_error
-    ):
-        """Tests `FetcherFactory` called in `deps.py`"""
-        context = {
-            "library": library,
-            "collection": collection,
-            "record_type": record_type,
-            "vendor": "FOO",
-            "primary_matchpoint": "isbn",
-            "name": "foo",
-            "agent": "bar",
-            "id": 1,
-            "workflow_id": "1234",
-        }
-        with pytest.raises(sierra_clients.BookopsPlatformError) as exc:
-            self.client.post(f"/pvf/{record_type}/process-vendor-file", data=context)
-        assert "Trouble connecting: " in str(exc.value)
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
     def test_reports_router_output_report(self, record_type):

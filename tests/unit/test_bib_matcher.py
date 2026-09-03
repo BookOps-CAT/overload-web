@@ -23,7 +23,7 @@ def stub_domain_bib(library, collection):
 
 class TestSierraBibFetcher:
     @pytest.mark.parametrize("match", ["bib_id", "upc", "isbn", "control_number"])
-    def test_get_bibs_by_id_bpl(self, mock_session, match, caplog):
+    def test_get_bibs_by_id_bpl(self, mock_sierra_session, match, caplog):
         fetcher = sierra_clients.SierraBibFetcher(
             session=sierra_clients.BPLSolrSession()
         )
@@ -33,7 +33,7 @@ class TestSierraBibFetcher:
         assert fetcher.session.__class__.__name__ == "BPLSolrSession"
 
     @pytest.mark.parametrize("id", [".b123", ".i123", ".o123", "123", 123, 123456789])
-    def test_get_bibs_by_bib_id_bpl(self, mock_session, id, caplog):
+    def test_get_bibs_by_bib_id_bpl(self, mock_sierra_session, id, caplog):
         """Test `_prep_sierra_number override."""
         fetcher = sierra_clients.SierraBibFetcher(
             session=sierra_clients.BPLSolrSession()
@@ -42,7 +42,7 @@ class TestSierraBibFetcher:
             fetcher.get_bibs_by_id(value=id, key="bib_id")
 
     @pytest.mark.parametrize("match", ["bib_id", "upc", "isbn", "control_number"])
-    def test_get_bibs_by_id_nypl(self, mock_session, match, caplog):
+    def test_get_bibs_by_id_nypl(self, mock_sierra_session, match, caplog):
         fetcher = sierra_clients.SierraBibFetcher(
             session=sierra_clients.NYPLPlatformSession()
         )
@@ -52,7 +52,7 @@ class TestSierraBibFetcher:
         assert fetcher.session.__class__.__name__ == "NYPLPlatformSession"
 
     @pytest.mark.parametrize("id", [".b123", ".i123", ".o123", "123", 123, 123456789])
-    def test_get_bibs_by_bib_id_nypl(self, mock_session, id, caplog):
+    def test_get_bibs_by_bib_id_nypl(self, mock_sierra_session, id, caplog):
         """Test `_prep_sierra_number override."""
         fetcher = sierra_clients.SierraBibFetcher(
             session=sierra_clients.NYPLPlatformSession()
@@ -60,8 +60,8 @@ class TestSierraBibFetcher:
         with does_not_raise():
             fetcher.get_bibs_by_id(value=id, key="bib_id")
 
-    def test_get_bibs_by_id_invalid_matchpoint(self, mock_session, caplog):
-        fetcher = sierra_clients.SierraBibFetcher(session=mock_session)
+    def test_get_bibs_by_id_invalid_matchpoint(self, mock_sierra_session, caplog):
+        fetcher = sierra_clients.SierraBibFetcher(session=mock_sierra_session)
         with pytest.raises(ValueError) as exc:
             fetcher.get_bibs_by_id(value="123456789", key="bar")
         assert "Unsupported query matchpoint: 'bar'" in caplog.text
@@ -70,8 +70,8 @@ class TestSierraBibFetcher:
     @pytest.mark.parametrize(
         "match", ["bib_id", "upc", "isbn", "control_number", "issn"]
     )
-    def test_get_bibs_by_id_no_value_passed(self, match, mock_session, caplog):
-        fetcher = sierra_clients.SierraBibFetcher(session=mock_session)
+    def test_get_bibs_by_id_no_value_passed(self, match, mock_sierra_session, caplog):
+        fetcher = sierra_clients.SierraBibFetcher(session=mock_sierra_session)
         bibs = fetcher.get_bibs_by_id(value=None, key=match)
         assert bibs == []
         assert f"Skipping Sierra query on {match} with missing value." in caplog.text
@@ -88,7 +88,7 @@ class TestSierraBibFetcher:
             fetcher.get_bibs_by_id(value="123456789", key="isbn")
         assert "BookopsSolrError while running Sierra queries." in caplog.text
 
-    def test_get_bibs_by_id_nypl_issn(self, mock_session):
+    def test_get_bibs_by_id_nypl_issn(self, mock_sierra_session):
         fetcher = sierra_clients.SierraBibFetcher(
             session=sierra_clients.NYPLPlatformSession()
         )
@@ -96,13 +96,34 @@ class TestSierraBibFetcher:
             fetcher.get_bibs_by_id(value="123456789", key="issn")
         assert "Search by ISSN not implemented in NYPL Platform" in str(exc.value)
 
-    def test_get_bibs_by_id_bpl_issn(self, mock_session):
+    def test_get_bibs_by_id_bpl_issn(self, mock_sierra_session):
         fetcher = sierra_clients.SierraBibFetcher(
             session=sierra_clients.BPLSolrSession()
         )
         with pytest.raises(NotImplementedError) as exc:
             fetcher.get_bibs_by_id(value="123456789", key="issn")
         assert "Search by ISSN not implemented in BPL Solr" in str(exc.value)
+
+
+class TestFetcherFactory:
+    @pytest.mark.parametrize(
+        "library, session_type",
+        [("nypl", "NYPLPlatformSession"), ("bpl", "BPLSolrSession")],
+    )
+    def test_fetcher_factory(self, mock_sierra_session, library, session_type):
+        fetcher = sierra_clients.FetcherFactory.make(library=library)
+        assert isinstance(fetcher, sierra_clients.SierraBibFetcher)
+        assert fetcher.session.__class__.__name__ == session_type
+
+    def test_fetcher_factory_invalid_library(self, mock_sierra_session):
+        with pytest.raises(ValueError) as exc:
+            sierra_clients.FetcherFactory.make(library="foo")
+        assert str(exc.value) == "Invalid library: foo. Must be 'bpl' or 'nypl'"
+
+    def test_fetcher_factory_platform_error(self, mock_nypl_session_error):
+        with pytest.raises(sierra_clients.BookopsPlatformError) as exc:
+            sierra_clients.FetcherFactory.make(library="nypl")
+        assert "Trouble connecting: " in str(exc.value)
 
 
 @pytest.mark.parametrize(

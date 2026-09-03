@@ -463,7 +463,7 @@ def get_fetcher(
     library: Annotated[str, Form(...)],
 ) -> Generator[sierra_clients.SierraBibFetcher, None, None]:
     """Create a Sierra bib fetcher service for a library."""
-    yield sierra_clients.FetcherFactory().make(library)
+    yield sierra_clients.FetcherFactory.make(library)
 
 
 def get_marc_engine() -> Generator[marc_engine.MarcUpdateEngine, None, None]:

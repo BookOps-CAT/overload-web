@@ -1,21 +1,71 @@
 import pytest
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
 
 from overload_web.domain.pvf import reporting
 from overload_web.infrastructure import reporter
 
 
+class MockCreds:
+    def __init__(self):
+        self.token = "foo"
+        self.refresh_token = "bar"
+
+    @property
+    def valid(self, *args, **kwargs):
+        return True
+
+    @property
+    def expired(self, *args, **kwargs):
+        return False
+
+    def refresh(self, *args, **kwargs):
+        self.expired = False
+        self.valid = True
+
+    def to_json(self, *args, **kwargs):
+        pass
+
+    def run_local_server(self, *args, **kwargs):
+        return self
+
+
 @pytest.fixture
-def mock_sheet_config_invalid_creds(monkeypatch, mock_sheet_config):
+def mock_config(monkeypatch) -> None:
+    def mock_creds(*args, **kwargs):
+        return MockCreds()
+
+    monkeypatch.setattr(Credentials, "from_authorized_user_info", mock_creds)
+
+
+@pytest.fixture
+def mock_config_expired_creds(monkeypatch, mock_config):
+    monkeypatch.setattr(MockCreds, "valid", False)
+    monkeypatch.setattr(MockCreds, "expired", True)
+
+
+@pytest.fixture
+def mock_config_no_creds(monkeypatch):
+    def mock_creds(*args, **kwargs):
+        return MockCreds()
+
+    def null_return(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(InstalledAppFlow, "from_client_config", mock_creds)
+    monkeypatch.setattr(Credentials, "from_authorized_user_info", null_return)
+
+
+@pytest.fixture
+def mock_config_invalid_creds(monkeypatch, mock_config):
     def mock_error(*args, **kwargs):
         raise ValueError
 
-    monkeypatch.setattr(
-        "google.oauth2.credentials.Credentials.from_authorized_user_info", mock_error
-    )
+    monkeypatch.setattr(Credentials, "from_authorized_user_info", mock_error)
 
 
 @pytest.fixture
-def mock_sheet_timeout_error(monkeypatch):
+def mock_sheet_timeout_error(monkeypatch, mock_sheet_service):
     def mock_error(*args, **kwargs):
         raise TimeoutError
 
@@ -24,7 +74,7 @@ def mock_sheet_timeout_error(monkeypatch):
 
 
 @pytest.fixture
-def mock_sheet_auth_error(monkeypatch):
+def mock_sheet_auth_error(monkeypatch, mock_sheet_service):
     def mock_error(*args, **kwargs):
         raise ValueError
 
@@ -37,25 +87,25 @@ def stub_report():
     return reporting.ProcessingStatistics(
         stats=[
             {
-                "vendor": "BTSERIES",
-                "resource_id": "9781234567890",
-                "target_bib_id": "12345",
+                "action": "attach",
+                "call_number": "Foo",
+                "call_number_match": False,
                 "duplicate_records": [],
                 "mixed": [],
                 "other": [],
-                "call_number_match": False,
-                "call_number": "Foo",
+                "resource_id": "9781234567890",
+                "target_bib_id": "12345",
                 "target_call_no": "Bar",
                 "target_title": "Baz",
                 "updated_by_vendor": False,
-                "action": "attach",
+                "vendor": "BTSERIES",
             }
         ]
     )
 
 
 class TestReporter:
-    def test_configure_sheet(self, mock_sheet_config):
+    def test_configure_sheet(self, mock_config):
         google_handler = reporter.GoogleSheetsReporter()
         creds = google_handler.configure_sheet()
         assert creds.token == "foo"
@@ -63,7 +113,7 @@ class TestReporter:
         assert creds.expired is False
         assert creds.refresh_token is not None
 
-    def test_configure_sheet_expired(self, mock_sheet_config_expired_creds):
+    def test_configure_sheet_expired(self, mock_config_expired_creds):
         google_handler = reporter.GoogleSheetsReporter()
         creds = google_handler.configure_sheet()
         assert creds.token == "foo"
@@ -71,18 +121,7 @@ class TestReporter:
         assert creds.expired is False
         assert creds.refresh_token is not None
 
-    def test_configure_sheet_generate_new_creds(
-        self, mock_sheet_config_no_creds, caplog
-    ):
-        google_handler = reporter.GoogleSheetsReporter()
-        creds = google_handler.configure_sheet()
-        assert creds.token == "foo"
-        assert creds.valid is True
-        assert creds.expired is False
-        assert creds.refresh_token is not None
-        assert "API token not found. Running credential config flow." in caplog.text
-
-    def test_configure_sheet_no_creds(self, mock_sheet_config_no_creds, caplog):
+    def test_configure_sheet_generate_new_creds(self, mock_config_no_creds, caplog):
         google_handler = reporter.GoogleSheetsReporter()
         creds = google_handler.configure_sheet()
         assert creds.token == "foo"
@@ -91,9 +130,7 @@ class TestReporter:
         assert creds.refresh_token is not None
         assert "API token not found. Running credential config flow." in caplog.text
 
-    def test_configure_sheet_invalid_creds(
-        self, mock_sheet_config_invalid_creds, caplog
-    ):
+    def test_configure_sheet_invalid_creds(self, mock_config_invalid_creds):
         google_handler = reporter.GoogleSheetsReporter()
         with pytest.raises(ValueError):
             google_handler.configure_sheet()
@@ -112,7 +149,7 @@ class TestReporter:
         prepped_report = google_handler.prep_report([])
         assert prepped_report == []
 
-    def test_write_report(self, mock_sheet_config, stub_report, caplog):
+    def test_write_report(self, mock_sheet_service, stub_report, caplog):
         google_handler = reporter.GoogleSheetsReporter()
         google_handler.write_report(stub_report.create_duplicate_report())
         assert (
@@ -121,7 +158,7 @@ class TestReporter:
         )
 
     def test_write_data_to_sheet_timeout_error(
-        self, mock_sheet_config, mock_sheet_timeout_error, stub_report, caplog
+        self, mock_sheet_timeout_error, stub_report, caplog
     ):
         google_handler = reporter.GoogleSheetsReporter()
         google_handler.write_report(stub_report.create_duplicate_report())
@@ -129,7 +166,7 @@ class TestReporter:
         assert "Data not written to sheet." in caplog.text
 
     def test_write_data_to_sheet_auth_error(
-        self, mock_sheet_config, mock_sheet_auth_error, stub_report, caplog
+        self, mock_sheet_auth_error, stub_report, caplog
     ):
         google_handler = reporter.GoogleSheetsReporter()
         google_handler.write_report(stub_report.create_duplicate_report())

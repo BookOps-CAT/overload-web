@@ -11,10 +11,10 @@ from bookops_worldcat.errors import BookopsWorldcatError
 from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain.pvf import bibs, reporting
+from overload_web.domain.pvf import bibs
 from overload_web.domain.shared import sierra_responses
 from overload_web.infrastructure import marc_engine as engine
-from overload_web.infrastructure import oclc, sierra_clients
+from overload_web.infrastructure import oclc, reporter, sierra_clients
 
 
 @pytest.fixture(scope="session")
@@ -154,7 +154,7 @@ class FakeSierraSession(sierra_clients.SierraSessionProtocol):
 
 
 @pytest.fixture
-def mock_session(monkeypatch):
+def mock_sierra_session(monkeypatch):
     def response(*args, **kwargs):
         record = {"id": "123456789", "title": "foo"}
         json = {"response": {"docs": [record]}, "data": [record]}
@@ -170,7 +170,7 @@ def mock_session(monkeypatch):
 
 
 @pytest.fixture
-def mock_bpl_session_error(monkeypatch, mock_session):
+def mock_bpl_session_error(monkeypatch, mock_sierra_session):
     def mock_error(*args, **kwargs):
         raise sierra_clients.BookopsSolrError
 
@@ -179,7 +179,7 @@ def mock_bpl_session_error(monkeypatch, mock_session):
 
 
 @pytest.fixture
-def mock_nypl_session_error(monkeypatch, mock_session):
+def mock_nypl_session_error(monkeypatch, mock_sierra_session):
     def mock_error(*args, **kwargs):
         raise sierra_clients.BookopsPlatformError
 
@@ -259,7 +259,6 @@ def stub_bib(library, collection) -> Bib:
     bib = Bib()
     bib.leader = "00000cam  2200517 i 4500"
     bib.library = library
-    bib.add_field(Field(tag="005", data="20200101010000.0"))
     bib.add_field(
         Field(
             tag="020",
@@ -595,30 +594,6 @@ def parser_engine(
     )
 
 
-class MockCreds:
-    def __init__(self):
-        self.token = "foo"
-        self.refresh_token = "bar"
-
-    @property
-    def valid(self, *args, **kwargs):
-        return True
-
-    @property
-    def expired(self, *args, **kwargs):
-        return False
-
-    def refresh(self, *args, **kwargs):
-        self.expired = False
-        self.valid = True
-
-    def to_json(self, *args, **kwargs):
-        pass
-
-    def run_local_server(self, *args, **kwargs):
-        return self
-
-
 class MockResource:
     def __init__(self):
         self.spreadsheetId = "foo"
@@ -638,62 +613,16 @@ class MockResource:
 
 
 @pytest.fixture
-def mock_sheet_config(monkeypatch, mocker) -> None:
-    m = mocker.mock_open(read_data="")
-    mocker.patch("overload_web.infrastructure.reporter.open", m)
-    mocker.patch("os.path.exists", lambda *args, **kwargs: True)
+def mock_sheet_service(monkeypatch) -> None:
+    def mock_creds(*args, **kwargs):
+        pass
 
     def build_sheet(*args, **kwargs):
         return MockResource()
 
-    def mock_creds(*args, **kwargs):
-        return MockCreds()
-
     monkeypatch.setattr("googleapiclient.discovery.build", build_sheet)
     monkeypatch.setattr("googleapiclient.discovery.build_from_document", build_sheet)
-    monkeypatch.setattr(
-        "google.oauth2.credentials.Credentials.from_authorized_user_info", mock_creds
-    )
-
-
-@pytest.fixture
-def mock_sheet_config_expired_creds(monkeypatch, mock_sheet_config):
-    monkeypatch.setattr(MockCreds, "valid", False)
-    monkeypatch.setattr(MockCreds, "expired", True)
-
-
-@pytest.fixture
-def mock_sheet_config_no_creds(monkeypatch, mock_sheet_config):
-    monkeypatch.setattr(
-        "google_auth_oauthlib.flow.InstalledAppFlow.from_client_config",
-        lambda *args, **kwargs: MockCreds(),
-    )
-    monkeypatch.setattr(
-        "google.oauth2.credentials.Credentials.from_authorized_user_info",
-        lambda *args, **kwargs: None,
-    )
-
-
-@pytest.fixture
-def stub_report():
-    return reporting.ProcessingStatistics(
-        stats=[
-            {
-                "action": "insert",
-                "call_number": "Foo",
-                "call_number_match": True,
-                "duplicate_records": [],
-                "mixed": [],
-                "other": [],
-                "resource_id": "12345",
-                "target_bib_id": "b12345",
-                "target_call_no": "Foo",
-                "target_title": "Bar",
-                "updated_by_vendor": False,
-                "vendor": "Baz",
-            }
-        ]
-    )
+    monkeypatch.setattr(reporter.GoogleSheetsReporter, "configure_sheet", mock_creds)
 
 
 @pytest.fixture

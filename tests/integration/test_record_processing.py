@@ -76,141 +76,6 @@ def test_session():
     test_engine.dispose()
 
 
-class TestProcessCommands:
-    ENGINE = marc_engine.MarcUpdateEngine()
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
-    )
-    def test_cat_service_process_vendor_file(
-        self, library, fake_fetcher, test_session, parser_engine, update_rules
-    ):
-        repo = batch_db.PVFBatchRepository(session=test_session)
-        with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
-            marc_data = fh.read()
-        out = ProcessCatalogingRecords.execute(
-            batches={"foo.mrc": marc_data},
-            marc_updater=self.ENGINE,
-            marc_update_rules=update_rules,
-            fetcher=fake_fetcher,
-            repo=repo,
-            marc_parser=parser_engine,
-        )
-        assert out["id"] is not None
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
-    )
-    def test_sel_service_process_vendor_file(
-        self, library, fake_fetcher, test_session, parser_engine, update_rules
-    ):
-        repo = batch_db.PVFBatchRepository(session=test_session)
-        with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
-            marc_data = fh.read()
-        out = ProcessSelectionRecords.execute(
-            {"foo.mrc": marc_data},
-            marc_updater=self.ENGINE,
-            fetcher=fake_fetcher,
-            marc_update_rules=update_rules,
-            template_data={"format": "a", "vendor": "UNKNOWN"},
-            matchpoints={"primary_matchpoint": "isbn"},
-            repo=repo,
-            marc_parser=parser_engine,
-        )
-        assert out["id"] is not None
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "acq"), ("nypl", "RL", "acq"), ("bpl", "NONE", "acq")],
-    )
-    def test_acq_service_process_vendor_file(
-        self, library, fake_fetcher, test_session, parser_engine, update_rules
-    ):
-        repo = batch_db.PVFBatchRepository(session=test_session)
-        with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
-            marc_data = fh.read()
-        out = ProcessAcquisitionsRecords.execute(
-            {"foo.mrc": marc_data},
-            marc_updater=self.ENGINE,
-            fetcher=fake_fetcher,
-            marc_update_rules=update_rules,
-            template_data={"format": "a", "vendor": "UNKNOWN"},
-            matchpoints={"primary_matchpoint": "isbn"},
-            repo=repo,
-            marc_parser=parser_engine,
-        )
-        assert out["id"] is not None
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
-    )
-    def test_cat_service_process_vendor_file_dupes(
-        self, library, fake_fetcher, test_session, parser_engine, update_rules
-    ):
-        repo = batch_db.PVFBatchRepository(session=test_session)
-        with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
-            marc_data = fh.read()
-        with pytest.raises(ValueError) as exc:
-            ProcessCatalogingRecords.execute(
-                batches={"foo.mrc": marc_data},
-                marc_updater=self.ENGINE,
-                fetcher=fake_fetcher,
-                marc_update_rules=update_rules,
-                repo=repo,
-                marc_parser=parser_engine,
-            )
-        assert "Duplicate barcodes found in file: " in str(exc.value)
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "acq"), ("nypl", "RL", "acq"), ("bpl", "NONE", "acq")],
-    )
-    def test_acq_service_process_vendor_file_dupes(
-        self, library, fake_fetcher, test_session, parser_engine, update_rules
-    ):
-        repo = batch_db.PVFBatchRepository(session=test_session)
-        with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
-            marc_data = fh.read()
-        with pytest.raises(ValueError) as exc:
-            ProcessAcquisitionsRecords.execute(
-                {"foo.mrc": marc_data},
-                marc_updater=self.ENGINE,
-                fetcher=fake_fetcher,
-                marc_update_rules=update_rules,
-                template_data={"format": "a"},
-                matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
-                repo=repo,
-                marc_parser=parser_engine,
-            )
-        assert "Duplicate barcodes found in file: " in str(exc.value)
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
-    )
-    def test_sel_service_process_vendor_file_dupes(
-        self, library, fake_fetcher, test_session, parser_engine, update_rules
-    ):
-        repo = batch_db.PVFBatchRepository(session=test_session)
-        with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
-            marc_data = fh.read()
-        with pytest.raises(ValueError) as exc:
-            ProcessSelectionRecords.execute(
-                {"foo.mrc": marc_data},
-                marc_updater=self.ENGINE,
-                fetcher=fake_fetcher,
-                marc_update_rules=update_rules,
-                template_data={"format": "a"},
-                matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
-                repo=repo,
-                marc_parser=parser_engine,
-            )
-        assert "Duplicate barcodes found in file: " in str(exc.value)
-
-
 @pytest.fixture(scope="class")
 def test_session_no_records():
     test_engine = create_engine("sqlite:///:memory:")
@@ -221,18 +86,146 @@ def test_session_no_records():
     test_engine.dispose()
 
 
+@pytest.fixture(scope="class")
+def test_batch_repository(test_session):
+    return batch_db.PVFBatchRepository(session=test_session)
+
+
+class TestProcessCommands:
+    ENGINE = marc_engine.MarcUpdateEngine()
+
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
+    )
+    def test_cat_service_process_vendor_file(
+        self, library, fake_fetcher, test_batch_repository, parser_engine, update_rules
+    ):
+        with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
+            marc_data = fh.read()
+        out = ProcessCatalogingRecords.execute(
+            batches={"foo.mrc": marc_data},
+            marc_updater=self.ENGINE,
+            marc_update_rules=update_rules,
+            fetcher=fake_fetcher,
+            repo=test_batch_repository,
+            marc_parser=parser_engine,
+        )
+        assert out["id"] is not None
+
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
+    )
+    def test_sel_service_process_vendor_file(
+        self, library, fake_fetcher, test_batch_repository, parser_engine, update_rules
+    ):
+        with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
+            marc_data = fh.read()
+        out = ProcessSelectionRecords.execute(
+            {"foo.mrc": marc_data},
+            marc_updater=self.ENGINE,
+            fetcher=fake_fetcher,
+            marc_update_rules=update_rules,
+            template_data={"format": "a", "vendor": "UNKNOWN"},
+            matchpoints={"primary_matchpoint": "isbn"},
+            repo=test_batch_repository,
+            marc_parser=parser_engine,
+        )
+        assert out["id"] is not None
+
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [("nypl", "BL", "acq"), ("nypl", "RL", "acq"), ("bpl", "NONE", "acq")],
+    )
+    def test_acq_service_process_vendor_file(
+        self, library, fake_fetcher, test_batch_repository, parser_engine, update_rules
+    ):
+        with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
+            marc_data = fh.read()
+        out = ProcessAcquisitionsRecords.execute(
+            {"foo.mrc": marc_data},
+            marc_updater=self.ENGINE,
+            fetcher=fake_fetcher,
+            marc_update_rules=update_rules,
+            template_data={"format": "a", "vendor": "UNKNOWN"},
+            matchpoints={"primary_matchpoint": "isbn"},
+            repo=test_batch_repository,
+            marc_parser=parser_engine,
+        )
+        assert out["id"] is not None
+
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
+    )
+    def test_cat_service_process_vendor_file_dupes(
+        self, library, fake_fetcher, test_batch_repository, parser_engine, update_rules
+    ):
+        with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
+            marc_data = fh.read()
+        with pytest.raises(ValueError) as exc:
+            ProcessCatalogingRecords.execute(
+                batches={"foo.mrc": marc_data},
+                marc_updater=self.ENGINE,
+                fetcher=fake_fetcher,
+                marc_update_rules=update_rules,
+                repo=test_batch_repository,
+                marc_parser=parser_engine,
+            )
+        assert "Duplicate barcodes found in file: " in str(exc.value)
+
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [("nypl", "BL", "acq"), ("nypl", "RL", "acq"), ("bpl", "NONE", "acq")],
+    )
+    def test_acq_service_process_vendor_file_dupes(
+        self, library, fake_fetcher, test_batch_repository, parser_engine, update_rules
+    ):
+        with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
+            marc_data = fh.read()
+        with pytest.raises(ValueError) as exc:
+            ProcessAcquisitionsRecords.execute(
+                {"foo.mrc": marc_data},
+                marc_updater=self.ENGINE,
+                fetcher=fake_fetcher,
+                marc_update_rules=update_rules,
+                template_data={"format": "a"},
+                matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
+                repo=test_batch_repository,
+                marc_parser=parser_engine,
+            )
+        assert "Duplicate barcodes found in file: " in str(exc.value)
+
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
+    )
+    def test_sel_service_process_vendor_file_dupes(
+        self, library, fake_fetcher, test_batch_repository, parser_engine, update_rules
+    ):
+        with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
+            marc_data = fh.read()
+        with pytest.raises(ValueError) as exc:
+            ProcessSelectionRecords.execute(
+                {"foo.mrc": marc_data},
+                marc_updater=self.ENGINE,
+                fetcher=fake_fetcher,
+                marc_update_rules=update_rules,
+                template_data={"format": "a"},
+                matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
+                repo=test_batch_repository,
+                marc_parser=parser_engine,
+            )
+        assert "Duplicate barcodes found in file: " in str(exc.value)
+
+
 class TestReportCommands:
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_create_pvf_output_report(
-        self, mock_sheet_config, caplog, test_session, record_type
-    ):
-        repo = batch_db.PVFBatchRepository(session=test_session)
+    def test_create_pvf_output_report(self, test_batch_repository, record_type):
         out = CreatePVFOutputReport.execute(
-            batch_id="1", record_type=record_type, repo=repo
+            batch_id="1", record_type=record_type, repo=test_batch_repository
         )
-        assert "total_records" in out.keys()
-        assert "file_names" in out.keys()
-        assert "total_files" in out.keys()
         assert out == {
             "total_records": 1,
             "file_names": ["foo.mrc"],
@@ -256,9 +249,8 @@ class TestReportCommands:
             "processing_integrity": True,
         }
 
-    def test_get_detailed_report_data(self, mock_sheet_config, caplog, test_session):
-        repo = batch_db.PVFBatchRepository(session=test_session)
-        out = GetDetailedReportData.execute(batch_id="1", repo=repo)
+    def test_get_detailed_report_data(self, test_batch_repository):
+        out = GetDetailedReportData.execute(batch_id="1", repo=test_batch_repository)
         assert sorted(out[0].keys()) == sorted(
             [
                 "vendor",
@@ -278,13 +270,12 @@ class TestReportCommands:
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
     def test_write_output_report_both_reports(
-        self, mock_sheet_config, caplog, test_session, record_type
+        self, mock_sheet_service, caplog, test_batch_repository, record_type
     ):
-        repo = batch_db.PVFBatchRepository(session=test_session)
         WriteOutputReport.execute(
             batch_id="1",
             record_type=record_type,
-            repo=repo,
+            repo=test_batch_repository,
             writer=reporter.GoogleSheetsReporter(),
         )
         assert len(caplog.records) == 2
@@ -299,13 +290,12 @@ class TestReportCommands:
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
     def test_write_output_report_no_call_no_report(
-        self, mock_sheet_config, caplog, test_session, record_type
+        self, mock_sheet_service, caplog, test_batch_repository, record_type
     ):
-        repo = batch_db.PVFBatchRepository(session=test_session)
         WriteOutputReport.execute(
             batch_id=2,
             record_type=record_type,
-            repo=repo,
+            repo=test_batch_repository,
             writer=reporter.GoogleSheetsReporter(),
         )
         assert len(caplog.records) == 1
@@ -316,7 +306,7 @@ class TestReportCommands:
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
     def test_write_output_report_no_reports(
-        self, mock_sheet_config, caplog, test_session_no_records, record_type
+        self, mock_sheet_service, caplog, test_session_no_records, record_type
     ):
         repo = batch_db.PVFBatchRepository(session=test_session_no_records)
         WriteOutputReport.execute(

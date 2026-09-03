@@ -117,7 +117,7 @@ class TestLiveSierraSession:
 
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_SierraBibFetcher_live(self, library):
-        fetcher = sierra_clients.FetcherFactory().make(library=library)
+        fetcher = sierra_clients.FetcherFactory.make(library=library)
         bibs = fetcher.get_bibs_by_id(value="9781338299151", key="isbn")
         assert isinstance(bibs, list)
         assert bibs[0]["title"] is not None

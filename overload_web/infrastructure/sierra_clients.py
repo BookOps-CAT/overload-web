@@ -43,7 +43,8 @@ AGENT = f"{__title__}/{__version__}"
 class FetcherFactory:
     """Create a `SierraBibFetcher` object"""
 
-    def make(self, library: str) -> SierraBibFetcher:
+    @staticmethod
+    def make(library: str) -> SierraBibFetcher:
         client: SierraSessionProtocol
         if library not in ["bpl", "nypl"]:
             raise ValueError(f"Invalid library: {library}. Must be 'bpl' or 'nypl'")
