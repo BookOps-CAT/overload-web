@@ -1,9 +1,10 @@
+import datetime
 from contextlib import nullcontext as does_not_raise
 
 import pytest
 
 from overload_web.application.pvf import match_service
-from overload_web.domain.pvf import matching, models
+from overload_web.domain.pvf import models
 from overload_web.domain.shared import sierra_responses
 from overload_web.infrastructure import sierra_clients
 
@@ -27,7 +28,7 @@ def nypl_data():
     return {
         "id": "12345",
         "title": "Record 1",
-        "updatedDate": "2000-01-01T01:00:00",
+        "updatedDate": "2020-01-01T01:00:00",
         "varFields": [],
         "locations": [
             {"code": "a", "name": "library"},
@@ -147,7 +148,7 @@ class TestFetcherFactory:
 
 
 @pytest.mark.parametrize(
-    "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
+    "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", None)]
 )
 class TestBibMatcher:
     @pytest.mark.parametrize(
@@ -204,102 +205,34 @@ class TestBibMatcher:
         )
         assert len(candidates) == 0
 
-
-@pytest.mark.parametrize(
-    "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
-)
-class TestSelectionMatchAnalyzer:
-    ANALYZER = matching.SelectionMatchAnalyzer()
-
-    def test_classify_matches_duplicates(self, full_bib, sierra_response):
-        classified = self.ANALYZER.classify_matches(
-            record=full_bib, matches=[sierra_response, sierra_response]
-        )
-        assert classified.duplicates == ["12345", "12345"]
-
-    def test_classify_matches_unknown_library(self, full_bib, sierra_response):
-        full_bib.library = "FOO"
-        with pytest.raises(ValueError) as exc:
-            self.ANALYZER.classify_matches(record=full_bib, matches=[sierra_response])
-        assert str(exc.value) == "Unknown library: FOO. Cannot classify matches."
-
-    def test_analyze(self, sel_bib, sierra_response):
-        candidates = self.ANALYZER.classify_matches(
-            record=sel_bib, matches=[sierra_response]
-        )
-        result = self.ANALYZER.analyze(record=sel_bib, candidates=candidates)
-        assert sel_bib.bib_id is None
-        assert result.target_bib_id == "12345"
-        assert result.duplicate_records == []
-        assert result.call_number == "Foo"
-        assert result.resource_id == "9781234567890"
-        assert result.mixed == []
-        assert result.other == []
-        assert result.action == "attach"
-        assert result.call_number_match is True
-        assert result.updated_by_vendor is False
-        assert result.target_call_no == "Foo"
-        assert result.target_title == "Record 1"
-
-    def test_analyze_no_matches(self, sel_bib):
-        candidates = matching.ClassifiedCandidates([], [], [])
-        result = self.ANALYZER.analyze(record=sel_bib, candidates=candidates)
-        assert sel_bib.bib_id is None
-        assert result.target_bib_id is None
-        assert result.duplicate_records == []
-        assert result.call_number == "Foo"
-        assert result.resource_id == "9781234567890"
-        assert result.mixed == []
-        assert result.other == []
-        assert result.action == "insert"
-        assert result.call_number_match is True
-        assert result.updated_by_vendor is False
-        assert result.target_call_no is None
-        assert result.target_title is None
-
-    def test_analyze_no_call_no(self, sel_bib, collection, nypl_data):
-        nypl_data["varFields"] = [
-            {"marcTag": "910", "subfields": [{"content": collection, "tag": "a"}]}
-        ]
-        response = sierra_responses.NYPLPlatformResponse(data=nypl_data)
-        candidates = matching.ClassifiedCandidates([response], [], [])
-        result = self.ANALYZER.analyze(record=sel_bib, candidates=candidates)
-        assert result.target_bib_id == "12345"
-        assert result.duplicate_records == []
-        assert result.call_number == "Foo"
-        assert sel_bib.bib_id is None
-        assert result.resource_id == "9781234567890"
-        assert result.mixed == []
-        assert result.other == []
-        assert result.action == "attach"
-        assert result.call_number_match is True
-        assert result.updated_by_vendor is False
-        assert result.target_call_no is None
-        assert result.target_title == "Record 1"
-        assert response.branch_call_number is None
-        assert response.research_call_number == []
-
-
-@pytest.mark.parametrize(
-    "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
-)
-class TestAcquisitionsMatchAnalyzer:
-    ANALYZER = matching.AcquisitionsMatchAnalyzer()
-
     def test_action_attr(self, acq_bib):
         with pytest.raises(AttributeError) as exc:
             acq_bib.action
         assert str(exc.value) == "CatalogAction has not been assigned to the DomainBib"
 
-    def test_analyze(self, acq_bib, sierra_response):
-        candidates = self.ANALYZER.classify_matches(
-            record=acq_bib, matches=[sierra_response]
+    @pytest.mark.parametrize(
+        "key, value, output",
+        [
+            ("control_number", "123456789", "123456789"),
+            ("isbn", "123456789", "123456789"),
+            ("oclc_number", [], None),
+            ("oclc_number", "123456789", "123456789"),
+            ("oclc_number", ["123456789", "987654321"], "123456789"),
+            ("upc", "123456789", "123456789"),
+        ],
+    )
+    def test_review_matches_acq(
+        self, acq_bib, stub_matcher, key, value, sierra_response, output
+    ):
+        acq_bib.isbn = None
+        setattr(acq_bib, key, value)
+        result = stub_matcher.review_matches(
+            acq_bib, matches=[sierra_response, sierra_response]
         )
-        result = self.ANALYZER.analyze(record=acq_bib, candidates=candidates)
         assert acq_bib.bib_id is None
         assert result.target_bib_id == acq_bib.bib_id
-        assert result.duplicate_records == []
-        assert result.resource_id == "9781234567890"
+        assert result.duplicate_records == ["12345", "12345"]
+        assert result.resource_id == output
         assert result.mixed == []
         assert result.other == []
         assert result.action == "insert"
@@ -308,88 +241,8 @@ class TestAcquisitionsMatchAnalyzer:
         assert result.target_call_no == result.call_number
         assert result.target_title == acq_bib.title
 
-    @pytest.mark.parametrize(
-        "key, value",
-        [
-            ("control_number", "123456789"),
-            ("isbn", "123456789"),
-            ("oclc_number", "123456789"),
-            ("oclc_number", ["123456789", "987654321"]),
-            ("upc", "123456789"),
-        ],
-    )
-    def test_resource_id(self, acq_bib, sierra_response, key, value):
-        acq_bib.isbn = None
-        setattr(acq_bib, key, value)
-        response = sierra_responses.NYPLPlatformResponse(sierra_response)
-        candidates = matching.ClassifiedCandidates([response], [], [])
-        result = self.ANALYZER.analyze(record=acq_bib, candidates=candidates)
-        assert result.resource_id == "123456789"
-        assert result.call_number == "Foo"
-
-    def test_resource_id_none(self, acq_bib, sierra_response):
-        acq_bib.isbn = None
-        response = sierra_responses.NYPLPlatformResponse(sierra_response)
-        candidates = matching.ClassifiedCandidates([response], [], [])
-        result = self.ANALYZER.analyze(record=acq_bib, candidates=candidates)
-        assert result.resource_id is None
-        assert acq_bib.control_number is None
-        assert acq_bib.isbn is None
-        assert acq_bib.oclc_number is None
-        assert acq_bib.upc is None
-
-
-@pytest.mark.parametrize("library, collection", [("nypl", "BL")])
-class TestNYPLCatBranchMatchAnalyzer:
-    ANALYZER = matching.NYPLCatBranchMatchAnalyzer()
-
-    @pytest.mark.parametrize("location", ["zzzzz", "myj", "maj", "agj"])
-    def test_classify_matches_nypl_bl_locations(self, full_bib, nypl_data, location):
-        nypl_data["locations"] = [{"code": location, "name": "Foo"}]
-        classified = self.ANALYZER.classify_matches(
-            record=full_bib, matches=[nypl_data]
-        )
-        assert len(classified.matched) == 1
-        assert len(classified.mixed) == 0
-
-    def test_classify_matches_nypl_mixed(self, full_bib, nypl_data):
-        nypl_data["varFields"] = [
-            {"marcTag": "910", "subfields": [{"content": "BL", "tag": "a"}]},
-            {"marcTag": "910", "subfields": [{"content": "RL", "tag": "a"}]},
-        ]
-        classified = self.ANALYZER.classify_matches(
-            record=full_bib, matches=[nypl_data]
-        )
-        assert len(classified.mixed) == 1
-
-    def test_classify_matches_nypl_mixed_call_number(self, full_bib, nypl_data):
-        nypl_data["varFields"] = [
-            {"marcTag": "091", "subfields": [{"content": "Foo", "tag": "a"}]},
-            {
-                "marcTag": "852",
-                "ind1": "8",
-                "ind2": " ",
-                "subfields": [{"content": "Foo", "tag": "a"}],
-            },
-        ]
-        classified = self.ANALYZER.classify_matches(
-            record=full_bib, matches=[nypl_data]
-        )
-        assert len(classified.mixed) == 1
-
-    def test_classify_matches_nypl_no_collection(self, full_bib, nypl_data):
-        classified = self.ANALYZER.classify_matches(
-            record=full_bib, matches=[nypl_data]
-        )
-        assert len(classified.mixed) == 0
-        assert len(classified.duplicates) == 0
-        assert len(classified.matched) == 0
-        assert len(classified.other) == 1
-
-    def test_analyze(self, full_bib, sierra_response):
-        response = sierra_responses.NYPLPlatformResponse(sierra_response)
-        candidates = matching.ClassifiedCandidates([response], [], [])
-        result = self.ANALYZER.analyze(record=full_bib, candidates=candidates)
+    def test_review_matches_cat(self, full_bib, stub_matcher, sierra_response):
+        result = stub_matcher.review_matches(full_bib, matches=[sierra_response])
         assert full_bib.bib_id is None
         assert result.target_bib_id == "12345"
         assert result.duplicate_records == []
@@ -403,9 +256,8 @@ class TestNYPLCatBranchMatchAnalyzer:
         assert result.target_call_no == "Foo"
         assert result.target_title == "Record 1"
 
-    def test_analyze_no_matches(self, full_bib):
-        candidates = matching.ClassifiedCandidates([], [], [])
-        result = self.ANALYZER.analyze(record=full_bib, candidates=candidates)
+    def test_review_matches_cat_no_matches(self, full_bib, stub_matcher):
+        result = stub_matcher.review_matches(full_bib, matches=[])
         assert full_bib.bib_id is None
         assert result.target_bib_id is None
         assert result.duplicate_records == []
@@ -419,126 +271,96 @@ class TestNYPLCatBranchMatchAnalyzer:
         assert result.target_call_no is None
         assert result.target_title is None
 
+    def test_review_matches_sel(self, sel_bib, stub_matcher, sierra_response):
+        result = stub_matcher.review_matches(sel_bib, matches=[sierra_response])
+        assert sel_bib.bib_id is None
+        assert result.target_bib_id == "12345"
+        assert result.duplicate_records == []
+        assert result.call_number == "Foo"
+        assert result.resource_id == "9781234567890"
+        assert result.mixed == []
+        assert result.other == []
+        assert result.action == "attach"
+        assert result.call_number_match is True
+        assert result.updated_by_vendor is False
+        assert result.target_call_no == "Foo"
+        assert result.target_title == "Record 1"
+
+    def test_review_matches_sel_no_matches(self, sel_bib, stub_matcher):
+        result = stub_matcher.review_matches(sel_bib, matches=[])
+        assert sel_bib.bib_id is None
+        assert result.target_bib_id is None
+        assert result.duplicate_records == []
+        assert result.call_number == "Foo"
+        assert result.resource_id == "9781234567890"
+        assert result.mixed == []
+        assert result.other == []
+        assert result.action == "insert"
+        assert result.call_number_match is True
+        assert result.updated_by_vendor is False
+        assert result.target_call_no is None
+        assert result.target_title is None
+
+    def test_review_matches_sel_no_call_no(
+        self, sel_bib, sierra_response, stub_matcher, collection
+    ):
+        sierra_response["varFields"] = [
+            {"marcTag": "901", "subfields": [{"content": "CAT", "tag": "b"}]},
+            {"marcTag": "910", "subfields": [{"content": collection, "tag": "a"}]},
+        ]
+        sierra_response = {
+            k: v for k, v in sierra_response.items() if k != "call_number"
+        }
+        result = stub_matcher.review_matches(sel_bib, matches=[sierra_response])
+        assert result.target_bib_id == "12345"
+        assert result.duplicate_records == []
+        assert result.call_number == "Foo"
+        assert sel_bib.bib_id is None
+        assert result.resource_id == "9781234567890"
+        assert result.mixed == []
+        assert result.other == []
+        assert result.action == "attach"
+        assert result.call_number_match is True
+        assert result.updated_by_vendor is False
+        assert result.target_call_no is None
+        assert result.target_title == "Record 1"
+
+
+class TestBibMatcherReviewMatches:
     @pytest.mark.parametrize(
         "date, action, updated",
         [
             ("2025-01-01T01:00:00", "update", True),
             ("2020-01-01T01:00:00", "attach", False),
+            (None, "attach", False),
         ],
     )
-    def test_analyze_no_call_number_match_vendor_source(
-        self, full_bib, date, action, updated, nypl_data
+    @pytest.mark.parametrize("library, collection", [("nypl", "BL")])
+    def test_review_matches_cat_bl_vendor_record(
+        self, full_bib, date, action, updated, nypl_data, stub_matcher
     ):
         nypl_data["varFields"] = [
-            {"marcTag": "091", "subfields": [{"content": "Baz", "tag": "a"}]},
-            {"marcTag": "910", "subfields": [{"content": "BL", "tag": "a"}]},
-        ]
-        nypl_data["updatedDate"] = date
-        response = sierra_responses.NYPLPlatformResponse(nypl_data)
-        candidates = matching.ClassifiedCandidates([response], [], [])
-        result = self.ANALYZER.analyze(record=full_bib, candidates=candidates)
-        assert result.target_bib_id == "12345"
-        assert response.cat_source == "vendor"
-        assert response.branch_call_number is not None
-        assert result.action == action
-        assert result.duplicate_records == []
-        assert result.call_number == "Foo"
-        assert result.resource_id == "9781234567890"
-        assert result.mixed == []
-        assert result.other == []
-        assert result.call_number_match is False
-        assert result.updated_by_vendor == updated
-        assert result.target_call_no == "Baz"
-        assert result.target_title == "Record 1"
-        # test that NYPLPlatformResponse is parsing data correctly
-        assert response.barcodes == []
-        assert response.control_number is None
-        assert response.isbn == []
-        assert response.oclc_number == []
-        assert response.upc == []
-
-
-@pytest.mark.parametrize("library, collection", [("nypl", "RL")])
-class TestNYPLCatResearchMatchAnalyzer:
-    ANALYZER = matching.NYPLCatResearchMatchAnalyzer()
-
-    @pytest.mark.parametrize("location", ["myd", "xxx", "lsx", "scx", "max"])
-    def test_classify_matches_nypl_rl_locations(self, full_bib, nypl_data, location):
-        nypl_data["locations"] = [{"code": location, "name": "Foo"}]
-        classified = self.ANALYZER.classify_matches(
-            record=full_bib, matches=[nypl_data]
-        )
-        assert len(classified.matched) == 1
-        assert len(classified.mixed) == 0
-
-    def test_classify_matches_nypl_mixed(self, full_bib, nypl_data):
-        nypl_data["varFields"] = [
-            {"marcTag": "910", "subfields": [{"content": "BL", "tag": "a"}]},
-            {"marcTag": "910", "subfields": [{"content": "RL", "tag": "a"}]},
-        ]
-        classified = self.ANALYZER.classify_matches(
-            record=full_bib, matches=[nypl_data]
-        )
-        assert len(classified.mixed) == 1
-
-    def test_classify_matches_nypl_mixed_call_number(self, full_bib, nypl_data):
-        nypl_data["varFields"] = [
-            {"marcTag": "091", "subfields": [{"content": "Foo", "tag": "a"}]},
             {
-                "marcTag": "852",
-                "ind1": "8",
+                "marcTag": "091",
+                "ind1": " ",
                 "ind2": " ",
                 "subfields": [{"content": "Foo", "tag": "a"}],
-            },
+            }
         ]
-        classified = self.ANALYZER.classify_matches(
-            record=full_bib, matches=[nypl_data]
-        )
-        assert len(classified.mixed) == 1
-
-    def test_classify_matches_nypl_no_collection(self, full_bib, nypl_data):
-        classified = self.ANALYZER.classify_matches(
-            record=full_bib, matches=[nypl_data]
-        )
-        assert len(classified.mixed) == 0
-        assert len(classified.duplicates) == 0
-        assert len(classified.matched) == 0
-        assert len(classified.other) == 1
-
-    def test_analyze(self, full_bib, sierra_response):
-        response = sierra_responses.NYPLPlatformResponse(sierra_response)
-        candidates = matching.ClassifiedCandidates([response], [], [])
-        result = self.ANALYZER.analyze(record=full_bib, candidates=candidates)
+        nypl_data["updatedDate"] = date
+        result = stub_matcher.review_matches(full_bib, matches=[nypl_data])
         assert full_bib.bib_id is None
         assert result.target_bib_id == "12345"
+        assert result.action == action
+        assert result.mixed == []
+        assert result.other == []
         assert result.duplicate_records == []
         assert result.resource_id == "9781234567890"
         assert result.call_number == "Foo"
-        assert result.mixed == []
-        assert result.other == []
-        assert result.action == "attach"
         assert result.call_number_match is True
-        assert result.updated_by_vendor is False
+        assert result.updated_by_vendor == updated
         assert result.target_call_no == "Foo"
-        assert result.target_bib_id == "12345"
         assert result.target_title == "Record 1"
-
-    def test_analyze_no_results(self, full_bib):
-        candidates = matching.ClassifiedCandidates([], [], [])
-        result = self.ANALYZER.analyze(record=full_bib, candidates=candidates)
-        assert full_bib.bib_id is None
-        assert result.target_bib_id is None
-        assert result.duplicate_records == []
-        assert result.resource_id == "9781234567890"
-        assert result.call_number == "Foo"
-        assert result.mixed == []
-        assert result.other == []
-        assert result.action == "insert"
-        assert result.call_number_match is True
-        assert result.updated_by_vendor is False
-        assert result.target_call_no is None
-        assert result.target_bib_id is None
-        assert result.target_title is None
 
     @pytest.mark.parametrize(
         "date, action, updated",
@@ -548,7 +370,10 @@ class TestNYPLCatResearchMatchAnalyzer:
             (None, "attach", False),
         ],
     )
-    def test_analyze_vendor_record(self, full_bib, date, action, updated, nypl_data):
+    @pytest.mark.parametrize("library, collection", [("nypl", "RL")])
+    def test_review_matches_cat_rl_vendor_record(
+        self, full_bib, date, action, updated, nypl_data, stub_matcher
+    ):
         nypl_data["varFields"] = [
             {
                 "marcTag": "852",
@@ -558,12 +383,9 @@ class TestNYPLCatResearchMatchAnalyzer:
             }
         ]
         nypl_data["updatedDate"] = date
-        response = sierra_responses.NYPLPlatformResponse(data=nypl_data)
-        candidates = matching.ClassifiedCandidates([response], [], [])
-        result = self.ANALYZER.analyze(record=full_bib, candidates=candidates)
+        result = stub_matcher.review_matches(full_bib, matches=[nypl_data])
         assert full_bib.bib_id is None
         assert result.target_bib_id == "12345"
-        assert response.cat_source == "vendor"
         assert result.action == action
         assert result.mixed == []
         assert result.other == []
@@ -575,68 +397,6 @@ class TestNYPLCatResearchMatchAnalyzer:
         assert result.target_call_no == "Bar"
         assert result.target_title == "Record 1"
 
-    def test_analyze_no_call_no(self, full_bib, sierra_response):
-        sierra_response["varFields"] = [
-            i for i in sierra_response["varFields"] if i["marcTag"] != "852"
-        ]
-        response = sierra_responses.NYPLPlatformResponse(data=sierra_response)
-        candidates = matching.ClassifiedCandidates([response], [], [])
-        result = self.ANALYZER.analyze(record=full_bib, candidates=candidates)
-        assert full_bib.bib_id is None
-        assert result.target_bib_id == "12345"
-        assert result.action == "update"
-        assert result.mixed == []
-        assert result.other == []
-        assert result.duplicate_records == []
-        assert result.resource_id == "9781234567890"
-        assert result.call_number == "Foo"
-        assert result.call_number_match is False
-        assert result.updated_by_vendor is False
-        assert result.target_call_no is None
-        assert result.target_title == "Record 1"
-
-
-@pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
-class TestBPLCatMatchAnalyzer:
-    ANALYZER = matching.BPLCatMatchAnalyzer()
-
-    def test_analyze(self, full_bib, sierra_response):
-        response = sierra_responses.BPLSolrResponse(data=sierra_response)
-        candidates = matching.ClassifiedCandidates(
-            matched=[response], mixed=[], other=[]
-        )
-        result = self.ANALYZER.analyze(record=full_bib, candidates=candidates)
-        assert full_bib.bib_id is None
-        assert result.target_bib_id == "12345"
-        assert result.duplicate_records == []
-        assert result.call_number == "Foo"
-        # test that the BPL response is parsed correctly
-        assert response.barcodes == ["33333123456789"]
-        assert response.cat_source == "inhouse"
-        assert response.control_number == "ocn123456789"
-        assert response.isbn == ["9781234567890"]
-        assert sorted(response.oclc_number) == sorted(["ocn123456789"])
-        assert response.research_call_number == []
-        assert sorted(response.upc) == sorted(["12345"])
-        assert result.call_number_match is True
-
-    def test_analyze_no_results(self, full_bib):
-        candidates = matching.ClassifiedCandidates([], [], [])
-        result = self.ANALYZER.analyze(record=full_bib, candidates=candidates)
-        assert full_bib.bib_id is None
-        assert result.target_bib_id is None
-        assert result.action == "insert"
-        assert result.call_number_match is True
-
-    def test_analyze_no_results_midwest(self, full_bib):
-        full_bib.vendor = "Midwest DVD"
-        candidates = matching.ClassifiedCandidates([], [], [])
-        result = self.ANALYZER.analyze(record=full_bib, candidates=candidates)
-        assert full_bib.bib_id is None
-        assert result.target_bib_id is None
-        assert result.action == "attach"
-        assert result.call_number_match is True
-
     @pytest.mark.parametrize(
         "date, action",
         [
@@ -645,30 +405,188 @@ class TestBPLCatMatchAnalyzer:
             (None, "attach"),
         ],
     )
-    def test_analyze_vendor_record(self, full_bib, date, action):
+    @pytest.mark.parametrize("library, collection", [("bpl", None)])
+    def test_review_matches_cat_bpl_vendor_record(
+        self, full_bib, date, action, stub_matcher
+    ):
         data = {
             "id": "34567",
             "title": "Record 3",
             "ss_marc_tag_005": date,
             "call_number": "Foo",
         }
-        response = sierra_responses.BPLSolrResponse(data=data)
-        candidates = matching.ClassifiedCandidates([response], [], [])
-        result = self.ANALYZER.analyze(record=full_bib, candidates=candidates)
+        result = stub_matcher.review_matches(full_bib, matches=[data])
         assert result.target_bib_id == "34567"
-        assert response.cat_source == "vendor"
         assert result.action == action
         assert result.call_number_match is True
 
-    def test_analyze_no_call_no(self, full_bib):
-        data = {
-            "id": "34567",
-            "title": "Record 3",
-            "ss_marc_tag_005": "20250101010000.0",
-        }
-        response = sierra_responses.BPLSolrResponse(data=data)
-        candidates = matching.ClassifiedCandidates([response], [], [])
-        result = self.ANALYZER.analyze(record=full_bib, candidates=candidates)
-        assert result.target_bib_id == "34567"
-        assert result.action == "update"
+    @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
+    def test_review_matches_nypl_mixed(self, full_bib, nypl_data, stub_matcher):
+        nypl_data["varFields"] = [
+            {"marcTag": "910", "subfields": [{"content": "BL", "tag": "a"}]},
+            {"marcTag": "910", "subfields": [{"content": "RL", "tag": "a"}]},
+        ]
+        result = stub_matcher.review_matches(full_bib, matches=[nypl_data])
+        assert len(result.mixed) == 1
+
+    @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
+    def test_review_matches_nypl_mixed_call_number(
+        self, full_bib, nypl_data, stub_matcher
+    ):
+        nypl_data["varFields"] = [
+            {"marcTag": "091", "subfields": [{"content": "Foo", "tag": "a"}]},
+            {
+                "marcTag": "852",
+                "ind1": "8",
+                "ind2": " ",
+                "subfields": [{"content": "Foo", "tag": "a"}],
+            },
+        ]
+        result = stub_matcher.review_matches(full_bib, matches=[nypl_data])
+        assert len(result.mixed) == 1
+
+    @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
+    def test_review_matches_nypl_no_collection(self, full_bib, nypl_data, stub_matcher):
+        result = stub_matcher.review_matches(full_bib, matches=[nypl_data])
+        assert len(result.mixed) == 0
+        assert len(result.duplicate_records) == 0
+        assert result.target_bib_id is None
+        assert len(result.other) == 1
+
+    @pytest.mark.parametrize(
+        "library, collection, location",
+        [
+            ("nypl", "RL", "myd"),
+            ("nypl", "RL", "xxx"),
+            ("nypl", "RL", "lsx"),
+            ("nypl", "RL", "scx"),
+            ("nypl", "RL", "max"),
+            ("nypl", "BL", "zzzzz"),
+            ("nypl", "BL", "myj"),
+            ("nypl", "BL", "maj"),
+            ("nypl", "BL", "agj"),
+        ],
+    )
+    def test_review_matches_nypl_locations(
+        self, full_bib, nypl_data, location, stub_matcher
+    ):
+        nypl_data["locations"] = [{"code": location, "name": "Foo"}]
+        result = stub_matcher.review_matches(full_bib, matches=[nypl_data])
+        assert len(result.mixed) == 0
+
+    @pytest.mark.parametrize(
+        "date, action, updated",
+        [
+            ("2025-01-01T01:00:00", "update", True),
+            ("2020-01-01T01:00:00", "attach", False),
+        ],
+    )
+    @pytest.mark.parametrize("library, collection", [("nypl", "BL")])
+    def test_review_matches_cat_bl_no_call_no_match_vendor_source(
+        self, full_bib, date, action, updated, nypl_data, stub_matcher
+    ):
+        nypl_data["varFields"] = [
+            {"marcTag": "091", "subfields": [{"content": "Baz", "tag": "a"}]},
+            {"marcTag": "910", "subfields": [{"content": "BL", "tag": "a"}]},
+        ]
+        nypl_data["updatedDate"] = date
+        result = stub_matcher.review_matches(full_bib, matches=[nypl_data])
+        assert result.target_bib_id == "12345"
+        assert result.action == action
+        assert result.duplicate_records == []
+        assert result.call_number == "Foo"
+        assert result.resource_id == "9781234567890"
+        assert result.mixed == []
+        assert result.other == []
         assert result.call_number_match is False
+        assert result.updated_by_vendor == updated
+        assert result.target_call_no == "Baz"
+        assert result.target_title == "Record 1"
+
+    @pytest.mark.parametrize("library, collection", [("bpl", None)])
+    def test_review_matches_cat_bpl_no_call_no(
+        self, full_bib, sierra_response, stub_matcher
+    ):
+        sierra_response = {
+            k: v for k, v in sierra_response.items() if k != "call_number"
+        }
+        result = stub_matcher.review_matches(full_bib, matches=[sierra_response])
+        assert full_bib.bib_id is None
+        assert result.target_bib_id == "12345"
+        assert result.duplicate_records == []
+        assert result.call_number == "Foo"
+        assert result.target_call_no is None
+
+    @pytest.mark.parametrize("library, collection", [("bpl", None)])
+    def test_review_matches_cat_bpl_no_results_midwest(self, full_bib, stub_matcher):
+        full_bib.vendor = "Midwest DVD"
+        result = stub_matcher.review_matches(full_bib, matches=[])
+        assert full_bib.bib_id is None
+        assert result.target_bib_id is None
+        assert result.action == "attach"
+        assert result.call_number_match is True
+
+    def test_bpl_sierra_response(self):
+        response = sierra_responses.BPLSolrResponse(
+            data={
+                "call_number": "Foo",
+                "id": "12345",
+                "isbn": ["9781234567890"],
+                "sm_bib_varfields": ["005 || 20200101000001.0", "024 || {{a}} 12345"],
+                "sm_item_data": ['{"barcode": "33333123456789"}'],
+                "ss_marc_tag_001": "ocn123456789",
+                "ss_marc_tag_003": "OCoLC",
+                "ss_marc_tag_005": "20000101010000.0",
+                "title": "Record 1",
+            }
+        )
+        assert response.barcodes == ["33333123456789"]
+        assert response.branch_call_number == "Foo"
+        assert response.cat_source == "inhouse"
+        assert response.collection == "NONE"
+        assert response.control_number == "ocn123456789"
+        assert response.isbn == ["9781234567890"]
+        assert response.oclc_number == ["ocn123456789"]
+        assert response.research_call_number == []
+        assert response.upc == ["12345"]
+        assert response.update_date == "20000101010000.0"
+        assert response.update_datetime == datetime.datetime(2000, 1, 1, 1)
+        assert response.var_fields == [
+            {"marc_tag": "024", "subfields": [{"tag": "a", "content": "12345"}]}
+        ]
+
+    @pytest.mark.parametrize("collection", ["BL", "RL"])
+    def test_nypl_sierra_response(self, collection):
+        response = sierra_responses.NYPLPlatformResponse(
+            data={
+                "id": "12345",
+                "title": "Record 1",
+                "updatedDate": "2020-01-01T01:00:00",
+                "varFields": [
+                    {"marcTag": "901", "subfields": [{"content": "CAT", "tag": "b"}]},
+                    {
+                        "marcTag": "910",
+                        "subfields": [{"content": collection, "tag": "a"}],
+                    },
+                ],
+                "locations": [
+                    {"code": "a", "name": "library"},
+                    {"code": "123", "name": "library"},
+                ],
+            }
+        )
+        assert response.barcodes == []
+        assert response.branch_call_number is None
+        assert response.cat_source == "inhouse"
+        assert response.collection == collection
+        assert response.control_number is None
+        assert response.isbn == []
+        assert response.oclc_number == []
+        assert response.research_call_number == []
+        assert response.upc == []
+        assert response.update_date == "2020-01-01T01:00:00"
+        assert response.update_datetime == datetime.datetime(2020, 1, 1, 1)
+        assert response.var_fields == [
+            {"marcTag": "901", "subfields": [{"content": "CAT", "tag": "b"}]},
+            {"marcTag": "910", "subfields": [{"content": collection, "tag": "a"}]},
+        ]

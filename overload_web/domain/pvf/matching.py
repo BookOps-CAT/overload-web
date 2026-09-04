@@ -90,12 +90,8 @@ class BaseMatchAnalyzer(ABC):
         """Classify the candidate matches associated with this response."""
         if record.library == "bpl":
             matches = [sierra_responses.BPLSolrResponse(i) for i in matches]
-        elif record.library == "nypl":
+        if record.library == "nypl":
             matches = [sierra_responses.NYPLPlatformResponse(i) for i in matches]
-        else:
-            raise ValueError(
-                f"Unknown library: {record.library}. Cannot classify matches."
-            )
         matched, mixed, other = [], [], []
         for c in sorted(matches, key=lambda i: int(i.bib_id.strip(".b")), reverse=True):
             if c.collection == "MIXED":
