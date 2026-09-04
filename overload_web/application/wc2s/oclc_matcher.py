@@ -43,7 +43,7 @@ class WorldcatMatcher:
         payload = {
             "q": f"{self.ID_INDEX[source.id_type]}={source.id}",
             "inCatalogLanguage": "eng",
-            "catalogSource": source.required_cat_agency,
+            "catalogSource": source.required_cataloging_agency,
             "itemSubType": self.MATERIAL_TYPE_MAPPING.get(source.material_type),
             "limit": 50,
         }
@@ -63,7 +63,7 @@ class WorldcatMatcher:
         payload = {
             "q": f"{self.ID_INDEX[source.id_type]}={source.id}",
             "inCatalogLanguage": "eng",
-            "catalogSource": source.required_cat_agency,
+            "catalogSource": source.required_cataloging_agency,
             "itemSubType": self.MATERIAL_TYPE_MAPPING.get(source.material_type),
             "limit": 50,
         }

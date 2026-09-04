@@ -11,7 +11,7 @@ from overload_web.application.pvf.reporting import (
     GetDetailedReportData,
     WriteOutputReport,
 )
-from overload_web.infrastructure import batch_db, marc_engine, reporter
+from overload_web.infrastructure import batch_db, marc_handler, reporter
 
 
 @pytest.fixture(scope="class")
@@ -92,24 +92,29 @@ def test_batch_repository(test_session):
 
 
 class TestProcessCommands:
-    ENGINE = marc_engine.MarcUpdateEngine()
+    ENGINE = marc_handler.MarcUpdateHandler()
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_cat_service_process_vendor_file(
-        self, library, fake_fetcher, test_batch_repository, parser_engine, update_rules
+        self,
+        library,
+        fake_fetcher,
+        test_batch_repository,
+        parsing_handler,
+        update_rules,
     ):
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
         out = ProcessCatalogingRecords.execute(
             batches={"foo.mrc": marc_data},
-            marc_updater=self.ENGINE,
+            marc_handler=self.ENGINE,
             marc_update_rules=update_rules,
             fetcher=fake_fetcher,
             repo=test_batch_repository,
-            marc_parser=parser_engine,
+            marc_parser=parsing_handler,
         )
         assert out["id"] is not None
 
@@ -118,19 +123,24 @@ class TestProcessCommands:
         [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
     )
     def test_sel_service_process_vendor_file(
-        self, library, fake_fetcher, test_batch_repository, parser_engine, update_rules
+        self,
+        library,
+        fake_fetcher,
+        test_batch_repository,
+        parsing_handler,
+        update_rules,
     ):
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
         out = ProcessSelectionRecords.execute(
             {"foo.mrc": marc_data},
-            marc_updater=self.ENGINE,
+            marc_handler=self.ENGINE,
             fetcher=fake_fetcher,
             marc_update_rules=update_rules,
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
             repo=test_batch_repository,
-            marc_parser=parser_engine,
+            marc_parser=parsing_handler,
         )
         assert out["id"] is not None
 
@@ -139,19 +149,24 @@ class TestProcessCommands:
         [("nypl", "BL", "acq"), ("nypl", "RL", "acq"), ("bpl", "NONE", "acq")],
     )
     def test_acq_service_process_vendor_file(
-        self, library, fake_fetcher, test_batch_repository, parser_engine, update_rules
+        self,
+        library,
+        fake_fetcher,
+        test_batch_repository,
+        parsing_handler,
+        update_rules,
     ):
         with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
             marc_data = fh.read()
         out = ProcessAcquisitionsRecords.execute(
             {"foo.mrc": marc_data},
-            marc_updater=self.ENGINE,
+            marc_handler=self.ENGINE,
             fetcher=fake_fetcher,
             marc_update_rules=update_rules,
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
             repo=test_batch_repository,
-            marc_parser=parser_engine,
+            marc_parser=parsing_handler,
         )
         assert out["id"] is not None
 
@@ -160,18 +175,23 @@ class TestProcessCommands:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_cat_service_process_vendor_file_dupes(
-        self, library, fake_fetcher, test_batch_repository, parser_engine, update_rules
+        self,
+        library,
+        fake_fetcher,
+        test_batch_repository,
+        parsing_handler,
+        update_rules,
     ):
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
         with pytest.raises(ValueError) as exc:
             ProcessCatalogingRecords.execute(
                 batches={"foo.mrc": marc_data},
-                marc_updater=self.ENGINE,
+                marc_handler=self.ENGINE,
                 fetcher=fake_fetcher,
                 marc_update_rules=update_rules,
                 repo=test_batch_repository,
-                marc_parser=parser_engine,
+                marc_parser=parsing_handler,
             )
         assert "Duplicate barcodes found in file: " in str(exc.value)
 
@@ -180,20 +200,25 @@ class TestProcessCommands:
         [("nypl", "BL", "acq"), ("nypl", "RL", "acq"), ("bpl", "NONE", "acq")],
     )
     def test_acq_service_process_vendor_file_dupes(
-        self, library, fake_fetcher, test_batch_repository, parser_engine, update_rules
+        self,
+        library,
+        fake_fetcher,
+        test_batch_repository,
+        parsing_handler,
+        update_rules,
     ):
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
         with pytest.raises(ValueError) as exc:
             ProcessAcquisitionsRecords.execute(
                 {"foo.mrc": marc_data},
-                marc_updater=self.ENGINE,
+                marc_handler=self.ENGINE,
                 fetcher=fake_fetcher,
                 marc_update_rules=update_rules,
                 template_data={"format": "a"},
                 matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
                 repo=test_batch_repository,
-                marc_parser=parser_engine,
+                marc_parser=parsing_handler,
             )
         assert "Duplicate barcodes found in file: " in str(exc.value)
 
@@ -202,20 +227,25 @@ class TestProcessCommands:
         [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
     )
     def test_sel_service_process_vendor_file_dupes(
-        self, library, fake_fetcher, test_batch_repository, parser_engine, update_rules
+        self,
+        library,
+        fake_fetcher,
+        test_batch_repository,
+        parsing_handler,
+        update_rules,
     ):
         with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
             marc_data = fh.read()
         with pytest.raises(ValueError) as exc:
             ProcessSelectionRecords.execute(
                 {"foo.mrc": marc_data},
-                marc_updater=self.ENGINE,
+                marc_handler=self.ENGINE,
                 fetcher=fake_fetcher,
                 marc_update_rules=update_rules,
                 template_data={"format": "a"},
                 matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
                 repo=test_batch_repository,
-                marc_parser=parser_engine,
+                marc_parser=parsing_handler,
             )
         assert "Duplicate barcodes found in file: " in str(exc.value)
 

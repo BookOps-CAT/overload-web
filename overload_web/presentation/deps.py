@@ -14,7 +14,7 @@ from sqlmodel import Session, SQLModel, create_engine
 from overload_web.infrastructure import (
     batch_db,
     file_io,
-    marc_engine,
+    marc_handler,
     oclc,
     reporter,
     sierra_clients,
@@ -276,7 +276,7 @@ class UserCriteria(BaseModel):
     material_type: Literal["any", "bluray", "dvd", "large_print", "print"]
     action: Literal["catalog", "upgrade"]
     record_level: Literal["1", "2", "3"]
-    required_cat_agency: Literal["DLC", "any"] | None = None
+    required_cataloging_agency: Literal["DLC", "any"] | None = None
     required_cataloging_rules: Literal["RDA", "any"] | None = None
     data_source: str | None = None
 
@@ -313,7 +313,7 @@ class UserCriteria(BaseModel):
             material_type=material_type,
             action=action,
             record_level=record_level,
-            required_cat_agency=cat_agency,
+            required_cataloging_agency=cat_agency,
             required_cataloging_rules=cat_rules,
             data_source=data_source,
         )
@@ -327,7 +327,7 @@ class SourceDataModel(BaseModel):
     material_type: Literal["any", "bluray", "dvd", "large_print", "print"]
     action: Literal["catalog", "upgrade"]
     record_level: Literal["1", "2", "3"]
-    required_cat_agency: Literal["DLC", "any"] | None = None
+    required_cataloging_agency: Literal["DLC", "any"] | None = None
     required_cataloging_rules: Literal["RDA", "any"] | None = None
     data_source: str | None = None
     update_date: str | None = None
@@ -371,7 +371,7 @@ class SourceDataModel(BaseModel):
                     material_type=material_type,
                     action=action,
                     record_level=record_level,
-                    required_cat_agency=cat_agency,
+                    required_cataloging_agency=cat_agency,
                     required_cataloging_rules=cat_rules,
                     data_source=data_source,
                     update_date=i[1],
@@ -387,7 +387,7 @@ class SourceDataModel(BaseModel):
                 material_type=material_type,
                 action=action,
                 record_level=record_level,
-                required_cat_agency=cat_agency,
+                required_cataloging_agency=cat_agency,
                 required_cataloging_rules=cat_rules,
                 data_source=data_source,
             )
@@ -466,15 +466,15 @@ def get_fetcher(
     yield sierra_clients.FetcherFactory.make(library)
 
 
-def get_marc_engine() -> Generator[marc_engine.MarcUpdateEngine, None, None]:
-    """Create a `MarcUpdateEngine` service with injected dependencies."""
-    yield marc_engine.MarcUpdateEngine()
+def get_marc_update_handler() -> Generator[marc_handler.MarcUpdateHandler, None, None]:
+    """Create a `MarcUpdateHandler` service with injected dependencies."""
+    yield marc_handler.MarcUpdateHandler()
 
 
 def get_marc_update_rules(
     context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
 ) -> MarcUpdateRulesModel:
-    """Create a `MarcUpdateEngine` service with injected dependencies."""
+    """Create a `MarcUpdateHandler` service with injected dependencies."""
     with open("overload_web/data/update_rules.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     return MarcUpdateRulesModel(
@@ -489,13 +489,13 @@ def get_marc_update_rules(
     )
 
 
-def get_marc_parsing_engine(
+def get_marc_parsing_handler(
     context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
-) -> Generator[marc_engine.MarcParsingEngine, None, None]:
-    """Create a `MarcParsingEngine` service with injected dependencies."""
+) -> Generator[marc_handler.MarcParsingHandler, None, None]:
+    """Create a `MarcParsingHandler` service with injected dependencies."""
     with open("overload_web/data/parsing_rules.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
-    yield marc_engine.MarcParsingEngine(
+    yield marc_handler.MarcParsingHandler(
         library=context.library,
         record_type=context.record_type,
         collection=context.collection,

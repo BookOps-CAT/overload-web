@@ -138,7 +138,7 @@ class FileWriter(Protocol):
 
 
 @runtime_checkable
-class MarcParsingEnginePort(Protocol):
+class MarcParsingHandlerPort(Protocol):
     library: str
     record_type: str
     collection: str | None
@@ -176,7 +176,7 @@ class MarcParsingEnginePort(Protocol):
 
 
 @runtime_checkable
-class MarcUpdateEnginePort(Protocol[U, V]):
+class MarcUpdateHandlerPort(Protocol[U, V]):
     library: str
     record_type: str
     collection: str | None

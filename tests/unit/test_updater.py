@@ -7,7 +7,7 @@ from pymarc import Field, Indicators, Subfield
 from overload_web.application.pvf import update
 from overload_web.domain.pvf import models
 from overload_web.domain.shared import fields
-from overload_web.infrastructure import marc_engine
+from overload_web.infrastructure import marc_handler
 
 
 @pytest.fixture
@@ -73,7 +73,7 @@ def make_bt_series_full_bib(full_bib, library, collection):
 
 
 class TestUpdaterAcqRecords:
-    ENGINE = marc_engine.MarcUpdateEngine()
+    ENGINE = marc_handler.MarcUpdateHandler()
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
@@ -87,7 +87,7 @@ class TestUpdaterAcqRecords:
             record=acq_bib,
             template_data={"name": "Foo", "order_code_1": "b", "format": "a"},
         )
-        updater.update_record(record=acq_bib, engine=self.ENGINE, updates=updates)
+        updater.update_record(record=acq_bib, handler=self.ENGINE, updates=updates)
         assert [i.order_code_1 for i in original_orders] == ["j"]
         assert [i.order_code_1 for i in acq_bib.orders] == ["b"]
 
@@ -103,7 +103,7 @@ class TestUpdaterAcqRecords:
         updates = updater.get_acq_updates(
             record=input_bib, template_data={"format": "a"}
         )
-        updater.update_record(record=input_bib, engine=self.ENGINE, updates=updates)
+        updater.update_record(record=input_bib, handler=self.ENGINE, updates=updates)
         updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
         assert len(updated_bib.get_fields("949")) == 2
         assert len(original_bib.get_fields("949")) == 2
@@ -118,7 +118,7 @@ class TestUpdaterAcqRecords:
 
 
 class TestUpdaterCatRecords:
-    ENGINE = marc_engine.MarcUpdateEngine()
+    ENGINE = marc_handler.MarcUpdateHandler()
 
     @pytest.mark.parametrize(
         "library, collection, tag, record_type",
@@ -134,7 +134,7 @@ class TestUpdaterCatRecords:
         original_bib = Bib(full_bib.binary_data, library=full_bib.library)
         updater = update.BibUpdater(**update_rules)
         updates = updater.get_cat_updates(record=full_bib)
-        updater.update_record(record=full_bib, engine=self.ENGINE, updates=updates)
+        updater.update_record(record=full_bib, handler=self.ENGINE, updates=updates)
         updated_bib = Bib(full_bib.binary_data, library=full_bib.library)
         assert len(original_bib.get_fields(tag)) == 0
         assert len(updated_bib.get_fields(tag)) == 1
@@ -156,7 +156,7 @@ class TestUpdaterCatRecords:
         original_bib = Bib(full_bib.binary_data, library=full_bib.library)
         updater = update.BibUpdater(**update_rules)
         updates = updater.get_cat_updates(record=full_bib)
-        updater.update_record(record=full_bib, engine=self.ENGINE, updates=updates)
+        updater.update_record(record=full_bib, handler=self.ENGINE, updates=updates)
         assert len(original_bib.get_fields("949")) == 1
         assert (
             len(Bib(full_bib.binary_data, library=full_bib.library).get_fields("949"))
@@ -179,7 +179,7 @@ class TestUpdaterCatRecords:
         original_bib = Bib(full_bib.binary_data, library=full_bib.library)
         updater = update.BibUpdater(**update_rules)
         updates = updater.get_cat_updates(record=full_bib)
-        updater.update_record(record=full_bib, engine=self.ENGINE, updates=updates)
+        updater.update_record(record=full_bib, handler=self.ENGINE, updates=updates)
         assert len(original_bib.get_fields("949")) == 0
         assert (
             len(Bib(full_bib.binary_data, library=full_bib.library).get_fields("949"))
@@ -210,7 +210,7 @@ class TestUpdaterCatRecords:
         original_bib = Bib(input_bib.binary_data, library=input_bib.library)
         updater = update.BibUpdater(**update_rules)
         updates = updater.get_cat_updates(record=input_bib)
-        updater.update_record(record=input_bib, engine=self.ENGINE, updates=updates)
+        updater.update_record(record=input_bib, handler=self.ENGINE, updates=updates)
         updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
         assert updated_bib.get_fields("091")[0].value() == " ".join(
             [i for i in pairs.values()]
@@ -234,7 +234,9 @@ class TestUpdaterCatRecords:
         with pytest.raises(ValueError) as exc:
             updater = update.BibUpdater(**update_rules)
             updates = updater.get_cat_updates(record=input_bib)
-            updater.update_record(record=input_bib, engine=self.ENGINE, updates=updates)
+            updater.update_record(
+                record=input_bib, handler=self.ENGINE, updates=updates
+            )
         assert (
             str(exc.value)
             == "Constructed call number does not match original. New=FIC SNICKET, Original=FOO J FIC SNICKET"
@@ -242,7 +244,7 @@ class TestUpdaterCatRecords:
 
 
 class TestUpdaterSelRecords:
-    ENGINE = marc_engine.MarcUpdateEngine()
+    ENGINE = marc_handler.MarcUpdateHandler()
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
@@ -255,7 +257,7 @@ class TestUpdaterSelRecords:
         updates = updater.get_sel_updates(
             sel_bib, template_data={"name": "Foo", "order_code_1": "b", "format": "a"}
         )
-        updater.update_record(sel_bib, engine=self.ENGINE, updates=updates)
+        updater.update_record(sel_bib, handler=self.ENGINE, updates=updates)
         assert [i.order_code_1 for i in original_orders] == ["j"]
         assert [i.order_code_1 for i in sel_bib.orders] == ["b"]
 
@@ -281,7 +283,7 @@ class TestUpdaterSelRecords:
         original_bib = Bib(input_bib.binary_data, library=input_bib.library)
         updater = update.BibUpdater(**update_rules)
         updates = updater.get_sel_updates(input_bib, template_data={})
-        updater.update_record(input_bib, engine=self.ENGINE, updates=updates)
+        updater.update_record(input_bib, handler=self.ENGINE, updates=updates)
         updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
         assert [i.value() for i in original_bib.get_fields("949")] == [
             "333331234567890",
@@ -306,7 +308,7 @@ class TestUpdaterSelRecords:
         original_bib = Bib(input_bib.binary_data, library=input_bib.library)
         updater = update.BibUpdater(**update_rules)
         updates = updater.get_sel_updates(input_bib, template_data={"format": "a"})
-        updater.update_record(input_bib, engine=self.ENGINE, updates=updates)
+        updater.update_record(input_bib, handler=self.ENGINE, updates=updates)
         updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
         assert len(updated_bib.get_fields("949")) == 2
         assert len(original_bib.get_fields("949")) == 2
@@ -334,7 +336,7 @@ class TestUpdaterSelRecords:
         original_bib = Bib(sel_bib.binary_data, library=sel_bib.library)
         updater = update.BibUpdater(**update_rules)
         updates = updater.get_sel_updates(sel_bib, template_data={})
-        updater.update_record(sel_bib, engine=self.ENGINE, updates=updates)
+        updater.update_record(sel_bib, handler=self.ENGINE, updates=updates)
         updated_bib = Bib(sel_bib.binary_data, library=sel_bib.library)
         assert len(updated_bib.get_fields("949")) == field_count
         assert len(original_bib.get_fields("949")) == 1

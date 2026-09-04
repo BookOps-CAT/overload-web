@@ -81,7 +81,7 @@ class SourceData:
     material_type: MaterialType
     action: Action
     record_level: str
-    required_cat_agency: Literal["DLC"] | None = None
+    required_cataloging_agency: Literal["DLC"] | None = None
     required_cataloging_rules: Literal["RDA"] | None = None
     update_date: str | None = None
 

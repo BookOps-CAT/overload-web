@@ -43,7 +43,7 @@ def match_record(
                 "material_type": material_type,
                 "action": action,
                 "record_level": record_level,
-                "required_cat_agency": cat_agency,
+                "required_cataloging_agency": cat_agency,
                 "required_cataloging_rules": cat_rules,
                 "data_source": data_source,
                 "id_type": id_type,

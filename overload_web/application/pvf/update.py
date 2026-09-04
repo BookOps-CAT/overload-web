@@ -1,3 +1,5 @@
+"""Application services for updating MARC records during processing."""
+
 from __future__ import annotations
 
 import logging
@@ -88,11 +90,11 @@ class BibUpdater:
     def update_record(
         self,
         record: models.DomainBib,
-        engine: ports.MarcUpdateEnginePort,
+        handler: ports.MarcUpdateHandlerPort,
         updates: list[marc_rules.MarcFieldUpdateValues],
     ) -> None:
         """Update and add MARC fields to bib record"""
-        bib = engine.create_bib_from_domain(record=record)
-        engine.update_fields(field_updates=updates, bib=bib)
+        bib = handler.create_bib_from_domain(record=record)
+        handler.update_fields(field_updates=updates, bib=bib)
         bib.leader = marc_rules.FieldRules.update_leader(bib.leader)
         record.binary_data = bib.as_marc()

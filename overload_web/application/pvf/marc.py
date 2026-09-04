@@ -1,4 +1,4 @@
-"""Application services for interacting with DomainBib objects during processing."""
+"""Application services for parsing MARC records during processing."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class BibDeduplicator:
     @staticmethod
     def deduplicate(
-        records: list[models.DomainBib], engine: ports.MarcUpdateEnginePort
+        records: list[models.DomainBib], handler: ports.MarcUpdateHandlerPort
     ) -> dict[str, list[models.DomainBib]]:
         """Review and deduplicate a batch of processed full-level MARC records."""
         out: dict[str, list[models.DomainBib]] = {"NEW": [], "DUP": [], "DEDUPED": []}
@@ -43,7 +43,7 @@ class BibDeduplicator:
             all_dupes = [
                 i for i in out["DUP"] if i.control_number == record.control_number
             ]
-            base_rec = engine.create_bib_from_domain(record=all_dupes[0])
+            base_rec = handler.create_bib_from_domain(record=all_dupes[0])
             tag = "949"
             ind2 = "1"
             if base_rec.library == "bpl" and base_rec.overdrive_number is None:
@@ -51,7 +51,7 @@ class BibDeduplicator:
                 ind2 = " "
             all_items = []
             for dupe in all_dupes[1:]:
-                dupe_bib = engine.create_bib_from_domain(record=dupe)
+                dupe_bib = handler.create_bib_from_domain(record=dupe)
                 all_items.extend(dupe_bib.get_fields(tag))
             for item in all_items:
                 if item.indicator1 == " " and item.indicator2 == ind2:
@@ -62,7 +62,7 @@ class BibDeduplicator:
             # new_items = marc_rules.FieldRules.add_item_fields(
             #     items=all_items, ind2=ind2, tag=tag
             # )
-            # engine.update_fields(new_items, bib=base_rec)
+            # handler.update_fields(new_items, bib=base_rec)
             # record.binary_data = base_rec.as_marc()
             # processed_dupes.append(record.control_number)
             out["DEDUPED"].append(record)
@@ -72,7 +72,7 @@ class BibDeduplicator:
 class BibParser:
     @staticmethod
     def combine_marc_files(
-        data: list[bytes], marc_reader: ports.MarcParsingEnginePort
+        data: list[bytes], marc_reader: ports.MarcParsingHandlerPort
     ) -> bytes:
         """Combine multiple bytes objects (ie. MARC files) into one for processing."""
         records = []
@@ -88,7 +88,9 @@ class BibParser:
 
     @staticmethod
     def parse_marc_data(
-        data: bytes, parser: ports.MarcParsingEnginePort, vendor: str | None = "UNKNOWN"
+        data: bytes,
+        parser: ports.MarcParsingHandlerPort,
+        vendor: str | None = "UNKNOWN",
     ) -> list[models.DomainBib]:
         """Parse MARC binary to a list of `DomainBib` domain objects."""
         parsed = []

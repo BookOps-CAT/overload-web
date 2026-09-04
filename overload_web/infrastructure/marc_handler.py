@@ -1,7 +1,7 @@
 """Adapter module defining classes used to parse and update MARC records.
 
 Includes wrapper that allows for MARC records to be translated from pymarc/bookops_marc
-objects to domain objects. The `MarcUpdateEngine`also updates fields and the
+objects to domain objects. The `MarcUpdateHandler`also updates fields and the
 `MarcParserEngine` also extracts values from fields.
 
 Protocols:
@@ -15,7 +15,7 @@ Classes:
 `MarcParserEngine`
     Parse binary MARC data using `bookops_marc` and `pymarc`. Uses config data
     to determine field mapping and processing workflows.
-`MarcUpdateEngine`
+`MarcUpdateHandler`
     Update binary MARC data using `bookops_marc` and `pymarc`. Uses config data
     to determine field mapping and processing workflows.
 """
@@ -38,7 +38,7 @@ class DomainBibProtocol(Protocol):
     binary_data: bytes
 
 
-class MarcUpdateEngine:
+class MarcUpdateHandler:
     """Interacts with binary MARC data using `bookops_marc`."""
 
     def _find_specific_field(self, bib: Bib, criteria: Any) -> Field | None:
@@ -89,7 +89,7 @@ class MarcUpdateEngine:
             )
 
 
-class MarcParsingEngine:
+class MarcParsingHandler:
     """Interacts with binary MARC data using `bookops_marc`."""
 
     def __init__(
@@ -102,9 +102,9 @@ class MarcParsingEngine:
         vendor_mapping: dict[str, Any],
     ) -> None:
         """
-        Initialize `MarcParsingEngine` using a set of mapping rules and workflow inputs.
+        Initialize `MarcParsingHandler` using a set of mapping rules and inputs.
 
-        This class is a concrete implementation of the `MarcParsingEnginePort` protocol.
+        This class is an implementation of the `MarcParsingHandlerPort` protocol.
 
         Args:
             library:

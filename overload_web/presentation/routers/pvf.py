@@ -37,8 +37,8 @@ def process_acq_records(
     request: Request,
     fetcher: Annotated[Any, Depends(deps.get_fetcher)],
     order_template: Annotated[Any, Depends(deps.TemplateDataModel.from_form)],
-    marc_parser: Annotated[Any, Depends(deps.get_marc_parsing_engine)],
-    marc_updater: Annotated[Any, Depends(deps.get_marc_engine)],
+    marc_parser: Annotated[Any, Depends(deps.get_marc_parsing_handler)],
+    marc_handler: Annotated[Any, Depends(deps.get_marc_update_handler)],
     marc_update_rules: Annotated[
         deps.MarcUpdateRulesModel, Depends(deps.get_marc_update_rules)
     ],
@@ -54,10 +54,10 @@ def process_acq_records(
             a `ports.BibFetcher` object used by application service.
         order_template:
             an order template loaded from the database or input via an html form.
-        marc_updater:
-            a `ports.MarcUpdateEnginePort` object used by application service.
+        marc_handler:
+            a `ports.MarcUpdateHandlerPort` object used by application service.
         marc_update_rules:
-            a `marc_updater.MarcUpdateRulesModel` object representing cataloging rules.
+            a `marc_handler.MarcUpdateRulesModel` object representing cataloging rules.
         matchpoints:
             a list of matchpoints loaded from an order template in the database or
             input via an html form.
@@ -72,7 +72,7 @@ def process_acq_records(
     """
     processed = ProcessAcquisitionsRecords.execute(
         batches={f"{i.file_name}": i.content for i in files},
-        marc_updater=marc_updater,
+        marc_handler=marc_handler,
         fetcher=fetcher,
         template_data=order_template.model_dump(),
         matchpoints=matchpoints.model_dump(),
@@ -91,8 +91,8 @@ def process_acq_records(
 def process_cat_records(
     request: Request,
     fetcher: Annotated[Any, Depends(deps.get_fetcher)],
-    marc_updater: Annotated[Any, Depends(deps.get_marc_engine)],
-    marc_parser: Annotated[Any, Depends(deps.get_marc_parsing_engine)],
+    marc_handler: Annotated[Any, Depends(deps.get_marc_update_handler)],
+    marc_parser: Annotated[Any, Depends(deps.get_marc_parsing_handler)],
     marc_update_rules: Annotated[
         deps.MarcUpdateRulesModel, Depends(deps.get_marc_update_rules)
     ],
@@ -105,10 +105,10 @@ def process_cat_records(
     Args:
         fetcher:
             a `ports.BibFetcher` object used by application service.
-        marc_updater:
-            a `ports.MarcUpdateEnginePort` object used by application service.
+        marc_handler:
+            a `ports.MarcUpdateHandlerPort` object used by application service.
         marc_update_rules:
-            a `marc_updater.MarcUpdateRulesModel` object representing cataloging rules.
+            a `marc_handler.MarcUpdateRulesModel` object representing cataloging rules.
         repository:
             a `repository.PVFBatchRepository` object where the processed files and
             their associated statistics will be saved.
@@ -120,7 +120,7 @@ def process_cat_records(
     """
     processed = ProcessCatalogingRecords.execute(
         batches={f"{i.file_name}": i.content for i in files},
-        marc_updater=marc_updater,
+        marc_handler=marc_handler,
         fetcher=fetcher,
         repo=repository,
         marc_parser=marc_parser,
@@ -138,8 +138,8 @@ def process_sel_records(
     request: Request,
     fetcher: Annotated[Any, Depends(deps.get_fetcher)],
     order_template: Annotated[Any, Depends(deps.TemplateDataModel.from_form)],
-    marc_updater: Annotated[Any, Depends(deps.get_marc_engine)],
-    marc_parser: Annotated[Any, Depends(deps.get_marc_parsing_engine)],
+    marc_handler: Annotated[Any, Depends(deps.get_marc_update_handler)],
+    marc_parser: Annotated[Any, Depends(deps.get_marc_parsing_handler)],
     marc_update_rules: Annotated[
         deps.MarcUpdateRulesModel, Depends(deps.get_marc_update_rules)
     ],
@@ -155,10 +155,10 @@ def process_sel_records(
             a `ports.BibFetcher` object used by application service.
         order_template:
             an order template loaded from the database or input via an html form.
-        marc_updater:
-            a `ports.MarcUpdateEnginePort` object used by application service.
+        marc_handler:
+            a `ports.MarcUpdateHandlerPort` object used by application service.
         marc_update_rules:
-            a `marc_updater.MarcUpdateRulesModel` object representing cataloging rules.
+            a `marc_handler.MarcUpdateRulesModel` object representing cataloging rules.
         matchpoints:
             a list of matchpoints loaded from an order template in the database or
             input via an html form.
@@ -173,7 +173,7 @@ def process_sel_records(
     """
     processed = ProcessSelectionRecords.execute(
         batches={f"{i.file_name}": i.content for i in files},
-        marc_updater=marc_updater,
+        marc_handler=marc_handler,
         fetcher=fetcher,
         template_data=order_template.model_dump(),
         matchpoints=matchpoints.model_dump(),

@@ -115,9 +115,21 @@ class BibMatcher:
         )
         return responses
 
-    def process_matches(
+    def review_matches(
         self, bib: models.DomainBib, matches: list[dict[str, Any]]
-    ) -> Any:
+    ) -> matching.MatchAnalysis:
+        """
+        Review and categorize match candidates returned from Sierra.
+
+        Args:
+            bib:
+                A parsed bibliographic record as a `DomainBib` object.
+            matches:
+                A list of dictionaries representing results from Sierra.
+
+        Returns:
+            A `MatchAnalysis` object containing classified matches.
+        """
         analyzer = matching.MatchAnalyzerFactory.make(
             library=bib.library, record_type=bib.record_type, collection=bib.collection
         )

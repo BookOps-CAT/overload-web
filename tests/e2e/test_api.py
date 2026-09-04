@@ -404,3 +404,40 @@ class TestApp:
             f"/reports/write?batch_id=1&record_type={record_type}"
         )
         assert response.status_code == 200
+
+    @pytest.mark.parametrize(
+        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "")]
+    )
+    def test_wc2s_router_match_record(self, library, collection):
+        context = {
+            "library": library,
+            "collection": collection,
+            "id_type": "isbn",
+            "material_type": "print",
+            "action": "catalog",
+            "record_level": "1",
+            "cat_agency": "any",
+            "cat_rules": "any",
+            "data_source": "id",
+        }
+        response = self.client.post(
+            "/wc2s/match_record",
+            data=context,
+            files={"file": ("foo.txt", b"9781234567890", "text/plain")},
+        )
+        context = response.context
+        assert response.status_code == 200
+        assert context["input_data"] == [{"id": "9781234567890", "id_type": "isbn"}]
+        assert sorted(list(context["form_data"].keys())) == sorted(
+            [
+                "action",
+                "collection",
+                "data_source",
+                "id_type",
+                "library",
+                "material_type",
+                "record_level",
+                "required_cataloging_agency",
+                "required_cataloging_rules",
+            ]
+        )

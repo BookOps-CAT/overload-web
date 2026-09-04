@@ -13,7 +13,7 @@ from pymarc import Field, Indicators, Subfield
 
 from overload_web.domain.pvf import models
 from overload_web.domain.shared import fields, sierra_responses
-from overload_web.infrastructure import marc_engine, oclc, reporter, sierra_clients
+from overload_web.infrastructure import marc_handler, oclc, reporter, sierra_clients
 
 
 @pytest.fixture(scope="session")
@@ -580,10 +580,10 @@ def update_rules(library, record_type, collection, get_constants) -> dict[str, A
 
 
 @pytest.fixture
-def parser_engine(
+def parsing_handler(
     library, record_type, collection, parsing_rules
-) -> marc_engine.MarcParsingEngine:
-    return marc_engine.MarcParsingEngine(
+) -> marc_handler.MarcParsingHandler:
+    return marc_handler.MarcParsingHandler(
         order_mapping=parsing_rules["order_mapping"],
         library=library,
         record_type=record_type,
