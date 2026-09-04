@@ -175,8 +175,6 @@ class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
                 classified=candidates,
                 resource_id=record.resource_id,
                 target_bib_id=record.bib_id,
-                target_call_no=record.branch_call_number,
-                target_title=record.title,
                 vendor=record.vendor,
             )
         for candidate in candidates.matched:
