@@ -53,7 +53,7 @@ class TestSierraBibFetcher:
         assert fetcher.session.__class__.__name__ == "BPLSolrSession"
 
     @pytest.mark.parametrize("id", [".b123", ".i123", ".o123", "123", 123, 123456789])
-    def test_get_bibs_by_bib_id_bpl(self, mock_sierra_session, id, caplog):
+    def test_get_bibs_by_bib_id_bpl(self, mock_sierra_session, id):
         """Test `_prep_sierra_number override."""
         fetcher = sierra_clients.SierraBibFetcher(
             session=sierra_clients.BPLSolrSession()
@@ -72,7 +72,7 @@ class TestSierraBibFetcher:
         assert fetcher.session.__class__.__name__ == "NYPLPlatformSession"
 
     @pytest.mark.parametrize("id", [".b123", ".i123", ".o123", "123", 123, 123456789])
-    def test_get_bibs_by_bib_id_nypl(self, mock_sierra_session, id, caplog):
+    def test_get_bibs_by_bib_id_nypl(self, mock_sierra_session, id):
         """Test `_prep_sierra_number override."""
         fetcher = sierra_clients.SierraBibFetcher(
             session=sierra_clients.NYPLPlatformSession()
