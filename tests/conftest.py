@@ -731,3 +731,12 @@ class FakeOCLCSession:
 @pytest.fixture
 def fake_oclc_fetcher():
     return oclc.WorldcatFetcher(session=FakeOCLCSession())
+
+
+@pytest.fixture
+def fake_oclc_fetcher_no_update_date(monkeypatch):
+    def empty_dict(*rgs, **kwargs):
+        return {}
+
+    monkeypatch.setattr(oclc.WorldcatFetcher, "get_full_bib_json_by_id", empty_dict)
+    return oclc.WorldcatFetcher(session=FakeOCLCSession())

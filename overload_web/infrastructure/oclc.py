@@ -79,7 +79,7 @@ class OclcSession(MetadataSession):
         logger.debug(
             f"MetadataSession returned {rec_count} record(s). Returning first 50."
         )
-        return json_response["briefRecords"]
+        return json_response.get("briefRecords", [])
 
     def _prepare_and_send_request(self, request: Request) -> Response:
         prepared_request = self.prepare_request(request)

@@ -127,10 +127,7 @@ class MarcParsingHandler:
         self.bib_mapping = bib_mapping
         self.order_mapping = order_mapping
         self.vendor_mapping = vendor_mapping
-
-    def get_reader(self, data: bytes | BinaryIO) -> SierraBibReader:
-        """Instantiate a `SierraBibReader` to read MARC binary data."""
-        return SierraBibReader(data, library=self.library)
+        self.reader = MarcReaderWriter(library=self.library)
 
     def match_vendor_tags_from_bib(
         self, record: Bib, tags: dict[str, dict[str, str]]
@@ -243,6 +240,15 @@ class MarcParsingHandler:
             if alt_match:
                 return info
         return self.vendor_mapping[record.library]["UNKNOWN"]
+
+
+class MarcReaderWriter:
+    def __init__(self, library: str) -> None:
+        self.library = library
+
+    def get_reader(self, data: bytes | BinaryIO) -> SierraBibReader:
+        """Instantiate a `SierraBibReader` to read MARC binary data."""
+        return SierraBibReader(data, library=self.library)
 
     def write(self, records: list[DomainBibProtocol]) -> bytes:
         """

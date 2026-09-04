@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 from dataclasses import dataclass
 from enum import StrEnum
@@ -20,9 +22,9 @@ class IdType(StrEnum):
 
 
 class MatchStatus(StrEnum):
-    MATCHED = "matched"
     FAILED_GLOBAL_CRITERIA = "global"
     FAILED_USER_CRITERIA = "user"
+    MATCHED = "matched"
 
 
 class MaterialType(StrEnum):
@@ -63,11 +65,19 @@ class BriefRecordResult:
 
 
 @dataclass
-class UpgradeItem:
+class MatchedItem:
     id: str
     id_type: IdType
     status: MatchStatus
-    matched_oclc: str | None = None
+    matched_oclc: str
+
+
+@dataclass
+class MatchedResult:
+    matched: bool
+    source_data: SourceData
+    failed_matches: list[MatchedItem] | None = None
+    successful_matches: list[MatchedItem] | None = None
 
 
 @dataclass
@@ -110,7 +120,9 @@ class RecordEvaluator:
     def parse_responses(
         self, responses: list[dict[str, Any]]
     ) -> list[BriefRecordResult]:
-        out = []
+        out: list[BriefRecordResult] = []
+        if not responses:
+            return out
         for record in responses:
             cat_info = record["catalogingInfo"]
             parsed = BriefRecordResult(
@@ -133,40 +145,43 @@ class RecordEvaluator:
             out.append(parsed)
         return out
 
-    def filter_brief_bibs(
+    def filter_brief_bib_matches(
         self, responses: list[BriefRecordResult], source: SourceData
-    ) -> list[UpgradeItem]:
-        out = []
+    ) -> MatchedResult:
+        if not responses:
+            return MatchedResult(matched=False, source_data=source)
+        success = []
+        failed_matches = []
         for response in responses:
-            if (
-                source.update_datetime
+            if response.cat_level not in self.valid_cat_levels:
+                status = MatchStatus.FAILED_USER_CRITERIA
+
+            elif source.action == Action.UPGRADE and (
+                not response.update_datetime or not source.update_datetime
+            ):
+                status = MatchStatus.FAILED_GLOBAL_CRITERIA
+            elif (
+                source.action == Action.UPGRADE
                 and response.update_datetime
+                and source.update_datetime
                 and source.update_datetime > response.update_datetime
             ):
-                out.append(
-                    UpgradeItem(
-                        id=source.id,
-                        id_type=source.id_type,
-                        status=MatchStatus.FAILED_GLOBAL_CRITERIA,
-                        matched_oclc=response.oclc_number,
-                    )
-                )
-            elif response.cat_level not in self.valid_cat_levels:
-                out.append(
-                    UpgradeItem(
-                        id=source.id,
-                        id_type=source.id_type,
-                        status=MatchStatus.FAILED_USER_CRITERIA,
-                        matched_oclc=response.oclc_number,
-                    )
-                )
+                status = MatchStatus.FAILED_GLOBAL_CRITERIA
             else:
-                out.append(
-                    UpgradeItem(
-                        id=source.id,
-                        id_type=source.id_type,
-                        status=MatchStatus.MATCHED,
-                        matched_oclc=response.oclc_number,
-                    )
-                )
-        return out
+                status = MatchStatus.MATCHED
+            item = MatchedItem(
+                id=source.id,
+                id_type=source.id_type,
+                status=status,
+                matched_oclc=response.oclc_number,
+            )
+            if status == "matched":
+                success.append(item)
+            else:
+                failed_matches.append(item)
+        return MatchedResult(
+            matched=True,
+            source_data=source,
+            failed_matches=failed_matches,
+            successful_matches=success,
+        )

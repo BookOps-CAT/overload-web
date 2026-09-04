@@ -51,7 +51,8 @@ class TestWorldcatFetcher:
             "limit": 50,
         }
         payload = {k: v for k, v in payload.items()}
-        fetcher.get_brief_bibs_by_id(params=payload)
+        brief_bibs = fetcher.get_brief_bibs_by_id(params=payload)
+        assert isinstance(brief_bibs, list)
         assert len(caplog.records) == 2
         assert "Querying WorldCat for brief bibs with query" in caplog.records[0].msg
         assert (
@@ -91,7 +92,8 @@ class TestWorldcatFetcher:
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_get_full_bib_json_by_id(self, mock_wc_session, library, caplog):
         fetcher = oclc.WorldcatFetcher(session=oclc.OclcSession(library=library))
-        fetcher.get_full_bib_json_by_id(value=1)
+        full_bib = fetcher.get_full_bib_json_by_id(value=1)
+        assert isinstance(full_bib, dict)
         assert len(caplog.records) == 1
         assert (
             "Querying WorldCat for full bib record in json for" in caplog.records[0].msg
@@ -110,9 +112,11 @@ class TestWorldcatFetcher:
 class TestWorldcatMatcher:
     def test_match_record(self, fake_oclc_fetcher, stub_source_data):
         service = oclc_matcher.WorldcatMatcher(fetcher=fake_oclc_fetcher)
-        candidates = service.get_record_matches(stub_source_data)
-        assert len(candidates) == 1
-        assert candidates[0] == worldcat.UpgradeItem(
+        result = service.get_record_matches(stub_source_data)
+        assert result.matched is True
+        assert len(result.successful_matches) == 1
+        assert len(result.failed_matches) == 0
+        assert result.successful_matches[0] == worldcat.MatchedItem(
             id=stub_source_data.id,
             id_type=stub_source_data.id_type,
             status=worldcat.MatchStatus.MATCHED,
@@ -124,24 +128,29 @@ class TestWorldcatMatcher:
     ):
         stub_source_data.record_level = "1"
         service = oclc_matcher.WorldcatMatcher(fetcher=fake_oclc_fetcher)
-        candidates = service.get_record_matches(stub_source_data)
-        assert len(candidates) == 1
-        assert candidates[0] == worldcat.UpgradeItem(
+        result = service.get_record_matches(stub_source_data)
+        assert result.matched is True
+        assert len(result.successful_matches) == 0
+        assert len(result.failed_matches) == 1
+        assert result.failed_matches[0] == worldcat.MatchedItem(
             id=stub_source_data.id,
             id_type=stub_source_data.id_type,
             status=worldcat.MatchStatus.FAILED_USER_CRITERIA,
             matched_oclc="12345678",
         )
 
+    @pytest.mark.parametrize("update_date", ["20260101000100.0", ""])
     def test_match_record_failed_global_criteria(
-        self, fake_oclc_fetcher, stub_source_data
+        self, fake_oclc_fetcher, stub_source_data, update_date
     ):
-        stub_source_data.update_date = "20260101000100.0"
+        stub_source_data.update_date = update_date
         stub_source_data.action = worldcat.Action.UPGRADE
         service = oclc_matcher.WorldcatMatcher(fetcher=fake_oclc_fetcher)
-        candidates = service.get_record_matches(stub_source_data)
-        assert len(candidates) == 1
-        assert candidates[0] == worldcat.UpgradeItem(
+        result = service.get_record_matches(stub_source_data)
+        assert result.matched is True
+        assert len(result.successful_matches) == 0
+        assert len(result.failed_matches) == 1
+        assert result.failed_matches[0] == worldcat.MatchedItem(
             id=stub_source_data.id,
             id_type=stub_source_data.id_type,
             status=worldcat.MatchStatus.FAILED_GLOBAL_CRITERIA,

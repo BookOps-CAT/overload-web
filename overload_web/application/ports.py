@@ -145,10 +145,11 @@ class MarcParsingHandlerPort(Protocol):
     bib_mapping: str
     order_mapping: dict[str, Any]
     vendor_rules: dict[str, Any]
+    reader: MarcReaderPort
 
-    def get_reader(self, data: bytes) -> Iterator: ...  # pragma: no branch
+    def combine_marc_files(self, data: list[bytes]) -> bytes: ...  # pragma: no branch
 
-    """Instantiate an object that can read MARC binary as an iterator."""
+    """Combine multiple MARC files as bytes into a single bytes object."""
 
     def match_vendor_tags_from_bib(
         self, record: V, tags: dict[str, dict[str, str]]
@@ -169,6 +170,15 @@ class MarcParsingHandlerPort(Protocol):
     def parse_fields(self, obj: V) -> list[dict[str, Any]]: ...  # pragma: no branch
 
     """Map all marc fields to a list of dictionarys."""
+
+
+@runtime_checkable
+class MarcReaderPort(Protocol):
+    library: str
+
+    def get_reader(self, data: bytes) -> Iterator: ...  # pragma: no branch
+
+    """Instantiate an object that can read MARC binary as an iterator."""
 
     def write(self, records: list[U]) -> bytes: ...  # pragma:no branch
 
@@ -259,7 +269,7 @@ class OCLCBibFetcher(Protocol):
 
     """Search for brief bib resource using specified parameters."""
 
-    def get_full_bibs_by_id(self, value: str | int) -> bytes: ...  # pragma: no branch
+    def get_full_bib_by_id(self, value: str | int) -> bytes: ...  # pragma: no branch
 
     """Retrieve for full MARC record as a bytes object for a given ID."""
 

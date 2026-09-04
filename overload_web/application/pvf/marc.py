@@ -72,12 +72,12 @@ class BibDeduplicator:
 class BibParser:
     @staticmethod
     def combine_marc_files(
-        data: list[bytes], marc_reader: ports.MarcParsingHandlerPort
+        data: list[bytes], marc_handler: ports.MarcParsingHandlerPort
     ) -> bytes:
         """Combine multiple bytes objects (ie. MARC files) into one for processing."""
         records = []
         for batch in data:
-            reader = marc_reader.get_reader(batch)
+            reader = marc_handler.reader.get_reader(batch)
             for record in reader:
                 records.append(record)
         io_data = io.BytesIO()
@@ -94,7 +94,7 @@ class BibParser:
     ) -> list[models.DomainBib]:
         """Parse MARC binary to a list of `DomainBib` domain objects."""
         parsed = []
-        reader = parser.get_reader(data)
+        reader = parser.reader.get_reader(data)
         for record in reader:
             bib_dict = parser.map_bib_data(obj=record)
             order_data = [parser.map_order_data(obj=i) for i in record.orders]

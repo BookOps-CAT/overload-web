@@ -78,7 +78,7 @@ class ProcessAcquisitionsRecords:
                 updater.update_record(bib, handler=marc_handler, updates=update_fields)
                 report_data.append(analysis.to_dict())
             processed = batch.ProcessedFile(
-                file_name=file_name, records=marc_parser.write(records)
+                file_name=file_name, records=marc_parser.reader.write(records)
             )
             out_batches.append(processed)
         processed_batch = batch.ProcessedFileBatch(
@@ -125,7 +125,7 @@ class ProcessCatalogingRecords:
         """
         file_names = list(batches.keys())
         content = list(batches.values())
-        data = marc.BibParser.combine_marc_files(data=content, marc_reader=marc_parser)
+        data = marc.BibParser.combine_marc_files(data=content, marc_handler=marc_parser)
         records = marc.BibParser.parse_marc_data(parser=marc_parser, data=data)
         original_barcodes = batch.BarcodeValidator.validate_unique(records=records)
         report_data = []
@@ -149,7 +149,7 @@ class ProcessCatalogingRecords:
         file_name = datetime.datetime.today().strftime("%y%m%d")
         files = [
             batch.ProcessedFile(
-                file_name=f"{file_name}-{k}.mrc", records=marc_parser.write(v)
+                file_name=f"{file_name}-{k}.mrc", records=marc_parser.reader.write(v)
             )
             for k, v in deduplicated.items()
         ]
@@ -229,7 +229,7 @@ class ProcessSelectionRecords:
                 updater.update_record(bib, handler=marc_handler, updates=update_fields)
                 report_data.append(analysis.to_dict())
             processed = batch.ProcessedFile(
-                file_name=file_name, records=marc_parser.write(records)
+                file_name=file_name, records=marc_parser.reader.write(records)
             )
             out_batches.append(processed)
         processed_batch = batch.ProcessedFileBatch(
