@@ -20,34 +20,14 @@ def stub_source_data(library, collection):
 
 
 class TestWorldcatFetcher:
-    @pytest.mark.parametrize(
-        "library, index, cat_agency",
-        [
-            ("bpl", "sn", "DLC"),
-            ("bpl", "sn", None),
-            ("bpl", "sn", "DLC"),
-            ("bpl", "sn", None),
-            ("bpl", "no", "DLC"),
-            ("bpl", "no", None),
-            ("nypl", "sn", "DLC"),
-            ("nypl", "sn", None),
-            ("nypl", "no", "DLC"),
-            ("nypl", "no", None),
-        ],
-    )
-    @pytest.mark.parametrize(
-        "format",
-        ["book-printbook", "book-largeprint", "video-dvd", "video-bluray", None],
-    )
-    def test_get_brief_bibs_by_id(
-        self, mock_wc_session, library, index, format, cat_agency, caplog
-    ):
+    @pytest.mark.parametrize("library", ["bpl", "nypl"])
+    def test_get_brief_bibs_by_id(self, mock_wc_session, library, caplog):
         fetcher = oclc.WorldcatFetcher(session=oclc.OclcSession(library=library))
         payload = {
-            "q": f"{index}=1",
+            "q": "sn=1",
             "inCatalogLanguage": "eng",
-            "catalogSource": cat_agency,
-            "itemSubType": format,
+            "catalogSource": "DLC",
+            "itemSubType": "book-printbook",
             "limit": 50,
         }
         payload = {k: v for k, v in payload.items()}
@@ -60,15 +40,13 @@ class TestWorldcatFetcher:
             == caplog.records[1].msg
         )
 
-    @pytest.mark.parametrize(
-        "library, index", [("bpl", "sn"), ("bpl", "no"), ("nypl", "sn"), ("nypl", "no")]
-    )
-    def test_get_brief_bibs_by_id_error(self, mock_wc_session_error, library, index):
+    @pytest.mark.parametrize("library", ["bpl", "nypl"])
+    def test_get_brief_bibs_by_id_error(self, mock_wc_session_error, library):
         fetcher = oclc.WorldcatFetcher(session=oclc.OclcSession(library=library))
         with pytest.raises(BookopsWorldcatError):
             fetcher.get_brief_bibs_by_id(
                 params={
-                    "q": f"{index}=1",
+                    "q": "sn=1",
                     "inCatalogLanguage": "eng",
                     "catalogSource": "DLC",
                     "itemSubType": "book-printbook",

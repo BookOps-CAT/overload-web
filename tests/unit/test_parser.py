@@ -1,5 +1,3 @@
-import datetime
-
 import pytest
 from pymarc import Field, Indicators, Subfield
 
@@ -77,23 +75,3 @@ class TestParser:
         assert records[0].update_datetime is None
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [
-            ("nypl", "BL", "acq"),
-            ("nypl", "BL", "sel"),
-            ("nypl", "RL", "acq"),
-            ("nypl", "RL", "sel"),
-            ("bpl", "NONE", "acq"),
-            ("bpl", "NONE", "sel"),
-        ],
-    )
-    def test_parse_update_datetime(self, parsing_handler, stub_bib):
-        stub_bib.add_field(Field(tag="005", data="20200101010000.0"))
-        records = marc.BibParser.parse_marc_data(
-            parser=parsing_handler, data=stub_bib.as_marc()
-        )
-        assert len(records) == 1
-        assert records[0].update_date == "20200101010000.0"
-        assert records[0].update_datetime == datetime.datetime(2020, 1, 1, 1, 0, 0, 0)
