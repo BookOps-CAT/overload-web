@@ -1,7 +1,9 @@
+import copy
+
 import pytest
 from bookops_worldcat.errors import BookopsWorldcatError
 
-from overload_web.application.wc2s import oclc_matcher
+from overload_web.application.wc2s import match, oclc_matcher
 from overload_web.domain.wc2s import worldcat
 from overload_web.infrastructure import oclc
 
@@ -89,14 +91,15 @@ class TestWorldcatFetcher:
 )
 class TestWorldcatMatcher:
     def test_match_record(self, fake_oclc_fetcher, stub_source_data):
+        source_data = copy.deepcopy(stub_source_data)
         service = oclc_matcher.WorldcatMatcher(fetcher=fake_oclc_fetcher)
-        result = service.get_record_matches(stub_source_data)
+        result = service.get_record_matches(source_data)
         assert result.matched is True
         assert len(result.successful_matches) == 1
         assert len(result.failed_matches) == 0
         assert result.successful_matches[0] == worldcat.MatchedItem(
-            id=stub_source_data.id,
-            id_type=stub_source_data.id_type,
+            id=source_data.id,
+            id_type=source_data.id_type,
             status=worldcat.MatchStatus.MATCHED,
             matched_oclc="12345678",
         )
@@ -104,15 +107,16 @@ class TestWorldcatMatcher:
     def test_match_record_failed_user_criteria(
         self, fake_oclc_fetcher, stub_source_data
     ):
-        stub_source_data.record_level = "1"
+        source_data = copy.deepcopy(stub_source_data)
+        source_data.record_level = "1"
         service = oclc_matcher.WorldcatMatcher(fetcher=fake_oclc_fetcher)
-        result = service.get_record_matches(stub_source_data)
+        result = service.get_record_matches(source_data)
         assert result.matched is True
         assert len(result.successful_matches) == 0
         assert len(result.failed_matches) == 1
         assert result.failed_matches[0] == worldcat.MatchedItem(
-            id=stub_source_data.id,
-            id_type=stub_source_data.id_type,
+            id=source_data.id,
+            id_type=source_data.id_type,
             status=worldcat.MatchStatus.FAILED_USER_CRITERIA,
             matched_oclc="12345678",
         )
@@ -121,16 +125,29 @@ class TestWorldcatMatcher:
     def test_match_record_failed_global_criteria(
         self, fake_oclc_fetcher, stub_source_data, update_date
     ):
-        stub_source_data.update_date = update_date
-        stub_source_data.action = worldcat.Action.UPGRADE
+        source_data = copy.deepcopy(stub_source_data)
+        source_data.update_date = update_date
+        source_data.action = worldcat.Action.UPGRADE
         service = oclc_matcher.WorldcatMatcher(fetcher=fake_oclc_fetcher)
-        result = service.get_record_matches(stub_source_data)
+        result = service.get_record_matches(source_data)
         assert result.matched is True
         assert len(result.successful_matches) == 0
         assert len(result.failed_matches) == 1
         assert result.failed_matches[0] == worldcat.MatchedItem(
-            id=stub_source_data.id,
-            id_type=stub_source_data.id_type,
+            id=source_data.id,
+            id_type=source_data.id_type,
             status=worldcat.MatchStatus.FAILED_GLOBAL_CRITERIA,
             matched_oclc="12345678",
         )
+
+
+class TestMatchWorldcat2Sierra:
+    @pytest.mark.parametrize(
+        "library, collection", [("bpl", None), ("nypl", "RL"), ("nypl", "BL")]
+    )
+    def test_match_worldcat_2_sierra(self, stub_source_data, fake_oclc_fetcher):
+        source_data = copy.deepcopy(stub_source_data)
+        batches = match.MatchWorldcat2Sierra.execute(
+            fetcher=fake_oclc_fetcher, source_data=[source_data]
+        )
+        assert len(batches) == 1

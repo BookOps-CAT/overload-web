@@ -81,6 +81,19 @@ class MatchedResult:
 
 
 @dataclass
+class FullMatchedItem(MatchedItem):
+    full_record: bytes
+
+
+@dataclass
+class FullMatchedResult:
+    matched: bool
+    source_data: SourceData
+    failed_matches: list[MatchedItem] | None = None
+    successful_matches: list[FullMatchedItem] | list[MatchedItem] | None = None
+
+
+@dataclass
 class SourceData:
     """A domain model representing a Worldcat2Sierra query."""
 

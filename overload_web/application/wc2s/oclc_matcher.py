@@ -53,9 +53,19 @@ class WorldcatMatcher:
         filtered = evaluator.filter_brief_bib_matches(responses=parsed, source=source)
         return filtered
 
-    def get_full_records(self, matches: list[worldcat.MatchedItem]) -> list[bytes]:
+    def get_full_records(
+        self, matches: list[worldcat.MatchedItem]
+    ) -> list[worldcat.FullMatchedItem]:
         full_records = []
         for item in matches:
             record = self.fetcher.get_full_bib_by_id(item.matched_oclc)
-            full_records.append(record)
+            full_records.append(
+                worldcat.FullMatchedItem(
+                    id=item.id,
+                    id_type=item.id_type,
+                    status=item.status,
+                    matched_oclc=item.matched_oclc,
+                    full_record=record,
+                )
+            )
         return full_records

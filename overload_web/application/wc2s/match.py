@@ -19,10 +19,24 @@ class MatchWorldcat2Sierra:
         matcher = oclc_matcher.WorldcatMatcher(fetcher)
         for record in source_data:
             result = matcher.get_record_matches(source=record)
-            out = []
             if result.matched is True and result.successful_matches:
                 full_results = matcher.get_full_records(result.successful_matches)
-                out.append(full_results)
-            batches.append(out)
+                batches.append(
+                    worldcat.FullMatchedResult(
+                        matched=result.matched,
+                        source_data=record,
+                        failed_matches=result.failed_matches,
+                        successful_matches=full_results,
+                    )
+                )
+            else:
+                batches.append(
+                    worldcat.FullMatchedResult(
+                        matched=result.matched,
+                        source_data=record,
+                        failed_matches=result.failed_matches,
+                        successful_matches=full_results,
+                    )
+                )
 
         return batches
