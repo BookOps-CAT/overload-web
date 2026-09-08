@@ -276,8 +276,8 @@ class UserCriteria(BaseModel):
     material_type: Literal["any", "bluray", "dvd", "large_print", "print"]
     action: Literal["catalog", "upgrade"]
     record_level: Literal["1", "2", "3"]
-    required_cataloging_agency: Literal["DLC", "any"] | None = None
-    required_cataloging_rules: Literal["RDA", "any"] | None = None
+    cat_agency: Literal["DLC", "any"] | None = None
+    cat_rules: Literal["RDA", "any"] | None = None
     data_source: str | None = None
 
     @field_validator("collection", mode="before")
@@ -295,16 +295,16 @@ class UserCriteria(BaseModel):
     def from_form(
         self,
         id_type: Literal["isbn", "issn", "lccn", "upc", "oclc_number"] = Form(...),
+        record_level: Literal["1", "2", "3"] = Form(...),
         library: Literal["nypl", "bpl"] = Form(...),
         collection: Literal["BL", "RL", ""] | None = Form(None),
         material_type: Literal["any", "bluray", "dvd", "large_print", "print"] = Form(
-            ...
+            default="any"
         ),
-        action: Literal["catalog", "upgrade"] = Form(...),
-        record_level: Literal["1", "2", "3"] = Form(...),
+        action: Literal["catalog", "upgrade"] = Form(default="catalog"),
         cat_agency: Literal["DLC", "any"] | None = Form(default=None),
         cat_rules: Literal["RDA", "any"] | None = Form(default=None),
-        data_source: Literal["id", "export"] | None = Form(default=None),
+        data_source: Literal["id", "export"] | None = Form(default="id"),
     ) -> UserCriteria:
         return UserCriteria(
             id_type=id_type,
@@ -313,8 +313,8 @@ class UserCriteria(BaseModel):
             material_type=material_type,
             action=action,
             record_level=record_level,
-            required_cataloging_agency=cat_agency,
-            required_cataloging_rules=cat_rules,
+            cat_agency=cat_agency,
+            cat_rules=cat_rules,
             data_source=data_source,
         )
 
@@ -329,70 +329,7 @@ class SourceDataModel(BaseModel):
     record_level: Literal["1", "2", "3"]
     required_cataloging_agency: Literal["DLC", "any"] | None = None
     required_cataloging_rules: Literal["RDA", "any"] | None = None
-    data_source: str | None = None
     update_date: str | None = None
-
-    @field_validator("collection", mode="before")
-    @classmethod
-    def parse_collection(
-        cls, value: Literal["BL", "RL"] | None
-    ) -> Literal["BL", "RL"] | None:
-        """Parses value of `collection` param from html forms."""
-        if not value:
-            return None
-        else:
-            return value
-
-    def from_form(
-        self,
-        file: UploadFile,
-        id: str = Form(...),
-        id_type: Literal["isbn", "issn", "lccn", "upc", "oclc_number"] = Form(...),
-        library: Literal["nypl", "bpl"] = Form(...),
-        collection: Literal["BL", "RL", ""] | None = Form(None),
-        material_type: Literal["any", "bluray", "dvd", "large_print", "print"] = Form(
-            ...
-        ),
-        action: Literal["catalog", "upgrade"] = Form(...),
-        record_level: Literal["1", "2", "3"] = Form(...),
-        cat_agency: Literal["DLC", "any"] | None = Form(default=None),
-        cat_rules: Literal["RDA", "any"] | None = Form(default=None),
-        data_source: Literal["id", "export"] | None = Form(default=None),
-    ) -> list[SourceDataModel]:
-        lines = file.file.readlines()
-        if data_source == "export":
-            split_data = [i.decode("utf-8").strip("\r\n").split(",") for i in lines]
-            return [
-                SourceDataModel(
-                    id_type=id_type,
-                    id=i[0],
-                    library=library,
-                    collection=collection,
-                    material_type=material_type,
-                    action=action,
-                    record_level=record_level,
-                    required_cataloging_agency=cat_agency,
-                    required_cataloging_rules=cat_rules,
-                    data_source=data_source,
-                    update_date=i[1],
-                )
-                for i in split_data
-            ]
-        return [
-            SourceDataModel(
-                id_type=id_type,
-                id=i.decode("utf-8").strip("\r\n"),
-                library=library,
-                collection=collection,
-                material_type=material_type,
-                action=action,
-                record_level=record_level,
-                required_cataloging_agency=cat_agency,
-                required_cataloging_rules=cat_rules,
-                data_source=data_source,
-            )
-            for i in lines
-        ]
 
 
 def get_engine_with_uri():
@@ -511,9 +448,29 @@ def oclc_fetcher(
     yield oclc.WorldcatFetcher(session=oclc.OclcSession(library=user_criteria.library))
 
 
-def load_wc2s_file(file: UploadFile) -> list:
+def load_wc2s_file(file: UploadFile) -> list[str]:
     lines = file.file.readlines()
-    return [{"id": i, "id_type": "isbn"} for i in lines]
+    return [i.decode("utf-8").strip("\r\n") for i in lines]
+
+
+def source_data_from_load(
+    ids: Annotated[list[str], Depends(load_wc2s_file)],
+    data: Annotated[UserCriteria, Depends(UserCriteria.from_form)],
+) -> list:
+    return [
+        SourceDataModel(
+            id=i,
+            id_type=data.id_type,
+            library=data.library,
+            collection=data.collection,
+            material_type=data.material_type,
+            action=data.action,
+            record_level=data.record_level,
+            required_cataloging_agency=data.cat_agency,
+            required_cataloging_rules=data.cat_rules,
+        )
+        for i in ids
+    ]
 
 
 def get_report_writer() -> reporter.GoogleSheetsReporter:

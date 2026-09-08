@@ -644,6 +644,7 @@ def mock_wc_session(library, monkeypatch):
                         "catalogingLanguage": "eng",
                         "levelOfCataloging": " ",
                     },
+                    "date": {"replaceDate": "260901"},
                 }
             ],
             "date": {"replaceDate": "260901"},

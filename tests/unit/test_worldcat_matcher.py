@@ -148,6 +148,6 @@ class TestMatchWorldcat2Sierra:
     def test_match_worldcat_2_sierra(self, stub_source_data, fake_oclc_fetcher):
         source_data = copy.deepcopy(stub_source_data)
         batches = match.MatchWorldcat2Sierra.execute(
-            fetcher=fake_oclc_fetcher, source_data=[source_data]
+            fetcher=fake_oclc_fetcher, source_data=[source_data.__dict__]
         )
         assert len(batches) == 1

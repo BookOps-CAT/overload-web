@@ -145,7 +145,7 @@ class RecordEvaluator:
                 creator=record["creator"],
                 date=record["date"],
                 language=record["language"],
-                merged_oclc_numbers=record["mergedOclcNumbers"],
+                merged_oclc_numbers=record.get("mergedOclcNumbers", []),
                 oclc_number=record["oclcNumber"],
                 title=record["title"],
                 edition=record.get("edition"),

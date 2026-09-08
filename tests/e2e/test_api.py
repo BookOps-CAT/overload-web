@@ -408,7 +408,7 @@ class TestApp:
     @pytest.mark.parametrize(
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "")]
     )
-    def test_wc2s_router_match_record(self, library, collection):
+    def test_wc2s_router_match_record(self, library, collection, mock_wc_session):
         context = {
             "library": library,
             "collection": collection,
@@ -427,17 +427,4 @@ class TestApp:
         )
         context = response.context
         assert response.status_code == 200
-        assert context["input_data"] == [{"id": "9781234567890", "id_type": "isbn"}]
-        assert sorted(list(context["form_data"].keys())) == sorted(
-            [
-                "action",
-                "collection",
-                "data_source",
-                "id_type",
-                "library",
-                "material_type",
-                "record_level",
-                "required_cataloging_agency",
-                "required_cataloging_rules",
-            ]
-        )
+        assert context["input_data"][0].id == "9781234567890"

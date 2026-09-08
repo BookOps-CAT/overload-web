@@ -13,18 +13,19 @@ logger = logging.getLogger(__name__)
 class MatchWorldcat2Sierra:
     @staticmethod
     def execute(
-        fetcher: ports.OCLCBibFetcher, source_data: list[worldcat.SourceData]
+        fetcher: ports.OCLCBibFetcher, source_data: list[dict[str, Any]]
     ) -> list[Any]:
         batches = []
         matcher = oclc_matcher.WorldcatMatcher(fetcher)
         for record in source_data:
-            result = matcher.get_record_matches(source=record)
+            source = worldcat.SourceData(**record)
+            result = matcher.get_record_matches(source=source)
             if result.matched is True and result.successful_matches:
                 full_results = matcher.get_full_records(result.successful_matches)
                 batches.append(
                     worldcat.FullMatchedResult(
                         matched=result.matched,
-                        source_data=record,
+                        source_data=source,
                         failed_matches=result.failed_matches,
                         successful_matches=full_results,
                     )
@@ -33,7 +34,7 @@ class MatchWorldcat2Sierra:
                 batches.append(
                     worldcat.FullMatchedResult(
                         matched=result.matched,
-                        source_data=record,
+                        source_data=source,
                         failed_matches=result.failed_matches,
                         successful_matches=full_results,
                     )
