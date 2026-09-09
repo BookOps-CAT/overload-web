@@ -129,34 +129,18 @@ class MarcParsingHandler:
         self.vendor_mapping = vendor_mapping
         self.reader = MarcReaderWriter(library=self.library)
 
-    def match_vendor_tags_from_bib(
-        self, record: Bib, tags: dict[str, dict[str, str]]
-    ) -> bool:
-        """
-        Get the MARC tag, subfield code, and subfield value from a record based on a
-        dictionary containing tags and subfield codes.
-
-        Args:
-            record: A `bookops_marc.Bib` object
-            tags: A dictionary containing MARC tags, subfield codes, and subfield values
-
-        Returns:
-            A dictionary containing the values present in the MARC fields/subfields.
-
-        """
-        bib_dict: dict = {}
-        for tag, data in tags.items():
-            fields = record.get_fields(tag)
-            if not fields:
-                continue
-            values = [i.get(data["code"]) for i in fields]
-            for value in values:
-                if value != data["value"]:
-                    continue
-                bib_dict[tag] = {"code": data["code"], "value": value}
-        if bib_dict:
-            return bib_dict == tags
-        return False
+    def identify_vendor(self, record: Bib) -> dict[str, Any]:
+        """Determine the vendor who created a `bookops_marc.Bib` record."""
+        for vendor, info in self.vendor_mapping[record.library].items():
+            tags = info["vendor_tags"].get("primary", {})
+            tag_match = self.match_vendor_tags_from_bib(record=record, tags=tags)
+            if tag_match:
+                return info
+            alt_tags = info["vendor_tags"].get("alternate", {})
+            alt_match = self.match_vendor_tags_from_bib(record=record, tags=alt_tags)
+            if alt_match:
+                return info
+        return self.vendor_mapping[record.library]["UNKNOWN"]
 
     def map_bib_data(self, obj: Bib) -> dict[str, Any]:
         """
@@ -228,18 +212,34 @@ class MarcParsingHandler:
                     out[attr] = field.get(code) if field else None
         return out
 
-    def identify_vendor(self, record: Bib) -> dict[str, Any]:
-        """Determine the vendor who created a `bookops_marc.Bib` record."""
-        for vendor, info in self.vendor_mapping[record.library].items():
-            tags = info["vendor_tags"].get("primary", {})
-            tag_match = self.match_vendor_tags_from_bib(record=record, tags=tags)
-            if tag_match:
-                return info
-            alt_tags = info["vendor_tags"].get("alternate", {})
-            alt_match = self.match_vendor_tags_from_bib(record=record, tags=alt_tags)
-            if alt_match:
-                return info
-        return self.vendor_mapping[record.library]["UNKNOWN"]
+    def match_vendor_tags_from_bib(
+        self, record: Bib, tags: dict[str, dict[str, str]]
+    ) -> bool:
+        """
+        Get the MARC tag, subfield code, and subfield value from a record based on a
+        dictionary containing tags and subfield codes.
+
+        Args:
+            record: A `bookops_marc.Bib` object
+            tags: A dictionary containing MARC tags, subfield codes, and subfield values
+
+        Returns:
+            A dictionary containing the values present in the MARC fields/subfields.
+
+        """
+        bib_dict: dict = {}
+        for tag, data in tags.items():
+            fields = record.get_fields(tag)
+            if not fields:
+                continue
+            values = [i.get(data["code"]) for i in fields]
+            for value in values:
+                if value != data["value"]:
+                    continue
+                bib_dict[tag] = {"code": data["code"], "value": value}
+        if bib_dict:
+            return bib_dict == tags
+        return False
 
 
 class MarcReaderWriter:
