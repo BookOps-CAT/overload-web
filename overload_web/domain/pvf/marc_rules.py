@@ -99,26 +99,6 @@ class FieldRules:
         )
 
     @staticmethod
-    def add_item_fields(
-        items: list[fields.ParsedField], ind2: str, tag: str
-    ) -> list[MarcFieldUpdateValues]:
-        """Creates list of new item records to add to a record"""
-        new_items = []
-        for item in items:
-            if item.indicators == (" ", ind2):
-                new_items.append(
-                    MarcFieldUpdateValues(
-                        tag=tag,
-                        ind1=" ",
-                        ind2=ind2,
-                        subfields=[
-                            {"code": i.code, "value": i.value} for i in item.subfields
-                        ],
-                    )
-                )
-        return new_items
-
-    @staticmethod
     def add_vendor_fields(record: models.DomainBib) -> list[MarcFieldUpdateValues]:
         """Creates a list of fields for a full MARC record based on `VendorInfo`."""
         field_objs = []
@@ -233,3 +213,47 @@ class FieldRules:
                     )
                 )
         return fields
+
+    @staticmethod
+    def get_item_field_criteria(record: models.DomainBib) -> tuple[str, str, str]:
+        """Get appropriate item field tag and indicators."""
+        if not record.library == "bpl":
+            return ("949", " ", "1")
+        fields_037 = [i for i in record.parsed_fields if i.tag == "037" and i.subfields]
+        for field in fields_037:
+            subfield_a = []
+            subfield_b: str | None = None
+            for subfield in field.subfields:
+                if subfield.code == "a" and isinstance(subfield.value, str):
+                    subfield_a.append(subfield.value)
+                elif subfield.code == "b" and subfield.value == "OverDrive, Inc.":
+                    subfield_b = subfield.value
+            if subfield_b is not None and len(subfield_a) >= 1:
+                return ("949", " ", "1")
+        return ("960", " ", " ")
+
+    @staticmethod
+    def get_item_fields(
+        records: list[models.DomainBib], criteria: tuple[str, str, str]
+    ) -> list[MarcFieldUpdateValues]:
+        """Creates list of item fields to add to combine duplicate records."""
+        all_items = []
+        for record in records:
+            for item in record.parsed_fields:
+                if item.tag == criteria[0] and item.indicators == (
+                    criteria[1],
+                    criteria[2],
+                ):
+                    all_items.append(
+                        MarcFieldUpdateValues(
+                            tag=item.tag,
+                            ind1=item.indicators[0],
+                            ind2=item.indicators[1],
+                            subfields=[
+                                {"code": i.code, "value": i.value}
+                                for i in item.subfields
+                            ],
+                        )
+                    )
+
+        return all_items

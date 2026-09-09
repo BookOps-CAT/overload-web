@@ -72,7 +72,7 @@ class MarcUpdateHandler:
             None. The record's fields are updated in place.
         """
         for update in field_updates:
-            if update.delete_all_by_tag:
+            if update.delete_all_by_tag is True:
                 bib.remove_fields(update.delete_all_by_tag)
             if update.target_to_delete is not None:
                 to_delete = self._find_specific_field(bib, update.target_to_delete)

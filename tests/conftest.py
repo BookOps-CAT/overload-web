@@ -391,6 +391,21 @@ def acq_bib(collection, library, stub_bib):
         blanket_po="baz",
     )
     bib = copy.deepcopy(stub_bib)
+    parsed_fields = []
+    for field in stub_bib.fields:
+        if field.subfields:
+            parsed_fields.append(
+                fields.ParsedField(
+                    tag=field.tag,
+                    indicators=(field.indicator1, field.indicator2),
+                    subfields=[
+                        fields.ParsedSubfield(code=sf.code, value=sf.value)
+                        for sf in field.subfields
+                    ],
+                )
+            )
+        else:
+            parsed_fields.append(fields.ParsedField(tag=field.tag, value=field.data))
     domain_bib = models.DomainBib(
         library=library,
         collection=collection,
@@ -404,13 +419,7 @@ def acq_bib(collection, library, stub_bib):
         barcodes=["333331234567890"],
         orders=[order],
         update_date="20200101010000.0",
-        parsed_fields=[
-            fields.ParsedField(
-                tag="020",
-                indicators=(" ", " "),
-                subfields=[fields.ParsedSubfield(code="a", value="9781234567890")],
-            )
-        ],
+        parsed_fields=parsed_fields,
     )
     return domain_bib
 
@@ -481,6 +490,21 @@ def full_bib(library, collection):
                 subfields=[Subfield(code="i", value="333331234567890")],
             )
         )
+    parsed_fields = []
+    for field in bib.fields:
+        if field.subfields:
+            parsed_fields.append(
+                fields.ParsedField(
+                    tag=field.tag,
+                    indicators=(field.indicator1, field.indicator2),
+                    subfields=[
+                        fields.ParsedSubfield(code=sf.code, value=sf.value)
+                        for sf in field.subfields
+                    ],
+                )
+            )
+        else:
+            parsed_fields.append(fields.ParsedField(tag=field.tag, value=field.data))
     domain_bib = models.DomainBib(
         library=library,
         collection=collection,
@@ -501,13 +525,7 @@ def full_bib(library, collection):
                 "secondary_matchpoint": "control_number",
             },
         ),
-        parsed_fields=[
-            fields.ParsedField(
-                tag="020",
-                indicators=(" ", " "),
-                subfields=[fields.ParsedSubfield(code="a", value="9781234567890")],
-            )
-        ],
+        parsed_fields=parsed_fields,
     )
     return domain_bib
 

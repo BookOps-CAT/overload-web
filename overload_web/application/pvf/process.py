@@ -143,9 +143,7 @@ class ProcessCatalogingRecords:
         missing_barcodes = batch.BarcodeValidator.validate_preserved(
             processed_records=records, original_barcodes=original_barcodes
         )
-        deduplicated = marc.BibDeduplicator.deduplicate(
-            records=records, handler=marc_handler
-        )
+        deduplicated = updater.deduplicate(records=records, handler=marc_handler)
         file_name = datetime.datetime.today().strftime("%y%m%d")
         files = [
             batch.ProcessedFile(

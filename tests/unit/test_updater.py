@@ -72,6 +72,68 @@ def make_bt_series_full_bib(full_bib, library, collection):
     return make_full_bib
 
 
+@pytest.fixture
+def stub_full_bib(full_bib):
+    new_full_bib = copy.deepcopy(full_bib)
+    new_full_bib.control_number = "123456789"
+    return new_full_bib
+
+
+@pytest.fixture
+def full_bib_add_barcodes(stub_full_bib, library):
+    new_full_bib = copy.deepcopy(stub_full_bib)
+    new_bib = Bib(new_full_bib.binary_data, library=library)
+    if library == "bpl":
+        new_bib.remove_fields("960")
+        new_bib.add_field(
+            Field(
+                tag="960",
+                indicators=Indicators(" ", " "),
+                subfields=[Subfield(code="a", value="333331111111111")],
+            )
+        )
+    else:
+        new_bib.remove_fields("949")
+        new_bib.add_field(
+            Field(
+                tag="949",
+                indicators=Indicators(" ", "1"),
+                subfields=[Subfield(code="i", value="333331111111111")],
+            )
+        )
+        new_bib.add_field(
+            Field(
+                tag="949",
+                indicators=Indicators(" ", " "),
+                subfields=[Subfield(code="i", value="*b2=a;")],
+            )
+        )
+    parsed_fields = []
+    for field in new_bib.fields:
+        if field.subfields:
+            parsed_fields.append(
+                fields.ParsedField(
+                    tag=field.tag,
+                    indicators=(field.indicator1, field.indicator2),
+                    subfields=[
+                        fields.ParsedSubfield(code=sf.code, value=sf.value)
+                        for sf in field.subfields
+                    ],
+                )
+            )
+        else:
+            parsed_fields.append(fields.ParsedField(tag=field.tag, value=field.data))
+    new_full_bib.binary_data = new_bib.as_marc()
+    new_full_bib.parsed_fields = parsed_fields
+    new_full_bib.barcodes = ["333331111111111"]
+    return new_full_bib
+
+
+@pytest.fixture
+def stub_updater(update_rules):
+    return update.BibUpdater(**update_rules)
+
+
 class TestUpdaterAcqRecords:
     ENGINE = marc_handler.MarcUpdateHandler()
 
@@ -344,3 +406,123 @@ class TestUpdaterSelRecords:
             "333331234567890"
         ]
         assert [i.value() for i in updated_bib.get_fields("949")] == output
+
+
+@pytest.mark.parametrize("record_type", ["cat"])
+class TestDeduplicate:
+    ENGINE = marc_handler.MarcUpdateHandler()
+
+    @pytest.mark.parametrize(
+        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
+    )
+    def test_dedupe_attach(self, stub_full_bib, stub_updater):
+        bib = copy.deepcopy(stub_full_bib)
+        bib.action = models.CatalogAction.ATTACH
+        processed = stub_updater.deduplicate(records=[bib], handler=self.ENGINE)
+        assert len(processed["NEW"]) == 0
+        assert len(processed["DUP"]) == 1
+        assert len(processed["DEDUPED"]) == 0
+
+    @pytest.mark.parametrize(
+        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
+    )
+    def test_dedupe_insert(self, stub_full_bib, stub_updater):
+        bib = copy.deepcopy(stub_full_bib)
+        bib.action = models.CatalogAction.INSERT
+        processed = stub_updater.deduplicate(records=[bib], handler=self.ENGINE)
+        assert len(processed["NEW"]) == 1
+        assert len(processed["DUP"]) == 0
+        assert len(processed["DEDUPED"]) == 0
+
+    @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
+    def test_dedupe_combine_bpl_bibs(
+        self, library, stub_full_bib, full_bib_add_barcodes, stub_updater
+    ):
+        bib = copy.deepcopy(stub_full_bib)
+        bib_add_barcodes = copy.deepcopy(full_bib_add_barcodes)
+        bib.action = models.CatalogAction.INSERT
+        bib_add_barcodes.action = models.CatalogAction.INSERT
+        processed = stub_updater.deduplicate(
+            records=[bib, bib_add_barcodes], handler=self.ENGINE
+        )
+        deduped = Bib(processed["DEDUPED"][0].binary_data, library=library)
+        assert len(processed["NEW"]) == 2
+        assert len(processed["DUP"]) == 0
+        assert len(processed["DEDUPED"]) == 1
+        assert sorted([i.value() for i in deduped.get_fields("960")]) == [
+            "333331111111111",
+            "333331234567890",
+        ]
+        assert [i.control_number for i in processed["NEW"]] == [
+            "123456789",
+            "123456789",
+        ]
+        assert [i.control_number for i in processed["DEDUPED"]] == ["123456789"]
+
+    @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
+    def test_dedupe_bpl_overdrive_bibs(
+        self, library, stub_bib, full_bib_add_barcodes, stub_updater
+    ):
+        bib = copy.deepcopy(stub_bib)
+        bib_add_barcodes = copy.deepcopy(full_bib_add_barcodes)
+        bib.action = models.CatalogAction.INSERT
+        bib_add_barcodes.action = models.CatalogAction.INSERT
+        processed = stub_updater.deduplicate(
+            records=[bib, bib_add_barcodes], handler=self.ENGINE
+        )
+        assert len(processed["NEW"]) == 2
+        assert len(processed["DUP"]) == 0
+        assert len(processed["DEDUPED"]) == 0
+
+    @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
+    def test_dedupe_combine_nypl_bibs(
+        self, library, stub_full_bib, full_bib_add_barcodes, stub_updater
+    ):
+        bib = copy.deepcopy(stub_full_bib)
+        bib_add_barcodes = copy.deepcopy(full_bib_add_barcodes)
+        bib.action = models.CatalogAction.INSERT
+        bib_add_barcodes.action = models.CatalogAction.INSERT
+        processed = stub_updater.deduplicate(
+            records=[bib, bib_add_barcodes], handler=self.ENGINE
+        )
+        deduped = Bib(processed["DEDUPED"][0].binary_data, library=library)
+        assert len(processed["NEW"]) == 2
+        assert len(processed["DUP"]) == 0
+        assert len(processed["DEDUPED"]) == 1
+        assert sorted([i.value() for i in deduped.get_fields("949")]) == [
+            "333331111111111",
+            "333331234567890",
+        ]
+        assert [i.control_number for i in processed["NEW"]] == [
+            "123456789",
+            "123456789",
+        ]
+        assert [i.control_number for i in processed["DEDUPED"]] == ["123456789"]
+
+    @pytest.mark.parametrize(
+        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
+    )
+    def test_dedupe_other_recs(
+        self, stub_full_bib, full_bib_add_barcodes, stub_updater
+    ):
+        other_rec = copy.deepcopy(stub_full_bib)
+        other_rec.control_number = "987654321"
+        other_rec.action = models.CatalogAction.INSERT
+        stub_full_bib.action = models.CatalogAction.INSERT
+        full_bib_add_barcodes.action = models.CatalogAction.INSERT
+        processed = stub_updater.deduplicate(
+            records=[stub_full_bib, full_bib_add_barcodes, other_rec],
+            handler=self.ENGINE,
+        )
+        assert len(processed["NEW"]) == 3
+        assert len(processed["DUP"]) == 0
+        assert len(processed["DEDUPED"]) == 2
+        assert sorted([i.control_number for i in processed["NEW"]]) == [
+            "123456789",
+            "123456789",
+            "987654321",
+        ]
+        assert sorted([i.control_number for i in processed["DEDUPED"]]) == [
+            "123456789",
+            "987654321",
+        ]

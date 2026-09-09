@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 from overload_web.application import ports
-from overload_web.domain.pvf import marc_rules, models
+from overload_web.domain.pvf import batch, marc_rules, models
 
 logger = logging.getLogger(__name__)
 
@@ -98,3 +98,28 @@ class BibUpdater:
         handler.update_fields(field_updates=updates, bib=bib)
         bib.leader = marc_rules.FieldRules.update_leader(bib.leader)
         record.binary_data = bib.as_marc()
+
+    def deduplicate(
+        self, records: list[models.DomainBib], handler: ports.MarcUpdateHandlerPort
+    ) -> dict[str, list[models.DomainBib]]:
+        """Review and deduplicate a batch of processed full-level MARC records."""
+        batches = batch.BatchReviewer.review_batch(records=records)
+        if not batches.get("TO_DEDUPE"):
+            return {"NEW": batches["NEW"], "DUP": batches["DUP"], "DEDUPED": []}
+        deduped = []
+        for control_number, group in batches["TO_DEDUPE"].items():
+            if len(group) == 1:
+                deduped.append(group[0])
+            elif len(group) > 1 and control_number is not None:
+                base_rec = group[0]
+                item_tags = marc_rules.FieldRules.get_item_field_criteria(
+                    record=base_rec
+                )
+                item_fields = marc_rules.FieldRules.get_item_fields(
+                    records=group[1:], criteria=item_tags
+                )
+                bib = handler.create_bib_from_domain(record=base_rec)
+                handler.update_fields(field_updates=item_fields, bib=bib)
+                base_rec.binary_data = bib.as_marc()
+                deduped.append(base_rec)
+        return {"NEW": batches["NEW"], "DUP": batches["DUP"], "DEDUPED": deduped}

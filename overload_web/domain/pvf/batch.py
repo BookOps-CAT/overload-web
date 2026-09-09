@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import itertools
 import logging
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from typing import Any
 
@@ -71,3 +71,23 @@ class BarcodeValidator:
         if not valid:
             logger.error(f"Barcodes integrity error: {list(missing_barcodes)}")
         return list(missing_barcodes)
+
+
+class BatchReviewer:
+    @staticmethod
+    def review_batch(records: list[models.DomainBib]) -> dict[str, Any]:
+        """Merges item fields from duplicate records into the base record."""
+        out: dict[str, list[models.DomainBib]] = {"NEW": [], "DUP": [], "DEDUPED": []}
+        dup_groups = defaultdict(list)
+
+        for record in records:
+            if record.action and record.action == "attach":
+                out["DUP"].append(record)
+            else:
+                out["NEW"].append(record)
+                dup_groups[record.control_number].append(record)
+        for control_number, group in dup_groups.items():
+            # only deduplicate new recs if there are groups with multiple records
+            if len(group) > 1 and control_number is not None:
+                return {"NEW": out["NEW"], "DUP": out["DUP"], "TO_DEDUPE": dup_groups}
+        return {"NEW": out["NEW"], "DUP": out["DUP"]}
