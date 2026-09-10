@@ -6,6 +6,22 @@ from overload_web.domain.pvf import matching, models
 from overload_web.domain.shared import sierra_responses
 
 
+@pytest.fixture(params=["BL", "RL"])
+def stub_nypl_bib(request):
+    return models.DomainBib(
+        library="nypl",
+        collection=request.param,
+        isbn="9781234567890",
+        title="Foo",
+        record_type="cat",
+        binary_data=b"",
+        parsed_fields=[],
+        vendor_info=models.VendorInfo(
+            name="UNKNOWN", matchpoints={"primary_matchpoint": "isbn"}, bib_fields=[]
+        ),
+    )
+
+
 @pytest.fixture
 def nypl_bl_bib():
     return models.DomainBib(
@@ -55,7 +71,7 @@ def bpl_bib():
 
 
 @pytest.fixture
-def nypl_data():
+def stub_nypl_data():
     return {
         "id": "12345",
         "title": "Record 1",
@@ -69,34 +85,38 @@ def nypl_data():
 
 
 @pytest.fixture
-def nypl_bl_data(nypl_data):
-    data = copy.deepcopy(nypl_data)
-    data["varFields"] = [
-        {
-            "marcTag": "091",
-            "ind1": " ",
-            "ind2": " ",
-            "subfields": [{"content": "Foo", "tag": "a"}],
-        },
-        {"marcTag": "901", "subfields": [{"content": "CAT", "tag": "b"}]},
-        {"marcTag": "910", "subfields": [{"content": "BL", "tag": "a"}]},
-    ]
+def nypl_bl_data(stub_nypl_data):
+    data = copy.deepcopy(stub_nypl_data)
+    data["varFields"].extend(
+        [
+            {
+                "marcTag": "091",
+                "ind1": " ",
+                "ind2": " ",
+                "subfields": [{"content": "Foo", "tag": "a"}],
+            },
+            {"marcTag": "901", "subfields": [{"content": "CAT", "tag": "b"}]},
+            {"marcTag": "910", "subfields": [{"content": "BL", "tag": "a"}]},
+        ]
+    )
     return data
 
 
 @pytest.fixture
-def nypl_rl_data(nypl_data):
-    data = copy.deepcopy(nypl_data)
-    data["varFields"] = [
-        {
-            "marcTag": "852",
-            "ind1": "8",
-            "ind2": " ",
-            "subfields": [{"content": "Foo", "tag": "a"}],
-        },
-        {"marcTag": "901", "subfields": [{"content": "CAT", "tag": "b"}]},
-        {"marcTag": "910", "subfields": [{"content": "RL", "tag": "a"}]},
-    ]
+def nypl_rl_data(stub_nypl_data):
+    data = copy.deepcopy(stub_nypl_data)
+    data["varFields"].extend(
+        [
+            {
+                "marcTag": "852",
+                "ind1": "8",
+                "ind2": " ",
+                "subfields": [{"content": "Foo", "tag": "a"}],
+            },
+            {"marcTag": "901", "subfields": [{"content": "CAT", "tag": "b"}]},
+            {"marcTag": "910", "subfields": [{"content": "RL", "tag": "a"}]},
+        ]
+    )
     return data
 
 
@@ -147,60 +167,67 @@ class TestClassifyMatches:
         assert len(classified.other) == 0
         assert len(classified.duplicates) == 2
 
-    @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
-    @pytest.mark.parametrize(
-        "var_fields",
-        [
-            [
-                {"marcTag": "910", "subfields": [{"content": "BL", "tag": "a"}]},
-                {"marcTag": "910", "subfields": [{"content": "RL", "tag": "a"}]},
-            ],
-            [
-                {"marcTag": "091", "subfields": [{"content": "Foo", "tag": "a"}]},
-                {
-                    "marcTag": "852",
-                    "ind1": "8",
-                    "ind2": " ",
-                    "subfields": [{"content": "Foo", "tag": "a"}],
-                },
-            ],
-        ],
-    )
-    def test_classify_matches_nypl_mixed(
-        self, full_bib, nypl_data, var_fields, collection
+    @pytest.mark.parametrize("collection", ["BL", "RL"])
+    def test_classify_matches_nypl_mixed_910s(
+        self, stub_nypl_bib, stub_nypl_data, collection
     ):
-        nypl_data["varFields"] = var_fields
+        stub_nypl_data["varFields"] = [
+            {"marcTag": "910", "subfields": [{"content": "BL", "tag": "a"}]},
+            {"marcTag": "910", "subfields": [{"content": "RL", "tag": "a"}]},
+        ]
         matcher = matching.MatchAnalyzerFactory.make("nypl", "cat", collection)
-        classified = matcher.classify_matches(full_bib, matches=[nypl_data])
+        classified = matcher.classify_matches(stub_nypl_bib, matches=[stub_nypl_data])
         assert len(classified.matched) == 0
         assert len(classified.mixed) == 1
         assert len(classified.other) == 0
         assert len(classified.duplicates) == 0
 
-    @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
-    def test_classify_matches_nypl_no_collection(self, full_bib, nypl_data, collection):
+    @pytest.mark.parametrize("collection", ["BL", "RL"])
+    def test_classify_matches_nypl_mixed_call_numbers(
+        self, stub_nypl_bib, stub_nypl_data, collection
+    ):
+        call_no = [{"content": "Foo", "tag": "a"}]
+        stub_nypl_data["varFields"] = [
+            {"marcTag": "091", "subfields": call_no},
+            {"marcTag": "852", "ind1": "8", "ind2": " ", "subfields": call_no},
+        ]
         matcher = matching.MatchAnalyzerFactory.make("nypl", "cat", collection)
-        classified = matcher.classify_matches(full_bib, matches=[nypl_data])
+        classified = matcher.classify_matches(stub_nypl_bib, matches=[stub_nypl_data])
+        assert len(classified.matched) == 0
+        assert len(classified.mixed) == 1
+        assert len(classified.other) == 0
+        assert len(classified.duplicates) == 0
+
+    @pytest.mark.parametrize("collection", ["BL", "RL"])
+    def test_classify_matches_nypl_no_collection(
+        self, stub_nypl_bib, stub_nypl_data, collection
+    ):
+        matcher = matching.MatchAnalyzerFactory.make("nypl", "cat", collection)
+        classified = matcher.classify_matches(stub_nypl_bib, matches=[stub_nypl_data])
         assert len(classified.matched) == 0
         assert len(classified.mixed) == 0
         assert len(classified.other) == 1
         assert len(classified.duplicates) == 0
 
     @pytest.mark.parametrize("location", ["zzzzz", "myj", "maj", "agj"])
-    def test_classify_matches_nypl_bl_locations(self, nypl_bl_bib, nypl_data, location):
-        nypl_data["locations"] = [{"code": location, "name": "Foo"}]
+    def test_classify_matches_nypl_bl_locations(
+        self, nypl_bl_bib, stub_nypl_data, location
+    ):
+        stub_nypl_data["locations"] = [{"code": location, "name": "Foo"}]
         matcher = matching.MatchAnalyzerFactory.make("nypl", "cat", "BL")
-        classified = matcher.classify_matches(nypl_bl_bib, matches=[nypl_data])
+        classified = matcher.classify_matches(nypl_bl_bib, matches=[stub_nypl_data])
         assert len(classified.matched) == 1
         assert len(classified.mixed) == 0
         assert len(classified.other) == 0
         assert len(classified.duplicates) == 0
 
     @pytest.mark.parametrize("location", ["myd", "xxx", "lsx", "scx", "max"])
-    def test_classify_matches_nypl_rl_locations(self, nypl_rl_bib, nypl_data, location):
-        nypl_data["locations"] = [{"code": location, "name": "Foo"}]
+    def test_classify_matches_nypl_rl_locations(
+        self, nypl_rl_bib, stub_nypl_data, location
+    ):
+        stub_nypl_data["locations"] = [{"code": location, "name": "Foo"}]
         matcher = matching.MatchAnalyzerFactory.make("nypl", "cat", "RL")
-        classified = matcher.classify_matches(nypl_rl_bib, matches=[nypl_data])
+        classified = matcher.classify_matches(nypl_rl_bib, matches=[stub_nypl_data])
         assert len(classified.matched) == 1
         assert len(classified.mixed) == 0
         assert len(classified.other) == 0
@@ -251,9 +278,9 @@ class TestDetermineCatalogAction:
         assert response.update_datetime is None
         assert len(response.var_fields) == 3
 
-    def test_determine_catalog_action_update(self, nypl_data, nypl_bl_bib):
+    def test_determine_catalog_action_update(self, stub_nypl_data, nypl_bl_bib):
         matcher = matching.SelectionMatchAnalyzer()
-        response = sierra_responses.NYPLPlatformResponse(nypl_data)
+        response = sierra_responses.NYPLPlatformResponse(stub_nypl_data)
         action, updated = matcher.determine_catalog_action(
             nypl_bl_bib, candidate=response
         )
@@ -261,10 +288,12 @@ class TestDetermineCatalogAction:
         assert updated is True
         assert response.cat_source == "vendor"
 
-    def test_determine_catalog_action_vendor_record_nypl(self, nypl_data, nypl_bl_bib):
+    def test_determine_catalog_action_vendor_record_nypl(
+        self, stub_nypl_data, nypl_bl_bib
+    ):
         matcher = matching.SelectionMatchAnalyzer()
         nypl_bl_bib.update_date = "20250101000001.0"
-        response = sierra_responses.NYPLPlatformResponse(nypl_data)
+        response = sierra_responses.NYPLPlatformResponse(stub_nypl_data)
         action, updated = matcher.determine_catalog_action(
             nypl_bl_bib, candidate=response
         )
@@ -299,13 +328,13 @@ class TestAcquisitionsMatchAnalyzer:
             ("upc", "123456789", "123456789"),
         ],
     )
-    def test_analyze(self, nypl_data, nypl_bl_bib, key, value, output):
+    def test_analyze(self, stub_nypl_data, nypl_bl_bib, key, value, output):
         nypl_bl_bib.isbn = None
         nypl_bl_bib.record_type = "acq"
         setattr(nypl_bl_bib, key, value)
         matcher = matching.AcquisitionsMatchAnalyzer()
         candidates = matching.ClassifiedCandidates(
-            [sierra_responses.NYPLPlatformResponse(nypl_data)], [], []
+            [sierra_responses.NYPLPlatformResponse(stub_nypl_data)], [], []
         )
         result = matcher.analyze(nypl_bl_bib, candidates=candidates)
         assert result.action == "insert"
@@ -379,11 +408,10 @@ class TestNYPLCatResearchMatchAnalyzer:
         assert result.target_call_no == "Foo"
 
     def test_analyze_no_response_call_no(self, nypl_rl_bib, nypl_rl_data):
-        nypl_rl_data["varFields"] = [
-            i for i in nypl_rl_data["varFields"] if i["marcTag"] != "852"
-        ]
+        data = copy.deepcopy(nypl_rl_data)
+        data["varFields"] = [i for i in data["varFields"] if i["marcTag"] != "852"]
         candidates = matching.ClassifiedCandidates(
-            [sierra_responses.NYPLPlatformResponse(nypl_rl_data)], [], []
+            [sierra_responses.NYPLPlatformResponse(data)], [], []
         )
         result = self.MATCHER.analyze(nypl_rl_bib, candidates=candidates)
         assert result.call_number_match is False
@@ -417,11 +445,10 @@ class TestNYPLCatBranchMatchAnalyzer:
         assert result.target_call_no == "Foo"
 
     def test_analyze_no_response_call_no(self, nypl_bl_bib, nypl_bl_data):
-        nypl_bl_data["varFields"] = [
-            i for i in nypl_bl_data["varFields"] if i["marcTag"] != "091"
-        ]
+        data = copy.deepcopy(nypl_bl_data)
+        data["varFields"] = [i for i in data["varFields"] if i["marcTag"] != "091"]
         candidates = matching.ClassifiedCandidates(
-            [sierra_responses.NYPLPlatformResponse(nypl_bl_data)], [], []
+            [sierra_responses.NYPLPlatformResponse(data)], [], []
         )
         result = self.MATCHER.analyze(nypl_bl_bib, candidates=candidates)
         assert result.call_number_match is False

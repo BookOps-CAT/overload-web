@@ -91,6 +91,19 @@ def test_batch_repository(test_session):
     return batch_db.PVFBatchRepository(session=test_session)
 
 
+@pytest.fixture
+def update_rules(library, record_type, collection, get_constants):
+    constants = get_constants["constants"]
+    return {
+        "order_mapping": constants["order_mapping"],
+        "default_loc": constants["default_locations"][library].get(collection),
+        "bib_id_tag": constants["bib_id_tag"][library],
+        "library": library,
+        "record_type": record_type,
+        "collection": collection,
+    }
+
+
 class TestProcessCommands:
     ENGINE = marc_handler.MarcUpdateHandler()
 

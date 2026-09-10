@@ -16,22 +16,6 @@ from overload_web.domain.shared import fields, sierra_responses
 from overload_web.infrastructure import marc_handler, oclc, reporter, sierra_clients
 
 
-@pytest.fixture(scope="session")
-def get_constants() -> dict[str, Any]:
-    """Retrieve processing constants from JSON file."""
-    with open("overload_web/data/update_rules.json", "r", encoding="utf-8") as fh:
-        constants = json.load(fh)
-    return constants
-
-
-@pytest.fixture(scope="session")
-def parsing_rules() -> dict[str, Any]:
-    """Retrieve processing constants from JSON file."""
-    with open("overload_web/data/parsing_rules.json", "r", encoding="utf-8") as fh:
-        constants = json.load(fh)
-    return constants
-
-
 @pytest.fixture(autouse=True)
 def test_setup(caplog, monkeypatch):
     caplog.set_level("DEBUG")
@@ -585,29 +569,28 @@ def fake_fetcher_no_matches(monkeypatch):
     return sierra_clients.SierraBibFetcher(session=FakeSierraSession())
 
 
-@pytest.fixture
-def update_rules(library, record_type, collection, get_constants) -> dict[str, Any]:
-    return {
-        "order_mapping": get_constants["order_mapping"],
-        "default_loc": get_constants["default_locations"][library].get(collection),
-        "bib_id_tag": get_constants["bib_id_tag"][library],
-        "library": library,
-        "record_type": record_type,
-        "collection": collection,
-    }
+@pytest.fixture(scope="session")
+def get_constants() -> dict[str, Any]:
+    """Retrieve processing constants from JSON file."""
+    with open("overload_web/data/update_rules.json", "r", encoding="utf-8") as fh:
+        constants = json.load(fh)
+    with open("overload_web/data/parsing_rules.json", "r", encoding="utf-8") as fh:
+        parsing_rules = json.load(fh)
+    return {"constants": constants, "parsing_rules": parsing_rules}
 
 
 @pytest.fixture
 def parsing_handler(
-    library, record_type, collection, parsing_rules
+    library, record_type, collection, get_constants
 ) -> marc_handler.MarcParsingHandler:
+    rules = get_constants["parsing_rules"]
     return marc_handler.MarcParsingHandler(
-        order_mapping=parsing_rules["order_mapping"],
+        order_mapping=rules["order_mapping"],
         library=library,
         record_type=record_type,
         collection=collection,
-        bib_mapping=parsing_rules["bib_mapping"],
-        vendor_mapping=parsing_rules["vendor_rules"],
+        bib_mapping=rules["bib_mapping"],
+        vendor_mapping=rules["vendor_rules"],
     )
 
 

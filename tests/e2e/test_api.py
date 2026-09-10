@@ -5,7 +5,6 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.domain.shared import files
 from overload_web.infrastructure import batch_db, file_io, template_db
 from overload_web.main import app
 from overload_web.presentation import deps
@@ -84,10 +83,6 @@ def fake_sql_session():
     test_engine.dispose()
 
 
-def fake_storage():
-    return [files.VendorFile(content=b"", file_name="foo.mrc")]
-
-
 @pytest.fixture
 def mock_temp_storage(monkeypatch, mocker, tmp_path):
     m = mocker.mock_open(read_data="")
@@ -119,7 +114,9 @@ def test_deps():
     engine.dispose()
 
 
-@pytest.mark.usefixtures("mock_sierra_session", "mock_sftp_client", "mock_temp_storage")
+@pytest.mark.usefixtures(
+    "mock_sierra_session", "mock_sftp_client", "mock_temp_storage", "fake_reporter"
+)
 class TestApp:
     client = TestClient(app)
     app.dependency_overrides[deps.get_session] = fake_sql_session
@@ -397,9 +394,7 @@ class TestApp:
         assert '<th scope="row">' not in response.text
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_reports_router_write_report_to_google_sheet(
-        self, record_type, fake_reporter
-    ):
+    def test_reports_router_write_report_to_google_sheet(self, record_type):
         response = self.client.post(
             f"/reports/write?batch_id=1&record_type={record_type}"
         )
