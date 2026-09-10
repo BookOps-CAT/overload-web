@@ -35,33 +35,54 @@ class MaterialType(StrEnum):
     PRINT = "print"
 
 
-@dataclass(kw_only=True)
 class BriefRecordResult:
     """A domain model for a brief bib response from a Worldcat2Sierra query."""
 
-    cat_agency: str
-    cat_language: str
-    cat_level: str
-    creator: str
-    date: str
-    language: str
-    merged_oclc_numbers: list[str]
-    oclc_number: str
-    title: str
-    edition: str | None = None
-    format: str | None = None
-    isbns: list[str] | None = None
-    issns: list[str] | None = None
-    publisher: str | None = None
-    pub_place: str | None = None
-    update_date: str | None = None
+    def __init__(
+        self,
+        cat_agency: str,
+        cat_language: str,
+        cat_level: str,
+        creator: str,
+        date: str,
+        language: str,
+        merged_oclc_numbers: list[str],
+        oclc_number: str,
+        title: str,
+        edition: str | None = None,
+        format: str | None = None,
+        isbns: list[str] | None = None,
+        issns: list[str] | None = None,
+        publisher: str | None = None,
+        pub_place: str | None = None,
+        update_datetime: datetime.datetime | None = None,
+    ) -> None:
+        self.cat_agency = cat_agency
+        self.cat_language = cat_language
+        self.cat_level = cat_level
+        self.creator = creator
+        self.date = date
+        self.language = language
+        self.merged_oclc_numbers = merged_oclc_numbers
+        self.oclc_number = oclc_number
+        self.title = title
+        self.edition = edition
+        self.format = format
+        self.isbns = isbns
+        self.issns = issns
+        self.publisher = publisher
+        self.pub_place = pub_place
+        self.update_datetime = update_datetime
 
     @property
     def update_datetime(self) -> datetime.datetime | None:
-        """Creates `datetime.datetime` object from `update_date` string."""
-        if self.update_date:
-            return datetime.datetime.strptime(self.update_date, "%y%m%d")
-        return None
+        return self._update_datetime
+
+    @update_datetime.setter
+    def update_datetime(self, value: str | None) -> None:
+        """Creates `datetime.datetime` object from a string."""
+        if value:
+            self._update_datetime = datetime.datetime.strptime(value, "%y%m%d")
 
 
 @dataclass

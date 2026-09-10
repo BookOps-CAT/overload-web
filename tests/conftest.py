@@ -705,9 +705,9 @@ def fake_oclc_fetcher():
 
 
 @pytest.fixture
-def fake_oclc_fetcher_no_update_date(monkeypatch):
-    def empty_dict(*rgs, **kwargs):
-        return {}
+def fake_oclc_fetcher_no_matches(monkeypatch):
+    def empty_list(*rgs, **kwargs):
+        return []
 
-    monkeypatch.setattr(oclc.WorldcatFetcher, "get_full_bib_json_by_id", empty_dict)
+    monkeypatch.setattr(oclc.WorldcatFetcher, "get_brief_bibs_by_id", empty_list)
     return oclc.WorldcatFetcher(session=FakeOCLCSession())

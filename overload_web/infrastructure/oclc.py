@@ -77,7 +77,7 @@ class OclcSession(MetadataSession):
         json_response = response.json()
         rec_count = int(json_response["numberOfRecords"])
         logger.debug(
-            f"MetadataSession returned {rec_count} record(s). Returning first 50."
+            f"MetadataSession found {rec_count} matching record(s). Returning first 50."
         )
         return json_response.get("briefRecords", [])
 

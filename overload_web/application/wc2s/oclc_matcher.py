@@ -32,7 +32,7 @@ class WorldcatMatcher:
         for response in responses:
             bib_json = self.fetcher.get_full_bib_json_by_id(value=response.oclc_number)
             date = bib_json.get("date", {})
-            response.update_date = date.get("replaceDate", date.get("createDate"))
+            response.update_datetime = date.get("replaceDate", date.get("createDate"))
         return responses
 
     def get_record_matches(self, source: worldcat.SourceData) -> worldcat.MatchedResult:

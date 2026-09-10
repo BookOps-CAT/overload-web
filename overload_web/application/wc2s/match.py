@@ -36,7 +36,7 @@ class MatchWorldcat2Sierra:
                         matched=result.matched,
                         source_data=source,
                         failed_matches=result.failed_matches,
-                        successful_matches=full_results,
+                        successful_matches=result.successful_matches,
                     )
                 )
 

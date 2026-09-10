@@ -38,7 +38,7 @@ class TestWorldcatFetcher:
         assert len(caplog.records) == 2
         assert "Querying WorldCat for brief bibs with query" in caplog.records[0].msg
         assert (
-            "MetadataSession returned 1 record(s). Returning first 50."
+            "MetadataSession found 1 matching record(s). Returning first 50."
             == caplog.records[1].msg
         )
 
@@ -104,6 +104,14 @@ class TestWorldcatMatcher:
             matched_oclc="12345678",
         )
 
+    def test_match_record_no_matches(
+        self, fake_oclc_fetcher_no_matches, stub_source_data
+    ):
+        source_data = copy.deepcopy(stub_source_data)
+        service = oclc_matcher.WorldcatMatcher(fetcher=fake_oclc_fetcher_no_matches)
+        result = service.get_record_matches(source_data)
+        assert result.matched is False
+
     def test_match_record_failed_user_criteria(
         self, fake_oclc_fetcher, stub_source_data
     ):
@@ -151,3 +159,39 @@ class TestMatchWorldcat2Sierra:
             fetcher=fake_oclc_fetcher, source_data=[source_data.__dict__]
         )
         assert len(batches) == 1
+        assert isinstance(batches[0], worldcat.FullMatchedResult)
+        assert batches[0].matched is True
+        assert batches[0].failed_matches == []
+        assert batches[0].successful_matches == [
+            worldcat.FullMatchedItem(
+                id=source_data.id,
+                id_type=source_data.id_type,
+                status=worldcat.MatchStatus.MATCHED,
+                matched_oclc="12345678",
+                full_record=b"",
+            )
+        ]
+
+    @pytest.mark.parametrize(
+        "library, collection", [("bpl", None), ("nypl", "RL"), ("nypl", "BL")]
+    )
+    def test_match_worldcat_2_sierra_failed_matches(
+        self, stub_source_data, fake_oclc_fetcher
+    ):
+        source_data = copy.deepcopy(stub_source_data)
+        source_data.record_level = "1"
+        batches = match.MatchWorldcat2Sierra.execute(
+            fetcher=fake_oclc_fetcher, source_data=[source_data.__dict__]
+        )
+        assert len(batches) == 1
+        assert isinstance(batches[0], worldcat.FullMatchedResult)
+        assert batches[0].matched is True
+        assert batches[0].failed_matches == [
+            worldcat.MatchedItem(
+                id=source_data.id,
+                id_type=source_data.id_type,
+                status=worldcat.MatchStatus.FAILED_USER_CRITERIA,
+                matched_oclc="12345678",
+            )
+        ]
+        assert batches[0].successful_matches == []
