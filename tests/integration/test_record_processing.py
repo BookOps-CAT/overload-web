@@ -6,78 +6,8 @@ from overload_web.application.pvf.process import (
     ProcessCatalogingRecords,
     ProcessSelectionRecords,
 )
+from overload_web.domain.pvf import models
 from overload_web.infrastructure import batch_db, marc_handler
-
-# @pytest.fixture(scope="class")
-# def test_session():
-#     batch1 = batch_db.PVFBatch(
-#         files=[batch_db.ProcessedFileModel(file_name="foo.mrc", records=b"")],
-#         stats=[
-#             {
-#                 "action": "insert",
-#                 "call_number": "Foo",
-#                 "call_number_match": False,
-#                 "duplicate_records": [],
-#                 "mixed": [],
-#                 "other": [],
-#                 "resource_id": "12345",
-#                 "target_bib_id": "23456",
-#                 "target_call_no": "Foo",
-#                 "target_title": None,
-#                 "updated_by_vendor": False,
-#                 "vendor": "UNKNOWN",
-#             }
-#         ],
-#         file_names=["foo.mrc"],
-#         total_files=1,
-#         total_records=1,
-#         missing_barcodes=[],
-#         processing_integrity=True,
-#     )
-#     batch2 = batch_db.PVFBatch(
-#         files=[batch_db.ProcessedFileModel(file_name="bar.mrc", records=b"")],
-#         stats=[
-#             {
-#                 "action": "insert",
-#                 "call_number": "Foo",
-#                 "call_number_match": True,
-#                 "duplicate_records": [],
-#                 "mixed": [],
-#                 "other": [],
-#                 "resource_id": "12345",
-#                 "target_bib_id": "23456",
-#                 "target_call_no": "Foo",
-#                 "target_title": None,
-#                 "updated_by_vendor": False,
-#                 "vendor": "UNKNOWN",
-#             }
-#         ],
-#         file_names=["foo.mrc"],
-#         total_files=1,
-#         total_records=1,
-#         missing_barcodes=[],
-#         processing_integrity=True,
-#     )
-#     test_engine = create_engine("sqlite:///:memory:")
-#     SQLModel.metadata.create_all(test_engine)
-#     with Session(test_engine) as session:
-#         session.add(batch1)
-#         session.commit()
-#         session.add(batch2)
-#         session.commit()
-#         yield session
-#     session.close()
-#     test_engine.dispose()
-
-
-# @pytest.fixture(scope="class")
-# def test_session_no_records():
-#     test_engine = create_engine("sqlite:///:memory:")
-#     SQLModel.metadata.create_all(test_engine)
-#     with Session(test_engine) as session:
-#         yield session
-#     session.close()
-#     test_engine.dispose()
 
 
 @pytest.fixture(scope="class")
@@ -103,6 +33,67 @@ def update_rules(library, record_type, collection, get_constants):
     }
 
 
+@pytest.fixture
+def missing_barcodes(monkeypatch):
+    def get_barcodes(*args, **kwargs):
+        return ["333330987654321"]
+
+    monkeypatch.setattr(
+        "overload_web.domain.pvf.batch.BarcodeValidator.validate_unique", get_barcodes
+    )
+
+
+@pytest.fixture
+def stub_bib():
+    def make_bib(library, collection, record_type):
+        return models.DomainBib(
+            library=library,
+            collection=collection,
+            isbn="9781234567890",
+            title="Foo",
+            record_type=record_type,
+            binary_data=b"",
+            branch_call_number="Foo",
+            research_call_number=["Foo"],
+            barcodes=["333331234567890"],
+            orders=[],
+            update_date="20200101010000.0",
+            vendor_info=models.VendorInfo(
+                name="UNKNOWN",
+                bib_fields=[],
+                matchpoints={
+                    "primary_matchpoint": "isbn",
+                    "secondary_matchpoint": "control_number",
+                },
+            ),
+            parsed_fields=[],
+        )
+
+    return make_bib
+
+
+@pytest.fixture
+def stub_parsed_bib(monkeypatch, stub_bib, record_type, library, collection):
+    def parse_bibs(*args, **kwargs):
+        bib = stub_bib(library, collection, record_type)
+        return [bib]
+
+    monkeypatch.setattr(
+        "overload_web.application.pvf.marc.BibParser.parse_marc_data", parse_bibs
+    )
+
+
+@pytest.fixture
+def dupe_barcodes(monkeypatch, stub_bib, record_type, library, collection):
+    def parse_bibs(*args, **kwargs):
+        bib = stub_bib(library, collection, record_type)
+        return [bib, bib]
+
+    monkeypatch.setattr(
+        "overload_web.application.pvf.marc.BibParser.parse_marc_data", parse_bibs
+    )
+
+
 class TestProcessCommands:
     ENGINE = marc_handler.MarcUpdateHandler()
 
@@ -111,12 +102,16 @@ class TestProcessCommands:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_cat_service_process_vendor_file(
-        self, library, fake_fetcher, stub_repo, parsing_handler, update_rules
+        self,
+        fake_fetcher,
+        stub_repo,
+        parsing_handler,
+        update_rules,
+        caplog,
+        stub_parsed_bib,
     ):
-        with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
-            marc_data = fh.read()
         out = ProcessCatalogingRecords.execute(
-            batches={"foo.mrc": marc_data},
+            batches={"foo.mrc": b""},
             marc_handler=self.ENGINE,
             marc_update_rules=update_rules,
             fetcher=fake_fetcher,
@@ -124,18 +119,49 @@ class TestProcessCommands:
             marc_parser=parsing_handler,
         )
         assert out["id"] is not None
+        assert "Integrity validation: True, missing_barcodes: []" in [
+            i.msg for i in caplog.records
+        ]
+
+    @pytest.mark.parametrize(
+        "library, collection, record_type",
+        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
+    )
+    def test_cat_service_process_vendor_file_missing_barcodes(
+        self,
+        fake_fetcher,
+        stub_repo,
+        parsing_handler,
+        update_rules,
+        missing_barcodes,
+        caplog,
+        stub_parsed_bib,
+    ):
+        out = ProcessCatalogingRecords.execute(
+            batches={"foo.mrc": b""},
+            marc_handler=self.ENGINE,
+            marc_update_rules=update_rules,
+            fetcher=fake_fetcher,
+            repo=stub_repo,
+            marc_parser=parsing_handler,
+        )
+        assert out["id"] is not None
+        assert "Integrity validation: False, missing_barcodes: ['333330987654321']" in [
+            i.msg for i in caplog.records
+        ]
+        assert "Barcodes integrity error: ['333330987654321']" in [
+            i.msg for i in caplog.records
+        ]
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
         [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
     )
     def test_sel_service_process_vendor_file(
-        self, library, fake_fetcher, stub_repo, parsing_handler, update_rules
+        self, fake_fetcher, stub_repo, parsing_handler, update_rules, stub_parsed_bib
     ):
-        with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
-            marc_data = fh.read()
         out = ProcessSelectionRecords.execute(
-            {"foo.mrc": marc_data},
+            {"foo.mrc": b""},
             marc_handler=self.ENGINE,
             fetcher=fake_fetcher,
             marc_update_rules=update_rules,
@@ -151,12 +177,10 @@ class TestProcessCommands:
         [("nypl", "BL", "acq"), ("nypl", "RL", "acq"), ("bpl", "NONE", "acq")],
     )
     def test_acq_service_process_vendor_file(
-        self, library, fake_fetcher, stub_repo, parsing_handler, update_rules
+        self, fake_fetcher, stub_repo, parsing_handler, update_rules, stub_parsed_bib
     ):
-        with open(f"tests/data/{library}-sample.mrc", "rb") as fh:
-            marc_data = fh.read()
         out = ProcessAcquisitionsRecords.execute(
-            {"foo.mrc": marc_data},
+            {"foo.mrc": b""},
             marc_handler=self.ENGINE,
             fetcher=fake_fetcher,
             marc_update_rules=update_rules,
@@ -172,13 +196,11 @@ class TestProcessCommands:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],
     )
     def test_cat_service_process_vendor_file_dupes(
-        self, library, fake_fetcher, stub_repo, parsing_handler, update_rules
+        self, fake_fetcher, stub_repo, parsing_handler, update_rules, dupe_barcodes
     ):
-        with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
-            marc_data = fh.read()
         with pytest.raises(ValueError) as exc:
             ProcessCatalogingRecords.execute(
-                batches={"foo.mrc": marc_data},
+                batches={"foo.mrc": b""},
                 marc_handler=self.ENGINE,
                 fetcher=fake_fetcher,
                 marc_update_rules=update_rules,
@@ -192,13 +214,11 @@ class TestProcessCommands:
         [("nypl", "BL", "acq"), ("nypl", "RL", "acq"), ("bpl", "NONE", "acq")],
     )
     def test_acq_service_process_vendor_file_dupes(
-        self, library, fake_fetcher, stub_repo, parsing_handler, update_rules
+        self, fake_fetcher, stub_repo, parsing_handler, update_rules, dupe_barcodes
     ):
-        with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
-            marc_data = fh.read()
         with pytest.raises(ValueError) as exc:
             ProcessAcquisitionsRecords.execute(
-                {"foo.mrc": marc_data},
+                {"foo.mrc": b""},
                 marc_handler=self.ENGINE,
                 fetcher=fake_fetcher,
                 marc_update_rules=update_rules,
@@ -214,13 +234,11 @@ class TestProcessCommands:
         [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
     )
     def test_sel_service_process_vendor_file_dupes(
-        self, library, fake_fetcher, stub_repo, parsing_handler, update_rules
+        self, fake_fetcher, stub_repo, parsing_handler, update_rules, dupe_barcodes
     ):
-        with open(f"tests/data/{library}-dupes-sample.mrc", "rb") as fh:
-            marc_data = fh.read()
         with pytest.raises(ValueError) as exc:
             ProcessSelectionRecords.execute(
-                {"foo.mrc": marc_data},
+                {"foo.mrc": b""},
                 marc_handler=self.ENGINE,
                 fetcher=fake_fetcher,
                 marc_update_rules=update_rules,
