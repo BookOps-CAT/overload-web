@@ -12,7 +12,7 @@ from file_retriever import Client, File, FileInfo
 from pymarc import Field, Indicators, Subfield
 
 from overload_web.domain.pvf import models
-from overload_web.domain.shared import fields, sierra_responses
+from overload_web.domain.shared import fields
 from overload_web.infrastructure import marc_handler, oclc, sierra_clients
 
 
@@ -59,58 +59,6 @@ class MockHTTPResponse:
 
     def json(self):
         return self._json
-
-
-class FakeSierraResponse(sierra_responses.BaseSierraResponse):
-    library = "library"
-
-    @property
-    def barcodes(self) -> list[str]:
-        return ["333331234567890"]
-
-    @property
-    def branch_call_number(self) -> str | None:
-        return "FIC"
-
-    @property
-    def cat_source(self) -> str:
-        return "inhouse"
-
-    @property
-    def collection(self) -> str | None:
-        return None
-
-    @property
-    def control_number(self) -> str | None:
-        return self._data["id"]
-
-    @property
-    def isbn(self) -> list[str]:
-        return [self._data["id"]]
-
-    @property
-    def oclc_number(self) -> list[str]:
-        return [self._data["id"]]
-
-    @property
-    def research_call_number(self) -> list[str]:
-        return ["FOO"]
-
-    @property
-    def upc(self) -> list[str]:
-        return [self._data["id"]]
-
-    @property
-    def update_date(self) -> str:
-        return "2025-01-01T00:00:00"
-
-    @property
-    def update_datetime(self) -> datetime.datetime:
-        return datetime.datetime(2025, 1, 1, 0, 0, 0)
-
-    @property
-    def var_fields(self) -> list[dict[str, Any]]:
-        return [{"020": self._data["id"]}]
 
 
 class FakeSierraSession(sierra_clients.SierraSessionProtocol):
@@ -514,58 +462,8 @@ def full_bib(library, collection):
     return domain_bib
 
 
-@pytest.fixture
-def sierra_response(library, collection):
-    if library == "bpl":
-        data = {
-            "call_number": "Foo",
-            "id": "12345",
-            "isbn": ["9781234567890"],
-            "sm_bib_varfields": ["005 || 20200101000001.0", "024 || {{a}} 12345"],
-            "sm_item_data": ['{"barcode": "33333123456789"}'],
-            "ss_marc_tag_001": "ocn123456789",
-            "ss_marc_tag_003": "OCoLC",
-            "ss_marc_tag_005": "20000101010000.0",
-            "title": "Record 1",
-        }
-        return data
-
-    call_no_field = {"content": "Foo", "tag": "a"}
-    data = {
-        "id": "12345",
-        "controlNumber": "ocn123456789",
-        "standardNumbers": ["9781234567890"],
-        "title": "Record 1",
-        "updatedDate": "2000-01-01T01:00:00",
-        "varFields": [
-            {"marcTag": "901", "subfields": [{"content": "CAT", "tag": "b"}]},
-            {"marcTag": "910", "subfields": [{"content": collection, "tag": "a"}]},
-        ],
-    }
-    if collection == "RL":
-        data["varFields"].append(
-            {"marcTag": "852", "ind1": "8", "ind2": " ", "subfields": [call_no_field]}
-        )
-    else:
-        data["varFields"].append({"marcTag": "091", "subfields": [call_no_field]})
-    return data
-
-
-@pytest.fixture
-def fake_fetcher(monkeypatch, sierra_response):
-    def fake_response(*args, **kwargs):
-        return [sierra_response]
-
-    monkeypatch.setattr(FakeSierraSession, "_parse_response", fake_response)
-    return sierra_clients.SierraBibFetcher(session=FakeSierraSession())
-
-
-@pytest.fixture
-def fake_fetcher_no_matches(monkeypatch):
-    def fake_response(*args, **kwargs):
-        return []
-
-    monkeypatch.setattr(FakeSierraSession, "_parse_response", fake_response)
+@pytest.fixture(scope="session")
+def fake_fetcher():
     return sierra_clients.SierraBibFetcher(session=FakeSierraSession())
 
 
