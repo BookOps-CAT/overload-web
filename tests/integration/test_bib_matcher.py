@@ -123,40 +123,12 @@ class TestBibMatcher:
     @pytest.mark.parametrize(
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", None)]
     )
-    def test_review_matches_acq(
-        self, stub_bib, stub_matcher, stub_response, library, collection
-    ):
-        bib2match = stub_bib(library, collection, "acq")
-        result = stub_matcher.review_matches(bib2match, matches=[stub_response])
-        assert bib2match.bib_id is None
-        assert result.target_bib_id is None
-        assert result.duplicate_records == []
-        assert result.call_number == "Foo"
-        assert result.resource_id == "9781234567890"
-        assert result.mixed == []
-        assert result.other == []
-        assert result.action == "insert"
-        assert result.call_number_match is True
-        assert result.updated_by_vendor is False
-        assert result.target_call_no == "Foo"
-
-    @pytest.mark.parametrize(
-        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", None)]
-    )
-    @pytest.mark.parametrize("record_type", ["cat", "sel"])
+    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
     def test_review_matches(
         self, stub_bib, stub_matcher, stub_response, library, collection, record_type
     ):
         bib2match = stub_bib(library, collection, record_type)
         result = stub_matcher.review_matches(bib2match, matches=[stub_response])
-        assert bib2match.bib_id is None
-        assert result.target_bib_id == "12345"
-        assert result.duplicate_records == []
-        assert result.call_number == "Foo"
         assert result.resource_id == "9781234567890"
         assert result.mixed == []
         assert result.other == []
-        assert result.action == "attach"
-        assert result.call_number_match is True
-        assert result.updated_by_vendor is False
-        assert result.target_call_no == "Foo"

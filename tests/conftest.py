@@ -195,11 +195,8 @@ def stub_bib():
             title="Foo",
             record_type=record_type,
             binary_data=b"",
-            branch_call_number="Foo",
-            research_call_number=["Foo"],
             barcodes=["333331234567890"],
             orders=[],
-            update_date="20200101010000.0",
             vendor_info=models.VendorInfo(
                 name="UNKNOWN",
                 bib_fields=[],
