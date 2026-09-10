@@ -349,7 +349,7 @@ class TestBPLCatMatchAnalyzer:
 class TestNYPLCatResearchMatchAnalyzer:
     MATCHER = matching.NYPLCatResearchMatchAnalyzer()
 
-    @pytest.mark.parametrize("call_number, match", [("Foo", True), ("Bar", True)])
+    @pytest.mark.parametrize("call_number, match", [(["Foo"], True), (["Bar"], True)])
     @pytest.mark.workflow(record_type="cat", library="nypl", collection="RL")
     def test_analyze(self, mock_bib, nypl_rl_data, call_number, match):
         mock_bib.research_call_number = call_number
