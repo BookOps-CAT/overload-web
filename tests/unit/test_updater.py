@@ -5,7 +5,7 @@ from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
 from overload_web.application.pvf import update
-from overload_web.domain.pvf import models
+from overload_web.domain.pvf import marc_rules, models
 from overload_web.domain.shared import fields
 from overload_web.infrastructure import marc_handler
 
@@ -428,6 +428,21 @@ class TestUpdaterSelRecords:
         ]
         assert [i.value() for i in updated_bib.get_fields("949")] == output
 
+    @pytest.mark.parametrize(
+        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
+    )
+    def test_update_command_tag_not_found(self, sel_bib):
+        """Tests `_find_specific_field` method."""
+        bib = Bib(sel_bib.binary_data, library=sel_bib.library)
+        criteria = marc_rules.TargetFieldCriteria(
+            tag="500",
+            indicators=(" ", " "),
+            subfield_code="a",
+            subfield_starts_with="Foo",
+        )
+        field = self.ENGINE._find_specific_field(bib, criteria=criteria)
+        assert field is None
+
 
 @pytest.mark.parametrize("record_type", ["cat"])
 class TestDeduplicate:
@@ -526,14 +541,15 @@ class TestDeduplicate:
     def test_dedupe_other_recs(
         self, stub_full_bib, full_bib_add_barcodes, stub_updater
     ):
+        bib = copy.deepcopy(stub_full_bib)
+        bib_add_barcodes = copy.deepcopy(full_bib_add_barcodes)
         other_rec = copy.deepcopy(stub_full_bib)
         other_rec.control_number = "987654321"
         other_rec.action = models.CatalogAction.INSERT
-        stub_full_bib.action = models.CatalogAction.INSERT
-        full_bib_add_barcodes.action = models.CatalogAction.INSERT
+        bib.action = models.CatalogAction.INSERT
+        bib_add_barcodes.action = models.CatalogAction.INSERT
         processed = stub_updater.deduplicate(
-            records=[stub_full_bib, full_bib_add_barcodes, other_rec],
-            handler=self.ENGINE,
+            records=[bib, bib_add_barcodes, other_rec], handler=self.ENGINE
         )
         assert len(processed["NEW"]) == 3
         assert len(processed["DUP"]) == 0
@@ -545,5 +561,44 @@ class TestDeduplicate:
         ]
         assert sorted([i.control_number for i in processed["DEDUPED"]]) == [
             "123456789",
+            "987654321",
+        ]
+
+    @pytest.mark.parametrize(
+        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "NONE")]
+    )
+    def test_dedupe_multiple_groups(
+        self, stub_full_bib, full_bib_add_barcodes, stub_updater
+    ):
+        bib_1a = copy.deepcopy(stub_full_bib)
+        bib_1a.action = models.CatalogAction.INSERT
+        bib_1b = copy.deepcopy(full_bib_add_barcodes)
+        bib_1b.action = models.CatalogAction.INSERT
+        bib2 = copy.deepcopy(stub_full_bib)
+        bib2.control_number = None
+        bib2.action = models.CatalogAction.INSERT
+        bib3 = copy.deepcopy(stub_full_bib)
+        bib3.control_number = None
+        bib3.action = models.CatalogAction.INSERT
+        bib4 = copy.deepcopy(stub_full_bib)
+        bib4.control_number = "987654321"
+        bib4.action = models.CatalogAction.INSERT
+        processed = stub_updater.deduplicate(
+            records=[bib_1a, bib_1b, bib2, bib3, bib4], handler=self.ENGINE
+        )
+        assert len(processed["NEW"]) == 5
+        assert len(processed["DUP"]) == 0
+        assert len(processed["DEDUPED"]) == 4
+        assert [i.control_number for i in processed["NEW"]] == [
+            "123456789",
+            "123456789",
+            None,
+            None,
+            "987654321",
+        ]
+        assert [i.control_number for i in processed["DEDUPED"]] == [
+            "123456789",
+            None,
+            None,
             "987654321",
         ]

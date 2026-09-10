@@ -122,4 +122,6 @@ class BibUpdater:
                 handler.update_fields(field_updates=item_fields, bib=bib)
                 base_rec.binary_data = bib.as_marc()
                 deduped.append(base_rec)
+            else:
+                deduped.extend(group)
         return {"NEW": batches["NEW"], "DUP": batches["DUP"], "DEDUPED": deduped}

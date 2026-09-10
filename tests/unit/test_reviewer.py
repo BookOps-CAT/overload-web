@@ -1,12 +1,9 @@
 import pytest
 
 from overload_web.domain.pvf import batch
-from overload_web.infrastructure import marc_handler
 
 
 class TestReviewer:
-    ENGINE = marc_handler.MarcUpdateHandler()
-
     @pytest.mark.parametrize(
         "library, collection, record_type",
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "NONE", "cat")],

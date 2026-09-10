@@ -13,7 +13,7 @@ from pymarc import Field, Indicators, Subfield
 
 from overload_web.domain.pvf import models
 from overload_web.domain.shared import fields, sierra_responses
-from overload_web.infrastructure import marc_handler, oclc, reporter, sierra_clients
+from overload_web.infrastructure import marc_handler, oclc, sierra_clients
 
 
 @pytest.fixture(autouse=True)
@@ -592,37 +592,6 @@ def parsing_handler(
         bib_mapping=rules["bib_mapping"],
         vendor_mapping=rules["vendor_rules"],
     )
-
-
-class MockResource:
-    def __init__(self):
-        self.spreadsheetId = "foo"
-        self.range = "bar"
-
-    def append(self, *args, **kwargs):
-        return self
-
-    def execute(self, *args, **kwargs):
-        return dict(spreadsheetId=self.spreadsheetId, tableRange=self.range)
-
-    def spreadsheets(self, *args, **kwargs):
-        return self
-
-    def values(self, *args, **kwargs):
-        return self
-
-
-@pytest.fixture
-def mock_sheet_service(monkeypatch) -> None:
-    def mock_creds(*args, **kwargs):
-        pass
-
-    def build_sheet(*args, **kwargs):
-        return MockResource()
-
-    monkeypatch.setattr("googleapiclient.discovery.build", build_sheet)
-    monkeypatch.setattr("googleapiclient.discovery.build_from_document", build_sheet)
-    monkeypatch.setattr(reporter.GoogleSheetsReporter, "configure_sheet", mock_creds)
 
 
 @pytest.fixture
