@@ -1,7 +1,6 @@
 import pytest
 
 from overload_web.application.pvf import match_service
-from overload_web.domain.pvf import models
 
 
 @pytest.fixture
@@ -65,81 +64,57 @@ def stub_matcher_no_matches(fake_fetcher, monkeypatch):
     return match_service.BibMatcher(fetcher=fake_fetcher)
 
 
-@pytest.fixture
-def stub_bib():
-    def make_bib(library, collection, record_type):
-        return models.DomainBib(
-            library=library,
-            collection=collection,
-            isbn="9781234567890",
-            title="Foo",
-            record_type=record_type,
-            binary_data=b"",
-            branch_call_number="Foo",
-            research_call_number=["Foo"],
-            barcodes=["333331234567890"],
-            orders=[],
-            update_date="20200101010000.0",
-            vendor_info=models.VendorInfo(
-                name="UNKNOWN",
-                bib_fields=[],
-                matchpoints={
-                    "primary_matchpoint": "isbn",
-                    "secondary_matchpoint": "control_number",
-                },
-            ),
-            parsed_fields=[],
-        )
-
-    return make_bib
-
-
 @pytest.fixture(params=[("nypl", "BL"), ("nypl", "RL"), ("bpl", None)])
-def acq_bib(request, stub_bib):
-    return stub_bib(request.param[0], request.param[1], "acq")
+def mock_bib(stub_bib, request):
+    marker = request.node.get_closest_marker("workflow")
+    record_type = marker.kwargs["record_type"]
 
-
-@pytest.fixture(params=[("nypl", "BL"), ("nypl", "RL"), ("bpl", None)])
-def cat_bib(request, stub_bib):
-    return stub_bib(request.param[0], request.param[1], "cat")
+    return stub_bib(request.param[0], request.param[1], record_type)
 
 
 class TestBibMatcher:
-    def test_match_full(self, cat_bib, stub_matcher):
-        candidates = stub_matcher.match_full_record(cat_bib)
+    @pytest.mark.workflow(record_type="cat")
+    def test_match_full(self, mock_bib, stub_matcher):
+        candidates = stub_matcher.match_full_record(mock_bib)
         assert len(candidates) == 1
 
-    def test_match_full_no_candidates(self, stub_matcher_no_matches, cat_bib):
-        candidates = stub_matcher_no_matches.match_full_record(cat_bib)
+    @pytest.mark.workflow(record_type="cat")
+    def test_match_full_no_candidates(self, stub_matcher_no_matches, mock_bib):
+        candidates = stub_matcher_no_matches.match_full_record(mock_bib)
         assert len(candidates) == 0
 
-    def test_match_full_no_vendor_index(self, cat_bib, stub_matcher):
-        cat_bib.vendor_info = None
+    @pytest.mark.workflow(record_type="cat")
+    def test_match_full_no_vendor_index(self, mock_bib, stub_matcher):
+        mock_bib.vendor_info = None
         with pytest.raises(ValueError) as exc:
-            stub_matcher.match_full_record(cat_bib)
+            stub_matcher.match_full_record(mock_bib)
         assert str(exc.value) == "Vendor index required for cataloging workflow."
 
-    def test_match_order_level(self, acq_bib, stub_matcher):
+    @pytest.mark.workflow(record_type="acq")
+    def test_match_order_level(self, mock_bib, stub_matcher):
         candidates = stub_matcher.match_order_record(
-            acq_bib, matchpoints={"primary_matchpoint": "isbn"}
+            mock_bib, matchpoints={"primary_matchpoint": "isbn"}
         )
         assert len(candidates) == 1
 
-    def test_match_order_level_no_matches(self, acq_bib, stub_matcher_no_matches):
+    @pytest.mark.workflow(record_type="acq")
+    def test_match_order_level_no_matches(self, mock_bib, stub_matcher_no_matches):
         candidates = stub_matcher_no_matches.match_order_record(
-            acq_bib, matchpoints={"primary_matchpoint": "isbn"}
+            mock_bib, matchpoints={"primary_matchpoint": "isbn"}
         )
         assert len(candidates) == 0
 
-    def test_match_order_level_matchpoint_none(self, acq_bib, stub_matcher):
+    @pytest.mark.workflow(record_type="acq")
+    def test_match_order_level_matchpoint_none(self, mock_bib, stub_matcher):
         candidates = stub_matcher.match_order_record(
-            acq_bib, matchpoints={"primary_matchpoint": None}
+            mock_bib, matchpoints={"primary_matchpoint": None}
         )
         assert len(candidates) == 0
 
-    def test_match_order_level_no_matchpoints(self, acq_bib, stub_matcher):
+    @pytest.mark.workflow(record_type="acq")
+    def test_match_order_level_no_matchpoints(self, mock_bib, stub_matcher):
         with pytest.raises(TypeError) as exc:
-            stub_matcher.match_order_record(acq_bib)
+            stub_matcher.match_order_record(mock_bib)
         assert (
             str(exc.value)
             == "BibMatcher.match_order_record() missing 1 required positional argument: 'matchpoints'"

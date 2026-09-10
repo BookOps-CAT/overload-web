@@ -52,6 +52,7 @@ module-root = ""
 testpaths = ["tests"]
 markers = [
 	"livetest: mark a test hitting live web services",
+    "workflow: the processing workflow context to be tested (includes library, collection, and record_type)"
 ]
 addopts = '-m "not livetest" --cov=overload_web/'
 

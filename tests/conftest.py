@@ -13,7 +13,7 @@ from pymarc import Field, Indicators, Subfield
 
 from overload_web.domain.pvf import models
 from overload_web.domain.shared import fields
-from overload_web.infrastructure import marc_handler, oclc, sierra_clients
+from overload_web.infrastructure import oclc, sierra_clients
 
 
 @pytest.fixture(autouse=True)
@@ -186,7 +186,36 @@ def fake_template_data() -> dict:
 
 
 @pytest.fixture
-def stub_bib(library, collection) -> Bib:
+def stub_bib():
+    def make_bib(library, collection, record_type):
+        return models.DomainBib(
+            library=library,
+            collection=collection,
+            isbn="9781234567890",
+            title="Foo",
+            record_type=record_type,
+            binary_data=b"",
+            branch_call_number="Foo",
+            research_call_number=["Foo"],
+            barcodes=["333331234567890"],
+            orders=[],
+            update_date="20200101010000.0",
+            vendor_info=models.VendorInfo(
+                name="UNKNOWN",
+                bib_fields=[],
+                matchpoints={
+                    "primary_matchpoint": "isbn",
+                    "secondary_matchpoint": "control_number",
+                },
+            ),
+            parsed_fields=[],
+        )
+
+    return make_bib
+
+
+@pytest.fixture
+def stub_marc(library, collection) -> Bib:
     bib = Bib()
     bib.leader = "00000cam  2200517 i 4500"
     bib.library = library
@@ -294,7 +323,7 @@ def stub_bib(library, collection) -> Bib:
 
 
 @pytest.fixture
-def acq_bib(collection, library, stub_bib):
+def acq_bib(collection, library, stub_marc):
     order = models.Order(
         locations=["agj0y"],
         audience=["j"],
@@ -322,9 +351,9 @@ def acq_bib(collection, library, stub_bib):
         vendor_title_no=None,
         blanket_po="baz",
     )
-    bib = copy.deepcopy(stub_bib)
+    bib = copy.deepcopy(stub_marc)
     parsed_fields = []
-    for field in stub_bib.fields:
+    for field in stub_marc.fields:
         if field.subfields:
             parsed_fields.append(
                 fields.ParsedField(
@@ -475,21 +504,6 @@ def get_constants() -> dict[str, Any]:
     with open("overload_web/data/parsing_rules.json", "r", encoding="utf-8") as fh:
         parsing_rules = json.load(fh)
     return {"constants": constants, "parsing_rules": parsing_rules}
-
-
-@pytest.fixture
-def parsing_handler(
-    library, record_type, collection, get_constants
-) -> marc_handler.MarcParsingHandler:
-    rules = get_constants["parsing_rules"]
-    return marc_handler.MarcParsingHandler(
-        order_mapping=rules["order_mapping"],
-        library=library,
-        record_type=record_type,
-        collection=collection,
-        bib_mapping=rules["bib_mapping"],
-        vendor_mapping=rules["vendor_rules"],
-    )
 
 
 @pytest.fixture

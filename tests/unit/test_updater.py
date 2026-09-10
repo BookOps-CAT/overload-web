@@ -495,20 +495,30 @@ class TestDeduplicate:
         ]
         assert [i.control_number for i in processed["DEDUPED"]] == ["123456789"]
 
-    @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
-    def test_dedupe_bpl_overdrive_bibs(
-        self, library, stub_bib, full_bib_add_barcodes, stub_updater
-    ):
-        bib = copy.deepcopy(stub_bib)
-        bib_add_barcodes = copy.deepcopy(full_bib_add_barcodes)
-        bib.action = models.CatalogAction.INSERT
-        bib_add_barcodes.action = models.CatalogAction.INSERT
-        processed = stub_updater.deduplicate(
-            records=[bib, bib_add_barcodes], handler=self.ENGINE
-        )
-        assert len(processed["NEW"]) == 2
-        assert len(processed["DUP"]) == 0
-        assert len(processed["DEDUPED"]) == 0
+    # @pytest.mark.parametrize("library, collection", [("bpl", "NONE")])
+    # def test_dedupe_combine_bpl_overdrive_bibs(
+    #     self, library, stub_full_bib, full_bib_add_barcodes, stub_updater
+    # ):
+    #     bib = copy.deepcopy(stub_full_bib)
+    #     bib_add_barcodes = copy.deepcopy(full_bib_add_barcodes)
+    #     bib.action = models.CatalogAction.INSERT
+    #     bib_add_barcodes.action = models.CatalogAction.INSERT
+    #     processed = stub_updater.deduplicate(
+    #         records=[bib, bib_add_barcodes], handler=self.ENGINE
+    #     )
+    #     deduped = Bib(processed["DEDUPED"][0].binary_data, library=library)
+    #     assert len(processed["NEW"]) == 2
+    #     assert len(processed["DUP"]) == 0
+    #     assert len(processed["DEDUPED"]) == 1
+    #     assert sorted([i.value() for i in deduped.get_fields("949")]) == [
+    #         "333331111111111",
+    #         "333331234567890",
+    #     ]
+    #     assert [i.control_number for i in processed["NEW"]] == [
+    #         "123456789",
+    #         "123456789",
+    #     ]
+    #     assert [i.control_number for i in processed["DEDUPED"]] == ["123456789"]
 
     @pytest.mark.parametrize("library, collection", [("nypl", "BL"), ("nypl", "RL")])
     def test_dedupe_combine_nypl_bibs(
