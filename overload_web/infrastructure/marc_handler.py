@@ -164,8 +164,7 @@ class MarcParsingHandler:
                 out[k] = list(set(property.values()))
             elif isinstance(v, dict) and "tag" in v:
                 field = obj.get(v["tag"])
-                if field is not None:
-                    out[k] = str(field.data)
+                out[k] = getattr(field, "data")
             # most attrs have 1:1 mapping between `Bib` and `DomainBib`
             else:
                 out[k] = getattr(obj, v)

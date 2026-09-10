@@ -15,12 +15,12 @@ logger = logging.getLogger(__name__)
 class BibParser:
     @staticmethod
     def combine_marc_files(
-        data: list[bytes], marc_handler: ports.MarcParsingHandlerPort
+        data: list[bytes], marc_reader: ports.MarcReaderPort
     ) -> bytes:
         """Combine multiple bytes objects (ie. MARC files) into one for processing."""
         records = []
         for batch in data:
-            reader = marc_handler.reader.get_reader(batch)
+            reader = marc_reader.get_reader(batch)
             for record in reader:
                 records.append(record)
         io_data = io.BytesIO()

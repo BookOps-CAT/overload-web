@@ -125,7 +125,9 @@ class ProcessCatalogingRecords:
         """
         file_names = list(batches.keys())
         content = list(batches.values())
-        data = marc.BibParser.combine_marc_files(data=content, marc_handler=marc_parser)
+        data = marc.BibParser.combine_marc_files(
+            data=content, marc_reader=marc_parser.reader
+        )
         records = marc.BibParser.parse_marc_data(parser=marc_parser, data=data)
         original_barcodes = batch.BarcodeValidator.validate_unique(records=records)
         report_data = []

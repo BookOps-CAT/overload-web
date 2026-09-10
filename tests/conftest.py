@@ -216,6 +216,7 @@ def stub_marc(library, collection) -> Bib:
     bib = Bib()
     bib.leader = "00000cam  2200517 i 4500"
     bib.library = library
+    bib.add_field(Field(tag="005", data="20000101010001.0"))
     bib.add_field(
         Field(
             tag="020",
