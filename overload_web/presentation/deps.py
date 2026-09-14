@@ -92,7 +92,6 @@ class MarcUpdateRulesModel(BaseModel):
     default_loc: str | None
     library: str
     order_mapping: dict[str, Any]
-    record_type: str
 
 
 class TemplateDataModel(BaseModel):
@@ -421,7 +420,6 @@ def get_marc_update_rules(
         ),
         bib_id_tag=constants["bib_id_tag"][context.library],
         library=context.library,
-        record_type=context.record_type,
         collection=context.collection,
     )
 

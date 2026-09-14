@@ -58,13 +58,12 @@ class FieldRules:
         command_tag: str | None = None
         for field in fields:
             if field.tag == "949" and field.indicators == (" ", " "):
-                for subfield in field.subfields:
-                    if subfield.code == "a" and subfield.value.startswith("*"):
-                        command_tag = subfield.value.strip()
+                for sf in field.subfields:
+                    if sf.code == "a" and sf.value[0] == "*" and command_tag is None:
+                        command_tag = sf.value.strip()
                         if "bn=" in command_tag:
                             return None
-                        else:
-                            break
+
         if not command_tag:
             if not format:
                 command_tag = f"*bn={default_loc};"

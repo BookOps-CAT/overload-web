@@ -154,7 +154,7 @@ def mock_sftp_client(monkeypatch):
 
 
 @pytest.fixture
-def fake_template_data() -> dict:
+def stub_template_data() -> dict:
     return {
         "name": "Foo",
         "agent": "Bar",
@@ -390,105 +390,6 @@ def sel_bib(acq_bib):
     return bib
 
 
-@pytest.fixture
-def full_bib(library, collection):
-    bib = Bib()
-    bib.leader = "00000cam  2200517 i 4500"
-    bib.library = library
-    bib.add_field(Field(tag="005", data="20200101010000.0"))
-    bib.add_field(
-        Field(
-            tag="020",
-            indicators=Indicators(" ", " "),
-            subfields=[Subfield(code="a", value="9781234567890")],
-        )
-    )
-    if library == "bpl":
-        bib.add_field(
-            Field(
-                tag="099",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value="Foo")],
-            )
-        )
-        bib.add_field(
-            Field(
-                tag="960",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="i", value="333331234567890")],
-            )
-        )
-    else:
-        if collection == "BL":
-            bib.add_field(
-                Field(
-                    tag="091",
-                    indicators=Indicators(" ", " "),
-                    subfields=[Subfield(code="a", value="Foo")],
-                )
-            )
-        else:
-            bib.add_field(
-                Field(
-                    tag="852",
-                    indicators=Indicators("8", " "),
-                    subfields=[Subfield(code="a", value="Foo")],
-                )
-            )
-        bib.add_field(
-            Field(
-                tag="910",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value=collection)],
-            )
-        )
-        bib.add_field(
-            Field(
-                tag="949",
-                indicators=Indicators(" ", "1"),
-                subfields=[Subfield(code="i", value="333331234567890")],
-            )
-        )
-    parsed_fields = []
-    for field in bib.fields:
-        if field.subfields:
-            parsed_fields.append(
-                fields.ParsedField(
-                    tag=field.tag,
-                    indicators=(field.indicator1, field.indicator2),
-                    subfields=[
-                        fields.ParsedSubfield(code=sf.code, value=sf.value)
-                        for sf in field.subfields
-                    ],
-                )
-            )
-        else:
-            parsed_fields.append(fields.ParsedField(tag=field.tag, value=field.data))
-    domain_bib = models.DomainBib(
-        library=library,
-        collection=collection,
-        isbn="9781234567890",
-        title="Foo",
-        record_type="cat",
-        binary_data=bib.as_marc(),
-        branch_call_number="Foo",
-        research_call_number=["Foo"],
-        barcodes=["333331234567890"],
-        orders=[],
-        update_date="20200101010000.0",
-        vendor_info=models.VendorInfo(
-            name="UNKNOWN",
-            bib_fields=[],
-            matchpoints={
-                "primary_matchpoint": "isbn",
-                "secondary_matchpoint": "control_number",
-            },
-        ),
-        parsed_fields=parsed_fields,
-    )
-    return domain_bib
-
-
 @pytest.fixture(scope="session")
 def fake_fetcher():
     return sierra_clients.SierraBibFetcher(session=FakeSierraSession())
@@ -505,7 +406,7 @@ def get_constants() -> dict[str, Any]:
 
 
 @pytest.fixture
-def mock_wc_session(library, monkeypatch):
+def mock_wc_session(monkeypatch):
     def response(*args, **kwargs):
         json = {
             "numberOfRecords": 1,

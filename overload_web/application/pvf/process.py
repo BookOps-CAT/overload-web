@@ -58,7 +58,7 @@ class ProcessAcquisitionsRecords:
         file_names = []
         report_data = []
         matcher = match_service.BibMatcher(fetcher)
-        updater = update.BibUpdater(**marc_update_rules)
+        updater = update.BibFieldUpdater(**marc_update_rules)
         vendor = template_data.get("vendor", "UNKNOWN")
         for file_name, data in batches.items():
             file_names.append(file_name)
@@ -75,7 +75,9 @@ class ProcessAcquisitionsRecords:
                 update_fields = updater.get_acq_updates(
                     bib, template_data=template_data
                 )
-                updater.update_record(bib, handler=marc_handler, updates=update_fields)
+                update.BibRecordUpdater.update_record(
+                    bib, handler=marc_handler, updates=update_fields
+                )
                 report_data.append(analysis.to_dict())
             processed = batch.ProcessedFile(
                 file_name=file_name, records=marc_parser.reader.write(records)
@@ -132,7 +134,7 @@ class ProcessCatalogingRecords:
         original_barcodes = batch.BarcodeValidator.validate_unique(records=records)
         report_data = []
         matcher = match_service.BibMatcher(fetcher)
-        updater = update.BibUpdater(**marc_update_rules)
+        updater = update.BibFieldUpdater(**marc_update_rules)
         for bib in records:
             matches = matcher.match_full_record(bib)
             analysis = matcher.review_matches(bib=bib, matches=matches)
@@ -140,12 +142,16 @@ class ProcessCatalogingRecords:
                 target_bib_id=analysis.target_bib_id, action=analysis.action
             )
             update_fields = updater.get_cat_updates(bib)
-            updater.update_record(bib, handler=marc_handler, updates=update_fields)
+            update.BibRecordUpdater.update_record(
+                bib, handler=marc_handler, updates=update_fields
+            )
             report_data.append(analysis.to_dict())
         missing_barcodes = batch.BarcodeValidator.validate_preserved(
             processed_records=records, original_barcodes=original_barcodes
         )
-        deduplicated = updater.deduplicate(records=records, handler=marc_handler)
+        deduplicated = update.BibRecordUpdater.deduplicate(
+            records=records, handler=marc_handler
+        )
         file_name = datetime.datetime.today().strftime("%y%m%d")
         files = [
             batch.ProcessedFile(
@@ -209,7 +215,7 @@ class ProcessSelectionRecords:
         file_names = []
         report_data = []
         matcher = match_service.BibMatcher(fetcher)
-        updater = update.BibUpdater(**marc_update_rules)
+        updater = update.BibFieldUpdater(**marc_update_rules)
         vendor = template_data.get("vendor", "UNKNOWN")
         for file_name, data in batches.items():
             file_names.append(file_name)
@@ -226,7 +232,9 @@ class ProcessSelectionRecords:
                 update_fields = updater.get_sel_updates(
                     record=bib, template_data=template_data
                 )
-                updater.update_record(bib, handler=marc_handler, updates=update_fields)
+                update.BibRecordUpdater.update_record(
+                    bib, handler=marc_handler, updates=update_fields
+                )
                 report_data.append(analysis.to_dict())
             processed = batch.ProcessedFile(
                 file_name=file_name, records=marc_parser.reader.write(records)

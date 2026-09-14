@@ -11,7 +11,7 @@ from overload_web.domain.pvf import batch, marc_rules, models
 logger = logging.getLogger(__name__)
 
 
-class BibUpdater:
+class BibFieldUpdater:
     def __init__(
         self,
         bib_id_tag: str,
@@ -19,14 +19,12 @@ class BibUpdater:
         default_loc: str | None,
         library: str,
         order_mapping: dict[str, Any],
-        record_type: str,
     ) -> None:
         self.bib_id_tag = bib_id_tag
         self.collection = collection
         self.default_loc = default_loc
         self.library = library
         self.order_mapping = order_mapping
-        self.record_type = record_type
 
     def get_acq_updates(
         self, record: models.DomainBib, template_data: dict[str, Any]
@@ -42,7 +40,7 @@ class BibUpdater:
         updates.append(
             marc_rules.FieldRules.add_bib_id(record=record, tag=self.bib_id_tag)
         )
-        if record.library == "nypl":
+        if self.library == "nypl":
             updates.append(marc_rules.FieldRules.update_910_field(record=record))
         return [i for i in updates if i]
 
@@ -55,7 +53,7 @@ class BibUpdater:
         updates.append(
             marc_rules.FieldRules.add_bib_id(record=record, tag=self.bib_id_tag)
         )
-        if record.library == "nypl":
+        if self.library == "nypl":
             updates.append(marc_rules.FieldRules.update_910_field(record=record))
             updates.append(
                 marc_rules.FieldRules.update_bt_series_call_no(record=record)
@@ -83,12 +81,14 @@ class BibUpdater:
         updates.append(
             marc_rules.FieldRules.add_bib_id(record=record, tag=self.bib_id_tag)
         )
-        if record.library == "nypl":
+        if self.library == "nypl":
             updates.append(marc_rules.FieldRules.update_910_field(record=record))
         return [i for i in updates if i]
 
+
+class BibRecordUpdater:
+    @staticmethod
     def update_record(
-        self,
         record: models.DomainBib,
         handler: ports.MarcUpdateHandlerPort,
         updates: list[marc_rules.MarcFieldUpdateValues],
@@ -99,8 +99,9 @@ class BibUpdater:
         bib.leader = marc_rules.FieldRules.update_leader(bib.leader)
         record.binary_data = bib.as_marc()
 
+    @staticmethod
     def deduplicate(
-        self, records: list[models.DomainBib], handler: ports.MarcUpdateHandlerPort
+        records: list[models.DomainBib], handler: ports.MarcUpdateHandlerPort
     ) -> dict[str, list[models.DomainBib]]:
         """Review and deduplicate a batch of processed full-level MARC records."""
         batches = batch.BatchReviewer.review_batch(records=records)

@@ -72,8 +72,8 @@ class TestWorldcatFetcher:
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_get_full_bib_json_by_id(self, mock_wc_session, library, caplog):
         fetcher = oclc.WorldcatFetcher(session=oclc.OclcSession(library=library))
-        full_bib = fetcher.get_full_bib_json_by_id(value=1)
-        assert isinstance(full_bib, dict)
+        bib_json = fetcher.get_full_bib_json_by_id(value=1)
+        assert isinstance(bib_json, dict)
         assert len(caplog.records) == 1
         assert (
             "Querying WorldCat for full bib record in json for" in caplog.records[0].msg

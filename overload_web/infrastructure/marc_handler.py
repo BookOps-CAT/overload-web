@@ -76,7 +76,8 @@ class MarcUpdateHandler:
                 bib.remove_fields(update.delete_all_by_tag)
             if update.target_to_delete is not None:
                 to_delete = self._find_specific_field(bib, update.target_to_delete)
-                bib.remove_field(to_delete)
+                if to_delete:
+                    bib.remove_field(to_delete)
             bib.add_ordered_field(
                 Field(
                     tag=update.tag,

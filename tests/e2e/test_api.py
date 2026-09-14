@@ -237,8 +237,8 @@ class TestApp:
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request"]
 
-    def test_ot_router_create_template(self, fake_template_data):
-        response = self.client.post("/ot/template", data=fake_template_data)
+    def test_ot_router_create_template(self, stub_template_data):
+        response = self.client.post("/ot/template", data=stub_template_data)
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request", "template"]
         assert response.context["template"].get("id") == 2

@@ -82,12 +82,12 @@ class TestTemplateService:
         template_list = ListOrderTemplates.execute(repository=repo)
         assert template_list == []
 
-    def test_save_template(self, repo, fake_template_data, make_template):
-        template = make_template(fake_template_data)
+    def test_save_template(self, repo, stub_template_data, make_template):
+        template = make_template(stub_template_data)
         template_saver = CreateOrderTemplate.execute(repository=repo, obj=template)
-        assert template_saver.name == fake_template_data["name"]
-        assert template_saver.agent == fake_template_data["agent"]
-        assert template_saver.blanket_po == fake_template_data["blanket_po"]
+        assert template_saver.name == stub_template_data["name"]
+        assert template_saver.agent == stub_template_data["agent"]
+        assert template_saver.blanket_po == stub_template_data["blanket_po"]
 
     @pytest.mark.parametrize(
         "id, name, agent",

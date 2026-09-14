@@ -42,8 +42,8 @@ def marc_stubs(monkeypatch):
 
     monkeypatch.setattr(marc.BibParser, "combine_marc_files", bytes_response)
     monkeypatch.setattr(marc_handler.MarcReaderWriter, "write", bytes_response)
-    monkeypatch.setattr(update.BibUpdater, "get_cat_updates", fake_updates)
-    monkeypatch.setattr(update.BibUpdater, "update_record", null_response)
+    monkeypatch.setattr(update.BibFieldUpdater, "get_cat_updates", fake_updates)
+    monkeypatch.setattr(update.BibRecordUpdater, "update_record", null_response)
 
 
 @pytest.fixture(params=[("nypl", "BL"), ("nypl", "RL"), ("bpl", None)])
@@ -96,8 +96,7 @@ class TestProcessCommands:
         "default_loc": "foo",
         "bib_id_tag": "bar",
         "library": "baz",
-        "record_type": "qux",
-        "collection": "spam",
+        "collection": "qux",
     }
     STUB_ENGINE = marc_handler.MarcUpdateHandler()
 
