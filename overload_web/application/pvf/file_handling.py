@@ -46,25 +46,6 @@ class LoadVendorFile:
         return files.VendorFile(file_name=name, content=file)
 
 
-class WriteFile:
-    @staticmethod
-    def execute(file: bytes, file_name: str, dir: str, writer: ports.FileWriter) -> str:
-        """
-        Write a file to a directory.
-
-        Args:
-            file: The file content to write as a bytes object.
-            file_name: The name of the file as a string.
-            dir: The directory where the file should be written as a string.
-            writer: Concrete implementation of `FileWriter` protocol.
-
-        Returns:
-            the directory and filename where the file was written.
-        """
-        out_file = writer.write(file=file, file_name=file_name, dir=dir)
-        return out_file
-
-
 class UploadFileToWorkflow:
     @staticmethod
     def execute(

@@ -1,12 +1,11 @@
-import os
-
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.application import ports
 from overload_web.application.pvf.file_handling import (
     DeleteFileFromWorkflow,
+    ListVendorFiles,
     LoadAllWorkflowFiles,
+    LoadVendorFile,
     UploadFileToWorkflow,
 )
 from overload_web.infrastructure import file_io
@@ -48,6 +47,33 @@ def test_session(tmp_path):
     test_engine.dispose()
 
 
+class FakeFileRetriever:
+    def __init__(self) -> None:
+        pass
+
+    def list(self, dir: str) -> list[str]:
+        return ["foo.mrc"]
+
+    def download(self, name: str, dir: str) -> bytes:
+        return b""
+
+
+class TestFileRetriever:
+    retriever = FakeFileRetriever()
+
+    def test_list_files(self):
+        file_list = ListVendorFiles.execute(dir="foo", retriever=self.retriever)
+        assert len(file_list) == 1
+        assert file_list[0] == "foo.mrc"
+
+    def test_load_file(self):
+        file = LoadVendorFile.execute(
+            name="foo.mrc", dir="foo", retriever=self.retriever
+        )
+        assert file.file_name == "foo.mrc"
+        assert file.content == b""
+
+
 class TestFileWorkflow:
     def test_load_all_files(self, test_session, caplog, tmp_path, tmp_files):
         path = tmp_path / "temp"
@@ -84,63 +110,3 @@ class TestFileWorkflow:
         files = DeleteFileFromWorkflow.execute(id="1", repo=repo, workflow_id="12345")
         assert len(files) == 1
         assert files[0]["filename"] == "bar.mrc"
-
-
-class TestLocalFiles:
-    def test_local_objs(self):
-        retriever = file_io.LocalFileRetriever()
-        writer = file_io.LocalFileWriter()
-        assert isinstance(retriever, ports.FileRetriever)
-        assert isinstance(writer, ports.FileWriter)
-
-    def test_local_download(self, tmp_path, tmp_files):
-        retriever = file_io.LocalFileRetriever()
-        loaded_file = retriever.download("foo.mrc", dir=tmp_path)
-        assert "333331234567890".encode() in loaded_file
-        assert "foo.mrc" in os.listdir(tmp_path)
-
-    def test_local_list(self, tmp_path, tmp_files):
-        retriever = file_io.LocalFileRetriever()
-        file_list = retriever.list(dir=tmp_path)
-        assert len(file_list) == 2
-        assert "foo.mrc" in file_list
-
-    def test_local_write(self, tmp_path):
-        writer = file_io.LocalFileWriter()
-        new_file = writer.write(
-            file=b"333331234567890", file_name="foo.mrc", dir=tmp_path
-        )
-        assert new_file == os.path.join(tmp_path, "foo.mrc")
-        assert "foo.mrc" in os.listdir(tmp_path)
-        assert "333331234567890".encode() in open(new_file, "rb").read()
-
-    def test_sftp_retriever(self, mock_sftp_client):
-        retriever = file_io.SFTPFileRetriever(client=mock_sftp_client)
-        assert isinstance(retriever, ports.FileRetriever)
-        assert hasattr(retriever, "list")
-        assert hasattr(retriever, "download")
-        assert retriever.client.name == "FOO"
-        assert isinstance(retriever, ports.FileRetriever)
-
-    def test_sftp_writer(self, mock_sftp_client):
-        writer = file_io.SFTPFileWriter(client=mock_sftp_client)
-        assert isinstance(writer, ports.FileWriter)
-        assert hasattr(writer, "write")
-        assert writer.client.name == "FOO"
-        assert isinstance(writer, ports.FileWriter)
-
-    def test_sftp_list(self, mock_sftp_client):
-        retriever = file_io.SFTPFileRetriever(client=mock_sftp_client)
-        file_list = retriever.list(dir="test")
-        assert len(file_list) == 1
-        assert file_list[0] == "foo.mrc"
-
-    def test_sftp_download(self, mock_sftp_client):
-        retriever = file_io.SFTPFileRetriever(client=mock_sftp_client)
-        file = retriever.download(name="foo.mrc", dir="test")
-        assert file == b""
-
-    def test_sftp_write(self, mock_sftp_client):
-        writer = file_io.SFTPFileWriter(client=mock_sftp_client)
-        out_file = writer.write(file=b"foo", file_name="foo.mrc", dir="test")
-        assert out_file == "foo.mrc"
