@@ -1,4 +1,3 @@
-import copy
 import datetime
 import io
 import json
@@ -6,13 +5,10 @@ from typing import Any
 
 import pytest
 import requests
-from bookops_marc import Bib
 from bookops_worldcat.errors import BookopsWorldcatError
 from file_retriever import Client, File, FileInfo
-from pymarc import Field, Indicators, Subfield
 
 from overload_web.domain.pvf import models
-from overload_web.domain.shared import fields
 from overload_web.infrastructure import oclc, sierra_clients
 
 
@@ -209,185 +205,6 @@ def stub_bib():
         )
 
     return make_bib
-
-
-@pytest.fixture
-def stub_marc(library, collection) -> Bib:
-    bib = Bib()
-    bib.leader = "00000cam  2200517 i 4500"
-    bib.library = library
-    bib.add_field(Field(tag="005", data="20000101010001.0"))
-    bib.add_field(
-        Field(
-            tag="020",
-            indicators=Indicators(" ", " "),
-            subfields=[Subfield(code="a", value="9781234567890")],
-        )
-    )
-    if library == "bpl":
-        bib.add_field(
-            Field(
-                tag="037",
-                indicators=Indicators(" ", " "),
-                subfields=[
-                    Subfield(code="a", value="123"),
-                    Subfield(code="b", value="OverDrive, Inc."),
-                ],
-            )
-        )
-        bib.add_field(
-            Field(
-                tag="099",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value="Foo")],
-            )
-        )
-    else:
-        if collection == "BL":
-            bib.add_field(
-                Field(
-                    tag="091",
-                    indicators=Indicators(" ", " "),
-                    subfields=[Subfield(code="a", value="Foo")],
-                )
-            )
-        else:
-            bib.add_field(
-                Field(
-                    tag="852",
-                    indicators=Indicators("8", " "),
-                    subfields=[Subfield(code="a", value="Foo")],
-                )
-            )
-        bib.add_field(
-            Field(
-                tag="910",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value=collection)],
-            )
-        )
-    bib.add_field(
-        Field(
-            tag="949",
-            indicators=Indicators(" ", "1"),
-            subfields=[Subfield(code="i", value="333331234567890")],
-        )
-    )
-    bib.add_field(
-        Field(
-            tag="960",
-            indicators=Indicators(" ", " "),
-            subfields=[
-                Subfield(code="a", value="l"),
-                Subfield(code="b", value="-"),
-                Subfield(code="c", value="j"),
-                Subfield(code="d", value="c"),
-                Subfield(code="e", value="d"),
-                Subfield(code="f", value="a"),
-                Subfield(code="g", value="b"),
-                Subfield(code="h", value="-"),
-                Subfield(code="i", value="l"),
-                Subfield(code="j", value="-"),
-                Subfield(code="k", value="A01"),
-                Subfield(code="m", value="o"),
-                Subfield(code="n", value="-"),
-                Subfield(code="o", value="13"),
-                Subfield(code="p", value="  -  -  "),
-                Subfield(code="q", value="01-01-25"),
-                Subfield(code="r", value="  -  -  "),
-                Subfield(code="s", value="{{dollar}}13.20"),
-                Subfield(code="t", value="agj0y"),
-                Subfield(code="u", value="lease"),
-                Subfield(code="v", value="btlea"),
-                Subfield(code="w", value="eng"),
-                Subfield(code="x", value="xxu"),
-                Subfield(code="y", value="1"),
-                Subfield(code="z", value=".o10000010"),
-            ],
-        )
-    )
-    bib.add_field(
-        Field(
-            tag="961",
-            indicators=Indicators(" ", " "),
-            subfields=[
-                Subfield(code="d", value="foo"),
-                Subfield(code="f", value="bar"),
-                Subfield(code="m", value="baz"),
-            ],
-        )
-    )
-    return bib
-
-
-@pytest.fixture
-def acq_bib(collection, library, stub_marc):
-    order = models.Order(
-        locations=["agj0y"],
-        audience=["j"],
-        branches=["ag"],
-        copies="13",
-        create_date="01-01-25",
-        format="b",
-        lang="eng",
-        order_id=".o10000010",
-        shelves=["0y"],
-        status="o",
-        vendor_notes=None,
-        order_code_1="j",
-        order_code_2="c",
-        order_code_3="d",
-        order_code_4="a",
-        order_type="l",
-        price="{{dollar}}13.20",
-        project_code="A01",
-        fund="lease",
-        vendor_code="btlea",
-        country="xxu",
-        internal_note="foo",
-        selector_note="bar",
-        vendor_title_no=None,
-        blanket_po="baz",
-    )
-    bib = copy.deepcopy(stub_marc)
-    parsed_fields = []
-    for field in stub_marc.fields:
-        if field.subfields:
-            parsed_fields.append(
-                fields.ParsedField(
-                    tag=field.tag,
-                    indicators=(field.indicator1, field.indicator2),
-                    subfields=[
-                        fields.ParsedSubfield(code=sf.code, value=sf.value)
-                        for sf in field.subfields
-                    ],
-                )
-            )
-        else:
-            parsed_fields.append(fields.ParsedField(tag=field.tag, value=field.data))
-    domain_bib = models.DomainBib(
-        library=library,
-        collection=collection,
-        isbn="9781234567890",
-        title="Foo",
-        record_type="acq",
-        binary_data=bib.as_marc(),
-        branch_call_number="Foo",
-        research_call_number=["Foo"],
-        vendor="BTSERIES",
-        barcodes=["333331234567890"],
-        orders=[order],
-        update_date="20200101010000.0",
-        parsed_fields=parsed_fields,
-    )
-    return domain_bib
-
-
-@pytest.fixture
-def sel_bib(acq_bib):
-    bib = copy.deepcopy(acq_bib)
-    bib.record_type = "sel"
-    return bib
 
 
 @pytest.fixture(scope="session")

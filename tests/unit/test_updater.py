@@ -165,24 +165,12 @@ def stub_updater(request, get_constants):
 
 
 @pytest.fixture
-def stub_bib(request):
+def stub_domain_bib(request, stub_bib):
     marker = request.node.get_closest_marker("workflow")
 
     def make_bib(record_type):
-        return models.DomainBib(
-            library=marker.kwargs["library"],
-            collection=marker.kwargs["collection"],
-            isbn="9781234567890",
-            title="Foo",
-            record_type=record_type,
-            binary_data=b"",
-            branch_call_number="Foo",
-            research_call_number=["Foo"],
-            vendor="UNKNOWN",
-            barcodes=["333331234567890"],
-            update_date="20200101010000.0",
-            parsed_fields=[],
-            orders=[],
+        return stub_bib(
+            marker.kwargs["library"], marker.kwargs["collection"], record_type
         )
 
     return make_bib
@@ -192,8 +180,8 @@ class TestUpdateRecords:
     ENGINE = marc_handler.MarcUpdateHandler()
 
     @pytest.mark.workflow(library="bpl", collection=None)
-    def test_update_record_add_vendor_fields(self, stub_bib):
-        cat_bib = stub_bib("cat")
+    def test_update_record_add_vendor_fields(self, stub_domain_bib):
+        cat_bib = stub_domain_bib("cat")
         cat_bib.vendor_info = models.VendorInfo(
             name="INGRAM",
             matchpoints={},
@@ -211,8 +199,8 @@ class TestUpdateRecords:
         assert [i.format_field() for i in updated_bib.get_fields("949")] == ["*b2=a;"]
 
     @pytest.mark.workflow(library="nypl", collection="RL")
-    def test_update_record_add_bib_id(self, stub_bib):
-        cat_bib = stub_bib("cat")
+    def test_update_record_add_bib_id(self, stub_domain_bib):
+        cat_bib = stub_domain_bib("cat")
         cat_bib.bib_id = "12345"
         update.BibRecordUpdater.update_record(
             cat_bib,
@@ -231,8 +219,10 @@ class TestUpdateRecords:
             ("*b2=a", "*b2=a;bn=zzzzz;"),
         ],
     )
-    def test_update_record_command_tag(self, stub_updater, stub_bib, original, output):
-        sel_bib = stub_bib("sel")
+    def test_update_record_command_tag(
+        self, stub_updater, stub_domain_bib, original, output
+    ):
+        sel_bib = stub_domain_bib("sel")
         sel_bib.parsed_fields = [
             fields.ParsedField(
                 tag="949",
@@ -269,8 +259,8 @@ class TestUpdateRecords:
         assert output in fields_949
 
     @pytest.mark.workflow(library="nypl", collection="BL")
-    def test_update_record_original_command_tag_not_found(self, stub_bib):
-        sel_bib = stub_bib("sel")
+    def test_update_record_original_command_tag_not_found(self, stub_domain_bib):
+        sel_bib = stub_domain_bib("sel")
         original = copy.deepcopy(sel_bib)
         update.BibRecordUpdater.update_record(
             sel_bib,
