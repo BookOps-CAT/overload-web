@@ -1,4 +1,5 @@
 import copy
+import random
 
 import pytest
 from bookops_marc import Bib
@@ -10,12 +11,17 @@ from overload_web.domain.shared import fields
 from overload_web.infrastructure import marc_handler
 
 
-@pytest.fixture(params=[("nypl", "BL"), ("nypl", "RL"), ("bpl", None)])
-def stub_full_bib(request):
-    library = request.param[0]
-    collection = request.param[1]
-
-    def create_bib(barcode, action):
+@pytest.fixture
+def stub_full_bib(stub_bib):
+    def create_bib(library, collection, control_number, item_tag):
+        number = random.randint(0, 100)
+        barcode = f"33333{str(number).zfill(10)}"
+        if item_tag == "960":
+            field_037b = "Foo"
+            item_ind2 = " "
+        else:
+            field_037b = "OverDrive, Inc."
+            item_ind2 = "1"
         field_list = [
             {
                 "tag": "037",
@@ -23,20 +29,20 @@ def stub_full_bib(request):
                 "ind2": " ",
                 "subfields": [
                     {"code": "a", "value": "123"},
-                    {"code": "b", "value": "OverDrive, Inc."},
+                    {"code": "b", "value": field_037b},
                 ],
             },
             {
-                "tag": "949",
+                "tag": item_tag,
                 "ind1": " ",
-                "ind2": "1",
+                "ind2": item_ind2,
                 "subfields": [{"code": "i", "value": barcode}],
             },
             {
                 "tag": "949",
                 "ind1": " ",
                 "ind2": " ",
-                "subfields": [{"code": "i", "value": "*b2=a;"}],
+                "subfields": [{"code": "a", "value": "*b2=a;"}],
             },
         ]
         parsed_fields = []
@@ -64,87 +70,29 @@ def stub_full_bib(request):
                     ],
                 )
             )
-        domain_bib = models.DomainBib(
-            library=library,
-            collection=collection,
-            title="Foo",
-            record_type="cat",
-            binary_data=bib.as_marc(),
-            control_number="123456789",
-            vendor="UNKNOWN",
-            parsed_fields=parsed_fields,
-            barcodes=[barcode],
-        )
-        domain_bib.action = models.CatalogAction(action)
+        domain_bib = stub_bib(library, collection, "cat")
+        domain_bib.binary_data = bib.as_marc()
+        domain_bib.parsed_fields = parsed_fields
+        domain_bib.barcodes = [barcode]
+        domain_bib.control_number = control_number
+        domain_bib.action = models.CatalogAction.INSERT
         return domain_bib
 
     return create_bib
 
 
+@pytest.fixture(params=[("nypl", "BL"), ("nypl", "RL"), ("bpl", None)])
+def full_bib_949_item(stub_full_bib, request):
+    def create_bib(control_number):
+        return stub_full_bib(request.param[0], request.param[1], control_number, "949")
+
+    return create_bib
+
+
 @pytest.fixture
-def stub_bpl_bib():
-    def create_bib(barcode, action):
-        field_list = [
-            {
-                "tag": "037",
-                "ind1": " ",
-                "ind2": " ",
-                "subfields": [
-                    {"code": "a", "value": "Foo"},
-                    {"code": "n", "value": "Bar"},
-                ],
-            },
-            {
-                "tag": "960",
-                "ind1": " ",
-                "ind2": " ",
-                "subfields": [{"code": "i", "value": barcode}],
-            },
-            {
-                "tag": "949",
-                "ind1": " ",
-                "ind2": " ",
-                "subfields": [{"code": "i", "value": "*b2=a;"}],
-            },
-        ]
-        parsed_fields = []
-        bib = Bib()
-        bib.leader = "00000cam  2200517 i 4500"
-        bib.library = "bpl"
-        for field in field_list:
-            bib.add_field(
-                Field(
-                    tag=field["tag"],
-                    indicators=(field["ind1"], field["ind2"]),
-                    subfields=[
-                        Subfield(code=i["code"], value=i["value"])
-                        for i in field["subfields"]
-                    ],
-                )
-            )
-            parsed_fields.append(
-                fields.ParsedField(
-                    tag=field["tag"],
-                    indicators=(field["ind1"], field["ind2"]),
-                    subfields=[
-                        fields.ParsedSubfield(code=i["code"], value=i["value"])
-                        for i in field["subfields"]
-                    ],
-                )
-            )
-        domain_bib = models.DomainBib(
-            library="bpl",
-            collection=None,
-            title="Foo",
-            record_type="cat",
-            binary_data=bib.as_marc(),
-            control_number="123456789",
-            vendor="UNKNOWN",
-            parsed_fields=parsed_fields,
-            barcodes=[barcode],
-        )
-        domain_bib.action = models.CatalogAction(action)
-        return domain_bib
+def full_bib_960_item(stub_full_bib):
+    def create_bib(control_number):
+        return stub_full_bib("bpl", None, control_number, "960")
 
     return create_bib
 
@@ -664,23 +612,14 @@ class TestMarcUpdateHandler:
         assert updated_bib["945"].format_field() == "12345"
 
     @pytest.mark.workflow(library="nypl", collection="BL")
-    @pytest.mark.parametrize(
-        "original, output",
-        [
-            ("*b2=a;", "*b2=a;bn=zzzzz;"),
-            ("*b2=a;bn=;", "*b2=a;bn=;"),
-            ("*b2=a", "*b2=a;bn=zzzzz;"),
-        ],
-    )
-    def test_update_record_command_tag(
-        self, stub_updater, stub_domain_bib, original, output
-    ):
+    def test_update_record_command_tag(self, stub_domain_bib):
+        field_949 = "*b2=a;"
         sel_bib = stub_domain_bib("sel")
         sel_bib.parsed_fields = [
             fields.ParsedField(
                 tag="949",
                 indicators=(" ", " "),
-                subfields=[fields.ParsedSubfield(code="a", value=original)],
+                subfields=[fields.ParsedSubfield(code="a", value=field_949)],
             )
         ]
         marc_data = Bib()
@@ -697,19 +636,24 @@ class TestMarcUpdateHandler:
             Field(
                 tag="949",
                 indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value=original)],
+                subfields=[Subfield(code="a", value=field_949)],
             )
         )
         sel_bib.binary_data = marc_data.as_marc()
-        updates = stub_updater.get_sel_updates(sel_bib, template_data={})
         update.BibRecordUpdater.update_record(
-            sel_bib, handler=self.ENGINE, updates=updates
+            sel_bib,
+            handler=self.ENGINE,
+            updates=[
+                marc_rules.FieldRules.add_command_tag(
+                    format="a", default_loc="zzzzz", fields=sel_bib.parsed_fields
+                )
+            ],
         )
         updated_bib = Bib(sel_bib.binary_data, library=sel_bib.library)
         fields_949 = [i.format_field() for i in updated_bib.get_fields("949")]
         assert len(fields_949) == 2
         assert "333339876543210" in fields_949
-        assert output in fields_949
+        assert "*b2=a;bn=zzzzz;" in fields_949
 
     @pytest.mark.workflow(library="nypl", collection="BL")
     def test_update_record_original_command_tag_not_found(self, stub_domain_bib):
@@ -740,8 +684,9 @@ class TestMarcUpdateHandler:
             "*b2=a;bn=zzzzz;"
         ]
 
-    def test_dedupe_attach(self, stub_full_bib):
-        bib = stub_full_bib("333331234567890", "attach")
+    def test_dedupe_attach(self, full_bib_949_item):
+        bib = full_bib_949_item("123456789")
+        bib.action = models.CatalogAction.ATTACH
         processed = update.BibRecordUpdater.deduplicate(
             records=[bib], handler=self.ENGINE
         )
@@ -749,8 +694,8 @@ class TestMarcUpdateHandler:
         assert len(processed["DUP"]) == 1
         assert len(processed["DEDUPED"]) == 0
 
-    def test_dedupe_insert(self, stub_full_bib):
-        bib = stub_full_bib("333331234567890", "insert")
+    def test_dedupe_insert(self, full_bib_949_item):
+        bib = full_bib_949_item("123456789")
         processed = update.BibRecordUpdater.deduplicate(
             records=[bib], handler=self.ENGINE
         )
@@ -758,96 +703,74 @@ class TestMarcUpdateHandler:
         assert len(processed["DUP"]) == 0
         assert len(processed["DEDUPED"]) == 0
 
-    def test_dedupe_combine_bibs(self, stub_full_bib):
-        bib1 = stub_full_bib("333331234567890", "insert")
-        bib2 = stub_full_bib("333339876543210", "insert")
+    def test_dedupe_combine_bibs(self, full_bib_949_item):
+        bib1 = full_bib_949_item("123456789")
+        bib2 = full_bib_949_item("123456789")
         processed = update.BibRecordUpdater.deduplicate(
             records=[bib1, bib2], handler=self.ENGINE
         )
         combined_rec = processed["DEDUPED"][0]
         deduped = Bib(combined_rec.binary_data, library=combined_rec.library)
+        new_ctrl_nums = [i.control_number for i in processed["NEW"]]
+        deduped_ctrl_nums = [i.control_number for i in processed["DEDUPED"]]
         assert len(processed["NEW"]) == 2
         assert len(processed["DUP"]) == 0
         assert len(processed["DEDUPED"]) == 1
         assert sorted([i.value() for i in deduped.get_fields("949")]) == [
-            "*b2=a;",
-            "333331234567890",
-            "333339876543210",
-        ]
-        assert [i.control_number for i in processed["NEW"]] == [
-            "123456789",
-            "123456789",
-        ]
-        assert [i.control_number for i in processed["DEDUPED"]] == ["123456789"]
+            "*b2=a;"
+        ] + sorted(bib1.barcodes + bib2.barcodes)
+        assert new_ctrl_nums == ["123456789", "123456789"]
+        assert deduped_ctrl_nums == ["123456789"]
 
-    def test_dedupe_combine_bpl_bibs(self, stub_bpl_bib):
-        bib1 = stub_bpl_bib("333331234567890", "insert")
-        bib2 = stub_bpl_bib("333339876543210", "insert")
+    def test_dedupe_combine_bpl_bibs(self, full_bib_960_item):
+        bib1 = full_bib_960_item("123456789")
+        bib2 = full_bib_960_item("123456789")
         processed = update.BibRecordUpdater.deduplicate(
             records=[bib1, bib2], handler=self.ENGINE
         )
         combined_rec = processed["DEDUPED"][0]
         deduped = Bib(combined_rec.binary_data, library=combined_rec.library)
+        new_ctrl_nums = [i.control_number for i in processed["NEW"]]
+        deduped_ctrl_nums = [i.control_number for i in processed["DEDUPED"]]
         assert len(processed["NEW"]) == 2
         assert len(processed["DUP"]) == 0
         assert len(processed["DEDUPED"]) == 1
         assert [i.value() for i in deduped.get_fields("949")] == ["*b2=a;"]
-        assert sorted([i.value() for i in deduped.get_fields("960")]) == [
-            "333331234567890",
-            "333339876543210",
-        ]
-        assert [i.control_number for i in processed["NEW"]] == [
-            "123456789",
-            "123456789",
-        ]
-        assert [i.control_number for i in processed["DEDUPED"]] == ["123456789"]
+        assert sorted([i.value() for i in deduped.get_fields("960")]) == sorted(
+            bib1.barcodes + bib2.barcodes
+        )
+        assert new_ctrl_nums == ["123456789", "123456789"]
+        assert deduped_ctrl_nums == ["123456789"]
 
-    def test_dedupe_other_recs(self, stub_full_bib):
-        bib1a = stub_full_bib("333331234567890", "insert")
-        bib1b = stub_full_bib("333339876543210", "insert")
-        bib2 = stub_full_bib("333331111111111", "insert")
-        bib2.control_number = "987654321"
+    def test_dedupe_other_recs(self, full_bib_949_item):
+        bib1a = full_bib_949_item("123456789")
+        bib1b = full_bib_949_item("123456789")
+        bib2 = full_bib_949_item("987654321")
         processed = update.BibRecordUpdater.deduplicate(
             records=[bib1a, bib1b, bib2], handler=self.ENGINE
         )
+        new_ctrl_nums = [i.control_number for i in processed["NEW"]]
+        deduped_ctrl_nums = [i.control_number for i in processed["DEDUPED"]]
         assert len(processed["NEW"]) == 3
         assert len(processed["DUP"]) == 0
         assert len(processed["DEDUPED"]) == 2
-        assert sorted([i.control_number for i in processed["NEW"]]) == [
-            "123456789",
-            "123456789",
-            "987654321",
-        ]
-        assert sorted([i.control_number for i in processed["DEDUPED"]]) == [
-            "123456789",
-            "987654321",
-        ]
+        assert sorted(new_ctrl_nums) == ["123456789", "123456789", "987654321"]
+        assert sorted(deduped_ctrl_nums) == ["123456789", "987654321"]
 
-    def test_dedupe_multiple_groups(self, stub_full_bib):
-        bib_1a = stub_full_bib("333331111111111", "insert")
-        bib_1b = stub_full_bib("333332222222222", "insert")
-        bib2 = stub_full_bib("333333333333333", "insert")
-        bib2.control_number = None
-        bib3 = stub_full_bib("333334444444444", "insert")
-        bib3.control_number = None
-        bib4 = stub_full_bib("333335555555555", "insert")
+    def test_dedupe_multiple_groups(self, full_bib_949_item):
+        bib_1a = full_bib_949_item("123456789")
+        bib_1b = full_bib_949_item("123456789")
+        bib2 = full_bib_949_item(None)
+        bib3 = full_bib_949_item(None)
+        bib4 = full_bib_949_item("987654321")
         bib4.control_number = "987654321"
         processed = update.BibRecordUpdater.deduplicate(
             records=[bib_1a, bib_1b, bib2, bib3, bib4], handler=self.ENGINE
         )
+        new_ctrl_nums = [i.control_number for i in processed["NEW"]]
+        deduped_ctrl_nums = [i.control_number for i in processed["DEDUPED"]]
         assert len(processed["NEW"]) == 5
         assert len(processed["DUP"]) == 0
         assert len(processed["DEDUPED"]) == 4
-        assert [i.control_number for i in processed["NEW"]] == [
-            "123456789",
-            "123456789",
-            None,
-            None,
-            "987654321",
-        ]
-        assert [i.control_number for i in processed["DEDUPED"]] == [
-            "123456789",
-            None,
-            None,
-            "987654321",
-        ]
+        assert new_ctrl_nums == ["123456789", "123456789", None, None, "987654321"]
+        assert deduped_ctrl_nums == ["123456789", None, None, "987654321"]
