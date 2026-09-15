@@ -228,7 +228,9 @@ class TestDetermineCatalogAction:
         assert len(response.var_fields) == 3
 
     @pytest.mark.workflow(record_type="sel", library="nypl", collection="BL")
-    def test_determine_catalog_action_update(self, stub_nypl_data, mock_bib):
+    def test_determine_catalog_action_update_vendor_record_nypl(
+        self, stub_nypl_data, mock_bib
+    ):
         matcher = matching.SelectionMatchAnalyzer()
         response = sierra_responses.NYPLPlatformResponse(stub_nypl_data)
         action, updated = matcher.determine_catalog_action(mock_bib, candidate=response)
@@ -237,7 +239,7 @@ class TestDetermineCatalogAction:
         assert response.cat_source == "vendor"
 
     @pytest.mark.workflow(record_type="sel", library="nypl", collection="BL")
-    def test_determine_catalog_action_vendor_record_nypl(
+    def test_determine_catalog_action_attach_vendor_record_nypl(
         self, stub_nypl_data, mock_bib
     ):
         matcher = matching.SelectionMatchAnalyzer()
@@ -249,7 +251,9 @@ class TestDetermineCatalogAction:
         assert response.cat_source == "vendor"
 
     @pytest.mark.workflow(record_type="sel", library="bpl", collection=None)
-    def test_determine_catalog_action_vendor_record_bpl(self, bpl_data, mock_bib):
+    def test_determine_catalog_action_attach_vendor_record_bpl(
+        self, bpl_data, mock_bib
+    ):
         matcher = matching.SelectionMatchAnalyzer()
         mock_bib.update_date = "20250101000001.0"
         bpl_data = {k: v for k, v in bpl_data.items() if k != "ss_marc_tag_003"}
