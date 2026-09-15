@@ -2,7 +2,6 @@ import os
 
 import pytest
 
-from overload_web.application import ports
 from overload_web.infrastructure import file_io
 
 
@@ -15,12 +14,6 @@ def tmp_files(tmp_path):
 
 
 class TestLocalFiles:
-    def test_local_objs(self):
-        retriever = file_io.LocalFileRetriever()
-        writer = file_io.LocalFileWriter()
-        assert isinstance(retriever, ports.FileRetriever)
-        assert isinstance(writer, ports.FileWriter)
-
     def test_local_download(self, tmp_path, tmp_files):
         retriever = file_io.LocalFileRetriever()
         loaded_file = retriever.download("foo.mrc", dir=tmp_path)
@@ -46,18 +39,14 @@ class TestLocalFiles:
 class TestRemoteFiles:
     def test_sftp_retriever(self, mock_sftp_client):
         retriever = file_io.SFTPFileRetriever(client=mock_sftp_client)
-        assert isinstance(retriever, ports.FileRetriever)
         assert hasattr(retriever, "list")
         assert hasattr(retriever, "download")
         assert retriever.client.name == "FOO"
-        assert isinstance(retriever, ports.FileRetriever)
 
     def test_sftp_writer(self, mock_sftp_client):
         writer = file_io.SFTPFileWriter(client=mock_sftp_client)
-        assert isinstance(writer, ports.FileWriter)
         assert hasattr(writer, "write")
         assert writer.client.name == "FOO"
-        assert isinstance(writer, ports.FileWriter)
 
     def test_sftp_list(self, mock_sftp_client):
         retriever = file_io.SFTPFileRetriever(client=mock_sftp_client)

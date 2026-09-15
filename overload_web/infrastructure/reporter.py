@@ -71,6 +71,7 @@ class GoogleSheetsReporter:
                 creds = flow.run_local_server()
             return creds
         except (ValueError, RefreshError) as e:
+            logger.error(f"Unable to configure google sheet API credentials: {e}")
             raise e
 
     def prep_report(self, data: list[dict[str, Any]]) -> list[list[str]]:
@@ -125,8 +126,6 @@ class GoogleSheetsReporter:
             )
             logger.info(f"Data written to Google Sheet: {result}")
             return
-        except (ValueError, RefreshError) as e:
-            logger.error(f"Unable to configure google sheet API credentials: {e}")
         except (HttpError, TimeoutError) as e:
             logger.error(f"Unable to send data to google sheet: {e}")
         logger.error("Data not written to sheet.")
