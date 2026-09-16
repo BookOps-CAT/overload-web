@@ -11,7 +11,7 @@ import logging
 from typing import Any
 
 from overload_web.application import ports
-from overload_web.domain.pvf import matching
+from overload_web.domain.pvf import matching, models
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ class BibMatcher:
         self.fetcher = fetcher
 
     def _match_bib(
-        self, record: matching.DomainBib, matchpoints: dict[str, str]
+        self, record: models.DomainBib, matchpoints: dict[str, str]
     ) -> list[dict[str, Any]]:
         """
         Find all matches in Sierra for a given bib record.
@@ -73,7 +73,7 @@ class BibMatcher:
         return []
 
     def match_order_record(
-        self, record: matching.DomainBib, matchpoints: dict[str, str]
+        self, record: models.DomainBib, matchpoints: dict[str, str]
     ) -> list[dict[str, Any]]:
         """
         Match an order-level bibliographic record against Sierra.
@@ -93,7 +93,7 @@ class BibMatcher:
         )
         return responses
 
-    def match_full_record(self, record: matching.DomainBib) -> list[dict[str, Any]]:
+    def match_full_record(self, record: models.DomainBib) -> list[dict[str, Any]]:
         """
         Match a full-level bibliographic record against Sierra.
 
@@ -116,7 +116,7 @@ class BibMatcher:
         return responses
 
     def review_matches(
-        self, bib: matching.DomainBib, matches: list[dict[str, Any]]
+        self, bib: models.DomainBib, matches: list[dict[str, Any]]
     ) -> matching.MatchAnalysis:
         """
         Review and categorize match candidates returned from Sierra.
