@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol
 
-from overload_web.domain.pvf import models
-from overload_web.domain.shared import fields
+from overload_web.domain import shared
 
 logger = logging.getLogger(__name__)
 
@@ -32,25 +31,31 @@ class MarcFieldUpdateValues:
     target_to_delete: TargetFieldCriteria | None = None
 
 
+class MarcOrderProtocol(Protocol):
+    def map_to_marc(
+        self, rules: dict[str, Any]
+    ) -> dict[str, Any]: ...  # pragma: no branch
+
+
 class FieldRules:
     """Functions that create `MarcFieldUpdateValues` to be used to update MARC fields"""
 
     @staticmethod
-    def add_bib_id(record: models.DomainBib, tag: str) -> MarcFieldUpdateValues | None:
+    def add_bib_id(bib_id: str | None, tag: str) -> MarcFieldUpdateValues | None:
         """Creates a new bib ID field."""
-        if record.bib_id:
+        if bib_id:
             return MarcFieldUpdateValues(
                 delete_all_by_tag=True,
                 tag=tag,
                 ind1=" ",
                 ind2=" ",
-                subfields=[{"code": "a", "value": record.bib_id}],
+                subfields=[{"code": "a", "value": bib_id}],
             )
         return None
 
     @staticmethod
     def add_command_tag(
-        format: str | None, default_loc: str | None, fields: list[fields.ParsedField]
+        format: str | None, default_loc: str | None, fields: list[shared.ParsedField]
     ) -> MarcFieldUpdateValues | None:
         """Creates a new or updated command tag field."""
         if not format and not default_loc:
@@ -98,11 +103,10 @@ class FieldRules:
         )
 
     @staticmethod
-    def add_vendor_fields(record: models.DomainBib) -> list[MarcFieldUpdateValues]:
+    def add_vendor_fields(fields: list[dict[str, Any]]) -> list[MarcFieldUpdateValues]:
         """Creates a list of fields for a full MARC record based on `VendorInfo`."""
         field_objs = []
-        bib_fields = getattr(record.vendor_info, "bib_fields", [])
-        for field_data in bib_fields:
+        for field_data in fields:
             field_objs.append(
                 MarcFieldUpdateValues(
                     tag=field_data["tag"],
@@ -116,32 +120,68 @@ class FieldRules:
         return field_objs
 
     @staticmethod
-    def update_leader(leader: str) -> str:
-        """Updates record leader for UTF-8"""
-        return leader[:9] + "a" + leader[10:]
+    def get_item_field_criteria(
+        fields: list[shared.ParsedField], library: str
+    ) -> tuple[str, str, str]:
+        """Get appropriate item field tag and indicators."""
+        if not library == "bpl":
+            return ("949", " ", "1")
+        fields_037 = [i for i in fields if i.tag == "037" and i.subfields]
+        for field in fields_037:
+            subfield_a = []
+            subfield_b: str | None = None
+            for subfield in field.subfields:
+                if subfield.code == "a" and isinstance(subfield.value, str):
+                    subfield_a.append(subfield.value)
+                elif subfield.code == "b" and subfield.value == "OverDrive, Inc.":
+                    subfield_b = subfield.value
+            if subfield_b is not None and len(subfield_a) >= 1:
+                return ("949", " ", "1")
+        return ("960", " ", " ")
 
     @staticmethod
-    def update_910_field(record: models.DomainBib) -> MarcFieldUpdateValues:
+    def get_item_fields(
+        fields: list[list[shared.ParsedField]], criteria: tuple[str, str, str]
+    ) -> list[MarcFieldUpdateValues]:
+        """Creates list of item fields to add to combine duplicate records."""
+        all_items = []
+        for field_list in fields:
+            for item in field_list:
+                if item.tag == criteria[0] and item.indicators == (
+                    criteria[1],
+                    criteria[2],
+                ):
+                    all_items.append(
+                        MarcFieldUpdateValues(
+                            tag=item.tag,
+                            ind1=item.indicators[0],
+                            ind2=item.indicators[1],
+                            subfields=[
+                                {"code": i.code, "value": i.value}
+                                for i in item.subfields
+                            ],
+                        )
+                    )
+
+        return all_items
+
+    @staticmethod
+    def update_910_field(collection: str) -> MarcFieldUpdateValues:
         """Adds 910 field for branches or research if applicable."""
         return MarcFieldUpdateValues(
             delete_all_by_tag=True,
             tag="910",
             ind1=" ",
             ind2=" ",
-            subfields=[{"code": "a", "value": record.collection}],
+            subfields=[{"code": "a", "value": collection}],
         )
 
     @staticmethod
     def update_bt_series_call_no(
-        record: models.DomainBib,
+        call_no: str | None, collection: str | None, vendor: str | None
     ) -> MarcFieldUpdateValues | None:
         """Updates call number for B&T Series materials."""
-        call_no = record.branch_call_number
-        if (
-            not record.vendor == "BT SERIES"
-            or not call_no
-            or not record.collection == "BL"
-        ):
+        if not vendor == "BT SERIES" or not call_no or not collection == "BL":
             return None
         new_subfields = []
         pos = 0
@@ -191,11 +231,11 @@ class FieldRules:
 
     @staticmethod
     def update_order_fields(
-        record: models.DomainBib, mapping: dict[str, Any]
+        orders: list[MarcOrderProtocol], mapping: dict[str, Any]
     ) -> list[MarcFieldUpdateValues]:
         """Updates order record fields based on template data applied to DomainBib"""
         fields = []
-        for order in record.orders:
+        for order in orders:
             order_data = order.map_to_marc(rules=mapping)
             for tag, subfield_values in order_data.items():
                 subfields = []
@@ -212,47 +252,3 @@ class FieldRules:
                     )
                 )
         return fields
-
-    @staticmethod
-    def get_item_field_criteria(record: models.DomainBib) -> tuple[str, str, str]:
-        """Get appropriate item field tag and indicators."""
-        if not record.library == "bpl":
-            return ("949", " ", "1")
-        fields_037 = [i for i in record.parsed_fields if i.tag == "037" and i.subfields]
-        for field in fields_037:
-            subfield_a = []
-            subfield_b: str | None = None
-            for subfield in field.subfields:
-                if subfield.code == "a" and isinstance(subfield.value, str):
-                    subfield_a.append(subfield.value)
-                elif subfield.code == "b" and subfield.value == "OverDrive, Inc.":
-                    subfield_b = subfield.value
-            if subfield_b is not None and len(subfield_a) >= 1:
-                return ("949", " ", "1")
-        return ("960", " ", " ")
-
-    @staticmethod
-    def get_item_fields(
-        records: list[models.DomainBib], criteria: tuple[str, str, str]
-    ) -> list[MarcFieldUpdateValues]:
-        """Creates list of item fields to add to combine duplicate records."""
-        all_items = []
-        for record in records:
-            for item in record.parsed_fields:
-                if item.tag == criteria[0] and item.indicators == (
-                    criteria[1],
-                    criteria[2],
-                ):
-                    all_items.append(
-                        MarcFieldUpdateValues(
-                            tag=item.tag,
-                            ind1=item.indicators[0],
-                            ind2=item.indicators[1],
-                            subfields=[
-                                {"code": i.code, "value": i.value}
-                                for i in item.subfields
-                            ],
-                        )
-                    )
-
-        return all_items

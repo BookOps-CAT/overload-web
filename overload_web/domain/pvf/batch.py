@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import itertools
 import logging
-from collections import Counter, defaultdict
+from collections import Counter
 from dataclasses import dataclass
 from typing import Any
-
-from overload_web.domain.pvf import models
 
 logger = logging.getLogger(__name__)
 
@@ -41,29 +39,27 @@ class ProcessedFileBatch:
 
 
 class BarcodeValidator:
-    @staticmethod
-    def validate_unique(records: list[models.DomainBib]) -> list[str]:
+    @classmethod
+    def validate_unique(cls, barcodes: list[list[str]]) -> list[str]:
         """Confirm barcodes in a file are all unique."""
-        barcodes = list(itertools.chain.from_iterable([i.barcodes for i in records]))
-        barcode_counter = Counter(barcodes)
+        barcode_list = list(itertools.chain.from_iterable(barcodes))
+        barcode_counter = Counter(barcode_list)
         dupe_barcodes = [i for i, count in barcode_counter.items() if count > 1]
         if dupe_barcodes:
             raise ValueError(f"Duplicate barcodes found in file: {dupe_barcodes}")
-        return barcodes
+        return barcode_list
 
     @classmethod
     def validate_preserved(
-        cls, processed_records: list[models.DomainBib], original_barcodes: list[str]
+        cls, processed_barcodes: list[list[str]], original_barcodes: list[str]
     ) -> list[str]:
         """Confirm barcodes extracted from a file are present in processed records"""
         missing_barcodes = set()
-        processed_barcodes = list(
-            itertools.chain.from_iterable([i.barcodes for i in processed_records])
-        )
+        processed = list(itertools.chain.from_iterable(processed_barcodes))
         for barcode in original_barcodes:
-            if barcode not in processed_barcodes:
+            if barcode not in processed:
                 missing_barcodes.add(barcode)
-        missing_barcodes = set(original_barcodes) - set(processed_barcodes)
+        missing_barcodes = set(original_barcodes) - set(processed)
         valid = len(missing_barcodes) == 0
         logger.debug(
             f"Integrity validation: {valid}, missing_barcodes: {list(missing_barcodes)}"
@@ -71,23 +67,3 @@ class BarcodeValidator:
         if not valid:
             logger.error(f"Barcodes integrity error: {list(missing_barcodes)}")
         return list(missing_barcodes)
-
-
-class BatchReviewer:
-    @staticmethod
-    def review_batch(records: list[models.DomainBib]) -> dict[str, Any]:
-        """Merges item fields from duplicate records into the base record."""
-        out: dict[str, list[models.DomainBib]] = {"NEW": [], "DUP": [], "DEDUPED": []}
-        dup_groups = defaultdict(list)
-
-        for record in records:
-            if record.action and record.action == "attach":
-                out["DUP"].append(record)
-            else:
-                out["NEW"].append(record)
-                dup_groups[record.control_number].append(record)
-        for control_number, group in dup_groups.items():
-            # only deduplicate new recs if there are groups with multiple records
-            if len(group) > 1 and control_number is not None:
-                return {"NEW": out["NEW"], "DUP": out["DUP"], "TO_DEDUPE": dup_groups}
-        return {"NEW": out["NEW"], "DUP": out["DUP"]}

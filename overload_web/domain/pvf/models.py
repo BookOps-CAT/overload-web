@@ -8,7 +8,12 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
-from overload_web.domain.shared import context, fields
+from overload_web.domain.shared import (
+    Collection,
+    LibrarySystem,
+    ParsedField,
+    RecordType,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -27,10 +32,10 @@ class DomainBib:
     def __init__(
         self,
         binary_data: bytes,
-        collection: context.Collection | str | None,
-        library: context.LibrarySystem | str,
-        parsed_fields: list[fields.ParsedField],
-        record_type: context.RecordType | str,
+        collection: Collection | str | None,
+        library: LibrarySystem | str,
+        parsed_fields: list[ParsedField] | list[dict[str, Any]],
+        record_type: RecordType | str,
         title: str,
         barcodes: list[str] = [],
         bib_id: str | None = None,
@@ -98,25 +103,27 @@ class DomainBib:
         self.bib_id = bib_id
         self.binary_data = binary_data
         self.branch_call_number = branch_call_number
-        self.collection = context.Collection(str(collection).upper())
+        self.collection = Collection(str(collection).upper())
         self.command_tag = command_tag
         self.control_number = control_number
         self.isbn = isbn
-        self.library = context.LibrarySystem(library)
+        self.library = LibrarySystem(library)
         self.oclc_number = oclc_number
         self.orders = orders
-        self.parsed_fields = parsed_fields
+        self.parsed_fields = [
+            i if isinstance(i, ParsedField) else ParsedField(**i) for i in parsed_fields
+        ]
         self.research_call_number = research_call_number
-        self.record_type = context.RecordType(record_type)
+        self.record_type = RecordType(record_type)
         self.title = title
         self.upc = upc
         self.update_date = update_date
         self.vendor_info = vendor_info
         self.vendor = vendor if not vendor_info else vendor_info.name
-        self._action: CatalogAction | None = None
+        self._action: str | None = None
 
     @property
-    def action(self) -> CatalogAction:
+    def action(self) -> str:
         """`CatalogAction` obj assigned bib after analysis. Only present after match."""
         if self._action is None:
             raise AttributeError("CatalogAction has not been assigned to the DomainBib")
@@ -159,19 +166,19 @@ class DomainBib:
             return datetime.datetime.strptime(self.update_date, "%Y%m%d%H%M%S.%f")
         return None
 
-    def apply_match(self, action: CatalogAction, target_bib_id: str | None) -> None:
+    def apply_match(self, action: str, bib_id: str | None) -> None:
         """
         Update a `DomainBib` object's bib_id.
 
         Args:
             action: the action to take determined by match analysis
-            target_bib_id: The new sierra bib ID if applicable as a string.
+            bib_id: The new sierra bib ID if applicable as a string.
 
         Returns:
             None
         """
-        if target_bib_id and self.bib_id is None:
-            self.bib_id = target_bib_id
+        if bib_id and self.bib_id is None:
+            self.bib_id = bib_id
         self._action = action
 
     def apply_order_template(self, template_data: dict[str, Any]) -> None:

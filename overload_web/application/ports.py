@@ -138,47 +138,43 @@ class FileWriter(Protocol):
 
 
 @runtime_checkable
-class MarcParsingHandlerPort(Protocol):
+class MarcParserPort(Protocol):
     library: str
     record_type: str
     collection: str | None
     bib_mapping: str
     order_mapping: dict[str, Any]
     vendor_rules: dict[str, Any]
-    reader: MarcReaderPort
 
-    def combine_marc_files(self, data: list[bytes]) -> bytes: ...  # pragma: no branch
+    def get_reader(
+        self, data: bytes, library: str
+    ) -> Iterator: ...  # pragma: no branch
 
-    """Combine multiple MARC files as bytes into a single bytes object."""
+    """Instantiate an object that can read MARC binary as an iterator."""
 
-    def match_vendor_tags_from_bib(
-        self, record: V, tags: dict[str, dict[str, str]]
-    ) -> bool: ...  # pragma:no branch
-
-    def identify_vendor(self, record: V) -> dict[str, Any]: ...  # pragma: no branch
+    def identify_vendor(
+        self, obj: V, mapping: dict[str, Any]
+    ) -> dict[str, Any]: ...  # pragma: no branch
 
     """Determine the vendor who created a `bookops_marc.Bib` record."""
 
-    def map_bib_data(self, obj: V) -> dict[str, Any]: ...  # pragma: no branch
+    def map_bib_data(
+        self, obj: V, mapping: dict[str, Any]
+    ) -> dict[str, Any]: ...  # pragma: no branch
 
     """Map an bib to a dictionary following a set of rules."""
 
-    def map_order_data(self, obj: V) -> dict[str, Any]: ...  # pragma: no branch
+    def map_order_data(
+        self, obj: V, mapping: dict[str, Any]
+    ) -> dict[str, Any]: ...  # pragma: no branch
 
     """Map an order to a dictionary following a set of rules."""
 
-    def parse_fields(self, obj: V) -> list[dict[str, Any]]: ...  # pragma: no branch
+    def match_vendor_tags_from_bib(
+        self, obj: V, tags: dict[str, dict[str, str]]
+    ) -> bool: ...  # pragma:no branch
 
-    """Map all marc fields to a list of dictionarys."""
-
-
-@runtime_checkable
-class MarcReaderPort(Protocol):
-    library: str
-
-    def get_reader(self, data: bytes) -> Iterator: ...  # pragma: no branch
-
-    """Instantiate an object that can read MARC binary as an iterator."""
+    """Match vendor tags from mapping to bib object."""
 
     def write(self, records: list[U]) -> bytes: ...  # pragma:no branch
 
@@ -186,7 +182,7 @@ class MarcReaderPort(Protocol):
 
 
 @runtime_checkable
-class MarcUpdateHandlerPort(Protocol[U, V]):
+class MarcUpdaterPort(Protocol[U, V]):
     library: str
     record_type: str
     collection: str | None
@@ -201,6 +197,12 @@ class MarcUpdateHandlerPort(Protocol[U, V]):
     ) -> None: ...  # pragma:no branch
 
     """Update record in place"""
+
+    def update_leader_encoding(
+        self, leader: str, bib: V
+    ) -> None: ...  # pragma:no branch
+
+    """Update character encoding to unicode."""
 
 
 @runtime_checkable

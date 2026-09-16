@@ -3,12 +3,33 @@
 from __future__ import annotations
 
 import logging
+from collections import defaultdict
 from typing import Any
 
 from overload_web.application import ports
-from overload_web.domain.pvf import batch, marc_rules, models
+from overload_web.domain.pvf import marc_rules, models
 
 logger = logging.getLogger(__name__)
+
+
+class BatchReviewer:
+    @staticmethod
+    def review_batch(records: list[models.DomainBib]) -> dict[str, Any]:
+        """Merges item fields from duplicate records into the base record."""
+        out: dict[str, list[models.DomainBib]] = {"NEW": [], "DUP": [], "DEDUPED": []}
+        dup_groups = defaultdict(list)
+
+        for record in records:
+            if record.action and record.action == "attach":
+                out["DUP"].append(record)
+            else:
+                out["NEW"].append(record)
+                dup_groups[record.control_number].append(record)
+        for control_number, group in dup_groups.items():
+            # only deduplicate new recs if there are groups with multiple records
+            if len(group) > 1 and control_number is not None:
+                return {"NEW": out["NEW"], "DUP": out["DUP"], "TO_DEDUPE": dup_groups}
+        return {"NEW": out["NEW"], "DUP": out["DUP"]}
 
 
 class BibFieldUpdater:
@@ -34,14 +55,14 @@ class BibFieldUpdater:
         record.apply_order_template(template_data)
         updates.extend(
             marc_rules.FieldRules.update_order_fields(
-                record=record, mapping=self.order_mapping
+                orders=record.orders, mapping=self.order_mapping
             )
         )
         updates.append(
-            marc_rules.FieldRules.add_bib_id(record=record, tag=self.bib_id_tag)
+            marc_rules.FieldRules.add_bib_id(bib_id=record.bib_id, tag=self.bib_id_tag)
         )
         if self.library == "nypl":
-            updates.append(marc_rules.FieldRules.update_910_field(record=record))
+            updates.append(marc_rules.FieldRules.update_910_field(record.collection))
         return [i for i in updates if i]
 
     def get_cat_updates(
@@ -49,14 +70,23 @@ class BibFieldUpdater:
     ) -> list[marc_rules.MarcFieldUpdateValues]:
         """Get list of MARC fields to update in processed full-level bib record"""
         updates: list[Any] = []
-        updates.extend(marc_rules.FieldRules.add_vendor_fields(record=record))
+
+        updates.extend(
+            marc_rules.FieldRules.add_vendor_fields(
+                getattr(record.vendor_info, "bib_fields", [])
+            )
+        )
         updates.append(
-            marc_rules.FieldRules.add_bib_id(record=record, tag=self.bib_id_tag)
+            marc_rules.FieldRules.add_bib_id(bib_id=record.bib_id, tag=self.bib_id_tag)
         )
         if self.library == "nypl":
-            updates.append(marc_rules.FieldRules.update_910_field(record=record))
+            updates.append(marc_rules.FieldRules.update_910_field(record.collection))
             updates.append(
-                marc_rules.FieldRules.update_bt_series_call_no(record=record)
+                marc_rules.FieldRules.update_bt_series_call_no(
+                    call_no=record.branch_call_number,
+                    vendor=record.vendor,
+                    collection=record.collection,
+                )
             )
         return [i for i in updates if i]
 
@@ -68,7 +98,7 @@ class BibFieldUpdater:
         record.apply_order_template(template_data)
         updates.extend(
             marc_rules.FieldRules.update_order_fields(
-                record=record, mapping=self.order_mapping
+                orders=record.orders, mapping=self.order_mapping
             )
         )
         updates.append(
@@ -79,10 +109,10 @@ class BibFieldUpdater:
             )
         )
         updates.append(
-            marc_rules.FieldRules.add_bib_id(record=record, tag=self.bib_id_tag)
+            marc_rules.FieldRules.add_bib_id(bib_id=record.bib_id, tag=self.bib_id_tag)
         )
         if self.library == "nypl":
-            updates.append(marc_rules.FieldRules.update_910_field(record=record))
+            updates.append(marc_rules.FieldRules.update_910_field(record.collection))
         return [i for i in updates if i]
 
 
@@ -90,21 +120,21 @@ class BibRecordUpdater:
     @staticmethod
     def update_record(
         record: models.DomainBib,
-        handler: ports.MarcUpdateHandlerPort,
+        handler: ports.MarcUpdaterPort,
         updates: list[marc_rules.MarcFieldUpdateValues],
     ) -> None:
         """Update and add MARC fields to bib record"""
         bib = handler.create_bib_from_domain(record=record)
         handler.update_fields(field_updates=updates, bib=bib)
-        bib.leader = marc_rules.FieldRules.update_leader(bib.leader)
+        handler.update_leader_encoding(leader=bib.leader, bib=bib)
         record.binary_data = bib.as_marc()
 
     @staticmethod
     def deduplicate(
-        records: list[models.DomainBib], handler: ports.MarcUpdateHandlerPort
+        records: list[models.DomainBib], handler: ports.MarcUpdaterPort
     ) -> dict[str, list[models.DomainBib]]:
         """Review and deduplicate a batch of processed full-level MARC records."""
-        batches = batch.BatchReviewer.review_batch(records=records)
+        batches = BatchReviewer.review_batch(records=records)
         if not batches.get("TO_DEDUPE"):
             return {"NEW": batches["NEW"], "DUP": batches["DUP"], "DEDUPED": []}
         deduped = []
@@ -113,11 +143,12 @@ class BibRecordUpdater:
                 deduped.append(group[0])
             elif len(group) > 1 and control_number is not None:
                 base_rec = group[0]
+                other_fields = [i.parsed_fields for i in group[1:]]
                 item_tags = marc_rules.FieldRules.get_item_field_criteria(
-                    record=base_rec
+                    fields=base_rec.parsed_fields, library=base_rec.library
                 )
                 item_fields = marc_rules.FieldRules.get_item_fields(
-                    records=group[1:], criteria=item_tags
+                    fields=other_fields, criteria=item_tags
                 )
                 bib = handler.create_bib_from_domain(record=base_rec)
                 handler.update_fields(field_updates=item_fields, bib=bib)

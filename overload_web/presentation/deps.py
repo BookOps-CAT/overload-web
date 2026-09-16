@@ -91,7 +91,14 @@ class MarcUpdateRulesModel(BaseModel):
     collection: str | None
     default_loc: str | None
     library: str
+    record_type: str
     order_mapping: dict[str, Any]
+
+
+class MarcParsingRulesModel(BaseModel):
+    bib_mapping: dict[str, Any]
+    order_mapping: dict[str, Any]
+    vendor_mapping: dict[str, Any]
 
 
 class TemplateDataModel(BaseModel):
@@ -402,15 +409,14 @@ def get_fetcher(
     yield sierra_clients.FetcherFactory.make(library)
 
 
-def get_marc_update_handler() -> Generator[marc_handler.MarcUpdateHandler, None, None]:
-    """Create a `MarcUpdateHandler` service with injected dependencies."""
-    yield marc_handler.MarcUpdateHandler()
+def get_marc_updater() -> Generator[marc_handler.MarcUpdater, None, None]:
+    """Create a `MarcUpdater` service with injected dependencies."""
+    yield marc_handler.MarcUpdater()
 
 
 def get_marc_update_rules(
     context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
 ) -> MarcUpdateRulesModel:
-    """Create a `MarcUpdateHandler` service with injected dependencies."""
     with open("overload_web/data/update_rules.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     return MarcUpdateRulesModel(
@@ -421,23 +427,23 @@ def get_marc_update_rules(
         bib_id_tag=constants["bib_id_tag"][context.library],
         library=context.library,
         collection=context.collection,
+        record_type=context.record_type,
     )
 
 
-def get_marc_parsing_handler(
-    context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
-) -> Generator[marc_handler.MarcParsingHandler, None, None]:
-    """Create a `MarcParsingHandler` service with injected dependencies."""
+def get_marc_parsing_rules() -> MarcParsingRulesModel:
     with open("overload_web/data/parsing_rules.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
-    yield marc_handler.MarcParsingHandler(
-        library=context.library,
-        record_type=context.record_type,
-        collection=context.collection,
+    return MarcParsingRulesModel(
         bib_mapping=constants["bib_mapping"],
         order_mapping=constants["order_mapping"],
         vendor_mapping=constants["vendor_rules"],
     )
+
+
+def get_marc_parser() -> Generator[marc_handler.MarcParser, None, None]:
+    """Create a `MarcParser` service with injected dependencies."""
+    yield marc_handler.MarcParser()
 
 
 def oclc_fetcher(

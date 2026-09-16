@@ -2,8 +2,7 @@ import copy
 
 import pytest
 
-from overload_web.domain.pvf import matching
-from overload_web.domain.shared import sierra_responses
+from overload_web.domain.pvf import matching, sierra_responses
 
 
 @pytest.fixture
@@ -189,7 +188,9 @@ class TestDetermineCatalogAction:
         matcher = matching.SelectionMatchAnalyzer()
         bpl_data = {k: v for k, v in bpl_data.items() if k != "ss_marc_tag_005"}
         response = sierra_responses.BPLSolrResponse(bpl_data)
-        action, updated = matcher.determine_catalog_action(mock_bib, candidate=response)
+        action, updated = matcher.determine_catalog_action(
+            mock_bib.update_datetime, candidate=response
+        )
         assert action == "attach"
         assert updated is False
         assert response.barcodes == ["33333123456789"]
@@ -212,7 +213,9 @@ class TestDetermineCatalogAction:
         matcher = matching.SelectionMatchAnalyzer()
         nypl_bl_data = {k: v for k, v in nypl_bl_data.items() if k != "updatedDate"}
         response = sierra_responses.NYPLPlatformResponse(nypl_bl_data)
-        action, updated = matcher.determine_catalog_action(mock_bib, candidate=response)
+        action, updated = matcher.determine_catalog_action(
+            mock_bib.update_datetime, candidate=response
+        )
         assert action == "attach"
         assert updated is False
         assert response.barcodes == []
@@ -233,7 +236,9 @@ class TestDetermineCatalogAction:
     ):
         matcher = matching.SelectionMatchAnalyzer()
         response = sierra_responses.NYPLPlatformResponse(stub_nypl_data)
-        action, updated = matcher.determine_catalog_action(mock_bib, candidate=response)
+        action, updated = matcher.determine_catalog_action(
+            mock_bib.update_datetime, candidate=response
+        )
         assert action == "update"
         assert updated is True
         assert response.cat_source == "vendor"
@@ -245,7 +250,9 @@ class TestDetermineCatalogAction:
         matcher = matching.SelectionMatchAnalyzer()
         mock_bib.update_date = "20250101000001.0"
         response = sierra_responses.NYPLPlatformResponse(stub_nypl_data)
-        action, updated = matcher.determine_catalog_action(mock_bib, candidate=response)
+        action, updated = matcher.determine_catalog_action(
+            mock_bib.update_datetime, candidate=response
+        )
         assert action == "attach"
         assert updated is False
         assert response.cat_source == "vendor"
@@ -258,7 +265,9 @@ class TestDetermineCatalogAction:
         mock_bib.update_date = "20250101000001.0"
         bpl_data = {k: v for k, v in bpl_data.items() if k != "ss_marc_tag_003"}
         response = sierra_responses.BPLSolrResponse(bpl_data)
-        action, updated = matcher.determine_catalog_action(mock_bib, candidate=response)
+        action, updated = matcher.determine_catalog_action(
+            mock_bib.update_datetime, candidate=response
+        )
         assert action == "attach"
         assert updated is False
         assert response.cat_source == "vendor"

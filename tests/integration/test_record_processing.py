@@ -41,7 +41,7 @@ def marc_stubs(monkeypatch):
         pass
 
     monkeypatch.setattr(marc.BibParser, "combine_marc_files", bytes_response)
-    monkeypatch.setattr(marc_handler.MarcReaderWriter, "write", bytes_response)
+    monkeypatch.setattr(marc_handler.MarcParser, "write", bytes_response)
     monkeypatch.setattr(update.BibFieldUpdater, "get_cat_updates", fake_updates)
     monkeypatch.setattr(update.BibRecordUpdater, "update_record", null_response)
 
@@ -77,12 +77,6 @@ class FakeMarcParser:
         self.bib_mapping: dict = {}
         self.order_mapping: dict = {}
         self.vendor_rules: dict = {}
-        self.reader = FakeMarcReader(self.library)
-
-
-class FakeMarcReader:
-    def __init__(self, library: str) -> None:
-        self.library = library
 
     def write(self, records: list) -> bytes:
         return b""
@@ -98,7 +92,15 @@ class TestProcessCommands:
         "library": "baz",
         "collection": "qux",
     }
-    STUB_ENGINE = marc_handler.MarcUpdateHandler()
+    FAKE_PARSING_RULES = {
+        "order_mapping": {},
+        "bib_mapping": {},
+        "vendor_mapping": {"bar"},
+        "library": "foo",
+        "collection": "bar",
+        "record_type": "baz",
+    }
+    STUB_UPDATER = marc_handler.MarcUpdater()
 
     @pytest.mark.workflow(record_type="cat")
     def test_cat_service_process_vendor_file(
@@ -106,11 +108,12 @@ class TestProcessCommands:
     ):
         out = ProcessCatalogingRecords.execute(
             batches={"foo.mrc": b""},
-            marc_handler=self.STUB_ENGINE,
+            marc_updater=self.STUB_UPDATER,
             marc_update_rules=self.FAKE_UPDATE_RULES,
             fetcher=fake_fetcher,
             repo=stub_repo,
             marc_parser=self.FAKE_MARC_PARSER,
+            marc_parsing_rules=self.FAKE_PARSING_RULES,
         )
         assert out["id"] is not None
         assert "Integrity validation: True, missing_barcodes: []" in [
@@ -123,11 +126,12 @@ class TestProcessCommands:
     ):
         out = ProcessCatalogingRecords.execute(
             batches={"foo.mrc": b""},
-            marc_handler=self.STUB_ENGINE,
+            marc_updater=self.STUB_UPDATER,
             marc_update_rules=self.FAKE_UPDATE_RULES,
             fetcher=fake_fetcher,
             repo=stub_repo,
             marc_parser=self.FAKE_MARC_PARSER,
+            marc_parsing_rules=self.FAKE_PARSING_RULES,
         )
         assert out["id"] is not None
         assert "Integrity validation: False, missing_barcodes: ['333330987654321']" in [
@@ -141,13 +145,14 @@ class TestProcessCommands:
     def test_sel_service_process_vendor_file(self, fake_fetcher, stub_repo, mock_marc):
         out = ProcessSelectionRecords.execute(
             {"foo.mrc": b""},
-            marc_handler=self.STUB_ENGINE,
+            marc_updater=self.STUB_UPDATER,
             fetcher=fake_fetcher,
             marc_update_rules=self.FAKE_UPDATE_RULES,
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
             repo=stub_repo,
             marc_parser=self.FAKE_MARC_PARSER,
+            marc_parsing_rules=self.FAKE_PARSING_RULES,
         )
         assert out["id"] is not None
 
@@ -155,12 +160,13 @@ class TestProcessCommands:
     def test_acq_service_process_vendor_file(self, fake_fetcher, stub_repo, mock_marc):
         out = ProcessAcquisitionsRecords.execute(
             {"foo.mrc": b""},
-            marc_handler=self.STUB_ENGINE,
+            marc_updater=self.STUB_UPDATER,
             fetcher=fake_fetcher,
             marc_update_rules=self.FAKE_UPDATE_RULES,
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
             repo=stub_repo,
+            marc_parsing_rules=self.FAKE_PARSING_RULES,
             marc_parser=self.FAKE_MARC_PARSER,
         )
         assert out["id"] is not None
@@ -172,11 +178,12 @@ class TestProcessCommands:
         with pytest.raises(ValueError) as exc:
             ProcessCatalogingRecords.execute(
                 batches={"foo.mrc": b""},
-                marc_handler=self.STUB_ENGINE,
+                marc_updater=self.STUB_UPDATER,
                 fetcher=fake_fetcher,
                 marc_update_rules=self.FAKE_UPDATE_RULES,
                 repo=stub_repo,
                 marc_parser=self.FAKE_MARC_PARSER,
+                marc_parsing_rules=self.FAKE_PARSING_RULES,
             )
         assert "Duplicate barcodes found in file: " in str(exc.value)
 
@@ -187,13 +194,14 @@ class TestProcessCommands:
         with pytest.raises(ValueError) as exc:
             ProcessAcquisitionsRecords.execute(
                 {"foo.mrc": b""},
-                marc_handler=self.STUB_ENGINE,
+                marc_updater=self.STUB_UPDATER,
                 fetcher=fake_fetcher,
                 marc_update_rules=self.FAKE_UPDATE_RULES,
                 template_data={"format": "a"},
                 matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
                 repo=stub_repo,
                 marc_parser=self.FAKE_MARC_PARSER,
+                marc_parsing_rules=self.FAKE_PARSING_RULES,
             )
         assert "Duplicate barcodes found in file: " in str(exc.value)
 
@@ -204,12 +212,13 @@ class TestProcessCommands:
         with pytest.raises(ValueError) as exc:
             ProcessSelectionRecords.execute(
                 {"foo.mrc": b""},
-                marc_handler=self.STUB_ENGINE,
+                marc_updater=self.STUB_UPDATER,
                 fetcher=fake_fetcher,
                 marc_update_rules=self.FAKE_UPDATE_RULES,
                 template_data={"format": "a"},
                 matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
                 repo=stub_repo,
                 marc_parser=self.FAKE_MARC_PARSER,
+                marc_parsing_rules=self.FAKE_PARSING_RULES,
             )
         assert "Duplicate barcodes found in file: " in str(exc.value)

@@ -92,13 +92,11 @@ no_show = true
 pylib = false
 exclude_exact = [
     "overload_web.application",
-    "overload_web.application.commands",
     "overload_web.application.ports",
     "overload_web.application.pvf",
-    "overload_web.application.services",
+    "overload_web.application.wc2s",
     "overload_web.domain",
     "overload_web.domain.pvf",
-    "overload_web.domain.shared",
     "overload_web.domain.wc2s",
     "overload_web.infrastructure",
     "overload_web.presentation",

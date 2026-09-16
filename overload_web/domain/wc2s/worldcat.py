@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Literal
 
-from overload_web.domain.shared import context
+from overload_web.domain import shared
 
 
 class Action(StrEnum):
@@ -118,10 +118,10 @@ class FullMatchedResult:
 class SourceData:
     """A domain model representing a Worldcat2Sierra query."""
 
-    collection: context.Collection | None
+    collection: shared.Collection | None
     id: str
     id_type: IdType
-    library: context.LibrarySystem
+    library: shared.LibrarySystem
     material_type: MaterialType
     action: Action
     record_level: str

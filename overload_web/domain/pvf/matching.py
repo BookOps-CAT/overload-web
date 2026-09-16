@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
+import datetime
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
 
-from overload_web.domain.pvf import models
-from overload_web.domain.shared import sierra_responses
+from overload_web.domain.pvf.models import CatalogAction, DomainBib
+from overload_web.domain.pvf.sierra_responses import (
+    BaseSierraResponse,
+    BPLSolrResponse,
+    NYPLPlatformResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +40,7 @@ class MatchAnalysis:
 
     def __init__(
         self,
-        action: models.CatalogAction,
+        action: CatalogAction,
         call_number: str | None,
         call_number_match: bool,
         classified: ClassifiedCandidates,
@@ -81,17 +86,17 @@ class BaseMatchAnalyzer(ABC):
 
     @abstractmethod
     def analyze(
-        self, record: models.DomainBib, candidates: ClassifiedCandidates
+        self, record: DomainBib, candidates: ClassifiedCandidates
     ) -> MatchAnalysis: ...  # pragma: no branch
 
     def classify_matches(
-        self, record: models.DomainBib, matches: list
+        self, record: DomainBib, matches: list
     ) -> ClassifiedCandidates:
         """Classify the candidate matches associated with this response."""
         if record.library == "bpl":
-            matches = [sierra_responses.BPLSolrResponse(i) for i in matches]
+            matches = [BPLSolrResponse(i) for i in matches]
         if record.library == "nypl":
-            matches = [sierra_responses.NYPLPlatformResponse(i) for i in matches]
+            matches = [NYPLPlatformResponse(i) for i in matches]
         matched, mixed, other = [], [], []
         for c in sorted(matches, key=lambda i: int(i.bib_id.strip(".b")), reverse=True):
             if c.collection == "MIXED":
@@ -104,27 +109,28 @@ class BaseMatchAnalyzer(ABC):
         return ClassifiedCandidates(matched, mixed, other)
 
     def determine_catalog_action(
-        self, record: models.DomainBib, candidate: sierra_responses.BaseSierraResponse
-    ) -> tuple[models.CatalogAction, bool]:
+        self, update_datetime: datetime.datetime | None, candidate: BaseSierraResponse
+    ) -> tuple[CatalogAction, bool]:
         """
         Determine whether to insert, attach, or overlay/update a bib record in Sierra
         based on matches
         """
         if candidate.cat_source == "inhouse":
-            return models.CatalogAction.ATTACH, False
+            return CatalogAction.ATTACH, False
         if candidate.update_datetime and (
-            not record.update_datetime
-            or candidate.update_datetime > record.update_datetime
+            not update_datetime or candidate.update_datetime > update_datetime
         ):
-            return models.CatalogAction.UPDATE, True
-        return models.CatalogAction.ATTACH, False
+            return CatalogAction.UPDATE, True
+        return CatalogAction.ATTACH, False
 
 
 class MatchAnalyzerFactory:
     """Create a BaseMatchAnalyzer based on library, record_type and collection."""
 
     @staticmethod
-    def make(library: str, record_type: str, collection: str) -> BaseMatchAnalyzer:
+    def make(
+        library: str, record_type: str, collection: str | None
+    ) -> BaseMatchAnalyzer:
         match record_type, library, collection:
             case "cat", "nypl", "BL":
                 return NYPLCatBranchMatchAnalyzer()
@@ -140,10 +146,10 @@ class MatchAnalyzerFactory:
 
 class AcquisitionsMatchAnalyzer(BaseMatchAnalyzer):
     def analyze(
-        self, record: models.DomainBib, candidates: ClassifiedCandidates
+        self, record: DomainBib, candidates: ClassifiedCandidates
     ) -> MatchAnalysis:
         return MatchAnalysis(
-            action=models.CatalogAction.INSERT,
+            action=CatalogAction.INSERT,
             call_number=record.call_number,
             call_number_match=True,
             classified=candidates,
@@ -157,13 +163,13 @@ class AcquisitionsMatchAnalyzer(BaseMatchAnalyzer):
 
 class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
     def analyze(
-        self, record: models.DomainBib, candidates: ClassifiedCandidates
+        self, record: DomainBib, candidates: ClassifiedCandidates
     ) -> MatchAnalysis:
         if not candidates.matched:
             if record.vendor in ["Midwest DVD", "Midwest Audio", "Midwest CD"]:
-                action = models.CatalogAction.ATTACH
+                action = CatalogAction.ATTACH
             else:
-                action = models.CatalogAction.INSERT
+                action = CatalogAction.INSERT
             return MatchAnalysis(
                 action=action,
                 call_number=record.call_number,
@@ -177,7 +183,7 @@ class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
             if candidate.branch_call_number:
                 if record.branch_call_number == candidate.branch_call_number:
                     action, updated = self.determine_catalog_action(
-                        record=record, candidate=candidate
+                        update_datetime=record.update_datetime, candidate=candidate
                     )
                     return MatchAnalysis(
                         call_number_match=True,
@@ -194,7 +200,7 @@ class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
 
         fallback = candidates.matched[-1]
         action, updated = self.determine_catalog_action(
-            record=record, candidate=fallback
+            update_datetime=record.update_datetime, candidate=fallback
         )
         return MatchAnalysis(
             call_number_match=False,
@@ -212,12 +218,12 @@ class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
 
 class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
     def analyze(
-        self, record: models.DomainBib, candidates: ClassifiedCandidates
+        self, record: DomainBib, candidates: ClassifiedCandidates
     ) -> MatchAnalysis:
         if not candidates.matched:
             return MatchAnalysis(
                 call_number_match=True,
-                action=models.CatalogAction.INSERT,
+                action=CatalogAction.INSERT,
                 target_bib_id=None,
                 call_number=record.call_number,
                 resource_id=record.resource_id,
@@ -227,7 +233,7 @@ class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
         for candidate in candidates.matched:
             if candidate.research_call_number:
                 action, updated = self.determine_catalog_action(
-                    record=record, candidate=candidate
+                    update_datetime=record.update_datetime, candidate=candidate
                 )
                 return MatchAnalysis(
                     call_number_match=True,
@@ -244,7 +250,7 @@ class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
         last = candidates.matched[-1]
         return MatchAnalysis(
             call_number_match=False,
-            action=models.CatalogAction.UPDATE,
+            action=CatalogAction.UPDATE,
             target_bib_id=last.bib_id,
             target_title=last.title,
             target_call_no=None,
@@ -257,12 +263,12 @@ class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
 
 class NYPLCatBranchMatchAnalyzer(BaseMatchAnalyzer):
     def analyze(
-        self, record: models.DomainBib, candidates: ClassifiedCandidates
+        self, record: DomainBib, candidates: ClassifiedCandidates
     ) -> MatchAnalysis:
         if not candidates.matched:
             return MatchAnalysis(
                 call_number_match=True,
-                action=models.CatalogAction.INSERT,
+                action=CatalogAction.INSERT,
                 target_bib_id=None,
                 call_number=record.call_number,
                 resource_id=record.resource_id,
@@ -275,7 +281,7 @@ class NYPLCatBranchMatchAnalyzer(BaseMatchAnalyzer):
                 and record.branch_call_number == candidate.branch_call_number
             ):
                 action, updated = self.determine_catalog_action(
-                    record=record, candidate=candidate
+                    update_datetime=record.update_datetime, candidate=candidate
                 )
                 return MatchAnalysis(
                     call_number_match=True,
@@ -292,7 +298,7 @@ class NYPLCatBranchMatchAnalyzer(BaseMatchAnalyzer):
 
         fallback = candidates.matched[-1]
         action, updated = self.determine_catalog_action(
-            record=record, candidate=fallback
+            update_datetime=record.update_datetime, candidate=fallback
         )
         return MatchAnalysis(
             call_number_match=False,
@@ -310,12 +316,12 @@ class NYPLCatBranchMatchAnalyzer(BaseMatchAnalyzer):
 
 class SelectionMatchAnalyzer(BaseMatchAnalyzer):
     def analyze(
-        self, record: models.DomainBib, candidates: ClassifiedCandidates
+        self, record: DomainBib, candidates: ClassifiedCandidates
     ) -> MatchAnalysis:
         if not candidates.matched:
             return MatchAnalysis(
                 call_number_match=True,
-                action=models.CatalogAction.INSERT,
+                action=CatalogAction.INSERT,
                 target_bib_id=None,
                 call_number=record.call_number,
                 resource_id=record.resource_id,
@@ -332,7 +338,7 @@ class SelectionMatchAnalyzer(BaseMatchAnalyzer):
             if call_no:
                 return MatchAnalysis(
                     call_number_match=True,
-                    action=models.CatalogAction.ATTACH,
+                    action=CatalogAction.ATTACH,
                     target_bib_id=candidate.bib_id,
                     target_call_no=call_no,
                     target_title=candidate.title,
@@ -344,7 +350,7 @@ class SelectionMatchAnalyzer(BaseMatchAnalyzer):
         fallback = candidates.matched[-1]
         return MatchAnalysis(
             call_number_match=True,
-            action=models.CatalogAction.ATTACH,
+            action=CatalogAction.ATTACH,
             target_bib_id=fallback.bib_id,
             target_call_no=fallback.branch_call_number,
             target_title=fallback.title,

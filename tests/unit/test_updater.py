@@ -6,8 +6,8 @@ from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
 from overload_web.application.pvf import update
+from overload_web.domain import shared
 from overload_web.domain.pvf import marc_rules, models
-from overload_web.domain.shared import fields
 from overload_web.infrastructure import marc_handler
 
 
@@ -61,11 +61,11 @@ def stub_full_bib(stub_bib):
                 )
             )
             parsed_fields.append(
-                fields.ParsedField(
+                shared.ParsedField(
                     tag=field["tag"],
                     indicators=(field["ind1"], field["ind2"]),
                     subfields=[
-                        fields.ParsedSubfield(code=i["code"], value=i["value"])
+                        shared.ParsedSubfield(code=i["code"], value=i["value"])
                         for i in field["subfields"]
                     ],
                 )
@@ -75,7 +75,7 @@ def stub_full_bib(stub_bib):
         domain_bib.parsed_fields = parsed_fields
         domain_bib.barcodes = [barcode]
         domain_bib.control_number = control_number
-        domain_bib.action = models.CatalogAction.INSERT
+        domain_bib.action = "insert"
         return domain_bib
 
     return create_bib
@@ -121,16 +121,16 @@ def stub_domain_bib(request, stub_bib):
             marker.kwargs["library"], marker.kwargs["collection"], record_type
         )
         bib.parsed_fields = [
-            fields.ParsedField(tag="005", value="20200101010000.0"),
-            fields.ParsedField(
+            shared.ParsedField(tag="005", value="20200101010000.0"),
+            shared.ParsedField(
                 tag="020",
                 indicators=(" ", " "),
-                subfields=[fields.ParsedSubfield(code="i", value="9781234567890")],
+                subfields=[shared.ParsedSubfield(code="i", value="9781234567890")],
             ),
-            fields.ParsedField(
+            shared.ParsedField(
                 tag="949",
                 indicators=(" ", "1"),
-                subfields=[fields.ParsedSubfield(code="i", value="333331234567890")],
+                subfields=[shared.ParsedSubfield(code="i", value="333331234567890")],
             ),
         ]
         bib.orders = [
@@ -230,10 +230,10 @@ class TestGetBibUpdatesBPL:
     def test_get_sel_updates_with_command_tag(self, stub_updater, stub_domain_bib):
         sel_bib = stub_domain_bib("sel")
         sel_bib.parsed_fields = [
-            fields.ParsedField(
+            shared.ParsedField(
                 tag="949",
                 indicators=(" ", " "),
-                subfields=[fields.ParsedSubfield(code="a", value="*b2=a;")],
+                subfields=[shared.ParsedSubfield(code="a", value="*b2=a;")],
             )
         ]
         updates = stub_updater.get_sel_updates(
@@ -377,10 +377,10 @@ class TestGetBibUpdatesNYPLBranch:
     ):
         sel_bib = stub_domain_bib("sel")
         sel_bib.parsed_fields = [
-            fields.ParsedField(
+            shared.ParsedField(
                 tag="949",
                 indicators=(" ", " "),
-                subfields=[fields.ParsedSubfield(code="a", value="b2=a")],
+                subfields=[shared.ParsedSubfield(code="a", value="b2=a")],
             )
         ]
         original_orders = copy.deepcopy(sel_bib.orders)
@@ -404,10 +404,10 @@ class TestGetBibUpdatesNYPLBranch:
     ):
         sel_bib = stub_domain_bib("sel")
         sel_bib.parsed_fields = [
-            fields.ParsedField(
+            shared.ParsedField(
                 tag="949",
                 indicators=(" ", " "),
-                subfields=[fields.ParsedSubfield(code="a", value=original)],
+                subfields=[shared.ParsedSubfield(code="a", value=original)],
             )
         ]
         updates = stub_updater.get_sel_updates(
@@ -429,10 +429,10 @@ class TestGetBibUpdatesNYPLBranch:
     def test_get_sel_updates_skip_command_tag(self, stub_updater, stub_domain_bib):
         sel_bib = stub_domain_bib("sel")
         sel_bib.parsed_fields = [
-            fields.ParsedField(
+            shared.ParsedField(
                 tag="949",
                 indicators=(" ", " "),
-                subfields=[fields.ParsedSubfield(code="a", value="*b2=a;bn=zzzzz;")],
+                subfields=[shared.ParsedSubfield(code="a", value="*b2=a;bn=zzzzz;")],
             )
         ]
         updates = stub_updater.get_sel_updates(
@@ -510,10 +510,10 @@ class TestGetBibUpdatesNYPLResearch:
     ):
         sel_bib = stub_domain_bib("sel")
         sel_bib.parsed_fields = [
-            fields.ParsedField(
+            shared.ParsedField(
                 tag="949",
                 indicators=(" ", " "),
-                subfields=[fields.ParsedSubfield(code="a", value="b2=a")],
+                subfields=[shared.ParsedSubfield(code="a", value="b2=a")],
             )
         ]
         original_orders = copy.deepcopy(sel_bib.orders)
@@ -536,10 +536,10 @@ class TestGetBibUpdatesNYPLResearch:
     ):
         sel_bib = stub_domain_bib("sel")
         sel_bib.parsed_fields = [
-            fields.ParsedField(
+            shared.ParsedField(
                 tag="949",
                 indicators=(" ", " "),
-                subfields=[fields.ParsedSubfield(code="a", value=original)],
+                subfields=[shared.ParsedSubfield(code="a", value=original)],
             )
         ]
         updates = stub_updater.get_sel_updates(
@@ -562,10 +562,10 @@ class TestGetBibUpdatesNYPLResearch:
     def test_get_sel_updates_skip_command_tag(self, stub_updater, stub_domain_bib):
         sel_bib = stub_domain_bib("sel")
         sel_bib.parsed_fields = [
-            fields.ParsedField(
+            shared.ParsedField(
                 tag="949",
                 indicators=(" ", " "),
-                subfields=[fields.ParsedSubfield(code="a", value="*b2=a;bn=xxx;")],
+                subfields=[shared.ParsedSubfield(code="a", value="*b2=a;bn=xxx;")],
             )
         ]
         updates = stub_updater.get_sel_updates(
@@ -577,8 +577,8 @@ class TestGetBibUpdatesNYPLResearch:
         assert updates[2].tag == "910"
 
 
-class TestMarcUpdateHandler:
-    ENGINE = marc_handler.MarcUpdateHandler()
+class TestMarcUpdater:
+    ENGINE = marc_handler.MarcUpdater()
 
     @pytest.mark.workflow(library="bpl", collection=None)
     def test_update_record_add_vendor_fields(self, stub_domain_bib):
@@ -594,7 +594,9 @@ class TestMarcUpdateHandler:
         update.BibRecordUpdater.update_record(
             cat_bib,
             handler=self.ENGINE,
-            updates=marc_rules.FieldRules.add_vendor_fields(cat_bib),
+            updates=marc_rules.FieldRules.add_vendor_fields(
+                cat_bib.vendor_info.bib_fields
+            ),
         )
         updated_bib = Bib(cat_bib.binary_data, library=cat_bib.library)
         assert [i.format_field() for i in updated_bib.get_fields("949")] == ["*b2=a;"]
@@ -606,7 +608,7 @@ class TestMarcUpdateHandler:
         update.BibRecordUpdater.update_record(
             cat_bib,
             handler=self.ENGINE,
-            updates=[marc_rules.FieldRules.add_bib_id(cat_bib, "945")],
+            updates=[marc_rules.FieldRules.add_bib_id(cat_bib.bib_id, "945")],
         )
         updated_bib = Bib(cat_bib.binary_data, library=cat_bib.library)
         assert updated_bib["945"].format_field() == "12345"
@@ -616,10 +618,10 @@ class TestMarcUpdateHandler:
         field_949 = "*b2=a;"
         sel_bib = stub_domain_bib("sel")
         sel_bib.parsed_fields = [
-            fields.ParsedField(
+            shared.ParsedField(
                 tag="949",
                 indicators=(" ", " "),
-                subfields=[fields.ParsedSubfield(code="a", value=field_949)],
+                subfields=[shared.ParsedSubfield(code="a", value=field_949)],
             )
         ]
         marc_data = Bib()
@@ -686,7 +688,7 @@ class TestMarcUpdateHandler:
 
     def test_dedupe_attach(self, full_bib_949_item):
         bib = full_bib_949_item("123456789")
-        bib.action = models.CatalogAction.ATTACH
+        bib.action = "attach"
         processed = update.BibRecordUpdater.deduplicate(
             records=[bib], handler=self.ENGINE
         )

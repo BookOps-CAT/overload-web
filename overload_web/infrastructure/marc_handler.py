@@ -1,7 +1,7 @@
 """Adapter module defining classes used to parse and update MARC records.
 
 Includes wrapper that allows for MARC records to be translated from pymarc/bookops_marc
-objects to domain objects. The `MarcUpdateHandler`also updates fields and the
+objects to domain objects. The `MarcUpdater`also updates fields and the
 `MarcParserEngine` also extracts values from fields.
 
 Protocols:
@@ -15,7 +15,7 @@ Classes:
 `MarcParserEngine`
     Parse binary MARC data using `bookops_marc` and `pymarc`. Uses config data
     to determine field mapping and processing workflows.
-`MarcUpdateHandler`
+`MarcUpdater`
     Update binary MARC data using `bookops_marc` and `pymarc`. Uses config data
     to determine field mapping and processing workflows.
 """
@@ -38,7 +38,7 @@ class DomainBibProtocol(Protocol):
     binary_data: bytes
 
 
-class MarcUpdateHandler:
+class MarcUpdater:
     """Interacts with binary MARC data using `bookops_marc`."""
 
     def _find_specific_field(self, bib: Bib, criteria: Any) -> Field | None:
@@ -89,61 +89,43 @@ class MarcUpdateHandler:
                 )
             )
 
-
-class MarcParsingHandler:
-    """Interacts with binary MARC data using `bookops_marc`."""
-
-    def __init__(
-        self,
-        library: str,
-        collection: str | None,
-        record_type: str,
-        bib_mapping: dict[str, Any],
-        order_mapping: dict[str, Any],
-        vendor_mapping: dict[str, Any],
-    ) -> None:
+    def update_leader_encoding(self, leader: str, bib: Bib) -> None:
         """
-        Initialize `MarcParsingHandler` using a set of mapping rules and inputs.
-
-        This class is an implementation of the `MarcParsingHandlerPort` protocol.
+        Update a bib record's leader[9] value to indicate unicode character encoding.
 
         Args:
-            library:
-                the library whose records are being parsed
-            collection:
-                the collection to which the records belong
-            record_type:
-                the workflow two whom this record belongs
-            bib_mapping:
-                rules for mapping bookops_marc.Bib objects to domain objects
-            order_mapping:
-                rules for mapping bookops_marc.Order objects to domain objects
-            vendor_mapping:
-                rules for identifying the vendor to whom a record belongs
+            bib:
+                A MARC record as a `bookops_marc.Bib` object
+            leader:
+                A MARC leader as a string
+
+        Returns:
+            None. The record's leader is updated in place.
         """
+        bib.leader = leader[:9] + "a" + leader[10:]
 
-        self.library = library
-        self.collection = collection
-        self.record_type = record_type
-        self.bib_mapping = bib_mapping
-        self.order_mapping = order_mapping
-        self.vendor_mapping = vendor_mapping
-        self.reader = MarcReaderWriter(library=self.library)
 
-    def identify_vendor(self, record: Bib) -> dict[str, Any]:
+class MarcParser:
+    """Interacts with binary MARC data using `bookops_marc`."""
+
+    def get_reader(self, data: bytes | BinaryIO, library: str) -> SierraBibReader:
+        """Instantiate a `SierraBibReader` to read MARC binary data."""
+        return SierraBibReader(data, library=library)
+
+    def identify_vendor(self, obj: Bib, mapping: dict[str, Any]) -> dict[str, Any]:
         """Determine the vendor who created a `bookops_marc.Bib` record."""
-        for vendor, info in self.vendor_mapping[record.library].items():
+        for vendor, info in mapping[obj.library].items():
             tags = info["vendor_tags"].get("primary", {})
-            tag_match = self.match_vendor_tags_from_bib(record=record, tags=tags)
+            tag_match = self.match_vendor_tags_from_bib(obj=obj, tags=tags)
             if tag_match:
                 return info
             alt_tags = info["vendor_tags"].get("alternate", {})
-            alt_match = self.match_vendor_tags_from_bib(record=record, tags=alt_tags)
+            alt_match = self.match_vendor_tags_from_bib(obj=obj, tags=alt_tags)
             if alt_match:
                 return info
-        return self.vendor_mapping[record.library]["UNKNOWN"]
+        return mapping[obj.library]["UNKNOWN"]
 
-    def map_bib_data(self, obj: Bib) -> dict[str, Any]:
+    def map_bib_data(self, obj: Bib, mapping: dict[str, Any]) -> dict[str, Any]:
         """
         Build a dictionary representing a `DomainBib` object
         from a `bookops_marc.Bib` object and a set of mapping rules.
@@ -158,7 +140,7 @@ class MarcParsingHandler:
         out: dict[str, Any] = {}
 
         obj.normalize_oclc_control_number()
-        for k, v in self.bib_mapping.items():
+        for k, v in mapping.items():
             # OCLC Numbers have to be normalized from a dictionary
             if v == "oclc_nos":
                 property = getattr(obj, v)
@@ -187,7 +169,7 @@ class MarcParsingHandler:
         out["parsed_fields"] = parsed_fields
         return out
 
-    def map_order_data(self, obj: Order) -> dict[str, Any]:
+    def map_order_data(self, obj: Order, mapping: dict[str, Any]) -> dict[str, Any]:
         """
         Build a dictionary representing a domain `Order` object
         from a `bookops_marc.Order` object and a set of mapping rules.
@@ -201,7 +183,7 @@ class MarcParsingHandler:
         """
         out: dict[str, Any] = {}
 
-        for k, v in self.order_mapping.items():
+        for k, v in mapping.items():
             # most attrs have 1:1 mapping
             if isinstance(v, str):
                 out[k] = getattr(obj, v)
@@ -213,14 +195,14 @@ class MarcParsingHandler:
         return out
 
     def match_vendor_tags_from_bib(
-        self, record: Bib, tags: dict[str, dict[str, str]]
+        self, obj: Bib, tags: dict[str, dict[str, str]]
     ) -> bool:
         """
         Get the MARC tag, subfield code, and subfield value from a record based on a
         dictionary containing tags and subfield codes.
 
         Args:
-            record: A `bookops_marc.Bib` object
+            obj: A `bookops_marc.Bib` object
             tags: A dictionary containing MARC tags, subfield codes, and subfield values
 
         Returns:
@@ -229,7 +211,7 @@ class MarcParsingHandler:
         """
         bib_dict: dict = {}
         for tag, data in tags.items():
-            fields = record.get_fields(tag)
+            fields = obj.get_fields(tag)
             if not fields:
                 continue
             values = [i.get(data["code"]) for i in fields]
@@ -240,15 +222,6 @@ class MarcParsingHandler:
         if bib_dict:
             return bib_dict == tags
         return False
-
-
-class MarcReaderWriter:
-    def __init__(self, library: str) -> None:
-        self.library = library
-
-    def get_reader(self, data: bytes | BinaryIO) -> SierraBibReader:
-        """Instantiate a `SierraBibReader` to read MARC binary data."""
-        return SierraBibReader(data, library=self.library)
 
     def write(self, records: list[DomainBibProtocol]) -> bytes:
         """
