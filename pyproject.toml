@@ -88,8 +88,6 @@ indent = 2
 
 [tool.pydeps]
 cluster = true
-no_show = true
-pylib = false
 exclude_exact = [
     "overload_web.application",
     "overload_web.application.ports",
