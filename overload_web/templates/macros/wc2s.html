@@ -25,13 +25,13 @@
             autocomplete="off">
       {% if field_input %}
         <option value=""></option>
-        <option value="{{ field_input }}" selected>{{ field_input }} ({{ data['options'][field_input] }})</option>
+        <option value="{{ field_input }}" selected>{{ data['options'][field_input] }}</option>
         {% for k, v in data['options'].items() %}
           {% if k != field_input %}<option value="{{ k }}">{{ k }} ({{ v }})</option>{% endif %}
         {% endfor %}
       {% else %}
         <option value="" selected></option>
-        {% for k, v in data['options'].items() %}<option value="{{ k }}">{{ k }} ({{ v }})</option>{% endfor %}
+        {% for k, v in data['options'].items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}
       {% endif %}
     </select>
     <label for="{{ field_id }}">{{ data['label'] }}</label>

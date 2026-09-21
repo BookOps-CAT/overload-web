@@ -138,13 +138,17 @@ class FileWriter(Protocol):
 
 
 @runtime_checkable
-class MarcParserPort(Protocol):
+class MarcParserPort(Protocol[V]):
     library: str
     record_type: str
     collection: str | None
     bib_mapping: str
     order_mapping: dict[str, Any]
     vendor_rules: dict[str, Any]
+
+    def create_bib_obj(self, data: bytes, library: str) -> V: ...  # pragma: no branch
+
+    """Instantiate a Bib object from binary data."""
 
     def get_reader(
         self, data: bytes, library: str

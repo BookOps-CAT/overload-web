@@ -422,4 +422,4 @@ class TestApp:
         )
         context = response.context
         assert response.status_code == 200
-        assert context["input_data"][0].id == "9781234567890"
+        assert len(context["wc2s_results"]) > 0

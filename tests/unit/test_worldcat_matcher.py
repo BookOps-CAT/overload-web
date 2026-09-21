@@ -5,7 +5,7 @@ from bookops_worldcat.errors import BookopsWorldcatError
 
 from overload_web.application.wc2s import match, oclc_matcher
 from overload_web.domain.wc2s import worldcat
-from overload_web.infrastructure import oclc
+from overload_web.infrastructure import marc_handler, oclc
 
 
 @pytest.fixture
@@ -150,25 +150,28 @@ class TestWorldcatMatcher:
 
 
 class TestMatchWorldcat2Sierra:
+    PARSER = marc_handler.MarcParser()
+
     @pytest.mark.parametrize(
         "library, collection", [("bpl", None), ("nypl", "RL"), ("nypl", "BL")]
     )
     def test_match_worldcat_2_sierra(self, stub_source_data, fake_oclc_fetcher):
         source_data = copy.deepcopy(stub_source_data)
         batches = match.MatchWorldcat2Sierra.execute(
-            fetcher=fake_oclc_fetcher, source_data=[source_data.__dict__]
+            fetcher=fake_oclc_fetcher,
+            source_data=[source_data.__dict__],
+            parser=self.PARSER,
         )
         assert len(batches) == 1
-        assert isinstance(batches[0], worldcat.FullMatchedResult)
+        assert isinstance(batches[0], worldcat.MatchedResultFull)
         assert batches[0].matched is True
         assert batches[0].failed_matches == []
         assert batches[0].successful_matches == [
-            worldcat.FullMatchedItem(
+            worldcat.MatchedItem(
                 id=source_data.id,
                 id_type=source_data.id_type,
                 status=worldcat.MatchStatus.MATCHED,
                 matched_oclc="12345678",
-                full_record=b"",
             )
         ]
 
@@ -181,10 +184,12 @@ class TestMatchWorldcat2Sierra:
         source_data = copy.deepcopy(stub_source_data)
         source_data.record_level = "1"
         batches = match.MatchWorldcat2Sierra.execute(
-            fetcher=fake_oclc_fetcher, source_data=[source_data.__dict__]
+            fetcher=fake_oclc_fetcher,
+            source_data=[source_data.__dict__],
+            parser=self.PARSER,
         )
         assert len(batches) == 1
-        assert isinstance(batches[0], worldcat.FullMatchedResult)
+        assert isinstance(batches[0], worldcat.MatchedResultFull)
         assert batches[0].matched is True
         assert batches[0].failed_matches == [
             worldcat.MatchedItem(

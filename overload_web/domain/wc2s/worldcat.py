@@ -94,24 +94,24 @@ class MatchedItem:
 
 
 @dataclass
-class MatchedResult:
+class MatchedResultBrief:
     matched: bool
-    source_data: SourceData
-    failed_matches: list[MatchedItem] | None = None
-    successful_matches: list[MatchedItem] | None = None
+    failed_matches: list[MatchedItem]
+    successful_matches: list[MatchedItem]
 
 
 @dataclass
 class FullMatchedItem(MatchedItem):
-    full_record: bytes
+    full_record: bytes | Any
 
 
 @dataclass
-class FullMatchedResult:
+class MatchedResultFull:
     matched: bool
+    failed_matches: list[MatchedItem]
+    successful_matches: list[MatchedItem]
+    full_record_matches: list[FullMatchedItem]
     source_data: SourceData
-    failed_matches: list[MatchedItem] | None = None
-    successful_matches: list[FullMatchedItem] | list[MatchedItem] | None = None
 
 
 @dataclass
@@ -181,9 +181,11 @@ class RecordEvaluator:
 
     def filter_brief_bib_matches(
         self, responses: list[BriefRecordResult], source: SourceData
-    ) -> MatchedResult:
+    ) -> MatchedResultBrief:
         if not responses:
-            return MatchedResult(matched=False, source_data=source)
+            return MatchedResultBrief(
+                matched=False, failed_matches=[], successful_matches=[]
+            )
         success = []
         failed_matches = []
         for response in responses:
@@ -213,9 +215,6 @@ class RecordEvaluator:
                 success.append(item)
             else:
                 failed_matches.append(item)
-        return MatchedResult(
-            matched=True,
-            source_data=source,
-            failed_matches=failed_matches,
-            successful_matches=success,
+        return MatchedResultBrief(
+            matched=True, failed_matches=failed_matches, successful_matches=success
         )

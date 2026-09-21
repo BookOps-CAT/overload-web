@@ -108,6 +108,10 @@ class MarcUpdater:
 class MarcParser:
     """Interacts with binary MARC data using `bookops_marc`."""
 
+    def create_bib_obj(self, data: bytes | BinaryIO, library: str) -> Bib:
+        """Instantiate a `SierraBibReader` to read MARC binary data."""
+        return Bib(data, library=library)  # type: ignore
+
     def get_reader(self, data: bytes | BinaryIO, library: str) -> SierraBibReader:
         """Instantiate a `SierraBibReader` to read MARC binary data."""
         return SierraBibReader(data, library=library)

@@ -35,7 +35,9 @@ class WorldcatMatcher:
             response.update_datetime = date.get("replaceDate", date.get("createDate"))
         return responses
 
-    def get_record_matches(self, source: worldcat.SourceData) -> worldcat.MatchedResult:
+    def get_record_matches(
+        self, source: worldcat.SourceData
+    ) -> worldcat.MatchedResultBrief:
         evaluator = worldcat.RecordEvaluator(source.record_level)
         payload = {
             "q": f"{self.ID_INDEX[source.id_type]}={source.id}",

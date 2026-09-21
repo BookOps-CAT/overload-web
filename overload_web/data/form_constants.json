@@ -1165,7 +1165,7 @@
   "wc2sierra_fields": {
     "record_level": {
       "label": "Record Level",
-      "options": { "1": "Level 1: blank, |, 4", "2": "Level 2 & up: M, K, 7, 1, 2", "3": "Level 3 & up: 3, 8" }
+      "options": { "1": "Level 1: blank, 4", "2": "Level 2 & up: M, K, 7, 1, 2", "3": "Level 3 & up: 3, 8" }
     },
     "material_type": {
       "label": "Record Type",
@@ -1177,11 +1177,11 @@
     },
     "cat_rules": {
       "label": "Cataloging Rules",
-      "options": { "RDA": "RDA only", "any": "Any" }
+      "options": { "any": "Any", "RDA": "RDA only" }
     },
     "cat_agency": {
       "label": "Cataloging Source",
-      "options": { "DLC": "DLC only", "any": "Any" }
+      "options": { "any": "Any", "DLC": "DLC only" }
     },
     "data_source": {
       "label": "Data Source",

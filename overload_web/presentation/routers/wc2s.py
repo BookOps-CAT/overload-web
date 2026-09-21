@@ -22,14 +22,22 @@ def match_record(
     request: Request,
     # file: Annotated[list, Depends(deps.load_wc2s_file)],
     # criteria: Annotated[Any, Depends(deps.UserCriteria.from_form)],
+    marc_parser: Annotated[Any, Depends(deps.get_marc_parser)],
     source_data: Annotated[Any, Depends(deps.source_data_from_load)],
     oclc_handler: Annotated[Any, Depends(deps.oclc_fetcher)],
 ) -> HTMLResponse:
     out = match.MatchWorldcat2Sierra.execute(
-        fetcher=oclc_handler, source_data=[i.model_dump() for i in source_data]
+        fetcher=oclc_handler,
+        source_data=[i.model_dump() for i in source_data],
+        parser=marc_parser,
     )
+    out_dict = {}
+    for item in out:
+        out_dict[item.source_data.id] = [
+            i.full_record for i in item.full_record_matches
+        ]
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="wc2s_partials/wc2s_results.html",
-        context={"input_data": source_data, "form_data": out},
+        context={"wc2s_results": out, "out_dict": out_dict},
     )
