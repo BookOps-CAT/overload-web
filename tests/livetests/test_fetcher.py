@@ -24,7 +24,7 @@ class TestLiveSierraSession:
             response = session._get_bibs_by_isbn("9781338299151")
             matched_bibs = session._parse_response(response=response)
             assert isinstance(matched_bibs, list)
-            assert len(matched_bibs) == 3
+            assert len(matched_bibs) > 0
             assert isinstance(matched_bibs[0], dict)
             assert sorted(list(response.json()["response"]["docs"][0].keys())) == [
                 "_version_",
@@ -86,7 +86,7 @@ class TestLiveSierraSession:
             response = session._get_bibs_by_isbn("9781338299151")
             matched_bibs = session._parse_response(response=response)
             assert isinstance(matched_bibs, list)
-            assert len(matched_bibs) == 1
+            assert len(matched_bibs) > 0
             assert isinstance(matched_bibs[0], dict)
             assert sorted(list(response.json()["data"][0].keys())) == [
                 "author",

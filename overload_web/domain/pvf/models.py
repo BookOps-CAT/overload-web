@@ -8,12 +8,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
-from overload_web.domain.shared import (
-    Collection,
-    LibrarySystem,
-    ParsedField,
-    RecordType,
-)
+from overload_web.domain import shared
 
 logger = logging.getLogger(__name__)
 
@@ -32,10 +27,10 @@ class DomainBib:
     def __init__(
         self,
         binary_data: bytes,
-        collection: Collection | str | None,
-        library: LibrarySystem | str,
-        parsed_fields: list[ParsedField] | list[dict[str, Any]],
-        record_type: RecordType | str,
+        collection: shared.Collection | str | None,
+        library: shared.LibrarySystem | str,
+        parsed_fields: list[shared.ParsedField] | list[dict[str, Any]],
+        record_type: shared.RecordType | str,
         title: str,
         barcodes: list[str] = [],
         bib_id: str | None = None,
@@ -103,18 +98,19 @@ class DomainBib:
         self.bib_id = bib_id
         self.binary_data = binary_data
         self.branch_call_number = branch_call_number
-        self.collection = Collection(str(collection).upper())
+        self.collection = shared.Collection(str(collection).upper())
         self.command_tag = command_tag
         self.control_number = control_number
         self.isbn = isbn
-        self.library = LibrarySystem(library)
+        self.library = shared.LibrarySystem(library)
         self.oclc_number = oclc_number
         self.orders = orders
         self.parsed_fields = [
-            i if isinstance(i, ParsedField) else ParsedField(**i) for i in parsed_fields
+            i if isinstance(i, shared.ParsedField) else shared.ParsedField(**i)
+            for i in parsed_fields
         ]
         self.research_call_number = research_call_number
-        self.record_type = RecordType(record_type)
+        self.record_type = shared.RecordType(record_type)
         self.title = title
         self.upc = upc
         self.update_date = update_date
