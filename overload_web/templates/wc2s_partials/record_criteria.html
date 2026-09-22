@@ -1,7 +1,16 @@
 {% import "macros/wc2s.html" as macro %}
 <div class="card w-100 p-3">
   <h5 class="card-title">Record Criteria</h5>
-  {% include "wc2s_partials/context_source.html" %}
+  <div class="context-block">
+    <div class="d-flex gap-2"
+         hx-get="/update-context?workflow=wc2s"
+         hx-trigger="change from:.context-block select, load"
+         hx-include="closest .context-block"
+         hx-swap="none">
+      <div id="library-select" class="w-100">{{ macro.context_select("library", context_fields["library"]) }}</div>
+      <div id="collection-select" class="w-100">{{ macro.context_select("collection", context_fields["collection"]) }}</div>
+    </div>
+  </div>
   <h5 class="mb-2 mt-2">MARC Rules</h5>
   <div class="row row-cols-2 g-2">
     {% for field_id, field_data in wc2sierra_fields.items() %}

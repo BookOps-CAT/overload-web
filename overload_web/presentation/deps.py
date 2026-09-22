@@ -91,12 +91,14 @@ class MarcUpdateRulesModel(BaseModel):
     collection: str | None
     default_loc: str | None
     library: str
-    record_type: str
     order_mapping: dict[str, Any]
 
 
 class MarcParsingRulesModel(BaseModel):
     bib_mapping: dict[str, Any]
+    collection: str | None
+    library: str
+    record_type: str
     order_mapping: dict[str, Any]
     vendor_mapping: dict[str, Any]
 
@@ -427,15 +429,19 @@ def get_marc_update_rules(
         bib_id_tag=constants["bib_id_tag"][context.library],
         library=context.library,
         collection=context.collection,
-        record_type=context.record_type,
     )
 
 
-def get_marc_parsing_rules() -> MarcParsingRulesModel:
+def get_marc_parsing_rules(
+    context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
+) -> MarcParsingRulesModel:
     with open("overload_web/data/parsing_rules.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     return MarcParsingRulesModel(
         bib_mapping=constants["bib_mapping"],
+        library=context.library,
+        collection=context.collection,
+        record_type=context.record_type,
         order_mapping=constants["order_mapping"],
         vendor_mapping=constants["vendor_rules"],
     )

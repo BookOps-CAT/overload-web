@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any, Protocol, Sequence
 
 from overload_web.domain import shared
 
@@ -228,7 +228,7 @@ class FieldRules:
 
     @staticmethod
     def update_order_fields(
-        orders: list[MarcOrderProtocol], mapping: dict[str, Any]
+        orders: Sequence[MarcOrderProtocol], mapping: dict[str, Any]
     ) -> list[MarcFieldUpdateValues]:
         """Updates order record fields based on template data applied to DomainBib"""
         fields = []

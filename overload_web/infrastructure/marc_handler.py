@@ -174,14 +174,16 @@ class MarcParser:
         out: dict[str, Any] = {}
         # Adds or removes OCLC prefix from `001` field based on library
         obj.normalize_oclc_control_number()
+        print(mapping)
         for k, v in mapping.items():
             # OCLC Numbers have to be converted from a list to a dictionary
             if v == "oclc_nos":
                 property = getattr(obj, v)
                 out[k] = list(set(property.values()))
             elif isinstance(v, dict) and "tag" in v:
-                field = obj.get(v["tag"])
-                out[k] = getattr(field, "data")
+                if v["tag"] in obj:
+                    field = obj.get(v["tag"])
+                    out[k] = getattr(field, "data")
             # most attrs have 1:1 mapping between `Bib` and `DomainBib`
             else:
                 out[k] = getattr(obj, v)
