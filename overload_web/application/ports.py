@@ -139,12 +139,11 @@ class FileWriter(Protocol):
 
 @runtime_checkable
 class MarcParserPort(Protocol[V]):
-    library: str
-    record_type: str
-    collection: str | None
-    bib_mapping: str
-    order_mapping: dict[str, Any]
-    vendor_rules: dict[str, Any]
+    def compare_mapped_tags(
+        self, obj: V, tags: dict[str, dict[str, str]]
+    ) -> bool: ...  # pragma:no branch
+
+    """Match vendor tags from mapping to bib object."""
 
     def create_bib_obj(self, data: bytes, library: str) -> V: ...  # pragma: no branch
 
@@ -173,12 +172,6 @@ class MarcParserPort(Protocol[V]):
     ) -> dict[str, Any]: ...  # pragma: no branch
 
     """Map an order to a dictionary following a set of rules."""
-
-    def match_vendor_tags_from_bib(
-        self, obj: V, tags: dict[str, dict[str, str]]
-    ) -> bool: ...  # pragma:no branch
-
-    """Match vendor tags from mapping to bib object."""
 
     def write(self, records: list[U]) -> bytes: ...  # pragma:no branch
 

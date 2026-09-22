@@ -38,18 +38,21 @@ class DomainBibProtocol(Protocol):
     binary_data: bytes
 
 
+class TargetProtocol(Protocol):
+    tag: str
+    indicators: tuple[str, str]
+    code: str
+    value: str
+
+
 class MarcUpdater:
     """Interacts with binary MARC data using `bookops_marc`."""
 
-    def _find_specific_field(self, bib: Bib, criteria: Any) -> Field | None:
+    def _find_specific_field(self, bib: Bib, target: TargetProtocol) -> Field | None:
         """Find a field based on generic domain criteria."""
-        for field in bib.get_fields(criteria.tag):
-            subfield = field.get(criteria.subfield_code, "")
-            if (
-                (field.indicator1, field.indicator2) == criteria.indicators
-                and criteria.subfield_starts_with
-                and subfield.startswith(criteria.subfield_starts_with)
-            ):
+        for field in bib.get_fields(target.tag):
+            subfield = field.get(target.code, "")
+            if field.indicators == target.indicators and subfield == target.value:
                 return field
         return None
 
@@ -108,6 +111,33 @@ class MarcUpdater:
 class MarcParser:
     """Interacts with binary MARC data using `bookops_marc`."""
 
+    def compare_mapped_tags(self, obj: Bib, tags: dict[str, dict[str, str]]) -> bool:
+        """
+        Get the MARC tag, subfield code, and subfield value from a record based on a
+        dictionary containing tags and subfield codes.
+
+        Args:
+            obj: A `bookops_marc.Bib` object
+            tags: A dictionary containing MARC tags, subfield codes, and subfield values
+
+        Returns:
+            A dictionary containing the values present in the MARC fields/subfields.
+
+        """
+        bib_dict: dict = {}
+        for tag, data in tags.items():
+            fields = obj.get_fields(tag)
+            if not fields:
+                continue
+            values = [i.get(data["code"]) for i in fields]
+            for value in values:
+                if value != data["value"]:
+                    continue
+                bib_dict[tag] = {"code": data["code"], "value": value}
+        if bib_dict:
+            return bib_dict == tags
+        return False
+
     def create_bib_obj(self, data: bytes | BinaryIO, library: str) -> Bib:
         """Instantiate a `SierraBibReader` to read MARC binary data."""
         return Bib(data, library=library)  # type: ignore
@@ -120,11 +150,11 @@ class MarcParser:
         """Determine the vendor who created a `bookops_marc.Bib` record."""
         for vendor, info in mapping[obj.library].items():
             tags = info["vendor_tags"].get("primary", {})
-            tag_match = self.match_vendor_tags_from_bib(obj=obj, tags=tags)
+            tag_match = self.compare_mapped_tags(obj=obj, tags=tags)
             if tag_match:
                 return info
             alt_tags = info["vendor_tags"].get("alternate", {})
-            alt_match = self.match_vendor_tags_from_bib(obj=obj, tags=alt_tags)
+            alt_match = self.compare_mapped_tags(obj=obj, tags=alt_tags)
             if alt_match:
                 return info
         return mapping[obj.library]["UNKNOWN"]
@@ -142,10 +172,10 @@ class MarcParser:
             and a domain object.
         """
         out: dict[str, Any] = {}
-
+        # Adds or removes OCLC prefix from `001` field based on library
         obj.normalize_oclc_control_number()
         for k, v in mapping.items():
-            # OCLC Numbers have to be normalized from a dictionary
+            # OCLC Numbers have to be converted from a list to a dictionary
             if v == "oclc_nos":
                 property = getattr(obj, v)
                 out[k] = list(set(property.values()))
@@ -197,35 +227,6 @@ class MarcParser:
                 for code, attr in v.items():
                     out[attr] = field.get(code) if field else None
         return out
-
-    def match_vendor_tags_from_bib(
-        self, obj: Bib, tags: dict[str, dict[str, str]]
-    ) -> bool:
-        """
-        Get the MARC tag, subfield code, and subfield value from a record based on a
-        dictionary containing tags and subfield codes.
-
-        Args:
-            obj: A `bookops_marc.Bib` object
-            tags: A dictionary containing MARC tags, subfield codes, and subfield values
-
-        Returns:
-            A dictionary containing the values present in the MARC fields/subfields.
-
-        """
-        bib_dict: dict = {}
-        for tag, data in tags.items():
-            fields = obj.get_fields(tag)
-            if not fields:
-                continue
-            values = [i.get(data["code"]) for i in fields]
-            for value in values:
-                if value != data["value"]:
-                    continue
-                bib_dict[tag] = {"code": data["code"], "value": value}
-        if bib_dict:
-            return bib_dict == tags
-        return False
 
     def write(self, records: list[DomainBibProtocol]) -> bytes:
         """

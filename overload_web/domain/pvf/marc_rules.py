@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 class TargetFieldCriteria:
     tag: str
     indicators: tuple[str, str]
-    subfield_code: str
-    subfield_starts_with: str | None = None
+    code: str
+    value: str
 
 
 @dataclass
@@ -95,10 +95,7 @@ class FieldRules:
                 }
             ],
             target_to_delete=TargetFieldCriteria(
-                tag="949",
-                indicators=(" ", " "),
-                subfield_code="a",
-                subfield_starts_with="*",
+                tag="949", indicators=(" ", " "), code="a", value=command_tag
             ),
         )
 

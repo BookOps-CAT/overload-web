@@ -3,7 +3,7 @@
     <p class="card-text">
       <b>{{ k }}:</b>
     </br>
-    {{ v }}</p>{% endfor %}
+    {% for bib in v %}{{ bib }}{% endfor %}</p>{% endfor %}
 {% endif %}
 {% if wc2s_results %}
   <a id="wc2s-button"

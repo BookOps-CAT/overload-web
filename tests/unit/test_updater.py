@@ -421,8 +421,8 @@ class TestGetBibUpdatesNYPLBranch:
         assert updates[2].target_to_delete.__dict__ == {
             "tag": "949",
             "indicators": (" ", " "),
-            "subfield_code": "a",
-            "subfield_starts_with": "*",
+            "code": "a",
+            "value": original,
         }
         assert updates[3].tag == "910"
 
@@ -553,8 +553,8 @@ class TestGetBibUpdatesNYPLResearch:
         assert updates[2].target_to_delete.__dict__ == {
             "tag": "949",
             "indicators": (" ", " "),
-            "subfield_code": "a",
-            "subfield_starts_with": "*",
+            "code": "a",
+            "value": original,
         }
 
         assert updates[3].tag == "910"
@@ -671,10 +671,7 @@ class TestMarcUpdater:
                     ind2=" ",
                     subfields=[{"code": "a", "value": "*b2=a;bn=zzzzz;"}],
                     target_to_delete=marc_rules.TargetFieldCriteria(
-                        tag="949",
-                        indicators=(" ", " "),
-                        subfield_code="a",
-                        subfield_starts_with="*",
+                        tag="949", indicators=(" ", " "), code="a", value="*"
                     ),
                 )
             ],
