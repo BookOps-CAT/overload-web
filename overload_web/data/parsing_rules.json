@@ -44,7 +44,7 @@
       "m": "blanket_po"
     }
   },
-  "vendor_rules": {
+  "vendor_mapping": {
     "nypl": {
       "BT SERIES": {
         "name": "BT SERIES",

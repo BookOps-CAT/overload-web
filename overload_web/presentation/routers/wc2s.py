@@ -20,8 +20,6 @@ api_router = APIRouter()
 @api_router.post("/match_record", response_class=HTMLResponse)
 def match_record(
     request: Request,
-    # file: Annotated[list, Depends(deps.load_wc2s_file)],
-    # criteria: Annotated[Any, Depends(deps.UserCriteria.from_form)],
     marc_parser: Annotated[Any, Depends(deps.get_marc_parser)],
     source_data: Annotated[Any, Depends(deps.source_data_from_load)],
     oclc_handler: Annotated[Any, Depends(deps.oclc_fetcher)],

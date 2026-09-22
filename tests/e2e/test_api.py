@@ -35,7 +35,7 @@ def fake_reporter(monkeypatch):
         return None
 
     monkeypatch.setattr(
-        "overload_web.application.pvf.reporting.WriteOutputReport.execute",
+        "overload_web.application.pvf.report_service.WriteOutputReport.execute",
         null_response,
     )
 

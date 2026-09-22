@@ -97,7 +97,7 @@ class LoadAllWorkflowFiles:
     @staticmethod
     def execute(
         workflow_id: str, storage: ports.FileStorage, repo: ports.SqlRepositoryProtocol
-    ) -> list[files.VendorFile]:
+    ) -> dict[str, bytes]:
         """
         Loads all files for a workflow.
 
@@ -112,15 +112,11 @@ class LoadAllWorkflowFiles:
                 Concrete implementation of the `FileStorage` for
                 handling vendor files.
         Returns:
-            The list of files for workflow as a list of `VendorFile` objects.
+            The list of dictionaries representing file names and content for workflow.
         """
         file_list = repo.list_by_id(workflow_id)
-        vendor_files = [
-            files.VendorFile(
-                file_name=i["filename"], content=storage.load(i["reference"])
-            )
-            for i in file_list
-        ]
+        vendor_files = {i["filename"]: storage.load(i["reference"]) for i in file_list}
+
         logger.info(f"Loading all files for workflow {workflow_id}: {vendor_files}.")
         return vendor_files
 

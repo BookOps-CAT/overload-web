@@ -19,6 +19,7 @@ from overload_web.infrastructure import (
     reporter,
     sierra_clients,
     template_db,
+    unit_of_work,
 )
 
 logger = logging.getLogger(__name__)
@@ -86,21 +87,21 @@ class MatchpointsModel(BaseModel):
         )
 
 
+class MarcParsingRulesModel(BaseModel):
+    bib_mapping: dict[str, Any]
+    collection: str | None
+    library: str
+    order_mapping: dict[str, Any]
+    record_type: str
+    vendor_mapping: dict[str, Any]
+
+
 class MarcUpdateRulesModel(BaseModel):
     bib_id_tag: str
     collection: str | None
     default_loc: str | None
     library: str
     order_mapping: dict[str, Any]
-
-
-class MarcParsingRulesModel(BaseModel):
-    bib_mapping: dict[str, Any]
-    collection: str | None
-    library: str
-    record_type: str
-    order_mapping: dict[str, Any]
-    vendor_mapping: dict[str, Any]
 
 
 class TemplateDataModel(BaseModel):
@@ -372,6 +373,11 @@ def get_session(
         yield session
 
 
+def pvf_unit_of_work() -> Generator[unit_of_work.PVFUnitOfWork, None, None]:
+    """Create an order template repository."""
+    yield unit_of_work.PVFUnitOfWork()
+
+
 def order_template_db(
     session: Annotated[Any, Depends(get_session)],
 ) -> Generator[template_db.OrderTemplateRepository, None, None]:
@@ -443,7 +449,7 @@ def get_marc_parsing_rules(
         collection=context.collection,
         record_type=context.record_type,
         order_mapping=constants["order_mapping"],
-        vendor_mapping=constants["vendor_rules"],
+        vendor_mapping=constants["vendor_mapping"],
     )
 
 

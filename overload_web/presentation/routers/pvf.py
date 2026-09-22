@@ -8,7 +8,6 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse
 
-from overload_web.application.pvf.file_handling import LoadAllWorkflowFiles
 from overload_web.application.pvf.process import (
     ProcessAcquisitionsRecords,
     ProcessCatalogingRecords,
@@ -22,16 +21,6 @@ logger = logging.getLogger(__name__)
 api_router = APIRouter()
 
 
-def load_files(
-    workflow_id: Annotated[str, Form(...)],
-    repo: Annotated[Any, Depends(deps.incoming_file_db)],
-    storage: Annotated[Any, Depends(deps.local_file_storage)],
-) -> list:
-    return LoadAllWorkflowFiles.execute(
-        workflow_id=workflow_id, storage=storage, repo=repo
-    )
-
-
 @api_router.post("/acq/process-vendor-file", response_class=HTMLResponse)
 def process_acq_records(
     request: Request,
@@ -39,15 +28,13 @@ def process_acq_records(
     order_template: Annotated[Any, Depends(deps.TemplateDataModel.from_form)],
     marc_updater: Annotated[Any, Depends(deps.get_marc_updater)],
     marc_parser: Annotated[Any, Depends(deps.get_marc_parser)],
-    marc_update_rules: Annotated[
-        deps.MarcUpdateRulesModel, Depends(deps.get_marc_update_rules)
-    ],
-    marc_parsing_rules: Annotated[
-        deps.MarcParsingRulesModel, Depends(deps.get_marc_parsing_rules)
-    ],
+    update_rules: Annotated[Any, Depends(deps.get_marc_update_rules)],
+    parsing_rules: Annotated[Any, Depends(deps.get_marc_parsing_rules)],
     matchpoints: Annotated[Any, Depends(deps.MatchpointsModel.from_form)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
-    files: Annotated[Any, Depends(load_files)],
+    storage: Annotated[Any, Depends(deps.local_file_storage)],
+    workflow_id: Annotated[str, Form(...)],
+    file_repo: Annotated[Any, Depends(deps.incoming_file_db)],
 ) -> HTMLResponse:
     """
     Process one or more files of order-level MARC records using the acq workflow.
@@ -61,9 +48,9 @@ def process_acq_records(
             a `ports.MarcUpdaterPort` object used by application service.
         marc_parser:
             a `ports.MarcParserPort` object used by application service.
-        marc_parsing_rules:
+        parsing_rules:
             a `marc_updater.MarcParsingRulesModel` object representing cataloging rules.
-        marc_update_rules:
+        update_rules:
             a `marc_updater.MarcUpdateRulesModel` object representing cataloging rules.
         matchpoints:
             a list of matchpoints loaded from an order template in the database or
@@ -78,15 +65,17 @@ def process_acq_records(
         the ID for the processed files and stats wrapped in an `HTMLResponse` object
     """
     processed = ProcessAcquisitionsRecords.execute(
-        batches={f"{i.file_name}": i.content for i in files},
+        storage=storage,
+        workflow_id=workflow_id,
         marc_updater=marc_updater,
         fetcher=fetcher,
         template_data=order_template.model_dump(),
         matchpoints=matchpoints.model_dump(),
         repo=repository,
         marc_parser=marc_parser,
-        marc_parsing_rules=marc_parsing_rules.model_dump(),
-        marc_update_rules=marc_update_rules.model_dump(),
+        parsing_rules=parsing_rules,
+        update_rules=update_rules.model_dump(),
+        file_repo=file_repo,
     )
     return request.app.state.templates.TemplateResponse(
         request=request,
@@ -101,14 +90,12 @@ def process_cat_records(
     fetcher: Annotated[Any, Depends(deps.get_fetcher)],
     marc_updater: Annotated[Any, Depends(deps.get_marc_updater)],
     marc_parser: Annotated[Any, Depends(deps.get_marc_parser)],
-    marc_update_rules: Annotated[
-        deps.MarcUpdateRulesModel, Depends(deps.get_marc_update_rules)
-    ],
-    marc_parsing_rules: Annotated[
-        deps.MarcParsingRulesModel, Depends(deps.get_marc_parsing_rules)
-    ],
+    update_rules: Annotated[Any, Depends(deps.get_marc_update_rules)],
+    parsing_rules: Annotated[Any, Depends(deps.get_marc_parsing_rules)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
-    files: Annotated[Any, Depends(load_files)],
+    storage: Annotated[Any, Depends(deps.local_file_storage)],
+    workflow_id: Annotated[str, Form(...)],
+    file_repo: Annotated[Any, Depends(deps.incoming_file_db)],
 ) -> HTMLResponse:
     """
     Process one or more files of full-level MARC records using the cat workflow.
@@ -120,9 +107,9 @@ def process_cat_records(
             a `ports.MarcUpdaterPort` object used by application service.
         marc_parser:
             a `ports.MarcParserPort` object used by application service.
-        marc_parsing_rules:
+        parsing_rules:
             a `marc_updater.MarcParsingRulesModel` object representing cataloging rules.
-        marc_update_rules:
+        update_rules:
             a `marc_updater.MarcUpdateRulesModel` object representing cataloging rules.
         repository:
             a `repository.PVFBatchRepository` object where the processed files and
@@ -134,13 +121,15 @@ def process_cat_records(
         the ID for the processed files and stats wrapped in an `HTMLResponse` object
     """
     processed = ProcessCatalogingRecords.execute(
-        batches={f"{i.file_name}": i.content for i in files},
+        storage=storage,
+        workflow_id=workflow_id,
         marc_updater=marc_updater,
         fetcher=fetcher,
         repo=repository,
         marc_parser=marc_parser,
-        marc_parsing_rules=marc_parsing_rules.model_dump(),
-        marc_update_rules=marc_update_rules.model_dump(),
+        parsing_rules=parsing_rules,
+        update_rules=update_rules.model_dump(),
+        file_repo=file_repo,
     )
     return request.app.state.templates.TemplateResponse(
         request=request,
@@ -156,15 +145,13 @@ def process_sel_records(
     order_template: Annotated[Any, Depends(deps.TemplateDataModel.from_form)],
     marc_updater: Annotated[Any, Depends(deps.get_marc_updater)],
     marc_parser: Annotated[Any, Depends(deps.get_marc_parser)],
-    marc_update_rules: Annotated[
-        deps.MarcUpdateRulesModel, Depends(deps.get_marc_update_rules)
-    ],
-    marc_parsing_rules: Annotated[
-        deps.MarcParsingRulesModel, Depends(deps.get_marc_parsing_rules)
-    ],
+    update_rules: Annotated[Any, Depends(deps.get_marc_update_rules)],
+    parsing_rules: Annotated[Any, Depends(deps.get_marc_parsing_rules)],
     matchpoints: Annotated[Any, Depends(deps.MatchpointsModel.from_form)],
     repository: Annotated[Any, Depends(deps.pvf_batch_db)],
-    files: Annotated[Any, Depends(load_files)],
+    storage: Annotated[Any, Depends(deps.local_file_storage)],
+    workflow_id: Annotated[str, Form(...)],
+    file_repo: Annotated[Any, Depends(deps.incoming_file_db)],
 ) -> HTMLResponse:
     """
     Process one or more files of order-level MARC records using the sel workflow.
@@ -178,9 +165,9 @@ def process_sel_records(
             a `ports.MarcUpdaterPort` object used by application service.
         marc_parser:
             a `ports.MarcParserPort` object used by application service.
-        marc_parsing_rules:
+        parsing_rules:
             a `marc_updater.MarcParsingRulesModel` object representing cataloging rules.
-        marc_update_rules:
+        update_rules:
             a `marc_updater.MarcUpdateRulesModel` object representing cataloging rules.
         matchpoints:
             a list of matchpoints loaded from an order template in the database or
@@ -195,15 +182,17 @@ def process_sel_records(
         the ID for the processed files and stats wrapped in an `HTMLResponse` object
     """
     processed = ProcessSelectionRecords.execute(
-        batches={f"{i.file_name}": i.content for i in files},
+        storage=storage,
+        workflow_id=workflow_id,
         marc_updater=marc_updater,
         fetcher=fetcher,
         template_data=order_template.model_dump(),
         matchpoints=matchpoints.model_dump(),
         repo=repository,
         marc_parser=marc_parser,
-        marc_parsing_rules=marc_parsing_rules.model_dump(),
-        marc_update_rules=marc_update_rules.model_dump(),
+        parsing_rules=parsing_rules,
+        update_rules=update_rules.model_dump(),
+        file_repo=file_repo,
     )
     return request.app.state.templates.TemplateResponse(
         request=request,

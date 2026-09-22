@@ -4,7 +4,7 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.application.pvf import marc
+from overload_web.application.pvf import parsing_service
 from overload_web.infrastructure import marc_handler
 
 
@@ -141,8 +141,8 @@ class TestMarcParser:
         assert len([i for i in combined]) >= 1
 
     def test_identify_vendor(self, mock_marc, get_constants):
-        vendor_rules = get_constants["parsing_rules"]["vendor_rules"]
-        vendor_info = self.ENGINE.identify_vendor(obj=mock_marc, mapping=vendor_rules)
+        vendor_mapping = get_constants["parsing_rules"]["vendor_mapping"]
+        vendor_info = self.ENGINE.identify_vendor(obj=mock_marc, mapping=vendor_mapping)
         assert list(vendor_info.keys()) == [
             "name",
             "vendor_tags",
@@ -156,7 +156,7 @@ class TestMarcParser:
         "field,vendor", [("B&amp;T SERIES", "BT SERIES"), ("INGRAM", "INGRAM")]
     )
     def test_identify_vendor_bpl(self, stub_marc, get_constants, field, vendor):
-        vendor_rules = get_constants["parsing_rules"]["vendor_rules"]
+        vendor_mapping = get_constants["parsing_rules"]["vendor_mapping"]
         stub_marc.add_field(
             Field(
                 tag="947",
@@ -164,7 +164,7 @@ class TestMarcParser:
                 subfields=[Subfield(code="a", value=field)],
             )
         )
-        vendor_info = self.ENGINE.identify_vendor(obj=stub_marc, mapping=vendor_rules)
+        vendor_info = self.ENGINE.identify_vendor(obj=stub_marc, mapping=vendor_mapping)
         assert vendor_info["name"] == vendor
 
     def test_map_bib_data(self, mock_marc, get_constants):
@@ -236,17 +236,13 @@ class TestBibParser:
         rules = get_constants["parsing_rules"]
         marker = request.node.get_closest_marker("workflow")
         record_type = marker.kwargs["record_type"]
-        parser = marc.BibParser(
-            library=mock_marc.library,
-            collection=mock_marc.collection,
-            order_mapping=rules["order_mapping"],
-            bib_mapping=rules["bib_mapping"],
-            vendor_mapping=rules["vendor_rules"],
-            record_type=record_type,
+        rules["library"] = mock_marc.library
+        rules["collection"] = mock_marc.collection
+        rules["record_type"] = record_type
+        parser = parsing_service.BibParser(
+            rules=parsing_service.ParsingRules(**rules), handler=self.ENGINE
         )
-        combined = parser.combine_marc_files(
-            handler=self.ENGINE, data=[mock_marc.as_marc()]
-        )
+        combined = parser.combine_marc_files(data=[mock_marc.as_marc()])
         assert len([i for i in combined]) > 1
 
     @pytest.mark.workflow(record_type="acq")
@@ -256,15 +252,13 @@ class TestBibParser:
         rules = get_constants["parsing_rules"]
         marker = request.node.get_closest_marker("workflow")
         record_type = marker.kwargs["record_type"]
-        parser = marc.BibParser(
-            library=mock_marc.library,
-            collection=mock_marc.collection,
-            order_mapping=rules["order_mapping"],
-            bib_mapping=rules["bib_mapping"],
-            vendor_mapping=rules["vendor_rules"],
-            record_type=record_type,
+        rules["library"] = mock_marc.library
+        rules["collection"] = mock_marc.collection
+        rules["record_type"] = record_type
+        parser = parsing_service.BibParser(
+            rules=parsing_service.ParsingRules(**rules), handler=self.ENGINE
         )
-        records = parser.parse_marc_data(handler=self.ENGINE, data=mock_marc.as_marc())
+        records = parser.parse_marc_data(data=mock_marc.as_marc())
         assert len(records) == 1
         assert records[0].library == mock_marc.library
         assert records[0].record_type == record_type
@@ -282,15 +276,13 @@ class TestBibParser:
         rules = get_constants["parsing_rules"]
         marker = request.node.get_closest_marker("workflow")
         record_type = marker.kwargs["record_type"]
-        parser = marc.BibParser(
-            library=mock_marc.library,
-            collection=mock_marc.collection,
-            order_mapping=rules["order_mapping"],
-            bib_mapping=rules["bib_mapping"],
-            vendor_mapping=rules["vendor_rules"],
-            record_type=record_type,
+        rules["library"] = mock_marc.library
+        rules["collection"] = mock_marc.collection
+        rules["record_type"] = record_type
+        parser = parsing_service.BibParser(
+            rules=parsing_service.ParsingRules(**rules), handler=self.ENGINE
         )
-        records = parser.parse_marc_data(handler=self.ENGINE, data=mock_marc.as_marc())
+        records = parser.parse_marc_data(data=mock_marc.as_marc())
         assert len(records) == 1
         assert records[0].library == mock_marc.library
         assert records[0].record_type == record_type
@@ -307,15 +299,13 @@ class TestBibParser:
         rules = get_constants["parsing_rules"]
         marker = request.node.get_closest_marker("workflow")
         record_type = marker.kwargs["record_type"]
-        parser = marc.BibParser(
-            library=mock_marc.library,
-            collection=mock_marc.collection,
-            order_mapping=rules["order_mapping"],
-            bib_mapping=rules["bib_mapping"],
-            vendor_mapping=rules["vendor_rules"],
-            record_type=record_type,
+        rules["library"] = mock_marc.library
+        rules["collection"] = mock_marc.collection
+        rules["record_type"] = record_type
+        parser = parsing_service.BibParser(
+            rules=parsing_service.ParsingRules(**rules), handler=self.ENGINE
         )
-        records = parser.parse_marc_data(handler=self.ENGINE, data=mock_marc.as_marc())
+        records = parser.parse_marc_data(data=mock_marc.as_marc())
         assert len(records) == 1
         assert records[0].library == mock_marc.library
         assert records[0].record_type == record_type

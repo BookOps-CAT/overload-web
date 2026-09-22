@@ -5,7 +5,7 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.application.pvf import update
+from overload_web.application.pvf import update_service
 from overload_web.domain import shared
 from overload_web.domain.pvf import marc_rules, models
 from overload_web.infrastructure import marc_handler
@@ -103,13 +103,19 @@ def stub_updater(request, get_constants):
     collection = marker.kwargs["collection"]
     library = marker.kwargs["library"]
     constants = get_constants["constants"]
-    return update.BibFieldUpdater(
+    return update_service.BibUpdater(
         order_mapping=constants["order_mapping"],
         default_loc=constants["default_locations"][library].get(collection),
         bib_id_tag=constants["bib_id_tag"][library],
         library=library,
         collection=collection,
+        handler=marc_handler.MarcUpdater(),
     )
+
+
+@pytest.fixture
+def stub_reviewer():
+    return update_service.BibReviewer(handler=marc_handler.MarcUpdater())
 
 
 @pytest.fixture
@@ -581,7 +587,7 @@ class TestMarcUpdater:
     ENGINE = marc_handler.MarcUpdater()
 
     @pytest.mark.workflow(library="bpl", collection=None)
-    def test_update_record_add_vendor_fields(self, stub_domain_bib):
+    def test_update_record_add_vendor_fields(self, stub_domain_bib, stub_updater):
         cat_bib = stub_domain_bib("cat")
         cat_bib.vendor_info = models.VendorInfo(
             name="INGRAM",
@@ -591,9 +597,8 @@ class TestMarcUpdater:
                 {"tag": "949", "ind1": " ", "ind2": " ", "code": "a", "value": "*b2=a;"}
             ],
         )
-        update.BibRecordUpdater.update_record(
+        stub_updater.apply_field_updates(
             cat_bib,
-            handler=self.ENGINE,
             updates=marc_rules.FieldRules.add_vendor_fields(
                 cat_bib.vendor_info.bib_fields
             ),
@@ -602,19 +607,17 @@ class TestMarcUpdater:
         assert [i.format_field() for i in updated_bib.get_fields("949")] == ["*b2=a;"]
 
     @pytest.mark.workflow(library="nypl", collection="RL")
-    def test_update_record_add_bib_id(self, stub_domain_bib):
+    def test_update_record_add_bib_id(self, stub_domain_bib, stub_updater):
         cat_bib = stub_domain_bib("cat")
         cat_bib.bib_id = "12345"
-        update.BibRecordUpdater.update_record(
-            cat_bib,
-            handler=self.ENGINE,
-            updates=[marc_rules.FieldRules.add_bib_id(cat_bib.bib_id, "945")],
+        stub_updater.apply_field_updates(
+            cat_bib, updates=[marc_rules.FieldRules.add_bib_id(cat_bib.bib_id, "945")]
         )
         updated_bib = Bib(cat_bib.binary_data, library=cat_bib.library)
         assert updated_bib["945"].format_field() == "12345"
 
     @pytest.mark.workflow(library="nypl", collection="BL")
-    def test_update_record_command_tag(self, stub_domain_bib):
+    def test_update_record_command_tag(self, stub_domain_bib, stub_updater):
         field_949 = "*b2=a;"
         sel_bib = stub_domain_bib("sel")
         sel_bib.parsed_fields = [
@@ -642,9 +645,8 @@ class TestMarcUpdater:
             )
         )
         sel_bib.binary_data = marc_data.as_marc()
-        update.BibRecordUpdater.update_record(
+        stub_updater.apply_field_updates(
             sel_bib,
-            handler=self.ENGINE,
             updates=[
                 marc_rules.FieldRules.add_command_tag(
                     format="a", default_loc="zzzzz", fields=sel_bib.parsed_fields
@@ -658,12 +660,13 @@ class TestMarcUpdater:
         assert "*b2=a;bn=zzzzz;" in fields_949
 
     @pytest.mark.workflow(library="nypl", collection="BL")
-    def test_update_record_original_command_tag_not_found(self, stub_domain_bib):
+    def test_update_record_original_command_tag_not_found(
+        self, stub_domain_bib, stub_updater
+    ):
         sel_bib = stub_domain_bib("sel")
         original = copy.deepcopy(sel_bib)
-        update.BibRecordUpdater.update_record(
+        stub_updater.apply_field_updates(
             sel_bib,
-            handler=self.ENGINE,
             updates=[
                 marc_rules.MarcFieldUpdateValues(
                     tag="949",
@@ -682,94 +685,3 @@ class TestMarcUpdater:
         assert [i.format_field() for i in updated_bib.get_fields("949")] == [
             "*b2=a;bn=zzzzz;"
         ]
-
-    def test_dedupe_attach(self, full_bib_949_item):
-        bib = full_bib_949_item("123456789")
-        bib.action = "attach"
-        processed = update.BibRecordUpdater.deduplicate(
-            records=[bib], handler=self.ENGINE
-        )
-        assert len(processed["NEW"]) == 0
-        assert len(processed["DUP"]) == 1
-        assert len(processed["DEDUPED"]) == 0
-
-    def test_dedupe_insert(self, full_bib_949_item):
-        bib = full_bib_949_item("123456789")
-        processed = update.BibRecordUpdater.deduplicate(
-            records=[bib], handler=self.ENGINE
-        )
-        assert len(processed["NEW"]) == 1
-        assert len(processed["DUP"]) == 0
-        assert len(processed["DEDUPED"]) == 0
-
-    def test_dedupe_combine_bibs(self, full_bib_949_item):
-        bib1 = full_bib_949_item("123456789")
-        bib2 = full_bib_949_item("123456789")
-        processed = update.BibRecordUpdater.deduplicate(
-            records=[bib1, bib2], handler=self.ENGINE
-        )
-        combined_rec = processed["DEDUPED"][0]
-        deduped = Bib(combined_rec.binary_data, library=combined_rec.library)
-        new_ctrl_nums = [i.control_number for i in processed["NEW"]]
-        deduped_ctrl_nums = [i.control_number for i in processed["DEDUPED"]]
-        assert len(processed["NEW"]) == 2
-        assert len(processed["DUP"]) == 0
-        assert len(processed["DEDUPED"]) == 1
-        assert sorted([i.value() for i in deduped.get_fields("949")]) == [
-            "*b2=a;"
-        ] + sorted(bib1.barcodes + bib2.barcodes)
-        assert new_ctrl_nums == ["123456789", "123456789"]
-        assert deduped_ctrl_nums == ["123456789"]
-
-    def test_dedupe_combine_bpl_bibs(self, full_bib_960_item):
-        bib1 = full_bib_960_item("123456789")
-        bib2 = full_bib_960_item("123456789")
-        processed = update.BibRecordUpdater.deduplicate(
-            records=[bib1, bib2], handler=self.ENGINE
-        )
-        combined_rec = processed["DEDUPED"][0]
-        deduped = Bib(combined_rec.binary_data, library=combined_rec.library)
-        new_ctrl_nums = [i.control_number for i in processed["NEW"]]
-        deduped_ctrl_nums = [i.control_number for i in processed["DEDUPED"]]
-        assert len(processed["NEW"]) == 2
-        assert len(processed["DUP"]) == 0
-        assert len(processed["DEDUPED"]) == 1
-        assert [i.value() for i in deduped.get_fields("949")] == ["*b2=a;"]
-        assert sorted([i.value() for i in deduped.get_fields("960")]) == sorted(
-            bib1.barcodes + bib2.barcodes
-        )
-        assert new_ctrl_nums == ["123456789", "123456789"]
-        assert deduped_ctrl_nums == ["123456789"]
-
-    def test_dedupe_other_recs(self, full_bib_949_item):
-        bib1a = full_bib_949_item("123456789")
-        bib1b = full_bib_949_item("123456789")
-        bib2 = full_bib_949_item("987654321")
-        processed = update.BibRecordUpdater.deduplicate(
-            records=[bib1a, bib1b, bib2], handler=self.ENGINE
-        )
-        new_ctrl_nums = [i.control_number for i in processed["NEW"]]
-        deduped_ctrl_nums = [i.control_number for i in processed["DEDUPED"]]
-        assert len(processed["NEW"]) == 3
-        assert len(processed["DUP"]) == 0
-        assert len(processed["DEDUPED"]) == 2
-        assert sorted(new_ctrl_nums) == ["123456789", "123456789", "987654321"]
-        assert sorted(deduped_ctrl_nums) == ["123456789", "987654321"]
-
-    def test_dedupe_multiple_groups(self, full_bib_949_item):
-        bib_1a = full_bib_949_item("123456789")
-        bib_1b = full_bib_949_item("123456789")
-        bib2 = full_bib_949_item(None)
-        bib3 = full_bib_949_item(None)
-        bib4 = full_bib_949_item("987654321")
-        bib4.control_number = "987654321"
-        processed = update.BibRecordUpdater.deduplicate(
-            records=[bib_1a, bib_1b, bib2, bib3, bib4], handler=self.ENGINE
-        )
-        new_ctrl_nums = [i.control_number for i in processed["NEW"]]
-        deduped_ctrl_nums = [i.control_number for i in processed["DEDUPED"]]
-        assert len(processed["NEW"]) == 5
-        assert len(processed["DUP"]) == 0
-        assert len(processed["DEDUPED"]) == 4
-        assert new_ctrl_nums == ["123456789", "123456789", None, None, "987654321"]
-        assert deduped_ctrl_nums == ["123456789", None, None, "987654321"]

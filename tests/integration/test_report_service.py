@@ -1,7 +1,7 @@
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.application.pvf.reporting import (
+from overload_web.application.pvf.report_service import (
     CreatePVFOutputReport,
     GetDetailedReportData,
     WriteOutputReport,

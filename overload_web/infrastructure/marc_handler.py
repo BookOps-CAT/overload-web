@@ -12,7 +12,7 @@ Protocols:
 
 Classes:
 
-`MarcParserEngine`
+`MarcParser`
     Parse binary MARC data using `bookops_marc` and `pymarc`. Uses config data
     to determine field mapping and processing workflows.
 `MarcUpdater`
@@ -174,7 +174,6 @@ class MarcParser:
         out: dict[str, Any] = {}
         # Adds or removes OCLC prefix from `001` field based on library
         obj.normalize_oclc_control_number()
-        print(mapping)
         for k, v in mapping.items():
             # OCLC Numbers have to be converted from a list to a dictionary
             if v == "oclc_nos":
