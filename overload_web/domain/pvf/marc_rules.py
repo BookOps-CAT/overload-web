@@ -27,8 +27,8 @@ class MarcFieldUpdateValues:
     ind1: str
     ind2: str
     subfields: list[dict[str, str]]
-    delete_all_by_tag: bool = False
-    target_to_delete: TargetFieldCriteria | None = None
+    delete_fields_by_tag: bool = False
+    target_field_to_delete: TargetFieldCriteria | None = None
 
 
 class MarcOrderProtocol(Protocol):
@@ -45,7 +45,7 @@ class FieldRules:
         """Creates a new bib ID field."""
         if bib_id:
             return MarcFieldUpdateValues(
-                delete_all_by_tag=True,
+                delete_fields_by_tag=True,
                 tag=tag,
                 ind1=" ",
                 ind2=" ",
@@ -94,7 +94,7 @@ class FieldRules:
                     "value": f"{command_tag.removesuffix(';')};bn={default_loc};",
                 }
             ],
-            target_to_delete=TargetFieldCriteria(
+            target_field_to_delete=TargetFieldCriteria(
                 tag="949", indicators=(" ", " "), code="a", value=command_tag
             ),
         )
@@ -166,7 +166,7 @@ class FieldRules:
     def update_910_field(collection: str) -> MarcFieldUpdateValues:
         """Adds 910 field for branches or research if applicable."""
         return MarcFieldUpdateValues(
-            delete_all_by_tag=True,
+            delete_fields_by_tag=True,
             tag="910",
             ind1=" ",
             ind2=" ",
@@ -219,7 +219,7 @@ class FieldRules:
                 f"New={new_call_no}, Original={call_no}"
             )
         return MarcFieldUpdateValues(
-            delete_all_by_tag=True,
+            delete_fields_by_tag=True,
             tag="091",
             ind1=" ",
             ind2=" ",

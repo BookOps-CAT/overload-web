@@ -74,7 +74,7 @@ def process_acq_records(
         repo=repository,
         marc_parser=marc_parser,
         parsing_rules=parsing_rules,
-        update_rules=update_rules.model_dump(),
+        update_rules=update_rules,
         file_repo=file_repo,
     )
     return request.app.state.templates.TemplateResponse(
@@ -128,7 +128,7 @@ def process_cat_records(
         repo=repository,
         marc_parser=marc_parser,
         parsing_rules=parsing_rules,
-        update_rules=update_rules.model_dump(),
+        update_rules=update_rules,
         file_repo=file_repo,
     )
     return request.app.state.templates.TemplateResponse(
@@ -191,7 +191,7 @@ def process_sel_records(
         repo=repository,
         marc_parser=marc_parser,
         parsing_rules=parsing_rules,
-        update_rules=update_rules.model_dump(),
+        update_rules=update_rules,
         file_repo=file_repo,
     )
     return request.app.state.templates.TemplateResponse(

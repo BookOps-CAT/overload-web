@@ -19,7 +19,6 @@ from overload_web.infrastructure import (
     reporter,
     sierra_clients,
     template_db,
-    unit_of_work,
 )
 
 logger = logging.getLogger(__name__)
@@ -371,11 +370,6 @@ def get_session(
     """
     with Session(engine) as session:
         yield session
-
-
-def pvf_unit_of_work() -> Generator[unit_of_work.PVFUnitOfWork, None, None]:
-    """Create an order template repository."""
-    yield unit_of_work.PVFUnitOfWork()
 
 
 def order_template_db(

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import Any
 
 from overload_web.application import ports
@@ -11,22 +12,31 @@ from overload_web.domain.pvf import marc_rules, models
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class UpdateRules:
+    bib_id_tag: str
+    collection: str | None
+    default_loc: str | None
+    library: str
+    order_mapping: dict[str, Any]
+
+
 class BibUpdater:
-    def __init__(
-        self,
-        bib_id_tag: str,
-        collection: str | None,
-        handler: ports.MarcUpdaterPort,
-        default_loc: str | None,
-        library: str,
-        order_mapping: dict[str, Any],
-    ) -> None:
-        self.bib_id_tag = bib_id_tag
-        self.collection = collection
-        self.default_loc = default_loc
+    def __init__(self, handler: ports.MarcUpdaterPort, rules: UpdateRules) -> None:
+        self.bib_id_tag = rules.bib_id_tag
+        self.default_loc = rules.default_loc
         self.handler = handler
-        self.library = library
-        self.order_mapping = order_mapping
+        self.library = rules.library
+        self.order_mapping = rules.order_mapping
+
+    def apply_field_updates(
+        self, record: models.DomainBib, updates: list[marc_rules.MarcFieldUpdateValues]
+    ) -> None:
+        """Update and add MARC fields to bib record"""
+        bib = self.handler.create_bib_from_domain(record=record)
+        self.handler.update_fields(field_updates=updates, bib=bib)
+        self.handler.update_leader_encoding(leader=bib.leader, bib=bib)
+        record.binary_data = bib.as_marc()
 
     def get_acq_updates(
         self, record: models.DomainBib, template_data: dict[str, Any]
@@ -95,12 +105,3 @@ class BibUpdater:
         if self.library == "nypl":
             updates.append(marc_rules.FieldRules.update_910_field(record.collection))
         return [i for i in updates if i]
-
-    def apply_field_updates(
-        self, record: models.DomainBib, updates: list[marc_rules.MarcFieldUpdateValues]
-    ) -> None:
-        """Update and add MARC fields to bib record"""
-        bib = self.handler.create_bib_from_domain(record=record)
-        self.handler.update_fields(field_updates=updates, bib=bib)
-        self.handler.update_leader_encoding(leader=bib.leader, bib=bib)
-        record.binary_data = bib.as_marc()

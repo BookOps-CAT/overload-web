@@ -103,13 +103,15 @@ def stub_updater(request, get_constants):
     collection = marker.kwargs["collection"]
     library = marker.kwargs["library"]
     constants = get_constants["constants"]
+    rules = {
+        "library": library,
+        "collection": collection,
+        "default_loc": constants["default_locations"][library].get(collection),
+        "bib_id_tag": constants["bib_id_tag"][library],
+        "order_mapping": constants["order_mapping"],
+    }
     return update_service.BibUpdater(
-        order_mapping=constants["order_mapping"],
-        default_loc=constants["default_locations"][library].get(collection),
-        bib_id_tag=constants["bib_id_tag"][library],
-        library=library,
-        collection=collection,
-        handler=marc_handler.MarcUpdater(),
+        rules=update_service.UpdateRules(**rules), handler=marc_handler.MarcUpdater()
     )
 
 
@@ -203,16 +205,16 @@ class TestGetBibUpdatesBPL:
         assert len(updates) == 2
         assert updates[0].__dict__ == {
             "tag": "949",
-            "delete_all_by_tag": False,
-            "target_to_delete": None,
+            "delete_fields_by_tag": False,
+            "target_field_to_delete": None,
             "ind1": " ",
             "ind2": " ",
             "subfields": [{"code": "a", "value": "*b2=a;"}],
         }
         assert updates[1].__dict__ == {
             "tag": "907",
-            "delete_all_by_tag": True,
-            "target_to_delete": None,
+            "delete_fields_by_tag": True,
+            "target_field_to_delete": None,
             "ind1": " ",
             "ind2": " ",
             "subfields": [{"code": "a", "value": "12345"}],
@@ -231,7 +233,7 @@ class TestGetBibUpdatesBPL:
         assert updates[1].tag == "961"
         assert updates[2].tag == "949"
         assert updates[2].subfields == [{"code": "a", "value": "*b2=a;"}]
-        assert updates[2].target_to_delete is None
+        assert updates[2].target_field_to_delete is None
 
     def test_get_sel_updates_with_command_tag(self, stub_updater, stub_domain_bib):
         sel_bib = stub_domain_bib("sel")
@@ -273,8 +275,8 @@ class TestGetBibUpdatesNYPLBranch:
         assert updates[1].tag == "961"
         assert updates[2].__dict__ == {
             "tag": "910",
-            "delete_all_by_tag": True,
-            "target_to_delete": None,
+            "delete_fields_by_tag": True,
+            "target_field_to_delete": None,
             "ind1": " ",
             "ind2": " ",
             "subfields": [{"code": "a", "value": "BL"}],
@@ -295,16 +297,16 @@ class TestGetBibUpdatesNYPLBranch:
         assert len(updates) == 3
         assert updates[0].__dict__ == {
             "tag": "949",
-            "delete_all_by_tag": False,
-            "target_to_delete": None,
+            "delete_fields_by_tag": False,
+            "target_field_to_delete": None,
             "ind1": " ",
             "ind2": " ",
             "subfields": [{"code": "a", "value": "*b2=a;"}],
         }
         assert updates[1].__dict__ == {
             "tag": "945",
-            "delete_all_by_tag": True,
-            "target_to_delete": None,
+            "delete_fields_by_tag": True,
+            "target_field_to_delete": None,
             "ind1": " ",
             "ind2": " ",
             "subfields": [{"code": "a", "value": "12345"}],
@@ -352,8 +354,8 @@ class TestGetBibUpdatesNYPLBranch:
         assert updates[1].tag == "091"
         assert updates[1].ind1 == " "
         assert updates[1].ind2 == " "
-        assert updates[1].delete_all_by_tag is True
-        assert updates[1].target_to_delete is None
+        assert updates[1].delete_fields_by_tag is True
+        assert updates[1].target_field_to_delete is None
         assert updates[1].subfields == [
             {"code": k, "value": v} for k, v in output.items()
         ]
@@ -398,7 +400,7 @@ class TestGetBibUpdatesNYPLBranch:
         assert updates[1].tag == "961"
         assert updates[2].tag == "949"
         assert updates[2].subfields == [{"code": "a", "value": command_tag}]
-        assert updates[2].target_to_delete is None
+        assert updates[2].target_field_to_delete is None
         assert updates[3].tag == "910"
 
     @pytest.mark.parametrize(
@@ -424,7 +426,7 @@ class TestGetBibUpdatesNYPLBranch:
         assert updates[1].tag == "961"
         assert updates[2].tag == "949"
         assert updates[2].subfields == [{"code": "a", "value": output}]
-        assert updates[2].target_to_delete.__dict__ == {
+        assert updates[2].target_field_to_delete.__dict__ == {
             "tag": "949",
             "indicators": (" ", " "),
             "code": "a",
@@ -466,8 +468,8 @@ class TestGetBibUpdatesNYPLResearch:
         assert updates[1].tag == "961"
         assert updates[2].__dict__ == {
             "tag": "910",
-            "delete_all_by_tag": True,
-            "target_to_delete": None,
+            "delete_fields_by_tag": True,
+            "target_field_to_delete": None,
             "ind1": " ",
             "ind2": " ",
             "subfields": [{"code": "a", "value": "RL"}],
@@ -488,16 +490,16 @@ class TestGetBibUpdatesNYPLResearch:
         assert len(updates) == 3
         assert updates[0].__dict__ == {
             "tag": "949",
-            "delete_all_by_tag": False,
-            "target_to_delete": None,
+            "delete_fields_by_tag": False,
+            "target_field_to_delete": None,
             "ind1": " ",
             "ind2": " ",
             "subfields": [{"code": "a", "value": "*b2=a;"}],
         }
         assert updates[1].__dict__ == {
             "tag": "945",
-            "delete_all_by_tag": True,
-            "target_to_delete": None,
+            "delete_fields_by_tag": True,
+            "target_field_to_delete": None,
             "ind1": " ",
             "ind2": " ",
             "subfields": [{"code": "a", "value": "12345"}],
@@ -531,7 +533,7 @@ class TestGetBibUpdatesNYPLResearch:
         assert updates[1].tag == "961"
         assert updates[2].tag == "949"
         assert updates[2].subfields == [{"code": "a", "value": command_tag}]
-        assert updates[2].target_to_delete is None
+        assert updates[2].target_field_to_delete is None
         assert updates[3].tag == "910"
 
     @pytest.mark.parametrize(
@@ -556,7 +558,7 @@ class TestGetBibUpdatesNYPLResearch:
         assert updates[1].tag == "961"
         assert updates[2].tag == "949"
         assert updates[2].subfields == [{"code": "a", "value": output}]
-        assert updates[2].target_to_delete.__dict__ == {
+        assert updates[2].target_field_to_delete.__dict__ == {
             "tag": "949",
             "indicators": (" ", " "),
             "code": "a",
@@ -673,7 +675,7 @@ class TestMarcUpdater:
                     ind1=" ",
                     ind2=" ",
                     subfields=[{"code": "a", "value": "*b2=a;bn=zzzzz;"}],
-                    target_to_delete=marc_rules.TargetFieldCriteria(
+                    target_field_to_delete=marc_rules.TargetFieldCriteria(
                         tag="949", indicators=(" ", " "), code="a", value="*"
                     ),
                 )

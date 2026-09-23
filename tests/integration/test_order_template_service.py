@@ -4,9 +4,9 @@ import pytest
 from sqlmodel import Session, SQLModel, create_engine
 
 from overload_web.application.pvf.template_handling import (
-    CreateOrderTemplate,
     GetOrderTemplate,
     ListOrderTemplates,
+    SaveNewOrderTemplate,
 )
 from overload_web.domain.pvf import order_templates
 from overload_web.infrastructure import template_db
@@ -84,7 +84,7 @@ class TestTemplateService:
 
     def test_save_template(self, repo, stub_template_data, make_template):
         template = make_template(stub_template_data)
-        template_saver = CreateOrderTemplate.execute(repository=repo, obj=template)
+        template_saver = SaveNewOrderTemplate.execute(repository=repo, obj=template)
         assert template_saver.name == stub_template_data["name"]
         assert template_saver.agent == stub_template_data["agent"]
         assert template_saver.blanket_po == stub_template_data["blanket_po"]
@@ -108,6 +108,6 @@ class TestTemplateService:
                 "primary_matchpoint": "isbn",
             }
         )
-        CreateOrderTemplate.execute(repository=repo, obj=template)
+        SaveNewOrderTemplate.execute(repository=repo, obj=template)
         saved_template = GetOrderTemplate.execute(repository=repo, template_id=id)
         assert saved_template.__dict__ == template.model_dump()

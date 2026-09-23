@@ -9,7 +9,7 @@ from overload_web.domain.pvf import order_templates
 logger = logging.getLogger(__name__)
 
 
-class CreateOrderTemplate:
+class SaveNewOrderTemplate:
     @staticmethod
     def execute(
         repository: ports.SqlRepositoryProtocol, obj: order_templates.OrderTemplateBase

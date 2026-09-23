@@ -75,10 +75,12 @@ class MarcUpdater:
             None. The record's fields are updated in place.
         """
         for update in field_updates:
-            if update.delete_all_by_tag is True:
-                bib.remove_fields(update.delete_all_by_tag)
-            if update.target_to_delete is not None:
-                to_delete = self._find_specific_field(bib, update.target_to_delete)
+            if update.delete_fields_by_tag is True:
+                bib.remove_fields(update.delete_fields_by_tag)
+            if update.target_field_to_delete is not None:
+                to_delete = self._find_specific_field(
+                    bib, update.target_field_to_delete
+                )
                 if to_delete:
                     bib.remove_field(to_delete)
             bib.add_ordered_field(
@@ -180,9 +182,8 @@ class MarcParser:
                 property = getattr(obj, v)
                 out[k] = list(set(property.values()))
             elif isinstance(v, dict) and "tag" in v:
-                if v["tag"] in obj:
-                    field = obj.get(v["tag"])
-                    out[k] = getattr(field, "data")
+                field = obj.get(v["tag"])
+                out[k] = getattr(field, "data", None)
             # most attrs have 1:1 mapping between `Bib` and `DomainBib`
             else:
                 out[k] = getattr(obj, v)

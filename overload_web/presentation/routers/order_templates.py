@@ -9,9 +9,9 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse
 
 from overload_web.application.pvf.template_handling import (
-    CreateOrderTemplate,
     GetOrderTemplate,
     ListOrderTemplates,
+    SaveNewOrderTemplate,
     UpdateOrderTemplate,
 )
 from overload_web.presentation import deps
@@ -38,7 +38,7 @@ def create_template(
     Returns:
         the saved order template as a dict wrapped in an `HTMLResponse` object
     """
-    saved_template = CreateOrderTemplate.execute(obj=template, repository=repository)
+    saved_template = SaveNewOrderTemplate.execute(obj=template, repository=repository)
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="forms/template_form.html",

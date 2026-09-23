@@ -7,7 +7,6 @@ from overload_web.application.pvf.process import (
     ProcessCatalogingRecords,
     ProcessSelectionRecords,
 )
-from overload_web.domain.pvf import batch
 from overload_web.infrastructure import batch_db, file_io, marc_handler
 
 
@@ -36,7 +35,9 @@ def missing_barcodes(monkeypatch):
     def get_barcodes(*args, **kwargs):
         return ["333330987654321"]
 
-    monkeypatch.setattr(batch.BarcodeValidator, "validate_unique", get_barcodes)
+    monkeypatch.setattr(
+        parsing_service.BarcodeValidator, "validate_unique", get_barcodes
+    )
 
 
 @pytest.fixture
@@ -105,13 +106,13 @@ class FakeMarcParser:
 @pytest.mark.usefixtures("marc_stubs")
 class TestProcessCommands:
     FAKE_MARC_PARSER = FakeMarcParser()
-    FAKE_UPDATE_RULES = {
-        "order_mapping": {},
-        "default_loc": "foo",
-        "bib_id_tag": "bar",
-        "library": "baz",
-        "collection": "qux",
-    }
+    FAKE_UPDATE_RULES = update_service.UpdateRules(
+        order_mapping={},
+        default_loc="foo",
+        bib_id_tag="bar",
+        library="baz",
+        collection="qux",
+    )
     FAKE_PARSING_RULES = {
         "order_mapping": {},
         "bib_mapping": {},
