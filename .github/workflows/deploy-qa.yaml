@@ -1,0 +1,100 @@
+# On merge into the qa` branch, build the image and deploy to ECR.
+# This is on `nypl-dev` account.
+name: Publish qa
+on:
+  push:
+    branches:
+        - qa
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy_qa:
+    name: Publish image to ECR and update ECS stack
+    runs-on: ubuntu-latest
+    environment: qa
+    env:
+      ECR_REPOSITORY: bookops/overload
+      IMAGE_TAG: qa-latest
+      ECS_CLUSTER: bookops-overload-app-qa
+      ECS_SERVICE: bookops-overload-app-qa
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # Variables and secrets are stored in GitHub
+          # using environments from the settings page.
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ secrets.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+            ${{ secrets.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+
+      - name: Force ECS Update
+        run: |
+          aws ecs update-service \
+            --cluster $ECS_CLUSTER \
+            --service $ECS_SERVICE \
+            --force-new-deployment
+
+      - name: Wait for ECS service stability
+        run: |
+          aws ecs wait services-stable \
+            --cluster "$ECS_CLUSTER" \
+            --services "$ECS_SERVICE"
+
+      - name: Print ECS diagnostics on failure
+        if: failure()
+        run: |
+          echo "Recent ECS service events:"
+          aws ecs describe-services \
+            --cluster "$ECS_CLUSTER" \
+            --services "$ECS_SERVICE" \
+            --query "services[0].events[0:10].[createdAt,message]" \
+            --output table
+
+          echo "Recent ECS tasks:"
+          TASK_ARNS="$(aws ecs list-tasks \
+            --cluster "$ECS_CLUSTER" \
+            --service-name "$ECS_SERVICE" \
+            --desired-status RUNNING \
+            --query "taskArns" \
+            --output text)"
+
+          if [ -z "$TASK_ARNS" ]; then
+            TASK_ARNS="$(aws ecs list-tasks \
+              --cluster "$ECS_CLUSTER" \
+              --service-name "$ECS_SERVICE" \
+              --desired-status STOPPED \
+              --query "taskArns[0:5]" \
+              --output text)"
+          fi
+
+          if [ -n "$TASK_ARNS" ]; then
+            aws ecs describe-tasks \
+              --cluster "$ECS_CLUSTER" \
+              --tasks $TASK_ARNS \
+              --query "tasks[].{lastStatus:lastStatus,desiredStatus:desiredStatus,healthStatus:healthStatus,stoppedReason:stoppedReason,containers:containers[].{name:name,lastStatus:lastStatus,healthStatus:healthStatus,reason:reason,exitCode:exitCode}}" \
+              --output json
+          else
+            echo "No running or stopped tasks found for $ECS_SERVICE."
+          fi
