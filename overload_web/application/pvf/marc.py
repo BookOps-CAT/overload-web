@@ -22,12 +22,12 @@ class MarcServiceHandler:
         self, record: models.DomainBib, record_type: str, **kwargs
     ) -> None:
         updates = []
-        if record_type == "acq":
-            updates.extend(self.updater.get_acq_updates(record=record, **kwargs))
-        elif record_type == "cat":
+        if record_type == "cat":
             updates.extend(self.updater.get_cat_updates(record=record, **kwargs))
         elif record_type == "sel":
             updates.extend(self.updater.get_sel_updates(record=record, **kwargs))
+        else:
+            updates.extend(self.updater.get_acq_updates(record=record, **kwargs))
         self.updater.apply_field_updates(record=record, updates=updates)
 
     def extract_barcodes(self, records: list[models.DomainBib]) -> list[str]:

@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import logging
+from types import TracebackType
 from typing import Any, Iterator, Protocol, Sequence, TypeVar, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar("T", contravariant=True)  # variable for `SQLModel` type
-U = TypeVar("U", contravariant=True)  # variable for `DomainBib` contravariant type
-V = TypeVar("V")  # variable for `DomainBib` type
+T = TypeVar("T", contravariant=True)  # variable for contravariant `SQLModel` type
+U = TypeVar("U")  # variable for invariant `SQLModel` type
+V = TypeVar("V", contravariant=True)  # variable for contravariant `DomainBib` type
+W = TypeVar("W")  # variable for invariant `bookops_marc.Bib` type
 
 
 @runtime_checkable
@@ -138,14 +140,14 @@ class FileWriter(Protocol):
 
 
 @runtime_checkable
-class MarcParserPort(Protocol[V]):
+class MarcParserPort(Protocol[W]):
     def compare_mapped_tags(
-        self, obj: V, tags: dict[str, dict[str, str]]
+        self, obj: W, tags: dict[str, dict[str, str]]
     ) -> bool: ...  # pragma:no branch
 
     """Match vendor tags from mapping to bib object."""
 
-    def create_bib_obj(self, data: bytes, library: str) -> V: ...  # pragma: no branch
+    def create_bib_obj(self, data: bytes, library: str) -> W: ...  # pragma: no branch
 
     """Instantiate a Bib object from binary data."""
 
@@ -156,50 +158,86 @@ class MarcParserPort(Protocol[V]):
     """Instantiate an object that can read MARC binary as an iterator."""
 
     def identify_vendor(
-        self, obj: V, mapping: dict[str, Any]
+        self, obj: W, mapping: dict[str, Any]
     ) -> dict[str, Any]: ...  # pragma: no branch
 
     """Determine the vendor who created a `bookops_marc.Bib` record."""
 
     def map_bib_data(
-        self, obj: V, mapping: dict[str, Any]
+        self, obj: W, mapping: dict[str, Any]
     ) -> dict[str, Any]: ...  # pragma: no branch
 
     """Map an bib to a dictionary following a set of rules."""
 
     def map_order_data(
-        self, obj: V, mapping: dict[str, Any]
+        self, obj: W, mapping: dict[str, Any]
     ) -> dict[str, Any]: ...  # pragma: no branch
 
     """Map an order to a dictionary following a set of rules."""
 
-    def write(self, records: list[U]) -> bytes: ...  # pragma:no branch
+    def write(self, records: list[V]) -> bytes: ...  # pragma:no branch
 
     """Write `DomainBib` objects to single binary object."""
 
 
 @runtime_checkable
-class MarcUpdaterPort(Protocol[U, V]):
+class MarcUpdaterPort(Protocol[V, W]):
     library: str
     record_type: str
     collection: str | None
     config: dict[str, Any]
 
-    def create_bib_from_domain(self, record: U) -> V: ...  # pragma:no branch
+    def create_bib_from_domain(self, record: V) -> W: ...  # pragma:no branch
 
     """Create a `bookops_marc.Bib` object from a `DomainBib` object"""
 
     def update_fields(
-        self, field_updates: list[Any], bib: V
+        self, field_updates: list[Any], bib: W
     ) -> None: ...  # pragma:no branch
 
     """Update record in place"""
 
     def update_leader_encoding(
-        self, leader: str, bib: V
+        self, leader: str, bib: W
     ) -> None: ...  # pragma:no branch
 
     """Update character encoding to unicode."""
+
+
+@runtime_checkable
+class OCLCBibFetcher(Protocol):
+    """Interface for interactions with OCLC Metadata/Search APIs."""
+
+    def get_brief_bibs_by_id(
+        self, params: dict[str, Any]
+    ) -> list[dict[str, Any]]: ...  # pragma: no branch
+
+    """Search for brief bib resource using specified parameters."""
+
+    def get_full_bib_by_id(self, value: str | int) -> bytes: ...  # pragma: no branch
+
+    """Retrieve for full MARC record as a bytes object for a given ID."""
+
+    def get_full_bib_json_by_id(
+        self, value: str
+    ) -> dict[str, Any]: ...  # pragma: no branch
+
+    """Retrieve for full MARC record as a json object for a given ID."""
+
+
+@runtime_checkable
+class ReportWriter(Protocol):
+    """A protocol defining a service used to write report data."""
+
+    def prep_report(
+        self, data: list[dict[str, Any]]
+    ) -> list[list[Any]]: ...  # pragma: no branch
+
+    """Prep data to write to an external service."""
+
+    def write_report(self, data: list[list[Any]]) -> None: ...  # pragma: no branch
+
+    """Write report data to an external service."""
 
 
 @runtime_checkable
@@ -243,37 +281,43 @@ class SqlRepositoryProtocol(Protocol[T]):
     """Update an existing object in a database."""
 
 
-@runtime_checkable
-class ReportWriter(Protocol):
-    """A protocol defining a service used to write report data."""
+class UnitOfWorkProtocol(Protocol):
+    """Protocol defining the Unit of Work for database transactions."""
 
-    def prep_report(
-        self, data: list[dict[str, Any]]
-    ) -> list[list[Any]]: ...  # pragma: no branch
+    batch_repo: SqlRepositoryProtocol
+    file_repo: SqlRepositoryProtocol
+    job_repo: WorkflowRepositoryProtocol
 
-    """Prep data to write to an external service."""
+    def __enter__(self) -> UnitOfWorkProtocol: ...
 
-    def write_report(self, data: list[list[Any]]) -> None: ...  # pragma: no branch
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None: ...
 
-    """Write report data to an external service."""
+    def commit(self) -> None: ...
+    def rollback(self) -> None: ...
 
 
-@runtime_checkable
-class OCLCBibFetcher(Protocol):
-    """Interface for interactions with OCLC Metadata/Search APIs."""
+class WorkflowRepositoryProtocol(Protocol[U]):
+    """
+    Interface for repository operations on workflow objects.
 
-    def get_brief_bibs_by_id(
-        self, params: dict[str, Any]
-    ) -> list[dict[str, Any]]: ...  # pragma: no branch
+    Includes methods for fetching and saving generic objects.
+    """
 
-    """Search for brief bib resource using specified parameters."""
+    session: Any
 
-    def get_full_bib_by_id(self, value: str | int) -> bytes: ...  # pragma: no branch
+    def get(self, id: str) -> U: ...  # pragma: no branch
 
-    """Retrieve for full MARC record as a bytes object for a given ID."""
+    """Get objects from a database."""
 
-    def get_full_bib_json_by_id(
-        self, value: str
-    ) -> dict[str, Any]: ...  # pragma: no branch
+    def save(self, obj: U) -> str: ...  # pragma: no branch
 
-    """Retrieve for full MARC record as a json object for a given ID."""
+    """Save a new object to a database."""
+
+    def update(self, id: str, data: U) -> U: ...  # pragma: no branch
+
+    """Update an existing object in a database."""
