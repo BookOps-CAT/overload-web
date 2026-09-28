@@ -3,16 +3,15 @@
   {% set template = {} %}
 {% endif %}
 <div class="row row-cols-4 g-2">
-  <div class="col">{{ macro.input_field('name', {'label': 'Name'}, template.get('name')) }}</div>
+  <div class="col">{{ macro.input_field('name', {'label': 'Template Name'}, template.get('name')) }}</div>
   <div class="col">{{ macro.input_field('agent', {'label': 'User'}, template.get('agent')) }}</div>
   <div class="col">
     <div class="form-floating">
-      <input id="id"
+      <input id="template_id"
              class="form-control"
-             name="id"
+             name="template_id"
              type="hidden"
              form="pvf-form"
-             {% if not template %}disabled{% endif %}
              value='{{ template.get("id") }}' />
     </div>
   </div>

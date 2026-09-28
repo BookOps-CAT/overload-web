@@ -1,5 +1,5 @@
-<div class="row" id="template-form">
-  <div class="col" id="template-form">
+<div class="row">
+  <div class="col">
     <div id="template-form-fields">{% include "order_templates/rendered.html" %}</div>
     <div id="template-buttons" class="row row-cols-3">
       <div class="col" hx-include="#template-form-fields">
@@ -8,7 +8,7 @@
                 hx-target="#template-form"
                 type="submit">Save Template as New</button>
       </div>
-      <div class="col">
+      <div class="col" hx-include="#template-form-fields">
         <button class="btn btn-nypl"
                 hx-patch="/ot/template"
                 hx-target="#template-form"
@@ -23,3 +23,8 @@
     </div>
   </div>
 </div>
+<div id="templates"
+     hx-get="/ot/templates"
+     hx-trigger="load"
+     name="templates"
+     hx-swap-oob="true"></div>

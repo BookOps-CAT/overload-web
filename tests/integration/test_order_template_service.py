@@ -1,7 +1,7 @@
 import inspect
 
 import pytest
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import SQLModel, create_engine
 
 from overload_web.application.pvf.template_handling import (
     GetOrderTemplate,
@@ -10,18 +10,8 @@ from overload_web.application.pvf.template_handling import (
     UpdateOrderTemplate,
 )
 from overload_web.domain.pvf import order_templates
-from overload_web.infrastructure import template_db
+from overload_web.infrastructure import template_db, unit_of_work
 from overload_web.presentation import deps
-
-
-@pytest.fixture
-def test_sql_session():
-    test_engine = create_engine("sqlite:///:memory:")
-    SQLModel.metadata.create_all(test_engine)
-    with Session(test_engine) as session:
-        yield session
-    session.close()
-    test_engine.dispose()
 
 
 @pytest.fixture
@@ -31,6 +21,19 @@ def make_template():
         return template
 
     return _make_template
+
+
+@pytest.fixture
+def mock_engine():
+    engine = create_engine("sqlite:///:memory:")
+    SQLModel.metadata.create_all(engine)
+    yield engine
+    engine.dispose()
+
+
+@pytest.fixture
+def stub_uow(mock_engine):
+    return unit_of_work.SqlModelUnitOfWork(mock_engine)
 
 
 def test_template_attrs():
@@ -67,25 +70,17 @@ def test_template_attrs():
 
 
 class TestTemplateService:
-    @pytest.fixture
-    def repo(self, test_sql_session):
-        return template_db.OrderTemplateRepository(session=test_sql_session)
-
-    def test_OrderTemplateRepository(self, test_sql_session):
-        repo = template_db.OrderTemplateRepository(session=test_sql_session)
-        assert hasattr(repo, "session")
-
-    def test_get_template(self, repo):
-        template_obj = GetOrderTemplate.execute(repository=repo, template_id="foo")
+    def test_get_template(self, stub_uow):
+        template_obj = GetOrderTemplate.execute(uow=stub_uow, template_id="foo")
         assert template_obj is None
 
-    def test_list_templates(self, repo):
-        template_list = ListOrderTemplates.execute(repository=repo)
+    def test_list_templates(self, stub_uow):
+        template_list = ListOrderTemplates.execute(uow=stub_uow)
         assert template_list == []
 
-    def test_save_template(self, repo, stub_template_data, make_template):
+    def test_save_template(self, stub_uow, stub_template_data, make_template):
         template = make_template(stub_template_data)
-        template_saver = SaveNewOrderTemplate.execute(repository=repo, obj=template)
+        template_saver = SaveNewOrderTemplate.execute(uow=stub_uow, obj=template)
         assert template_saver.name == stub_template_data["name"]
         assert template_saver.agent == stub_template_data["agent"]
         assert template_saver.blanket_po == stub_template_data["blanket_po"]
@@ -99,7 +94,7 @@ class TestTemplateService:
             (4, "Qux Template", "user3"),
         ],
     )
-    def test_save_template_check(self, id, name, agent, make_template, repo):
+    def test_save_template_check(self, id, name, agent, make_template, stub_uow):
         template = make_template(
             data={
                 "id": id,
@@ -109,11 +104,11 @@ class TestTemplateService:
                 "primary_matchpoint": "isbn",
             }
         )
-        SaveNewOrderTemplate.execute(repository=repo, obj=template)
-        saved_template = GetOrderTemplate.execute(repository=repo, template_id=id)
+        SaveNewOrderTemplate.execute(uow=stub_uow, obj=template)
+        saved_template = GetOrderTemplate.execute(uow=stub_uow, template_id=id)
         assert saved_template.__dict__ == template.model_dump()
 
-    def test_update_template(self, make_template, repo):
+    def test_update_template(self, make_template, stub_uow):
         template = make_template(
             data={
                 "id": "1",
@@ -124,13 +119,13 @@ class TestTemplateService:
             }
         )
         template_patch = deps.TemplatePatchModel(primary_matchpoint="upc", lang="eng")
-        SaveNewOrderTemplate.execute(repository=repo, obj=template)
-        original_template = GetOrderTemplate.execute(repository=repo, template_id="1")
+        SaveNewOrderTemplate.execute(uow=stub_uow, obj=template)
+        original_template = GetOrderTemplate.execute(uow=stub_uow, template_id="1")
         updated_template = UpdateOrderTemplate.execute(
-            repository=repo, template_id="1", obj=template_patch
+            uow=stub_uow, template_id="1", obj=template_patch
         )
         no_update = UpdateOrderTemplate.execute(
-            repository=repo, template_id="2", obj=template_patch
+            uow=stub_uow, template_id="2", obj=template_patch
         )
         assert updated_template.lang != original_template.lang
         assert (

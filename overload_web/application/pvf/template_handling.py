@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class SaveNewOrderTemplate:
     @staticmethod
     def execute(
-        repository: ports.SqlRepositoryProtocol, obj: order_templates.OrderTemplateBase
+        uow: ports.UnitOfWorkProtocol, obj: order_templates.OrderTemplateBase
     ) -> order_templates.OrderTemplate:
         """
         Save an order template.
@@ -27,14 +27,15 @@ class SaveNewOrderTemplate:
         Returns:
             The saved template as an `OrderTemplate` domain object.
         """
-        save_template = repository.save(obj=obj)
-        return order_templates.OrderTemplate(**save_template)
+        with uow:
+            save_template = uow.template_repo.save(obj=obj)
+            return order_templates.OrderTemplate(**save_template)
 
 
 class GetOrderTemplate:
     @staticmethod
     def execute(
-        repository: ports.SqlRepositoryProtocol, template_id: str
+        uow: ports.UnitOfWorkProtocol, template_id: str
     ) -> order_templates.OrderTemplate | None:
         """
         Retrieve an order template by its ID.
@@ -46,18 +47,17 @@ class GetOrderTemplate:
         Returns:
             The retrieved template as a `OrderTemplate` object or None.
         """
-        data = repository.get(id=template_id)
-        if data:
-            return order_templates.OrderTemplate(**data)
+        with uow:
+            data = uow.template_repo.get(id=template_id)
+            if data:
+                return order_templates.OrderTemplate(**data)
         return None
 
 
 class ListOrderTemplates:
     @staticmethod
     def execute(
-        repository: ports.SqlRepositoryProtocol,
-        offset: int | None = 0,
-        limit: int | None = 20,
+        uow: ports.UnitOfWorkProtocol, offset: int | None = 0, limit: int | None = 20
     ) -> Sequence[order_templates.OrderTemplate]:
         """
         Retrieve a list of templates in the database.
@@ -70,14 +70,15 @@ class ListOrderTemplates:
         Returns:
             A list of `OrderTemplate` objects.
         """
-        template_list = repository.list(offset=offset, limit=limit)
-        return [order_templates.OrderTemplate(**i) for i in template_list]
+        with uow:
+            template_list = uow.template_repo.list(offset=offset, limit=limit)
+            return [order_templates.OrderTemplate(**i) for i in template_list]
 
 
 class UpdateOrderTemplate:
     @staticmethod
     def execute(
-        repository: ports.SqlRepositoryProtocol,
+        uow: ports.UnitOfWorkProtocol,
         template_id: str,
         obj: order_templates.OrderTemplateBase,
     ) -> order_templates.OrderTemplate | None:
@@ -93,7 +94,8 @@ class UpdateOrderTemplate:
             The updated template as an `OrderTemplate` or None if the template
             does not exist.
         """
-        data = repository.update(id=template_id, data=obj)
-        if data:
-            return order_templates.OrderTemplate(**data)
+        with uow:
+            data = uow.template_repo.update(id=template_id, data=obj)
+            if data:
+                return order_templates.OrderTemplate(**data)
         return None

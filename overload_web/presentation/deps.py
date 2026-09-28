@@ -19,7 +19,6 @@ from overload_web.infrastructure import (
     oclc,
     reporter,
     sierra_clients,
-    template_db,
     unit_of_work,
 )
 
@@ -370,13 +369,6 @@ def get_session(engine: Any = Depends(get_engine)) -> Generator[Session, None, N
     """
     with Session(engine) as session:
         yield session
-
-
-def order_template_db(
-    session: Annotated[Any, Depends(get_session)],
-) -> Generator[template_db.OrderTemplateRepository, None, None]:
-    """Create an order template repository."""
-    yield template_db.OrderTemplateRepository(session=session)
 
 
 def pvf_batch_db(

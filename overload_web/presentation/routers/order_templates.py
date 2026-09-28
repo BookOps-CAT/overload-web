@@ -26,7 +26,7 @@ api_router = APIRouter()
 def create_template(
     request: Request,
     template: Annotated[Any, Depends(deps.TemplateCreateModel.from_form)],
-    repository: Annotated[Any, Depends(deps.order_template_db)],
+    uow: Annotated[Any, Depends(deps.get_uow)],
 ) -> HTMLResponse:
     """
     Save a new order template to the template database.
@@ -38,7 +38,7 @@ def create_template(
     Returns:
         the saved order template as a dict wrapped in an `HTMLResponse` object
     """
-    saved_template = SaveNewOrderTemplate.execute(obj=template, repository=repository)
+    saved_template = SaveNewOrderTemplate.execute(obj=template, uow=uow)
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="forms/template_form.html",
@@ -48,9 +48,7 @@ def create_template(
 
 @api_router.get("/template", response_class=HTMLResponse)
 def get_template(
-    request: Request,
-    template_id: str,
-    repository: Annotated[Any, Depends(deps.order_template_db)],
+    request: Request, template_id: str, uow: Annotated[Any, Depends(deps.get_uow)]
 ) -> HTMLResponse:
     """
     Retrieve an order template from the database.
@@ -62,7 +60,7 @@ def get_template(
     Returns:
         the retrieved order template as a dict wrapped in an `HTMLResponse` object
     """
-    template = GetOrderTemplate.execute(template_id=template_id, repository=repository)
+    template = GetOrderTemplate.execute(template_id=template_id, uow=uow)
     template_out = {k: v for k, v in template.__dict__.items() if v} if template else {}
     return request.app.state.templates.TemplateResponse(
         request=request,
@@ -74,7 +72,7 @@ def get_template(
 @api_router.get("/templates", response_class=HTMLResponse)
 def get_template_list(
     request: Request,
-    repository: Annotated[Any, Depends(deps.order_template_db)],
+    uow: Annotated[Any, Depends(deps.get_uow)],
     offset: int = 0,
     limit: int = 20,
 ) -> HTMLResponse:
@@ -90,9 +88,7 @@ def get_template_list(
         a list of order templates retrieved from the database wrapped in an
         `HTMLResponse` object
     """
-    template_list = ListOrderTemplates.execute(
-        repository=repository, offset=offset, limit=limit
-    )
+    template_list = ListOrderTemplates.execute(uow=uow, offset=offset, limit=limit)
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="order_templates/template_list.html",
@@ -104,8 +100,8 @@ def get_template_list(
 def update_template(
     request: Request,
     template_id: Annotated[str, Form(...)],
+    uow: Annotated[Any, Depends(deps.get_uow)],
     template_patch: Annotated[Any, Depends(deps.TemplatePatchModel.from_form)],
-    repository: Annotated[Any, Depends(deps.order_template_db)],
 ) -> HTMLResponse:
     """
     Apply patch updates to an order template in the database.
@@ -122,7 +118,7 @@ def update_template(
         the updated order template as a dict wrapped in an `HTMLResponse` object
     """
     updated_template = UpdateOrderTemplate.execute(
-        repository=repository, template_id=template_id, obj=template_patch
+        uow=uow, template_id=template_id, obj=template_patch
     )
     template_out = (
         {k: v for k, v in updated_template.__dict__.items() if v}
