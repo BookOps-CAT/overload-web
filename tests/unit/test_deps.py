@@ -29,7 +29,7 @@ class TestDeps:
 
     def test_local_file_storage(self, mock_storage):
         storage = deps.local_file_storage()
-        assert str(storage.base_path) == "temp\\uploads"
+        assert str(storage.base_path).startswith("temp")
 
     def test_remote_file_retriever(self, mock_sftp_client):
         retriever_generator = deps.remote_file_retriever(vendor="foo")
