@@ -52,10 +52,11 @@ def list_remote_files(
 @api_router.post("/remote/select", response_class=HTMLResponse)
 def select_ftp_file(
     request: Request,
-    repository: Annotated[Any, Depends(deps.incoming_file_db)],
+    uow: Annotated[Any, Depends(deps.get_uow)],
     storage: Annotated[Any, Depends(deps.local_file_storage)],
     retriever: Annotated[Any, Depends(deps.remote_file_retriever)],
     workflow_id: Annotated[str, Form(...)],
+    record_type: Annotated[str, Form(...)],
     remote_file: Annotated[str, Form(...)],
 ):
     """
@@ -81,7 +82,8 @@ def select_ftp_file(
         content=file_content.content,
         source="ftp",
         storage=storage,
-        repo=repository,
+        record_type=record_type,
+        uow=uow,
     )
     return request.app.state.templates.TemplateResponse(
         name="pvf_partials/selected_files.html",
@@ -94,8 +96,9 @@ def select_ftp_file(
 def upload_file(
     request: Request,
     file: UploadFile,
-    repository: Annotated[Any, Depends(deps.incoming_file_db)],
+    uow: Annotated[Any, Depends(deps.get_uow)],
     storage: Annotated[Any, Depends(deps.local_file_storage)],
+    record_type: Annotated[str, Form(...)],
     workflow_id: Annotated[str, Form(...)],
 ):
     """
@@ -116,7 +119,8 @@ def upload_file(
         content=file.file.read(),
         source="local",
         storage=storage,
-        repo=repository,
+        record_type=record_type,
+        uow=uow,
     )
     logger.info(f"Current file list: {selected}")
     return request.app.state.templates.TemplateResponse(

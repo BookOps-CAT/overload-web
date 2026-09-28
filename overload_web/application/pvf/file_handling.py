@@ -5,7 +5,7 @@ import uuid
 from typing import Any, Sequence
 
 from overload_web.application import ports
-from overload_web.domain.pvf import files
+from overload_web.domain.pvf import files, workflow
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +47,8 @@ class LoadVendorFile:
 
 
 class UploadFileToWorkflow:
+    """Saves incoming vendor file bytes and ensures a DRAFT WorkflowJob exists."""
+
     @staticmethod
     def execute(
         workflow_id: str,
@@ -54,11 +56,10 @@ class UploadFileToWorkflow:
         content: bytes,
         source: str,
         storage: ports.FileStorage,
-        repo: ports.SqlRepositoryProtocol,
+        uow: ports.UnitOfWorkProtocol,
+        record_type: str,
     ) -> Sequence[dict[str, Any]]:
-        """
-        Uploads a file for a workflow.
-
+        """Saves file data to storage and persists database metadata within a UoW.
 
         Args:
             workflow_id:
@@ -77,20 +78,38 @@ class UploadFileToWorkflow:
                 handling vendor files.
 
         Returns:
-            The list of files for workflow as a list of `VendorFile` objects.
+            The saved IncomingFile domain entity.
         """
         file_id = str(uuid.uuid4())
         reference = storage.save(id=file_id, filename=filename, content=content)
-        file = files.IncomingFile(
-            id=file_id,
-            workflow_id=workflow_id,
-            filename=filename,
-            source=source,
-            reference=reference,
-        )
-        repo.save(file)
-        logger.info(f"File added to workflow {workflow_id}: {file}.")
-        return repo.list_by_id(workflow_id)
+        with uow:
+            job = uow.job_repo.get(workflow_id)
+
+            if not job:
+                logger.info(
+                    f"First file uploaded for workflow {workflow_id}. "
+                    f"Creating DRAFT WorkflowJob."
+                )
+                job = workflow.WorkflowJob(
+                    id=workflow_id,
+                    status=workflow.JobStatus.DRAFT,
+                    record_type=record_type,
+                )
+                uow.job_repo.save(job)
+
+            file = files.IncomingFile(
+                id=file_id,
+                workflow_id=workflow_id,
+                filename=filename,
+                source=source,
+                reference=reference,
+            )
+            uow.file_repo.save(file)
+            logger.info(f"File added to workflow {workflow_id}: {file}.")
+
+            uow.commit()
+
+        return uow.file_repo.list_by_id(workflow_id)
 
 
 class LoadAllWorkflowFiles:

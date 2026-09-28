@@ -43,11 +43,6 @@ class TestRemoteFiles:
         assert hasattr(retriever, "download")
         assert retriever.client.name == "FOO"
 
-    def test_sftp_writer(self, mock_sftp_client):
-        writer = file_io.SFTPFileWriter(client=mock_sftp_client)
-        assert hasattr(writer, "write")
-        assert writer.client.name == "FOO"
-
     def test_sftp_list(self, mock_sftp_client):
         retriever = file_io.SFTPFileRetriever(client=mock_sftp_client)
         file_list = retriever.list(dir="test")
@@ -58,8 +53,3 @@ class TestRemoteFiles:
         retriever = file_io.SFTPFileRetriever(client=mock_sftp_client)
         file = retriever.download(name="foo.mrc", dir="test")
         assert file == b""
-
-    def test_sftp_write(self, mock_sftp_client):
-        writer = file_io.SFTPFileWriter(client=mock_sftp_client)
-        out_file = writer.write(file=b"foo", file_name="foo.mrc", dir="test")
-        assert out_file == "foo.mrc"

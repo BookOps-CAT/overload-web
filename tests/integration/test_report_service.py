@@ -124,6 +124,16 @@ class TestReportCommands:
             "processing_integrity": True,
         }
 
+    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
+    def test_create_pvf_output_report_no_data(
+        self, test_session_no_records, record_type
+    ):
+        repo = batch_db.PVFBatchRepository(session=test_session_no_records)
+        out = CreatePVFOutputReport.execute(
+            batch_id="1", record_type=record_type, repo=repo
+        )
+        assert out == {}
+
     def test_get_detailed_report_data(self, test_batch_repository):
         out = GetDetailedReportData.execute(batch_id="1", repo=test_batch_repository)
         assert sorted(out[0].keys()) == sorted(
@@ -142,6 +152,11 @@ class TestReportCommands:
                 "other",
             ]
         )
+
+    def test_get_detailed_report_data_no_data(self, test_session_no_records):
+        repo = batch_db.PVFBatchRepository(session=test_session_no_records)
+        out = GetDetailedReportData.execute(batch_id="1", repo=repo)
+        assert out == []
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
     def test_write_output_report_both_reports(

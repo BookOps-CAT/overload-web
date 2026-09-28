@@ -48,7 +48,7 @@ logging.config.dictConfig(get_log_config())
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Create and drop database tables on startup/shutdown."""
     logger.info("Starting up Overload...")
-    engine = deps.get_engine_with_uri()
+    engine = deps.get_engine()
     deps.create_db_and_tables(engine)
     yield
     logger.info("Shutting down Overload...")

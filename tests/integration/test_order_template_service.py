@@ -7,6 +7,7 @@ from overload_web.application.pvf.template_handling import (
     GetOrderTemplate,
     ListOrderTemplates,
     SaveNewOrderTemplate,
+    UpdateOrderTemplate,
 )
 from overload_web.domain.pvf import order_templates
 from overload_web.infrastructure import template_db
@@ -111,3 +112,29 @@ class TestTemplateService:
         SaveNewOrderTemplate.execute(repository=repo, obj=template)
         saved_template = GetOrderTemplate.execute(repository=repo, template_id=id)
         assert saved_template.__dict__ == template.model_dump()
+
+    def test_update_template(self, make_template, repo):
+        template = make_template(
+            data={
+                "id": "1",
+                "name": "foo",
+                "agent": "bar",
+                "country": "xxu",
+                "primary_matchpoint": "isbn",
+            }
+        )
+        template_patch = deps.TemplatePatchModel(primary_matchpoint="upc", lang="eng")
+        SaveNewOrderTemplate.execute(repository=repo, obj=template)
+        original_template = GetOrderTemplate.execute(repository=repo, template_id="1")
+        updated_template = UpdateOrderTemplate.execute(
+            repository=repo, template_id="1", obj=template_patch
+        )
+        no_update = UpdateOrderTemplate.execute(
+            repository=repo, template_id="2", obj=template_patch
+        )
+        assert updated_template.lang != original_template.lang
+        assert (
+            updated_template.primary_matchpoint != original_template.primary_matchpoint
+        )
+        assert updated_template.id == original_template.id
+        assert no_update is None

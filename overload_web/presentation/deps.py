@@ -9,7 +9,8 @@ from typing import Annotated, Any, Generator, Literal
 
 from fastapi import Depends, Form, UploadFile
 from pydantic import BaseModel, field_validator, model_validator
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session as Session
+from sqlmodel import SQLModel, create_engine
 
 from overload_web.infrastructure import (
     batch_db,
@@ -19,6 +20,7 @@ from overload_web.infrastructure import (
     reporter,
     sierra_clients,
     template_db,
+    unit_of_work,
 )
 
 logger = logging.getLogger(__name__)
@@ -340,7 +342,7 @@ class SourceDataModel(BaseModel):
     update_date: str | None = None
 
 
-def get_engine_with_uri():
+def get_engine():
     """Get the Postgres database URI from environment variables."""
     db_type = os.environ.get("DB_TYPE", "sqlite")
     user = os.environ.get("POSTGRES_USER")
@@ -359,9 +361,7 @@ def create_db_and_tables(engine) -> None:
     SQLModel.metadata.create_all(engine)
 
 
-def get_session(
-    engine: Any = Depends(get_engine_with_uri),
-) -> Generator[Session, None, None]:
+def get_session(engine: Any = Depends(get_engine)) -> Generator[Session, None, None]:
     """Create a new database session with and `engine` injected via Depends.
 
     FastAPI will treat `engine` as a dependency instead of a required
@@ -486,3 +486,13 @@ def source_data_from_load(
 def get_report_writer() -> reporter.GoogleSheetsReporter:
     """Return a `GoogleSheetsReporter` in order to write stats to a Google Sheet."""
     return reporter.GoogleSheetsReporter()
+
+
+def get_uow(engine: Any = Depends(get_engine)) -> unit_of_work.SqlModelUnitOfWork:
+    """
+    Provide an un-entered Unit of Work instance.
+
+    The UoW takes the engine and manages its own session lifecycle when
+    used in a context manager, making it safe to pass to BackgroundTasks.
+    """
+    return unit_of_work.SqlModelUnitOfWork(engine=engine)

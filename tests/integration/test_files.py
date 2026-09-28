@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
 
@@ -8,7 +10,7 @@ from overload_web.application.pvf.file_handling import (
     LoadVendorFile,
     UploadFileToWorkflow,
 )
-from overload_web.infrastructure import file_io
+from overload_web.infrastructure import file_io, unit_of_work, workflow_db
 
 
 @pytest.fixture
@@ -35,12 +37,17 @@ def test_session(tmp_path):
         source="ftp",
         reference=f"{tmp_path}/bar.mrc",
     )
+    workflow1 = workflow_db.WorkflowJobModel(
+        id="12345", status=workflow_db.workflow.JobStatus.DRAFT, record_type="cat"
+    )
     test_engine = create_engine("sqlite:///:memory:")
     SQLModel.metadata.create_all(test_engine)
     with Session(test_engine) as session:
         session.add(file1)
         session.commit()
         session.add(file2)
+        session.commit()
+        session.add(workflow1)
         session.commit()
         yield session
     session.close()
@@ -56,6 +63,28 @@ class FakeFileRetriever:
 
     def download(self, name: str, dir: str) -> bytes:
         return b""
+
+
+@pytest.fixture
+def mock_engine():
+    engine = create_engine("sqlite:///:memory:")
+    SQLModel.metadata.create_all(engine)
+    yield engine
+    engine.dispose()
+
+
+@pytest.fixture
+def mock_engine_with_files(monkeypatch, mock_engine, record_type):
+    def mock_workflow_jobs(*args, **kwargs):
+        return workflow_db.WorkflowJobModel(
+            id="12345",
+            status=workflow_db.workflow.JobStatus.DRAFT,
+            record_type=record_type,
+        )
+
+    monkeypatch.setattr(workflow_db.WorkflowJobRepository, "get", mock_workflow_jobs)
+    yield mock_engine
+    mock_engine.dispose()
 
 
 class TestFileRetriever:
@@ -74,7 +103,7 @@ class TestFileRetriever:
         assert file.content == b""
 
 
-class TestFileWorkflow:
+class TestFileWorkflows:
     def test_load_all_files(self, test_session, caplog, tmp_path, tmp_files):
         path = tmp_path / "temp"
         storage = file_io.LocalFileStorage(base_path=path)
@@ -90,9 +119,12 @@ class TestFileWorkflow:
         )
 
     @pytest.mark.parametrize("source", ["local", "ftp"])
-    def test_upload_files(self, test_session, tmp_path, tmp_files, caplog, source):
+    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
+    def test_upload_files(
+        self, mock_engine, tmp_path, tmp_files, caplog, source, record_type
+    ):
         path = tmp_path / "temp"
-        repo = file_io.IncomingFileRepository(session=test_session)
+        uow = unit_of_work.SqlModelUnitOfWork(mock_engine)
         storage = file_io.LocalFileStorage(base_path=path)
         UploadFileToWorkflow.execute(
             workflow_id="12345",
@@ -100,7 +132,28 @@ class TestFileWorkflow:
             content=b"",
             source=source,
             storage=storage,
-            repo=repo,
+            uow=uow,
+            record_type=record_type,
+        )
+        assert "File added to workflow 12345: IncomingFile(id=" in caplog.text
+        assert "Local file storage location: " in caplog.text
+
+    @pytest.mark.parametrize("source", ["local", "ftp"])
+    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
+    def test_upload_files_existing_files(
+        self, tmp_path, mock_engine_with_files, caplog, source, record_type, tmp_files
+    ):
+        path = tmp_path / "temp"
+        uow = unit_of_work.SqlModelUnitOfWork(mock_engine_with_files)
+        storage = file_io.LocalFileStorage(base_path=path)
+        UploadFileToWorkflow.execute(
+            workflow_id="12345",
+            filename="qux.mrc",
+            content=b"",
+            source=source,
+            storage=storage,
+            uow=uow,
+            record_type=record_type,
         )
         assert "File added to workflow 12345: IncomingFile(id=" in caplog.text
         assert "Local file storage location: " in caplog.text

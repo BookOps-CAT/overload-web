@@ -73,16 +73,6 @@ def live_test_client():
 class TestSFTPFiles:
     test_dir = "NSDROP/vendor_records/test"
 
-    def test_write(self, live_test_client):
-        writer = file_io.SFTPFileWriter(client=live_test_client)
-        outfile = writer.write(
-            file_name="test_bib.mrc",
-            file=b"02741pam  a2200445 a 4500",
-            dir=self.test_dir,
-        )
-        live_test_client.session.connection.chdir(None)
-        assert outfile == "test_bib.mrc"
-
     def test_list(self, live_test_client):
         retriever = file_io.SFTPFileRetriever(client=live_test_client)
         file_list = retriever.list(dir=self.test_dir)

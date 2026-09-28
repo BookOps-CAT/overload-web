@@ -10,13 +10,12 @@ The classes within this module are concrete implementations of the `FileRetrieve
 
 from __future__ import annotations
 
-import io
 import logging
 import os
 from pathlib import Path
 from typing import Any, Sequence
 
-from file_retriever import Client, File
+from file_retriever import Client
 from sqlmodel import Field, Session, SQLModel, select
 
 logger = logging.getLogger(__name__)
@@ -119,31 +118,6 @@ class SFTPFileRetriever:
         return SFTPFileRetriever(client=client)
 
 
-class SFTPFileWriter:
-    """
-    Writes files to a remote FTP/SFTP server.
-
-    Implements the `FileWriter` protocol using the file-retriever library
-    to connect to an FTP/SFTP server.
-    """
-
-    def __init__(self, client: Client) -> None:
-        self.client = client
-
-    def write(self, file: bytes, file_name: str, dir: str) -> str:
-        """Write a file to a remote directory."""
-        converted_file = File(
-            file_name=file_name,
-            file_stream=io.BytesIO(file),
-            file_mtime=0,
-            file_mode=None,
-            file_size=0,
-        )
-        out_file = self.client.put_file(file=converted_file, remote=True, dir=dir)
-        logger.info(f"Writing file to directory: {dir}/{out_file}")
-        return getattr(out_file, "file_name", file_name)
-
-
 class IncomingFileModel(SQLModel, table=True):
     __tablename__ = "incoming_files"
     id: str = Field(default=None, primary_key=True, index=True)
@@ -171,7 +145,6 @@ class IncomingFileRepository:
         results = self.session.exec(statement)
         file = results.one()
         self.session.delete(file)
-        self.session.commit()
 
     def list_by_id(self, id: str | int) -> Sequence[dict[str, Any]]:
         """
