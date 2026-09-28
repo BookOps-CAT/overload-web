@@ -141,6 +141,17 @@ class FakeFileRetriever:
         self.client = FakeFTPClient()
 
 
+class FakeFileStorage:
+    def __init__(self) -> None:
+        self.base_path = "temp/uploads"
+
+    def save(self):
+        return "foo"
+
+    def load(self):
+        return b"foo"
+
+
 def test_api_startup(monkeypatch):
     def fake_engine(*args, **kwargs):
         return create_engine("sqlite:///:memory:")
@@ -157,7 +168,7 @@ class TestApp:
     app.dependency_overrides[deps.get_engine] = fake_engine
     app.dependency_overrides[deps.remote_file_retriever] = FakeFileRetriever
     app.dependency_overrides[deps.get_fetcher] = FakeFetcher
-
+    app.dependency_overrides[deps.local_file_storage] = FakeFileStorage
     base_url = client.base_url
 
     def test_files_router_list_remote_files_get(self, mock_workflow_files):
