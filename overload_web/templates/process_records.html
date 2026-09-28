@@ -1,23 +1,13 @@
 {% extends 'base.html' %}
-{% block header %}<h2>{{ page_title }}</h2>{% endblock %}
+{% block page_title %}<h2>{{ page_title }}</h2>{% endblock %}
 {% block content %}
   <div id="pvf-form"></div>
-  <div class="row row-cols-1">
-    <div id="context-section">{% include "pvf_partials/context_source.html" %}</div>
-  </div>
-  <div id="file-source-section" class="row row-cols-3 align-items-stretch">
-    {% include "pvf_partials/file_source.html" %}
-  </div>
-  <div class="row row-cols-1">
-    <div id="template-source-section">
-      <div id="template_source_swap"></div>
-    </div>
-  </div>
-  <div class="row row-cols-1">
+  <div class="d-flex flex-column gap-2">
+    <div id="context-section" class="d-flex flex-column">{% include "pvf_partials/context_source.html" %}</div>
+    <div id="file-section" class="d-flex flex-column flex-md-row gap-2">{% include "pvf_partials/file_source.html" %}</div>
+    <div id="template-section"></div>
     <div id="pvf_output">
-      <div class="row">
-        <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
-      </div>
+      <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
     </div>
   </div>
 {% endblock %}

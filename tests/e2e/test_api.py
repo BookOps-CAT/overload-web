@@ -1,101 +1,155 @@
-from pathlib import Path
-
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import SQLModel, create_engine
 
-from overload_web.domain.models import files
-from overload_web.infrastructure import batch_db, clients, file_io, template_db
+from overload_web.application.pvf import (
+    file_handling,
+    process,
+    report_service,
+    template_handling,
+)
+from overload_web.domain.pvf import files, order_templates
 from overload_web.main import app
 from overload_web.presentation import deps
 
 
 @pytest.fixture
-def processed_records(monkeypatch, stub_report):
+def processed_records(monkeypatch):
     def fake_response(*args, **kwargs):
         return {"id": "1"}
 
-    monkeypatch.setattr(
-        "overload_web.application.commands.process.ProcessAcquisitionsRecords.execute",
-        fake_response,
-    )
-    monkeypatch.setattr(
-        "overload_web.application.commands.process.ProcessCatalogingRecords.execute",
-        fake_response,
-    )
-    monkeypatch.setattr(
-        "overload_web.application.commands.process.ProcessSelectionRecords.execute",
-        fake_response,
-    )
+    monkeypatch.setattr(process.ProcessAcquisitionsRecords, "execute", fake_response)
+    monkeypatch.setattr(process.ProcessCatalogingRecords, "execute", fake_response)
+    monkeypatch.setattr(process.ProcessSelectionRecords, "execute", fake_response)
+
+
+@pytest.fixture
+def mock_workflow_files(monkeypatch):
+    def fake_response(*args, **kwargs):
+        response = {
+            "filename": kwargs.get("filename"),
+            "reference": "bar",
+            "workflow_id": 1,
+            "source": kwargs.get("source"),
+        }
+        return [response]
+
+    def file_list(*args, **kwargs):
+        return ["foo.mrc"]
+
+    def delete_file(*args, **kwargs):
+        return []
+
+    def load_file(*args, **kwargs):
+        return files.VendorFile(content=b"", file_name=kwargs.get("name"))
+
+    monkeypatch.setattr(file_handling.UploadFileToWorkflow, "execute", fake_response)
+    monkeypatch.setattr(file_handling.ListVendorFiles, "execute", file_list)
+    monkeypatch.setattr(file_handling.LoadVendorFile, "execute", load_file)
+    monkeypatch.setattr(file_handling.DeleteFileFromWorkflow, "execute", delete_file)
 
 
 @pytest.fixture
 def fake_reporter(monkeypatch):
+    report_data = {
+        "total_records": 1,
+        "file_names": ["foo.mrc"],
+        "total_files": 1,
+        "vendor_report": {},
+        "dupes_report": {},
+        "missing_barcodes": [],
+        "processing_integrity": True,
+        "call_no_report": {},
+    }
+
     def null_response(*args, **kwargs):
         return None
 
-    monkeypatch.setattr(
-        "overload_web.application.services.report_services.ReportWriter.write_report_to_google_sheet",
-        null_response,
-    )
+    def create_report(*args, **kwrags):
+        return report_data
 
+    def report_stats(*arsg, **kwargs):
+        return [report_data]
 
-def fake_sql_session():
-    template = template_db.TemplateModel(
-        name="foo", agent="bar", primary_matchpoint="isbn"
-    )
-    batch = batch_db.PVFBatch(
-        files=[batch_db.ProcessedFileModel(file_name="foo.mrc", records=b"")],
-        report=batch_db.PVFReportModel(
-            id=1,
-            action=["insert"],
-            call_number=["Foo"],
-            call_number_match=[True],
-            duplicate_records=[[]],
-            file_names=["foo.mrc"],
-            mixed=[[]],
-            other=[[]],
-            resource_id=["12345"],
-            target_bib_id=["23456"],
-            target_call_no=["Foo"],
-            target_title=[],
-            total_files=1,
-            total_records=1,
-            updated_by_vendor=[False],
-            vendor=["UNKNOWN"],
-            missing_barcodes=[],
-            processing_integrity=True,
-        ),
-    )
-    file = file_io.IncomingFileModel(
-        id="1", filename="foo.mrc", workflow_id="123", source="ftp", reference="foo.mrc"
-    )
-    test_engine = create_engine("sqlite:///:memory:")
-    SQLModel.metadata.create_all(test_engine)
-    with Session(test_engine) as session:
-        session.add(template)
-        session.add(batch)
-        session.add(file)
-        session.commit()
-        yield session
-    session.close()
-    test_engine.dispose()
-
-
-def fake_storage():
-    return [files.VendorFile(content=b"", file_name="foo.mrc")]
+    monkeypatch.setattr(report_service.WriteOutputReport, "execute", null_response)
+    monkeypatch.setattr(report_service.CreatePVFOutputReport, "execute", create_report)
+    monkeypatch.setattr(report_service.GetDetailedReportData, "execute", report_stats)
 
 
 @pytest.fixture
-def mock_temp_storage(monkeypatch, mocker, tmp_path):
-    m = mocker.mock_open(read_data="")
-    mocker.patch("overload_web.infrastructure.file_io.open", m)
+def fake_reporter_no_response(monkeypatch):
+    def null_response(*args, **kwargs):
+        return {}
 
-    def mock_mkdir(*args, **kwargs):
-        return tmp_path
+    monkeypatch.setattr(report_service.CreatePVFOutputReport, "execute", null_response)
+    monkeypatch.setattr(report_service.GetDetailedReportData, "execute", null_response)
 
-    monkeypatch.setattr(Path, "mkdir", mock_mkdir)
+
+@pytest.fixture
+def fake_template_handler(monkeypatch):
+    template = order_templates.OrderTemplate(
+        name="foo", agent="bar", primary_matchpoint="isbn", id=1
+    )
+
+    def get_template(*args, **kwargs):
+        return template
+
+    def list_templates(*args, **kwargs):
+        return [template]
+
+    def update_template(*args, **kwargs):
+        data_dict = kwargs.get("obj").__dict__
+        data_dict.update({"id": 1, "name": "foo"})
+        return order_templates.OrderTemplate(**data_dict)
+
+    monkeypatch.setattr(template_handling.SaveNewOrderTemplate, "execute", get_template)
+    monkeypatch.setattr(template_handling.GetOrderTemplate, "execute", get_template)
+    monkeypatch.setattr(template_handling.ListOrderTemplates, "execute", list_templates)
+    monkeypatch.setattr(
+        template_handling.UpdateOrderTemplate, "execute", update_template
+    )
+
+
+@pytest.fixture
+def fake_template_handler_no_recs(monkeypatch):
+    def null_response(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(template_handling.UpdateOrderTemplate, "execute", null_response)
+
+
+def fake_engine():
+    engine = create_engine("sqlite:///:memory:")
+    SQLModel.metadata.create_all(engine)
+    yield engine
+    engine.dispose()
+
+
+class FakeFetcher:
+    def _get_credentials(self) -> str:
+        return "creds"
+
+
+class FakeFTPClient:
+    def __init__(self) -> None:
+        self.name = "foo"
+
+
+class FakeFileRetriever:
+    def __init__(self) -> None:
+        self.client = FakeFTPClient()
+
+
+class FakeFileStorage:
+    def __init__(self) -> None:
+        self.base_path = "temp/uploads"
+
+    def save(self):
+        return "foo"
+
+    def load(self):
+        return b"foo"
 
 
 def test_api_startup(monkeypatch):
@@ -109,22 +163,15 @@ def test_api_startup(monkeypatch):
         assert response.status_code == 200
 
 
-def test_deps():
-    engine = create_engine("sqlite:///:memory:")
-    deps.create_db_and_tables(engine)
-    session = deps.get_session(engine)
-    assert isinstance(next(session), Session)
-    session.close()
-    engine.dispose()
-
-
-@pytest.mark.usefixtures("mock_session", "mock_sftp_client", "mock_temp_storage")
 class TestApp:
     client = TestClient(app)
-    app.dependency_overrides[deps.get_session] = fake_sql_session
+    app.dependency_overrides[deps.get_engine] = fake_engine
+    app.dependency_overrides[deps.remote_file_retriever] = FakeFileRetriever
+    app.dependency_overrides[deps.get_fetcher] = FakeFetcher
+    app.dependency_overrides[deps.local_file_storage] = FakeFileStorage
     base_url = client.base_url
 
-    def test_files_router_list_remote_files_get(self):
+    def test_files_router_list_remote_files_get(self, mock_workflow_files):
         response = self.client.get("/files/remote/list?vendor=foo")
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/files/remote/list?vendor=foo"
@@ -133,12 +180,16 @@ class TestApp:
         )
         assert response.context["files"] == ["foo.mrc"]
 
-    def test_files_select_ftp_file(self):
+    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
+    def test_files_select_ftp_file(self, record_type, mock_workflow_files):
         response = self.client.post(
             "/files/remote/select?vendor=foo",
-            data={"remote_file": "bar.mrc", "workflow_id": 1},
+            data={
+                "remote_file": "bar.mrc",
+                "workflow_id": 1,
+                "record_type": record_type,
+            },
         )
-        print(response.content)
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/files/remote/select?vendor=foo"
         assert sorted(list(response.context.keys())) == sorted(["files", "request"])
@@ -146,13 +197,13 @@ class TestApp:
         assert response.context["files"][0]["filename"] == "bar.mrc"
         assert response.context["files"][0]["source"] == "ftp"
 
-    def test_files_upload_file(self):
+    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
+    def test_files_upload_file(self, record_type, mock_workflow_files):
         response = self.client.post(
             "/files/upload",
-            data={"workflow_id": 1, "vendor": None},
+            data={"workflow_id": 1, "vendor": None, "record_type": record_type},
             files={"file": ("baz.mrc", b"", "text/plain")},
         )
-        print(response.content)
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/files/upload"
         assert sorted(list(response.context.keys())) == sorted(["files", "request"])
@@ -160,7 +211,7 @@ class TestApp:
         assert response.context["files"][0]["filename"] == "baz.mrc"
         assert response.context["files"][0]["source"] == "local"
 
-    def test_files_remove_file(self):
+    def test_files_remove_file(self, mock_workflow_files):
         response = self.client.post(
             "/files/remove", data={"workflow_id": 1, "file_id": 1}
         )
@@ -182,41 +233,72 @@ class TestApp:
         assert response.context["page_title"] == "Process Vendor File"
 
     @pytest.mark.parametrize("library", ["nypl", "bpl"])
-    def test_frontend_get_library_context_update(self, library):
-        response = self.client.get(f"/forms/update-library?library={library}")
-        assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == [
-            "disabled",
-            "library",
-            "request",
-        ]
-
-    @pytest.mark.parametrize("collection", ["BL", "RL", "NONE"])
-    def test_frontend_get_collection_context_update(self, collection):
-        response = self.client.get(f"/forms/update-collection?collection={collection}")
-        assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == ["collection", "request"]
-
-    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_frontend_get_record_type_context_update(self, record_type):
+    @pytest.mark.parametrize("workflow", ["pvf", "wc2s"])
+    def test_frontend_get_context_update_library(self, library, workflow):
         response = self.client.get(
-            f"/forms/update-record-type?record_type={record_type}"
+            f"/update-context?workflow={workflow}&library={library}"
         )
         assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == ["record_type", "request"]
+        assert sorted(list(response.context.keys())) == [
+            "collection",
+            "collection_disabled",
+            "library",
+            "record_type",
+            "request",
+            "template_form_enabled",
+        ]
 
-    def test_ot_router_get_template_form(self):
+    @pytest.mark.parametrize("collection", ["BL", "RL", ""])
+    @pytest.mark.parametrize("workflow", ["pvf", "wc2s"])
+    def test_frontend_get_context_update_collection(self, collection, workflow):
+        response = self.client.get(
+            f"/update-context?workflow={workflow}&collection={collection}"
+        )
+        assert response.status_code == 200
+        assert sorted(list(response.context.keys())) == [
+            "collection",
+            "collection_disabled",
+            "library",
+            "record_type",
+            "request",
+            "template_form_enabled",
+        ]
+
+    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
+    @pytest.mark.parametrize("workflow", ["pvf", "wc2s"])
+    def test_frontend_get_context_update_record_type(self, record_type, workflow):
+        response = self.client.get(
+            f"/update-context?workflow={workflow}&record_type={record_type}"
+        )
+        assert response.status_code == 200
+        assert sorted(list(response.context.keys())) == [
+            "collection",
+            "collection_disabled",
+            "library",
+            "record_type",
+            "request",
+            "template_form_enabled",
+        ]
+
+    def test_frontend_wc2sierra_page_get(self):
+        response = self.client.get("/wc2sierra")
+        assert response.status_code == 200
+        assert "WorldCat2Sierra" in response.text
+        assert response.url == f"{self.base_url}/wc2sierra"
+        assert response.context["page_title"] == "WorldCat2Sierra"
+
+    def test_ot_router_get_template_form(self, fake_template_handler):
         response = self.client.get("/ot/forms/templates")
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request"]
 
-    def test_ot_router_create_template(self, fake_template_data):
-        response = self.client.post("/ot/template", data=fake_template_data)
+    def test_ot_router_create_template(self, stub_template_data, fake_template_handler):
+        response = self.client.post("/ot/template", data=stub_template_data)
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request", "template"]
-        assert response.context["template"].get("id") == 2
+        assert response.context["template"].get("id") == 1
 
-    def test_ot_router_get_template(self):
+    def test_ot_router_get_template(self, fake_template_handler):
         response = self.client.get("/ot/template?template_id=1")
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request", "template"]
@@ -225,12 +307,12 @@ class TestApp:
         assert response.context["template"]["agent"] == "bar"
         assert response.context["template"]["primary_matchpoint"] == "isbn"
 
-    def test_ot_router_get_template_list(self):
+    def test_ot_router_get_template_list(self, fake_template_handler):
         response = self.client.get("/ot/templates")
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request", "templates"]
 
-    def test_ot_router_update_template(self):
+    def test_ot_router_update_template(self, fake_template_handler):
         response = self.client.patch(
             "/ot/template",
             data={
@@ -248,7 +330,7 @@ class TestApp:
         assert response.context["template"]["name"] == "foo"
         assert response.context["template"]["agent"] == "bar"
 
-    def test_ot_router_update_template_not_found(self):
+    def test_ot_router_update_template_not_found(self, fake_template_handler_no_recs):
         response = self.client.patch(
             "/ot/template", data={"primary_matchpoint": "upc", "template_id": 3}
         )
@@ -301,19 +383,6 @@ class TestApp:
         response = self.client.post("/pvf/cat/process-vendor-file", data=context)
         assert response.status_code == 200
 
-    def test_pvf_router_process_full_records_fetcher_error(self):
-        """Tests incorrect library passed to `FetcherFactory` called in `deps.py`"""
-        context = {
-            "library": "Foo",
-            "collection": "BL",
-            "record_type": "cat",
-            "vendor": "FOO",
-            "workflow_id": "1234",
-        }
-        with pytest.raises(ValueError) as exc:
-            self.client.post("/pvf/cat/process-vendor-file", data=context)
-        assert str(exc.value) == "Invalid library: Foo. Must be 'bpl' or 'nypl'"
-
     @pytest.mark.parametrize(
         "library, record_type", [("nypl", "acq"), ("nypl", "cat"), ("nypl", "sel")]
     )
@@ -355,93 +424,30 @@ class TestApp:
             == "Value error, Collection should be `None` for BPL records."
         )
 
-    @pytest.mark.parametrize("record_type", ["acq", "sel"])
-    def test_pvf_router_process_order_records_fetcher_error(self, record_type):
-        """Tests incorrect library passed to `FetcherFactory` called in `deps.py`"""
-        context = {
-            "library": "Foo",
-            "collection": "BL",
-            "record_type": record_type,
-            "vendor": "FOO",
-            "primary_matchpoint": "isbn",
-            "name": "foo",
-            "agent": "bar",
-            "id": 1,
-            "workflow_id": "1234",
-        }
-
-        with pytest.raises(ValueError) as exc:
-            self.client.post(f"/pvf/{record_type}/process-vendor-file", data=context)
-        assert str(exc.value) == "Invalid library: Foo. Must be 'bpl' or 'nypl'"
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "RL", "cat")],
-    )
-    def test_pvf_router_process_full_records_platform_error(
-        self, library, collection, record_type, mock_nypl_session_error
-    ):
-        """Tests `FetcherFactory` called in `deps.py`"""
-        context = {
-            "library": library,
-            "collection": collection,
-            "record_type": record_type,
-            "vendor": "FOO",
-            "workflow_id": "1234",
-        }
-
-        with pytest.raises(clients.BookopsPlatformError) as exc:
-            self.client.post("/pvf/cat/process-vendor-file", data=context)
-        assert "Trouble connecting: " in str(exc.value)
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [
-            ("nypl", "BL", "acq"),
-            ("nypl", "RL", "acq"),
-            ("nypl", "BL", "sel"),
-            ("nypl", "RL", "sel"),
-        ],
-    )
-    def test_pvf_router_process_order_records_platform_error(
-        self, library, collection, record_type, mock_nypl_session_error
-    ):
-        """Tests `FetcherFactory` called in `deps.py`"""
-        context = {
-            "library": library,
-            "collection": collection,
-            "record_type": record_type,
-            "vendor": "FOO",
-            "primary_matchpoint": "isbn",
-            "name": "foo",
-            "agent": "bar",
-            "id": 1,
-            "workflow_id": "1234",
-        }
-        with pytest.raises(clients.BookopsPlatformError) as exc:
-            self.client.post(f"/pvf/{record_type}/process-vendor-file", data=context)
-        assert "Trouble connecting: " in str(exc.value)
-
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_reports_router_output_report(self, record_type):
+    def test_reports_router_output_report(self, record_type, fake_reporter):
         response = self.client.get(
             f"/reports/summary?batch_id=1&record_type={record_type}"
         )
         assert response.status_code == 200
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_reports_router_get_output_report_no_data(self, record_type):
+    def test_reports_router_get_output_report_no_data(
+        self, record_type, fake_reporter_no_response
+    ):
         response = self.client.get(
             f"/reports/summary?batch_id=10&record_type={record_type}"
         )
         assert response.status_code == 200
         assert '<th scope="row">' not in response.text
 
-    def test_reports_router_get_detailed_report(self):
+    def test_reports_router_get_detailed_report(self, fake_reporter):
         response = self.client.get("/reports/detailed?batch_id=1")
         assert response.status_code == 200
 
-    def test_reports_router_get_detailed_report_no_data(self):
+    def test_reports_router_get_detailed_report_no_data(
+        self, fake_reporter_no_response
+    ):
         response = self.client.get("/reports/detailed?batch_id=10")
         assert response.status_code == 200
         assert '<th scope="row">' not in response.text
@@ -454,3 +460,27 @@ class TestApp:
             f"/reports/write?batch_id=1&record_type={record_type}"
         )
         assert response.status_code == 200
+
+    @pytest.mark.parametrize(
+        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "")]
+    )
+    def test_wc2s_router_match_record(self, library, collection, mock_wc_session):
+        context = {
+            "library": library,
+            "collection": collection,
+            "id_type": "isbn",
+            "material_type": "print",
+            "action": "catalog",
+            "record_level": "1",
+            "cat_agency": "any",
+            "cat_rules": "any",
+            "data_source": "id",
+        }
+        response = self.client.post(
+            "/wc2s/match_record",
+            data=context,
+            files={"file": ("foo.txt", b"9781234567890", "text/plain")},
+        )
+        context = response.context
+        assert response.status_code == 200
+        assert len(context["wc2s_results"]) > 0

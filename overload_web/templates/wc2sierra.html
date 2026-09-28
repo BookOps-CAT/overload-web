@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block page_title %}<h2>{{ page_title }}</h2>{% endblock %}
+{% block content %}
+  <form id="wc2s-form"
+        hx-post="/wc2s/match_record"
+        hx-encoding="multipart/form-data"
+        hx-target="#wc2s_output"
+        hx-swap-oob="true"
+        autocomplete="off">
+    <div class="d-flex flex-column flex-md-row gap-2">
+      {% include "wc2s_partials/record_criteria.html" %}
+      {% include "wc2s_partials/wc2s_results.html" %}
+    </div>
+    <button id="wc2s-button" class="btn btn-nypl" form="wc2s-form" type="submit">Submit</button>
+  </form>
+{% endblock %}

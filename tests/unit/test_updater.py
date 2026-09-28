@@ -1,312 +1,689 @@
 import copy
+import random
 
 import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.application.services import marc
-from overload_web.domain.models import bibs
+from overload_web.application.pvf import update_service
+from overload_web.domain import shared
+from overload_web.domain.pvf import marc_rules, models
+from overload_web.infrastructure import marc_handler
 
 
 @pytest.fixture
-def bib_with_command_tag(sel_bib):
-    def create_match_result(value):
-        bib = copy.deepcopy(sel_bib)
-        record = Bib(sel_bib.binary_data, library=sel_bib.library)
-        record.add_field(
-            Field(
-                tag="949",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value=value)],
+def stub_full_bib(stub_bib):
+    def create_bib(library, collection, control_number, item_tag):
+        number = random.randint(0, 100)
+        barcode = f"33333{str(number).zfill(10)}"
+        if item_tag == "960":
+            field_037b = "Foo"
+            item_ind2 = " "
+        else:
+            field_037b = "OverDrive, Inc."
+            item_ind2 = "1"
+        field_list = [
+            {
+                "tag": "037",
+                "ind1": " ",
+                "ind2": " ",
+                "subfields": [
+                    {"code": "a", "value": "123"},
+                    {"code": "b", "value": field_037b},
+                ],
+            },
+            {
+                "tag": item_tag,
+                "ind1": " ",
+                "ind2": item_ind2,
+                "subfields": [{"code": "i", "value": barcode}],
+            },
+            {
+                "tag": "949",
+                "ind1": " ",
+                "ind2": " ",
+                "subfields": [{"code": "a", "value": "*b2=a;"}],
+            },
+        ]
+        parsed_fields = []
+        bib = Bib()
+        bib.leader = "00000cam  2200517 i 4500"
+        bib.library = library
+        for field in field_list:
+            bib.add_field(
+                Field(
+                    tag=field["tag"],
+                    indicators=(field["ind1"], field["ind2"]),
+                    subfields=[
+                        Subfield(code=i["code"], value=i["value"])
+                        for i in field["subfields"]
+                    ],
+                )
             )
+            parsed_fields.append(
+                shared.ParsedField(
+                    tag=field["tag"],
+                    indicators=(field["ind1"], field["ind2"]),
+                    subfields=[
+                        shared.ParsedSubfield(code=i["code"], value=i["value"])
+                        for i in field["subfields"]
+                    ],
+                )
+            )
+        domain_bib = stub_bib(library, collection, "cat")
+        domain_bib.binary_data = bib.as_marc()
+        domain_bib.parsed_fields = parsed_fields
+        domain_bib.barcodes = [barcode]
+        domain_bib.control_number = control_number
+        domain_bib.action = "insert"
+        return domain_bib
+
+    return create_bib
+
+
+@pytest.fixture(params=[("nypl", "BL"), ("nypl", "RL"), ("bpl", None)])
+def full_bib_949_item(stub_full_bib, request):
+    def create_bib(control_number):
+        return stub_full_bib(request.param[0], request.param[1], control_number, "949")
+
+    return create_bib
+
+
+@pytest.fixture
+def full_bib_960_item(stub_full_bib):
+    def create_bib(control_number):
+        return stub_full_bib("bpl", None, control_number, "960")
+
+    return create_bib
+
+
+@pytest.fixture
+def stub_updater(request, get_constants):
+    marker = request.node.get_closest_marker("workflow")
+    collection = marker.kwargs["collection"]
+    library = marker.kwargs["library"]
+    constants = get_constants["constants"]
+    rules = {
+        "library": library,
+        "collection": collection,
+        "default_loc": constants["default_locations"][library].get(collection),
+        "bib_id_tag": constants["bib_id_tag"][library],
+        "order_mapping": constants["order_mapping"],
+    }
+    return update_service.BibUpdater(
+        rules=update_service.UpdateRules(**rules), handler=marc_handler.MarcUpdater()
+    )
+
+
+@pytest.fixture
+def stub_reviewer():
+    return update_service.BibReviewer(handler=marc_handler.MarcUpdater())
+
+
+@pytest.fixture
+def stub_domain_bib(request, stub_bib):
+    marker = request.node.get_closest_marker("workflow")
+
+    def make_bib(record_type):
+        bib = stub_bib(
+            marker.kwargs["library"], marker.kwargs["collection"], record_type
         )
-        bib.binary_data = record.as_marc()
+        bib.parsed_fields = [
+            shared.ParsedField(tag="005", value="20200101010000.0"),
+            shared.ParsedField(
+                tag="020",
+                indicators=(" ", " "),
+                subfields=[shared.ParsedSubfield(code="i", value="9781234567890")],
+            ),
+            shared.ParsedField(
+                tag="949",
+                indicators=(" ", "1"),
+                subfields=[shared.ParsedSubfield(code="i", value="333331234567890")],
+            ),
+        ]
+        bib.orders = [
+            models.Order(
+                locations=["agj0y"],
+                audience=["j"],
+                branches=["ag"],
+                copies="13",
+                create_date="01-01-25",
+                format="b",
+                lang="eng",
+                order_id=".o10000010",
+                shelves=["0y"],
+                status="o",
+                vendor_notes=None,
+                order_code_1="j",
+                order_code_2="c",
+                order_code_3="d",
+                order_code_4="a",
+                order_type="l",
+                price="{{dollar}}13.20",
+                project_code="A01",
+                fund="lease",
+                vendor_code="btlea",
+                country="xxu",
+                internal_note="foo",
+                selector_note="bar",
+                vendor_title_no=None,
+                blanket_po="baz",
+            )
+        ]
         return bib
 
-    return create_match_result
+    return make_bib
 
 
-@pytest.fixture
-def make_bt_series_full_bib(full_bib, library, collection):
-    def make_full_bib(pairs):
-        bib = Bib(full_bib.binary_data, library=full_bib.library)
-        bib.remove_fields("091")
-        subfield_list = []
-        for k, v in pairs.items():
-            subfield_list.append(Subfield(code=k, value=v))
-        call_no = Field(
-            tag="091", indicators=Indicators(" ", " "), subfields=subfield_list
-        )
-        bib.add_field(call_no)
-        bib.add_field(
-            Field(
-                tag="901",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value="BTSERIES")],
-            )
-        )
-        full_bib.branch_call_number = call_no.value()
-        full_bib.binary_data = bib.as_marc()
-        full_bib.vendor_info = bibs.VendorInfo(
-            name="BT SERIES",
-            matchpoints={
-                "primary_matchpoint": "isbn",
-                "secondary_matchpoint": "control_number",
-            },
-            bib_fields=[
-                {"tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;"}
-            ],
-        )
-        full_bib.vendor = "BT SERIES"
-        return full_bib
-
-    return make_full_bib
-
-
-class TestUpdaterAcqRecords:
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "acq"), ("nypl", "RL", "acq"), ("bpl", "NONE", "acq")],
-    )
-    def test_update_with_template_data(self, acq_bib, marc_engine):
-        """Updates orders based on template data."""
+@pytest.mark.workflow(library="bpl", collection=None)
+class TestGetBibUpdatesBPL:
+    def test_get_acq_updates(self, stub_updater, stub_domain_bib):
+        acq_bib = stub_domain_bib("acq")
         original_orders = copy.deepcopy(acq_bib.orders)
-        marc.BibUpdater.update_acquisition_record(
-            acq_bib,
+        updates = stub_updater.get_acq_updates(
+            record=acq_bib,
             template_data={"name": "Foo", "order_code_1": "b", "format": "a"},
-            engine=marc_engine,
         )
         assert [i.order_code_1 for i in original_orders] == ["j"]
         assert [i.order_code_1 for i in acq_bib.orders] == ["b"]
+        assert len(updates) == 2
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
 
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "acq"), ("nypl", "RL", "acq"), ("bpl", "NONE", "acq")],
-    )
-    def test_update_check_command_tag(self, marc_engine, bib_with_command_tag):
-        """Checks for existing command tag based on format. Updates with default location."""
-        input_bib = bib_with_command_tag("*b2=a;")
-        original_bib = Bib(input_bib.binary_data, library=input_bib.library)
-        marc.BibUpdater.update_acquisition_record(
-            input_bib, template_data={"format": "a"}, engine=marc_engine
-        )
-        updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
-        assert len(updated_bib.get_fields("949")) == 2
-        assert len(original_bib.get_fields("949")) == 2
-        assert [i.value() for i in original_bib.get_fields("949")] == [
-            "333331234567890",
-            "*b2=a;",
-        ]
-        assert [i.value() for i in updated_bib.get_fields("949")] == [
-            "333331234567890",
-            "*b2=a;",
-        ]
-
-
-class TestUpdaterCatRecords:
-    @pytest.mark.parametrize(
-        "library, collection, tag, record_type",
-        [
-            ("bpl", "NONE", "907", "cat"),
-            ("nypl", "BL", "945", "cat"),
-            ("nypl", "RL", "945", "cat"),
-        ],
-    )
-    def test_update(self, full_bib, marc_engine, tag):
-        """Adds bib_id to appropriate tag"""
-        full_bib.bib_id = "12345"
-        original_bib = Bib(full_bib.binary_data, library=full_bib.library)
-        marc.BibUpdater.update_cataloging_record(record=full_bib, engine=marc_engine)
-        updated_bib = Bib(full_bib.binary_data, library=full_bib.library)
-        assert len(original_bib.get_fields(tag)) == 0
-        assert len(updated_bib.get_fields(tag)) == 1
-
-    @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "RL", "cat")],
-    )
-    def test_update_vendor_fields_nypl(self, full_bib, marc_engine):
-        """Adds command tag based on vendor info. Results in two 949 fields."""
-        full_bib.vendor = "INGRAM"
-        full_bib.vendor_info = bibs.VendorInfo(
+    def test_get_cat_updates(self, stub_updater, stub_domain_bib):
+        cat_bib = stub_domain_bib("cat")
+        cat_bib.bib_id = "12345"
+        cat_bib.vendor_info = models.VendorInfo(
             name="INGRAM",
-            matchpoints={"primary_matchpoint": "control_number"},
+            matchpoints={},
+            vendor_tags=[],
             bib_fields=[
-                {"tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;"}
+                {"tag": "949", "ind1": " ", "ind2": " ", "code": "a", "value": "*b2=a;"}
             ],
         )
-        original_bib = Bib(full_bib.binary_data, library=full_bib.library)
-        marc.BibUpdater.update_cataloging_record(record=full_bib, engine=marc_engine)
-        assert len(original_bib.get_fields("949")) == 1
-        assert (
-            len(Bib(full_bib.binary_data, library=full_bib.library).get_fields("949"))
-            == 2
-        )
+        updates = stub_updater.get_cat_updates(record=cat_bib)
+        assert len(updates) == 2
+        assert updates[0].__dict__ == {
+            "tag": "949",
+            "delete_fields_by_tag": False,
+            "target_field_to_delete": None,
+            "ind1": " ",
+            "ind2": " ",
+            "subfields": [{"code": "a", "value": "*b2=a;"}],
+        }
+        assert updates[1].__dict__ == {
+            "tag": "907",
+            "delete_fields_by_tag": True,
+            "target_field_to_delete": None,
+            "ind1": " ",
+            "ind2": " ",
+            "subfields": [{"code": "a", "value": "12345"}],
+        }
 
-    @pytest.mark.parametrize(
-        "library, collection, record_type", [("bpl", "NONE", "cat")]
-    )
-    def test_update_vendor_fields_bpl(self, full_bib, marc_engine):
-        """Adds command tag based on vendor info. Results in one 949 field."""
-        full_bib.vendor = "INGRAM"
-        full_bib.vendor_info = bibs.VendorInfo(
+    def test_get_sel_updates(self, stub_updater, stub_domain_bib):
+        sel_bib = stub_domain_bib("sel")
+        original_orders = copy.deepcopy(sel_bib.orders)
+        updates = stub_updater.get_sel_updates(
+            record=sel_bib, template_data={"order_code_1": "b", "format": "a"}
+        )
+        assert [i.order_code_1 for i in original_orders] == ["j"]
+        assert [i.order_code_1 for i in sel_bib.orders] == ["b"]
+        assert len(updates) == 3
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+        assert updates[2].tag == "949"
+        assert updates[2].subfields == [{"code": "a", "value": "*b2=a;"}]
+        assert updates[2].target_field_to_delete is None
+
+    def test_get_sel_updates_with_command_tag(self, stub_updater, stub_domain_bib):
+        sel_bib = stub_domain_bib("sel")
+        sel_bib.parsed_fields = [
+            shared.ParsedField(
+                tag="949",
+                indicators=(" ", " "),
+                subfields=[shared.ParsedSubfield(code="a", value="*b2=a;")],
+            )
+        ]
+        updates = stub_updater.get_sel_updates(
+            record=sel_bib, template_data={"format": "a"}
+        )
+        assert len(updates) == 2
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+
+    def test_get_sel_updates_no_command_tag(self, stub_updater, stub_domain_bib):
+        sel_bib = stub_domain_bib("sel")
+        updates = stub_updater.get_sel_updates(record=sel_bib, template_data={})
+        assert len(updates) == 2
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+
+
+@pytest.mark.workflow(library="nypl", collection="BL")
+class TestGetBibUpdatesNYPLBranch:
+    def test_get_acq_updates(self, stub_updater, stub_domain_bib):
+        acq_bib = stub_domain_bib("acq")
+        original_orders = copy.deepcopy(acq_bib.orders)
+        updates = stub_updater.get_acq_updates(
+            record=acq_bib,
+            template_data={"name": "Foo", "order_code_1": "b", "format": "a"},
+        )
+        assert [i.order_code_1 for i in original_orders] == ["j"]
+        assert [i.order_code_1 for i in acq_bib.orders] == ["b"]
+        assert len(updates) == 3
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+        assert updates[2].__dict__ == {
+            "tag": "910",
+            "delete_fields_by_tag": True,
+            "target_field_to_delete": None,
+            "ind1": " ",
+            "ind2": " ",
+            "subfields": [{"code": "a", "value": "BL"}],
+        }
+
+    def test_get_cat_updates(self, stub_updater, stub_domain_bib):
+        cat_bib = stub_domain_bib("cat")
+        cat_bib.bib_id = "12345"
+        cat_bib.vendor_info = models.VendorInfo(
             name="INGRAM",
-            matchpoints={"primary_matchpoint": "control_number"},
+            matchpoints={},
+            vendor_tags=[],
             bib_fields=[
-                {"tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;"}
+                {"tag": "949", "ind1": " ", "ind2": " ", "code": "a", "value": "*b2=a;"}
             ],
         )
-        original_bib = Bib(full_bib.binary_data, library=full_bib.library)
-        marc.BibUpdater.update_cataloging_record(record=full_bib, engine=marc_engine)
-        assert len(original_bib.get_fields("949")) == 0
-        assert (
-            len(Bib(full_bib.binary_data, library=full_bib.library).get_fields("949"))
-            == 1
-        )
+        updates = stub_updater.get_cat_updates(record=cat_bib)
+        assert len(updates) == 3
+        assert updates[0].__dict__ == {
+            "tag": "949",
+            "delete_fields_by_tag": False,
+            "target_field_to_delete": None,
+            "ind1": " ",
+            "ind2": " ",
+            "subfields": [{"code": "a", "value": "*b2=a;"}],
+        }
+        assert updates[1].__dict__ == {
+            "tag": "945",
+            "delete_fields_by_tag": True,
+            "target_field_to_delete": None,
+            "ind1": " ",
+            "ind2": " ",
+            "subfields": [{"code": "a", "value": "12345"}],
+        }
+        assert updates[2].tag == "910"
 
     @pytest.mark.parametrize(
-        "library, collection, record_type", [("nypl", "BL", "cat")]
-    )
-    @pytest.mark.parametrize(
-        "pairs",
+        "input,output",
         [
-            {"p": "J", "a": "FIC", "c": "SNICKET"},
-            {"p": "J", "f": "HOLIDAY", "a": "PIC", "c": "MONTES"},
-            {"p": "J", "f": "YR", "a": "FIC", "c": "WEST"},
-            {"p": "J SPA", "a": "PIC", "c": "J"},
-            {"f": "GRAPHIC", "a": "FIC", "c": "OCONNOR"},
-            {"p": "J E COMPOUND NAME"},
-            {"p": "J SPA E COMPOUND NAME"},
-            {"p": "J", "f": "GRAPHIC", "a": "GN FIC", "c": "SMITH"},
-            {"f": "DVD", "a": "MOVIE", "c": "MISSISSIPPI"},
+            ({"p": "J", "a": "FIC", "c": "FOO"}, {"p": "J", "a": "FIC", "c": "FOO"}),
+            (
+                {"p": "J", "f": "HOLIDAY", "a": "PIC", "c": "BAR"},
+                {"p": "J", "f": "HOLIDAY", "a": "PIC", "c": "BAR"},
+            ),
+            (
+                {"p": "J", "f": "YR", "a": "FIC", "c": "BAZ"},
+                {"p": "J", "f": "YR", "a": "FIC", "c": "BAZ"},
+            ),
+            (
+                {"p": "J SPA", "a": "PIC", "c": "J"},
+                {"p": "J SPA", "a": "PIC", "c": "J"},
+            ),
+            (
+                {"f": "GRAPHIC", "a": "FIC", "c": "FOO"},
+                {"f": "GRAPHIC", "a": "FIC", "c": "FOO"},
+            ),
+            ({"p": "J E FOO BAR"}, {"p": "J", "a": "E", "c": "FOO BAR"}),
+            ({"p": "J SPA E FOO BAR"}, {"p": "J SPA", "a": "E", "c": "FOO BAR"}),
+            (
+                {"p": "J", "f": "GRAPHIC", "a": "GN FIC", "c": "BAZ"},
+                {"p": "J", "f": "GRAPHIC", "a": "GN FIC", "c": "BAZ"},
+            ),
+            ({"f": "DVD", "a": "MOVIE", "c": "BAZ"}, {"c": "DVD MOVIE BAZ"}),
         ],
     )
-    def test_update_bt_series_call_no(
-        self, make_bt_series_full_bib, marc_engine, pairs
+    def test_get_cat_updates_bt_series_call_no(
+        self, stub_updater, stub_domain_bib, input, output
     ):
-        input_bib = make_bt_series_full_bib(pairs)
-        original_bib = Bib(input_bib.binary_data, library=input_bib.library)
-        marc.BibUpdater.update_cataloging_record(input_bib, engine=marc_engine)
-        updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
-        assert updated_bib.get_fields("091")[0].value() == " ".join(
-            [i for i in pairs.values()]
-        )
-        assert original_bib.get_fields("091")[0].value() == " ".join(
-            [i for i in pairs.values()]
-        )
-        assert original_bib.collection == "BL"
-        assert input_bib.vendor == "BT SERIES"
-        assert input_bib.record_type == "cat"
+        cat_bib = stub_domain_bib("cat")
+        cat_bib.vendor = "BT SERIES"
+        cat_bib.branch_call_number = " ".join([i for i in input.values()])
+        updates = stub_updater.get_cat_updates(record=cat_bib)
+        assert len(updates) == 2
+        assert updates[0].tag == "910"
+        assert updates[1].tag == "091"
+        assert updates[1].ind1 == " "
+        assert updates[1].ind2 == " "
+        assert updates[1].delete_fields_by_tag is True
+        assert updates[1].target_field_to_delete is None
+        assert updates[1].subfields == [
+            {"code": k, "value": v} for k, v in output.items()
+        ]
 
-    @pytest.mark.parametrize(
-        "library, collection, record_type", [("nypl", "BL", "cat")]
-    )
-    def test_update_bt_series_call_no_error(self, make_bt_series_full_bib, marc_engine):
-        input_bib = make_bt_series_full_bib(
-            {"z": "FOO", "p": "J", "a": "FIC", "c": "SNICKET"}
-        )
+    def test_get_cat_updates_bt_series_call_no_error(
+        self, stub_domain_bib, stub_updater
+    ):
+        cat_bib = stub_domain_bib("cat")
+        cat_bib.vendor = "BT SERIES"
+        cat_bib.branch_call_number = "FOO J FIC SNICKET"
         with pytest.raises(ValueError) as exc:
-            marc.BibUpdater.update_cataloging_record(input_bib, engine=marc_engine)
+            stub_updater.get_cat_updates(record=cat_bib)
         assert (
             str(exc.value)
             == "Constructed call number does not match original. New=FIC SNICKET, Original=FOO J FIC SNICKET"
         )
 
-
-class TestUpdaterSelRecords:
     @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "sel"), ("nypl", "RL", "sel"), ("bpl", "NONE", "sel")],
+        "template, command_tag",
+        [
+            ({"order_code_1": "b", "format": "a"}, "*b2=a;bn=zzzzz;"),
+            ({"order_code_1": "b"}, "*bn=zzzzz;"),
+        ],
     )
-    def test_update_template_data(self, sel_bib, marc_engine):
-        """Updates orders based on template data."""
+    def test_get_sel_updates(
+        self, stub_updater, stub_domain_bib, template, command_tag
+    ):
+        sel_bib = stub_domain_bib("sel")
+        sel_bib.parsed_fields = [
+            shared.ParsedField(
+                tag="949",
+                indicators=(" ", " "),
+                subfields=[shared.ParsedSubfield(code="a", value="b2=a")],
+            )
+        ]
         original_orders = copy.deepcopy(sel_bib.orders)
-        marc.BibUpdater.update_selection_record(
-            sel_bib,
-            template_data={"name": "Foo", "order_code_1": "b", "format": "a"},
-            engine=marc_engine,
-        )
+        updates = stub_updater.get_sel_updates(record=sel_bib, template_data=template)
         assert [i.order_code_1 for i in original_orders] == ["j"]
         assert [i.order_code_1 for i in sel_bib.orders] == ["b"]
+        assert len(updates) == 4
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+        assert updates[2].tag == "949"
+        assert updates[2].subfields == [{"code": "a", "value": command_tag}]
+        assert updates[2].target_field_to_delete is None
+        assert updates[3].tag == "910"
 
     @pytest.mark.parametrize(
-        "library, collection, record_type, original, output",
-        [
-            ("nypl", "BL", "sel", "*b2=a;", "*b2=a;bn=zzzzz;"),
-            ("nypl", "BL", "sel", "*b2=a;bn=;", "*b2=a;bn=;"),
-            ("nypl", "BL", "sel", "*b2=a", "*b2=a;bn=zzzzz;"),
-            ("nypl", "RL", "sel", "*b2=a;", "*b2=a;bn=xxx;"),
-            ("nypl", "RL", "sel", "*b2=a;bn=;", "*b2=a;bn=;"),
-            ("nypl", "RL", "sel", "*b2=a", "*b2=a;bn=xxx;"),
-            ("bpl", "NONE", "sel", "*b2=a;", "*b2=a;"),
-            ("bpl", "NONE", "sel", "*b2=a;bn=;", "*b2=a;bn=;"),
-            ("bpl", "NONE", "sel", "*b2=a", "*b2=a"),
-        ],
+        "original, output",
+        [("*b2=a;", "*b2=a;bn=zzzzz;"), ("*b2=a", "*b2=a;bn=zzzzz;")],
     )
-    def test_update_default_loc(
-        self, bib_with_command_tag, marc_engine, original, output
+    def test_get_sel_updates_check_command_tag(
+        self, stub_updater, stub_domain_bib, original, output
     ):
-        """Updates existing command tag with default location."""
-        input_bib = bib_with_command_tag(original)
-        original_bib = Bib(input_bib.binary_data, library=input_bib.library)
-        marc.BibUpdater.update_selection_record(
-            input_bib, template_data={}, engine=marc_engine
+        sel_bib = stub_domain_bib("sel")
+        sel_bib.parsed_fields = [
+            shared.ParsedField(
+                tag="949",
+                indicators=(" ", " "),
+                subfields=[shared.ParsedSubfield(code="a", value=original)],
+            )
+        ]
+        updates = stub_updater.get_sel_updates(
+            record=sel_bib, template_data={"order_code_1": "b", "format": "a"}
         )
-        updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
-        assert [i.value() for i in original_bib.get_fields("949")] == [
-            "333331234567890",
-            original,
+        assert len(updates) == 4
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+        assert updates[2].tag == "949"
+        assert updates[2].subfields == [{"code": "a", "value": output}]
+        assert updates[2].target_field_to_delete.__dict__ == {
+            "tag": "949",
+            "indicators": (" ", " "),
+            "code": "a",
+            "value": original,
+        }
+        assert updates[3].tag == "910"
+
+    def test_get_sel_updates_skip_command_tag(self, stub_updater, stub_domain_bib):
+        sel_bib = stub_domain_bib("sel")
+        sel_bib.parsed_fields = [
+            shared.ParsedField(
+                tag="949",
+                indicators=(" ", " "),
+                subfields=[shared.ParsedSubfield(code="a", value="*b2=a;bn=zzzzz;")],
+            )
         ]
-        assert [i.value() for i in updated_bib.get_fields("949")] == [
-            "333331234567890",
-            output,
-        ]
+        updates = stub_updater.get_sel_updates(
+            record=sel_bib, template_data={"order_code_1": "b", "format": "a"}
+        )
+        assert len(updates) == 3
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+        assert updates[2].tag == "910"
+
+
+@pytest.mark.workflow(library="nypl", collection="RL")
+class TestGetBibUpdatesNYPLResearch:
+    def test_get_acq_updates(self, stub_updater, stub_domain_bib):
+        acq_bib = stub_domain_bib("acq")
+        original_orders = copy.deepcopy(acq_bib.orders)
+        updates = stub_updater.get_acq_updates(
+            record=acq_bib,
+            template_data={"name": "Foo", "order_code_1": "b", "format": "a"},
+        )
+        assert [i.order_code_1 for i in original_orders] == ["j"]
+        assert [i.order_code_1 for i in acq_bib.orders] == ["b"]
+        assert len(updates) == 3
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+        assert updates[2].__dict__ == {
+            "tag": "910",
+            "delete_fields_by_tag": True,
+            "target_field_to_delete": None,
+            "ind1": " ",
+            "ind2": " ",
+            "subfields": [{"code": "a", "value": "RL"}],
+        }
+
+    def test_get_cat_updates(self, stub_updater, stub_domain_bib):
+        cat_bib = stub_domain_bib("cat")
+        cat_bib.bib_id = "12345"
+        cat_bib.vendor_info = models.VendorInfo(
+            name="INGRAM",
+            matchpoints={},
+            vendor_tags=[],
+            bib_fields=[
+                {"tag": "949", "ind1": " ", "ind2": " ", "code": "a", "value": "*b2=a;"}
+            ],
+        )
+        updates = stub_updater.get_cat_updates(record=cat_bib)
+        assert len(updates) == 3
+        assert updates[0].__dict__ == {
+            "tag": "949",
+            "delete_fields_by_tag": False,
+            "target_field_to_delete": None,
+            "ind1": " ",
+            "ind2": " ",
+            "subfields": [{"code": "a", "value": "*b2=a;"}],
+        }
+        assert updates[1].__dict__ == {
+            "tag": "945",
+            "delete_fields_by_tag": True,
+            "target_field_to_delete": None,
+            "ind1": " ",
+            "ind2": " ",
+            "subfields": [{"code": "a", "value": "12345"}],
+        }
+        assert updates[2].tag == "910"
 
     @pytest.mark.parametrize(
-        "library, collection, record_type, output",
+        "template, command_tag",
         [
-            ("nypl", "BL", "sel", "*b2=a;bn=zzzzz;"),
-            ("nypl", "RL", "sel", "*b2=a;bn=xxx;"),
-            ("bpl", "NONE", "sel", "*b2=a;"),
+            ({"order_code_1": "b", "format": "a"}, "*b2=a;bn=xxx;"),
+            ({"order_code_1": "b"}, "*bn=xxx;"),
         ],
     )
-    def test_update_check_command_tag(self, marc_engine, bib_with_command_tag, output):
-        """Checks for existing command tag based on format. Updates with default location."""
-        input_bib = bib_with_command_tag("*b2=a;")
-        original_bib = Bib(input_bib.binary_data, library=input_bib.library)
-        marc.BibUpdater.update_selection_record(
-            input_bib, template_data={"format": "a"}, engine=marc_engine
-        )
-        updated_bib = Bib(input_bib.binary_data, library=input_bib.library)
-        assert len(updated_bib.get_fields("949")) == 2
-        assert len(original_bib.get_fields("949")) == 2
-        assert [i.value() for i in original_bib.get_fields("949")] == [
-            "333331234567890",
-            "*b2=a;",
+    def test_get_sel_updates(
+        self, stub_updater, stub_domain_bib, template, command_tag
+    ):
+        sel_bib = stub_domain_bib("sel")
+        sel_bib.parsed_fields = [
+            shared.ParsedField(
+                tag="949",
+                indicators=(" ", " "),
+                subfields=[shared.ParsedSubfield(code="a", value="b2=a")],
+            )
         ]
-        assert [i.value() for i in updated_bib.get_fields("949")] == [
-            "333331234567890",
-            output,
-        ]
+        original_orders = copy.deepcopy(sel_bib.orders)
+        updates = stub_updater.get_sel_updates(record=sel_bib, template_data=template)
+        assert [i.order_code_1 for i in original_orders] == ["j"]
+        assert [i.order_code_1 for i in sel_bib.orders] == ["b"]
+        assert len(updates) == 4
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+        assert updates[2].tag == "949"
+        assert updates[2].subfields == [{"code": "a", "value": command_tag}]
+        assert updates[2].target_field_to_delete is None
+        assert updates[3].tag == "910"
 
     @pytest.mark.parametrize(
-        "library, collection, record_type, field_count, output",
-        [
-            ("nypl", "BL", "sel", 2, ["333331234567890", "*bn=zzzzz;"]),
-            ("nypl", "RL", "sel", 2, ["333331234567890", "*bn=xxx;"]),
-            ("bpl", "NONE", "sel", 1, ["333331234567890"]),
-        ],
+        "original, output", [("*b2=a;", "*b2=a;bn=xxx;"), ("*b2=a", "*b2=a;bn=xxx;")]
     )
-    def test_update_no_command_tag_bpl(self, sel_bib, marc_engine, field_count, output):
-        """Adds command tag with default location."""
-        original_bib = Bib(sel_bib.binary_data, library=sel_bib.library)
-        marc.BibUpdater.update_selection_record(
-            sel_bib, template_data={}, engine=marc_engine
+    def test_get_sel_updates_check_command_tag(
+        self, stub_updater, stub_domain_bib, original, output
+    ):
+        sel_bib = stub_domain_bib("sel")
+        sel_bib.parsed_fields = [
+            shared.ParsedField(
+                tag="949",
+                indicators=(" ", " "),
+                subfields=[shared.ParsedSubfield(code="a", value=original)],
+            )
+        ]
+        updates = stub_updater.get_sel_updates(
+            record=sel_bib, template_data={"order_code_1": "b", "format": "a"}
+        )
+        assert len(updates) == 4
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+        assert updates[2].tag == "949"
+        assert updates[2].subfields == [{"code": "a", "value": output}]
+        assert updates[2].target_field_to_delete.__dict__ == {
+            "tag": "949",
+            "indicators": (" ", " "),
+            "code": "a",
+            "value": original,
+        }
+
+        assert updates[3].tag == "910"
+
+    def test_get_sel_updates_skip_command_tag(self, stub_updater, stub_domain_bib):
+        sel_bib = stub_domain_bib("sel")
+        sel_bib.parsed_fields = [
+            shared.ParsedField(
+                tag="949",
+                indicators=(" ", " "),
+                subfields=[shared.ParsedSubfield(code="a", value="*b2=a;bn=xxx;")],
+            )
+        ]
+        updates = stub_updater.get_sel_updates(
+            record=sel_bib, template_data={"order_code_1": "b", "format": "a"}
+        )
+        assert len(updates) == 3
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+        assert updates[2].tag == "910"
+
+
+class TestMarcUpdater:
+    ENGINE = marc_handler.MarcUpdater()
+
+    @pytest.mark.workflow(library="bpl", collection=None)
+    def test_update_record_add_vendor_fields(self, stub_domain_bib, stub_updater):
+        cat_bib = stub_domain_bib("cat")
+        cat_bib.vendor_info = models.VendorInfo(
+            name="INGRAM",
+            matchpoints={},
+            vendor_tags=[],
+            bib_fields=[
+                {"tag": "949", "ind1": " ", "ind2": " ", "code": "a", "value": "*b2=a;"}
+            ],
+        )
+        stub_updater.apply_field_updates(
+            cat_bib,
+            updates=marc_rules.FieldRules.add_vendor_fields(
+                cat_bib.vendor_info.bib_fields
+            ),
+        )
+        updated_bib = Bib(cat_bib.binary_data, library=cat_bib.library)
+        assert [i.format_field() for i in updated_bib.get_fields("949")] == ["*b2=a;"]
+
+    @pytest.mark.workflow(library="nypl", collection="RL")
+    def test_update_record_add_bib_id(self, stub_domain_bib, stub_updater):
+        cat_bib = stub_domain_bib("cat")
+        cat_bib.bib_id = "12345"
+        stub_updater.apply_field_updates(
+            cat_bib, updates=[marc_rules.FieldRules.add_bib_id(cat_bib.bib_id, "945")]
+        )
+        updated_bib = Bib(cat_bib.binary_data, library=cat_bib.library)
+        assert updated_bib["945"].format_field() == "12345"
+
+    @pytest.mark.workflow(library="nypl", collection="BL")
+    def test_update_record_command_tag(self, stub_domain_bib, stub_updater):
+        field_949 = "*b2=a;"
+        sel_bib = stub_domain_bib("sel")
+        sel_bib.parsed_fields = [
+            shared.ParsedField(
+                tag="949",
+                indicators=(" ", " "),
+                subfields=[shared.ParsedSubfield(code="a", value=field_949)],
+            )
+        ]
+        marc_data = Bib()
+        marc_data.leader = "00000cam  2200517 i 4500"
+        marc_data.library = sel_bib.library
+        marc_data.add_field(
+            Field(
+                tag="949",
+                indicators=Indicators(" ", "1"),
+                subfields=[Subfield(code="a", value="333339876543210")],
+            )
+        )
+        marc_data.add_field(
+            Field(
+                tag="949",
+                indicators=Indicators(" ", " "),
+                subfields=[Subfield(code="a", value=field_949)],
+            )
+        )
+        sel_bib.binary_data = marc_data.as_marc()
+        stub_updater.apply_field_updates(
+            sel_bib,
+            updates=[
+                marc_rules.FieldRules.add_command_tag(
+                    format="a", default_loc="zzzzz", fields=sel_bib.parsed_fields
+                )
+            ],
         )
         updated_bib = Bib(sel_bib.binary_data, library=sel_bib.library)
-        assert len(updated_bib.get_fields("949")) == field_count
-        assert len(original_bib.get_fields("949")) == 1
-        assert [i.value() for i in original_bib.get_fields("949")] == [
-            "333331234567890"
+        fields_949 = [i.format_field() for i in updated_bib.get_fields("949")]
+        assert len(fields_949) == 2
+        assert "333339876543210" in fields_949
+        assert "*b2=a;bn=zzzzz;" in fields_949
+
+    @pytest.mark.workflow(library="nypl", collection="BL")
+    def test_update_record_original_command_tag_not_found(
+        self, stub_domain_bib, stub_updater
+    ):
+        sel_bib = stub_domain_bib("sel")
+        original = copy.deepcopy(sel_bib)
+        stub_updater.apply_field_updates(
+            sel_bib,
+            updates=[
+                marc_rules.MarcFieldUpdateValues(
+                    tag="949",
+                    ind1=" ",
+                    ind2=" ",
+                    subfields=[{"code": "a", "value": "*b2=a;bn=zzzzz;"}],
+                    target_field_to_delete=marc_rules.TargetFieldCriteria(
+                        tag="949", indicators=(" ", " "), code="a", value="*"
+                    ),
+                )
+            ],
+        )
+        updated_bib = Bib(sel_bib.binary_data, library=sel_bib.library)
+        original_bib = Bib(original.binary_data, library=original.library)
+        assert [i.format_field() for i in original_bib.get_fields("949")] == []
+        assert [i.format_field() for i in updated_bib.get_fields("949")] == [
+            "*b2=a;bn=zzzzz;"
         ]
-        assert [i.value() for i in updated_bib.get_fields("949")] == output

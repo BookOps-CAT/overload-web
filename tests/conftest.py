@@ -1,4 +1,3 @@
-import copy
 import datetime
 import io
 import json
@@ -6,21 +5,11 @@ from typing import Any
 
 import pytest
 import requests
-from bookops_marc import Bib
+from bookops_worldcat.errors import BookopsWorldcatError
 from file_retriever import Client, File, FileInfo
-from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain.models import bibs, reporting, sierra_responses
-from overload_web.infrastructure import clients
-from overload_web.infrastructure import marc_engine as engine
-
-
-@pytest.fixture(scope="session")
-def get_constants() -> dict[str, Any]:
-    """Retrieve processing constants from JSON file."""
-    with open("overload_web/data/mapping_specs.json", "r", encoding="utf-8") as fh:
-        constants = json.load(fh)
-    return constants
+from overload_web.domain.pvf import models
+from overload_web.infrastructure import oclc, sierra_clients
 
 
 @pytest.fixture(autouse=True)
@@ -45,71 +34,30 @@ def test_setup(caplog, monkeypatch):
     monkeypatch.setenv("GOOGLE_SHEET_CLIENT_SECRET", "qux")
     monkeypatch.setenv("GOOGLE_SHEET_NAME", "sheet")
     monkeypatch.setenv("GOOGLE_SHEET_ID", "id")
+    monkeypatch.setenv("NYPL_WORLDCAT_CLIENT", "foo")
+    monkeypatch.setenv("NYPL_WORLDCAT_SECRET", "bar")
+    monkeypatch.setenv("BPL_WORLDCAT_CLIENT", "foo")
+    monkeypatch.setenv("BPL_WORLDCAT_SECRET", "bar")
 
 
 class MockHTTPResponse:
-    def __init__(self, status_code: int, ok: bool, _json: dict):
+    def __init__(
+        self, status_code: int, ok: bool, _json: dict, _content: bytes | None = None
+    ):
         self.status_code = status_code
         self.ok = ok
         self._json = _json
+        self._content = _content
+
+    @property
+    def content(self):
+        return self._content
 
     def json(self):
         return self._json
 
 
-class FakeSierraResponse(sierra_responses.BaseSierraResponse):
-    library = "library"
-
-    @property
-    def barcodes(self) -> list[str]:
-        return ["333331234567890"]
-
-    @property
-    def branch_call_number(self) -> str | None:
-        return "FIC"
-
-    @property
-    def cat_source(self) -> str:
-        return "inhouse"
-
-    @property
-    def collection(self) -> str | None:
-        return None
-
-    @property
-    def control_number(self) -> str | None:
-        return self._data["id"]
-
-    @property
-    def isbn(self) -> list[str]:
-        return [self._data["id"]]
-
-    @property
-    def oclc_number(self) -> list[str]:
-        return [self._data["id"]]
-
-    @property
-    def research_call_number(self) -> list[str]:
-        return ["FOO"]
-
-    @property
-    def upc(self) -> list[str]:
-        return [self._data["id"]]
-
-    @property
-    def update_date(self) -> str:
-        return "2025-01-01T00:00:00"
-
-    @property
-    def update_datetime(self) -> datetime.datetime:
-        return datetime.datetime(2025, 1, 1, 0, 0, 0)
-
-    @property
-    def var_fields(self) -> list[dict[str, Any]]:
-        return [{"020": self._data["id"]}]
-
-
-class FakeSierraSession(clients.SierraSessionProtocol):
+class FakeSierraSession(sierra_clients.SierraSessionProtocol):
     def _get_credentials(self):
         return "foo"
 
@@ -133,7 +81,7 @@ class FakeSierraSession(clients.SierraSessionProtocol):
 
 
 @pytest.fixture
-def mock_session(monkeypatch):
+def mock_sierra_session(monkeypatch):
     def response(*args, **kwargs):
         record = {"id": "123456789", "title": "foo"}
         json = {"response": {"docs": [record]}, "data": [record]}
@@ -149,18 +97,18 @@ def mock_session(monkeypatch):
 
 
 @pytest.fixture
-def mock_bpl_session_error(monkeypatch, mock_session):
+def mock_bpl_session_error(monkeypatch, mock_sierra_session):
     def mock_error(*args, **kwargs):
-        raise clients.BookopsSolrError
+        raise sierra_clients.BookopsSolrError
 
     monkeypatch.setattr(FakeSierraSession, "_get_bibs_by_isbn", mock_error)
     return FakeSierraSession()
 
 
 @pytest.fixture
-def mock_nypl_session_error(monkeypatch, mock_session):
+def mock_nypl_session_error(monkeypatch, mock_sierra_session):
     def mock_error(*args, **kwargs):
-        raise clients.BookopsPlatformError
+        raise sierra_clients.BookopsPlatformError
 
     def mock_nypl_error(*args, **kwargs):
         raise requests.exceptions.Timeout
@@ -202,7 +150,7 @@ def mock_sftp_client(monkeypatch):
 
 
 @pytest.fixture
-def fake_template_data() -> dict:
+def stub_template_data() -> dict:
     return {
         "name": "Foo",
         "agent": "Bar",
@@ -234,519 +182,160 @@ def fake_template_data() -> dict:
 
 
 @pytest.fixture
-def stub_bib(library, collection) -> Bib:
-    bib = Bib()
-    bib.leader = "00000cam  2200517 i 4500"
-    bib.library = library
-    bib.add_field(Field(tag="005", data="20200101010000.0"))
-    bib.add_field(
-        Field(
-            tag="020",
-            indicators=Indicators(" ", " "),
-            subfields=[Subfield(code="a", value="9781234567890")],
+def stub_bib():
+    def make_bib(library, collection, record_type):
+        return models.DomainBib(
+            library=library,
+            collection=collection,
+            isbn="9781234567890",
+            title="Foo",
+            record_type=record_type,
+            binary_data=b"",
+            barcodes=["333331234567890"],
+            orders=[],
+            vendor_info=models.VendorInfo(
+                name="UNKNOWN",
+                bib_fields=[],
+                matchpoints={
+                    "primary_matchpoint": "isbn",
+                    "secondary_matchpoint": "control_number",
+                },
+            ),
+            parsed_fields=[],
         )
-    )
-    if library == "bpl":
-        bib.add_field(
-            Field(
-                tag="037",
-                indicators=Indicators(" ", " "),
-                subfields=[
-                    Subfield(code="a", value="123"),
-                    Subfield(code="b", value="OverDrive, Inc."),
-                ],
-            )
-        )
-        bib.add_field(
-            Field(
-                tag="099",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value="Foo")],
-            )
-        )
-    else:
-        if collection == "BL":
-            bib.add_field(
-                Field(
-                    tag="091",
-                    indicators=Indicators(" ", " "),
-                    subfields=[Subfield(code="a", value="Foo")],
-                )
-            )
-        else:
-            bib.add_field(
-                Field(
-                    tag="852",
-                    indicators=Indicators("8", " "),
-                    subfields=[Subfield(code="a", value="Foo")],
-                )
-            )
-        bib.add_field(
-            Field(
-                tag="910",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value=collection)],
-            )
-        )
-    bib.add_field(
-        Field(
-            tag="949",
-            indicators=Indicators(" ", "1"),
-            subfields=[Subfield(code="i", value="333331234567890")],
-        )
-    )
-    bib.add_field(
-        Field(
-            tag="960",
-            indicators=Indicators(" ", " "),
-            subfields=[
-                Subfield(code="a", value="l"),
-                Subfield(code="b", value="-"),
-                Subfield(code="c", value="j"),
-                Subfield(code="d", value="c"),
-                Subfield(code="e", value="d"),
-                Subfield(code="f", value="a"),
-                Subfield(code="g", value="b"),
-                Subfield(code="h", value="-"),
-                Subfield(code="i", value="l"),
-                Subfield(code="j", value="-"),
-                Subfield(code="k", value="A01"),
-                Subfield(code="m", value="o"),
-                Subfield(code="n", value="-"),
-                Subfield(code="o", value="13"),
-                Subfield(code="p", value="  -  -  "),
-                Subfield(code="q", value="01-01-25"),
-                Subfield(code="r", value="  -  -  "),
-                Subfield(code="s", value="{{dollar}}13.20"),
-                Subfield(code="t", value="agj0y"),
-                Subfield(code="u", value="lease"),
-                Subfield(code="v", value="btlea"),
-                Subfield(code="w", value="eng"),
-                Subfield(code="x", value="xxu"),
-                Subfield(code="y", value="1"),
-                Subfield(code="z", value=".o10000010"),
-            ],
-        )
-    )
-    bib.add_field(
-        Field(
-            tag="961",
-            indicators=Indicators(" ", " "),
-            subfields=[
-                Subfield(code="d", value="foo"),
-                Subfield(code="f", value="bar"),
-                Subfield(code="m", value="baz"),
-            ],
-        )
-    )
-    return bib
+
+    return make_bib
+
+
+@pytest.fixture(scope="session")
+def fake_fetcher():
+    return sierra_clients.SierraBibFetcher(session=FakeSierraSession())
+
+
+@pytest.fixture(scope="session")
+def get_constants() -> dict[str, Any]:
+    """Retrieve processing constants from JSON file."""
+    with open("overload_web/data/update_rules.json", "r", encoding="utf-8") as fh:
+        constants = json.load(fh)
+    with open("overload_web/data/parsing_rules.json", "r", encoding="utf-8") as fh:
+        parsing_rules = json.load(fh)
+    return {"constants": constants, "parsing_rules": parsing_rules}
 
 
 @pytest.fixture
-def acq_bib(collection, library):
-    order = bibs.Order(
-        locations=["agj0y"],
-        audience=["j"],
-        branches=["ag"],
-        copies="13",
-        create_date="01-01-25",
-        format="b",
-        lang="eng",
-        order_id=".o10000010",
-        shelves=["0y"],
-        status="o",
-        vendor_notes=None,
-        order_code_1="j",
-        order_code_2="c",
-        order_code_3="d",
-        order_code_4="a",
-        order_type="l",
-        price="{{dollar}}13.20",
-        project_code="A01",
-        fund="lease",
-        vendor_code="btlea",
-        country="xxu",
-        internal_note="foo",
-        selector_note="bar",
-        vendor_title_no=None,
-        blanket_po="baz",
-    )
-    bib = Bib()
-    bib.leader = "00000cam  2200517 i 4500"
-    bib.library = library
-    bib.add_field(Field(tag="005", data="20200101010000.0"))
-    bib.add_field(
-        Field(
-            tag="020",
-            indicators=Indicators(" ", " "),
-            subfields=[Subfield(code="a", value="9781234567890")],
-        )
-    )
-    if library == "bpl":
-        bib.add_field(
-            Field(
-                tag="037",
-                indicators=Indicators(" ", " "),
-                subfields=[
-                    Subfield(code="a", value="123"),
-                    Subfield(code="b", value="OverDrive, Inc."),
-                ],
-            )
-        )
-        bib.add_field(
-            Field(
-                tag="099",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value="Foo")],
-            )
-        )
-    else:
-        if collection == "BL":
-            bib.add_field(
-                Field(
-                    tag="091",
-                    indicators=Indicators(" ", " "),
-                    subfields=[Subfield(code="a", value="Foo")],
-                )
-            )
-        else:
-            bib.add_field(
-                Field(
-                    tag="852",
-                    indicators=Indicators("8", " "),
-                    subfields=[Subfield(code="a", value="Foo")],
-                )
-            )
-        bib.add_field(
-            Field(
-                tag="910",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value=collection)],
-            )
-        )
-    bib.add_field(
-        Field(
-            tag="949",
-            indicators=Indicators(" ", "1"),
-            subfields=[Subfield(code="i", value="333331234567890")],
-        )
-    )
-    bib.add_field(
-        Field(
-            tag="960",
-            indicators=Indicators(" ", " "),
-            subfields=[
-                Subfield(code="c", value=order.order_code_1),
-                Subfield(code="d", value=order.order_code_2),
-                Subfield(code="e", value=order.order_code_3),
-                Subfield(code="f", value=order.order_code_4),
-                Subfield(code="g", value=order.format),
-                Subfield(code="i", value=order.order_type),
-                Subfield(code="m", value=order.status),
-                Subfield(code="o", value=order.copies),
-                Subfield(code="q", value=order.create_date),
-                Subfield(code="s", value=order.price),
-                Subfield(code="t", value=order.locations[0]),
-                Subfield(code="u", value=order.fund),
-                Subfield(code="v", value=order.vendor_code),
-                Subfield(code="w", value=order.lang),
-                Subfield(code="x", value=order.country),
-                Subfield(code="z", value=order.order_id),
+def mock_wc_session(monkeypatch):
+    def response(*args, **kwargs):
+        json = {
+            "numberOfRecords": 1,
+            "briefRecords": [
+                {
+                    "oclcNumber": "1103229133",
+                    "title": "Foo: bar",
+                    "creator": "Baz",
+                    "language": "eng",
+                    "generalFormat": "Book",
+                    "specificFormat": "PrintBook",
+                    "isbns": ["9781470398842"],
+                    "catalogingInfo": {
+                        "catalogingAgency": "DLC",
+                        "transcribingAgency": "DLC",
+                        "catalogingLanguage": "eng",
+                        "levelOfCataloging": " ",
+                    },
+                    "date": {"replaceDate": "260901"},
+                }
             ],
-        )
-    )
-    bib.add_field(
-        Field(
-            tag="961",
-            indicators=Indicators(" ", " "),
-            subfields=[
-                Subfield(code="d", value=order.internal_note),
-                Subfield(code="f", value=order.selector_note),
-                Subfield(code="m", value=order.blanket_po),
-            ],
-        )
-    )
-    domain_bib = bibs.DomainBib(
-        library=library,
-        collection=collection,
-        isbn="9781234567890",
-        title="Foo",
-        record_type="acq",
-        binary_data=bib.as_marc(),
-        branch_call_number="Foo",
-        research_call_number=["Foo"],
-        vendor="BTSERIES",
-        barcodes=["333331234567890"],
-        orders=[order],
-        update_date="20200101010000.0",
-    )
-    return domain_bib
-
-
-@pytest.fixture
-def sel_bib(acq_bib):
-    bib = copy.deepcopy(acq_bib)
-    bib.record_type = "sel"
-    return bib
-
-
-@pytest.fixture
-def full_bib(library, collection):
-    bib = Bib()
-    bib.leader = "00000cam  2200517 i 4500"
-    bib.library = library
-    bib.add_field(Field(tag="005", data="20200101010000.0"))
-    bib.add_field(
-        Field(
-            tag="020",
-            indicators=Indicators(" ", " "),
-            subfields=[Subfield(code="a", value="9781234567890")],
-        )
-    )
-    if library == "bpl":
-        bib.add_field(
-            Field(
-                tag="099",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value="Foo")],
-            )
-        )
-        bib.add_field(
-            Field(
-                tag="960",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="i", value="333331234567890")],
-            )
-        )
-    else:
-        if collection == "BL":
-            bib.add_field(
-                Field(
-                    tag="091",
-                    indicators=Indicators(" ", " "),
-                    subfields=[Subfield(code="a", value="Foo")],
-                )
-            )
-        else:
-            bib.add_field(
-                Field(
-                    tag="852",
-                    indicators=Indicators("8", " "),
-                    subfields=[Subfield(code="a", value="Foo")],
-                )
-            )
-        bib.add_field(
-            Field(
-                tag="910",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value=collection)],
-            )
-        )
-        bib.add_field(
-            Field(
-                tag="949",
-                indicators=Indicators(" ", "1"),
-                subfields=[Subfield(code="i", value="333331234567890")],
-            )
-        )
-    domain_bib = bibs.DomainBib(
-        library=library,
-        collection=collection,
-        isbn="9781234567890",
-        title="Foo",
-        record_type="cat",
-        binary_data=bib.as_marc(),
-        branch_call_number="Foo",
-        research_call_number=["Foo"],
-        barcodes=["333331234567890"],
-        orders=[],
-        update_date="20200101010000.0",
-        vendor_info=bibs.VendorInfo(
-            name="UNKNOWN",
-            bib_fields=[],
-            matchpoints={
-                "primary_matchpoint": "isbn",
-                "secondary_matchpoint": "control_number",
-            },
-        ),
-    )
-    return domain_bib
-
-
-@pytest.fixture
-def sierra_response(library, collection):
-    if library == "bpl":
-        data = {
-            "call_number": "Foo",
-            "id": "12345",
-            "isbn": ["9781234567890"],
-            "sm_bib_varfields": ["005 || 20200101000001.0", "024 || {{a}} 12345"],
-            "sm_item_data": ['{"barcode": "33333123456789"}'],
-            "ss_marc_tag_001": "ocn123456789",
-            "ss_marc_tag_003": "OCoLC",
-            "ss_marc_tag_005": "20000101010000.0",
-            "title": "Record 1",
+            "date": {"replaceDate": "260901"},
         }
-        return data
+        return MockHTTPResponse(status_code=200, ok=True, _json=json, _content=b"")
 
-    call_no_field = {"content": "Foo", "tag": "a"}
-    data = {
-        "id": "12345",
-        "controlNumber": "ocn123456789",
-        "standardNumbers": ["9781234567890"],
-        "title": "Record 1",
-        "updatedDate": "2000-01-01T01:00:00",
-        "varFields": [
-            {"marcTag": "901", "subfields": [{"content": "CAT", "tag": "b"}]},
-            {"marcTag": "910", "subfields": [{"content": collection, "tag": "a"}]},
-        ],
-    }
-    if collection == "RL":
-        data["varFields"].append(
-            {"marcTag": "852", "ind1": "8", "ind2": " ", "subfields": [call_no_field]}
-        )
-    else:
-        data["varFields"].append({"marcTag": "091", "subfields": [call_no_field]})
-    return data
+    def token_response(*args, **kwargs):
+        token_json = {
+            "access_token": "foo",
+            "expires_at": "2020-08-23 01:00:00Z",
+            "token_type": "bearer",
+        }
+        return MockHTTPResponse(status_code=200, ok=True, _json=token_json)
+
+    monkeypatch.setattr("requests.Session.send", response)
+    monkeypatch.setattr("requests.post", token_response)
+    return FakeOCLCSession()
 
 
 @pytest.fixture
-def fake_fetcher(monkeypatch, sierra_response):
-    def fake_response(*args, **kwargs):
-        return [sierra_response]
+def mock_wc_session_error(monkeypatch, mock_wc_session):
+    def worldcat_error(*args, **kwargs):
+        raise BookopsWorldcatError
 
-    monkeypatch.setattr(FakeSierraSession, "_parse_response", fake_response)
-    return clients.SierraBibFetcher(session=FakeSierraSession())
+    def token_response(*args, **kwargs):
+        now = datetime.datetime.now(tz=datetime.UTC)
+        new_expiration = now + datetime.timedelta(hours=1)
+        token_json = {
+            "access_token": "foo",
+            "expires_at": datetime.datetime.strftime(
+                new_expiration, "%Y-%m-%d %H:%M:%SZ"
+            ),
+            "token_type": "bearer",
+        }
+        return MockHTTPResponse(status_code=200, ok=True, _json=token_json)
 
-
-@pytest.fixture
-def fake_fetcher_no_matches(monkeypatch):
-    def fake_response(*args, **kwargs):
-        return []
-
-    monkeypatch.setattr(FakeSierraSession, "_parse_response", fake_response)
-    return clients.SierraBibFetcher(session=FakeSierraSession())
-
-
-@pytest.fixture
-def engine_config(
-    library, record_type, collection, get_constants
-) -> engine.MarcEngineConfig:
-    return engine.MarcEngineConfig(
-        marc_order_mapping=get_constants["marc_order_mapping"],
-        default_loc=get_constants["default_locations"][library].get(collection),
-        bib_id_tag=get_constants["bib_id_tag"][library],
-        library=library,
-        record_type=record_type,
-        collection=collection,
-        parser_bib_mapping=get_constants["bib_domain_mapping"],
-        parser_order_mapping=get_constants["order_domain_mapping"],
-        parser_vendor_mapping=get_constants["vendor_info_options"][library],
-    )
+    monkeypatch.setattr("requests.Session.send", worldcat_error)
+    monkeypatch.setattr("requests.post", token_response)
+    return FakeOCLCSession()
 
 
-@pytest.fixture
-def marc_engine(engine_config) -> engine.MarcEngine:
-    return engine.MarcEngine(rules=engine_config)
+class FakeOCLCSession:
+    def _get_credentials(self):
+        return "foo"
 
-
-class MockCreds:
-    def __init__(self):
-        self.token = "foo"
-        self.refresh_token = "bar"
-
-    @property
-    def valid(self, *args, **kwargs):
-        return True
-
-    @property
-    def expired(self, *args, **kwargs):
-        return False
-
-    def refresh(self, *args, **kwargs):
-        self.expired = False
-        self.valid = True
-
-    def to_json(self, *args, **kwargs):
+    def _check_authorization(self):
         pass
 
-    def run_local_server(self, *args, **kwargs):
-        return self
+    def _parse_brief_record_response(self, response: requests.Response):
+        return [
+            {
+                "oclcNumber": "12345678",
+                "date": "2020",
+                "title": "Foo.",
+                "creator": "Bar",
+                "language": "eng",
+                "generalFormat": "Book",
+                "specificFormat": "PrintBook",
+                "isbns": [],
+                "mergedOclcNumbers": [],
+                "catalogingInfo": {
+                    "catalogingAgency": "N$T",
+                    "transcribingAgency": "N$T",
+                    "catalogingLanguage": "eng",
+                    "levelOfCataloging": "7",
+                },
+            }
+        ]
 
+    def _prepare_and_send_request(self, request: requests.Request):
+        pass
 
-class MockResource:
-    def __init__(self):
-        self.spreadsheetId = "foo"
-        self.range = "bar"
+    def _brief_bibs_get_by_id(self, params: dict[str, Any]):
+        pass
 
-    def append(self, *args, **kwargs):
-        return self
+    def _full_bib_get_by_id(self, value: str | int):
+        return MockHTTPResponse(status_code=200, ok=True, _json={}, _content=b"")
 
-    def execute(self, *args, **kwargs):
-        return dict(spreadsheetId=self.spreadsheetId, tableRange=self.range)
-
-    def spreadsheets(self, *args, **kwargs):
-        return self
-
-    def values(self, *args, **kwargs):
-        return self
-
-
-@pytest.fixture
-def mock_sheet_config(monkeypatch, mocker) -> None:
-    m = mocker.mock_open(read_data="")
-    mocker.patch("overload_web.infrastructure.reporter.open", m)
-    mocker.patch("os.path.exists", lambda *args, **kwargs: True)
-
-    def build_sheet(*args, **kwargs):
-        return MockResource()
-
-    def mock_creds(*args, **kwargs):
-        return MockCreds()
-
-    monkeypatch.setattr("googleapiclient.discovery.build", build_sheet)
-    monkeypatch.setattr("googleapiclient.discovery.build_from_document", build_sheet)
-    monkeypatch.setattr(
-        "google.oauth2.credentials.Credentials.from_authorized_user_info", mock_creds
-    )
+    def _full_bib_json_get_by_id(self, oclc_number: str):
+        return MockHTTPResponse(
+            status_code=200, ok=True, _json={"date": {"replaceDate": "200801"}}
+        )
 
 
 @pytest.fixture
-def mock_sheet_config_expired_creds(monkeypatch, mock_sheet_config):
-    monkeypatch.setattr(MockCreds, "valid", False)
-    monkeypatch.setattr(MockCreds, "expired", True)
+def fake_oclc_fetcher():
+    return oclc.WorldcatFetcher(session=FakeOCLCSession())
 
 
 @pytest.fixture
-def mock_sheet_config_no_creds(monkeypatch, mock_sheet_config):
-    monkeypatch.setattr(
-        "google_auth_oauthlib.flow.InstalledAppFlow.from_client_config",
-        lambda *args, **kwargs: MockCreds(),
-    )
-    monkeypatch.setattr(
-        "google.oauth2.credentials.Credentials.from_authorized_user_info",
-        lambda *args, **kwargs: None,
-    )
+def fake_oclc_fetcher_no_matches(monkeypatch):
+    def empty_list(*rgs, **kwargs):
+        return []
 
-
-@pytest.fixture
-def stub_report():
-    return reporting.ProcessingStatistics(
-        action=["insert"],
-        call_number=["Foo"],
-        call_number_match=[True],
-        duplicate_records=[[]],
-        file_names=["foo.mrc"],
-        mixed=[[]],
-        other=[[]],
-        resource_id=["12345"],
-        target_bib_id=["b12345"],
-        target_call_no=["Foo"],
-        target_title=["Bar"],
-        total_files=1,
-        total_records=1,
-        updated_by_vendor=[False],
-        vendor=["Baz"],
-        missing_barcodes=[],
-        processing_integrity=True,
-    )
+    monkeypatch.setattr(oclc.WorldcatFetcher, "get_brief_bibs_by_id", empty_list)
+    return oclc.WorldcatFetcher(session=FakeOCLCSession())

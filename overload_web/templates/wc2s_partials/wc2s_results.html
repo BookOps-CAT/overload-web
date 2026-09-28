@@ -1,0 +1,14 @@
+{% if out_dict %}
+  {% for k,v in out_dict.items() %}
+    <p class="card-text">
+      <b>{{ k }}:</b>
+    </br>
+    {% for bib in v %}{{ bib }}{% endfor %}</p>{% endfor %}
+{% endif %}
+{% if wc2s_results %}
+  <a id="wc2s-button"
+     class="btn btn-nypl"
+     href='{{ url_for("wc2sierra_page") }}'
+     type="submit"
+     role="button">Reset form</a>
+{% endif %}

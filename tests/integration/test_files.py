@@ -1,15 +1,16 @@
-import os
+from __future__ import annotations
 
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.application import ports
-from overload_web.application.commands.file_io import (
+from overload_web.application.pvf.file_handling import (
     DeleteFileFromWorkflow,
+    ListVendorFiles,
     LoadAllWorkflowFiles,
+    LoadVendorFile,
     UploadFileToWorkflow,
 )
-from overload_web.infrastructure import file_io
+from overload_web.infrastructure import file_io, unit_of_work, workflow_db
 
 
 @pytest.fixture
@@ -36,6 +37,9 @@ def test_session(tmp_path):
         source="ftp",
         reference=f"{tmp_path}/bar.mrc",
     )
+    workflow1 = workflow_db.WorkflowJobModel(
+        id="12345", status=workflow_db.workflow.JobStatus.DRAFT, record_type="cat"
+    )
     test_engine = create_engine("sqlite:///:memory:")
     SQLModel.metadata.create_all(test_engine)
     with Session(test_engine) as session:
@@ -43,12 +47,63 @@ def test_session(tmp_path):
         session.commit()
         session.add(file2)
         session.commit()
+        session.add(workflow1)
+        session.commit()
         yield session
     session.close()
     test_engine.dispose()
 
 
-class TestFileWorkflow:
+class FakeFileRetriever:
+    def __init__(self) -> None:
+        pass
+
+    def list(self, dir: str) -> list[str]:
+        return ["foo.mrc"]
+
+    def download(self, name: str, dir: str) -> bytes:
+        return b""
+
+
+@pytest.fixture
+def mock_engine():
+    engine = create_engine("sqlite:///:memory:")
+    SQLModel.metadata.create_all(engine)
+    yield engine
+    engine.dispose()
+
+
+@pytest.fixture
+def mock_engine_with_files(monkeypatch, mock_engine, record_type):
+    def mock_workflow_jobs(*args, **kwargs):
+        return workflow_db.WorkflowJobModel(
+            id="12345",
+            status=workflow_db.workflow.JobStatus.DRAFT,
+            record_type=record_type,
+        )
+
+    monkeypatch.setattr(workflow_db.WorkflowJobRepository, "get", mock_workflow_jobs)
+    yield mock_engine
+    mock_engine.dispose()
+
+
+class TestFileRetriever:
+    retriever = FakeFileRetriever()
+
+    def test_list_files(self):
+        file_list = ListVendorFiles.execute(dir="foo", retriever=self.retriever)
+        assert len(file_list) == 1
+        assert file_list[0] == "foo.mrc"
+
+    def test_load_file(self):
+        file = LoadVendorFile.execute(
+            name="foo.mrc", dir="foo", retriever=self.retriever
+        )
+        assert file.file_name == "foo.mrc"
+        assert file.content == b""
+
+
+class TestFileWorkflows:
     def test_load_all_files(self, test_session, caplog, tmp_path, tmp_files):
         path = tmp_path / "temp"
         storage = file_io.LocalFileStorage(base_path=path)
@@ -64,9 +119,12 @@ class TestFileWorkflow:
         )
 
     @pytest.mark.parametrize("source", ["local", "ftp"])
-    def test_upload_files(self, test_session, tmp_path, tmp_files, caplog, source):
+    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
+    def test_upload_files(
+        self, mock_engine, tmp_path, tmp_files, caplog, source, record_type
+    ):
         path = tmp_path / "temp"
-        repo = file_io.IncomingFileRepository(session=test_session)
+        uow = unit_of_work.SqlModelUnitOfWork(mock_engine)
         storage = file_io.LocalFileStorage(base_path=path)
         UploadFileToWorkflow.execute(
             workflow_id="12345",
@@ -74,7 +132,28 @@ class TestFileWorkflow:
             content=b"",
             source=source,
             storage=storage,
-            repo=repo,
+            uow=uow,
+            record_type=record_type,
+        )
+        assert "File added to workflow 12345: IncomingFile(id=" in caplog.text
+        assert "Local file storage location: " in caplog.text
+
+    @pytest.mark.parametrize("source", ["local", "ftp"])
+    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
+    def test_upload_files_existing_files(
+        self, tmp_path, mock_engine_with_files, caplog, source, record_type, tmp_files
+    ):
+        path = tmp_path / "temp"
+        uow = unit_of_work.SqlModelUnitOfWork(mock_engine_with_files)
+        storage = file_io.LocalFileStorage(base_path=path)
+        UploadFileToWorkflow.execute(
+            workflow_id="12345",
+            filename="qux.mrc",
+            content=b"",
+            source=source,
+            storage=storage,
+            uow=uow,
+            record_type=record_type,
         )
         assert "File added to workflow 12345: IncomingFile(id=" in caplog.text
         assert "Local file storage location: " in caplog.text
@@ -84,63 +163,3 @@ class TestFileWorkflow:
         files = DeleteFileFromWorkflow.execute(id="1", repo=repo, workflow_id="12345")
         assert len(files) == 1
         assert files[0]["filename"] == "bar.mrc"
-
-
-class TestLocalFiles:
-    def test_local_objs(self):
-        loader = file_io.LocalFileLoader()
-        writer = file_io.LocalFileWriter()
-        assert isinstance(loader, ports.FileLoader)
-        assert isinstance(writer, ports.FileWriter)
-
-    def test_local_load(self, tmp_path, tmp_files):
-        loader = file_io.LocalFileLoader()
-        loaded_file = loader.load("foo.mrc", dir=tmp_path)
-        assert "333331234567890".encode() in loaded_file
-        assert "foo.mrc" in os.listdir(tmp_path)
-
-    def test_local_list(self, tmp_path, tmp_files):
-        loader = file_io.LocalFileLoader()
-        file_list = loader.list(dir=tmp_path)
-        assert len(file_list) == 2
-        assert "foo.mrc" in file_list
-
-    def test_local_write(self, tmp_path):
-        writer = file_io.LocalFileWriter()
-        new_file = writer.write(
-            file=b"333331234567890", file_name="foo.mrc", dir=tmp_path
-        )
-        assert new_file == os.path.join(tmp_path, "foo.mrc")
-        assert "foo.mrc" in os.listdir(tmp_path)
-        assert "333331234567890".encode() in open(new_file, "rb").read()
-
-    def test_sftp_loader(self, mock_sftp_client):
-        loader = file_io.SFTPFileLoader(client=mock_sftp_client)
-        assert isinstance(loader, ports.FileLoader)
-        assert hasattr(loader, "list")
-        assert hasattr(loader, "load")
-        assert loader.client.name == "FOO"
-        assert isinstance(loader, ports.FileLoader)
-
-    def test_sftp_writer(self, mock_sftp_client):
-        writer = file_io.SFTPFileWriter(client=mock_sftp_client)
-        assert isinstance(writer, ports.FileWriter)
-        assert hasattr(writer, "write")
-        assert writer.client.name == "FOO"
-        assert isinstance(writer, ports.FileWriter)
-
-    def test_sftp_list(self, mock_sftp_client):
-        loader = file_io.SFTPFileLoader(client=mock_sftp_client)
-        file_list = loader.list(dir="test")
-        assert len(file_list) == 1
-        assert file_list[0] == "foo.mrc"
-
-    def test_sftp_load(self, mock_sftp_client):
-        loader = file_io.SFTPFileLoader(client=mock_sftp_client)
-        file = loader.load(name="foo.mrc", dir="test")
-        assert file == b""
-
-    def test_sftp_write(self, mock_sftp_client):
-        writer = file_io.SFTPFileWriter(client=mock_sftp_client)
-        out_file = writer.write(file=b"foo", file_name="foo.mrc", dir="test")
-        assert out_file == "foo.mrc"

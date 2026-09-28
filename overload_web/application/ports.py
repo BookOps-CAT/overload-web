@@ -3,19 +3,19 @@
 from __future__ import annotations
 
 import logging
+from types import TracebackType
 from typing import Any, Iterator, Protocol, Sequence, TypeVar, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
-R = TypeVar("R")  # variabe for `ProcessingStatistics` report type
-S = TypeVar("S")  # variable for `BaseSierraResponse` type
-T = TypeVar("T", contravariant=True)  # variable for `OrderTemplate` type
-U = TypeVar("U", contravariant=True)  # variable for `DomainBib` contravariant type
-V = TypeVar("V")  # variable for `DomainBib` type
+T = TypeVar("T", contravariant=True)  # variable for contravariant `SQLModel` type
+U = TypeVar("U")  # variable for invariant `SQLModel` type
+V = TypeVar("V", contravariant=True)  # variable for contravariant `DomainBib` type
+W = TypeVar("W")  # variable for invariant `bookops_marc.Bib` type
 
 
 @runtime_checkable
-class BibFetcher(Protocol[S]):
+class BibFetcher(Protocol):
     """
     Protocol for a service that searches Sierra for bib records based on an identifier.
 
@@ -28,7 +28,7 @@ class BibFetcher(Protocol[S]):
 
     def get_bibs_by_id(
         self, value: str | int, key: str
-    ) -> list[S]: ...  # pragma: no branch
+    ) -> list[dict[str, Any]]: ...  # pragma: no branch
 
     """
     Retrieve candidate bib records that match a key-value pair.
@@ -38,12 +38,53 @@ class BibFetcher(Protocol[S]):
         key: The field name corresponding to the identifier (eg. "isbn").
 
     Returns:
-        a list of `BaseSierraResponse` objects representing candidate matches.
+        a list of dictionaries representing candidate matches.
+    """
+
+
+@runtime_checkable
+class FileRetriever(Protocol):
+    """
+    A protocol for a service which retrieves files for use within Overload.
+
+    Implementations may interact with an FTP/SFTP server or a local file directory.
+    """
+
+    def list(self, dir: str) -> list[str]: ...  # pragma: no branch
+
+    """
+    List available files.
+
+    Args:
+        dir: the directory whose files to list
+
+    Returns:
+        a list of file names as strings
+    """
+
+    def download(self, name: str, dir: str) -> bytes: ...  # pragma: no branch
+
+    """
+    Download the content of a specific file.
+
+    Args:
+        name: the name of the file to load
+        dir: the directory where the file is located
+
+    Returns:
+        the content of the specified file as a `bytes` object
     """
 
 
 @runtime_checkable
 class FileStorage(Protocol):
+    """
+    A protocol for a service which saves files to storage and loads them for processing
+    within Overload.
+
+    Implementations may interact with an FTP/SFTP server or a local file directory.
+    """
+
     def load(self, reference: str) -> bytes: ...  # pragma: no branch
 
     """
@@ -74,43 +115,9 @@ class FileStorage(Protocol):
 
 
 @runtime_checkable
-class FileLoader(Protocol):
-    """
-    A protocol for a service which loads .mrc files for use within Overload.
-
-    Implementations may interact with an FTP/SFTP server or a local file directory.
-    """
-
-    def list(self, dir: str) -> list[str]: ...  # pragma: no branch
-
-    """
-    List available files.
-
-    Args:
-        dir: the directory whose files to list
-
-    Returns:
-        a list of file names as strings
-    """
-
-    def load(self, name: str, dir: str) -> bytes: ...  # pragma: no branch
-
-    """
-    Load the content of a specific file.
-
-    Args:
-        name: the name of the file to load
-        dir: the directory where the file is located
-
-    Returns:
-        the content of the specified file as a `bytes` object
-    """
-
-
-@runtime_checkable
 class FileWriter(Protocol):
     """
-    A protocol for a service for use within Overload which writes .mrc files.
+    A protocol for a service for use within Overload which writes files.
 
     Implementations may interact with an FTP/SFTP server or a local file directory.
     """
@@ -133,55 +140,104 @@ class FileWriter(Protocol):
 
 
 @runtime_checkable
-class MarcEnginePort(Protocol[U, V]):
-    bib_rules: dict[str, Any]
-    library: str
-    order_rules: dict[str, Any]
-    record_type: str
-    collection: str | None
-    vendor_rules: dict[str, Any]
-    default_loc: str
-    bib_id_tag: str
-    marc_order_mapping: dict[str, Any]
-    config: Any
+class MarcParserPort(Protocol[W]):
+    def compare_mapped_tags(
+        self, obj: W, tags: dict[str, dict[str, str]]
+    ) -> bool: ...  # pragma:no branch
 
-    def create_bib_from_domain(self, record: U) -> V: ...  # pragma:no branch
+    """Match vendor tags from mapping to bib object."""
 
-    """Create a `bookops_marc.Bib` object from a `DomainBib` object"""
+    def create_bib_obj(self, data: bytes, library: str) -> W: ...  # pragma: no branch
 
-    def get_command_tag_field(self, bib: V) -> Any | None: ...  # pragma: no branch
+    """Instantiate a Bib object from binary data."""
 
-    """Get the Sierra command tag from a bib record if present."""
-
-    def get_reader(self, data: bytes) -> Iterator: ...  # pragma: no branch
+    def get_reader(
+        self, data: bytes, library: str
+    ) -> Iterator: ...  # pragma: no branch
 
     """Instantiate an object that can read MARC binary as an iterator."""
 
-    def get_vendor_tags_from_bib(
-        self, record: V, tags: dict[str, dict[str, str]]
-    ) -> bool: ...  # pragma:no branch
-
     def identify_vendor(
-        self, record: V, rules: dict[str, Any]
+        self, obj: W, mapping: dict[str, Any]
     ) -> dict[str, Any]: ...  # pragma: no branch
 
     """Determine the vendor who created a `bookops_marc.Bib` record."""
 
-    def map_data(
-        self, obj: Any, rules: dict[str, Any]
+    def map_bib_data(
+        self, obj: W, mapping: dict[str, Any]
     ) -> dict[str, Any]: ...  # pragma: no branch
 
-    """Map an object to a dictionary following a set of rules."""
+    """Map an bib to a dictionary following a set of rules."""
+
+    def map_order_data(
+        self, obj: W, mapping: dict[str, Any]
+    ) -> dict[str, Any]: ...  # pragma: no branch
+
+    """Map an order to a dictionary following a set of rules."""
+
+    def write(self, records: list[V]) -> bytes: ...  # pragma:no branch
+
+    """Write `DomainBib` objects to single binary object."""
+
+
+@runtime_checkable
+class MarcUpdaterPort(Protocol[V, W]):
+    library: str
+    record_type: str
+    collection: str | None
+    config: dict[str, Any]
+
+    def create_bib_from_domain(self, record: V) -> W: ...  # pragma:no branch
+
+    """Create a `bookops_marc.Bib` object from a `DomainBib` object"""
 
     def update_fields(
-        self, field_updates: list[Any], bib: V
+        self, field_updates: list[Any], bib: W
     ) -> None: ...  # pragma:no branch
 
     """Update record in place"""
 
-    def write(self, records: list[V]) -> bytes: ...  # pragma:no branch
+    def update_leader_encoding(
+        self, leader: str, bib: W
+    ) -> None: ...  # pragma:no branch
 
-    """Write DomainBib objects to binary."""
+    """Update character encoding to unicode."""
+
+
+@runtime_checkable
+class OCLCBibFetcher(Protocol):
+    """Interface for interactions with OCLC Metadata/Search APIs."""
+
+    def get_brief_bibs_by_id(
+        self, params: dict[str, Any]
+    ) -> list[dict[str, Any]]: ...  # pragma: no branch
+
+    """Search for brief bib resource using specified parameters."""
+
+    def get_full_bib_by_id(self, value: str | int) -> bytes: ...  # pragma: no branch
+
+    """Retrieve for full MARC record as a bytes object for a given ID."""
+
+    def get_full_bib_json_by_id(
+        self, value: str
+    ) -> dict[str, Any]: ...  # pragma: no branch
+
+    """Retrieve for full MARC record as a json object for a given ID."""
+
+
+@runtime_checkable
+class ReportWriter(Protocol):
+    """A protocol defining a service used to write report data."""
+
+    def prep_report(
+        self, data: list[dict[str, Any]]
+    ) -> list[list[Any]]: ...  # pragma: no branch
+
+    """Prep data to write to an external service."""
+
+    def write_report(self, data: list[list[Any]]) -> None: ...  # pragma: no branch
+
+    """Write report data to an external service."""
 
 
 @runtime_checkable
@@ -225,39 +281,43 @@ class SqlRepositoryProtocol(Protocol[T]):
     """Update an existing object in a database."""
 
 
-class ReportHandler(Protocol):
-    """A protocol defining a service used to create processing reports."""
+class UnitOfWorkProtocol(Protocol):
+    """Protocol defining the Unit of Work for database transactions."""
 
-    library: str
-    collection: str | None
-    record_type: str
+    batch_repo: SqlRepositoryProtocol
+    file_repo: SqlRepositoryProtocol
+    job_repo: WorkflowRepositoryProtocol
 
-    def create_call_number_report(
-        self, report_data: R, record_type: str
-    ) -> dict[str, list[Any]]: ...  # pragma: no branch
+    def __enter__(self) -> UnitOfWorkProtocol: ...
 
-    def create_detailed_report(
-        self, report_data: R
-    ) -> dict[str, list[Any]]: ...  # pragma: no branch
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None: ...
 
-    def create_duplicate_report(
-        self, report_data: R
-    ) -> dict[str, list[Any]]: ...  # pragma: no branch
-
-    def create_vendor_report(
-        self, report_data: R
-    ) -> dict[str, list[Any]]: ...  # pragma: no branch
+    def commit(self) -> None: ...
+    def rollback(self) -> None: ...
 
 
-class ReportWriter(Protocol):
-    """A protocol defining a service used to write report data."""
+class WorkflowRepositoryProtocol(Protocol[U]):
+    """
+    Interface for repository operations on workflow objects.
 
-    def prep_report(
-        self, data: dict[str, list[Any]]
-    ) -> list[list[Any]]: ...  # pragma: no branch
+    Includes methods for fetching and saving generic objects.
+    """
 
-    """Prep data to write to an external service."""
+    session: Any
 
-    def write_report(self, data: list[list[Any]]) -> None: ...  # pragma: no branch
+    def get(self, id: str) -> U: ...  # pragma: no branch
 
-    """Write report data to an external service."""
+    """Get objects from a database."""
+
+    def save(self, obj: U) -> str: ...  # pragma: no branch
+
+    """Save a new object to a database."""
+
+    def update(self, id: str, data: U) -> U: ...  # pragma: no branch
+
+    """Update an existing object in a database."""

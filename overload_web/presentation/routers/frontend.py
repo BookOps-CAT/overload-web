@@ -41,7 +41,7 @@ def vendor_file_page(
     """
     Renders the 'Process Vendor File' page.
 
-    This is the first page users see after selecting the Process Vendor File tab and
+    This is the first page users see after selecting the Process Vendor File app and
     it is where they  can input values for `library`, `collection`, and `record_type`
     in order to determine the correct processing workflow. This also generates a
     `workflow_id` to be used while uploading and processing files.
@@ -61,32 +61,70 @@ def vendor_file_page(
     )
 
 
-@frontend_router.get("/forms/update-library", response_class=HTMLResponse)
-def get_library_context_update(request: Request, library: str):
-    ctx = {"library": library, "disabled": False}
-    if library == "bpl":
-        ctx["disabled"] = True
-        return request.app.state.templates.TemplateResponse(
-            name="forms/library_context.html", request=request, context=ctx
-        )
+@frontend_router.get("/update-context", response_class=HTMLResponse)
+def get_context_update(
+    request: Request,
+    workflow: str,
+    library: str = "",
+    collection: str = "",
+    record_type: str = "",
+):
+    """
+    Updates header based on library, collection, record_type, and selected workflow.
+
+    This endpoint adds the library's logo, collection and record_type to identify
+    the system being used in the processing workflow. This endpoint also disables the
+    "collection" select box if "bpl" is selected as the library.
+
+    Args:
+        request:
+            `FastAPI` Request object.
+        library:
+            the library as a string (either `'nypl'` or `'bpl'`).
+        collection:
+            the collection as a string (either `'BL'`, `'RL'`, or '').
+        record_type:
+            the record_type as a string (either `'acq'`, `'cat'`, or `'sel'`).
+
+    Returns:
+        HTML partial for updated header and select box.
+    """
+    collection_disabled = library == "bpl"
+
+    template_form_enabled = record_type in ["acq", "sel"]
+
+    if collection_disabled:
+        collection = ""
+
     return request.app.state.templates.TemplateResponse(
-        name="forms/library_context.html", request=request, context=ctx
+        name=f"{workflow}_partials/context_updates.html",
+        request=request,
+        context={
+            "library": library,
+            "collection": collection,
+            "record_type": record_type,
+            "collection_disabled": collection_disabled,
+            "template_form_enabled": template_form_enabled,
+        },
     )
 
 
-@frontend_router.get("/forms/update-collection", response_class=HTMLResponse)
-def get_collection_context_update(request: Request, collection: str | None):
-    return request.app.state.templates.TemplateResponse(
-        name="forms/collection_context.html",
-        request=request,
-        context={"collection": collection},
-    )
+@frontend_router.get("/wc2sierra", response_class=HTMLResponse)
+def wc2sierra_page(
+    request: Request, page_title: str = "WorldCat2Sierra"
+) -> HTMLResponse:
+    """
+    Renders the 'WorldCat2Sierra' page.
 
+    This is the first page users see after selecting the WorldCat2Sierra app.
 
-@frontend_router.get("/forms/update-record-type", response_class=HTMLResponse)
-def get_record_type_context_update(request: Request, record_type: str):
+    Args:
+        request: `FastAPI` Request object.
+        page_title: optional title to override the default.
+
+    Returns:
+        HTML template response for the 'Process Vendor File' page.
+    """
     return request.app.state.templates.TemplateResponse(
-        name="forms/record_type_context.html",
-        request=request,
-        context={"record_type": record_type},
+        request=request, name="wc2sierra.html", context={"page_title": page_title}
     )

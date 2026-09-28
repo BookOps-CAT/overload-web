@@ -12,10 +12,6 @@ Models:
     A pydantic/sqlmodel model that defines a batch containing one or more MARC files
     and their associated processing statistics.
 
-`PVFReportModel`
-    A pydantic/sqlmodel model that defines processing statistics for a process vendor
-    file workflow.
-
 `ProcessedFileModel`
     A pydantic/sqlmodel model that defines a processed MARC file.
 """
@@ -42,37 +38,12 @@ class PVFBatch(SQLModel, table=True):
     files: list["ProcessedFileModel"] = Relationship(
         back_populates="batch", sa_relationship_kwargs={"lazy": "selectin"}
     )
-    report: "PVFReportModel" = Relationship(
-        back_populates="batch", sa_relationship_kwargs={"lazy": "selectin"}
-    )
-
-
-class PVFReportModel(SQLModel, table=True):
-    """A table model representing a batch of processing statistics."""
-
-    __tablename__ = "reports"
-
-    id: int = Field(default=None, primary_key=True, index=True, exclude=True)
-    action: list[str | None] = Field(sa_column=Column(JSON))
-    call_number: list[str | None] = Field(sa_column=Column(JSON))
-    call_number_match: list[bool | None] = Field(sa_column=Column(JSON))
-    duplicate_records: list[list[str | None]] = Field(sa_column=Column(JSON))
+    stats: list[dict[str, Any]] = Field(sa_column=Column(JSON))
     file_names: list[str | None] = Field(sa_column=Column(JSON))
-    mixed: list[list[str | None]] = Field(sa_column=Column(JSON))
-    other: list[list[str | None]] = Field(sa_column=Column(JSON))
-    resource_id: list[str | None] = Field(sa_column=Column(JSON))
-    target_bib_id: list[str | None] = Field(sa_column=Column(JSON))
-    target_call_no: list[str | None] = Field(sa_column=Column(JSON))
-    target_title: list[str | None] = Field(sa_column=Column(JSON))
     total_files: int
     total_records: int
-    updated_by_vendor: list[bool | None] = Field(sa_column=Column(JSON))
-    vendor: list[str | None] = Field(sa_column=Column(JSON))
     missing_barcodes: list[str | None] | None = Field(sa_column=Column(JSON))
     processing_integrity: bool | None
-
-    batch_id: int = Field(default=None, foreign_key="batches.id", exclude=True)
-    batch: PVFBatch = Relationship(back_populates="report")
 
 
 class ProcessedFileModel(SQLModel, table=True):
@@ -115,7 +86,12 @@ class PVFBatchRepository:
         if batch:
             return {
                 "files": [f.model_dump() for f in batch.files],
-                "report": batch.report.model_dump(),
+                "stats": batch.stats,
+                "file_names": batch.file_names,
+                "total_files": batch.total_files,
+                "total_records": batch.total_records,
+                "missing_barcodes": batch.missing_barcodes,
+                "processing_integrity": batch.processing_integrity,
             }
         return None
 
@@ -133,8 +109,15 @@ class PVFBatchRepository:
             ProcessedFileModel.model_validate(i, from_attributes=True)
             for i in obj.files
         ]
-        valid_stats = PVFReportModel.model_validate(obj.report, from_attributes=True)
-        valid_batch = PVFBatch(files=valid_files, report=valid_stats)
+        valid_batch = PVFBatch(
+            files=valid_files,
+            stats=obj.stats,
+            file_names=obj.file_names,
+            total_files=obj.total_files,
+            total_records=obj.total_records,
+            missing_barcodes=obj.missing_barcodes,
+            processing_integrity=obj.processing_integrity,
+        )
         self.session.add(valid_batch)
         self.session.commit()
         self.session.refresh(valid_batch)

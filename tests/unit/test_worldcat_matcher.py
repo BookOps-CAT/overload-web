@@ -1,0 +1,202 @@
+import copy
+
+import pytest
+from bookops_worldcat.errors import BookopsWorldcatError
+
+from overload_web.application.wc2s import match, oclc_matcher
+from overload_web.domain.wc2s import worldcat
+from overload_web.infrastructure import marc_handler, oclc
+
+
+@pytest.fixture
+def stub_source_data(library, collection):
+    return worldcat.SourceData(
+        library=library,
+        collection=collection,
+        id="9781234567890",
+        id_type=worldcat.IdType.ISBN,
+        material_type=worldcat.MaterialType.PRINT,
+        record_level="2",
+        action=worldcat.Action.CATALOG,
+    )
+
+
+class TestWorldcatFetcher:
+    @pytest.mark.parametrize("library", ["bpl", "nypl"])
+    def test_get_brief_bibs_by_id(self, mock_wc_session, library, caplog):
+        fetcher = oclc.WorldcatFetcher(session=oclc.OclcSession(library=library))
+        payload = {
+            "q": "sn=1",
+            "inCatalogLanguage": "eng",
+            "catalogSource": "DLC",
+            "itemSubType": "book-printbook",
+            "limit": 50,
+        }
+        payload = {k: v for k, v in payload.items()}
+        brief_bibs = fetcher.get_brief_bibs_by_id(params=payload)
+        assert isinstance(brief_bibs, list)
+        assert len(caplog.records) == 2
+        assert "Querying WorldCat for brief bibs with query" in caplog.records[0].msg
+        assert (
+            "MetadataSession found 1 matching record(s). Returning first 50."
+            == caplog.records[1].msg
+        )
+
+    @pytest.mark.parametrize("library", ["bpl", "nypl"])
+    def test_get_brief_bibs_by_id_error(self, mock_wc_session_error, library):
+        fetcher = oclc.WorldcatFetcher(session=oclc.OclcSession(library=library))
+        with pytest.raises(BookopsWorldcatError):
+            fetcher.get_brief_bibs_by_id(
+                params={
+                    "q": "sn=1",
+                    "inCatalogLanguage": "eng",
+                    "catalogSource": "DLC",
+                    "itemSubType": "book-printbook",
+                    "limit": 50,
+                }
+            )
+
+    @pytest.mark.parametrize("library", ["bpl", "nypl"])
+    def test_get_full_bib_by_id(self, mock_wc_session, library, caplog):
+        fetcher = oclc.WorldcatFetcher(session=oclc.OclcSession(library=library))
+        fetcher.get_full_bib_by_id(value=1)
+        assert len(caplog.records) == 1
+        assert "Querying WorldCat for full MARC record for" in caplog.records[0].msg
+
+    @pytest.mark.parametrize("library", ["bpl", "nypl"])
+    def test_get_full_bib_by_id_error(self, mock_wc_session_error, library):
+        fetcher = oclc.WorldcatFetcher(session=oclc.OclcSession(library=library))
+        with pytest.raises(BookopsWorldcatError):
+            fetcher.get_full_bib_by_id(value=1)
+
+    @pytest.mark.parametrize("library", ["bpl", "nypl"])
+    def test_get_full_bib_json_by_id(self, mock_wc_session, library, caplog):
+        fetcher = oclc.WorldcatFetcher(session=oclc.OclcSession(library=library))
+        bib_json = fetcher.get_full_bib_json_by_id(value=1)
+        assert isinstance(bib_json, dict)
+        assert len(caplog.records) == 1
+        assert (
+            "Querying WorldCat for full bib record in json for" in caplog.records[0].msg
+        )
+
+    @pytest.mark.parametrize("library", ["bpl", "nypl"])
+    def test_get_full_bib_json_by_id_error(self, mock_wc_session_error, library):
+        fetcher = oclc.WorldcatFetcher(session=oclc.OclcSession(library=library))
+        with pytest.raises(BookopsWorldcatError):
+            fetcher.get_full_bib_json_by_id(value=1)
+
+
+@pytest.mark.parametrize(
+    "library, collection", [("bpl", None), ("nypl", "RL"), ("nypl", "BL")]
+)
+class TestWorldcatMatcher:
+    def test_match_record(self, fake_oclc_fetcher, stub_source_data):
+        source_data = copy.deepcopy(stub_source_data)
+        service = oclc_matcher.WorldcatMatcher(fetcher=fake_oclc_fetcher)
+        result = service.get_record_matches(source_data)
+        assert result.matched is True
+        assert len(result.successful_matches) == 1
+        assert len(result.failed_matches) == 0
+        assert result.successful_matches[0] == worldcat.MatchedItem(
+            id=source_data.id,
+            id_type=source_data.id_type,
+            status=worldcat.MatchStatus.MATCHED,
+            matched_oclc="12345678",
+        )
+
+    def test_match_record_no_matches(
+        self, fake_oclc_fetcher_no_matches, stub_source_data
+    ):
+        source_data = copy.deepcopy(stub_source_data)
+        service = oclc_matcher.WorldcatMatcher(fetcher=fake_oclc_fetcher_no_matches)
+        result = service.get_record_matches(source_data)
+        assert result.matched is False
+
+    def test_match_record_failed_user_criteria(
+        self, fake_oclc_fetcher, stub_source_data
+    ):
+        source_data = copy.deepcopy(stub_source_data)
+        source_data.record_level = "1"
+        service = oclc_matcher.WorldcatMatcher(fetcher=fake_oclc_fetcher)
+        result = service.get_record_matches(source_data)
+        assert result.matched is True
+        assert len(result.successful_matches) == 0
+        assert len(result.failed_matches) == 1
+        assert result.failed_matches[0] == worldcat.MatchedItem(
+            id=source_data.id,
+            id_type=source_data.id_type,
+            status=worldcat.MatchStatus.FAILED_USER_CRITERIA,
+            matched_oclc="12345678",
+        )
+
+    @pytest.mark.parametrize("update_date", ["20260101000100.0", ""])
+    def test_match_record_failed_global_criteria(
+        self, fake_oclc_fetcher, stub_source_data, update_date
+    ):
+        source_data = copy.deepcopy(stub_source_data)
+        source_data.update_date = update_date
+        source_data.action = worldcat.Action.UPGRADE
+        service = oclc_matcher.WorldcatMatcher(fetcher=fake_oclc_fetcher)
+        result = service.get_record_matches(source_data)
+        assert result.matched is True
+        assert len(result.successful_matches) == 0
+        assert len(result.failed_matches) == 1
+        assert result.failed_matches[0] == worldcat.MatchedItem(
+            id=source_data.id,
+            id_type=source_data.id_type,
+            status=worldcat.MatchStatus.FAILED_GLOBAL_CRITERIA,
+            matched_oclc="12345678",
+        )
+
+
+class TestMatchWorldcat2Sierra:
+    PARSER = marc_handler.MarcParser()
+
+    @pytest.mark.parametrize(
+        "library, collection", [("bpl", None), ("nypl", "RL"), ("nypl", "BL")]
+    )
+    def test_match_worldcat_2_sierra(self, stub_source_data, fake_oclc_fetcher):
+        source_data = copy.deepcopy(stub_source_data)
+        batches = match.MatchWorldcat2Sierra.execute(
+            fetcher=fake_oclc_fetcher,
+            source_data=[source_data.__dict__],
+            parser=self.PARSER,
+        )
+        assert len(batches) == 1
+        assert isinstance(batches[0], worldcat.MatchedResultFull)
+        assert batches[0].matched is True
+        assert batches[0].failed_matches == []
+        assert batches[0].successful_matches == [
+            worldcat.MatchedItem(
+                id=source_data.id,
+                id_type=source_data.id_type,
+                status=worldcat.MatchStatus.MATCHED,
+                matched_oclc="12345678",
+            )
+        ]
+
+    @pytest.mark.parametrize(
+        "library, collection", [("bpl", None), ("nypl", "RL"), ("nypl", "BL")]
+    )
+    def test_match_worldcat_2_sierra_failed_matches(
+        self, stub_source_data, fake_oclc_fetcher
+    ):
+        source_data = copy.deepcopy(stub_source_data)
+        source_data.record_level = "1"
+        batches = match.MatchWorldcat2Sierra.execute(
+            fetcher=fake_oclc_fetcher,
+            source_data=[source_data.__dict__],
+            parser=self.PARSER,
+        )
+        assert len(batches) == 1
+        assert isinstance(batches[0], worldcat.MatchedResultFull)
+        assert batches[0].matched is True
+        assert batches[0].failed_matches == [
+            worldcat.MatchedItem(
+                id=source_data.id,
+                id_type=source_data.id_type,
+                status=worldcat.MatchStatus.FAILED_USER_CRITERIA,
+                matched_oclc="12345678",
+            )
+        ]
+        assert batches[0].successful_matches == []

@@ -7,42 +7,23 @@ import logging
 import os
 from typing import Annotated, Any, Generator, Literal
 
-from fastapi import Depends, Form
+from fastapi import Depends, Form, UploadFile
 from pydantic import BaseModel, field_validator, model_validator
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session as Session
+from sqlmodel import SQLModel, create_engine
 
 from overload_web.infrastructure import (
     batch_db,
-    clients,
     file_io,
-    marc_engine,
+    marc_handler,
+    oclc,
     reporter,
+    sierra_clients,
     template_db,
+    unit_of_work,
 )
 
 logger = logging.getLogger(__name__)
-
-
-class MatchpointsModel(BaseModel):
-    """Pydantic model for serializing/deserializing matchpoints from order templates"""
-
-    primary_matchpoint: str | None = None
-    secondary_matchpoint: str | None = None
-    tertiary_matchpoint: str | None = None
-
-    @classmethod
-    def from_form(
-        self,
-        primary_matchpoint: str | None = Form(default=None),
-        secondary_matchpoint: str | None = Form(default=None),
-        tertiary_matchpoint: str | None = Form(default=None),
-    ) -> MatchpointsModel:
-        """Class method used to create a `MatchpointsModel` object from an html form"""
-        return MatchpointsModel(
-            primary_matchpoint=primary_matchpoint,
-            secondary_matchpoint=secondary_matchpoint,
-            tertiary_matchpoint=tertiary_matchpoint,
-        )
 
 
 class ProcessingContext(BaseModel):
@@ -83,6 +64,45 @@ class ProcessingContext(BaseModel):
         return ProcessingContext(
             collection=collection, library=library, record_type=record_type
         )
+
+
+class MatchpointsModel(BaseModel):
+    """Pydantic model for serializing/deserializing matchpoints from order templates"""
+
+    primary_matchpoint: str | None = None
+    secondary_matchpoint: str | None = None
+    tertiary_matchpoint: str | None = None
+
+    @classmethod
+    def from_form(
+        self,
+        primary_matchpoint: str | None = Form(default=None),
+        secondary_matchpoint: str | None = Form(default=None),
+        tertiary_matchpoint: str | None = Form(default=None),
+    ) -> MatchpointsModel:
+        """Class method used to create a `MatchpointsModel` object from an html form"""
+        return MatchpointsModel(
+            primary_matchpoint=primary_matchpoint,
+            secondary_matchpoint=secondary_matchpoint,
+            tertiary_matchpoint=tertiary_matchpoint,
+        )
+
+
+class MarcParsingRulesModel(BaseModel):
+    bib_mapping: dict[str, Any]
+    collection: str | None
+    library: str
+    order_mapping: dict[str, Any]
+    record_type: str
+    vendor_mapping: dict[str, Any]
+
+
+class MarcUpdateRulesModel(BaseModel):
+    bib_id_tag: str
+    collection: str | None
+    default_loc: str | None
+    library: str
+    order_mapping: dict[str, Any]
 
 
 class TemplateDataModel(BaseModel):
@@ -259,7 +279,70 @@ class TemplateCreateModel(TemplatePatchModel):
     primary_matchpoint: str
 
 
-def get_engine_with_uri():
+class UserCriteria(BaseModel):
+    id_type: Literal["isbn", "issn", "lccn", "upc", "oclc_number"]
+    library: Literal["nypl", "bpl"]
+    collection: Literal["BL", "RL", ""] | None
+    material_type: Literal["any", "bluray", "dvd", "large_print", "print"]
+    action: Literal["catalog", "upgrade"]
+    record_level: Literal["1", "2", "3"]
+    cat_agency: Literal["DLC", "any"] | None = None
+    cat_rules: Literal["RDA", "any"] | None = None
+    data_source: str | None = None
+
+    @field_validator("collection", mode="before")
+    @classmethod
+    def parse_collection(
+        cls, value: Literal["BL", "RL"] | None
+    ) -> Literal["BL", "RL"] | None:
+        """Parses value of `collection` param from html forms."""
+        if not value:
+            return None
+        else:
+            return value
+
+    @classmethod
+    def from_form(
+        self,
+        id_type: Literal["isbn", "issn", "lccn", "upc", "oclc_number"] = Form(...),
+        record_level: Literal["1", "2", "3"] = Form(...),
+        library: Literal["nypl", "bpl"] = Form(...),
+        collection: Literal["BL", "RL", ""] | None = Form(None),
+        material_type: Literal["any", "bluray", "dvd", "large_print", "print"] = Form(
+            default="any"
+        ),
+        action: Literal["catalog", "upgrade"] = Form(default="catalog"),
+        cat_agency: Literal["DLC", "any"] | None = Form(default=None),
+        cat_rules: Literal["RDA", "any"] | None = Form(default=None),
+        data_source: Literal["id", "export"] | None = Form(default="id"),
+    ) -> UserCriteria:
+        return UserCriteria(
+            id_type=id_type,
+            library=library,
+            collection=collection,
+            material_type=material_type,
+            action=action,
+            record_level=record_level,
+            cat_agency=cat_agency,
+            cat_rules=cat_rules,
+            data_source=data_source,
+        )
+
+
+class SourceDataModel(BaseModel):
+    id: str
+    id_type: Literal["isbn", "issn", "lccn", "upc", "oclc_number"]
+    library: Literal["nypl", "bpl"]
+    collection: Literal["BL", "RL", ""] | None
+    material_type: Literal["any", "bluray", "dvd", "large_print", "print"]
+    action: Literal["catalog", "upgrade"]
+    record_level: Literal["1", "2", "3"]
+    required_cataloging_agency: Literal["DLC", "any"] | None = None
+    required_cataloging_rules: Literal["RDA", "any"] | None = None
+    update_date: str | None = None
+
+
+def get_engine():
     """Get the Postgres database URI from environment variables."""
     db_type = os.environ.get("DB_TYPE", "sqlite")
     user = os.environ.get("POSTGRES_USER")
@@ -278,9 +361,7 @@ def create_db_and_tables(engine) -> None:
     SQLModel.metadata.create_all(engine)
 
 
-def get_session(
-    engine: Any = Depends(get_engine_with_uri),
-) -> Generator[Session, None, None]:
+def get_session(engine: Any = Depends(get_engine)) -> Generator[Session, None, None]:
     """Create a new database session with and `engine` injected via Depends.
 
     FastAPI will treat `engine` as a dependency instead of a required
@@ -316,45 +397,102 @@ def local_file_storage() -> file_io.LocalFileStorage:
     return file_io.LocalFileStorage()
 
 
-def remote_file_loader(vendor: str) -> Generator[file_io.SFTPFileLoader, None, None]:
-    """Create an SFTP file loader service."""
-    yield file_io.SFTPFileLoader.create_loader_for_vendor(vendor=vendor)
+def remote_file_retriever(
+    vendor: str,
+) -> Generator[file_io.SFTPFileRetriever, None, None]:
+    """Create an SFTP file retriever service."""
+    yield file_io.SFTPFileRetriever.create_retriever_for_vendor(vendor=vendor)
 
 
 def get_fetcher(
     library: Annotated[str, Form(...)],
-) -> Generator[clients.SierraBibFetcher, None, None]:
+) -> Generator[sierra_clients.SierraBibFetcher, None, None]:
     """Create a Sierra bib fetcher service for a library."""
-    yield clients.FetcherFactory().make(library)
+    yield sierra_clients.FetcherFactory.make(library)
 
 
-def get_marc_engine(
+def get_marc_updater() -> Generator[marc_handler.MarcUpdater, None, None]:
+    """Create a `MarcUpdater` service with injected dependencies."""
+    yield marc_handler.MarcUpdater()
+
+
+def get_marc_update_rules(
     context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
-) -> Generator[marc_engine.MarcEngine, None, None]:
-    """Create a `MarcEngine` service with injected dependencies."""
-    with open("overload_web/data/mapping_specs.json", "r", encoding="utf-8") as fh:
+) -> MarcUpdateRulesModel:
+    with open("overload_web/data/update_rules.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
-    config = marc_engine.MarcEngineConfig(
-        marc_order_mapping=constants["marc_order_mapping"],
+    return MarcUpdateRulesModel(
+        order_mapping=constants["order_mapping"],
         default_loc=constants["default_locations"][context.library].get(
             context.collection
         ),
         bib_id_tag=constants["bib_id_tag"][context.library],
         library=context.library,
-        record_type=context.record_type,
         collection=context.collection,
-        parser_bib_mapping=constants["bib_domain_mapping"],
-        parser_order_mapping=constants["order_domain_mapping"],
-        parser_vendor_mapping=constants["vendor_info_options"][context.library],
     )
-    yield marc_engine.MarcEngine(rules=config)
 
 
-def get_report_handler() -> reporter.PandasReportHandler:
-    """Return a `PandasReportHandler` in order to generate reports."""
-    return reporter.PandasReportHandler()
+def get_marc_parsing_rules(
+    context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
+) -> MarcParsingRulesModel:
+    with open("overload_web/data/parsing_rules.json", "r", encoding="utf-8") as fh:
+        constants = json.load(fh)
+    return MarcParsingRulesModel(
+        bib_mapping=constants["bib_mapping"],
+        library=context.library,
+        collection=context.collection,
+        record_type=context.record_type,
+        order_mapping=constants["order_mapping"],
+        vendor_mapping=constants["vendor_mapping"],
+    )
+
+
+def get_marc_parser() -> Generator[marc_handler.MarcParser, None, None]:
+    """Create a `MarcParser` service with injected dependencies."""
+    yield marc_handler.MarcParser()
+
+
+def oclc_fetcher(
+    user_criteria: Annotated[UserCriteria, Depends(UserCriteria.from_form)],
+) -> Generator[oclc.WorldcatFetcher, None, None]:
+    yield oclc.WorldcatFetcher(session=oclc.OclcSession(library=user_criteria.library))
+
+
+def load_wc2s_file(file: UploadFile) -> list[str]:
+    lines = file.file.readlines()
+    return [i.decode("utf-8").strip("\r\n") for i in lines]
+
+
+def source_data_from_load(
+    ids: Annotated[list[str], Depends(load_wc2s_file)],
+    data: Annotated[UserCriteria, Depends(UserCriteria.from_form)],
+) -> list:
+    return [
+        SourceDataModel(
+            id=i,
+            id_type=data.id_type,
+            library=data.library,
+            collection=data.collection,
+            material_type=data.material_type,
+            action=data.action,
+            record_level=data.record_level,
+            required_cataloging_agency=data.cat_agency,
+            required_cataloging_rules=data.cat_rules,
+        )
+        for i in ids
+    ]
 
 
 def get_report_writer() -> reporter.GoogleSheetsReporter:
     """Return a `GoogleSheetsReporter` in order to write stats to a Google Sheet."""
     return reporter.GoogleSheetsReporter()
+
+
+def get_uow(engine: Any = Depends(get_engine)) -> unit_of_work.SqlModelUnitOfWork:
+    """
+    Provide an un-entered Unit of Work instance.
+
+    The UoW takes the engine and manages its own session lifecycle when
+    used in a context manager, making it safe to pass to BackgroundTasks.
+    """
+    return unit_of_work.SqlModelUnitOfWork(engine=engine)

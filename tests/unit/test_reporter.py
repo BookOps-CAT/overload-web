@@ -1,22 +1,72 @@
 import pytest
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
 
-from overload_web.application.services import report_services
-from overload_web.domain.models import reporting
+from overload_web.domain.pvf import reporting
 from overload_web.infrastructure import reporter
 
 
+class MockCreds:
+    def __init__(self):
+        self.token = "foo"
+        self.refresh_token = "bar"
+
+    @property
+    def valid(self, *args, **kwargs):
+        return True
+
+    @property
+    def expired(self, *args, **kwargs):
+        return False
+
+    def refresh(self, *args, **kwargs):
+        self.expired = False
+        self.valid = True
+
+    def to_json(self, *args, **kwargs):
+        pass
+
+    def run_local_server(self, *args, **kwargs):
+        return self
+
+
 @pytest.fixture
-def mock_sheet_config_invalid_creds(monkeypatch, mock_sheet_config):
+def mock_config(monkeypatch) -> None:
+    def mock_creds(*args, **kwargs):
+        return MockCreds()
+
+    monkeypatch.setattr(Credentials, "from_authorized_user_info", mock_creds)
+
+
+@pytest.fixture
+def mock_config_expired_creds(monkeypatch, mock_config):
+    monkeypatch.setattr(MockCreds, "valid", False)
+    monkeypatch.setattr(MockCreds, "expired", True)
+
+
+@pytest.fixture
+def mock_config_no_creds(monkeypatch):
+    def mock_creds(*args, **kwargs):
+        return MockCreds()
+
+    def null_return(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(InstalledAppFlow, "from_client_config", mock_creds)
+    monkeypatch.setattr(Credentials, "from_authorized_user_info", null_return)
+
+
+@pytest.fixture
+def mock_config_invalid_creds(monkeypatch, mock_config):
     def mock_error(*args, **kwargs):
         raise ValueError
 
-    monkeypatch.setattr(
-        "google.oauth2.credentials.Credentials.from_authorized_user_info", mock_error
-    )
+    monkeypatch.setattr(Credentials, "from_authorized_user_info", mock_error)
 
 
 @pytest.fixture
-def mock_sheet_timeout_error(monkeypatch):
+def mock_sheet_timeout_error(monkeypatch, mock_config):
+
     def mock_error(*args, **kwargs):
         raise TimeoutError
 
@@ -25,156 +75,136 @@ def mock_sheet_timeout_error(monkeypatch):
 
 
 @pytest.fixture
-def mock_sheet_auth_error(monkeypatch):
-    def mock_error(*args, **kwargs):
-        raise ValueError
-
-    monkeypatch.setattr("googleapiclient.discovery.build", mock_error)
-    monkeypatch.setattr("googleapiclient.discovery.build_from_document", mock_error)
-
-
-@pytest.fixture
 def stub_report():
     return reporting.ProcessingStatistics(
-        file_names=["foo.mrc"],
-        total_files=1,
-        total_records=1,
-        vendor=["BTSERIES"],
-        resource_id=["9781234567890"],
-        target_bib_id=["12345"],
-        duplicate_records=[[]],
-        mixed=[[]],
-        other=[[]],
-        call_number_match=[False],
-        call_number=["Foo"],
-        target_call_no=["Bar"],
-        target_title=["Baz"],
-        updated_by_vendor=[False],
-        action="attach",
+        stats=[
+            {
+                "action": "attach",
+                "call_number": "Foo",
+                "call_number_match": False,
+                "duplicate_records": [],
+                "mixed": [],
+                "other": [],
+                "resource_id": "9781234567890",
+                "target_bib_id": "12345",
+                "target_call_no": "Bar",
+                "target_title": "Baz",
+                "updated_by_vendor": False,
+                "vendor": "BTSERIES",
+            }
+        ]
     )
 
 
-@pytest.fixture
-def pandas_handler():
-    return reporter.PandasReportHandler()
-
-
 class TestReporter:
-    def test_configure_sheet(self, mock_sheet_config):
-        handler = reporter.GoogleSheetsReporter()
-        creds = handler.configure_sheet()
+    REPORT_HANDLER = reporter.GoogleSheetsReporter()
+
+    def test_configure_sheet(self, mock_config):
+        creds = self.REPORT_HANDLER.configure_sheet()
         assert creds.token == "foo"
         assert creds.valid is True
         assert creds.expired is False
         assert creds.refresh_token is not None
 
-    def test_configure_sheet_expired(self, mock_sheet_config_expired_creds):
-        handler = reporter.GoogleSheetsReporter()
-        creds = handler.configure_sheet()
+    def test_configure_sheet_expired(self, mock_config_expired_creds):
+        creds = self.REPORT_HANDLER.configure_sheet()
         assert creds.token == "foo"
         assert creds.valid is True
         assert creds.expired is False
         assert creds.refresh_token is not None
 
-    def test_configure_sheet_generate_new_creds(
-        self, mock_sheet_config_no_creds, caplog
-    ):
-        handler = reporter.GoogleSheetsReporter()
-        creds = handler.configure_sheet()
-        assert creds.token == "foo"
-        assert creds.valid is True
-        assert creds.expired is False
-        assert creds.refresh_token is not None
-        assert "API token not found. Running credential config flow." in caplog.text
-
-    def test_configure_sheet_no_creds(self, mock_sheet_config_no_creds, caplog):
-        handler = reporter.GoogleSheetsReporter()
-        creds = handler.configure_sheet()
+    def test_configure_sheet_generate_new_creds(self, mock_config_no_creds, caplog):
+        creds = self.REPORT_HANDLER.configure_sheet()
         assert creds.token == "foo"
         assert creds.valid is True
         assert creds.expired is False
         assert creds.refresh_token is not None
         assert "API token not found. Running credential config flow." in caplog.text
 
-    def test_configure_sheet_invalid_creds(
-        self, mock_sheet_config_invalid_creds, caplog
-    ):
-        handler = reporter.GoogleSheetsReporter()
+    def test_configure_sheet_invalid_creds(self, mock_config_invalid_creds, caplog):
         with pytest.raises(ValueError):
-            handler.configure_sheet()
+            self.REPORT_HANDLER.configure_sheet()
+        assert "Unable to configure google sheet API credentials:" in caplog.text
 
-    def test_write_report(self, mock_sheet_config, stub_report, caplog):
-        google_handler = reporter.GoogleSheetsReporter()
-        google_handler.write_report(stub_report)
-        assert (
-            "Data written to Google Sheet: {'spreadsheetId': 'foo', 'tableRange': 'bar'}"
-            in caplog.text
+    def test_prep_report(self, stub_report):
+        prepped_report = self.REPORT_HANDLER.prep_report(
+            stub_report.create_call_number_report(record_type="cat")
         )
+        assert prepped_report == [
+            ["BTSERIES", "9781234567890", "12345", "[]", "Foo", "Bar", "False"]
+        ]
+
+    def test_prep_report_no_data(self):
+        prepped_report = self.REPORT_HANDLER.prep_report([])
+        assert prepped_report == []
 
     def test_write_data_to_sheet_timeout_error(
-        self, mock_sheet_config, mock_sheet_timeout_error, stub_report, caplog
+        self, mock_sheet_timeout_error, stub_report, caplog
     ):
-        google_handler = reporter.GoogleSheetsReporter()
-        google_handler.write_report(stub_report)
+        self.REPORT_HANDLER.write_report(stub_report.create_duplicate_report())
         assert "Unable to send data to google sheet:" in caplog.text
         assert "Data not written to sheet." in caplog.text
 
-    def test_write_data_to_sheet_auth_error(
-        self, mock_sheet_config, mock_sheet_auth_error, stub_report, caplog
-    ):
-        google_handler = reporter.GoogleSheetsReporter()
-        google_handler.write_report(stub_report)
-        assert "Unable to configure google sheet API credentials:" in caplog.text
-        assert "Data not written to sheet." in caplog.text
 
+class TestProcessingStatistics:
+    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
+    def test_call_number_report(self, stub_report, record_type):
+        report = stub_report.create_call_number_report(record_type)
+        assert report == [
+            {
+                "call_number": "Foo",
+                "call_number_match": False,
+                "duplicate_records": [],
+                "resource_id": "9781234567890",
+                "target_bib_id": "12345",
+                "target_call_no": "Bar",
+                "vendor": "BTSERIES",
+            }
+        ]
 
-class TestRecordsProcessingReports:
-    def test_call_number_report(self, stub_report, pandas_handler):
-        report = pandas_handler.create_call_number_report(
-            stub_report.call_number_report_data, record_type="sel"
-        )
-        assert report is not None
-
-    def test_call_number_report_no_issues(self, stub_report, pandas_handler):
-        stub_report.call_number_match = [True]
-        report = pandas_handler.create_call_number_report(
-            stub_report.call_number_report_data, record_type="sel"
-        )
+    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
+    def test_call_number_report_no_issues(self, stub_report, record_type):
+        stub_report.stats[0]["call_number_match"] = True
+        report = stub_report.create_call_number_report(record_type)
         assert report is None
 
-    def test_duplicate_report(self, stub_report, pandas_handler):
-        report = pandas_handler.create_duplicate_report(
-            stub_report.duplicate_report_data
-        )
-        assert report["vendor"] == ["BTSERIES"]
-        assert report["resource_id"] == ["9781234567890"]
-        assert report["target_bib_id"] == ["12345"]
-        assert report["duplicate_records"] == [[]]
-        assert report["mixed"] == [[]]
-        assert report["other"] == [[]]
+    def test_call_number_report_cat_missing_call_number(self, stub_report):
+        stub_report.stats[0]["call_number"] = None
+        stub_report.stats[0]["target_call_no"] = None
+        stub_report.stats[0]["call_number_match"] = True
+        report = stub_report.create_call_number_report("cat")
+        assert report == [
+            {
+                "call_number": None,
+                "call_number_match": True,
+                "duplicate_records": [],
+                "resource_id": "9781234567890",
+                "target_bib_id": "12345",
+                "target_call_no": None,
+                "vendor": "BTSERIES",
+            }
+        ]
 
-    def test_vendor_report(self, stub_report, pandas_handler):
-        report = pandas_handler.create_vendor_report(stub_report.vendor_report_data)
-        assert report["vendor"] == ["BTSERIES"]
-        assert report["attach"] == [1]
-        assert report["insert"] == [0]
-        assert report["update"] == [0]
-        assert report["total"] == [1]
+    def test_duplicate_report(self, stub_report):
+        stub_report.stats[0]["duplicate_records"] = ["3456"]
+        report = stub_report.create_duplicate_report()
+        assert report == [
+            {
+                "vendor": "BTSERIES",
+                "resource_id": "9781234567890",
+                "target_bib_id": "12345",
+                "duplicate_records": ["3456"],
+                "mixed": [],
+                "other": [],
+            }
+        ]
 
-    def test_create_detailed_report(self, stub_report):
-        out = report_services.PVFReporter.create_detailed_report(
-            data=stub_report.__dict__, handler=reporter.PandasReportHandler()
-        )
-        assert "vendor" in out.keys()
-        assert "target_bib_id" in out.keys()
-        assert "resource_id" in out.keys()
+    def test_duplicate_report_no_dupes(self, stub_report):
+        report = stub_report.create_duplicate_report()
+        assert report == []
 
-    def test_create_output_report(self, stub_report):
-        out = report_services.PVFReporter.create_output_report(
-            data=stub_report.__dict__,
-            handler=reporter.PandasReportHandler(),
-            record_type="sel",
-        )
-        assert "vendor_report" in out.keys()
-        assert "dupes_report" in out.keys()
-        assert "call_no_report" in out.keys()
+    def test_vendor_report(self, stub_report):
+        report = stub_report.create_vendor_report()
+        assert report == [
+            {"vendor": "BTSERIES", "attach": 1, "insert": 0, "update": 0, "total": 1}
+        ]

@@ -1,0 +1,140 @@
+import inspect
+
+import pytest
+from sqlmodel import Session, SQLModel, create_engine
+
+from overload_web.application.pvf.template_handling import (
+    GetOrderTemplate,
+    ListOrderTemplates,
+    SaveNewOrderTemplate,
+    UpdateOrderTemplate,
+)
+from overload_web.domain.pvf import order_templates
+from overload_web.infrastructure import template_db
+from overload_web.presentation import deps
+
+
+@pytest.fixture
+def test_sql_session():
+    test_engine = create_engine("sqlite:///:memory:")
+    SQLModel.metadata.create_all(test_engine)
+    with Session(test_engine) as session:
+        yield session
+    session.close()
+    test_engine.dispose()
+
+
+@pytest.fixture
+def make_template():
+    def _make_template(data):
+        template = template_db.TemplateModel(**data)
+        return template
+
+    return _make_template
+
+
+def test_template_attrs():
+    """
+    _TemplateModelBase, TemplatePatchModel and OrderTemplateBase are the same
+    OrderTemplate and TemplateModel are the same
+
+    """
+    sql_base = [
+        name
+        for name in inspect.signature(template_db._TemplateModelBase).parameters.keys()
+    ]
+    pydantic_patch = [
+        name for name in inspect.signature(deps.TemplatePatchModel).parameters.keys()
+    ]
+    pydantic_create = [
+        name for name in inspect.signature(deps.TemplateCreateModel).parameters.keys()
+    ]
+    domain_base = [
+        name
+        for name in inspect.signature(
+            order_templates.OrderTemplateBase
+        ).parameters.keys()
+    ]
+    template_sql_model = [
+        name for name in inspect.signature(template_db.TemplateModel).parameters.keys()
+    ]
+    template_domain_model = [
+        name
+        for name in inspect.signature(order_templates.OrderTemplate).parameters.keys()
+    ]
+    assert sql_base == pydantic_patch == domain_base == pydantic_create
+    assert template_sql_model == template_domain_model
+
+
+class TestTemplateService:
+    @pytest.fixture
+    def repo(self, test_sql_session):
+        return template_db.OrderTemplateRepository(session=test_sql_session)
+
+    def test_OrderTemplateRepository(self, test_sql_session):
+        repo = template_db.OrderTemplateRepository(session=test_sql_session)
+        assert hasattr(repo, "session")
+
+    def test_get_template(self, repo):
+        template_obj = GetOrderTemplate.execute(repository=repo, template_id="foo")
+        assert template_obj is None
+
+    def test_list_templates(self, repo):
+        template_list = ListOrderTemplates.execute(repository=repo)
+        assert template_list == []
+
+    def test_save_template(self, repo, stub_template_data, make_template):
+        template = make_template(stub_template_data)
+        template_saver = SaveNewOrderTemplate.execute(repository=repo, obj=template)
+        assert template_saver.name == stub_template_data["name"]
+        assert template_saver.agent == stub_template_data["agent"]
+        assert template_saver.blanket_po == stub_template_data["blanket_po"]
+
+    @pytest.mark.parametrize(
+        "id, name, agent",
+        [
+            (1, "Foo Template", "user1"),
+            (2, "Bar Template", "user1"),
+            (3, "Baz Template", "user2"),
+            (4, "Qux Template", "user3"),
+        ],
+    )
+    def test_save_template_check(self, id, name, agent, make_template, repo):
+        template = make_template(
+            data={
+                "id": id,
+                "name": name,
+                "agent": agent,
+                "country": "xxu",
+                "primary_matchpoint": "isbn",
+            }
+        )
+        SaveNewOrderTemplate.execute(repository=repo, obj=template)
+        saved_template = GetOrderTemplate.execute(repository=repo, template_id=id)
+        assert saved_template.__dict__ == template.model_dump()
+
+    def test_update_template(self, make_template, repo):
+        template = make_template(
+            data={
+                "id": "1",
+                "name": "foo",
+                "agent": "bar",
+                "country": "xxu",
+                "primary_matchpoint": "isbn",
+            }
+        )
+        template_patch = deps.TemplatePatchModel(primary_matchpoint="upc", lang="eng")
+        SaveNewOrderTemplate.execute(repository=repo, obj=template)
+        original_template = GetOrderTemplate.execute(repository=repo, template_id="1")
+        updated_template = UpdateOrderTemplate.execute(
+            repository=repo, template_id="1", obj=template_patch
+        )
+        no_update = UpdateOrderTemplate.execute(
+            repository=repo, template_id="2", obj=template_patch
+        )
+        assert updated_template.lang != original_template.lang
+        assert (
+            updated_template.primary_matchpoint != original_template.primary_matchpoint
+        )
+        assert updated_template.id == original_template.id
+        assert no_update is None
