@@ -102,15 +102,12 @@ def stub_updater(request, get_constants):
     collection = marker.kwargs["collection"]
     library = marker.kwargs["library"]
     constants = get_constants["constants"]
-    rules = {
-        "library": library,
-        "collection": collection,
-        "default_loc": constants["default_locations"][library].get(collection),
-        "bib_id_tag": constants["bib_id_tag"][library],
-        "order_mapping": constants["order_mapping"],
-    }
     return update_service.BibUpdater(
-        rules=update_service.UpdateRules(**rules), handler=marc_handler.MarcUpdater()
+        library=library,
+        default_loc=constants["default_locations"][library].get(collection),
+        bib_id_tag=constants["bib_id_tag"][library],
+        order_mapping=constants["order_mapping"],
+        handler=marc_handler.MarcUpdater(),
     )
 
 

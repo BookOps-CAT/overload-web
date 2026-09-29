@@ -90,6 +90,30 @@ def mock_marc_dupes(monkeypatch, stub_bib, request):
     monkeypatch.setattr(parsing_service.BibParser, "parse_marc_data", parse_bibs)
 
 
+@pytest.fixture
+def stub_update_service():
+    return update_service.BibUpdater(
+        handler=marc_handler.MarcUpdater(),
+        order_mapping={},
+        default_loc="foo",
+        bib_id_tag="bar",
+        library="baz",
+    )
+
+
+@pytest.fixture
+def stub_parsing_service():
+    return parsing_service.BibParser(
+        handler=FakeMarcParser(),
+        library="foo",
+        record_type="bar",
+        collection="baz",
+        vendor_mapping={},
+        bib_mapping={},
+        order_mapping={},
+    )
+
+
 class FakeMarcParser:
     def __init__(self) -> None:
         self.library = "foo"
@@ -105,37 +129,25 @@ class FakeMarcParser:
 
 @pytest.mark.usefixtures("marc_stubs")
 class TestProcessCommands:
-    FAKE_MARC_PARSER = FakeMarcParser()
-    FAKE_UPDATE_RULES = update_service.UpdateRules(
-        order_mapping={},
-        default_loc="foo",
-        bib_id_tag="bar",
-        library="baz",
-        collection="qux",
-    )
-    FAKE_PARSING_RULES = {
-        "order_mapping": {},
-        "bib_mapping": {},
-        "vendor_mapping": {"bar"},
-        "library": "foo",
-        "collection": "bar",
-        "record_type": "baz",
-    }
-    STUB_UPDATER = marc_handler.MarcUpdater()
-
     @pytest.mark.workflow(record_type="cat")
     def test_cat_service_process_vendor_file(
-        self, fake_fetcher, stub_repo, caplog, mock_marc, tmp_path, stub_file_repo
+        self,
+        fake_fetcher,
+        stub_repo,
+        caplog,
+        mock_marc,
+        tmp_path,
+        stub_file_repo,
+        stub_update_service,
+        stub_parsing_service,
     ):
         path = tmp_path / "temp"
         out = ProcessCatalogingRecords.execute(
             workflow_id=1,
-            marc_updater=self.STUB_UPDATER,
-            update_rules=self.FAKE_UPDATE_RULES,
+            updater=stub_update_service,
+            parser=stub_parsing_service,
             fetcher=fake_fetcher,
             repo=stub_repo,
-            marc_parser=self.FAKE_MARC_PARSER,
-            parsing_rules=self.FAKE_PARSING_RULES,
             storage=file_io.LocalFileStorage(base_path=path),
             file_repo=stub_file_repo,
         )
@@ -154,16 +166,16 @@ class TestProcessCommands:
         mock_marc,
         tmp_path,
         stub_file_repo,
+        stub_update_service,
+        stub_parsing_service,
     ):
         path = tmp_path / "temp"
         out = ProcessCatalogingRecords.execute(
             workflow_id=1,
-            marc_updater=self.STUB_UPDATER,
-            update_rules=self.FAKE_UPDATE_RULES,
+            updater=stub_update_service,
+            parser=stub_parsing_service,
             fetcher=fake_fetcher,
             repo=stub_repo,
-            marc_parser=self.FAKE_MARC_PARSER,
-            parsing_rules=self.FAKE_PARSING_RULES,
             storage=file_io.LocalFileStorage(base_path=path),
             file_repo=stub_file_repo,
         )
@@ -177,19 +189,24 @@ class TestProcessCommands:
 
     @pytest.mark.workflow(record_type="sel")
     def test_sel_service_process_vendor_file(
-        self, fake_fetcher, stub_repo, mock_marc, tmp_path, stub_file_repo
+        self,
+        fake_fetcher,
+        stub_repo,
+        mock_marc,
+        tmp_path,
+        stub_file_repo,
+        stub_update_service,
+        stub_parsing_service,
     ):
         path = tmp_path / "temp"
         out = ProcessSelectionRecords.execute(
             {"foo.mrc": b""},
-            marc_updater=self.STUB_UPDATER,
             fetcher=fake_fetcher,
-            update_rules=self.FAKE_UPDATE_RULES,
+            updater=stub_update_service,
+            parser=stub_parsing_service,
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
             repo=stub_repo,
-            marc_parser=self.FAKE_MARC_PARSER,
-            parsing_rules=self.FAKE_PARSING_RULES,
             storage=file_io.LocalFileStorage(base_path=path),
             file_repo=stub_file_repo,
         )
@@ -197,19 +214,24 @@ class TestProcessCommands:
 
     @pytest.mark.workflow(record_type="acq")
     def test_acq_service_process_vendor_file(
-        self, fake_fetcher, stub_repo, mock_marc, tmp_path, stub_file_repo
+        self,
+        fake_fetcher,
+        stub_repo,
+        mock_marc,
+        tmp_path,
+        stub_file_repo,
+        stub_update_service,
+        stub_parsing_service,
     ):
         path = tmp_path / "temp"
         out = ProcessAcquisitionsRecords.execute(
             {"foo.mrc": b""},
-            marc_updater=self.STUB_UPDATER,
+            updater=stub_update_service,
+            parser=stub_parsing_service,
             fetcher=fake_fetcher,
-            update_rules=self.FAKE_UPDATE_RULES,
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
             repo=stub_repo,
-            parsing_rules=self.FAKE_PARSING_RULES,
-            marc_parser=self.FAKE_MARC_PARSER,
             storage=file_io.LocalFileStorage(base_path=path),
             file_repo=stub_file_repo,
         )
@@ -217,18 +239,23 @@ class TestProcessCommands:
 
     @pytest.mark.workflow(record_type="cat")
     def test_cat_service_process_vendor_file_dupes(
-        self, fake_fetcher, stub_repo, mock_marc_dupes, tmp_path, stub_file_repo
+        self,
+        fake_fetcher,
+        stub_repo,
+        mock_marc_dupes,
+        tmp_path,
+        stub_file_repo,
+        stub_update_service,
+        stub_parsing_service,
     ):
         path = tmp_path / "temp"
         with pytest.raises(ValueError) as exc:
             ProcessCatalogingRecords.execute(
                 workflow_id=1,
-                marc_updater=self.STUB_UPDATER,
+                updater=stub_update_service,
+                parser=stub_parsing_service,
                 fetcher=fake_fetcher,
-                update_rules=self.FAKE_UPDATE_RULES,
                 repo=stub_repo,
-                marc_parser=self.FAKE_MARC_PARSER,
-                parsing_rules=self.FAKE_PARSING_RULES,
                 storage=file_io.LocalFileStorage(base_path=path),
                 file_repo=stub_file_repo,
             )
@@ -236,20 +263,25 @@ class TestProcessCommands:
 
     @pytest.mark.workflow(record_type="acq")
     def test_acq_service_process_vendor_file_dupes(
-        self, fake_fetcher, stub_repo, mock_marc_dupes, tmp_path, stub_file_repo
+        self,
+        fake_fetcher,
+        stub_repo,
+        mock_marc_dupes,
+        tmp_path,
+        stub_file_repo,
+        stub_update_service,
+        stub_parsing_service,
     ):
         path = tmp_path / "temp"
         with pytest.raises(ValueError) as exc:
             ProcessAcquisitionsRecords.execute(
                 {"foo.mrc": b""},
-                marc_updater=self.STUB_UPDATER,
                 fetcher=fake_fetcher,
-                update_rules=self.FAKE_UPDATE_RULES,
                 template_data={"format": "a"},
                 matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
                 repo=stub_repo,
-                marc_parser=self.FAKE_MARC_PARSER,
-                parsing_rules=self.FAKE_PARSING_RULES,
+                updater=stub_update_service,
+                parser=stub_parsing_service,
                 storage=file_io.LocalFileStorage(base_path=path),
                 file_repo=stub_file_repo,
             )
@@ -257,20 +289,25 @@ class TestProcessCommands:
 
     @pytest.mark.workflow(record_type="sel")
     def test_sel_service_process_vendor_file_dupes(
-        self, fake_fetcher, stub_repo, mock_marc_dupes, tmp_path, stub_file_repo
+        self,
+        fake_fetcher,
+        stub_repo,
+        mock_marc_dupes,
+        tmp_path,
+        stub_file_repo,
+        stub_update_service,
+        stub_parsing_service,
     ):
         path = tmp_path / "temp"
         with pytest.raises(ValueError) as exc:
             ProcessSelectionRecords.execute(
                 {"foo.mrc": b""},
-                marc_updater=self.STUB_UPDATER,
                 fetcher=fake_fetcher,
-                update_rules=self.FAKE_UPDATE_RULES,
                 template_data={"format": "a"},
                 matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
                 repo=stub_repo,
-                marc_parser=self.FAKE_MARC_PARSER,
-                parsing_rules=self.FAKE_PARSING_RULES,
+                updater=stub_update_service,
+                parser=stub_parsing_service,
                 storage=file_io.LocalFileStorage(base_path=path),
                 file_repo=stub_file_repo,
             )

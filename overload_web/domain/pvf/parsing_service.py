@@ -54,34 +54,48 @@ class BarcodeValidator:
 
 
 class BibParser:
-    def __init__(self, handler: ports.MarcParserPort, rules: ParsingRules) -> None:
+    def __init__(
+        self,
+        bib_mapping: dict[str, Any],
+        collection: str | None,
+        handler: ports.MarcParserPort,
+        library: str,
+        order_mapping: dict[str, Any],
+        record_type: str,
+        vendor_mapping: dict[str, Any],
+    ) -> None:
         """
         Initialize `MarcParser` using a set of mapping rules and inputs.
 
         Args:
+            bib_mapping:
+                rules for mapping bookops_marc.Bib objects to domain objects
             collection:
                 the collection to which the records belong
             handler:
                 a `MarcParserPort` object used to handle interactions with pymarc
             library:
                 the library whose records are being parsed
-            record_type:
-                the workflow two whom this record belongs
-            bib_mapping:
-                rules for mapping bookops_marc.Bib objects to domain objects
             order_mapping:
                 rules for mapping bookops_marc.Order objects to domain objects
+            record_type:
+                the workflow two whom this record belongs
             vendor_mapping:
                 rules for identifying the vendor to whom a record belongs
         """
+        self.bib_mapping = bib_mapping
+        self.collection = collection
         self.handler = handler
-        self.rules = rules
+        self.library = library
+        self.order_mapping = order_mapping
+        self.record_type = record_type
+        self.vendor_mapping = vendor_mapping
 
     def combine_marc_files(self, data: list[bytes]) -> bytes:
         """Combine multiple bytes objects (ie. MARC files) into one for processing."""
         records = []
         for batch in data:
-            reader = self.handler.get_reader(batch, library=self.rules.library)
+            reader = self.handler.get_reader(batch, library=self.library)
             for record in reader:
                 records.append(record)
         io_data = io.BytesIO()
@@ -102,13 +116,13 @@ class BibParser:
         """Parse MARC binary to a list of `DomainBib` domain objects."""
         bib_dict["orders"] = [models.Order(**i) for i in order_data]
         bib_dict["binary_data"] = binary_data
-        bib_dict["record_type"] = self.rules.record_type
+        bib_dict["record_type"] = self.record_type
         if isinstance(vendor_info, dict):
             bib_dict["vendor_info"] = models.VendorInfo(**vendor_info)
         else:
             bib_dict["vendor"] = vendor
         if not collection:
-            bib_dict["collection"] = self.rules.collection
+            bib_dict["collection"] = self.collection
         bib = models.DomainBib(**bib_dict)
         return bib
 
@@ -118,18 +132,16 @@ class BibParser:
         """Parse MARC binary to a list of `DomainBib` domain objects."""
         vendor_info: dict[str, Any] | None
         parsed = []
-        reader = self.handler.get_reader(data, library=self.rules.library)
+        reader = self.handler.get_reader(data, library=self.library)
         for record in reader:
-            bib_dict = self.handler.map_bib_data(
-                obj=record, mapping=self.rules.bib_mapping
-            )
+            bib_dict = self.handler.map_bib_data(obj=record, mapping=self.bib_mapping)
             order_data = [
-                self.handler.map_order_data(obj=i, mapping=self.rules.order_mapping)
+                self.handler.map_order_data(obj=i, mapping=self.order_mapping)
                 for i in record.orders
             ]
-            if self.rules.record_type == "cat":
+            if self.record_type == "cat":
                 vendor_info = self.handler.identify_vendor(
-                    obj=record, mapping=self.rules.vendor_mapping
+                    obj=record, mapping=self.vendor_mapping
                 )
             else:
                 vendor_info = None
@@ -144,3 +156,6 @@ class BibParser:
             logger.info(f"Vendor record parsed: {parsed_bib}")
             parsed.append(parsed_bib)
         return parsed
+
+    def write(self, records: list[models.DomainBib]) -> bytes:
+        return self.handler.write(records=records)

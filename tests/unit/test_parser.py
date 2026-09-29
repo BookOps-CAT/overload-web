@@ -236,11 +236,14 @@ class TestBibParser:
         rules = get_constants["parsing_rules"]
         marker = request.node.get_closest_marker("workflow")
         record_type = marker.kwargs["record_type"]
-        rules["library"] = mock_marc.library
-        rules["collection"] = mock_marc.collection
-        rules["record_type"] = record_type
         parser = parsing_service.BibParser(
-            rules=parsing_service.ParsingRules(**rules), handler=self.ENGINE
+            bib_mapping=rules["bib_mapping"],
+            library=mock_marc.library,
+            collection=mock_marc.collection,
+            record_type=record_type,
+            order_mapping=rules["order_mapping"],
+            vendor_mapping=rules["vendor_mapping"],
+            handler=self.ENGINE,
         )
         combined = parser.combine_marc_files(data=[mock_marc.as_marc()])
         assert len([i for i in combined]) > 1
@@ -252,11 +255,14 @@ class TestBibParser:
         rules = get_constants["parsing_rules"]
         marker = request.node.get_closest_marker("workflow")
         record_type = marker.kwargs["record_type"]
-        rules["library"] = mock_marc.library
-        rules["collection"] = mock_marc.collection
-        rules["record_type"] = record_type
         parser = parsing_service.BibParser(
-            rules=parsing_service.ParsingRules(**rules), handler=self.ENGINE
+            bib_mapping=rules["bib_mapping"],
+            library=mock_marc.library,
+            collection=mock_marc.collection,
+            record_type=record_type,
+            order_mapping=rules["order_mapping"],
+            vendor_mapping=rules["vendor_mapping"],
+            handler=self.ENGINE,
         )
         records = parser.parse_marc_data(data=mock_marc.as_marc())
         assert len(records) == 1
@@ -276,11 +282,14 @@ class TestBibParser:
         rules = get_constants["parsing_rules"]
         marker = request.node.get_closest_marker("workflow")
         record_type = marker.kwargs["record_type"]
-        rules["library"] = mock_marc.library
-        rules["collection"] = mock_marc.collection
-        rules["record_type"] = record_type
         parser = parsing_service.BibParser(
-            rules=parsing_service.ParsingRules(**rules), handler=self.ENGINE
+            bib_mapping=rules["bib_mapping"],
+            library=mock_marc.library,
+            collection=mock_marc.collection,
+            record_type=record_type,
+            order_mapping=rules["order_mapping"],
+            vendor_mapping=rules["vendor_mapping"],
+            handler=self.ENGINE,
         )
         records = parser.parse_marc_data(data=mock_marc.as_marc())
         assert len(records) == 1
@@ -299,11 +308,14 @@ class TestBibParser:
         rules = get_constants["parsing_rules"]
         marker = request.node.get_closest_marker("workflow")
         record_type = marker.kwargs["record_type"]
-        rules["library"] = mock_marc.library
-        rules["collection"] = mock_marc.collection
-        rules["record_type"] = record_type
         parser = parsing_service.BibParser(
-            rules=parsing_service.ParsingRules(**rules), handler=self.ENGINE
+            bib_mapping=rules["bib_mapping"],
+            library=mock_marc.library,
+            collection=mock_marc.collection,
+            record_type=record_type,
+            order_mapping=rules["order_mapping"],
+            vendor_mapping=rules["vendor_mapping"],
+            handler=self.ENGINE,
         )
         records = parser.parse_marc_data(data=mock_marc.as_marc())
         assert len(records) == 1

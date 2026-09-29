@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Iterator, Protocol, TypeVar, runtime_checkable
+from typing import Any, Iterator, Protocol, Sequence, TypeVar, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class BibFetcher(Protocol):
 
     def get_bibs_by_id(
         self, value: str | int, key: str
-    ) -> list[dict[str, Any]]: ...  # pragma: no branch
+    ) -> Sequence[dict[str, Any]]: ...  # pragma: no branch
 
     """
     Retrieve candidate bib records that match a key-value pair.
@@ -40,7 +40,7 @@ class BibFetcher(Protocol):
 
 
 @runtime_checkable
-class MarcParserPort(Protocol[U]):
+class MarcParserPort(Protocol[U, T]):
     def compare_mapped_tags(
         self, obj: U, tags: dict[str, dict[str, str]]
     ) -> bool: ...  # pragma:no branch
@@ -75,18 +75,13 @@ class MarcParserPort(Protocol[U]):
 
     """Map an order to a dictionary following a set of rules."""
 
-    def write(self, records: list[T]) -> bytes: ...  # pragma:no branch
+    def write(self, records: Sequence[T]) -> bytes: ...  # pragma:no branch
 
     """Write `DomainBib` objects to single binary object."""
 
 
 @runtime_checkable
 class MarcUpdaterPort(Protocol[T, U]):
-    library: str
-    record_type: str
-    collection: str | None
-    config: dict[str, Any]
-
     def create_bib_from_domain(self, record: T) -> U: ...  # pragma:no branch
 
     """Create a `bookops_marc.Bib` object from a `DomainBib` object"""

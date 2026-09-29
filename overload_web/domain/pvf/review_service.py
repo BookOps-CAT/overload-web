@@ -6,8 +6,7 @@ import logging
 from collections import defaultdict
 from typing import Any
 
-from overload_web.application import ports
-from overload_web.domain.pvf import marc_rules, models
+from overload_web.domain.pvf import marc_rules, models, ports
 
 logger = logging.getLogger(__name__)
 

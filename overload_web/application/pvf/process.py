@@ -5,13 +5,13 @@ import logging
 from typing import Any
 
 from overload_web.application import ports
-from overload_web.application.pvf import (
-    batch_handling,
-    file_handling,
-    marc,
+from overload_web.application.pvf import batch_handling, file_handling, marc
+from overload_web.domain.pvf import (
+    match_service,
+    parsing_service,
     review_service,
+    update_service,
 )
-from overload_web.domain.pvf import match_service, parsing_service, update_service
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +24,8 @@ class ProcessAcquisitionsRecords:
         workflow_id: str,
         storage: ports.FileStorage,
         fetcher: ports.BibFetcher,
-        marc_updater: ports.MarcUpdaterPort,
-        marc_parser: ports.MarcParserPort,
-        update_rules: update_service.UpdateRules,
-        parsing_rules: parsing_service.ParsingRules,
+        updater: update_service.BibUpdater,
+        parser: parsing_service.BibParser,
         matchpoints: dict[str, str],
         repo: ports.SqlRepositoryProtocol,
         template_data: dict[str, Any],
@@ -69,10 +67,7 @@ class ProcessAcquisitionsRecords:
         batches = file_handling.LoadAllWorkflowFiles.execute(
             workflow_id=workflow_id, storage=storage, repo=file_repo
         )
-        marc_handler = marc.MarcServiceHandler(
-            parser=parsing_service.BibParser(rules=parsing_rules, handler=marc_parser),
-            updater=update_service.BibUpdater(handler=marc_updater, rules=update_rules),
-        )
+        marc_handler = marc.MarcServiceHandler(parser=parser, updater=updater)
         matcher = match_service.BibMatcher(fetcher)
         vendor = template_data.get("vendor", "UNKNOWN")
         for file_name, data in batches.items():
@@ -86,7 +81,7 @@ class ProcessAcquisitionsRecords:
                     record=bib, record_type="acq", template_data=template_data
                 )
                 report_data.append(analysis.to_dict())
-            processed = {"file_name": file_name, "records": marc_parser.write(records)}
+            processed = {"file_name": file_name, "records": parser.write(records)}
             out_batches.append(processed)
         saved_batch = batch_handling.SaveProcessedFileBatch.execute(
             batch_data=out_batches,
@@ -105,10 +100,8 @@ class ProcessCatalogingRecords:
         workflow_id: str,
         storage: ports.FileStorage,
         fetcher: ports.BibFetcher,
-        marc_updater: ports.MarcUpdaterPort,
-        marc_parser: ports.MarcParserPort,
-        update_rules: update_service.UpdateRules,
-        parsing_rules: parsing_service.ParsingRules,
+        updater: update_service.BibUpdater,
+        parser: parsing_service.BibParser,
         repo: ports.SqlRepositoryProtocol,
         file_repo: ports.SqlRepositoryProtocol,
     ) -> dict[str, Any]:
@@ -144,10 +137,7 @@ class ProcessCatalogingRecords:
         )
         file_names = list(batches.keys())
         content = list(batches.values())
-        marc_handler = marc.MarcServiceHandler(
-            parser=parsing_service.BibParser(rules=parsing_rules, handler=marc_parser),
-            updater=update_service.BibUpdater(handler=marc_updater, rules=update_rules),
-        )
+        marc_handler = marc.MarcServiceHandler(parser=parser, updater=updater)
         records = marc_handler.parse_and_validate_incoming(data=content)
         barcodes = marc_handler.extract_barcodes(records)
         matcher = match_service.BibMatcher(fetcher)
@@ -160,11 +150,11 @@ class ProcessCatalogingRecords:
         missing_barcodes = marc_handler.validate_output(
             barcodes=barcodes, processed_recs=records
         )
-        reviewer = review_service.BibReviewer(handler=marc_updater)
+        reviewer = review_service.BibReviewer(handler=updater.handler)
         deduplicated = reviewer.deduplicate(records=records)
         file_name = datetime.datetime.today().strftime("%y%m%d")
         files = [
-            {"file_name": f"{file_name}-{k}.mrc", "records": marc_parser.write(v)}
+            {"file_name": f"{file_name}-{k}.mrc", "records": parser.write(v)}
             for k, v in deduplicated.items()
         ]
         saved_batch = batch_handling.SaveProcessedFileBatch.execute(
@@ -185,10 +175,8 @@ class ProcessSelectionRecords:
         workflow_id: str,
         storage: ports.FileStorage,
         fetcher: ports.BibFetcher,
-        marc_updater: ports.MarcUpdaterPort,
-        marc_parser: ports.MarcParserPort,
-        update_rules: update_service.UpdateRules,
-        parsing_rules: parsing_service.ParsingRules,
+        updater: update_service.BibUpdater,
+        parser: parsing_service.BibParser,
         matchpoints: dict[str, str],
         repo: ports.SqlRepositoryProtocol,
         template_data: dict[str, Any],
@@ -230,10 +218,7 @@ class ProcessSelectionRecords:
         batches = file_handling.LoadAllWorkflowFiles.execute(
             workflow_id=workflow_id, storage=storage, repo=file_repo
         )
-        marc_handler = marc.MarcServiceHandler(
-            parser=parsing_service.BibParser(rules=parsing_rules, handler=marc_parser),
-            updater=update_service.BibUpdater(handler=marc_updater, rules=update_rules),
-        )
+        marc_handler = marc.MarcServiceHandler(parser=parser, updater=updater)
         matcher = match_service.BibMatcher(fetcher)
         vendor = template_data.get("vendor", "UNKNOWN")
         for file_name, data in batches.items():
@@ -247,7 +232,7 @@ class ProcessSelectionRecords:
                     record=bib, record_type="sel", template_data=template_data
                 )
                 report_data.append(analysis.to_dict())
-            processed = {"file_name": file_name, "records": marc_parser.write(records)}
+            processed = {"file_name": file_name, "records": parser.write(records)}
             out_batches.append(processed)
         saved_batch = batch_handling.SaveProcessedFileBatch.execute(
             batch_data=out_batches,

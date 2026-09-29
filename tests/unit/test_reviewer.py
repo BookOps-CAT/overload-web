@@ -4,8 +4,8 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Subfield
 
-from overload_web.application.pvf import review_service
 from overload_web.domain import shared
+from overload_web.domain.pvf import review_service
 from overload_web.infrastructure import marc_handler
 
 

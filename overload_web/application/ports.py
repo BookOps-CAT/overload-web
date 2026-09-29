@@ -284,9 +284,9 @@ class SqlRepositoryProtocol(Protocol[T]):
 class UnitOfWorkProtocol(Protocol):
     """Protocol defining the Unit of Work for database transactions."""
 
-    batch_repo: SqlRepositoryProtocol
-    file_repo: SqlRepositoryProtocol
-    job_repo: WorkflowRepositoryProtocol
+    processed_batches: SqlRepositoryProtocol
+    incoming_files: SqlRepositoryProtocol
+    workflow_jobs: WorkflowRepositoryProtocol
 
     def __enter__(self) -> UnitOfWorkProtocol: ...
 

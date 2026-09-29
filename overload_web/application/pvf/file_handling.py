@@ -83,7 +83,7 @@ class UploadFileToWorkflow:
         file_id = str(uuid.uuid4())
         reference = storage.save(id=file_id, filename=filename, content=content)
         with uow:
-            job = uow.job_repo.get(workflow_id)
+            job = uow.workflow_jobs.get(workflow_id)
 
             if not job:
                 logger.info(
@@ -95,7 +95,7 @@ class UploadFileToWorkflow:
                     status=workflow.JobStatus.DRAFT,
                     record_type=record_type,
                 )
-                uow.job_repo.save(job)
+                uow.workflow_jobs.save(job)
 
             file = files.IncomingFile(
                 id=file_id,
@@ -104,12 +104,12 @@ class UploadFileToWorkflow:
                 source=source,
                 reference=reference,
             )
-            uow.file_repo.save(file)
+            uow.incoming_files.save(file)
             logger.info(f"File added to workflow {workflow_id}: {file}.")
 
             uow.commit()
 
-        return uow.file_repo.list_by_id(workflow_id)
+        return uow.incoming_files.list_by_id(workflow_id)
 
 
 class LoadAllWorkflowFiles:

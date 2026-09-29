@@ -28,7 +28,7 @@ class SaveNewOrderTemplate:
             The saved template as an `OrderTemplate` domain object.
         """
         with uow:
-            save_template = uow.template_repo.save(obj=obj)
+            save_template = uow.order_templates.save(obj=obj)
             return order_templates.OrderTemplate(**save_template)
 
 
@@ -48,7 +48,7 @@ class GetOrderTemplate:
             The retrieved template as a `OrderTemplate` object or None.
         """
         with uow:
-            data = uow.template_repo.get(id=template_id)
+            data = uow.order_templates.get(id=template_id)
             if data:
                 return order_templates.OrderTemplate(**data)
         return None
@@ -71,7 +71,7 @@ class ListOrderTemplates:
             A list of `OrderTemplate` objects.
         """
         with uow:
-            template_list = uow.template_repo.list(offset=offset, limit=limit)
+            template_list = uow.order_templates.list(offset=offset, limit=limit)
             return [order_templates.OrderTemplate(**i) for i in template_list]
 
 
@@ -95,7 +95,7 @@ class UpdateOrderTemplate:
             does not exist.
         """
         with uow:
-            data = uow.template_repo.update(id=template_id, data=obj)
+            data = uow.order_templates.update(id=template_id, data=obj)
             if data:
                 return order_templates.OrderTemplate(**data)
         return None

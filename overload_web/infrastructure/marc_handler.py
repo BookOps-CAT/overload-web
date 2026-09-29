@@ -24,11 +24,13 @@ from __future__ import annotations
 
 import io
 import logging
-from typing import Any, BinaryIO, Protocol
+from typing import Any, BinaryIO, Protocol, Sequence
 
 from bookops_marc import Bib, SierraBibReader
 from bookops_marc.models import Order
 from pymarc import Field, Indicators, Subfield
+
+from overload_web.domain.pvf import ports
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +47,7 @@ class TargetProtocol(Protocol):
     value: str
 
 
-class MarcUpdater:
+class MarcUpdater(ports.MarcUpdaterPort):
     """Interacts with binary MARC data using `bookops_marc`."""
 
     def _find_specific_field(self, bib: Bib, target: TargetProtocol) -> Field | None:
@@ -110,7 +112,7 @@ class MarcUpdater:
         bib.leader = leader[:9] + "a" + leader[10:]
 
 
-class MarcParser:
+class MarcParser(ports.MarcParserPort):
     """Interacts with binary MARC data using `bookops_marc`."""
 
     def compare_mapped_tags(self, obj: Bib, tags: dict[str, dict[str, str]]) -> bool:
@@ -230,7 +232,7 @@ class MarcParser:
                     out[attr] = field.get(code) if field else None
         return out
 
-    def write(self, records: list[DomainBibProtocol]) -> bytes:
+    def write(self, records: Sequence[DomainBibProtocol]) -> bytes:
         """
         Serialize `DomainBib` objects into a binary MARC stream.
 

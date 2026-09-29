@@ -12,6 +12,7 @@ from pydantic import BaseModel, field_validator, model_validator
 from sqlmodel import Session as Session
 from sqlmodel import SQLModel, create_engine
 
+from overload_web.domain.pvf import match_service, parsing_service, update_service
 from overload_web.infrastructure import (
     batch_db,
     file_io,
@@ -85,23 +86,6 @@ class MatchpointsModel(BaseModel):
             secondary_matchpoint=secondary_matchpoint,
             tertiary_matchpoint=tertiary_matchpoint,
         )
-
-
-class MarcParsingRulesModel(BaseModel):
-    bib_mapping: dict[str, Any]
-    collection: str | None
-    library: str
-    order_mapping: dict[str, Any]
-    record_type: str
-    vendor_mapping: dict[str, Any]
-
-
-class MarcUpdateRulesModel(BaseModel):
-    bib_id_tag: str
-    collection: str | None
-    default_loc: str | None
-    library: str
-    order_mapping: dict[str, Any]
 
 
 class TemplateDataModel(BaseModel):
@@ -408,37 +392,6 @@ def get_marc_updater() -> Generator[marc_handler.MarcUpdater, None, None]:
     yield marc_handler.MarcUpdater()
 
 
-def get_marc_update_rules(
-    context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
-) -> MarcUpdateRulesModel:
-    with open("overload_web/data/update_rules.json", "r", encoding="utf-8") as fh:
-        constants = json.load(fh)
-    return MarcUpdateRulesModel(
-        order_mapping=constants["order_mapping"],
-        default_loc=constants["default_locations"][context.library].get(
-            context.collection
-        ),
-        bib_id_tag=constants["bib_id_tag"][context.library],
-        library=context.library,
-        collection=context.collection,
-    )
-
-
-def get_marc_parsing_rules(
-    context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
-) -> MarcParsingRulesModel:
-    with open("overload_web/data/parsing_rules.json", "r", encoding="utf-8") as fh:
-        constants = json.load(fh)
-    return MarcParsingRulesModel(
-        bib_mapping=constants["bib_mapping"],
-        library=context.library,
-        collection=context.collection,
-        record_type=context.record_type,
-        order_mapping=constants["order_mapping"],
-        vendor_mapping=constants["vendor_mapping"],
-    )
-
-
 def get_marc_parser() -> Generator[marc_handler.MarcParser, None, None]:
     """Create a `MarcParser` service with injected dependencies."""
     yield marc_handler.MarcParser()
@@ -488,3 +441,47 @@ def get_uow(engine: Any = Depends(get_engine)) -> unit_of_work.SqlModelUnitOfWor
     used in a context manager, making it safe to pass to BackgroundTasks.
     """
     return unit_of_work.SqlModelUnitOfWork(engine=engine)
+
+
+def get_matcher(
+    library: Annotated[str, Form(...)],
+) -> Generator[match_service.BibMatcher, None, None]:
+    """Create a Sierra bib fetcher service for a library."""
+    fetcher = sierra_clients.FetcherFactory.make(library)
+    yield match_service.BibMatcher(fetcher=fetcher)
+
+
+def get_parser(
+    context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
+) -> Generator[parsing_service.BibParser, None, None]:
+    """Create a Sierra bib fetcher service for a library."""
+    with open("overload_web/data/parsing_rules.json", "r", encoding="utf-8") as fh:
+        constants = json.load(fh)
+    parser = marc_handler.MarcParser()
+    yield parsing_service.BibParser(
+        handler=parser,
+        bib_mapping=constants["bib_mapping"],
+        library=context.library,
+        collection=context.collection,
+        record_type=context.record_type,
+        order_mapping=constants["order_mapping"],
+        vendor_mapping=constants["vendor_mapping"],
+    )
+
+
+def get_updater(
+    context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
+) -> Generator[update_service.BibUpdater, None, None]:
+    """Create a Sierra bib fetcher service for a library."""
+    with open("overload_web/data/update_rules.json", "r", encoding="utf-8") as fh:
+        constants = json.load(fh)
+    updater = marc_handler.MarcUpdater()
+    yield update_service.BibUpdater(
+        handler=updater,
+        bib_id_tag=constants["bib_id_tag"][context.library],
+        library=context.library,
+        order_mapping=constants["order_mapping"],
+        default_loc=constants["default_locations"][context.library].get(
+            context.collection
+        ),
+    )

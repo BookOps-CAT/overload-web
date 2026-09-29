@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from typing import Any
 
 from overload_web.domain.pvf import marc_rules, models, ports
@@ -11,22 +10,20 @@ from overload_web.domain.pvf import marc_rules, models, ports
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class UpdateRules:
-    bib_id_tag: str
-    collection: str | None
-    default_loc: str | None
-    library: str
-    order_mapping: dict[str, Any]
-
-
 class BibUpdater:
-    def __init__(self, handler: ports.MarcUpdaterPort, rules: UpdateRules) -> None:
-        self.bib_id_tag = rules.bib_id_tag
-        self.default_loc = rules.default_loc
+    def __init__(
+        self,
+        handler: ports.MarcUpdaterPort,
+        bib_id_tag: str,
+        default_loc: str | None,
+        library: str,
+        order_mapping: dict[str, Any],
+    ) -> None:
+        self.bib_id_tag = bib_id_tag
+        self.default_loc = default_loc
         self.handler = handler
-        self.library = rules.library
-        self.order_mapping = rules.order_mapping
+        self.library = library
+        self.order_mapping = order_mapping
 
     def apply_field_updates(
         self, record: models.DomainBib, updates: list[marc_rules.MarcFieldUpdateValues]

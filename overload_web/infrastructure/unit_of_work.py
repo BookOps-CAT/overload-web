@@ -18,10 +18,10 @@ class SqlModelUnitOfWork:
 
     def __enter__(self):
         self.session = Session(self.engine)
-        self.batch_repo = batch_db.PVFBatchRepository(session=self.session)
-        self.file_repo = file_io.IncomingFileRepository(session=self.session)
-        self.job_repo = workflow_db.WorkflowJobRepository(session=self.session)
-        self.template_repo = template_db.OrderTemplateRepository(session=self.session)
+        self.processed_batches = batch_db.PVFBatchRepository(session=self.session)
+        self.incoming_files = file_io.IncomingFileRepository(session=self.session)
+        self.workflow_jobs = workflow_db.WorkflowJobRepository(session=self.session)
+        self.order_templates = template_db.OrderTemplateRepository(session=self.session)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
