@@ -9,8 +9,7 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import Any
 
-from overload_web.application import ports
-from overload_web.domain.pvf import models
+from overload_web.domain.pvf import models, ports
 
 logger = logging.getLogger(__name__)
 

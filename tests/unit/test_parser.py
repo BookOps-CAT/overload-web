@@ -4,7 +4,7 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.application.pvf import parsing_service
+from overload_web.domain.pvf import parsing_service
 from overload_web.infrastructure import marc_handler
 
 

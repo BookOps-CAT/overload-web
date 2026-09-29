@@ -1,6 +1,6 @@
 import pytest
 
-from overload_web.application.pvf import match_service
+from overload_web.domain.pvf import match_service
 
 
 @pytest.fixture

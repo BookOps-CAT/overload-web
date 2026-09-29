@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from overload_web.application.pvf import parsing_service, update_service
-from overload_web.domain.pvf import models
+from overload_web.domain.pvf import models, parsing_service, update_service
 
 logger = logging.getLogger(__name__)
 

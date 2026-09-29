@@ -10,8 +10,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from overload_web.application import ports
-from overload_web.domain.pvf import matching, models
+from overload_web.domain.pvf import matching, models, ports
 
 logger = logging.getLogger(__name__)
 

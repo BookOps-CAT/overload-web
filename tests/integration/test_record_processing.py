@@ -1,12 +1,12 @@
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
 
-from overload_web.application.pvf import parsing_service, update_service
 from overload_web.application.pvf.process import (
     ProcessAcquisitionsRecords,
     ProcessCatalogingRecords,
     ProcessSelectionRecords,
 )
+from overload_web.domain.pvf import parsing_service, update_service
 from overload_web.infrastructure import batch_db, file_io, marc_handler
 
 

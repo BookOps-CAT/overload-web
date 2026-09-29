@@ -5,9 +5,8 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.application.pvf import update_service
 from overload_web.domain import shared
-from overload_web.domain.pvf import marc_rules, models
+from overload_web.domain.pvf import marc_rules, models, update_service
 from overload_web.infrastructure import marc_handler
 
 
