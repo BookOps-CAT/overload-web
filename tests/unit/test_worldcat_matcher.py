@@ -3,8 +3,8 @@ import copy
 import pytest
 from bookops_worldcat.errors import BookopsWorldcatError
 
-from overload_web.application.wc2s import match, oclc_matcher
-from overload_web.domain.wc2s import worldcat
+from overload_web.application.wc2s import match
+from overload_web.domain.wc2s import oclc_matcher, worldcat
 from overload_web.infrastructure import marc_handler, oclc
 
 

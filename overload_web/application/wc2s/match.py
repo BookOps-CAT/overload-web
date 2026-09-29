@@ -4,8 +4,7 @@ import logging
 from typing import Any
 
 from overload_web.application import ports
-from overload_web.application.wc2s import oclc_matcher
-from overload_web.domain.wc2s import worldcat
+from overload_web.domain.wc2s import oclc_matcher, worldcat
 
 logger = logging.getLogger(__name__)
 

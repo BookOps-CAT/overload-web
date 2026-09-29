@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from overload_web.application import ports
-from overload_web.domain.wc2s import worldcat
+from overload_web.domain.wc2s import ports, worldcat
 
 logger = logging.getLogger(__name__)
 
