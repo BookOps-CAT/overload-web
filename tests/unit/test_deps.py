@@ -1,5 +1,4 @@
 import pytest
-from sqlmodel import Session, create_engine
 
 from overload_web.presentation import deps
 
@@ -13,14 +12,6 @@ def mock_storage(monkeypatch):
 
 
 class TestDeps:
-    def test_get_session(self):
-        engine = create_engine("sqlite:///:memory:")
-        deps.create_db_and_tables(engine)
-        session = deps.get_session(engine)
-        assert isinstance(next(session), Session)
-        session.close()
-        engine.dispose()
-
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_get_fetcher(self, mock_sierra_session, library):
         fetcher_generator = deps.get_fetcher(library=library)

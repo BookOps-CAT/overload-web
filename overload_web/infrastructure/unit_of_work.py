@@ -6,7 +6,7 @@ import logging
 
 from sqlmodel import Session
 
-from overload_web.infrastructure import batch_db, file_io, template_db, workflow_db
+from overload_web.infrastructure import batch_db, file_io, template_db
 
 logger = logging.getLogger(__name__)
 
@@ -18,10 +18,9 @@ class SqlModelUnitOfWork:
 
     def __enter__(self):
         self.session = Session(self.engine)
-        self.processed_batches = batch_db.PVFBatchRepository(session=self.session)
         self.incoming_files = file_io.IncomingFileRepository(session=self.session)
-        self.workflow_jobs = workflow_db.WorkflowJobRepository(session=self.session)
         self.order_templates = template_db.OrderTemplateRepository(session=self.session)
+        self.processed_batches = batch_db.PVFBatchRepository(session=self.session)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

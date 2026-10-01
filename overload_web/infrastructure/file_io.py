@@ -4,8 +4,8 @@ Local and FTP/SFTP file I/O implementations for Overload.
 This module contains classes to load files from and write files to local
 directories and remote FTP/SFTP servers. The classes that interact with remote
 directories within this module use the BookOps/file-retriever library.
-The classes within this module are concrete implementations of the `FileRetriever` and
-`FileWriter` protocols within the domain model.
+The classes within this module are concrete implementations of the `FileRetriever`,
+`FileStorage` and `FileWriter` protocols within the domain model.
 """
 
 from __future__ import annotations
@@ -143,7 +143,7 @@ class IncomingFileRepository:
         """
         statement = select(IncomingFileModel).where(IncomingFileModel.id == id)
         results = self.session.exec(statement)
-        file = results.one()
+        file = results.one_or_none()
         self.session.delete(file)
 
     def list_by_id(self, id: str | int) -> Sequence[dict[str, Any]]:

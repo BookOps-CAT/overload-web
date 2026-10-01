@@ -1,32 +1,20 @@
 import pytest
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import SQLModel, create_engine
 
 from overload_web.application.pvf.process import (
     ProcessAcquisitionsRecords,
     ProcessCatalogingRecords,
     ProcessSelectionRecords,
 )
-from overload_web.domain.pvf import parsing_service, update_service
-from overload_web.infrastructure import batch_db, file_io, marc_handler
+from overload_web.domain.pvf import match_service, parsing_service, update_service
+from overload_web.infrastructure import file_io, marc_handler, unit_of_work
 
 
 @pytest.fixture(scope="class")
-def stub_repo():
+def stub_uow():
     test_engine = create_engine("sqlite:///:memory:")
     SQLModel.metadata.create_all(test_engine)
-    with Session(test_engine) as session:
-        yield batch_db.PVFBatchRepository(session=session)
-    session.close()
-    test_engine.dispose()
-
-
-@pytest.fixture(scope="class")
-def stub_file_repo():
-    test_engine = create_engine("sqlite:///:memory:")
-    SQLModel.metadata.create_all(test_engine)
-    with Session(test_engine) as session:
-        yield file_io.IncomingFileRepository(session=session)
-    session.close()
+    yield unit_of_work.SqlModelUnitOfWork(engine=test_engine)
     test_engine.dispose()
 
 
@@ -41,7 +29,7 @@ def missing_barcodes(monkeypatch):
 
 
 @pytest.fixture
-def marc_stubs(monkeypatch):
+def marc_stubs(monkeypatch, mocker, tmp_path):
     def bytes_response(*args, **kwargs):
         return b""
 
@@ -54,9 +42,12 @@ def marc_stubs(monkeypatch):
     def fake_file_reference(*args, **kwargs):
         return [{"filename": "foo.mrc", "reference": "bar"}]
 
-    def fake_files(*args, **kwargs):
-        return b""
+    def fake_path(*args, **kwargs):
+        return tmp_path / "uploads"
 
+    mock_read = mocker.mock_open(read_data=b"")
+    mocker.patch("overload_web.infrastructure.file_io.open", mock_read)
+    monkeypatch.setattr("pathlib.Path.mkdir", fake_path)
     monkeypatch.setattr(parsing_service.BibParser, "combine_marc_files", bytes_response)
     monkeypatch.setattr(marc_handler.MarcParser, "write", bytes_response)
     monkeypatch.setattr(update_service.BibUpdater, "get_cat_updates", fake_updates)
@@ -64,7 +55,6 @@ def marc_stubs(monkeypatch):
     monkeypatch.setattr(
         file_io.IncomingFileRepository, "list_by_id", fake_file_reference
     )
-    monkeypatch.setattr(file_io.LocalFileStorage, "load", fake_files)
 
 
 @pytest.fixture(params=[("nypl", "BL"), ("nypl", "RL"), ("bpl", None)])
@@ -114,6 +104,11 @@ def stub_parsing_service():
     )
 
 
+@pytest.fixture
+def fake_matcher(fake_fetcher):
+    return match_service.BibMatcher(fetcher=fake_fetcher)
+
+
 class FakeMarcParser:
     def __init__(self) -> None:
         self.library = "foo"
@@ -132,24 +127,22 @@ class TestProcessCommands:
     @pytest.mark.workflow(record_type="cat")
     def test_cat_service_process_vendor_file(
         self,
-        fake_fetcher,
-        stub_repo,
+        fake_matcher,
         caplog,
         mock_marc,
         tmp_path,
-        stub_file_repo,
         stub_update_service,
         stub_parsing_service,
+        stub_uow,
     ):
         path = tmp_path / "temp"
         out = ProcessCatalogingRecords.execute(
             workflow_id=1,
             updater=stub_update_service,
             parser=stub_parsing_service,
-            fetcher=fake_fetcher,
-            repo=stub_repo,
+            matcher=fake_matcher,
             storage=file_io.LocalFileStorage(base_path=path),
-            file_repo=stub_file_repo,
+            uow=stub_uow,
         )
         assert out["id"] is not None
         assert "Integrity validation: True, missing_barcodes: []" in [
@@ -159,25 +152,23 @@ class TestProcessCommands:
     @pytest.mark.workflow(record_type="cat")
     def test_cat_service_process_vendor_file_missing_barcodes(
         self,
-        fake_fetcher,
-        stub_repo,
+        fake_matcher,
         missing_barcodes,
         caplog,
         mock_marc,
         tmp_path,
-        stub_file_repo,
         stub_update_service,
         stub_parsing_service,
+        stub_uow,
     ):
         path = tmp_path / "temp"
         out = ProcessCatalogingRecords.execute(
             workflow_id=1,
             updater=stub_update_service,
             parser=stub_parsing_service,
-            fetcher=fake_fetcher,
-            repo=stub_repo,
+            matcher=fake_matcher,
             storage=file_io.LocalFileStorage(base_path=path),
-            file_repo=stub_file_repo,
+            uow=stub_uow,
         )
         assert out["id"] is not None
         assert "Integrity validation: False, missing_barcodes: ['333330987654321']" in [
@@ -190,61 +181,56 @@ class TestProcessCommands:
     @pytest.mark.workflow(record_type="sel")
     def test_sel_service_process_vendor_file(
         self,
-        fake_fetcher,
-        stub_repo,
+        fake_matcher,
         mock_marc,
         tmp_path,
-        stub_file_repo,
         stub_update_service,
         stub_parsing_service,
+        stub_uow,
     ):
         path = tmp_path / "temp"
         out = ProcessSelectionRecords.execute(
-            {"foo.mrc": b""},
-            fetcher=fake_fetcher,
+            workflow_id=1,
+            matcher=fake_matcher,
             updater=stub_update_service,
             parser=stub_parsing_service,
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
-            repo=stub_repo,
             storage=file_io.LocalFileStorage(base_path=path),
-            file_repo=stub_file_repo,
+            uow=stub_uow,
         )
         assert out["id"] is not None
 
     @pytest.mark.workflow(record_type="acq")
     def test_acq_service_process_vendor_file(
         self,
-        fake_fetcher,
-        stub_repo,
+        fake_matcher,
         mock_marc,
         tmp_path,
-        stub_file_repo,
         stub_update_service,
         stub_parsing_service,
+        stub_uow,
     ):
         path = tmp_path / "temp"
         out = ProcessAcquisitionsRecords.execute(
-            {"foo.mrc": b""},
+            workflow_id=1,
             updater=stub_update_service,
             parser=stub_parsing_service,
-            fetcher=fake_fetcher,
+            matcher=fake_matcher,
             template_data={"format": "a", "vendor": "UNKNOWN"},
             matchpoints={"primary_matchpoint": "isbn"},
-            repo=stub_repo,
             storage=file_io.LocalFileStorage(base_path=path),
-            file_repo=stub_file_repo,
+            uow=stub_uow,
         )
         assert out["id"] is not None
 
     @pytest.mark.workflow(record_type="cat")
     def test_cat_service_process_vendor_file_dupes(
         self,
-        fake_fetcher,
-        stub_repo,
+        fake_matcher,
+        stub_uow,
         mock_marc_dupes,
         tmp_path,
-        stub_file_repo,
         stub_update_service,
         stub_parsing_service,
     ):
@@ -254,61 +240,56 @@ class TestProcessCommands:
                 workflow_id=1,
                 updater=stub_update_service,
                 parser=stub_parsing_service,
-                fetcher=fake_fetcher,
-                repo=stub_repo,
+                matcher=fake_matcher,
                 storage=file_io.LocalFileStorage(base_path=path),
-                file_repo=stub_file_repo,
+                uow=stub_uow,
             )
         assert "Duplicate barcodes found in file: " in str(exc.value)
 
     @pytest.mark.workflow(record_type="acq")
     def test_acq_service_process_vendor_file_dupes(
         self,
-        fake_fetcher,
-        stub_repo,
+        fake_matcher,
         mock_marc_dupes,
         tmp_path,
-        stub_file_repo,
         stub_update_service,
         stub_parsing_service,
+        stub_uow,
     ):
         path = tmp_path / "temp"
         with pytest.raises(ValueError) as exc:
             ProcessAcquisitionsRecords.execute(
-                {"foo.mrc": b""},
-                fetcher=fake_fetcher,
+                workflow_id=1,
+                matcher=fake_matcher,
                 template_data={"format": "a"},
                 matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
-                repo=stub_repo,
                 updater=stub_update_service,
                 parser=stub_parsing_service,
                 storage=file_io.LocalFileStorage(base_path=path),
-                file_repo=stub_file_repo,
+                uow=stub_uow,
             )
         assert "Duplicate barcodes found in file: " in str(exc.value)
 
     @pytest.mark.workflow(record_type="sel")
     def test_sel_service_process_vendor_file_dupes(
         self,
-        fake_fetcher,
-        stub_repo,
+        fake_matcher,
         mock_marc_dupes,
         tmp_path,
-        stub_file_repo,
         stub_update_service,
         stub_parsing_service,
+        stub_uow,
     ):
         path = tmp_path / "temp"
         with pytest.raises(ValueError) as exc:
             ProcessSelectionRecords.execute(
-                {"foo.mrc": b""},
-                fetcher=fake_fetcher,
+                workflow_id=1,
+                matcher=fake_matcher,
                 template_data={"format": "a"},
                 matchpoints={"primary_matchpoint": "isbn", "vendor": "UNKNOWN"},
-                repo=stub_repo,
                 updater=stub_update_service,
                 parser=stub_parsing_service,
                 storage=file_io.LocalFileStorage(base_path=path),
-                file_repo=stub_file_repo,
+                uow=stub_uow,
             )
         assert "Duplicate barcodes found in file: " in str(exc.value)

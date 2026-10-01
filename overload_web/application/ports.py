@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from types import TracebackType
-from typing import Any, Iterator, Protocol, Sequence, TypeVar, runtime_checkable
+from typing import Any, Protocol, Sequence, TypeVar, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
@@ -12,34 +12,6 @@ T = TypeVar("T", contravariant=True)  # variable for contravariant `SQLModel` ty
 U = TypeVar("U")  # variable for invariant `SQLModel` type
 V = TypeVar("V", contravariant=True)  # variable for contravariant `DomainBib` type
 W = TypeVar("W")  # variable for invariant `bookops_marc.Bib` type
-
-
-@runtime_checkable
-class BibFetcher(Protocol):
-    """
-    Protocol for a service that searches Sierra for bib records based on an identifier.
-
-    This abstraction allows the `BibMatcher` to remain decoupled from any specific
-    data source or API. Implementations can include REST APIs, BPL's Solr service,
-    NYPL's Platform serivce, or other systems.
-    """
-
-    session: Any
-
-    def get_bibs_by_id(
-        self, value: str | int, key: str
-    ) -> list[dict[str, Any]]: ...  # pragma: no branch
-
-    """
-    Retrieve candidate bib records that match a key-value pair.
-
-    Args:
-        value: The identifier value to search by (eg. "9781234567890").
-        key: The field name corresponding to the identifier (eg. "isbn").
-
-    Returns:
-        a list of dictionaries representing candidate matches.
-    """
 
 
 @runtime_checkable
@@ -140,92 +112,6 @@ class FileWriter(Protocol):
 
 
 @runtime_checkable
-class MarcParserPort(Protocol[W]):
-    def compare_mapped_tags(
-        self, obj: W, tags: dict[str, dict[str, str]]
-    ) -> bool: ...  # pragma:no branch
-
-    """Match vendor tags from mapping to bib object."""
-
-    def create_bib_obj(self, data: bytes, library: str) -> W: ...  # pragma: no branch
-
-    """Instantiate a Bib object from binary data."""
-
-    def get_reader(
-        self, data: bytes, library: str
-    ) -> Iterator: ...  # pragma: no branch
-
-    """Instantiate an object that can read MARC binary as an iterator."""
-
-    def identify_vendor(
-        self, obj: W, mapping: dict[str, Any]
-    ) -> dict[str, Any]: ...  # pragma: no branch
-
-    """Determine the vendor who created a `bookops_marc.Bib` record."""
-
-    def map_bib_data(
-        self, obj: W, mapping: dict[str, Any]
-    ) -> dict[str, Any]: ...  # pragma: no branch
-
-    """Map an bib to a dictionary following a set of rules."""
-
-    def map_order_data(
-        self, obj: W, mapping: dict[str, Any]
-    ) -> dict[str, Any]: ...  # pragma: no branch
-
-    """Map an order to a dictionary following a set of rules."""
-
-    def write(self, records: list[V]) -> bytes: ...  # pragma:no branch
-
-    """Write `DomainBib` objects to single binary object."""
-
-
-@runtime_checkable
-class MarcUpdaterPort(Protocol[V, W]):
-    library: str
-    record_type: str
-    collection: str | None
-    config: dict[str, Any]
-
-    def create_bib_from_domain(self, record: V) -> W: ...  # pragma:no branch
-
-    """Create a `bookops_marc.Bib` object from a `DomainBib` object"""
-
-    def update_fields(
-        self, field_updates: list[Any], bib: W
-    ) -> None: ...  # pragma:no branch
-
-    """Update record in place"""
-
-    def update_leader_encoding(
-        self, leader: str, bib: W
-    ) -> None: ...  # pragma:no branch
-
-    """Update character encoding to unicode."""
-
-
-@runtime_checkable
-class OCLCBibFetcher(Protocol):
-    """Interface for interactions with OCLC Metadata/Search APIs."""
-
-    def get_brief_bibs_by_id(
-        self, params: dict[str, Any]
-    ) -> list[dict[str, Any]]: ...  # pragma: no branch
-
-    """Search for brief bib resource using specified parameters."""
-
-    def get_full_bib_by_id(self, value: str | int) -> bytes: ...  # pragma: no branch
-
-    """Retrieve for full MARC record as a bytes object for a given ID."""
-
-    def get_full_bib_json_by_id(
-        self, value: str
-    ) -> dict[str, Any]: ...  # pragma: no branch
-
-    """Retrieve for full MARC record as a json object for a given ID."""
-
-
-@runtime_checkable
 class ReportWriter(Protocol):
     """A protocol defining a service used to write report data."""
 
@@ -284,9 +170,9 @@ class SqlRepositoryProtocol(Protocol[T]):
 class UnitOfWorkProtocol(Protocol):
     """Protocol defining the Unit of Work for database transactions."""
 
-    processed_batches: SqlRepositoryProtocol
     incoming_files: SqlRepositoryProtocol
-    workflow_jobs: WorkflowRepositoryProtocol
+    order_templates: SqlRepositoryProtocol
+    processed_batches: SqlRepositoryProtocol
 
     def __enter__(self) -> UnitOfWorkProtocol: ...
 
@@ -299,25 +185,3 @@ class UnitOfWorkProtocol(Protocol):
 
     def commit(self) -> None: ...
     def rollback(self) -> None: ...
-
-
-class WorkflowRepositoryProtocol(Protocol[U]):
-    """
-    Interface for repository operations on workflow objects.
-
-    Includes methods for fetching and saving generic objects.
-    """
-
-    session: Any
-
-    def get(self, id: str) -> U: ...  # pragma: no branch
-
-    """Get objects from a database."""
-
-    def save(self, obj: U) -> str: ...  # pragma: no branch
-
-    """Save a new object to a database."""
-
-    def update(self, id: str, data: U) -> U: ...  # pragma: no branch
-
-    """Update an existing object in a database."""

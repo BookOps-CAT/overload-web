@@ -14,7 +14,6 @@ from sqlmodel import SQLModel, create_engine
 
 from overload_web.domain.pvf import match_service, parsing_service, update_service
 from overload_web.infrastructure import (
-    batch_db,
     file_io,
     marc_handler,
     oclc,
@@ -344,33 +343,8 @@ def create_db_and_tables(engine) -> None:
     SQLModel.metadata.create_all(engine)
 
 
-def get_session(engine: Any = Depends(get_engine)) -> Generator[Session, None, None]:
-    """Create a new database session with and `engine` injected via Depends.
-
-    FastAPI will treat `engine` as a dependency instead of a required
-    request parameter, avoiding 422 validation errors on endpoints
-    that depend on this session provider.
-    """
-    with Session(engine) as session:
-        yield session
-
-
-def pvf_batch_db(
-    session: Annotated[Any, Depends(get_session)],
-) -> Generator[batch_db.PVFBatchRepository, None, None]:
-    """Create an PVFBatch repository."""
-    yield batch_db.PVFBatchRepository(session=session)
-
-
-def incoming_file_db(
-    session: Annotated[Any, Depends(get_session)],
-) -> Generator[file_io.IncomingFileRepository, None, None]:
-    """Create an PVFBatch repository."""
-    yield file_io.IncomingFileRepository(session=session)
-
-
 def local_file_storage() -> file_io.LocalFileStorage:
-    return file_io.LocalFileStorage()
+    return file_io.LocalFileStorage(base_path="temp/uploads")
 
 
 def remote_file_retriever(
@@ -378,18 +352,6 @@ def remote_file_retriever(
 ) -> Generator[file_io.SFTPFileRetriever, None, None]:
     """Create an SFTP file retriever service."""
     yield file_io.SFTPFileRetriever.create_retriever_for_vendor(vendor=vendor)
-
-
-def get_fetcher(
-    library: Annotated[str, Form(...)],
-) -> Generator[sierra_clients.SierraBibFetcher, None, None]:
-    """Create a Sierra bib fetcher service for a library."""
-    yield sierra_clients.FetcherFactory.make(library)
-
-
-def get_marc_updater() -> Generator[marc_handler.MarcUpdater, None, None]:
-    """Create a `MarcUpdater` service with injected dependencies."""
-    yield marc_handler.MarcUpdater()
 
 
 def get_marc_parser() -> Generator[marc_handler.MarcParser, None, None]:
@@ -443,18 +405,22 @@ def get_uow(engine: Any = Depends(get_engine)) -> unit_of_work.SqlModelUnitOfWor
     return unit_of_work.SqlModelUnitOfWork(engine=engine)
 
 
-def get_matcher(
+def get_fetcher(
     library: Annotated[str, Form(...)],
-) -> Generator[match_service.BibMatcher, None, None]:
-    """Create a Sierra bib fetcher service for a library."""
-    fetcher = sierra_clients.FetcherFactory.make(library)
-    yield match_service.BibMatcher(fetcher=fetcher)
+) -> Generator[sierra_clients.SierraBibFetcher, None, None]:
+    """Create a SierraBibFetcher service for a library."""
+    yield sierra_clients.FetcherFactory.make(library)
+
+
+def get_matcher(fetcher: Any = Depends(get_fetcher)) -> match_service.BibMatcher:
+    """Create a BibMatcher service for a library."""
+    return match_service.BibMatcher(fetcher=fetcher)
 
 
 def get_parser(
     context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
 ) -> Generator[parsing_service.BibParser, None, None]:
-    """Create a Sierra bib fetcher service for a library."""
+    """Create a BibParser service for a library."""
     with open("overload_web/data/parsing_rules.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     parser = marc_handler.MarcParser()
@@ -472,7 +438,7 @@ def get_parser(
 def get_updater(
     context: Annotated[ProcessingContext, Depends(ProcessingContext.from_form)],
 ) -> Generator[update_service.BibUpdater, None, None]:
-    """Create a Sierra bib fetcher service for a library."""
+    """Create a BibUpdater service for a library."""
     with open("overload_web/data/update_rules.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     updater = marc_handler.MarcUpdater()

@@ -11,8 +11,8 @@ from fastapi.responses import HTMLResponse
 
 from overload_web.application.pvf.file_handling import (
     DeleteFileFromWorkflow,
+    DownloadRemoteFile,
     ListVendorFiles,
-    LoadVendorFile,
     UploadFileToWorkflow,
 )
 from overload_web.presentation import deps
@@ -56,7 +56,6 @@ def select_ftp_file(
     storage: Annotated[Any, Depends(deps.local_file_storage)],
     retriever: Annotated[Any, Depends(deps.remote_file_retriever)],
     workflow_id: Annotated[str, Form(...)],
-    record_type: Annotated[str, Form(...)],
     remote_file: Annotated[str, Form(...)],
 ):
     """
@@ -73,7 +72,7 @@ def select_ftp_file(
         the list of files wrapped in a `HTMLResponse` object
     """
     vendor_dir = os.environ[f"{retriever.client.name.upper()}_SRC"]
-    file_content = LoadVendorFile.execute(
+    file_content = DownloadRemoteFile.execute(
         name=remote_file, dir=vendor_dir, retriever=retriever
     )
     selected = UploadFileToWorkflow.execute(
@@ -82,7 +81,6 @@ def select_ftp_file(
         content=file_content.content,
         source="ftp",
         storage=storage,
-        record_type=record_type,
         uow=uow,
     )
     return request.app.state.templates.TemplateResponse(
@@ -98,7 +96,6 @@ def upload_file(
     file: UploadFile,
     uow: Annotated[Any, Depends(deps.get_uow)],
     storage: Annotated[Any, Depends(deps.local_file_storage)],
-    record_type: Annotated[str, Form(...)],
     workflow_id: Annotated[str, Form(...)],
 ):
     """
@@ -119,7 +116,6 @@ def upload_file(
         content=file.file.read(),
         source="local",
         storage=storage,
-        record_type=record_type,
         uow=uow,
     )
     logger.info(f"Current file list: {selected}")
@@ -133,7 +129,7 @@ def upload_file(
 @api_router.post("/remove", response_class=HTMLResponse)
 def remove_file(
     request: Request,
-    repository: Annotated[Any, Depends(deps.incoming_file_db)],
+    uow: Annotated[Any, Depends(deps.get_uow)],
     file_id: Annotated[str, Form(...)],
     workflow_id: Annotated[str, Form(...)],
 ):
@@ -149,7 +145,7 @@ def remove_file(
         the list of remaining files wrapped in a `HTMLResponse` object
     """
     selected = DeleteFileFromWorkflow.execute(
-        id=file_id, repo=repository, workflow_id=workflow_id
+        id=file_id, uow=uow, workflow_id=workflow_id
     )
     logger.info(f"Current file list: {selected}")
     return request.app.state.templates.TemplateResponse(

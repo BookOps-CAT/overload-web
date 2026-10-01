@@ -5,7 +5,7 @@ import uuid
 from typing import Any, Sequence
 
 from overload_web.application import ports
-from overload_web.domain.pvf import files, workflow
+from overload_web.domain.pvf import files
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class ListVendorFiles:
         return files
 
 
-class LoadVendorFile:
+class DownloadRemoteFile:
     @staticmethod
     def execute(
         name: str, dir: str, retriever: ports.FileRetriever
@@ -51,13 +51,12 @@ class UploadFileToWorkflow:
 
     @staticmethod
     def execute(
-        workflow_id: str,
-        filename: str,
         content: bytes,
+        filename: str,
         source: str,
         storage: ports.FileStorage,
         uow: ports.UnitOfWorkProtocol,
-        record_type: str,
+        workflow_id: str,
     ) -> Sequence[dict[str, Any]]:
         """Saves file data to storage and persists database metadata within a UoW.
 
@@ -83,20 +82,6 @@ class UploadFileToWorkflow:
         file_id = str(uuid.uuid4())
         reference = storage.save(id=file_id, filename=filename, content=content)
         with uow:
-            job = uow.workflow_jobs.get(workflow_id)
-
-            if not job:
-                logger.info(
-                    f"First file uploaded for workflow {workflow_id}. "
-                    f"Creating DRAFT WorkflowJob."
-                )
-                job = workflow.WorkflowJob(
-                    id=workflow_id,
-                    status=workflow.JobStatus.DRAFT,
-                    record_type=record_type,
-                )
-                uow.workflow_jobs.save(job)
-
             file = files.IncomingFile(
                 id=file_id,
                 workflow_id=workflow_id,
@@ -112,38 +97,10 @@ class UploadFileToWorkflow:
         return uow.incoming_files.list_by_id(workflow_id)
 
 
-class LoadAllWorkflowFiles:
-    @staticmethod
-    def execute(
-        workflow_id: str, storage: ports.FileStorage, repo: ports.SqlRepositoryProtocol
-    ) -> dict[str, bytes]:
-        """
-        Loads all files for a workflow.
-
-
-        Args:
-            workflow_id:
-                The id of the workflow whose files are to be loaded.
-            repo:
-                Concrete implementation of the `SqlRepositoryProtocol` for
-                handling vendor files.
-            storage:
-                Concrete implementation of the `FileStorage` for
-                handling vendor files.
-        Returns:
-            The list of dictionaries representing file names and content for workflow.
-        """
-        file_list = repo.list_by_id(workflow_id)
-        vendor_files = {i["filename"]: storage.load(i["reference"]) for i in file_list}
-
-        logger.info(f"Loading all files for workflow {workflow_id}: {vendor_files}.")
-        return vendor_files
-
-
 class DeleteFileFromWorkflow:
     @staticmethod
     def execute(
-        id: str, workflow_id: str, repo: ports.SqlRepositoryProtocol
+        id: str, workflow_id: str, uow: ports.UnitOfWorkProtocol
     ) -> Sequence[dict[str, Any]]:
         """
         Delete an incoming file from the workflow's list of files.
@@ -161,5 +118,7 @@ class DeleteFileFromWorkflow:
         Returns:
             The list of files remaining for the workflow as a list of dictionaries.
         """
-        repo.delete(id)
-        return repo.list_by_id(workflow_id)
+        with uow:
+            uow.incoming_files.delete(id)
+            files = uow.incoming_files.list_by_id(workflow_id)
+            return files

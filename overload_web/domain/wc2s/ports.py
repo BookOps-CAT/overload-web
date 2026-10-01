@@ -3,9 +3,18 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol, TypeVar, runtime_checkable
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T", covariant=True)  # variable for invariant `bookops_marc.Bib` type
+
+
+@runtime_checkable
+class MarcParserPort(Protocol[T]):
+    def create_bib_obj(self, data: bytes, library: str) -> T: ...  # pragma: no branch
+
+    """Instantiate a Bib object from binary data."""
 
 
 @runtime_checkable

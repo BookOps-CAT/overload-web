@@ -9,7 +9,7 @@ from overload_web.application.pvf import (
     report_service,
     template_handling,
 )
-from overload_web.domain.pvf import files, order_templates
+from overload_web.domain.pvf import files, match_service, order_templates
 from overload_web.main import app
 from overload_web.presentation import deps
 
@@ -25,7 +25,7 @@ def processed_records(monkeypatch):
 
 
 @pytest.fixture
-def mock_workflow_files(monkeypatch):
+def mock_files(monkeypatch):
     def fake_response(*args, **kwargs):
         response = {
             "filename": kwargs.get("filename"),
@@ -38,16 +38,13 @@ def mock_workflow_files(monkeypatch):
     def file_list(*args, **kwargs):
         return ["foo.mrc"]
 
-    def delete_file(*args, **kwargs):
-        return []
-
     def load_file(*args, **kwargs):
         return files.VendorFile(content=b"", file_name=kwargs.get("name"))
 
     monkeypatch.setattr(file_handling.UploadFileToWorkflow, "execute", fake_response)
     monkeypatch.setattr(file_handling.ListVendorFiles, "execute", file_list)
-    monkeypatch.setattr(file_handling.LoadVendorFile, "execute", load_file)
-    monkeypatch.setattr(file_handling.DeleteFileFromWorkflow, "execute", delete_file)
+    monkeypatch.setattr(file_handling.DownloadRemoteFile, "execute", load_file)
+    monkeypatch.setattr(file_handling.DeleteFileFromWorkflow, "execute", fake_response)
 
 
 @pytest.fixture
@@ -152,6 +149,10 @@ class FakeFileStorage:
         return b"foo"
 
 
+def fake_matcher():
+    yield match_service.BibMatcher(fetcher=FakeFetcher())
+
+
 def test_api_startup(monkeypatch):
     def fake_engine(*args, **kwargs):
         return create_engine("sqlite:///:memory:")
@@ -171,7 +172,7 @@ class TestApp:
     app.dependency_overrides[deps.local_file_storage] = FakeFileStorage
     base_url = client.base_url
 
-    def test_files_router_list_remote_files_get(self, mock_workflow_files):
+    def test_files_router_list_remote_files_get(self, mock_files):
         response = self.client.get("/files/remote/list?vendor=foo")
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/files/remote/list?vendor=foo"
@@ -181,7 +182,7 @@ class TestApp:
         assert response.context["files"] == ["foo.mrc"]
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_files_select_ftp_file(self, record_type, mock_workflow_files):
+    def test_files_select_ftp_file(self, record_type, mock_files):
         response = self.client.post(
             "/files/remote/select?vendor=foo",
             data={
@@ -198,7 +199,7 @@ class TestApp:
         assert response.context["files"][0]["source"] == "ftp"
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_files_upload_file(self, record_type, mock_workflow_files):
+    def test_files_upload_file(self, record_type, mock_files):
         response = self.client.post(
             "/files/upload",
             data={"workflow_id": 1, "vendor": None, "record_type": record_type},
@@ -211,14 +212,14 @@ class TestApp:
         assert response.context["files"][0]["filename"] == "baz.mrc"
         assert response.context["files"][0]["source"] == "local"
 
-    def test_files_remove_file(self, mock_workflow_files):
+    def test_files_remove_file(self, mock_files):
         response = self.client.post(
             "/files/remove", data={"workflow_id": 1, "file_id": 1}
         )
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/files/remove"
         assert sorted(list(response.context.keys())) == sorted(["files", "request"])
-        assert response.context["files"] == []
+        assert len(response.context["files"]) == 1
 
     def test_frontend_root_get(self):
         response = self.client.get("/")

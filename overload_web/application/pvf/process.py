@@ -1,15 +1,13 @@
 """Application serivce commands for the process vendor file service."""
 
-import datetime
 import logging
 from typing import Any
 
 from overload_web.application import ports
-from overload_web.application.pvf import batch_handling, file_handling, marc
 from overload_web.domain.pvf import (
+    aggregate,
     match_service,
     parsing_service,
-    review_service,
     update_service,
 )
 
@@ -21,15 +19,14 @@ class ProcessAcquisitionsRecords:
 
     @staticmethod
     def execute(
-        workflow_id: str,
-        storage: ports.FileStorage,
-        fetcher: ports.BibFetcher,
-        updater: update_service.BibUpdater,
-        parser: parsing_service.BibParser,
+        matcher: match_service.BibMatcher,
         matchpoints: dict[str, str],
-        repo: ports.SqlRepositoryProtocol,
+        parser: parsing_service.BibParser,
+        storage: ports.FileStorage,
         template_data: dict[str, Any],
-        file_repo: ports.SqlRepositoryProtocol,
+        updater: update_service.BibUpdater,
+        uow: ports.UnitOfWorkProtocol,
+        workflow_id: str,
     ) -> dict[str, Any]:
         """
         Process order-level MARC records.
@@ -61,35 +58,31 @@ class ProcessAcquisitionsRecords:
             A dictionary representing the processed files that were saved as a
             `ProcessedFileBatch` object in the db.
         """
-        out_batches = []
-        file_names = []
-        report_data = []
-        batches = file_handling.LoadAllWorkflowFiles.execute(
-            workflow_id=workflow_id, storage=storage, repo=file_repo
+        job = aggregate.AcquisitionJob(
+            workflow_id=workflow_id, vendor=template_data.get("vendor", "UNKNOWN")
         )
-        marc_handler = marc.MarcServiceHandler(parser=parser, updater=updater)
-        matcher = match_service.BibMatcher(fetcher)
-        vendor = template_data.get("vendor", "UNKNOWN")
-        for file_name, data in batches.items():
-            file_names.append(file_name)
-            records = marc_handler.parse_and_validate_incoming(data=data, vendor=vendor)
-            for bib in records:
-                matches = matcher.match_order_record(bib, matchpoints=matchpoints)
-                analysis = matcher.review_matches(bib=bib, matches=matches)
-                bib.apply_match(bib_id=analysis.target_bib_id, action=analysis.action)
-                marc_handler.apply_updates_by_record_type(
-                    record=bib, record_type="acq", template_data=template_data
-                )
-                report_data.append(analysis.to_dict())
-            processed = {"file_name": file_name, "records": parser.write(records)}
-            out_batches.append(processed)
-        saved_batch = batch_handling.SaveProcessedFileBatch.execute(
-            batch_data=out_batches,
-            file_names=file_names,
-            report_data=report_data,
-            repo=repo,
-        )
-        return saved_batch
+        with uow:
+            incoming_files = uow.incoming_files.list_by_id(workflow_id)
+            batches_data = {
+                i["filename"]: storage.load(i["reference"]) for i in incoming_files
+            }
+
+            logger.info(
+                f"Loading all files for workflow {workflow_id}: {batches_data}."
+            )
+            job.process(
+                batches_data=batches_data,
+                parser=parser,
+                matcher=matcher,
+                updater=updater,
+                matchpoints=matchpoints,
+                template_data=template_data,
+            )
+            processed_batch = job.create_batch()
+            db_batch = uow.processed_batches.save(processed_batch)
+            uow.commit()
+
+        return db_batch
 
 
 class ProcessCatalogingRecords:
@@ -97,13 +90,12 @@ class ProcessCatalogingRecords:
 
     @staticmethod
     def execute(
-        workflow_id: str,
-        storage: ports.FileStorage,
-        fetcher: ports.BibFetcher,
-        updater: update_service.BibUpdater,
+        matcher: match_service.BibMatcher,
         parser: parsing_service.BibParser,
-        repo: ports.SqlRepositoryProtocol,
-        file_repo: ports.SqlRepositoryProtocol,
+        updater: update_service.BibUpdater,
+        storage: ports.FileStorage,
+        uow: ports.UnitOfWorkProtocol,
+        workflow_id: str,
     ) -> dict[str, Any]:
         """
         Process a file of full MARC records.
@@ -131,40 +123,27 @@ class ProcessCatalogingRecords:
             A dictionary representing the processed files that were saved as a
             `ProcessedFileBatch` object in the db.
         """
-        report_data = []
-        batches = file_handling.LoadAllWorkflowFiles.execute(
-            workflow_id=workflow_id, storage=storage, repo=file_repo
-        )
-        file_names = list(batches.keys())
-        content = list(batches.values())
-        marc_handler = marc.MarcServiceHandler(parser=parser, updater=updater)
-        records = marc_handler.parse_and_validate_incoming(data=content)
-        barcodes = marc_handler.extract_barcodes(records)
-        matcher = match_service.BibMatcher(fetcher)
-        for bib in records:
-            matches = matcher.match_full_record(bib)
-            analysis = matcher.review_matches(bib=bib, matches=matches)
-            bib.apply_match(bib_id=analysis.target_bib_id, action=analysis.action)
-            marc_handler.apply_updates_by_record_type(record=bib, record_type="cat")
-            report_data.append(analysis.to_dict())
-        missing_barcodes = marc_handler.validate_output(
-            barcodes=barcodes, processed_recs=records
-        )
-        reviewer = review_service.BibReviewer(handler=updater.handler)
-        deduplicated = reviewer.deduplicate(records=records)
-        file_name = datetime.datetime.today().strftime("%y%m%d")
-        files = [
-            {"file_name": f"{file_name}-{k}.mrc", "records": parser.write(v)}
-            for k, v in deduplicated.items()
-        ]
-        saved_batch = batch_handling.SaveProcessedFileBatch.execute(
-            batch_data=files,
-            file_names=file_names,
-            report_data=report_data,
-            repo=repo,
-            missing_barcodes=missing_barcodes,
-        )
-        return saved_batch
+        job = aggregate.CatalogingJob(workflow_id=workflow_id)
+        with uow:
+            incoming_files = uow.incoming_files.list_by_id(workflow_id)
+            batches_data = {
+                i["filename"]: storage.load(i["reference"]) for i in incoming_files
+            }
+
+            logger.info(
+                f"Loading all files for workflow {workflow_id}: {batches_data}."
+            )
+            job.process(
+                batches_data=batches_data,
+                parser=parser,
+                matcher=matcher,
+                updater=updater,
+            )
+            processed_batch = job.create_batch()
+            db_batch = uow.processed_batches.save(processed_batch)
+            uow.commit()
+
+        return db_batch
 
 
 class ProcessSelectionRecords:
@@ -172,15 +151,14 @@ class ProcessSelectionRecords:
 
     @staticmethod
     def execute(
-        workflow_id: str,
-        storage: ports.FileStorage,
-        fetcher: ports.BibFetcher,
-        updater: update_service.BibUpdater,
-        parser: parsing_service.BibParser,
+        matcher: match_service.BibMatcher,
         matchpoints: dict[str, str],
-        repo: ports.SqlRepositoryProtocol,
+        parser: parsing_service.BibParser,
+        storage: ports.FileStorage,
         template_data: dict[str, Any],
-        file_repo: ports.SqlRepositoryProtocol,
+        updater: update_service.BibUpdater,
+        uow: ports.UnitOfWorkProtocol,
+        workflow_id: str,
     ) -> dict[str, Any]:
         """
         Process order-level MARC records.
@@ -212,32 +190,28 @@ class ProcessSelectionRecords:
             A dictionary representing the processed files that were saved as a
             `ProcessedFileBatch` object in the db.
         """
-        out_batches = []
-        file_names = []
-        report_data = []
-        batches = file_handling.LoadAllWorkflowFiles.execute(
-            workflow_id=workflow_id, storage=storage, repo=file_repo
+        job = aggregate.SelectionJob(
+            workflow_id=workflow_id, vendor=template_data.get("vendor", "UNKNOWN")
         )
-        marc_handler = marc.MarcServiceHandler(parser=parser, updater=updater)
-        matcher = match_service.BibMatcher(fetcher)
-        vendor = template_data.get("vendor", "UNKNOWN")
-        for file_name, data in batches.items():
-            file_names.append(file_name)
-            records = marc_handler.parse_and_validate_incoming(data=data, vendor=vendor)
-            for bib in records:
-                matches = matcher.match_order_record(bib, matchpoints=matchpoints)
-                analysis = matcher.review_matches(bib=bib, matches=matches)
-                bib.apply_match(bib_id=analysis.target_bib_id, action=analysis.action)
-                marc_handler.apply_updates_by_record_type(
-                    record=bib, record_type="sel", template_data=template_data
-                )
-                report_data.append(analysis.to_dict())
-            processed = {"file_name": file_name, "records": parser.write(records)}
-            out_batches.append(processed)
-        saved_batch = batch_handling.SaveProcessedFileBatch.execute(
-            batch_data=out_batches,
-            file_names=file_names,
-            report_data=report_data,
-            repo=repo,
-        )
-        return saved_batch
+        with uow:
+            incoming_files = uow.incoming_files.list_by_id(workflow_id)
+            batches_data = {
+                i["filename"]: storage.load(i["reference"]) for i in incoming_files
+            }
+
+            logger.info(
+                f"Loading all files for workflow {workflow_id}: {batches_data}."
+            )
+            job.process(
+                batches_data=batches_data,
+                parser=parser,
+                matcher=matcher,
+                updater=updater,
+                matchpoints=matchpoints,
+                template_data=template_data,
+            )
+            processed_batch = job.create_batch()
+            db_batch = uow.processed_batches.save(processed_batch)
+            uow.commit()
+
+        return db_batch

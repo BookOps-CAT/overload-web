@@ -1,12 +1,12 @@
 import pytest
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import SQLModel, create_engine
 
 from overload_web.application.pvf.report_service import (
     CreatePVFOutputReport,
     GetDetailedReportData,
     WriteOutputReport,
 )
-from overload_web.infrastructure import batch_db, reporter
+from overload_web.infrastructure import batch_db, reporter, unit_of_work
 
 
 class MockResource:
@@ -40,66 +40,82 @@ def mock_sheet_service(monkeypatch) -> None:
     monkeypatch.setattr(reporter.GoogleSheetsReporter, "configure_sheet", mock_creds)
 
 
-@pytest.fixture(scope="class")
-def test_session():
-    batches = [
-        batch_db.PVFBatch(
+@pytest.fixture
+def mock_stats():
+    return {
+        "action": "insert",
+        "call_number": "Foo",
+        "call_number_match": True,
+        "duplicate_records": [],
+        "mixed": [],
+        "other": [],
+        "resource_id": "12345",
+        "target_bib_id": "23456",
+        "target_call_no": "Foo",
+        "target_title": None,
+        "updated_by_vendor": False,
+        "vendor": "UNKNOWN",
+    }
+
+
+@pytest.fixture
+def stub_uow_no_data(monkeypatch):
+    def mock_get(*args, **kwargs):
+        pass
+
+    monkeypatch.setattr("sqlmodel.Session.get", mock_get)
+    test_engine = create_engine("sqlite:///:memory:")
+    SQLModel.metadata.create_all(test_engine)
+    yield unit_of_work.SqlModelUnitOfWork(engine=test_engine)
+    test_engine.dispose()
+
+
+@pytest.fixture
+def stub_uow_no_call_no_report(monkeypatch, mock_stats):
+    def mock_get(*args, **kwargs):
+        return batch_db.PVFBatch(
             files=[batch_db.ProcessedFileModel(file_name="foo.mrc", records=b"")],
-            stats=[
-                {
-                    "action": "insert",
-                    "call_number": "Foo",
-                    "call_number_match": option,
-                    "duplicate_records": [],
-                    "mixed": [],
-                    "other": [],
-                    "resource_id": "12345",
-                    "target_bib_id": "23456",
-                    "target_call_no": "Foo",
-                    "target_title": None,
-                    "updated_by_vendor": False,
-                    "vendor": "UNKNOWN",
-                }
-            ],
+            stats=[mock_stats],
             file_names=["foo.mrc"],
             total_files=1,
             total_records=1,
             missing_barcodes=[],
             processing_integrity=True,
         )
-        for option in [False, True]
-    ]
+
+    monkeypatch.setattr("sqlmodel.Session.get", mock_get)
     test_engine = create_engine("sqlite:///:memory:")
     SQLModel.metadata.create_all(test_engine)
-    with Session(test_engine) as session:
-        for batch in batches:
-            session.add(batch)
-            session.commit()
-        yield session
-    session.close()
+    yield unit_of_work.SqlModelUnitOfWork(engine=test_engine)
     test_engine.dispose()
 
 
-@pytest.fixture(scope="class")
-def test_session_no_records():
+@pytest.fixture
+def stub_uow_with_data(monkeypatch, mock_stats):
+    def mock_get(*args, **kwargs):
+        mock_stats["call_number_match"] = False
+        return batch_db.PVFBatch(
+            files=[batch_db.ProcessedFileModel(file_name="foo.mrc", records=b"")],
+            stats=[mock_stats],
+            file_names=["foo.mrc"],
+            total_files=1,
+            total_records=1,
+            missing_barcodes=[],
+            processing_integrity=True,
+        )
+
+    monkeypatch.setattr("sqlmodel.Session.get", mock_get)
     test_engine = create_engine("sqlite:///:memory:")
     SQLModel.metadata.create_all(test_engine)
-    with Session(test_engine) as session:
-        yield session
-    session.close()
+    yield unit_of_work.SqlModelUnitOfWork(engine=test_engine)
     test_engine.dispose()
-
-
-@pytest.fixture(scope="class")
-def test_batch_repository(test_session):
-    return batch_db.PVFBatchRepository(session=test_session)
 
 
 class TestReportCommands:
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_create_pvf_output_report(self, test_batch_repository, record_type):
+    def test_create_pvf_output_report(self, stub_uow_with_data, record_type):
         out = CreatePVFOutputReport.execute(
-            batch_id="1", record_type=record_type, repo=test_batch_repository
+            batch_id="1", record_type=record_type, uow=stub_uow_with_data
         )
         assert out == {
             "total_records": 1,
@@ -125,17 +141,14 @@ class TestReportCommands:
         }
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_create_pvf_output_report_no_data(
-        self, test_session_no_records, record_type
-    ):
-        repo = batch_db.PVFBatchRepository(session=test_session_no_records)
+    def test_create_pvf_output_report_no_data(self, stub_uow_no_data, record_type):
         out = CreatePVFOutputReport.execute(
-            batch_id="1", record_type=record_type, repo=repo
+            batch_id="1", record_type=record_type, uow=stub_uow_no_data
         )
         assert out == {}
 
-    def test_get_detailed_report_data(self, test_batch_repository):
-        out = GetDetailedReportData.execute(batch_id="1", repo=test_batch_repository)
+    def test_get_detailed_report_data(self, stub_uow_with_data):
+        out = GetDetailedReportData.execute(batch_id="1", uow=stub_uow_with_data)
         assert sorted(out[0].keys()) == sorted(
             [
                 "vendor",
@@ -153,19 +166,18 @@ class TestReportCommands:
             ]
         )
 
-    def test_get_detailed_report_data_no_data(self, test_session_no_records):
-        repo = batch_db.PVFBatchRepository(session=test_session_no_records)
-        out = GetDetailedReportData.execute(batch_id="1", repo=repo)
+    def test_get_detailed_report_data_no_data(self, stub_uow_no_data):
+        out = GetDetailedReportData.execute(batch_id="1", uow=stub_uow_no_data)
         assert out == []
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
     def test_write_output_report_both_reports(
-        self, mock_sheet_service, caplog, test_batch_repository, record_type
+        self, mock_sheet_service, caplog, stub_uow_with_data, record_type
     ):
         WriteOutputReport.execute(
             batch_id="1",
             record_type=record_type,
-            repo=test_batch_repository,
+            uow=stub_uow_with_data,
             writer=reporter.GoogleSheetsReporter(),
         )
         assert len(caplog.records) == 2
@@ -180,12 +192,12 @@ class TestReportCommands:
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
     def test_write_output_report_no_call_no_report(
-        self, mock_sheet_service, caplog, test_batch_repository, record_type
+        self, mock_sheet_service, caplog, stub_uow_no_call_no_report, record_type
     ):
         WriteOutputReport.execute(
             batch_id=2,
             record_type=record_type,
-            repo=test_batch_repository,
+            uow=stub_uow_no_call_no_report,
             writer=reporter.GoogleSheetsReporter(),
         )
         assert len(caplog.records) == 1
@@ -196,13 +208,12 @@ class TestReportCommands:
 
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
     def test_write_output_report_no_reports(
-        self, mock_sheet_service, caplog, test_session_no_records, record_type
+        self, mock_sheet_service, caplog, stub_uow_no_data, record_type
     ):
-        repo = batch_db.PVFBatchRepository(session=test_session_no_records)
         WriteOutputReport.execute(
             batch_id=2,
             record_type=record_type,
-            repo=repo,
+            uow=stub_uow_no_data,
             writer=reporter.GoogleSheetsReporter(),
         )
         assert len(caplog.records) == 0

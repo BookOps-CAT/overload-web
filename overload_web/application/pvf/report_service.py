@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class CreatePVFOutputReport:
     @staticmethod
     def execute(
-        batch_id: str, record_type: str, repo: ports.SqlRepositoryProtocol
+        batch_id: str, record_type: str, uow: ports.UnitOfWorkProtocol
     ) -> dict[str, Any]:
         """
         Create a report summary for a batch of processed records.
@@ -27,29 +27,28 @@ class CreatePVFOutputReport:
         Returns:
             The report data as a dictionary.
         """
-        data = repo.get(batch_id)
-        if data:
-            stats = reporting.ProcessingStatistics(data["stats"])
-            return {
-                "total_records": data["total_records"],
-                "file_names": data["file_names"],
-                "total_files": len(data["file_names"]),
-                "vendor_report": stats.create_vendor_report(),
-                "dupes_report": stats.create_duplicate_report(),
-                "missing_barcodes": data.get("missing_barcodes", []),
-                "processing_integrity": data.get("processing_integrity", True),
-                "call_no_report": stats.create_call_number_report(
-                    record_type=record_type
-                ),
-            }
+        with uow:
+            data = uow.processed_batches.get(batch_id)
+            if data:
+                stats = reporting.ProcessingStatistics(data["stats"])
+                return {
+                    "total_records": data["total_records"],
+                    "file_names": data["file_names"],
+                    "total_files": len(data["file_names"]),
+                    "vendor_report": stats.create_vendor_report(),
+                    "dupes_report": stats.create_duplicate_report(),
+                    "missing_barcodes": data.get("missing_barcodes", []),
+                    "processing_integrity": data.get("processing_integrity", True),
+                    "call_no_report": stats.create_call_number_report(
+                        record_type=record_type
+                    ),
+                }
         return {}
 
 
 class GetDetailedReportData:
     @staticmethod
-    def execute(
-        batch_id: str, repo: ports.SqlRepositoryProtocol
-    ) -> list[dict[str, Any]]:
+    def execute(batch_id: str, uow: ports.UnitOfWorkProtocol) -> list[dict[str, Any]]:
         """
         Create a detailed processing report for a batch of processed records.
 
@@ -61,10 +60,11 @@ class GetDetailedReportData:
         Returns:
             The report data as a dictionary.
         """
-        data = repo.get(batch_id)
-        if data:
-            return data["stats"]
-        return []
+        with uow:
+            data = uow.processed_batches.get(batch_id)
+            if data:
+                return data["stats"]
+            return []
 
 
 class WriteOutputReport:
@@ -72,7 +72,7 @@ class WriteOutputReport:
     def execute(
         batch_id: str,
         record_type: str,
-        repo: ports.SqlRepositoryProtocol,
+        uow: ports.UnitOfWorkProtocol,
         writer: ports.ReportWriter,
     ) -> None:
         """
@@ -90,12 +90,15 @@ class WriteOutputReport:
         Returns:
             The report data as a dictionary.
         """
-        data = repo.get(batch_id)
-        if data:
-            stats = reporting.ProcessingStatistics(data["stats"])
-            call_no_report = stats.create_call_number_report(record_type=record_type)
-            if call_no_report:
-                prepped_data = writer.prep_report(data=call_no_report)
+        with uow:
+            data = uow.processed_batches.get(batch_id)
+            if data:
+                stats = reporting.ProcessingStatistics(data["stats"])
+                call_no_report = stats.create_call_number_report(
+                    record_type=record_type
+                )
+                if call_no_report:
+                    prepped_data = writer.prep_report(data=call_no_report)
+                    writer.write_report(prepped_data)
+                prepped_data = writer.prep_report(data=stats.create_duplicate_report())
                 writer.write_report(prepped_data)
-            prepped_data = writer.prep_report(data=stats.create_duplicate_report())
-            writer.write_report(prepped_data)

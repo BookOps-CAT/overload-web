@@ -24,15 +24,14 @@ api_router = APIRouter()
 @api_router.post("/acq/process-vendor-file", response_class=HTMLResponse)
 def process_acq_records(
     request: Request,
-    fetcher: Annotated[Any, Depends(deps.get_fetcher)],
-    order_template: Annotated[Any, Depends(deps.TemplateDataModel.from_form)],
-    updater: Annotated[Any, Depends(deps.get_updater)],
-    parser: Annotated[Any, Depends(deps.get_parser)],
+    matcher: Annotated[Any, Depends(deps.get_matcher)],
     matchpoints: Annotated[Any, Depends(deps.MatchpointsModel.from_form)],
-    repository: Annotated[Any, Depends(deps.pvf_batch_db)],
+    order_template: Annotated[Any, Depends(deps.TemplateDataModel.from_form)],
+    parser: Annotated[Any, Depends(deps.get_parser)],
     storage: Annotated[Any, Depends(deps.local_file_storage)],
+    uow: Annotated[Any, Depends(deps.get_uow)],
+    updater: Annotated[Any, Depends(deps.get_updater)],
     workflow_id: Annotated[str, Form(...)],
-    file_repo: Annotated[Any, Depends(deps.incoming_file_db)],
 ) -> HTMLResponse:
     """
     Process one or more files of order-level MARC records using the acq workflow.
@@ -65,13 +64,12 @@ def process_acq_records(
     processed = ProcessAcquisitionsRecords.execute(
         storage=storage,
         workflow_id=workflow_id,
-        fetcher=fetcher,
+        matcher=matcher,
         template_data=order_template.model_dump(),
         matchpoints=matchpoints.model_dump(),
-        repo=repository,
         updater=updater,
         parser=parser,
-        file_repo=file_repo,
+        uow=uow,
     )
     return request.app.state.templates.TemplateResponse(
         request=request,
@@ -83,13 +81,12 @@ def process_acq_records(
 @api_router.post("/cat/process-vendor-file", response_class=HTMLResponse)
 def process_cat_records(
     request: Request,
-    fetcher: Annotated[Any, Depends(deps.get_fetcher)],
-    updater: Annotated[Any, Depends(deps.get_updater)],
+    matcher: Annotated[Any, Depends(deps.get_matcher)],
     parser: Annotated[Any, Depends(deps.get_parser)],
-    repository: Annotated[Any, Depends(deps.pvf_batch_db)],
     storage: Annotated[Any, Depends(deps.local_file_storage)],
+    uow: Annotated[Any, Depends(deps.get_uow)],
+    updater: Annotated[Any, Depends(deps.get_updater)],
     workflow_id: Annotated[str, Form(...)],
-    file_repo: Annotated[Any, Depends(deps.incoming_file_db)],
 ) -> HTMLResponse:
     """
     Process one or more files of full-level MARC records using the cat workflow.
@@ -117,11 +114,10 @@ def process_cat_records(
     processed = ProcessCatalogingRecords.execute(
         storage=storage,
         workflow_id=workflow_id,
-        fetcher=fetcher,
-        repo=repository,
+        matcher=matcher,
         updater=updater,
         parser=parser,
-        file_repo=file_repo,
+        uow=uow,
     )
     return request.app.state.templates.TemplateResponse(
         request=request,
@@ -133,15 +129,14 @@ def process_cat_records(
 @api_router.post("/sel/process-vendor-file", response_class=HTMLResponse)
 def process_sel_records(
     request: Request,
-    fetcher: Annotated[Any, Depends(deps.get_fetcher)],
-    order_template: Annotated[Any, Depends(deps.TemplateDataModel.from_form)],
-    updater: Annotated[Any, Depends(deps.get_updater)],
-    parser: Annotated[Any, Depends(deps.get_parser)],
+    matcher: Annotated[Any, Depends(deps.get_matcher)],
     matchpoints: Annotated[Any, Depends(deps.MatchpointsModel.from_form)],
-    repository: Annotated[Any, Depends(deps.pvf_batch_db)],
+    order_template: Annotated[Any, Depends(deps.TemplateDataModel.from_form)],
+    parser: Annotated[Any, Depends(deps.get_parser)],
     storage: Annotated[Any, Depends(deps.local_file_storage)],
+    uow: Annotated[Any, Depends(deps.get_uow)],
+    updater: Annotated[Any, Depends(deps.get_updater)],
     workflow_id: Annotated[str, Form(...)],
-    file_repo: Annotated[Any, Depends(deps.incoming_file_db)],
 ) -> HTMLResponse:
     """
     Process one or more files of order-level MARC records using the sel workflow.
@@ -174,13 +169,12 @@ def process_sel_records(
     processed = ProcessSelectionRecords.execute(
         storage=storage,
         workflow_id=workflow_id,
-        fetcher=fetcher,
+        matcher=matcher,
         template_data=order_template.model_dump(),
         matchpoints=matchpoints.model_dump(),
-        repo=repository,
         updater=updater,
         parser=parser,
-        file_repo=file_repo,
+        uow=uow,
     )
     return request.app.state.templates.TemplateResponse(
         request=request,
