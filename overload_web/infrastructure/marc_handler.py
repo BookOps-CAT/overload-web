@@ -193,9 +193,9 @@ class MarcUpdater(ports.MarcUpdaterPort):
                 return field
         return None
 
-    def create_bib_from_domain(self, record: models.DomainBib) -> Bib:
+    def create_bib_from_domain(self, binary_data: bytes, library: str) -> Bib:
         """Create a `bookops_marc.Bib` object from a `DomainBib` object"""
-        return Bib(data=record.binary_data, library=record.library)  # type: ignore
+        return Bib(data=binary_data, library=library)  # type: ignore
 
     def update_fields(self, bib: Bib, field_updates: list[Any]) -> None:
         """

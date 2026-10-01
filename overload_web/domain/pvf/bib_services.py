@@ -188,7 +188,9 @@ class BibReviewer:
                 item_fields = marc_rules.FieldRules.get_item_fields(
                     fields=other_fields, criteria=item_tags
                 )
-                bib = self.handler.create_bib_from_domain(record=base_rec)
+                bib = self.handler.create_bib_from_domain(
+                    binary_data=base_rec.binary_data, library=base_rec.library
+                )
                 self.handler.update_fields(field_updates=item_fields, bib=bib)
                 base_rec.binary_data = bib.as_marc()
                 deduped.append(base_rec)
@@ -236,7 +238,9 @@ class BibUpdater:
         self, record: models.DomainBib, updates: list[marc_rules.MarcFieldUpdateValues]
     ) -> None:
         """Update and add MARC fields to bib record"""
-        bib = self.handler.create_bib_from_domain(record=record)
+        bib = self.handler.create_bib_from_domain(
+            binary_data=record.binary_data, library=record.library
+        )
         self.handler.update_fields(field_updates=updates, bib=bib)
         self.handler.update_leader_encoding(leader=bib.leader, bib=bib)
         record.binary_data = bib.as_marc()
