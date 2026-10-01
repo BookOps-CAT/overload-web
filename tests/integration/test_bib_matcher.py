@@ -93,28 +93,28 @@ class TestBibMatcher:
     @pytest.mark.workflow(record_type="acq")
     def test_match_order_level(self, mock_bib, stub_matcher):
         candidates = stub_matcher.match_order_record(
-            mock_bib, matchpoints={"primary_matchpoint": "isbn"}
+            record=mock_bib, matchpoints={"primary_matchpoint": "isbn"}
         )
         assert len(candidates) == 1
 
     @pytest.mark.workflow(record_type="acq")
     def test_match_order_level_no_matches(self, mock_bib, stub_matcher_no_matches):
         candidates = stub_matcher_no_matches.match_order_record(
-            mock_bib, matchpoints={"primary_matchpoint": "isbn"}
+            record=mock_bib, matchpoints={"primary_matchpoint": "isbn"}
         )
         assert len(candidates) == 0
 
     @pytest.mark.workflow(record_type="acq")
     def test_match_order_level_matchpoint_none(self, mock_bib, stub_matcher):
         candidates = stub_matcher.match_order_record(
-            mock_bib, matchpoints={"primary_matchpoint": None}
+            record=mock_bib, matchpoints={"primary_matchpoint": None}
         )
         assert len(candidates) == 0
 
     @pytest.mark.workflow(record_type="acq")
     def test_match_order_level_no_matchpoints(self, mock_bib, stub_matcher):
         with pytest.raises(TypeError) as exc:
-            stub_matcher.match_order_record(mock_bib)
+            stub_matcher.match_order_record(record=mock_bib)
         assert (
             str(exc.value)
             == "BibMatcher.match_order_record() missing 1 required positional argument: 'matchpoints'"
@@ -128,7 +128,7 @@ class TestBibMatcher:
         self, stub_bib, stub_matcher, stub_response, library, collection, record_type
     ):
         bib2match = stub_bib(library, collection, record_type)
-        result = stub_matcher.review_matches(bib2match, matches=[stub_response])
+        result = stub_matcher.review_matches(bib=bib2match, matches=[stub_response])
         assert result.resource_id == "9781234567890"
         assert result.mixed == []
         assert result.other == []

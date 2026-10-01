@@ -1,4 +1,4 @@
-"""Application services for parsing and reviewing MARC records during processing."""
+"""Domain services for parsing, reviewing and updating MARC records during processing"""
 
 from __future__ import annotations
 
@@ -6,22 +6,11 @@ import io
 import itertools
 import logging
 from collections import Counter, defaultdict
-from dataclasses import dataclass
 from typing import Any
 
 from overload_web.domain.pvf import marc_rules, models, ports
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class ParsingRules:
-    bib_mapping: dict[str, Any]
-    collection: str | None
-    library: str
-    order_mapping: dict[str, Any]
-    record_type: str
-    vendor_mapping: dict[str, Any]
 
 
 class BarcodeValidator:
@@ -37,7 +26,7 @@ class BarcodeValidator:
     def validate_preserved(
         self, processed_barcodes: list[list[str]], original_barcodes: list[str]
     ) -> list[str]:
-        """Confirm barcodes extracted from a file are present in processed records"""
+        """Confirm all barcodes extracted from file are present in processed records"""
         missing_barcodes = set()
         processed = list(itertools.chain.from_iterable(processed_barcodes))
         for barcode in original_barcodes:
@@ -65,7 +54,7 @@ class BibParser:
         vendor_mapping: dict[str, Any],
     ) -> None:
         """
-        Initialize `MarcParser` using a set of mapping rules and inputs.
+        Initialize `BibParser` using a set of mapping rules and inputs.
 
         Args:
             bib_mapping:
@@ -107,11 +96,11 @@ class BibParser:
     def parse_record(
         self,
         bib_dict: dict[str, Any],
-        order_data: list[dict[str, Any]],
-        vendor_info: dict[str, Any] | None,
-        vendor: str | None,
-        collection: str | None,
         binary_data: bytes,
+        collection: str | None,
+        order_data: list[dict[str, Any]],
+        vendor: str | None,
+        vendor_info: dict[str, Any] | None,
     ) -> models.DomainBib:
         """Parse MARC binary to a list of `DomainBib` domain objects."""
         bib_dict["orders"] = [models.Order(**i) for i in order_data]
@@ -166,7 +155,7 @@ class BibReviewer:
         self.handler = handler
 
     def review_batch(self, records: list[models.DomainBib]) -> dict[str, Any]:
-        """Merges item fields from duplicate records into the base record."""
+        """Merges item fields from duplicate records into a base record."""
         out: dict[str, list[models.DomainBib]] = {"NEW": [], "DUP": [], "DEDUPED": []}
         dup_groups = defaultdict(list)
 
@@ -206,3 +195,101 @@ class BibReviewer:
             else:
                 deduped.extend(group)
         return {"NEW": batches["NEW"], "DUP": batches["DUP"], "DEDUPED": deduped}
+
+
+class BibUpdater:
+    def __init__(
+        self,
+        bib_id_tag: str,
+        default_loc: str | None,
+        handler: ports.MarcUpdaterPort,
+        library: str,
+        order_mapping: dict[str, Any],
+        record_type: str,
+    ) -> None:
+        """
+        Initialize `BibUpdater` using a set of rules and inputs.
+
+        Args:
+            bib_id_tag:
+                MARC tag where bib ID should be writting in output record.
+            default_loc:
+                The default location for a specific library/collection to be used
+                in output record
+            handler:
+                a `MarcUpdaterPort` object used to handle interactions with pymarc
+            library:
+                the library whose records are being parsed
+            order_mapping:
+                rules for mapping domain objects MARC fields/subfields
+            record_type:
+                the workflow two whom this record belongs
+        """
+        self.bib_id_tag = bib_id_tag
+        self.default_loc = default_loc
+        self.handler = handler
+        self.library = library
+        self.order_mapping = order_mapping
+        self.record_type = record_type
+
+    def apply_field_updates(
+        self, record: models.DomainBib, updates: list[marc_rules.MarcFieldUpdateValues]
+    ) -> None:
+        """Update and add MARC fields to bib record"""
+        bib = self.handler.create_bib_from_domain(record=record)
+        self.handler.update_fields(field_updates=updates, bib=bib)
+        self.handler.update_leader_encoding(leader=bib.leader, bib=bib)
+        record.binary_data = bib.as_marc()
+
+    def get_full_record_updates(
+        self, record: models.DomainBib
+    ) -> list[marc_rules.MarcFieldUpdateValues]:
+        """Get list of MARC fields to add to or update in processed bib record"""
+        updates: list[Any] = []
+
+        updates.extend(
+            marc_rules.FieldRules.add_vendor_fields(
+                getattr(record.vendor_info, "bib_fields", [])
+            )
+        )
+        updates.append(
+            marc_rules.FieldRules.add_bib_id(bib_id=record.bib_id, tag=self.bib_id_tag)
+        )
+        if self.library == "nypl":
+            updates.append(marc_rules.FieldRules.update_910_field(record.collection))
+            updates.append(
+                marc_rules.FieldRules.update_bt_series_call_no(
+                    call_no=record.branch_call_number,
+                    vendor=record.vendor,
+                    collection=record.collection,
+                )
+            )
+        return [i for i in updates if i]
+
+    def get_order_level_updates(
+        self, record: models.DomainBib, template_data: dict[str, Any]
+    ) -> list[marc_rules.MarcFieldUpdateValues]:
+        """Get list of MARC fields to add to or update in processed bib record"""
+        updates: list[Any] = []
+        record.apply_order_template(template_data)
+        updates.extend(
+            marc_rules.FieldRules.update_order_fields(
+                orders=record.orders, mapping=self.order_mapping
+            )
+        )
+        if self.record_type == "sel":
+            updates.append(
+                marc_rules.FieldRules.add_command_tag(
+                    fields=record.parsed_fields,
+                    format=template_data.get("format"),
+                    default_loc=self.default_loc,
+                )
+            )
+            updates.append(
+                marc_rules.FieldRules.add_bib_id(
+                    bib_id=record.bib_id, tag=self.bib_id_tag
+                )
+            )
+        if self.library == "nypl":
+            updates.append(marc_rules.FieldRules.update_910_field(record.collection))
+        return [i for i in updates if i]

@@ -51,18 +51,18 @@ class LocalFileRetriever(ports.FileRetriever):
     contents from a specific directory on a local computer.
     """
 
-    def list(self, dir: str) -> list[str]:
-        """List available files in a local directory."""
-        files = os.listdir(dir)
-        logger.info(f"Files in {dir}: {files}")
-        return files
-
-    def download(self, name: str, dir: str) -> bytes:
+    def download(self, dir: str, name: str) -> bytes:
         """Load a file from a local directory."""
         with open(os.path.join(dir, name), "rb") as fh:
             file = fh.read()
         logger.info(f"File loaded: {name}")
         return file
+
+    def list(self, dir: str) -> list[str]:
+        """List available files in a local directory."""
+        files = os.listdir(dir)
+        logger.info(f"Files in {dir}: {files}")
+        return files
 
 
 class LocalFileWriter(ports.FileWriter):
@@ -73,7 +73,7 @@ class LocalFileWriter(ports.FileWriter):
     to files within a specific directory on a local computer.
     """
 
-    def write(self, file: bytes, file_name: str, dir: str) -> str:
+    def write(self, dir: str, file: bytes, file_name: str) -> str:
         """Write a file to a local directory."""
         path = os.path.join(dir, file_name)
         with open(path, "wb") as f:
@@ -99,7 +99,7 @@ class SFTPFileRetriever(ports.FileRetriever):
         logger.info(f"Files in {dir}: {files}")
         return files
 
-    def download(self, name: str, dir: str) -> bytes:
+    def download(self, dir: str, name: str) -> bytes:
         """Load a file from a remote directory."""
         file_info = self.client.get_file_info(file_name=name, remote_dir=dir)
         file = self.client.get_file(file=file_info, remote_dir=dir)
@@ -175,6 +175,6 @@ class IncomingFileRepository(ports.SqlRepositoryProtocol):
         """
         valid_obj = IncomingFileModel.model_validate(obj, from_attributes=True)
         self.session.add(valid_obj)
-        self.session.commit()
+        self.session.flush()
         self.session.refresh(valid_obj)
         return valid_obj.model_dump()

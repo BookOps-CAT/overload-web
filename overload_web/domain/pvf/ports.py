@@ -32,8 +32,8 @@ class BibFetcher(Protocol):
     Retrieve candidate bib records that match a key-value pair.
 
     Args:
-        value: The identifier value to search by (eg. "9781234567890").
         key: The field name corresponding to the identifier (eg. "isbn").
+        value: The identifier value to search by (eg. "9781234567890").
 
     Returns:
         a list of dictionaries representing candidate matches.
@@ -48,6 +48,19 @@ class FileRetriever(Protocol):
     Implementations may interact with an FTP/SFTP server or a local file directory.
     """
 
+    def download(self, dir: str, name: str) -> bytes: ...  # pragma: no branch
+
+    """
+    Download the content of a specific file.
+
+    Args:
+        dir: the directory where the file is located
+        name: the name of the file to load
+
+    Returns:
+        the content of the specified file as a `bytes` object
+    """
+
     def list(self, dir: str) -> list[str]: ...  # pragma: no branch
 
     """
@@ -58,19 +71,6 @@ class FileRetriever(Protocol):
 
     Returns:
         a list of file names as strings
-    """
-
-    def download(self, name: str, dir: str) -> bytes: ...  # pragma: no branch
-
-    """
-    Download the content of a specific file.
-
-    Args:
-        name: the name of the file to load
-        dir: the directory where the file is located
-
-    Returns:
-        the content of the specified file as a `bytes` object
     """
 
 
@@ -103,10 +103,9 @@ class FileStorage(Protocol):
     Save a file to a location on storage.
 
     Args:
-        id: the workflow_id for the file.
-        filename: the name of the file.
         content: the content of the file as a bytes object.
-
+        filename: the name of the file.
+        id: the workflow_id for the file.
     Returns:
         the path where the file was saved as a string
     """
@@ -121,16 +120,16 @@ class FileWriter(Protocol):
     """
 
     def write(
-        self, file: bytes, file_name: str, dir: str
+        self, dir: str, file: bytes, file_name: str
     ) -> str: ...  # pragma: no branch
 
     """
     Write content to a specific file.
 
     Args:
+        dir: the directory where the file should be written
         file: the file content to write as a `bytes` object
         file_name: the name of the file to be writen
-        dir: the directory where the file should be written
 
     Returns:
         the name of the file that has just been written
@@ -185,13 +184,13 @@ class MarcUpdaterPort(Protocol[T, U]):
     """Create a `bookops_marc.Bib` object from a `DomainBib` object"""
 
     def update_fields(
-        self, field_updates: list[Any], bib: U
+        self, bib: U, field_updates: list[Any]
     ) -> None: ...  # pragma:no branch
 
     """Update record in place"""
 
     def update_leader_encoding(
-        self, leader: str, bib: U
+        self, bib: U, leader: str
     ) -> None: ...  # pragma:no branch
 
     """Update character encoding to unicode."""
@@ -247,7 +246,7 @@ class SqlRepositoryProtocol(Protocol[T]):
     """Save a new object to a database."""
 
     def update(
-        self, id: str, data: T
+        self, data: T, id: str
     ) -> dict[str, Any] | None: ...  # pragma: no branch
 
     """Update an existing object in a database."""
@@ -261,14 +260,14 @@ class UnitOfWorkProtocol(Protocol):
     order_templates: SqlRepositoryProtocol
     processed_batches: SqlRepositoryProtocol
 
-    def __enter__(self) -> UnitOfWorkProtocol: ...
+    def __enter__(self) -> UnitOfWorkProtocol: ...  # pragma: no branch
 
     def __exit__(
         self,
         exc_type: type[BaseException] | None,
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
-    ) -> None: ...
+    ) -> None: ...  # pragma: no branch
 
-    def commit(self) -> None: ...
-    def rollback(self) -> None: ...
+    def commit(self) -> None: ...  # pragma: no branch
+    def rollback(self) -> None: ...  # pragma: no branch

@@ -19,9 +19,8 @@ def processed_records(monkeypatch):
     def fake_response(*args, **kwargs):
         return {"id": "1"}
 
-    monkeypatch.setattr(process.ProcessAcquisitionsRecords, "execute", fake_response)
-    monkeypatch.setattr(process.ProcessCatalogingRecords, "execute", fake_response)
-    monkeypatch.setattr(process.ProcessSelectionRecords, "execute", fake_response)
+    monkeypatch.setattr(process.ProcessOrderLevelRecords, "execute", fake_response)
+    monkeypatch.setattr(process.ProcessFullRecords, "execute", fake_response)
 
 
 @pytest.fixture
@@ -181,15 +180,10 @@ class TestApp:
         )
         assert response.context["files"] == ["foo.mrc"]
 
-    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_files_select_ftp_file(self, record_type, mock_files):
+    def test_files_select_ftp_file(self, mock_files):
         response = self.client.post(
             "/files/remote/select?vendor=foo",
-            data={
-                "remote_file": "bar.mrc",
-                "workflow_id": 1,
-                "record_type": record_type,
-            },
+            data={"remote_file": "bar.mrc", "workflow_id": 1},
         )
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/files/remote/select?vendor=foo"
@@ -198,11 +192,10 @@ class TestApp:
         assert response.context["files"][0]["filename"] == "bar.mrc"
         assert response.context["files"][0]["source"] == "ftp"
 
-    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_files_upload_file(self, record_type, mock_files):
+    def test_files_upload_file(self, mock_files):
         response = self.client.post(
             "/files/upload",
-            data={"workflow_id": 1, "vendor": None, "record_type": record_type},
+            data={"workflow_id": 1, "vendor": None},
             files={"file": ("baz.mrc", b"", "text/plain")},
         )
         assert response.status_code == 200

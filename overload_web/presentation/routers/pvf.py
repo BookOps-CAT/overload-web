@@ -9,11 +9,10 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse
 
 from overload_web.application.pvf.process import (
-    ProcessAcquisitionsRecords,
-    ProcessCatalogingRecords,
-    ProcessSelectionRecords,
+    ProcessFullRecords,
+    ProcessOrderLevelRecords,
 )
-from overload_web.presentation import deps
+from overload_web.presentation import deps, schemas
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +24,8 @@ api_router = APIRouter()
 def process_acq_records(
     request: Request,
     matcher: Annotated[Any, Depends(deps.get_matcher)],
-    matchpoints: Annotated[Any, Depends(deps.MatchpointsModel.from_form)],
-    order_template: Annotated[Any, Depends(deps.TemplateDataModel.from_form)],
+    matchpoints: Annotated[Any, Depends(schemas.MatchpointsModel.from_form)],
+    order_template: Annotated[Any, Depends(schemas.TemplateDataModel.from_form)],
     parser: Annotated[Any, Depends(deps.get_parser)],
     storage: Annotated[Any, Depends(deps.local_file_storage)],
     uow: Annotated[Any, Depends(deps.get_uow)],
@@ -61,7 +60,7 @@ def process_acq_records(
     Returns:
         the ID for the processed files and stats wrapped in an `HTMLResponse` object
     """
-    processed = ProcessAcquisitionsRecords.execute(
+    processed = ProcessOrderLevelRecords.execute(
         storage=storage,
         workflow_id=workflow_id,
         matcher=matcher,
@@ -111,7 +110,7 @@ def process_cat_records(
     Returns:
         the ID for the processed files and stats wrapped in an `HTMLResponse` object
     """
-    processed = ProcessCatalogingRecords.execute(
+    processed = ProcessFullRecords.execute(
         storage=storage,
         workflow_id=workflow_id,
         matcher=matcher,
@@ -130,8 +129,8 @@ def process_cat_records(
 def process_sel_records(
     request: Request,
     matcher: Annotated[Any, Depends(deps.get_matcher)],
-    matchpoints: Annotated[Any, Depends(deps.MatchpointsModel.from_form)],
-    order_template: Annotated[Any, Depends(deps.TemplateDataModel.from_form)],
+    matchpoints: Annotated[Any, Depends(schemas.MatchpointsModel.from_form)],
+    order_template: Annotated[Any, Depends(schemas.TemplateDataModel.from_form)],
     parser: Annotated[Any, Depends(deps.get_parser)],
     storage: Annotated[Any, Depends(deps.local_file_storage)],
     uow: Annotated[Any, Depends(deps.get_uow)],
@@ -166,7 +165,7 @@ def process_sel_records(
     Returns:
         the ID for the processed files and stats wrapped in an `HTMLResponse` object
     """
-    processed = ProcessSelectionRecords.execute(
+    processed = ProcessOrderLevelRecords.execute(
         storage=storage,
         workflow_id=workflow_id,
         matcher=matcher,

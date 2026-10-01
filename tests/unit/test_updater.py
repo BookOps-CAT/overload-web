@@ -6,7 +6,7 @@ from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
 from overload_web.domain import shared
-from overload_web.domain.pvf import marc_rules, models, update_service
+from overload_web.domain.pvf import bib_services, marc_rules, models
 from overload_web.infrastructure import marc_handler
 
 
@@ -101,19 +101,16 @@ def stub_updater(request, get_constants):
     marker = request.node.get_closest_marker("workflow")
     collection = marker.kwargs["collection"]
     library = marker.kwargs["library"]
+    record_type = marker.kwargs["record_type"]
     constants = get_constants["constants"]
-    return update_service.BibUpdater(
+    return bib_services.BibUpdater(
         library=library,
         default_loc=constants["default_locations"][library].get(collection),
         bib_id_tag=constants["bib_id_tag"][library],
         order_mapping=constants["order_mapping"],
         handler=marc_handler.MarcUpdater(),
+        record_type=record_type,
     )
-
-
-@pytest.fixture
-def stub_reviewer():
-    return update_service.BibReviewer(handler=marc_handler.MarcUpdater())
 
 
 @pytest.fixture
@@ -171,12 +168,12 @@ def stub_domain_bib(request, stub_bib):
     return make_bib
 
 
-@pytest.mark.workflow(library="bpl", collection=None)
 class TestGetBibUpdatesBPL:
-    def test_get_acq_updates(self, stub_updater, stub_domain_bib):
+    @pytest.mark.workflow(library="bpl", collection=None, record_type="acq")
+    def test_get_order_level_updates_acq(self, stub_updater, stub_domain_bib):
         acq_bib = stub_domain_bib("acq")
         original_orders = copy.deepcopy(acq_bib.orders)
-        updates = stub_updater.get_acq_updates(
+        updates = stub_updater.get_order_level_updates(
             record=acq_bib,
             template_data={"name": "Foo", "order_code_1": "b", "format": "a"},
         )
@@ -186,7 +183,53 @@ class TestGetBibUpdatesBPL:
         assert updates[0].tag == "960"
         assert updates[1].tag == "961"
 
-    def test_get_cat_updates(self, stub_updater, stub_domain_bib):
+    @pytest.mark.workflow(library="bpl", collection=None, record_type="sel")
+    def test_get_order_level_updates_sel(self, stub_updater, stub_domain_bib):
+        sel_bib = stub_domain_bib("sel")
+        original_orders = copy.deepcopy(sel_bib.orders)
+        updates = stub_updater.get_order_level_updates(
+            record=sel_bib, template_data={"order_code_1": "b", "format": "a"}
+        )
+        assert [i.order_code_1 for i in original_orders] == ["j"]
+        assert [i.order_code_1 for i in sel_bib.orders] == ["b"]
+        assert len(updates) == 3
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+        assert updates[2].tag == "949"
+        assert updates[2].subfields == [{"code": "a", "value": "*b2=a;"}]
+        assert updates[2].target_field_to_delete is None
+
+    @pytest.mark.workflow(library="bpl", collection=None, record_type="sel")
+    def test_get_order_level_updates_sel_with_command_tag(
+        self, stub_updater, stub_domain_bib
+    ):
+        sel_bib = stub_domain_bib("sel")
+        sel_bib.parsed_fields = [
+            shared.ParsedField(
+                tag="949",
+                indicators=(" ", " "),
+                subfields=[shared.ParsedSubfield(code="a", value="*b2=a;")],
+            )
+        ]
+        updates = stub_updater.get_order_level_updates(
+            record=sel_bib, template_data={"format": "a"}
+        )
+        assert len(updates) == 2
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+
+    @pytest.mark.workflow(library="bpl", collection=None, record_type="sel")
+    def test_get_order_level_updates_sel_no_command_tag(
+        self, stub_updater, stub_domain_bib
+    ):
+        sel_bib = stub_domain_bib("sel")
+        updates = stub_updater.get_order_level_updates(record=sel_bib, template_data={})
+        assert len(updates) == 2
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+
+    @pytest.mark.workflow(library="bpl", collection=None, record_type="cat")
+    def test_get_full_record_updates(self, stub_updater, stub_domain_bib):
         cat_bib = stub_domain_bib("cat")
         cat_bib.bib_id = "12345"
         cat_bib.vendor_info = models.VendorInfo(
@@ -197,7 +240,7 @@ class TestGetBibUpdatesBPL:
                 {"tag": "949", "ind1": " ", "ind2": " ", "code": "a", "value": "*b2=a;"}
             ],
         )
-        updates = stub_updater.get_cat_updates(record=cat_bib)
+        updates = stub_updater.get_full_record_updates(record=cat_bib)
         assert len(updates) == 2
         assert updates[0].__dict__ == {
             "tag": "949",
@@ -216,51 +259,13 @@ class TestGetBibUpdatesBPL:
             "subfields": [{"code": "a", "value": "12345"}],
         }
 
-    def test_get_sel_updates(self, stub_updater, stub_domain_bib):
-        sel_bib = stub_domain_bib("sel")
-        original_orders = copy.deepcopy(sel_bib.orders)
-        updates = stub_updater.get_sel_updates(
-            record=sel_bib, template_data={"order_code_1": "b", "format": "a"}
-        )
-        assert [i.order_code_1 for i in original_orders] == ["j"]
-        assert [i.order_code_1 for i in sel_bib.orders] == ["b"]
-        assert len(updates) == 3
-        assert updates[0].tag == "960"
-        assert updates[1].tag == "961"
-        assert updates[2].tag == "949"
-        assert updates[2].subfields == [{"code": "a", "value": "*b2=a;"}]
-        assert updates[2].target_field_to_delete is None
 
-    def test_get_sel_updates_with_command_tag(self, stub_updater, stub_domain_bib):
-        sel_bib = stub_domain_bib("sel")
-        sel_bib.parsed_fields = [
-            shared.ParsedField(
-                tag="949",
-                indicators=(" ", " "),
-                subfields=[shared.ParsedSubfield(code="a", value="*b2=a;")],
-            )
-        ]
-        updates = stub_updater.get_sel_updates(
-            record=sel_bib, template_data={"format": "a"}
-        )
-        assert len(updates) == 2
-        assert updates[0].tag == "960"
-        assert updates[1].tag == "961"
-
-    def test_get_sel_updates_no_command_tag(self, stub_updater, stub_domain_bib):
-        sel_bib = stub_domain_bib("sel")
-        updates = stub_updater.get_sel_updates(record=sel_bib, template_data={})
-        assert len(updates) == 2
-        assert updates[0].tag == "960"
-        assert updates[1].tag == "961"
-
-
-@pytest.mark.workflow(library="nypl", collection="BL")
 class TestGetBibUpdatesNYPLBranch:
-    def test_get_acq_updates(self, stub_updater, stub_domain_bib):
+    @pytest.mark.workflow(library="nypl", collection="BL", record_type="acq")
+    def test_get_order_level_updates_acq(self, stub_updater, stub_domain_bib):
         acq_bib = stub_domain_bib("acq")
         original_orders = copy.deepcopy(acq_bib.orders)
-        updates = stub_updater.get_acq_updates(
+        updates = stub_updater.get_order_level_updates(
             record=acq_bib,
             template_data={"name": "Foo", "order_code_1": "b", "format": "a"},
         )
@@ -278,7 +283,93 @@ class TestGetBibUpdatesNYPLBranch:
             "subfields": [{"code": "a", "value": "BL"}],
         }
 
-    def test_get_cat_updates(self, stub_updater, stub_domain_bib):
+    @pytest.mark.parametrize(
+        "template, command_tag",
+        [
+            ({"order_code_1": "b", "format": "a"}, "*b2=a;bn=zzzzz;"),
+            ({"order_code_1": "b"}, "*bn=zzzzz;"),
+        ],
+    )
+    @pytest.mark.workflow(library="nypl", collection="BL", record_type="sel")
+    def test_get_order_level_updates_sel(
+        self, stub_updater, stub_domain_bib, template, command_tag
+    ):
+        sel_bib = stub_domain_bib("sel")
+        sel_bib.parsed_fields = [
+            shared.ParsedField(
+                tag="949",
+                indicators=(" ", " "),
+                subfields=[shared.ParsedSubfield(code="a", value="b2=a")],
+            )
+        ]
+        original_orders = copy.deepcopy(sel_bib.orders)
+        updates = stub_updater.get_order_level_updates(
+            record=sel_bib, template_data=template
+        )
+        assert [i.order_code_1 for i in original_orders] == ["j"]
+        assert [i.order_code_1 for i in sel_bib.orders] == ["b"]
+        assert len(updates) == 4
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+        assert updates[2].tag == "949"
+        assert updates[2].subfields == [{"code": "a", "value": command_tag}]
+        assert updates[2].target_field_to_delete is None
+        assert updates[3].tag == "910"
+
+    @pytest.mark.parametrize(
+        "original, output",
+        [("*b2=a;", "*b2=a;bn=zzzzz;"), ("*b2=a", "*b2=a;bn=zzzzz;")],
+    )
+    @pytest.mark.workflow(library="nypl", collection="BL", record_type="sel")
+    def test_get_order_level_updates_sel_check_command_tag(
+        self, stub_updater, stub_domain_bib, original, output
+    ):
+        sel_bib = stub_domain_bib("sel")
+        sel_bib.parsed_fields = [
+            shared.ParsedField(
+                tag="949",
+                indicators=(" ", " "),
+                subfields=[shared.ParsedSubfield(code="a", value=original)],
+            )
+        ]
+        updates = stub_updater.get_order_level_updates(
+            record=sel_bib, template_data={"order_code_1": "b", "format": "a"}
+        )
+        assert len(updates) == 4
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+        assert updates[2].tag == "949"
+        assert updates[2].subfields == [{"code": "a", "value": output}]
+        assert updates[2].target_field_to_delete.__dict__ == {
+            "tag": "949",
+            "indicators": (" ", " "),
+            "code": "a",
+            "value": original,
+        }
+        assert updates[3].tag == "910"
+
+    @pytest.mark.workflow(library="nypl", collection="BL", record_type="sel")
+    def test_get_order_level_updates_sel_skip_command_tag(
+        self, stub_updater, stub_domain_bib
+    ):
+        sel_bib = stub_domain_bib("sel")
+        sel_bib.parsed_fields = [
+            shared.ParsedField(
+                tag="949",
+                indicators=(" ", " "),
+                subfields=[shared.ParsedSubfield(code="a", value="*b2=a;bn=zzzzz;")],
+            )
+        ]
+        updates = stub_updater.get_order_level_updates(
+            record=sel_bib, template_data={"order_code_1": "b", "format": "a"}
+        )
+        assert len(updates) == 3
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+        assert updates[2].tag == "910"
+
+    @pytest.mark.workflow(library="nypl", collection="BL", record_type="cat")
+    def test_get_full_record_updates(self, stub_updater, stub_domain_bib):
         cat_bib = stub_domain_bib("cat")
         cat_bib.bib_id = "12345"
         cat_bib.vendor_info = models.VendorInfo(
@@ -289,7 +380,7 @@ class TestGetBibUpdatesNYPLBranch:
                 {"tag": "949", "ind1": " ", "ind2": " ", "code": "a", "value": "*b2=a;"}
             ],
         )
-        updates = stub_updater.get_cat_updates(record=cat_bib)
+        updates = stub_updater.get_full_record_updates(record=cat_bib)
         assert len(updates) == 3
         assert updates[0].__dict__ == {
             "tag": "949",
@@ -338,13 +429,14 @@ class TestGetBibUpdatesNYPLBranch:
             ({"f": "DVD", "a": "MOVIE", "c": "BAZ"}, {"c": "DVD MOVIE BAZ"}),
         ],
     )
-    def test_get_cat_updates_bt_series_call_no(
+    @pytest.mark.workflow(library="nypl", collection="BL", record_type="cat")
+    def test_get_full_record_updates_bt_series_call_no(
         self, stub_updater, stub_domain_bib, input, output
     ):
         cat_bib = stub_domain_bib("cat")
         cat_bib.vendor = "BT SERIES"
         cat_bib.branch_call_number = " ".join([i for i in input.values()])
-        updates = stub_updater.get_cat_updates(record=cat_bib)
+        updates = stub_updater.get_full_record_updates(record=cat_bib)
         assert len(updates) == 2
         assert updates[0].tag == "910"
         assert updates[1].tag == "091"
@@ -356,104 +448,27 @@ class TestGetBibUpdatesNYPLBranch:
             {"code": k, "value": v} for k, v in output.items()
         ]
 
-    def test_get_cat_updates_bt_series_call_no_error(
+    @pytest.mark.workflow(library="nypl", collection="BL", record_type="cat")
+    def test_get_full_record_updates_bt_series_call_no_error(
         self, stub_domain_bib, stub_updater
     ):
         cat_bib = stub_domain_bib("cat")
         cat_bib.vendor = "BT SERIES"
         cat_bib.branch_call_number = "FOO J FIC SNICKET"
         with pytest.raises(ValueError) as exc:
-            stub_updater.get_cat_updates(record=cat_bib)
+            stub_updater.get_full_record_updates(record=cat_bib)
         assert (
             str(exc.value)
             == "Constructed call number does not match original. New=FIC SNICKET, Original=FOO J FIC SNICKET"
         )
 
-    @pytest.mark.parametrize(
-        "template, command_tag",
-        [
-            ({"order_code_1": "b", "format": "a"}, "*b2=a;bn=zzzzz;"),
-            ({"order_code_1": "b"}, "*bn=zzzzz;"),
-        ],
-    )
-    def test_get_sel_updates(
-        self, stub_updater, stub_domain_bib, template, command_tag
-    ):
-        sel_bib = stub_domain_bib("sel")
-        sel_bib.parsed_fields = [
-            shared.ParsedField(
-                tag="949",
-                indicators=(" ", " "),
-                subfields=[shared.ParsedSubfield(code="a", value="b2=a")],
-            )
-        ]
-        original_orders = copy.deepcopy(sel_bib.orders)
-        updates = stub_updater.get_sel_updates(record=sel_bib, template_data=template)
-        assert [i.order_code_1 for i in original_orders] == ["j"]
-        assert [i.order_code_1 for i in sel_bib.orders] == ["b"]
-        assert len(updates) == 4
-        assert updates[0].tag == "960"
-        assert updates[1].tag == "961"
-        assert updates[2].tag == "949"
-        assert updates[2].subfields == [{"code": "a", "value": command_tag}]
-        assert updates[2].target_field_to_delete is None
-        assert updates[3].tag == "910"
 
-    @pytest.mark.parametrize(
-        "original, output",
-        [("*b2=a;", "*b2=a;bn=zzzzz;"), ("*b2=a", "*b2=a;bn=zzzzz;")],
-    )
-    def test_get_sel_updates_check_command_tag(
-        self, stub_updater, stub_domain_bib, original, output
-    ):
-        sel_bib = stub_domain_bib("sel")
-        sel_bib.parsed_fields = [
-            shared.ParsedField(
-                tag="949",
-                indicators=(" ", " "),
-                subfields=[shared.ParsedSubfield(code="a", value=original)],
-            )
-        ]
-        updates = stub_updater.get_sel_updates(
-            record=sel_bib, template_data={"order_code_1": "b", "format": "a"}
-        )
-        assert len(updates) == 4
-        assert updates[0].tag == "960"
-        assert updates[1].tag == "961"
-        assert updates[2].tag == "949"
-        assert updates[2].subfields == [{"code": "a", "value": output}]
-        assert updates[2].target_field_to_delete.__dict__ == {
-            "tag": "949",
-            "indicators": (" ", " "),
-            "code": "a",
-            "value": original,
-        }
-        assert updates[3].tag == "910"
-
-    def test_get_sel_updates_skip_command_tag(self, stub_updater, stub_domain_bib):
-        sel_bib = stub_domain_bib("sel")
-        sel_bib.parsed_fields = [
-            shared.ParsedField(
-                tag="949",
-                indicators=(" ", " "),
-                subfields=[shared.ParsedSubfield(code="a", value="*b2=a;bn=zzzzz;")],
-            )
-        ]
-        updates = stub_updater.get_sel_updates(
-            record=sel_bib, template_data={"order_code_1": "b", "format": "a"}
-        )
-        assert len(updates) == 3
-        assert updates[0].tag == "960"
-        assert updates[1].tag == "961"
-        assert updates[2].tag == "910"
-
-
-@pytest.mark.workflow(library="nypl", collection="RL")
 class TestGetBibUpdatesNYPLResearch:
-    def test_get_acq_updates(self, stub_updater, stub_domain_bib):
+    @pytest.mark.workflow(library="nypl", collection="RL", record_type="acq")
+    def test_get_order_level_updates_acq(self, stub_updater, stub_domain_bib):
         acq_bib = stub_domain_bib("acq")
         original_orders = copy.deepcopy(acq_bib.orders)
-        updates = stub_updater.get_acq_updates(
+        updates = stub_updater.get_order_level_updates(
             record=acq_bib,
             template_data={"name": "Foo", "order_code_1": "b", "format": "a"},
         )
@@ -471,7 +486,93 @@ class TestGetBibUpdatesNYPLResearch:
             "subfields": [{"code": "a", "value": "RL"}],
         }
 
-    def test_get_cat_updates(self, stub_updater, stub_domain_bib):
+    @pytest.mark.parametrize(
+        "template, command_tag",
+        [
+            ({"order_code_1": "b", "format": "a"}, "*b2=a;bn=xxx;"),
+            ({"order_code_1": "b"}, "*bn=xxx;"),
+        ],
+    )
+    @pytest.mark.workflow(library="nypl", collection="RL", record_type="sel")
+    def test_get_order_level_updates_sel(
+        self, stub_updater, stub_domain_bib, template, command_tag
+    ):
+        sel_bib = stub_domain_bib("sel")
+        sel_bib.parsed_fields = [
+            shared.ParsedField(
+                tag="949",
+                indicators=(" ", " "),
+                subfields=[shared.ParsedSubfield(code="a", value="b2=a")],
+            )
+        ]
+        original_orders = copy.deepcopy(sel_bib.orders)
+        updates = stub_updater.get_order_level_updates(
+            record=sel_bib, template_data=template
+        )
+        assert [i.order_code_1 for i in original_orders] == ["j"]
+        assert [i.order_code_1 for i in sel_bib.orders] == ["b"]
+        assert len(updates) == 4
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+        assert updates[2].tag == "949"
+        assert updates[2].subfields == [{"code": "a", "value": command_tag}]
+        assert updates[2].target_field_to_delete is None
+        assert updates[3].tag == "910"
+
+    @pytest.mark.parametrize(
+        "original, output", [("*b2=a;", "*b2=a;bn=xxx;"), ("*b2=a", "*b2=a;bn=xxx;")]
+    )
+    @pytest.mark.workflow(library="nypl", collection="RL", record_type="sel")
+    def test_get_order_level_updates_sel_check_command_tag(
+        self, stub_updater, stub_domain_bib, original, output
+    ):
+        sel_bib = stub_domain_bib("sel")
+        sel_bib.parsed_fields = [
+            shared.ParsedField(
+                tag="949",
+                indicators=(" ", " "),
+                subfields=[shared.ParsedSubfield(code="a", value=original)],
+            )
+        ]
+        updates = stub_updater.get_order_level_updates(
+            record=sel_bib, template_data={"order_code_1": "b", "format": "a"}
+        )
+        assert len(updates) == 4
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+        assert updates[2].tag == "949"
+        assert updates[2].subfields == [{"code": "a", "value": output}]
+        assert updates[2].target_field_to_delete.__dict__ == {
+            "tag": "949",
+            "indicators": (" ", " "),
+            "code": "a",
+            "value": original,
+        }
+
+        assert updates[3].tag == "910"
+
+    @pytest.mark.workflow(library="nypl", collection="RL", record_type="sel")
+    def test_get_order_level_updates_sel_skip_command_tag(
+        self, stub_updater, stub_domain_bib
+    ):
+        sel_bib = stub_domain_bib("sel")
+        sel_bib.parsed_fields = [
+            shared.ParsedField(
+                tag="949",
+                indicators=(" ", " "),
+                subfields=[shared.ParsedSubfield(code="a", value="*b2=a;bn=xxx;")],
+            )
+        ]
+        updates = stub_updater.get_order_level_updates(
+            record=sel_bib, template_data={"order_code_1": "b", "format": "a"}
+        )
+        assert len(updates) == 3
+        assert updates[0].tag == "960"
+        assert updates[1].tag == "961"
+        assert updates[2].tag == "910"
+
+    @pytest.mark.workflow(library="nypl", collection="RL", record_type="cat")
+    def test_get_full_record_updates(self, stub_updater, stub_domain_bib):
         cat_bib = stub_domain_bib("cat")
         cat_bib.bib_id = "12345"
         cat_bib.vendor_info = models.VendorInfo(
@@ -482,7 +583,7 @@ class TestGetBibUpdatesNYPLResearch:
                 {"tag": "949", "ind1": " ", "ind2": " ", "code": "a", "value": "*b2=a;"}
             ],
         )
-        updates = stub_updater.get_cat_updates(record=cat_bib)
+        updates = stub_updater.get_full_record_updates(record=cat_bib)
         assert len(updates) == 3
         assert updates[0].__dict__ == {
             "tag": "949",
@@ -502,89 +603,11 @@ class TestGetBibUpdatesNYPLResearch:
         }
         assert updates[2].tag == "910"
 
-    @pytest.mark.parametrize(
-        "template, command_tag",
-        [
-            ({"order_code_1": "b", "format": "a"}, "*b2=a;bn=xxx;"),
-            ({"order_code_1": "b"}, "*bn=xxx;"),
-        ],
-    )
-    def test_get_sel_updates(
-        self, stub_updater, stub_domain_bib, template, command_tag
-    ):
-        sel_bib = stub_domain_bib("sel")
-        sel_bib.parsed_fields = [
-            shared.ParsedField(
-                tag="949",
-                indicators=(" ", " "),
-                subfields=[shared.ParsedSubfield(code="a", value="b2=a")],
-            )
-        ]
-        original_orders = copy.deepcopy(sel_bib.orders)
-        updates = stub_updater.get_sel_updates(record=sel_bib, template_data=template)
-        assert [i.order_code_1 for i in original_orders] == ["j"]
-        assert [i.order_code_1 for i in sel_bib.orders] == ["b"]
-        assert len(updates) == 4
-        assert updates[0].tag == "960"
-        assert updates[1].tag == "961"
-        assert updates[2].tag == "949"
-        assert updates[2].subfields == [{"code": "a", "value": command_tag}]
-        assert updates[2].target_field_to_delete is None
-        assert updates[3].tag == "910"
-
-    @pytest.mark.parametrize(
-        "original, output", [("*b2=a;", "*b2=a;bn=xxx;"), ("*b2=a", "*b2=a;bn=xxx;")]
-    )
-    def test_get_sel_updates_check_command_tag(
-        self, stub_updater, stub_domain_bib, original, output
-    ):
-        sel_bib = stub_domain_bib("sel")
-        sel_bib.parsed_fields = [
-            shared.ParsedField(
-                tag="949",
-                indicators=(" ", " "),
-                subfields=[shared.ParsedSubfield(code="a", value=original)],
-            )
-        ]
-        updates = stub_updater.get_sel_updates(
-            record=sel_bib, template_data={"order_code_1": "b", "format": "a"}
-        )
-        assert len(updates) == 4
-        assert updates[0].tag == "960"
-        assert updates[1].tag == "961"
-        assert updates[2].tag == "949"
-        assert updates[2].subfields == [{"code": "a", "value": output}]
-        assert updates[2].target_field_to_delete.__dict__ == {
-            "tag": "949",
-            "indicators": (" ", " "),
-            "code": "a",
-            "value": original,
-        }
-
-        assert updates[3].tag == "910"
-
-    def test_get_sel_updates_skip_command_tag(self, stub_updater, stub_domain_bib):
-        sel_bib = stub_domain_bib("sel")
-        sel_bib.parsed_fields = [
-            shared.ParsedField(
-                tag="949",
-                indicators=(" ", " "),
-                subfields=[shared.ParsedSubfield(code="a", value="*b2=a;bn=xxx;")],
-            )
-        ]
-        updates = stub_updater.get_sel_updates(
-            record=sel_bib, template_data={"order_code_1": "b", "format": "a"}
-        )
-        assert len(updates) == 3
-        assert updates[0].tag == "960"
-        assert updates[1].tag == "961"
-        assert updates[2].tag == "910"
-
 
 class TestMarcUpdater:
     ENGINE = marc_handler.MarcUpdater()
 
-    @pytest.mark.workflow(library="bpl", collection=None)
+    @pytest.mark.workflow(library="bpl", collection=None, record_type="cat")
     def test_update_record_add_vendor_fields(self, stub_domain_bib, stub_updater):
         cat_bib = stub_domain_bib("cat")
         cat_bib.vendor_info = models.VendorInfo(
@@ -604,7 +627,7 @@ class TestMarcUpdater:
         updated_bib = Bib(cat_bib.binary_data, library=cat_bib.library)
         assert [i.format_field() for i in updated_bib.get_fields("949")] == ["*b2=a;"]
 
-    @pytest.mark.workflow(library="nypl", collection="RL")
+    @pytest.mark.workflow(library="nypl", collection="RL", record_type="cat")
     def test_update_record_add_bib_id(self, stub_domain_bib, stub_updater):
         cat_bib = stub_domain_bib("cat")
         cat_bib.bib_id = "12345"
@@ -614,7 +637,7 @@ class TestMarcUpdater:
         updated_bib = Bib(cat_bib.binary_data, library=cat_bib.library)
         assert updated_bib["945"].format_field() == "12345"
 
-    @pytest.mark.workflow(library="nypl", collection="BL")
+    @pytest.mark.workflow(library="nypl", collection="BL", record_type="cat")
     def test_update_record_command_tag(self, stub_domain_bib, stub_updater):
         field_949 = "*b2=a;"
         sel_bib = stub_domain_bib("sel")
@@ -657,7 +680,7 @@ class TestMarcUpdater:
         assert "333339876543210" in fields_949
         assert "*b2=a;bn=zzzzz;" in fields_949
 
-    @pytest.mark.workflow(library="nypl", collection="BL")
+    @pytest.mark.workflow(library="nypl", collection="BL", record_type="cat")
     def test_update_record_original_command_tag_not_found(
         self, stub_domain_bib, stub_updater
     ):

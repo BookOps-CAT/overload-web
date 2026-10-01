@@ -15,8 +15,6 @@ class BaseSierraResponse(ABC):
     """An abstract domain model that represents bib data returned from Sierra.
 
     Attributes:
-        library:
-            The library to whom the record belongs as a str.
         barcodes:
             The list of barcodes associated with a bib record as strings.
         bib_id:
@@ -31,6 +29,8 @@ class BaseSierraResponse(ABC):
             The record's control number as a string, if present.
         isbn:
             The ISBNs for the title as a list of strings.
+        library:
+            The library to whom the record belongs as a str.
         oclc_number:
             OCLC number(s) identifying the record as a list of strings.
         research_call_number:
@@ -115,6 +115,8 @@ class BaseSierraResponse(ABC):
 
 
 class BPLSolrResponse(BaseSierraResponse):
+    """A parsed response from Sierra via BPL Solr."""
+
     library = "bpl"
 
     @property
@@ -221,6 +223,8 @@ class BPLSolrResponse(BaseSierraResponse):
 
 
 class NYPLPlatformResponse(BaseSierraResponse):
+    """A parsed response from Sierra via NYPL Platform."""
+
     library = "nypl"
 
     @property

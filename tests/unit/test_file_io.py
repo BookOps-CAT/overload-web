@@ -16,7 +16,7 @@ def tmp_files(tmp_path):
 class TestLocalFiles:
     def test_local_download(self, tmp_path, tmp_files):
         retriever = file_io.LocalFileRetriever()
-        loaded_file = retriever.download("foo.mrc", dir=tmp_path)
+        loaded_file = retriever.download(name="foo.mrc", dir=tmp_path)
         assert "333331234567890".encode() in loaded_file
         assert "foo.mrc" in os.listdir(tmp_path)
 

@@ -14,7 +14,7 @@ from overload_web.application.pvf.template_handling import (
     SaveNewOrderTemplate,
     UpdateOrderTemplate,
 )
-from overload_web.presentation import deps
+from overload_web.presentation import deps, schemas
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ api_router = APIRouter()
 @api_router.post("/template", response_class=HTMLResponse)
 def create_template(
     request: Request,
-    template: Annotated[Any, Depends(deps.TemplateCreateModel.from_form)],
+    template: Annotated[Any, Depends(schemas.TemplateCreateModel.from_form)],
     uow: Annotated[Any, Depends(deps.get_uow)],
 ) -> HTMLResponse:
     """
@@ -33,7 +33,7 @@ def create_template(
 
     Args:
         template: the order template as an `TemplateCreateModel` object.
-        repository: a `repository.OrderTemplateRepository` object
+        uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
 
     Returns:
         the saved order template as a dict wrapped in an `HTMLResponse` object
@@ -55,7 +55,7 @@ def get_template(
 
     Args:
         template_id: the template's ID as a string.
-        repository: a `repository.OrderTemplateRepository` object
+        uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
 
     Returns:
         the retrieved order template as a dict wrapped in an `HTMLResponse` object
@@ -80,7 +80,7 @@ def get_template_list(
     List order templates in the database.
 
     Args:
-        repository: a `repository.OrderTemplateRepository` object
+        uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
         offset: the first template to be listed
         limit: the maximum number of templates to list
 
@@ -100,15 +100,15 @@ def get_template_list(
 def update_template(
     request: Request,
     template_id: Annotated[str, Form(...)],
+    template_patch: Annotated[Any, Depends(schemas.TemplatePatchModel.from_form)],
     uow: Annotated[Any, Depends(deps.get_uow)],
-    template_patch: Annotated[Any, Depends(deps.TemplatePatchModel.from_form)],
 ) -> HTMLResponse:
     """
     Apply patch updates to an order template in the database.
 
     Args:
-        repository:
-            a `repository.OrderTemplateRepository` object
+        uow:
+            a `ports.UnitOfWorkProtocol` object used by the endpoint.
         template_id:
             the template's ID as a string.
         template_patch:

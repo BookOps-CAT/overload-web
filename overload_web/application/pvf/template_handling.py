@@ -28,6 +28,7 @@ class SaveNewOrderTemplate:
         """
         with uow:
             save_template = uow.order_templates.save(obj=obj)
+            uow.commit()
             return order_templates.OrderTemplate(**save_template)
 
 
@@ -93,6 +94,7 @@ class UpdateOrderTemplate:
         """
         with uow:
             data = uow.order_templates.update(id=template_id, data=obj)
+            uow.commit()
             if data:
                 return order_templates.OrderTemplate(**data)
         return None

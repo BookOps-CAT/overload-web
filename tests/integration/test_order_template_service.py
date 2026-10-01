@@ -11,7 +11,7 @@ from overload_web.application.pvf.template_handling import (
 )
 from overload_web.domain.pvf import order_templates
 from overload_web.infrastructure import template_db, unit_of_work
-from overload_web.presentation import deps
+from overload_web.presentation import schemas
 
 
 @pytest.fixture
@@ -47,10 +47,11 @@ def test_template_attrs():
         for name in inspect.signature(template_db._TemplateModelBase).parameters.keys()
     ]
     pydantic_patch = [
-        name for name in inspect.signature(deps.TemplatePatchModel).parameters.keys()
+        name for name in inspect.signature(schemas.TemplatePatchModel).parameters.keys()
     ]
     pydantic_create = [
-        name for name in inspect.signature(deps.TemplateCreateModel).parameters.keys()
+        name
+        for name in inspect.signature(schemas.TemplateCreateModel).parameters.keys()
     ]
     domain_base = [
         name
@@ -118,7 +119,9 @@ class TestTemplateService:
                 "primary_matchpoint": "isbn",
             }
         )
-        template_patch = deps.TemplatePatchModel(primary_matchpoint="upc", lang="eng")
+        template_patch = schemas.TemplatePatchModel(
+            primary_matchpoint="upc", lang="eng"
+        )
         SaveNewOrderTemplate.execute(uow=stub_uow, obj=template)
         original_template = GetOrderTemplate.execute(uow=stub_uow, template_id="1")
         updated_template = UpdateOrderTemplate.execute(

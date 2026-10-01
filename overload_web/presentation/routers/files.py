@@ -26,16 +26,15 @@ api_router = APIRouter()
 @api_router.get("/remote/list", response_class=HTMLResponse)
 def list_remote_files(
     request: Request,
-    vendor: str,
     retriever: Annotated[Any, Depends(deps.remote_file_retriever)],
+    vendor: str,
 ) -> HTMLResponse:
     """
     List all files on a vendor's SFTP server.
 
     Args:
-        vendor: the vendor whose server to access
         retriever: a file retriever for the given vendor
-
+        vendor: the vendor whose server to access
     Returns:
         the list of files wrapped in a `HTMLResponse` object
     """
@@ -52,22 +51,21 @@ def list_remote_files(
 @api_router.post("/remote/select", response_class=HTMLResponse)
 def select_ftp_file(
     request: Request,
-    uow: Annotated[Any, Depends(deps.get_uow)],
-    storage: Annotated[Any, Depends(deps.local_file_storage)],
-    retriever: Annotated[Any, Depends(deps.remote_file_retriever)],
-    workflow_id: Annotated[str, Form(...)],
     remote_file: Annotated[str, Form(...)],
+    retriever: Annotated[Any, Depends(deps.remote_file_retriever)],
+    storage: Annotated[Any, Depends(deps.local_file_storage)],
+    uow: Annotated[Any, Depends(deps.get_uow)],
+    workflow_id: Annotated[str, Form(...)],
 ):
     """
     Load a file from remote storage and upload it to the workflow.
 
     Args:
-        repository: the repository where file data is written.
-        storage: file storage for the workflow.
-        retriever: a file retriever for the given vendor.
-        workflow_id: the ID for the given workflow.
         remote_file: the name of the file to be loaded.
-
+        retriever: a file retriever for the given vendor.
+        storage: file storage for the workflow.
+        uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
+        workflow_id: the ID for the given workflow.
     Returns:
         the list of files wrapped in a `HTMLResponse` object
     """
@@ -94,8 +92,8 @@ def select_ftp_file(
 def upload_file(
     request: Request,
     file: UploadFile,
-    uow: Annotated[Any, Depends(deps.get_uow)],
     storage: Annotated[Any, Depends(deps.local_file_storage)],
+    uow: Annotated[Any, Depends(deps.get_uow)],
     workflow_id: Annotated[str, Form(...)],
 ):
     """
@@ -103,8 +101,8 @@ def upload_file(
 
     Args:
         file: the file to be loaded as an `UploadFile` object.
-        repository: the repository where file data is written.
         storage: file storage for the workflow.
+        uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
         workflow_id: the ID for the given workflow.
 
     Returns:
@@ -129,16 +127,16 @@ def upload_file(
 @api_router.post("/remove", response_class=HTMLResponse)
 def remove_file(
     request: Request,
-    uow: Annotated[Any, Depends(deps.get_uow)],
     file_id: Annotated[str, Form(...)],
+    uow: Annotated[Any, Depends(deps.get_uow)],
     workflow_id: Annotated[str, Form(...)],
 ):
     """
     Rempve a file from the workflow.
 
     Args:
-        repository: the repository where file data is written.
         file_id: the ID for the file to be removed from the workflow.
+        uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
         workflow_id: the ID for the given workflow.
 
     Returns:

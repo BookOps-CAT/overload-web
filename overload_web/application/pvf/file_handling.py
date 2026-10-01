@@ -117,5 +117,6 @@ class DeleteFileFromWorkflow:
         """
         with uow:
             uow.incoming_files.delete(id)
+            uow.commit()
             files = uow.incoming_files.list_by_id(workflow_id)
             return files

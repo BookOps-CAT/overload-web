@@ -28,7 +28,20 @@ def get_output_report(
     record_type: str,
     uow: Annotated[Any, Depends(deps.get_uow)],
 ) -> HTMLResponse:
-    """Create a dict to be used on the report summary page after pvf workflow."""
+    """
+    Create a report for a workflow based on processing statistics.
+
+    This report is used on the report summary page after pvf workflow.
+
+    Args:
+        batch_id: the id for the batch of processed files and their statistics
+        record_type: the workflow used in the process (eg. "acq", "cat", or "sel").
+        uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
+
+    Returns:
+        the report data wrapped in a `HTMLResponse` object
+
+    """
     out = CreatePVFOutputReport.execute(
         batch_id=batch_id, uow=uow, record_type=record_type
     )
@@ -41,7 +54,19 @@ def get_output_report(
 def get_detailed_report(
     request: Request, batch_id: str, uow: Annotated[Any, Depends(deps.get_uow)]
 ) -> HTMLResponse:
-    """Create a dict to be used on the detailed report stats page after pvf workflow."""
+    """
+    Retrieve processing statistics and return a detailed report for a workflow.
+
+    This report is used on the report details page after pvf workflow.
+
+    Args:
+        batch_id: the id for the batch of processed files and their statistics
+        uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
+
+    Returns:
+        the report data wrapped in a `HTMLResponse` object
+
+    """
     out = GetDetailedReportData.execute(batch_id=batch_id, uow=uow)
     return request.app.state.templates.TemplateResponse(
         request=request, name="reports/detailed.html", context={"detailed_report": out}
@@ -56,7 +81,20 @@ def save_processing_statistics(
     uow: Annotated[Any, Depends(deps.get_uow)],
     writer: Annotated[Any, Depends(deps.get_report_writer)],
 ) -> HTMLResponse:
-    """Save processing statistics reports (call number and dupes) to a google sheet."""
+    """
+    Save all processing statistics for a workflow to a google sheet.
+
+    Args:
+        batch_id: the id for the batch of processed files and their statistics
+        record_type: the workflow used in the process (eg. "acq", "cat", or "sel").
+        uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
+        writer: a `ports.ReportWriter` object to interact with the Google Sheets API
+
+    Returns:
+        Whether or not the report data was successfully written wrapped
+        in a `HTMLResponse` object.
+
+    """
     WriteOutputReport.execute(
         batch_id=batch_id, uow=uow, writer=writer, record_type=record_type
     )

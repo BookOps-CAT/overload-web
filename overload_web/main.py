@@ -1,7 +1,4 @@
-"""`FastAPI` application entry point.
-
-Initializes the `FastAPI` app and registers all routers.
-"""
+"""Overload Web application entry point for FastAPI."""
 
 from __future__ import annotations
 
@@ -48,7 +45,9 @@ logging.config.dictConfig(get_log_config())
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Create and drop database tables on startup/shutdown."""
     logger.info("Starting up Overload...")
-    engine = deps.get_engine()
+    uri = deps.get_uri_for_engine()
+    engine = deps.get_engine(uri)
+    app.state.engine = engine
     deps.create_db_and_tables(engine)
     yield
     logger.info("Shutting down Overload...")

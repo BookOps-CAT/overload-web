@@ -189,7 +189,7 @@ class TestDetermineCatalogAction:
         bpl_data = {k: v for k, v in bpl_data.items() if k != "ss_marc_tag_005"}
         response = sierra_responses.BPLSolrResponse(bpl_data)
         action, updated = matcher.determine_catalog_action(
-            mock_bib.update_datetime, candidate=response
+            update_datetime=mock_bib.update_datetime, candidate=response
         )
         assert action == "attach"
         assert updated is False
@@ -214,7 +214,7 @@ class TestDetermineCatalogAction:
         nypl_bl_data = {k: v for k, v in nypl_bl_data.items() if k != "updatedDate"}
         response = sierra_responses.NYPLPlatformResponse(nypl_bl_data)
         action, updated = matcher.determine_catalog_action(
-            mock_bib.update_datetime, candidate=response
+            update_datetime=mock_bib.update_datetime, candidate=response
         )
         assert action == "attach"
         assert updated is False
@@ -237,7 +237,7 @@ class TestDetermineCatalogAction:
         matcher = matching.SelectionMatchAnalyzer()
         response = sierra_responses.NYPLPlatformResponse(stub_nypl_data)
         action, updated = matcher.determine_catalog_action(
-            mock_bib.update_datetime, candidate=response
+            update_datetime=mock_bib.update_datetime, candidate=response
         )
         assert action == "update"
         assert updated is True
@@ -251,7 +251,7 @@ class TestDetermineCatalogAction:
         mock_bib.update_date = "20250101000001.0"
         response = sierra_responses.NYPLPlatformResponse(stub_nypl_data)
         action, updated = matcher.determine_catalog_action(
-            mock_bib.update_datetime, candidate=response
+            update_datetime=mock_bib.update_datetime, candidate=response
         )
         assert action == "attach"
         assert updated is False
@@ -266,7 +266,7 @@ class TestDetermineCatalogAction:
         bpl_data = {k: v for k, v in bpl_data.items() if k != "ss_marc_tag_003"}
         response = sierra_responses.BPLSolrResponse(bpl_data)
         action, updated = matcher.determine_catalog_action(
-            mock_bib.update_datetime, candidate=response
+            update_datetime=mock_bib.update_datetime, candidate=response
         )
         assert action == "attach"
         assert updated is False

@@ -1,6 +1,6 @@
 """Application service for matching incoming records against ports.
 
-This module defines the `BibMatcher`, an application service responsible for
+This module defines the `BibMatcher`, a domain service responsible for
 finding duplicate records in Sierra for a `DomainBib`. Matching is based on
 specific identifiers such as OCLC number, ISBN, or Sierra Bib ID.
 """
@@ -8,7 +8,7 @@ specific identifiers such as OCLC number, ISBN, or Sierra Bib ID.
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Sequence
 
 from overload_web.domain.pvf import matching, models, ports
 
@@ -39,8 +39,8 @@ class BibMatcher:
         self.fetcher = fetcher
 
     def _match_bib(
-        self, record: models.DomainBib, matchpoints: dict[str, str]
-    ) -> list[dict[str, Any]]:
+        self, matchpoints: dict[str, str], record: models.DomainBib
+    ) -> Sequence[dict[str, Any]]:
         """
         Find all matches in Sierra for a given bib record.
 
@@ -48,17 +48,17 @@ class BibMatcher:
         The first non-empty match that returns candidates is used for comparison.
 
         Args:
-            record:
-                The bibliographic record to match against Sierra represented as a
-                `DomainBib` object.
             matchpoints:
                 a dictionary containing matchpoints and their priority e.g.
                 `{"primary_matchpoint": "isbn", "secondary_matchpoint": "bib_id"}`
+            record:
+                The bibliographic record to match against Sierra represented as a
+                `DomainBib` object.
         Returns:
             A list of the record's matches as dictionaries representing Sierra
             responses, or an empty list if no matches were found.
         """
-        candidates: list[dict[str, Any]]
+        candidates: Sequence[dict[str, Any]]
         for matchpoint in matchpoints.values():
             if not matchpoint:
                 continue
@@ -72,27 +72,28 @@ class BibMatcher:
         return []
 
     def match_order_record(
-        self, record: models.DomainBib, matchpoints: dict[str, str]
-    ) -> list[dict[str, Any]]:
+        self, matchpoints: dict[str, str], record: models.DomainBib
+    ) -> Sequence[dict[str, Any]]:
         """
         Match an order-level bibliographic record against Sierra.
 
         Args:
-            record:
-                A parsed bibliographic record as a `DomainBib` object.
             matchpoints:
-                A dictionary containing matchpoints to be used in matching.
-
+                a dictionary containing matchpoints and their priority e.g.
+                `{"primary_matchpoint": "isbn", "secondary_matchpoint": "bib_id"}`
+            record:
+                The bibliographic record to match against Sierra represented as a
+                `DomainBib` object.
         Returns:
             A list of the record's matches as dictionaries representing Sierra
             responses, or an empty list if no matches were found.
         """
-        responses: list[dict[str, Any]] = self._match_bib(
+        responses: Sequence[dict[str, Any]] = self._match_bib(
             record=record, matchpoints=matchpoints
         )
         return responses
 
-    def match_full_record(self, record: models.DomainBib) -> list[dict[str, Any]]:
+    def match_full_record(self, record: models.DomainBib) -> Sequence[dict[str, Any]]:
         """
         Match a full-level bibliographic record against Sierra.
 
@@ -109,13 +110,13 @@ class BibMatcher:
         """
         if record.vendor_info is None:
             raise ValueError("Vendor index required for cataloging workflow.")
-        responses: list[dict[str, Any]] = self._match_bib(
+        responses: Sequence[dict[str, Any]] = self._match_bib(
             record=record, matchpoints=record.vendor_info.matchpoints
         )
         return responses
 
     def review_matches(
-        self, bib: models.DomainBib, matches: list[dict[str, Any]]
+        self, bib: models.DomainBib, matches: Sequence[dict[str, Any]]
     ) -> matching.MatchAnalysis:
         """
         Review and categorize match candidates returned from Sierra.
