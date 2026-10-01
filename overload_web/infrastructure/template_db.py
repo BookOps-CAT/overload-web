@@ -1,5 +1,5 @@
 """Adapter module that defines a relational database and associated tables for
-order template (`TemplateModel`) objects.
+order template objects.
 
 Classes:
 
@@ -32,8 +32,8 @@ class _TemplateModelBase(SQLModel):
     A reusable template for applying consistent values to orders.
 
     Attributes:
-        name: the name to be associated with the `TemplateModel` in the database
         agent: the user who created the `TemplateModel`
+        name: the name to be assigned to the `TemplateModel` in the database
 
     All other fields correspond to those available in the `Order` domain model.
 
@@ -132,17 +132,17 @@ class OrderTemplateRepository(ports.SqlRepositoryProtocol):
         """
         valid_obj = TemplateModel.model_validate(obj, from_attributes=True)
         self.session.add(valid_obj)
-        self.session.commit()
+        self.session.flush()
         self.session.refresh(valid_obj)
         return valid_obj.model_dump()
 
-    def update(self, id: str, data: SQLModel) -> dict[str, Any] | None:
+    def update(self, data: SQLModel, id: str) -> dict[str, Any] | None:
         """
         Updates an existing `OrderTemplate` in the database.
 
         Args:
-            id: the id of the template to be updated
             data: the data to be used to update the existing template.
+            id: the id of the template to be updated
         Returns:
             a `TemplateModel` instance or `None` if not found.
         """
@@ -153,6 +153,6 @@ class OrderTemplateRepository(ports.SqlRepositoryProtocol):
             patch_data = data.model_dump(exclude_unset=True)
             template.sqlmodel_update(patch_data)
             self.session.add(template)
-            self.session.commit()
+            self.session.flush()
             self.session.refresh(template)
         return template.model_dump() if template else None

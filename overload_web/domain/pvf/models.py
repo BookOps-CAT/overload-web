@@ -50,39 +50,39 @@ class DomainBib:
         Initialize a `DomainBib` object.
 
         Args:
-            binary_data:
-                The marc record as a byte literal or `bytes` object
-            collection:
-                The collection to whom the record belongs as an enum
-                (`Collection`), str or None.
-            library:
-                The library to whom the record belongs as an enum
-                (`LibrarySystem`), str, or None.
-            record_type:
-                The workflow two whom this record belongs as an enum
-                (`RecordType`), str, or None.
-            title:
-                The title associated with the record as a string.
             barcodes:
                 The list of barcodes associated with the bib record as strings.
             bib_id:
                 The record's sierra bib ID as a string.
+            binary_data:
+                The marc record as a byte literal or `bytes` object
             branch_call_number:
                 The branch call number for the record, if present.
+            collection:
+                The collection to whom the record belongs as a
+                `Collection` enum, str or None.
             command_tag:
                 The command tag from an incoming record if present.
             control_number:
                 The record's control number as a string, if present.
             isbn:
                 The ISBN for the title as a string, if present.
+            library:
+                The library to whom the record belongs as a
+                `LibrarySystem` enum, str, or None.
             oclc_number:
                 OCLC number(s) identifying the record as a string or list of strings,
                 if present.
             orders:
                 The list of orders associated with the record as `Order` domain objects.
+            record_type:
+                The workflow two whom this record belongs as a
+                `RecordType` enum, str, or None.
             research_call_number:
                 The research call number for the record as a string or list of strings,
                 if present.
+            title:
+                The title associated with the record as a string.
             upc:
                 The UPC number associated with the record, if present.
             update_date:

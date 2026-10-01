@@ -1,4 +1,4 @@
-"""Application serivce commands for reporting operations."""
+"""Application service commands for reporting operations."""
 
 import logging
 from typing import Any
@@ -21,8 +21,8 @@ class CreatePVFOutputReport:
                 The ID for the `ProcessedFileBatch` object in the database.
             record_type:
                 The record type for the operation as a string.
-            repo:
-                a `ports.SqlRepositoryProtocol` object used by the command.
+            uow:
+                A `ports.UnitOfWorkProcotol` object used by the command.
         Returns:
             The report data as a dictionary.
         """
@@ -54,10 +54,10 @@ class GetDetailedReportData:
         Args:
             batch_id:
                 The ID for the `ProcessedFileBatch` object in the database.
-            repo:
-                a `ports.SqlRepositoryProtocol` object used by the command.
+            uow:
+                A `ports.UnitOfWorkProcotol` object used by the command.
         Returns:
-            The report data as a dictionary.
+            The report data as a list of dictionaries.
         """
         with uow:
             data = uow.processed_batches.get(batch_id)
@@ -82,8 +82,8 @@ class WriteOutputReport:
                 The ID for the `ProcessedFileBatch` object in the database.
             record_type:
                 The record type for the operation as a string.
-            repo:
-                a `ports.SqlRepositoryProtocol` object used by the command.
+            uow:
+                A `ports.UnitOfWorkProcotol` object used by the command.
             writer:
                 a `ports.ReportWriter` object used by the command.
         Returns:

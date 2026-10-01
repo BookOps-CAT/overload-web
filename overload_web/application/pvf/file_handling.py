@@ -60,23 +60,22 @@ class UploadFileToWorkflow:
         """Saves file data to storage and persists database metadata within a UoW.
 
         Args:
-            workflow_id:
-                The id of the workflow to which the file belongs.
-            filename:
-                The name of the file as a str.
             content:
                 The content of the file as a bytes object
+            filename:
+                The name of the file as a str.
             source:
                 The source of the file (ie. either `local` or `ftp`)
             storage:
                 Concrete implementation of the `FileStorage` for
                 handling vendor files.
-            repo:
-                Concrete implementation of the `SqlRepositoryProtocol` for
+            uow:
+                Concrete implementation of the `UnitOfWorkProcotol` for
                 handling vendor files.
-
+            workflow_id:
+                The id of the workflow to which the file belongs.
         Returns:
-            The saved IncomingFile domain entity.
+            A list of dictionariess representing the files saved to the workflow.
         """
         file_id = str(uuid.uuid4())
         reference = storage.save(id=file_id, filename=filename, content=content)
@@ -99,7 +98,7 @@ class UploadFileToWorkflow:
 class DeleteFileFromWorkflow:
     @staticmethod
     def execute(
-        id: str, workflow_id: str, uow: ports.UnitOfWorkProtocol
+        id: str, uow: ports.UnitOfWorkProtocol, workflow_id: str
     ) -> Sequence[dict[str, Any]]:
         """
         Delete an incoming file from the workflow's list of files.
@@ -108,12 +107,11 @@ class DeleteFileFromWorkflow:
         Args:
             id:
                 The id to the file to remove from the workflow as a str.
+            uow:
+                Concrete implementation of the `UnitOfWorkProcotol` for
+                handling vendor files.
             workflow_id:
                 The id of the workflow to which the file belongs.
-            repo:
-                Concrete implementation of the `SqlRepositoryProtocol` for
-                handling vendor files.
-
         Returns:
             The list of files remaining for the workflow as a list of dictionaries.
         """

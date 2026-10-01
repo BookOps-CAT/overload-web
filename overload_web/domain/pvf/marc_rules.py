@@ -1,18 +1,21 @@
-"""Domain models that define bib records, order records, and their component parts."""
+"""Value objects that define MARC fields, field updates, and update rules."""
 
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Protocol, Sequence
+from typing import Any, Sequence
 
 from overload_web.domain import shared
+from overload_web.domain.pvf import models
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class TargetFieldCriteria:
+    """Value object that defines data in a field to be deleted."""
+
     tag: str
     indicators: tuple[str, str]
     code: str
@@ -29,12 +32,6 @@ class MarcFieldUpdateValues:
     subfields: list[dict[str, str]]
     delete_fields_by_tag: bool = False
     target_field_to_delete: TargetFieldCriteria | None = None
-
-
-class MarcOrderProtocol(Protocol):
-    def map_to_marc(
-        self, rules: dict[str, Any]
-    ) -> dict[str, Any]: ...  # pragma: no branch
 
 
 class FieldRules:
@@ -140,7 +137,7 @@ class FieldRules:
     def get_item_fields(
         fields: list[list[shared.ParsedField]], criteria: tuple[str, str, str]
     ) -> list[MarcFieldUpdateValues]:
-        """Creates list of item fields to add to combine duplicate records."""
+        """Creates list of item fields to add to combined duplicate records."""
         all_items = []
         for field_list in fields:
             for item in field_list:
@@ -228,7 +225,7 @@ class FieldRules:
 
     @staticmethod
     def update_order_fields(
-        orders: Sequence[MarcOrderProtocol], mapping: dict[str, Any]
+        orders: Sequence[models.Order], mapping: dict[str, Any]
     ) -> list[MarcFieldUpdateValues]:
         """Updates order record fields based on template data applied to DomainBib"""
         fields = []

@@ -81,7 +81,7 @@ class GoogleSheetsReporter(ports.ReportWriter):
         Prep output for google sheet.
 
         Args:
-            data: dictionary containing report data to be written.
+            data: a list of dictionaries containing report data to be written.
 
         Returns:
             The data to be written as a list of lists

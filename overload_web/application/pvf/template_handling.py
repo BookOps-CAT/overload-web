@@ -11,14 +11,14 @@ logger = logging.getLogger(__name__)
 class SaveNewOrderTemplate:
     @staticmethod
     def execute(
-        uow: ports.UnitOfWorkProtocol, obj: order_templates.OrderTemplateBase
+        obj: order_templates.OrderTemplateBase, uow: ports.UnitOfWorkProtocol
     ) -> order_templates.OrderTemplate:
         """
         Save an order template.
 
         Args:
-            repository: a `ports.SqlRepositoryProtocol` object.
             obj: the template data as an `OrderTemplateBase` object.
+            uow: a `ports.UnitOfWorkProcotol` object.
 
         Raises:
             ValidationError: If the template lacks a name, agent, or primary_matchpoint.
@@ -34,14 +34,14 @@ class SaveNewOrderTemplate:
 class GetOrderTemplate:
     @staticmethod
     def execute(
-        uow: ports.UnitOfWorkProtocol, template_id: str
+        template_id: str, uow: ports.UnitOfWorkProtocol
     ) -> order_templates.OrderTemplate | None:
         """
         Retrieve an order template by its ID.
 
         Args:
-            repository: a `ports.SqlRepositoryProtocol` object.
             template_id: unique identifier for the template.
+            uow: a `ports.UnitOfWorkProcotol` object.
 
         Returns:
             The retrieved template as a `OrderTemplate` object or None.
@@ -62,10 +62,9 @@ class ListOrderTemplates:
         Retrieve a list of templates in the database.
 
         Args:
-            repository: a `ports.SqlRepositoryProtocol` object.
             offset: start position of first `OrderTemplate` object to return.
             limit: the maximum number of `OrderTemplate` objects to return.
-
+            uow: a `ports.UnitOfWorkProcotol` object.
         Returns:
             A list of `OrderTemplate` objects.
         """
@@ -77,18 +76,17 @@ class ListOrderTemplates:
 class UpdateOrderTemplate:
     @staticmethod
     def execute(
-        uow: ports.UnitOfWorkProtocol,
         template_id: str,
         obj: order_templates.OrderTemplateBase,
+        uow: ports.UnitOfWorkProtocol,
     ) -> order_templates.OrderTemplate | None:
         """
         Update an existing order template.
 
         Args:
-            repository: a `ports.SqlRepositoryProtocol` object.
-            template_id: unique identifier for the template to be updated.
             obj: the data to be replaces as an `OrderTemplateBase` object.
-
+            template_id: unique identifier for the template to be updated.
+            uow: a `ports.UnitOfWorkProcotol` object.
         Returns:
             The updated template as an `OrderTemplate` or None if the template
             does not exist.

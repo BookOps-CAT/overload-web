@@ -93,7 +93,7 @@ class TestFileWorkflows:
             storage=storage,
             uow=uow,
         )
-        assert "File added to workflow 12345: IncomingFile(id=" in caplog.text
+        assert "File added to workflow 12345: IncomingFile(filename=" in caplog.text
         assert "Local file storage location: " in caplog.text
 
     def test_delete_file(self, mock_engine_with_files):
