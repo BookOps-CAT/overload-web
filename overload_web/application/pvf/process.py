@@ -3,11 +3,11 @@
 import logging
 from typing import Any
 
-from overload_web.application import ports
 from overload_web.domain.pvf import (
     aggregate,
     match_service,
     parsing_service,
+    ports,
     update_service,
 )
 

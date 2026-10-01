@@ -21,6 +21,8 @@ from typing import Any
 
 from sqlmodel import JSON, Column, Field, Relationship, Session, SQLModel
 
+from overload_web.domain.pvf import ports
+
 logger = logging.getLogger(__name__)
 
 
@@ -59,7 +61,7 @@ class ProcessedFileModel(SQLModel, table=True):
     batch: PVFBatch = Relationship(back_populates="files")
 
 
-class PVFBatchRepository:
+class PVFBatchRepository(ports.SqlRepositoryProtocol):
     """
     `SQLModel` repository for `PVFBatch` objects.
 

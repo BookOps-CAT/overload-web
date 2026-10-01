@@ -6,12 +6,13 @@ import logging
 
 from sqlmodel import Session
 
+from overload_web.domain.pvf import ports
 from overload_web.infrastructure import batch_db, file_io, template_db
 
 logger = logging.getLogger(__name__)
 
 
-class SqlModelUnitOfWork:
+class SqlModelUnitOfWork(ports.UnitOfWorkProtocol):
     def __init__(self, engine):
         self.engine = engine
         self.session = None

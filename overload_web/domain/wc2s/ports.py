@@ -27,7 +27,7 @@ class OCLCBibFetcher(Protocol):
 
     """Search for brief bib resource using specified parameters."""
 
-    def get_full_bib_by_id(self, value: str | int) -> bytes: ...  # pragma: no branch
+    def get_full_bib_by_id(self, value: str) -> bytes: ...  # pragma: no branch
 
     """Retrieve for full MARC record as a bytes object for a given ID."""
 

@@ -20,10 +20,12 @@ from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
 from googleapiclient.discovery import build  # type: ignore
 from googleapiclient.errors import HttpError  # type: ignore
 
+from overload_web.domain.pvf import ports
+
 logger = logging.getLogger(__name__)
 
 
-class GoogleSheetsReporter:
+class GoogleSheetsReporter(ports.ReportWriter):
     def configure_sheet(self) -> Credentials:
         """
         Get or update credentials for google sheets API and save token to file.

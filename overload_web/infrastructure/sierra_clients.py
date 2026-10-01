@@ -33,6 +33,8 @@ import requests
 from bookops_bpl_solr import BookopsSolrError, SolrSession
 from bookops_nypl_platform import BookopsPlatformError, PlatformSession, PlatformToken
 
+from overload_web.domain.pvf import ports
+
 from .. import __title__, __version__
 
 logger = logging.getLogger(__name__)
@@ -59,7 +61,7 @@ class FetcherFactory:
         return SierraBibFetcher(client)
 
 
-class SierraBibFetcher:
+class SierraBibFetcher(ports.BibFetcher):
     """
     Fetches bibliographic records from Sierra and converts them into dictionaries
     to be parsed into `BaseSierraResponse` objects for `DomainBib` construction.

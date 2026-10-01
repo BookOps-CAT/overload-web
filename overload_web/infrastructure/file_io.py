@@ -18,10 +18,12 @@ from typing import Any, Sequence
 from file_retriever import Client
 from sqlmodel import Field, Session, SQLModel, select
 
+from overload_web.domain.pvf import ports
+
 logger = logging.getLogger(__name__)
 
 
-class LocalFileStorage:
+class LocalFileStorage(ports.FileStorage):
     def __init__(self, base_path: str = "temp/uploads"):
         self.base_path = Path(base_path)
         self.base_path.mkdir(exist_ok=True)
@@ -41,7 +43,7 @@ class LocalFileStorage:
         return file
 
 
-class LocalFileRetriever:
+class LocalFileRetriever(ports.FileRetriever):
     """
     Loads files from the local filesystem.
 
@@ -63,7 +65,7 @@ class LocalFileRetriever:
         return file
 
 
-class LocalFileWriter:
+class LocalFileWriter(ports.FileWriter):
     """
     Writes files to the local filesystem.
 
@@ -80,7 +82,7 @@ class LocalFileWriter:
         return path
 
 
-class SFTPFileRetriever:
+class SFTPFileRetriever(ports.FileRetriever):
     """
     Loads files from a remote FTP/SFTP server.
 
@@ -127,7 +129,7 @@ class IncomingFileModel(SQLModel, table=True):
     reference: str = Field(nullable=False)
 
 
-class IncomingFileRepository:
+class IncomingFileRepository(ports.SqlRepositoryProtocol):
     def __init__(self, session: Session):
         self.session = session
 

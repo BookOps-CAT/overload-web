@@ -90,7 +90,6 @@ indent = 2
 cluster = true
 exclude_exact = [
     "overload_web.application",
-    "overload_web.application.ports",
     "overload_web.application.pvf",
     "overload_web.application.wc2s",
     "overload_web.domain",

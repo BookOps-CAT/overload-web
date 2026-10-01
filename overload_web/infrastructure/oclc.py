@@ -10,6 +10,8 @@ from bookops_worldcat import MetadataSession, WorldcatAccessToken
 from bookops_worldcat.errors import BookopsWorldcatError
 from requests import Request, Response
 
+from overload_web.domain.wc2s import ports
+
 from .. import __title__, __version__
 
 logger = logging.getLogger(__name__)
@@ -17,7 +19,7 @@ logger = logging.getLogger(__name__)
 AGENT = f"{__title__}/{__version__}"
 
 
-class WorldcatFetcher(MetadataSession):
+class WorldcatFetcher(MetadataSession, ports.OCLCBibFetcher):
     """
     Fetches bibliographic record data from OCLC.
     This class is a concrete implementation of the `OCLCBibFetcher` protocol.

@@ -22,6 +22,8 @@ from typing import Any, Sequence
 
 from sqlmodel import Field, Session, SQLModel, select
 
+from overload_web.domain.pvf import ports
+
 logger = logging.getLogger(__name__)
 
 
@@ -74,7 +76,7 @@ class TemplateModel(_TemplateModelBase, table=True):
     id: int = Field(default=None, primary_key=True, index=True)
 
 
-class OrderTemplateRepository:
+class OrderTemplateRepository(ports.SqlRepositoryProtocol):
     """
     `SQLModel` repository for `TemplateModel` objects.
 

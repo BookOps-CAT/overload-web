@@ -4,8 +4,7 @@ import logging
 import uuid
 from typing import Any, Sequence
 
-from overload_web.application import ports
-from overload_web.domain.pvf import files
+from overload_web.domain.pvf import files, ports
 
 logger = logging.getLogger(__name__)
 

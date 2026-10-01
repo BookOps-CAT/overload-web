@@ -3,8 +3,7 @@
 import logging
 from typing import Sequence
 
-from overload_web.application import ports
-from overload_web.domain.pvf import order_templates
+from overload_web.domain.pvf import order_templates, ports
 
 logger = logging.getLogger(__name__)
 
