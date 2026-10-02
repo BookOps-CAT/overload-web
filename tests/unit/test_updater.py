@@ -5,7 +5,6 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain import shared
 from overload_web.domain.pvf import bib_services, marc_rules, models
 from overload_web.infrastructure import marc_handler
 
@@ -60,11 +59,11 @@ def stub_full_bib(stub_bib):
                 )
             )
             parsed_fields.append(
-                shared.ParsedField(
+                models.ParsedField(
                     tag=field["tag"],
                     indicators=(field["ind1"], field["ind2"]),
                     subfields=[
-                        shared.ParsedSubfield(code=i["code"], value=i["value"])
+                        models.ParsedSubfield(code=i["code"], value=i["value"])
                         for i in field["subfields"]
                     ],
                 )
@@ -122,16 +121,16 @@ def stub_domain_bib(request, stub_bib):
             marker.kwargs["library"], marker.kwargs["collection"], record_type
         )
         bib.parsed_fields = [
-            shared.ParsedField(tag="005", value="20200101010000.0"),
-            shared.ParsedField(
+            models.ParsedField(tag="005", value="20200101010000.0"),
+            models.ParsedField(
                 tag="020",
                 indicators=(" ", " "),
-                subfields=[shared.ParsedSubfield(code="i", value="9781234567890")],
+                subfields=[models.ParsedSubfield(code="i", value="9781234567890")],
             ),
-            shared.ParsedField(
+            models.ParsedField(
                 tag="949",
                 indicators=(" ", "1"),
-                subfields=[shared.ParsedSubfield(code="i", value="333331234567890")],
+                subfields=[models.ParsedSubfield(code="i", value="333331234567890")],
             ),
         ]
         bib.orders = [
@@ -205,10 +204,10 @@ class TestGetBibUpdatesBPL:
     ):
         sel_bib = stub_domain_bib("sel")
         sel_bib.parsed_fields = [
-            shared.ParsedField(
+            models.ParsedField(
                 tag="949",
                 indicators=(" ", " "),
-                subfields=[shared.ParsedSubfield(code="a", value="*b2=a;")],
+                subfields=[models.ParsedSubfield(code="a", value="*b2=a;")],
             )
         ]
         updates = stub_updater.get_order_level_updates(
@@ -296,10 +295,10 @@ class TestGetBibUpdatesNYPLBranch:
     ):
         sel_bib = stub_domain_bib("sel")
         sel_bib.parsed_fields = [
-            shared.ParsedField(
+            models.ParsedField(
                 tag="949",
                 indicators=(" ", " "),
-                subfields=[shared.ParsedSubfield(code="a", value="b2=a")],
+                subfields=[models.ParsedSubfield(code="a", value="b2=a")],
             )
         ]
         original_orders = copy.deepcopy(sel_bib.orders)
@@ -326,10 +325,10 @@ class TestGetBibUpdatesNYPLBranch:
     ):
         sel_bib = stub_domain_bib("sel")
         sel_bib.parsed_fields = [
-            shared.ParsedField(
+            models.ParsedField(
                 tag="949",
                 indicators=(" ", " "),
-                subfields=[shared.ParsedSubfield(code="a", value=original)],
+                subfields=[models.ParsedSubfield(code="a", value=original)],
             )
         ]
         updates = stub_updater.get_order_level_updates(
@@ -354,10 +353,10 @@ class TestGetBibUpdatesNYPLBranch:
     ):
         sel_bib = stub_domain_bib("sel")
         sel_bib.parsed_fields = [
-            shared.ParsedField(
+            models.ParsedField(
                 tag="949",
                 indicators=(" ", " "),
-                subfields=[shared.ParsedSubfield(code="a", value="*b2=a;bn=zzzzz;")],
+                subfields=[models.ParsedSubfield(code="a", value="*b2=a;bn=zzzzz;")],
             )
         ]
         updates = stub_updater.get_order_level_updates(
@@ -499,10 +498,10 @@ class TestGetBibUpdatesNYPLResearch:
     ):
         sel_bib = stub_domain_bib("sel")
         sel_bib.parsed_fields = [
-            shared.ParsedField(
+            models.ParsedField(
                 tag="949",
                 indicators=(" ", " "),
-                subfields=[shared.ParsedSubfield(code="a", value="b2=a")],
+                subfields=[models.ParsedSubfield(code="a", value="b2=a")],
             )
         ]
         original_orders = copy.deepcopy(sel_bib.orders)
@@ -528,10 +527,10 @@ class TestGetBibUpdatesNYPLResearch:
     ):
         sel_bib = stub_domain_bib("sel")
         sel_bib.parsed_fields = [
-            shared.ParsedField(
+            models.ParsedField(
                 tag="949",
                 indicators=(" ", " "),
-                subfields=[shared.ParsedSubfield(code="a", value=original)],
+                subfields=[models.ParsedSubfield(code="a", value=original)],
             )
         ]
         updates = stub_updater.get_order_level_updates(
@@ -557,10 +556,10 @@ class TestGetBibUpdatesNYPLResearch:
     ):
         sel_bib = stub_domain_bib("sel")
         sel_bib.parsed_fields = [
-            shared.ParsedField(
+            models.ParsedField(
                 tag="949",
                 indicators=(" ", " "),
-                subfields=[shared.ParsedSubfield(code="a", value="*b2=a;bn=xxx;")],
+                subfields=[models.ParsedSubfield(code="a", value="*b2=a;bn=xxx;")],
             )
         ]
         updates = stub_updater.get_order_level_updates(
@@ -642,10 +641,10 @@ class TestMarcUpdater:
         field_949 = "*b2=a;"
         sel_bib = stub_domain_bib("sel")
         sel_bib.parsed_fields = [
-            shared.ParsedField(
+            models.ParsedField(
                 tag="949",
                 indicators=(" ", " "),
-                subfields=[shared.ParsedSubfield(code="a", value=field_949)],
+                subfields=[models.ParsedSubfield(code="a", value=field_949)],
             )
         ]
         marc_data = Bib()

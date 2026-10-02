@@ -6,7 +6,7 @@ from overload_web.application.pvf.report_service import (
     GetDetailedReportData,
     WriteOutputReport,
 )
-from overload_web.infrastructure import batch_db, reporter, unit_of_work
+from overload_web.infrastructure import reporter, tables, unit_of_work
 
 
 class MockResource:
@@ -73,8 +73,8 @@ def stub_uow_no_data(monkeypatch):
 @pytest.fixture
 def stub_uow_no_call_no_report(monkeypatch, mock_stats):
     def mock_get(*args, **kwargs):
-        return batch_db.PVFBatch(
-            files=[batch_db.ProcessedFileModel(file_name="foo.mrc", records=b"")],
+        return tables.PVFBatch(
+            files=[tables.ProcessedFileModel(file_name="foo.mrc", records=b"")],
             stats=[mock_stats],
             file_names=["foo.mrc"],
             total_files=1,
@@ -94,8 +94,8 @@ def stub_uow_no_call_no_report(monkeypatch, mock_stats):
 def stub_uow_with_data(monkeypatch, mock_stats):
     def mock_get(*args, **kwargs):
         mock_stats["call_number_match"] = False
-        return batch_db.PVFBatch(
-            files=[batch_db.ProcessedFileModel(file_name="foo.mrc", records=b"")],
+        return tables.PVFBatch(
+            files=[tables.ProcessedFileModel(file_name="foo.mrc", records=b"")],
             stats=[mock_stats],
             file_names=["foo.mrc"],
             total_files=1,

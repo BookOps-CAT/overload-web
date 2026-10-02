@@ -10,14 +10,14 @@ from overload_web.application.pvf.template_handling import (
     UpdateOrderTemplate,
 )
 from overload_web.domain.pvf import order_templates
-from overload_web.infrastructure import template_db, unit_of_work
+from overload_web.infrastructure import tables, unit_of_work
 from overload_web.presentation import schemas
 
 
 @pytest.fixture
 def make_template():
     def _make_template(data):
-        template = template_db.TemplateModel(**data)
+        template = tables.TemplateModel(**data)
         return template
 
     return _make_template
@@ -43,8 +43,7 @@ def test_template_attrs():
 
     """
     sql_base = [
-        name
-        for name in inspect.signature(template_db._TemplateModelBase).parameters.keys()
+        name for name in inspect.signature(tables._TemplateModelBase).parameters.keys()
     ]
     pydantic_patch = [
         name for name in inspect.signature(schemas.TemplatePatchModel).parameters.keys()
@@ -60,7 +59,7 @@ def test_template_attrs():
         ).parameters.keys()
     ]
     template_sql_model = [
-        name for name in inspect.signature(template_db.TemplateModel).parameters.keys()
+        name for name in inspect.signature(tables.TemplateModel).parameters.keys()
     ]
     template_domain_model = [
         name

@@ -6,7 +6,6 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Sequence
 
-from overload_web.domain import shared
 from overload_web.domain.pvf import models
 
 logger = logging.getLogger(__name__)
@@ -52,7 +51,7 @@ class FieldRules:
 
     @staticmethod
     def add_command_tag(
-        format: str | None, default_loc: str | None, fields: list[shared.ParsedField]
+        format: str | None, default_loc: str | None, fields: list[models.ParsedField]
     ) -> MarcFieldUpdateValues | None:
         """Creates a new or updated command tag field."""
         if not format and not default_loc:
@@ -115,7 +114,7 @@ class FieldRules:
 
     @staticmethod
     def get_item_field_criteria(
-        fields: list[shared.ParsedField], library: str
+        fields: list[models.ParsedField], library: str
     ) -> tuple[str, str, str]:
         """Get appropriate item field tag and indicators."""
         if not library == "bpl":
@@ -135,7 +134,7 @@ class FieldRules:
 
     @staticmethod
     def get_item_fields(
-        fields: list[list[shared.ParsedField]], criteria: tuple[str, str, str]
+        fields: list[list[models.ParsedField]], criteria: tuple[str, str, str]
     ) -> list[MarcFieldUpdateValues]:
         """Creates list of item fields to add to combined duplicate records."""
         all_items = []

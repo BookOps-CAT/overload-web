@@ -137,7 +137,7 @@ class FileWriter(Protocol):
 
 
 @runtime_checkable
-class MarcParserPort(Protocol[U, T]):
+class MarcParserPort(Protocol[U]):
     def compare_mapped_tags(
         self, obj: U, tags: dict[str, dict[str, str]]
     ) -> bool: ...  # pragma:no branch
@@ -172,7 +172,7 @@ class MarcParserPort(Protocol[U, T]):
 
     """Map an order to a dictionary following a set of rules."""
 
-    def write(self, records: Sequence[T]) -> bytes: ...  # pragma:no branch
+    def write(self, records: list[bytes]) -> bytes: ...  # pragma:no branch
 
     """Write `DomainBib` objects to single binary object."""
 

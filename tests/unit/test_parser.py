@@ -5,8 +5,7 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain import shared
-from overload_web.domain.pvf import bib_services
+from overload_web.domain.pvf import bib_services, models
 from overload_web.infrastructure import marc_handler
 
 
@@ -183,11 +182,11 @@ def stub_full_bib(stub_bib):
                 )
             )
             parsed_fields.append(
-                shared.ParsedField(
+                models.ParsedField(
                     tag=field["tag"],
                     indicators=(field["ind1"], field["ind2"]),
                     subfields=[
-                        shared.ParsedSubfield(code=i["code"], value=i["value"])
+                        models.ParsedSubfield(code=i["code"], value=i["value"])
                         for i in field["subfields"]
                     ],
                 )
@@ -317,7 +316,7 @@ class TestMarcParser:
     )
     def test_write(self, stub_bib, library, collection):
         bib = stub_bib(library, collection, "cat")
-        out = self.ENGINE.write([bib])
+        out = self.ENGINE.write([bib.binary_data])
         assert isinstance(out, bytes)
 
 

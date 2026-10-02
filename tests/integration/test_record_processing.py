@@ -52,7 +52,7 @@ def marc_stubs(monkeypatch, mocker, tmp_path):
     )
     monkeypatch.setattr(bib_services.BibUpdater, "apply_field_updates", null_response)
     monkeypatch.setattr(
-        file_io.IncomingFileRepository, "list_by_id", fake_file_reference
+        unit_of_work.IncomingFileRepository, "list_by_id", fake_file_reference
     )
 
 

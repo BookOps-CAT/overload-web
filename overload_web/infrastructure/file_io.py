@@ -13,10 +13,8 @@ from __future__ import annotations
 import logging
 import os
 from pathlib import Path
-from typing import Any, Sequence
 
 from file_retriever import Client
-from sqlmodel import Field, Session, SQLModel, select
 
 from overload_web.domain.pvf import ports
 
@@ -118,63 +116,3 @@ class SFTPFileRetriever(ports.FileRetriever):
             port=os.environ[f"{vendor.upper()}_PORT"],
         )
         return SFTPFileRetriever(client=client)
-
-
-class IncomingFileModel(SQLModel, table=True):
-    __tablename__ = "incoming_files"
-    id: str = Field(default=None, primary_key=True, index=True)
-    filename: str = Field(nullable=False)
-    workflow_id: str = Field(nullable=False, index=True)
-    source: str = Field(nullable=False)
-    reference: str = Field(nullable=False)
-
-
-class IncomingFileRepository(ports.SqlRepositoryProtocol):
-    def __init__(self, session: Session):
-        self.session = session
-
-    def delete(self, id: str | int) -> None:
-        """
-        Delete an `IncomingFileModel` object from the workflow's list of files.
-
-        Args:
-            id: the ID of the file to delete.
-
-        Returns:
-            None
-        """
-        statement = select(IncomingFileModel).where(IncomingFileModel.id == id)
-        results = self.session.exec(statement)
-        file = results.one_or_none()
-        self.session.delete(file)
-
-    def list_by_id(self, id: str | int) -> Sequence[dict[str, Any]]:
-        """
-        Retrieve all `IncomingFileModel` objects in the database.
-
-        Args:
-            id: the `workflow_id` whose files to retrieve.
-
-        Returns:
-            a sequence of `IncomingFileModel` objects.
-        """
-        statement = select(IncomingFileModel).where(IncomingFileModel.workflow_id == id)
-        results = self.session.exec(statement)
-        all_files = results.all()
-        return [i.model_dump() for i in all_files]
-
-    def save(self, obj: IncomingFileModel) -> dict[str, Any]:
-        """
-        Adds a new `IncomingFileModel` to the database.
-
-        Args:
-            obj: the `IncomingFileModel` object to save.
-
-        Returns:
-            The `IncomingFileModel` data as a dictionary.
-        """
-        valid_obj = IncomingFileModel.model_validate(obj, from_attributes=True)
-        self.session.add(valid_obj)
-        self.session.flush()
-        self.session.refresh(valid_obj)
-        return valid_obj.model_dump()

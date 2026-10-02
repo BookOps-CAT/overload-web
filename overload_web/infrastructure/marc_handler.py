@@ -24,13 +24,13 @@ from __future__ import annotations
 
 import io
 import logging
-from typing import Any, BinaryIO, Protocol, Sequence
+from typing import Any, BinaryIO, Protocol
 
 from bookops_marc import Bib, SierraBibReader
 from bookops_marc.models import Order
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain.pvf import models, ports
+from overload_web.domain.pvf import ports
 
 logger = logging.getLogger(__name__)
 
@@ -162,7 +162,7 @@ class MarcParser(ports.MarcParserPort):
                     out[attr] = field.get(code) if field else None
         return out
 
-    def write(self, records: Sequence[models.DomainBib]) -> bytes:
+    def write(self, records: list[bytes]) -> bytes:
         """
         Serialize `DomainBib` objects into a binary MARC stream.
 
@@ -175,8 +175,7 @@ class MarcParser(ports.MarcParserPort):
         """
         io_data = io.BytesIO()
         for record in records:
-            logger.info(f"Writing MARC binary for record: {record}")
-            io_data.write(record.binary_data)
+            io_data.write(record)
         io_data.seek(0)
         out = io_data.getvalue()
         return out

@@ -29,7 +29,7 @@ class DomainBib:
         binary_data: bytes,
         collection: shared.Collection | str | None,
         library: shared.LibrarySystem | str,
-        parsed_fields: list[shared.ParsedField] | list[dict[str, Any]],
+        parsed_fields: list[ParsedField] | list[dict[str, Any]],
         record_type: shared.RecordType | str,
         title: str,
         barcodes: list[str] = [],
@@ -106,8 +106,7 @@ class DomainBib:
         self.oclc_number = oclc_number
         self.orders = orders
         self.parsed_fields = [
-            i if isinstance(i, shared.ParsedField) else shared.ParsedField(**i)
-            for i in parsed_fields
+            i if isinstance(i, ParsedField) else ParsedField(**i) for i in parsed_fields
         ]
         self.research_call_number = research_call_number
         self.record_type = shared.RecordType(record_type)
@@ -258,6 +257,31 @@ class Order:
                 tag_dict[k] = getattr(self, v)
             out[key] = tag_dict
         return out
+
+
+class ParsedField:
+    def __init__(
+        self,
+        tag: str,
+        indicators: tuple[str, str] | None = None,
+        subfields: list[ParsedSubfield] | list[dict[str, str]] = [],
+        value: str | None = None,
+    ):
+        self.tag = tag
+        self.indicators = indicators
+        self.subfields = [
+            i if isinstance(i, ParsedSubfield) else ParsedSubfield(**i)
+            for i in subfields
+        ]
+        self.value = value
+
+
+@dataclass(frozen=True)
+class ParsedSubfield:
+    """A pure Python representation of a MARC subfield."""
+
+    code: str
+    value: str
 
 
 @dataclass

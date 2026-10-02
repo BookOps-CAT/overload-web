@@ -9,7 +9,7 @@ from overload_web.application.pvf.file_handling import (
     ListVendorFiles,
     UploadFileToWorkflow,
 )
-from overload_web.infrastructure import file_io, unit_of_work
+from overload_web.infrastructure import file_io, tables, unit_of_work
 
 
 class FakeFileRetriever:
@@ -32,7 +32,7 @@ def mock_engine():
 
 
 class MockSqlResult:
-    FILE = file_io.IncomingFileModel(
+    FILE = tables.IncomingFileModel(
         id="12345",
         filename="foo.mrc",
         workflow_id="12345",

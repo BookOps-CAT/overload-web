@@ -147,7 +147,7 @@ class BibParser:
         return parsed
 
     def write(self, records: list[models.DomainBib]) -> bytes:
-        return self.handler.write(records=records)
+        return self.handler.write(records=[i.binary_data for i in records])
 
 
 class BibReviewer:

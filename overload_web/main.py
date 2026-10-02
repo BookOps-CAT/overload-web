@@ -15,8 +15,8 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from overload_web.presentation import deps
-from overload_web.presentation.routers import (
+from overload_web.presentation import (
+    deps,
     files,
     frontend,
     order_templates,
