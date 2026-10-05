@@ -109,6 +109,7 @@ def stub_updater(request, get_constants):
         order_mapping=constants["order_mapping"],
         handler=marc_handler.MarcUpdater(),
         record_type=record_type,
+        collection=collection,
     )
 
 

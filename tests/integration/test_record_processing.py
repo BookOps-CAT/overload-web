@@ -86,6 +86,7 @@ def stub_bib_services():
         bib_id_tag="bar",
         library="baz",
         record_type="quz",
+        collection="spam",
     )
 
 

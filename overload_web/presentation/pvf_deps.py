@@ -131,5 +131,6 @@ def get_updater(
         default_loc=updater_rules["default_locations"][context.library].get(
             context.collection
         ),
+        collection=context.collection,
         record_type=context.record_type,
     )

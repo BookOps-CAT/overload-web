@@ -64,6 +64,7 @@ class AcquisitionsSelectionJob(AbstractProcessingJob):
         self.missing_barcodes: list[str] = []
         self.processed_files: list[ProcessedFile] = []
         self.report_data: list[dict[str, Any]] = []
+        self.validator = services.BarcodeValidator()
 
     def process(
         self,
@@ -75,14 +76,11 @@ class AcquisitionsSelectionJob(AbstractProcessingJob):
         updater: services.BibUpdater,
     ) -> None:
         """The core domain logic loop."""
-        validator = services.BarcodeValidator()
 
         for file_name, data in batches_data.items():
             self.file_names.append(file_name)
             records = parser.parse_marc_data(data=data, vendor=self.vendor)
-            original_barcodes = validator.validate_unique(
-                [bib.barcodes for bib in records]
-            )
+            barcodes = self.validator.validate_unique([bib.barcodes for bib in records])
             for bib in records:
                 matches = matcher.match_order_record(
                     record=bib, matchpoints=matchpoints
@@ -94,8 +92,8 @@ class AcquisitionsSelectionJob(AbstractProcessingJob):
                 )
                 updater.apply_field_updates(record=bib, updates=updates)
                 self.report_data.append(analysis.to_dict())
-            validator.validate_preserved(
-                original_barcodes=original_barcodes,
+            self.validator.validate_preserved(
+                original_barcodes=barcodes,
                 processed_barcodes=[bib.barcodes for bib in records],
             )
             self.processed_files.append(
@@ -114,6 +112,7 @@ class CatalogingJob(AbstractProcessingJob):
         self.processed_files: list[ProcessedFile] = []
         self.report_data: list[dict[str, Any]] = []
         self.out_file_name = datetime.datetime.today().strftime("%y%m%d")
+        self.validator = services.BarcodeValidator()
 
     def process(
         self,
@@ -123,7 +122,6 @@ class CatalogingJob(AbstractProcessingJob):
         updater: services.BibUpdater,
     ) -> None:
         """The core domain logic loop."""
-        validator = services.BarcodeValidator()
         reviewer = services.BibReviewer(handler=updater.handler)
         data_list = []
         for file_name, file_data in batches_data.items():
@@ -131,7 +129,7 @@ class CatalogingJob(AbstractProcessingJob):
             data_list.append(file_data)
         data = parser.combine_marc_files(data_list)
         records = parser.parse_marc_data(data=data)
-        original_barcodes = validator.validate_unique([bib.barcodes for bib in records])
+        barcodes = self.validator.validate_unique([bib.barcodes for bib in records])
         for bib in records:
             matches = matcher.match_full_record(bib)
             analysis = matcher.review_matches(bib=bib, matches=matches)
@@ -140,8 +138,8 @@ class CatalogingJob(AbstractProcessingJob):
             updater.apply_field_updates(record=bib, updates=updates)
             self.report_data.append(analysis.to_dict())
         self.missing_barcodes.extend(
-            validator.validate_preserved(
-                original_barcodes=original_barcodes,
+            self.validator.validate_preserved(
+                original_barcodes=barcodes,
                 processed_barcodes=[bib.barcodes for bib in records],
             )
         )

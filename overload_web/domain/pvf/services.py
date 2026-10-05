@@ -346,6 +346,7 @@ class BibUpdater:
     def __init__(
         self,
         bib_id_tag: str,
+        collection: str | None,
         default_loc: str | None,
         handler: ports.MarcUpdaterPort,
         library: str,
@@ -358,6 +359,8 @@ class BibUpdater:
         Args:
             bib_id_tag:
                 MARC tag where bib ID should be writting in output record.
+            collection:
+                the collection to whom the records belong
             default_loc:
                 The default location for a specific library/collection to be used
                 in output record
@@ -371,6 +374,7 @@ class BibUpdater:
                 the workflow two whom this record belongs
         """
         self.bib_id_tag = bib_id_tag
+        self.collection = collection
         self.default_loc = default_loc
         self.handler = handler
         self.library = library
@@ -402,13 +406,13 @@ class BibUpdater:
         updates.append(
             models.FieldUpdates.add_bib_id(bib_id=record.bib_id, tag=self.bib_id_tag)
         )
-        if self.library == "nypl" and record.collection is not None:
-            updates.append(models.FieldUpdates.update_910_field(record.collection))
+        if self.library == "nypl" and self.collection is not None:
+            updates.append(models.FieldUpdates.update_910_field(self.collection))
             updates.append(
                 models.FieldUpdates.update_bt_series_call_no(
                     call_no=record.branch_call_number,
                     vendor=record.vendor,
-                    collection=record.collection,
+                    collection=self.collection,
                 )
             )
         return [i for i in updates if i]
@@ -437,6 +441,6 @@ class BibUpdater:
                     bib_id=record.bib_id, tag=self.bib_id_tag
                 )
             )
-        if self.library == "nypl" and record.collection is not None:
-            updates.append(models.FieldUpdates.update_910_field(record.collection))
+        if self.library == "nypl" and self.collection is not None:
+            updates.append(models.FieldUpdates.update_910_field(self.collection))
         return [i for i in updates if i]
