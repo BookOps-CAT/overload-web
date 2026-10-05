@@ -16,11 +16,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from overload_web.presentation import (
-    deps,
     files,
     frontend,
     order_templates,
     pvf,
+    pvf_deps,
     reports,
     wc2s,
 )
@@ -45,10 +45,10 @@ logging.config.dictConfig(get_log_config())
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Create and drop database tables on startup/shutdown."""
     logger.info("Starting up Overload...")
-    uri = deps.get_uri_for_engine()
-    engine = deps.get_engine(uri)
+    uri = pvf_deps.get_uri_for_engine()
+    engine = pvf_deps.get_engine(uri)
     app.state.engine = engine
-    deps.create_db_and_tables(engine)
+    pvf_deps.create_db_and_tables(engine)
     yield
     logger.info("Shutting down Overload...")
     engine.dispose()

@@ -1,4 +1,23 @@
-"""Domain services for parsing, reviewing and updating MARC records during processing"""
+"""Domain services for pvf workflow.
+
+This module defines domain services for parsing, matching, updating, and reviewing
+MARC records as part of the process vendor file application.
+
+Classes:
+`BarcodeValidator`:
+
+`BibMatcher`:
+    a domain service responsible for finding duplicate records in Sierra for a
+    `DomainBib`. Matching is based on specific identifiers such as OCLC number,
+    ISBN, or Sierra Bib ID.
+
+`BibParser`:
+
+`BibReviewer`:
+
+`BibUpdater`:
+
+"""
 
 from __future__ import annotations
 
@@ -6,9 +25,9 @@ import io
 import itertools
 import logging
 from collections import Counter, defaultdict
-from typing import Any
+from typing import Any, Sequence
 
-from overload_web.domain.pvf import marc_rules, models, ports
+from overload_web.domain.pvf import matching, models, ports
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +59,130 @@ class BarcodeValidator:
         if not valid:
             logger.error(f"Barcodes integrity error: {list(missing_barcodes)}")
         return list(missing_barcodes)
+
+
+class BibMatcher:
+    """
+    Domain service for retrieving records from Sierra that match a bib record.
+
+    This service compares a `DomainBib` instance against external candidates using
+    specified matchpoints (e.g., ISBN, OCLC number, UPC). The services queries Sierra
+    using an injected `BibFetcher` object and if any results are returned they are
+    passed to the `BaseSierraResponse` class to selects the best match for the given
+    record. The service returns the bib ID of the best match or `None` if no candidates
+    were found.
+    """
+
+    def __init__(self, fetcher: ports.BibFetcher) -> None:
+        """
+        Initialize the match service with a fetcher.
+
+        Args:
+            fetcher:
+                An injected `ports.BibFetcher` that retrieves candidate bibs
+                from Sierra.
+        """
+        self.fetcher = fetcher
+
+    def _match_bib(
+        self, matchpoints: dict[str, str], record: models.DomainBib
+    ) -> Sequence[dict[str, Any]]:
+        """
+        Find all matches in Sierra for a given bib record.
+
+        This method queries the fetcher object for candidates using each matchpoint.
+        The first non-empty match that returns candidates is used for comparison.
+
+        Args:
+            matchpoints:
+                a dictionary containing matchpoints and their priority e.g.
+                `{"primary_matchpoint": "isbn", "secondary_matchpoint": "bib_id"}`
+            record:
+                The bibliographic record to match against Sierra represented as a
+                `DomainBib` object.
+        Returns:
+            A list of the record's matches as dictionaries representing Sierra
+            responses, or an empty list if no matches were found.
+        """
+        candidates: Sequence[dict[str, Any]]
+        for matchpoint in matchpoints.values():
+            if not matchpoint:
+                continue
+            value = getattr(record, matchpoint, None)
+            if not value:
+                continue
+            else:
+                candidates = self.fetcher.get_bibs_by_id(value=value, key=matchpoint)
+                if candidates:
+                    return candidates
+        return []
+
+    def match_order_record(
+        self, matchpoints: dict[str, str], record: models.DomainBib
+    ) -> Sequence[dict[str, Any]]:
+        """
+        Match an order-level bibliographic record against Sierra.
+
+        Args:
+            matchpoints:
+                a dictionary containing matchpoints and their priority e.g.
+                `{"primary_matchpoint": "isbn", "secondary_matchpoint": "bib_id"}`
+            record:
+                The bibliographic record to match against Sierra represented as a
+                `DomainBib` object.
+        Returns:
+            A list of the record's matches as dictionaries representing Sierra
+            responses, or an empty list if no matches were found.
+        """
+        responses: Sequence[dict[str, Any]] = self._match_bib(
+            record=record, matchpoints=matchpoints
+        )
+        return responses
+
+    def match_full_record(self, record: models.DomainBib) -> Sequence[dict[str, Any]]:
+        """
+        Match a full-level bibliographic record against Sierra.
+
+        Args:
+            record:
+                A parsed bibliographic record as a `DomainBib` object.
+
+        Returns:
+            A list of the record's matches as dictionaries representing Sierra
+            responses, or an empty list if no matches were found.
+
+        Raises:
+            ValueError: if the value of a record's `vendor_info` attribute is None.
+        """
+        if record.vendor_info is None:
+            raise ValueError("Vendor index required for cataloging workflow.")
+        responses: Sequence[dict[str, Any]] = self._match_bib(
+            record=record, matchpoints=record.vendor_info.matchpoints
+        )
+        return responses
+
+    def review_matches(
+        self, bib: models.DomainBib, matches: Sequence[dict[str, Any]]
+    ) -> matching.MatchAnalysis:
+        """
+        Review and categorize match candidates returned from Sierra.
+
+        Args:
+            bib:
+                A parsed bibliographic record as a `DomainBib` object.
+            matches:
+                A list of dictionaries representing results from Sierra.
+
+        Returns:
+            A `MatchAnalysis` object containing classified matches.
+        """
+        analyzer = matching.MatchAnalyzerFactory.make(
+            library=bib.library, record_type=bib.record_type, collection=bib.collection
+        )
+        candidates = analyzer.classify_matches(
+            library=bib.library, collection=bib.collection, matches=matches
+        )
+        return analyzer.analyze(record=bib, candidates=candidates)
 
 
 class BibParser:
@@ -182,10 +325,10 @@ class BibReviewer:
             elif len(group) > 1 and control_number is not None:
                 base_rec = group[0]
                 other_fields = [i.parsed_fields for i in group[1:]]
-                item_tags = marc_rules.FieldRules.get_item_field_criteria(
+                item_tags = models.FieldUpdates.get_item_field_criteria(
                     fields=base_rec.parsed_fields, library=base_rec.library
                 )
-                item_fields = marc_rules.FieldRules.get_item_fields(
+                item_fields = models.FieldUpdates.get_item_fields(
                     fields=other_fields, criteria=item_tags
                 )
                 bib = self.handler.create_bib_from_domain(
@@ -235,7 +378,7 @@ class BibUpdater:
         self.record_type = record_type
 
     def apply_field_updates(
-        self, record: models.DomainBib, updates: list[marc_rules.MarcFieldUpdateValues]
+        self, record: models.DomainBib, updates: list[models.MarcFieldUpdateValues]
     ) -> None:
         """Update and add MARC fields to bib record"""
         bib = self.handler.create_bib_from_domain(
@@ -247,22 +390,22 @@ class BibUpdater:
 
     def get_full_record_updates(
         self, record: models.DomainBib
-    ) -> list[marc_rules.MarcFieldUpdateValues]:
+    ) -> list[models.MarcFieldUpdateValues]:
         """Get list of MARC fields to add to or update in processed bib record"""
         updates: list[Any] = []
 
         updates.extend(
-            marc_rules.FieldRules.add_vendor_fields(
+            models.FieldUpdates.add_vendor_fields(
                 getattr(record.vendor_info, "bib_fields", [])
             )
         )
         updates.append(
-            marc_rules.FieldRules.add_bib_id(bib_id=record.bib_id, tag=self.bib_id_tag)
+            models.FieldUpdates.add_bib_id(bib_id=record.bib_id, tag=self.bib_id_tag)
         )
-        if self.library == "nypl":
-            updates.append(marc_rules.FieldRules.update_910_field(record.collection))
+        if self.library == "nypl" and record.collection is not None:
+            updates.append(models.FieldUpdates.update_910_field(record.collection))
             updates.append(
-                marc_rules.FieldRules.update_bt_series_call_no(
+                models.FieldUpdates.update_bt_series_call_no(
                     call_no=record.branch_call_number,
                     vendor=record.vendor,
                     collection=record.collection,
@@ -272,28 +415,28 @@ class BibUpdater:
 
     def get_order_level_updates(
         self, record: models.DomainBib, template_data: dict[str, Any]
-    ) -> list[marc_rules.MarcFieldUpdateValues]:
+    ) -> list[models.MarcFieldUpdateValues]:
         """Get list of MARC fields to add to or update in processed bib record"""
         updates: list[Any] = []
         record.apply_order_template(template_data)
         updates.extend(
-            marc_rules.FieldRules.update_order_fields(
+            models.FieldUpdates.update_order_fields(
                 orders=record.orders, mapping=self.order_mapping
             )
         )
         if self.record_type == "sel":
             updates.append(
-                marc_rules.FieldRules.add_command_tag(
+                models.FieldUpdates.add_command_tag(
                     fields=record.parsed_fields,
                     format=template_data.get("format"),
                     default_loc=self.default_loc,
                 )
             )
             updates.append(
-                marc_rules.FieldRules.add_bib_id(
+                models.FieldUpdates.add_bib_id(
                     bib_id=record.bib_id, tag=self.bib_id_tag
                 )
             )
-        if self.library == "nypl":
-            updates.append(marc_rules.FieldRules.update_910_field(record.collection))
+        if self.library == "nypl" and record.collection is not None:
+            updates.append(models.FieldUpdates.update_910_field(record.collection))
         return [i for i in updates if i]

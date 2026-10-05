@@ -5,7 +5,7 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain.pvf import bib_services, models
+from overload_web.domain.pvf import models, services
 from overload_web.infrastructure import marc_handler
 
 
@@ -220,7 +220,7 @@ def full_bib_960_item(stub_full_bib):
 
 @pytest.fixture
 def stub_reviewer():
-    return bib_services.BibReviewer(handler=marc_handler.MarcUpdater())
+    return services.BibReviewer(handler=marc_handler.MarcUpdater())
 
 
 class TestMarcParser:
@@ -328,7 +328,7 @@ class TestBibParser:
         rules = get_constants["parsing_rules"]
         marker = request.node.get_closest_marker("workflow")
         record_type = marker.kwargs["record_type"]
-        parser = bib_services.BibParser(
+        parser = services.BibParser(
             bib_mapping=rules["bib_mapping"],
             library=mock_marc.library,
             collection=mock_marc.collection,
@@ -347,7 +347,7 @@ class TestBibParser:
         rules = get_constants["parsing_rules"]
         marker = request.node.get_closest_marker("workflow")
         record_type = marker.kwargs["record_type"]
-        parser = bib_services.BibParser(
+        parser = services.BibParser(
             bib_mapping=rules["bib_mapping"],
             library=mock_marc.library,
             collection=mock_marc.collection,
@@ -374,7 +374,7 @@ class TestBibParser:
         rules = get_constants["parsing_rules"]
         marker = request.node.get_closest_marker("workflow")
         record_type = marker.kwargs["record_type"]
-        parser = bib_services.BibParser(
+        parser = services.BibParser(
             bib_mapping=rules["bib_mapping"],
             library=mock_marc.library,
             collection=mock_marc.collection,

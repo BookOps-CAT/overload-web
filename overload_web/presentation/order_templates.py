@@ -14,7 +14,7 @@ from overload_web.application.pvf.template_handling import (
     SaveNewOrderTemplate,
     UpdateOrderTemplate,
 )
-from overload_web.presentation import deps, schemas
+from overload_web.presentation import pvf_deps, schemas
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ api_router = APIRouter()
 def create_template(
     request: Request,
     template: Annotated[Any, Depends(schemas.TemplateCreateModel.from_form)],
-    uow: Annotated[Any, Depends(deps.get_uow)],
+    uow: Annotated[Any, Depends(pvf_deps.get_uow)],
 ) -> HTMLResponse:
     """
     Save a new order template to the template database.
@@ -48,7 +48,7 @@ def create_template(
 
 @api_router.get("/template", response_class=HTMLResponse)
 def get_template(
-    request: Request, template_id: str, uow: Annotated[Any, Depends(deps.get_uow)]
+    request: Request, template_id: str, uow: Annotated[Any, Depends(pvf_deps.get_uow)]
 ) -> HTMLResponse:
     """
     Retrieve an order template from the database.
@@ -72,7 +72,7 @@ def get_template(
 @api_router.get("/templates", response_class=HTMLResponse)
 def get_template_list(
     request: Request,
-    uow: Annotated[Any, Depends(deps.get_uow)],
+    uow: Annotated[Any, Depends(pvf_deps.get_uow)],
     offset: int = 0,
     limit: int = 20,
 ) -> HTMLResponse:
@@ -101,7 +101,7 @@ def update_template(
     request: Request,
     template_id: Annotated[str, Form(...)],
     template_patch: Annotated[Any, Depends(schemas.TemplatePatchModel.from_form)],
-    uow: Annotated[Any, Depends(deps.get_uow)],
+    uow: Annotated[Any, Depends(pvf_deps.get_uow)],
 ) -> HTMLResponse:
     """
     Apply patch updates to an order template in the database.

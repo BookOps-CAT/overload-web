@@ -8,14 +8,13 @@ import os
 from functools import lru_cache
 from typing import Annotated, Any
 
-from fastapi import Depends, Form, Request, UploadFile
+from fastapi import Depends, Form, Request
 from sqlmodel import SQLModel, create_engine
 
-from overload_web.domain.pvf import bib_services, match_service
+from overload_web.domain.pvf import services
 from overload_web.infrastructure import (
     file_io,
     marc_handler,
-    oclc,
     reporter,
     sierra_clients,
     unit_of_work,
@@ -72,44 +71,6 @@ def remote_file_retriever(vendor: str) -> file_io.SFTPFileRetriever:
     return file_io.SFTPFileRetriever.create_retriever_for_vendor(vendor=vendor)
 
 
-def get_marc_parser() -> marc_handler.MarcParser:
-    """Create a `MarcParser` service with injected dependencies."""
-    return marc_handler.MarcParser()
-
-
-def oclc_fetcher(
-    user_criteria: Annotated[
-        schemas.UserCriteria, Depends(schemas.UserCriteria.from_form)
-    ],
-) -> oclc.WorldcatFetcher:
-    return oclc.WorldcatFetcher(session=oclc.OclcSession(library=user_criteria.library))
-
-
-def load_wc2s_file(file: UploadFile) -> list[str]:
-    lines = file.file.readlines()
-    return [i.decode("utf-8").strip("\r\n") for i in lines]
-
-
-def source_data_from_load(
-    ids: Annotated[list[str], Depends(load_wc2s_file)],
-    data: Annotated[schemas.UserCriteria, Depends(schemas.UserCriteria.from_form)],
-) -> list:
-    return [
-        schemas.SourceDataModel(
-            id=i,
-            id_type=data.id_type,
-            library=data.library,
-            collection=data.collection,
-            material_type=data.material_type,
-            action=data.action,
-            record_level=data.record_level,
-            required_cataloging_agency=data.cat_agency,
-            required_cataloging_rules=data.cat_rules,
-        )
-        for i in ids
-    ]
-
-
 def get_report_writer() -> reporter.GoogleSheetsReporter:
     """Return a `GoogleSheetsReporter` in order to write stats to a Google Sheet."""
     return reporter.GoogleSheetsReporter()
@@ -130,9 +91,9 @@ def get_fetcher(library: Annotated[str, Form(...)]) -> sierra_clients.SierraBibF
     return sierra_clients.FetcherFactory.make(library)
 
 
-def get_matcher(fetcher: Any = Depends(get_fetcher)) -> match_service.BibMatcher:
+def get_matcher(fetcher: Any = Depends(get_fetcher)) -> services.BibMatcher:
     """Create a BibMatcher service for a library."""
-    return match_service.BibMatcher(fetcher=fetcher)
+    return services.BibMatcher(fetcher=fetcher)
 
 
 def get_parser(
@@ -140,10 +101,10 @@ def get_parser(
         schemas.ProcessingContext, Depends(schemas.ProcessingContext.from_form)
     ],
     parser_rules: Annotated[dict[str, Any], Depends(parser_rules)],
-) -> bib_services.BibParser:
+) -> services.BibParser:
     """Create a BibParser service for a library."""
     parser = marc_handler.MarcParser()
-    return bib_services.BibParser(
+    return services.BibParser(
         handler=parser,
         bib_mapping=parser_rules["bib_mapping"],
         library=context.library,
@@ -159,10 +120,10 @@ def get_updater(
         schemas.ProcessingContext, Depends(schemas.ProcessingContext.from_form)
     ],
     updater_rules: Annotated[dict[str, Any], Depends(updater_rules)],
-) -> bib_services.BibUpdater:
+) -> services.BibUpdater:
     """Create a BibUpdater service for a library."""
     updater = marc_handler.MarcUpdater()
-    return bib_services.BibUpdater(
+    return services.BibUpdater(
         handler=updater,
         bib_id_tag=updater_rules["bib_id_tag"][context.library],
         library=context.library,

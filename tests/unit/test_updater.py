@@ -5,7 +5,7 @@ import pytest
 from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
-from overload_web.domain.pvf import bib_services, marc_rules, models
+from overload_web.domain.pvf import models, services
 from overload_web.infrastructure import marc_handler
 
 
@@ -102,7 +102,7 @@ def stub_updater(request, get_constants):
     library = marker.kwargs["library"]
     record_type = marker.kwargs["record_type"]
     constants = get_constants["constants"]
-    return bib_services.BibUpdater(
+    return services.BibUpdater(
         library=library,
         default_loc=constants["default_locations"][library].get(collection),
         bib_id_tag=constants["bib_id_tag"][library],
@@ -619,7 +619,7 @@ class TestMarcUpdater:
         )
         stub_updater.apply_field_updates(
             cat_bib,
-            updates=marc_rules.FieldRules.add_vendor_fields(
+            updates=models.FieldUpdates.add_vendor_fields(
                 cat_bib.vendor_info.bib_fields
             ),
         )
@@ -631,7 +631,7 @@ class TestMarcUpdater:
         cat_bib = stub_domain_bib("cat")
         cat_bib.bib_id = "12345"
         stub_updater.apply_field_updates(
-            cat_bib, updates=[marc_rules.FieldRules.add_bib_id(cat_bib.bib_id, "945")]
+            cat_bib, updates=[models.FieldUpdates.add_bib_id(cat_bib.bib_id, "945")]
         )
         updated_bib = Bib(cat_bib.binary_data, library=cat_bib.library)
         assert updated_bib["945"].format_field() == "12345"
@@ -668,7 +668,7 @@ class TestMarcUpdater:
         stub_updater.apply_field_updates(
             sel_bib,
             updates=[
-                marc_rules.FieldRules.add_command_tag(
+                models.FieldUpdates.add_command_tag(
                     format="a", default_loc="zzzzz", fields=sel_bib.parsed_fields
                 )
             ],
@@ -688,12 +688,12 @@ class TestMarcUpdater:
         stub_updater.apply_field_updates(
             sel_bib,
             updates=[
-                marc_rules.MarcFieldUpdateValues(
+                models.MarcFieldUpdateValues(
                     tag="949",
                     ind1=" ",
                     ind2=" ",
                     subfields=[{"code": "a", "value": "*b2=a;bn=zzzzz;"}],
-                    target_field_to_delete=marc_rules.TargetFieldCriteria(
+                    target_field_to_delete=models.TargetFieldCriteria(
                         tag="949", indicators=(" ", " "), code="a", value="*"
                     ),
                 )

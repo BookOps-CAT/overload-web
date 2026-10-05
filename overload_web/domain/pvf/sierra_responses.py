@@ -148,8 +148,8 @@ class BPLSolrResponse(BaseSierraResponse):
         return cat_source
 
     @property
-    def collection(self) -> str:
-        return "NONE"
+    def collection(self) -> str | None:
+        return None
 
     @property
     def control_number(self) -> str | None:

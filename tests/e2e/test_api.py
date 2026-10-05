@@ -9,9 +9,9 @@ from overload_web.application.pvf import (
     report_service,
     template_handling,
 )
-from overload_web.domain.pvf import files, match_service, order_templates
+from overload_web.domain.pvf import files, order_templates, services
 from overload_web.main import app
-from overload_web.presentation import deps
+from overload_web.presentation import pvf_deps
 
 
 @pytest.fixture
@@ -149,14 +149,14 @@ class FakeFileStorage:
 
 
 def fake_matcher():
-    yield match_service.BibMatcher(fetcher=FakeFetcher())
+    yield services.BibMatcher(fetcher=FakeFetcher())
 
 
 def test_api_startup(monkeypatch):
     def fake_engine(*args, **kwargs):
         return create_engine("sqlite:///:memory:")
 
-    monkeypatch.setattr(deps, "create_engine", fake_engine)
+    monkeypatch.setattr(pvf_deps, "create_engine", fake_engine)
 
     with TestClient(app) as client:
         response = client.get("/")
@@ -165,10 +165,10 @@ def test_api_startup(monkeypatch):
 
 class TestApp:
     client = TestClient(app)
-    app.dependency_overrides[deps.get_engine] = fake_engine
-    app.dependency_overrides[deps.remote_file_retriever] = FakeFileRetriever
-    app.dependency_overrides[deps.get_fetcher] = FakeFetcher
-    app.dependency_overrides[deps.local_file_storage] = FakeFileStorage
+    app.dependency_overrides[pvf_deps.get_engine] = fake_engine
+    app.dependency_overrides[pvf_deps.remote_file_retriever] = FakeFileRetriever
+    app.dependency_overrides[pvf_deps.get_fetcher] = FakeFetcher
+    app.dependency_overrides[pvf_deps.local_file_storage] = FakeFileStorage
     base_url = client.base_url
 
     def test_files_router_list_remote_files_get(self, mock_files):

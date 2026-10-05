@@ -13,7 +13,7 @@ from overload_web.application.pvf.report_service import (
     GetDetailedReportData,
     WriteOutputReport,
 )
-from overload_web.presentation import deps
+from overload_web.presentation import pvf_deps
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ def get_output_report(
     request: Request,
     batch_id: str,
     record_type: str,
-    uow: Annotated[Any, Depends(deps.get_uow)],
+    uow: Annotated[Any, Depends(pvf_deps.get_uow)],
 ) -> HTMLResponse:
     """
     Create a report for a workflow based on processing statistics.
@@ -52,7 +52,7 @@ def get_output_report(
 
 @api_router.get("/detailed", response_class=HTMLResponse)
 def get_detailed_report(
-    request: Request, batch_id: str, uow: Annotated[Any, Depends(deps.get_uow)]
+    request: Request, batch_id: str, uow: Annotated[Any, Depends(pvf_deps.get_uow)]
 ) -> HTMLResponse:
     """
     Retrieve processing statistics and return a detailed report for a workflow.
@@ -78,8 +78,8 @@ def save_processing_statistics(
     request: Request,
     batch_id: str,
     record_type: str,
-    uow: Annotated[Any, Depends(deps.get_uow)],
-    writer: Annotated[Any, Depends(deps.get_report_writer)],
+    uow: Annotated[Any, Depends(pvf_deps.get_uow)],
+    writer: Annotated[Any, Depends(pvf_deps.get_report_writer)],
 ) -> HTMLResponse:
     """
     Save all processing statistics for a workflow to a google sheet.

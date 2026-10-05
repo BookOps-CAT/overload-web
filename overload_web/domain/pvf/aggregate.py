@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
 
-from overload_web.domain.pvf import bib_services, match_service
+from overload_web.domain.pvf import services
 
 
 @dataclass
@@ -68,14 +68,14 @@ class AcquisitionsSelectionJob(AbstractProcessingJob):
     def process(
         self,
         batches_data: dict[str, bytes],
-        matcher: match_service.BibMatcher,
+        matcher: services.BibMatcher,
         matchpoints: dict[str, str],
-        parser: bib_services.BibParser,
+        parser: services.BibParser,
         template_data: dict[str, Any],
-        updater: bib_services.BibUpdater,
+        updater: services.BibUpdater,
     ) -> None:
         """The core domain logic loop."""
-        validator = bib_services.BarcodeValidator()
+        validator = services.BarcodeValidator()
 
         for file_name, data in batches_data.items():
             self.file_names.append(file_name)
@@ -118,13 +118,13 @@ class CatalogingJob(AbstractProcessingJob):
     def process(
         self,
         batches_data: dict[str, bytes],
-        matcher: match_service.BibMatcher,
-        parser: bib_services.BibParser,
-        updater: bib_services.BibUpdater,
+        matcher: services.BibMatcher,
+        parser: services.BibParser,
+        updater: services.BibUpdater,
     ) -> None:
         """The core domain logic loop."""
-        validator = bib_services.BarcodeValidator()
-        reviewer = bib_services.BibReviewer(handler=updater.handler)
+        validator = services.BarcodeValidator()
+        reviewer = services.BibReviewer(handler=updater.handler)
         data_list = []
         for file_name, file_data in batches_data.items():
             self.file_names.append(file_name)

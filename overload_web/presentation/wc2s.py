@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
 from overload_web.application.wc2s import match
-from overload_web.presentation import deps
+from overload_web.presentation import wc2s_deps
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +20,9 @@ api_router = APIRouter()
 @api_router.post("/match_record", response_class=HTMLResponse)
 def match_record(
     request: Request,
-    marc_parser: Annotated[Any, Depends(deps.get_marc_parser)],
-    source_data: Annotated[Any, Depends(deps.source_data_from_load)],
-    oclc_handler: Annotated[Any, Depends(deps.oclc_fetcher)],
+    marc_parser: Annotated[Any, Depends(wc2s_deps.get_marc_parser)],
+    source_data: Annotated[Any, Depends(wc2s_deps.source_data_from_load)],
+    oclc_handler: Annotated[Any, Depends(wc2s_deps.oclc_fetcher)],
 ) -> HTMLResponse:
     out = match.MatchWorldcat2Sierra.execute(
         fetcher=oclc_handler,

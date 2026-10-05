@@ -6,7 +6,7 @@ import datetime
 import logging
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any
+from typing import Any, Sequence
 
 from overload_web.domain import shared
 
@@ -98,7 +98,7 @@ class DomainBib:
         self.bib_id = bib_id
         self.binary_data = binary_data
         self.branch_call_number = branch_call_number
-        self.collection = shared.Collection(str(collection).upper())
+        self.collection = shared.Collection(collection).upper() if collection else None
         self.command_tag = command_tag
         self.control_number = control_number
         self.isbn = isbn
@@ -193,6 +193,232 @@ class DomainBib:
         return f"DomainBib(barcodes: {self.barcodes}, bib_id: {self.bib_id}, branch_call_number: {self.branch_call_number}, collection: {self.collection}, control_number: {self.control_number}, isbn: {self.isbn}, library: {self.library}, oclc_number: {self.oclc_number}, research_call_number: {self.research_call_number}, record_type: {self.record_type}, title: {self.title}, upc: {self.upc}, update_date: {self.update_date}, vendor: {self.vendor})"  # noqa: E501
 
 
+class FieldUpdates:
+    """Functions that create `MarcFieldUpdateValues` to be used to update MARC fields"""
+
+    @staticmethod
+    def add_bib_id(bib_id: str | None, tag: str) -> MarcFieldUpdateValues | None:
+        """Creates a new bib ID field."""
+        if bib_id:
+            return MarcFieldUpdateValues(
+                delete_fields_by_tag=True,
+                tag=tag,
+                ind1=" ",
+                ind2=" ",
+                subfields=[{"code": "a", "value": bib_id}],
+            )
+        return None
+
+    @staticmethod
+    def add_command_tag(
+        format: str | None, default_loc: str | None, fields: list[ParsedField]
+    ) -> MarcFieldUpdateValues | None:
+        """Creates a new or updated command tag field."""
+        if not format and not default_loc:
+            return None
+        command_tag: str | None = None
+        for field in fields:
+            if field.tag == "949" and field.indicators == (" ", " "):
+                for sf in field.subfields:
+                    if sf.code == "a" and sf.value[0] == "*" and command_tag is None:
+                        command_tag = sf.value.strip()
+                        if "bn=" in command_tag:
+                            return None
+
+        if not command_tag:
+            if not format:
+                command_tag = f"*bn={default_loc};"
+            elif format and not default_loc:
+                command_tag = f"*b2={format};"
+            else:
+                command_tag = f"*b2={format};bn={default_loc};"
+            return MarcFieldUpdateValues(
+                tag="949",
+                ind1=" ",
+                ind2=" ",
+                subfields=[{"code": "a", "value": command_tag}],
+            )
+        if command_tag and not default_loc:
+            return None
+        return MarcFieldUpdateValues(
+            tag="949",
+            ind1=" ",
+            ind2=" ",
+            subfields=[
+                {
+                    "code": "a",
+                    "value": f"{command_tag.removesuffix(';')};bn={default_loc};",
+                }
+            ],
+            target_field_to_delete=TargetFieldCriteria(
+                tag="949", indicators=(" ", " "), code="a", value=command_tag
+            ),
+        )
+
+    @staticmethod
+    def add_vendor_fields(fields: list[dict[str, Any]]) -> list[MarcFieldUpdateValues]:
+        """Creates a list of fields for a full MARC record based on `VendorInfo`."""
+        field_objs = []
+        for field_data in fields:
+            field_objs.append(
+                MarcFieldUpdateValues(
+                    tag=field_data["tag"],
+                    ind1=field_data["ind1"],
+                    ind2=field_data["ind2"],
+                    subfields=[
+                        {"code": field_data["code"], "value": field_data["value"]}
+                    ],
+                )
+            )
+        return field_objs
+
+    @staticmethod
+    def get_item_field_criteria(
+        fields: list[ParsedField], library: str
+    ) -> tuple[str, str, str]:
+        """Get appropriate item field tag and indicators."""
+        if not library == "bpl":
+            return ("949", " ", "1")
+        fields_037 = [i for i in fields if i.tag == "037" and i.subfields]
+        for field in fields_037:
+            subfield_a = []
+            subfield_b: str | None = None
+            for subfield in field.subfields:
+                if subfield.code == "a" and isinstance(subfield.value, str):
+                    subfield_a.append(subfield.value)
+                elif subfield.code == "b" and subfield.value == "OverDrive, Inc.":
+                    subfield_b = subfield.value
+            if subfield_b is not None and len(subfield_a) >= 1:
+                return ("949", " ", "1")
+        return ("960", " ", " ")
+
+    @staticmethod
+    def get_item_fields(
+        fields: list[list[ParsedField]], criteria: tuple[str, str, str]
+    ) -> list[MarcFieldUpdateValues]:
+        """Creates list of item fields to add to combined duplicate records."""
+        all_items = []
+        for field_list in fields:
+            for item in field_list:
+                if item.tag == criteria[0] and item.indicators == (
+                    criteria[1],
+                    criteria[2],
+                ):
+                    all_items.append(
+                        MarcFieldUpdateValues(
+                            tag=item.tag,
+                            ind1=item.indicators[0],
+                            ind2=item.indicators[1],
+                            subfields=[
+                                {"code": i.code, "value": i.value}
+                                for i in item.subfields
+                            ],
+                        )
+                    )
+
+        return all_items
+
+    @staticmethod
+    def update_910_field(collection: str) -> MarcFieldUpdateValues:
+        """Adds 910 field for branches or research if applicable."""
+        return MarcFieldUpdateValues(
+            delete_fields_by_tag=True,
+            tag="910",
+            ind1=" ",
+            ind2=" ",
+            subfields=[{"code": "a", "value": collection}],
+        )
+
+    @staticmethod
+    def update_bt_series_call_no(
+        call_no: str | None, collection: str | None, vendor: str | None
+    ) -> MarcFieldUpdateValues | None:
+        """Updates call number for B&T Series materials."""
+        if not vendor == "BT SERIES" or not call_no or not collection == "BL":
+            return None
+        new_subfields = []
+        pos = 0
+
+        if call_no[:6] == "J SPA ":
+            new_subfields.append({"code": "p", "value": "J SPA"})
+        elif call_no[:2] == "J ":
+            new_subfields.append({"code": "p", "value": "J"})
+
+        if "GRAPHIC " in call_no:
+            new_subfields.append({"code": "f", "value": "GRAPHIC"})
+        elif "HOLIDAY " in call_no:
+            new_subfields.append({"code": "f", "value": "HOLIDAY"})
+        elif "YR " in call_no:
+            new_subfields.append({"code": "f", "value": "YR"})
+
+        if "GN FIC " in call_no:
+            pos = call_no.index("GN FIC ") + 7
+            new_subfields.append({"code": "a", "value": "GN FIC"})
+        elif "FIC " in call_no:
+            pos = call_no.index("FIC ") + 4
+            new_subfields.append({"code": "a", "value": "FIC"})
+        elif "PIC " in call_no:
+            pos = call_no.index("PIC ") + 4
+            new_subfields.append({"code": "a", "value": "PIC"})
+        elif call_no[:4] == "J E ":
+            pos = call_no.index("J E ") + 4
+            new_subfields.append({"code": "a", "value": "E"})
+        elif call_no[:8] == "J SPA E ":
+            pos = call_no.index("J SPA E ") + 8
+            new_subfields.append({"code": "a", "value": "E"})
+
+        new_subfields.append({"code": "c", "value": call_no[pos:]})
+        new_call_no = " ".join([i["value"] for i in new_subfields])
+        if call_no != new_call_no:
+            raise ValueError(
+                "Constructed call number does not match original. "
+                f"New={new_call_no}, Original={call_no}"
+            )
+        return MarcFieldUpdateValues(
+            delete_fields_by_tag=True,
+            tag="091",
+            ind1=" ",
+            ind2=" ",
+            subfields=new_subfields,
+        )
+
+    @staticmethod
+    def update_order_fields(
+        orders: Sequence[Order], mapping: dict[str, Any]
+    ) -> list[MarcFieldUpdateValues]:
+        """Updates order record fields based on template data applied to DomainBib"""
+        fields = []
+        for order in orders:
+            order_data = order.map_to_marc(rules=mapping)
+            for tag, subfield_values in order_data.items():
+                subfields = []
+                for k, v in subfield_values.items():
+                    if v is None:
+                        continue
+                    if isinstance(v, list):
+                        subfields.extend([{"code": k, "value": str(i)} for i in v])
+                    else:
+                        subfields.append({"code": k, "value": str(v)})
+                fields.append(
+                    MarcFieldUpdateValues(
+                        tag=tag, ind1=" ", ind2=" ", subfields=subfields
+                    )
+                )
+        return fields
+
+
+@dataclass
+class MarcFieldUpdateValues:
+    """Value object used to define updates to be made to a MARC field."""
+
+    tag: str
+    ind1: str
+    ind2: str
+    subfields: list[dict[str, str]]
+    delete_fields_by_tag: bool = False
+    target_field_to_delete: TargetFieldCriteria | None = None
+
+
 @dataclass
 class Order:
     """A domain model representing a Sierra order."""
@@ -280,6 +506,16 @@ class ParsedField:
 class ParsedSubfield:
     """A pure Python representation of a MARC subfield."""
 
+    code: str
+    value: str
+
+
+@dataclass
+class TargetFieldCriteria:
+    """Value object that defines data in a field to be deleted."""
+
+    tag: str
+    indicators: tuple[str, str]
     code: str
     value: str
 

@@ -15,7 +15,7 @@ from overload_web.application.pvf.file_handling import (
     ListVendorFiles,
     UploadFileToWorkflow,
 )
-from overload_web.presentation import deps
+from overload_web.presentation import pvf_deps
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ api_router = APIRouter()
 @api_router.get("/remote/list", response_class=HTMLResponse)
 def list_remote_files(
     request: Request,
-    retriever: Annotated[Any, Depends(deps.remote_file_retriever)],
+    retriever: Annotated[Any, Depends(pvf_deps.remote_file_retriever)],
     vendor: str,
 ) -> HTMLResponse:
     """
@@ -52,9 +52,9 @@ def list_remote_files(
 def select_ftp_file(
     request: Request,
     remote_file: Annotated[str, Form(...)],
-    retriever: Annotated[Any, Depends(deps.remote_file_retriever)],
-    storage: Annotated[Any, Depends(deps.local_file_storage)],
-    uow: Annotated[Any, Depends(deps.get_uow)],
+    retriever: Annotated[Any, Depends(pvf_deps.remote_file_retriever)],
+    storage: Annotated[Any, Depends(pvf_deps.local_file_storage)],
+    uow: Annotated[Any, Depends(pvf_deps.get_uow)],
     workflow_id: Annotated[str, Form(...)],
 ):
     """
@@ -92,8 +92,8 @@ def select_ftp_file(
 def upload_file(
     request: Request,
     file: UploadFile,
-    storage: Annotated[Any, Depends(deps.local_file_storage)],
-    uow: Annotated[Any, Depends(deps.get_uow)],
+    storage: Annotated[Any, Depends(pvf_deps.local_file_storage)],
+    uow: Annotated[Any, Depends(pvf_deps.get_uow)],
     workflow_id: Annotated[str, Form(...)],
 ):
     """
@@ -128,7 +128,7 @@ def upload_file(
 def remove_file(
     request: Request,
     file_id: Annotated[str, Form(...)],
-    uow: Annotated[Any, Depends(deps.get_uow)],
+    uow: Annotated[Any, Depends(pvf_deps.get_uow)],
     workflow_id: Annotated[str, Form(...)],
 ):
     """

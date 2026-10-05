@@ -85,19 +85,19 @@ class BaseMatchAnalyzer(ABC):
     ) -> MatchAnalysis: ...  # pragma: no branch
 
     def classify_matches(
-        self, record: models.DomainBib, matches: Sequence[dict[str, Any]]
+        self, collection: str | None, library: str, matches: Sequence[dict[str, Any]]
     ) -> ClassifiedCandidates:
         """Classify the candidate matches associated with this response."""
         parsed: list[sierra_responses.BaseSierraResponse]
-        if record.library == "bpl":
+        if library == "bpl":
             parsed = [sierra_responses.BPLSolrResponse(i) for i in matches]
-        if record.library == "nypl":
+        if library == "nypl":
             parsed = [sierra_responses.NYPLPlatformResponse(i) for i in matches]
         matched, mixed, other = [], [], []
         for c in sorted(parsed, key=lambda i: int(i.bib_id.strip(".b")), reverse=True):
             if c.collection == "MIXED":
                 mixed.append(c.bib_id)
-            elif c.collection == record.collection:
+            elif c.collection == collection:
                 matched.append(c)
             else:
                 other.append(c.bib_id)

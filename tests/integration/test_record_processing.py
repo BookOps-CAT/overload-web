@@ -5,7 +5,7 @@ from overload_web.application.pvf.process import (
     ProcessFullRecords,
     ProcessOrderLevelRecords,
 )
-from overload_web.domain.pvf import bib_services, match_service
+from overload_web.domain.pvf import services
 from overload_web.infrastructure import file_io, marc_handler, unit_of_work
 
 
@@ -22,7 +22,7 @@ def missing_barcodes(monkeypatch):
     def get_barcodes(*args, **kwargs):
         return ["333330987654321"]
 
-    monkeypatch.setattr(bib_services.BarcodeValidator, "validate_unique", get_barcodes)
+    monkeypatch.setattr(services.BarcodeValidator, "validate_unique", get_barcodes)
 
 
 @pytest.fixture
@@ -45,12 +45,10 @@ def marc_stubs(monkeypatch, mocker, tmp_path):
     mock_read = mocker.mock_open(read_data=b"")
     mocker.patch("overload_web.infrastructure.file_io.open", mock_read)
     monkeypatch.setattr("pathlib.Path.mkdir", fake_path)
-    monkeypatch.setattr(bib_services.BibParser, "combine_marc_files", bytes_response)
+    monkeypatch.setattr(services.BibParser, "combine_marc_files", bytes_response)
     monkeypatch.setattr(marc_handler.MarcParser, "write", bytes_response)
-    monkeypatch.setattr(
-        bib_services.BibUpdater, "get_full_record_updates", fake_updates
-    )
-    monkeypatch.setattr(bib_services.BibUpdater, "apply_field_updates", null_response)
+    monkeypatch.setattr(services.BibUpdater, "get_full_record_updates", fake_updates)
+    monkeypatch.setattr(services.BibUpdater, "apply_field_updates", null_response)
     monkeypatch.setattr(
         unit_of_work.IncomingFileRepository, "list_by_id", fake_file_reference
     )
@@ -64,7 +62,7 @@ def mock_marc(monkeypatch, stub_bib, request):
     def parse_bibs(*args, **kwargs):
         return [stub_bib(request.param[0], request.param[1], record_type)]
 
-    monkeypatch.setattr(bib_services.BibParser, "parse_marc_data", parse_bibs)
+    monkeypatch.setattr(services.BibParser, "parse_marc_data", parse_bibs)
 
 
 @pytest.fixture(params=[("nypl", "BL"), ("nypl", "RL"), ("bpl", None)])
@@ -76,12 +74,12 @@ def mock_marc_dupes(monkeypatch, stub_bib, request):
         bib = stub_bib(request.param[0], request.param[1], record_type)
         return [bib, bib]
 
-    monkeypatch.setattr(bib_services.BibParser, "parse_marc_data", parse_bibs)
+    monkeypatch.setattr(services.BibParser, "parse_marc_data", parse_bibs)
 
 
 @pytest.fixture
 def stub_bib_services():
-    return bib_services.BibUpdater(
+    return services.BibUpdater(
         handler=marc_handler.MarcUpdater(),
         order_mapping={},
         default_loc="foo",
@@ -93,7 +91,7 @@ def stub_bib_services():
 
 @pytest.fixture
 def stub_parsing_service():
-    return bib_services.BibParser(
+    return services.BibParser(
         handler=FakeMarcParser(),
         library="foo",
         record_type="bar",
@@ -106,7 +104,7 @@ def stub_parsing_service():
 
 @pytest.fixture
 def fake_matcher(fake_fetcher):
-    return match_service.BibMatcher(fetcher=fake_fetcher)
+    return services.BibMatcher(fetcher=fake_fetcher)
 
 
 class FakeMarcParser:

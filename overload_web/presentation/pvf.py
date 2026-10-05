@@ -12,7 +12,7 @@ from overload_web.application.pvf.process import (
     ProcessFullRecords,
     ProcessOrderLevelRecords,
 )
-from overload_web.presentation import deps, schemas
+from overload_web.presentation import pvf_deps, schemas
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +23,13 @@ api_router = APIRouter()
 @api_router.post("/acq/process-vendor-file", response_class=HTMLResponse)
 def process_acq_records(
     request: Request,
-    matcher: Annotated[Any, Depends(deps.get_matcher)],
+    matcher: Annotated[Any, Depends(pvf_deps.get_matcher)],
     matchpoints: Annotated[Any, Depends(schemas.MatchpointsModel.from_form)],
     order_template: Annotated[Any, Depends(schemas.TemplateDataModel.from_form)],
-    parser: Annotated[Any, Depends(deps.get_parser)],
-    storage: Annotated[Any, Depends(deps.local_file_storage)],
-    uow: Annotated[Any, Depends(deps.get_uow)],
-    updater: Annotated[Any, Depends(deps.get_updater)],
+    parser: Annotated[Any, Depends(pvf_deps.get_parser)],
+    storage: Annotated[Any, Depends(pvf_deps.local_file_storage)],
+    uow: Annotated[Any, Depends(pvf_deps.get_uow)],
+    updater: Annotated[Any, Depends(pvf_deps.get_updater)],
     workflow_id: Annotated[str, Form(...)],
 ) -> HTMLResponse:
     """
@@ -80,11 +80,11 @@ def process_acq_records(
 @api_router.post("/cat/process-vendor-file", response_class=HTMLResponse)
 def process_cat_records(
     request: Request,
-    matcher: Annotated[Any, Depends(deps.get_matcher)],
-    parser: Annotated[Any, Depends(deps.get_parser)],
-    storage: Annotated[Any, Depends(deps.local_file_storage)],
-    uow: Annotated[Any, Depends(deps.get_uow)],
-    updater: Annotated[Any, Depends(deps.get_updater)],
+    matcher: Annotated[Any, Depends(pvf_deps.get_matcher)],
+    parser: Annotated[Any, Depends(pvf_deps.get_parser)],
+    storage: Annotated[Any, Depends(pvf_deps.local_file_storage)],
+    uow: Annotated[Any, Depends(pvf_deps.get_uow)],
+    updater: Annotated[Any, Depends(pvf_deps.get_updater)],
     workflow_id: Annotated[str, Form(...)],
 ) -> HTMLResponse:
     """
@@ -128,13 +128,13 @@ def process_cat_records(
 @api_router.post("/sel/process-vendor-file", response_class=HTMLResponse)
 def process_sel_records(
     request: Request,
-    matcher: Annotated[Any, Depends(deps.get_matcher)],
+    matcher: Annotated[Any, Depends(pvf_deps.get_matcher)],
     matchpoints: Annotated[Any, Depends(schemas.MatchpointsModel.from_form)],
     order_template: Annotated[Any, Depends(schemas.TemplateDataModel.from_form)],
-    parser: Annotated[Any, Depends(deps.get_parser)],
-    storage: Annotated[Any, Depends(deps.local_file_storage)],
-    uow: Annotated[Any, Depends(deps.get_uow)],
-    updater: Annotated[Any, Depends(deps.get_updater)],
+    parser: Annotated[Any, Depends(pvf_deps.get_parser)],
+    storage: Annotated[Any, Depends(pvf_deps.local_file_storage)],
+    uow: Annotated[Any, Depends(pvf_deps.get_uow)],
+    updater: Annotated[Any, Depends(pvf_deps.get_updater)],
     workflow_id: Annotated[str, Form(...)],
 ) -> HTMLResponse:
     """

@@ -1,6 +1,6 @@
 import pytest
 
-from overload_web.domain.pvf import match_service
+from overload_web.domain.pvf import services
 
 
 @pytest.fixture
@@ -49,7 +49,7 @@ def stub_response(library, collection):
 
 @pytest.fixture
 def stub_matcher(fake_fetcher):
-    return match_service.BibMatcher(fetcher=fake_fetcher)
+    return services.BibMatcher(fetcher=fake_fetcher)
 
 
 @pytest.fixture
@@ -61,7 +61,7 @@ def stub_matcher_no_matches(fake_fetcher, monkeypatch):
         "overload_web.infrastructure.sierra_clients.SierraBibFetcher.get_bibs_by_id",
         empty_response,
     )
-    return match_service.BibMatcher(fetcher=fake_fetcher)
+    return services.BibMatcher(fetcher=fake_fetcher)
 
 
 @pytest.fixture(params=[("nypl", "BL"), ("nypl", "RL"), ("bpl", None)])

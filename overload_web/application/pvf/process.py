@@ -3,7 +3,7 @@
 import logging
 from typing import Any
 
-from overload_web.domain.pvf import aggregate, bib_services, match_service, ports
+from overload_web.domain.pvf import aggregate, ports, services
 
 logger = logging.getLogger(__name__)
 
@@ -13,12 +13,12 @@ class ProcessOrderLevelRecords:
 
     @staticmethod
     def execute(
-        matcher: match_service.BibMatcher,
+        matcher: services.BibMatcher,
         matchpoints: dict[str, str],
-        parser: bib_services.BibParser,
+        parser: services.BibParser,
         storage: ports.FileStorage,
         template_data: dict[str, Any],
-        updater: bib_services.BibUpdater,
+        updater: services.BibUpdater,
         uow: ports.UnitOfWorkProtocol,
         workflow_id: str,
     ) -> dict[str, Any]:
@@ -31,7 +31,7 @@ class ProcessOrderLevelRecords:
 
         Args:
             matcher:
-                a `match_service.BibMatcher` object used by the command.
+                a `services.BibMatcher` object used by the command.
             matchpoints:
                 A dictionary containing matchpoints to be used in matching records.
             parser:
@@ -41,7 +41,7 @@ class ProcessOrderLevelRecords:
             template_data:
                 order template data as a dictionary.
             updater:
-                a `bib_services.BibUpdater` object used by the command.
+                a `services.BibUpdater` object used by the command.
             uow:
                 a `ports.UnitOfWorkProtocol` object used by the command.
             workflow_id:
@@ -83,10 +83,10 @@ class ProcessFullRecords:
 
     @staticmethod
     def execute(
-        matcher: match_service.BibMatcher,
-        parser: bib_services.BibParser,
+        matcher: services.BibMatcher,
+        parser: services.BibParser,
         storage: ports.FileStorage,
-        updater: bib_services.BibUpdater,
+        updater: services.BibUpdater,
         uow: ports.UnitOfWorkProtocol,
         workflow_id: str,
     ) -> dict[str, Any]:
@@ -99,13 +99,13 @@ class ProcessFullRecords:
 
         Args:
             matcher:
-                a `match_service.BibMatcher` object used by the command.
+                a `services.BibMatcher` object used by the command.
             parser:
                 a `parsing_service.BibParser` object used by the command.
             storage:
                 a `ports.FileStorage` object used by the command.
             updater:
-                a `bib_services.BibUpdater` object used by the command.
+                a `services.BibUpdater` object used by the command.
             uow:
                 a `ports.UnitOfWorkProtocol` object used by the command.
             workflow_id:
