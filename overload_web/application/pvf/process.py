@@ -21,7 +21,7 @@ class ProcessOrderLevelRecords:
         updater: services.BibUpdater,
         uow: ports.UnitOfWorkProtocol,
         workflow_id: str,
-    ) -> dict[str, Any]:
+    ) -> int:
         """
         Process order-level MARC records.
 
@@ -51,13 +51,13 @@ class ProcessOrderLevelRecords:
             A dictionary representing the processed files that were saved as a
             `ProcessedFileBatch` object in the db.
         """
-        job = aggregate.AcquisitionsSelectionJob(
+        job = aggregate.OrderLevelJob(
             workflow_id=workflow_id, vendor=template_data.get("vendor", "UNKNOWN")
         )
         with uow:
             incoming_files = uow.incoming_files.list_by_id(workflow_id)
             batches_data = {
-                i["filename"]: storage.load(i["reference"]) for i in incoming_files
+                i.filename: storage.load(i.reference) for i in incoming_files
             }
 
             logger.info(
@@ -73,9 +73,10 @@ class ProcessOrderLevelRecords:
             )
             processed_batch = job.create_batch()
             db_batch = uow.processed_batches.save(processed_batch)
+            batch_id = db_batch.id
             uow.commit()
-
-        return db_batch
+        logger.info(f"Finished processing batch {batch_id}")
+        return batch_id
 
 
 class ProcessFullRecords:
@@ -89,7 +90,7 @@ class ProcessFullRecords:
         updater: services.BibUpdater,
         uow: ports.UnitOfWorkProtocol,
         workflow_id: str,
-    ) -> dict[str, Any]:
+    ) -> int:
         """
         Process a file of full MARC records.
 
@@ -115,11 +116,11 @@ class ProcessFullRecords:
             A dictionary representing the processed files that were saved as a
             `ProcessedFileBatch` object in the db.
         """
-        job = aggregate.CatalogingJob(workflow_id=workflow_id)
+        job = aggregate.FullRecordJob(workflow_id=workflow_id)
         with uow:
             incoming_files = uow.incoming_files.list_by_id(workflow_id)
             batches_data = {
-                i["filename"]: storage.load(i["reference"]) for i in incoming_files
+                i.filename: storage.load(i.reference) for i in incoming_files
             }
 
             logger.info(
@@ -133,6 +134,7 @@ class ProcessFullRecords:
             )
             processed_batch = job.create_batch()
             db_batch = uow.processed_batches.save(processed_batch)
+            batch_id = db_batch.id
             uow.commit()
 
-        return db_batch
+        return batch_id

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any, Sequence
 
@@ -217,9 +217,9 @@ class FieldUpdates:
         if not format and not default_loc:
             return None
         command_tag: str | None = None
-        for field in fields:
-            if field.tag == "949" and field.indicators == (" ", " "):
-                for sf in field.subfields:
+        for marc_field in fields:
+            if marc_field.tag == "949" and marc_field.indicators == (" ", " "):
+                for sf in marc_field.subfields:
                     if sf.code == "a" and sf.value[0] == "*" and command_tag is None:
                         command_tag = sf.value.strip()
                         if "bn=" in command_tag:
@@ -280,10 +280,10 @@ class FieldUpdates:
         if not library == "bpl":
             return ("949", " ", "1")
         fields_037 = [i for i in fields if i.tag == "037" and i.subfields]
-        for field in fields_037:
+        for marc_field in fields_037:
             subfield_a = []
             subfield_b: str | None = None
-            for subfield in field.subfields:
+            for subfield in marc_field.subfields:
                 if subfield.code == "a" and isinstance(subfield.value, str):
                     subfield_a.append(subfield.value)
                 elif subfield.code == "b" and subfield.value == "OverDrive, Inc.":
@@ -528,3 +528,25 @@ class VendorInfo:
     matchpoints: dict[str, str]
     name: str
     vendor_tags: list[dict[str, str]] | None = None
+
+
+class WorkflowStatus(StrEnum):
+    PENDING = "PENDING"
+    PROCESSING = "PROCESSING"
+    MATCHING = "MATCHING"
+    UPDATING = "UPDATING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
+
+@dataclass
+class WorkflowState:
+    """Tracks the state of a long-running process."""
+
+    id: str
+    status: WorkflowStatus
+    batch_id: str | None = None
+    error_message: str | None = None
+    record_type: str | None = None
+    matchpoints: dict[str, str | None] = field(default_factory=dict)
+    template_data: dict[str, Any] = field(default_factory=dict)

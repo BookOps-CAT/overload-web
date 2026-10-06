@@ -6,7 +6,6 @@ Serves HTML pages for Overload Web's user interface.
 from __future__ import annotations
 
 import logging
-import uuid
 
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
@@ -53,11 +52,8 @@ def vendor_file_page(
     Returns:
         HTML template response for the 'Process Vendor File' page.
     """
-    workflow_id = str(uuid.uuid4())
     return request.app.state.templates.TemplateResponse(
-        request=request,
-        name="process_records.html",
-        context={"page_title": page_title, "workflow_id": workflow_id},
+        request=request, name="process_records.html", context={"page_title": page_title}
     )
 
 

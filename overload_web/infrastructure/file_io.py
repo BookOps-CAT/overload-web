@@ -12,11 +12,12 @@ from __future__ import annotations
 
 import logging
 import os
+import pickle
 from pathlib import Path
 
 from file_retriever import Client
 
-from overload_web.domain.pvf import ports
+from overload_web.domain.pvf import aggregate, ports
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,23 @@ class LocalFileStorage(ports.FileStorage):
         with open(reference, "rb") as fh:
             file = fh.read()
         return file
+
+    def save_intermediate_records(
+        self, id: str, job: aggregate.AbstractProcessingJob
+    ) -> None:
+        """Serializes the intermediate domain objects to disk."""
+        file_path = self.base_path / f"{id}_state.pkl"
+        with open(file_path, "wb") as f:
+            pickle.dump(job, f)
+
+    def load_intermediate_records(self, id: str) -> aggregate.AbstractProcessingJob:
+        """Deserializes the domain objects back into memory."""
+        file_path = self.base_path / f"{id}_state.pkl"
+
+        if not file_path.exists():
+            raise FileNotFoundError(f"No intermediate state found for {id}")
+        with open(file_path, "rb") as f:
+            return pickle.load(f)
 
 
 class LocalFileRetriever(ports.FileRetriever):

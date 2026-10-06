@@ -5,7 +5,7 @@ from sqlmodel import SQLModel, create_engine
 
 from overload_web.application.pvf import (
     file_handling,
-    process,
+    process_manager,
     report_service,
     template_handling,
 )
@@ -17,10 +17,18 @@ from overload_web.presentation import pvf_deps
 @pytest.fixture
 def processed_records(monkeypatch):
     def fake_response(*args, **kwargs):
-        return {"id": "1"}
+        pass
 
-    monkeypatch.setattr(process.ProcessOrderLevelRecords, "execute", fake_response)
-    monkeypatch.setattr(process.ProcessFullRecords, "execute", fake_response)
+    monkeypatch.setattr(
+        process_manager.OrderLevelWorkflowManager,
+        "handle_workflow_started",
+        fake_response,
+    )
+    monkeypatch.setattr(
+        process_manager.FullLevelWorkflowManager,
+        "start_full_level_workflow",
+        fake_response,
+    )
 
 
 @pytest.fixture
@@ -169,6 +177,7 @@ class TestApp:
     app.dependency_overrides[pvf_deps.remote_file_retriever] = FakeFileRetriever
     app.dependency_overrides[pvf_deps.get_fetcher] = FakeFetcher
     app.dependency_overrides[pvf_deps.local_file_storage] = FakeFileStorage
+    app.state.workflow_id = 1
     base_url = client.base_url
 
     def test_files_router_list_remote_files_get(self, mock_files):
@@ -182,8 +191,7 @@ class TestApp:
 
     def test_files_select_ftp_file(self, mock_files):
         response = self.client.post(
-            "/files/remote/select?vendor=foo",
-            data={"remote_file": "bar.mrc", "workflow_id": 1},
+            "/files/remote/select?vendor=foo", data={"remote_file": "bar.mrc"}
         )
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/files/remote/select?vendor=foo"
@@ -195,7 +203,7 @@ class TestApp:
     def test_files_upload_file(self, mock_files):
         response = self.client.post(
             "/files/upload",
-            data={"workflow_id": 1, "vendor": None},
+            data={"vendor": None},
             files={"file": ("baz.mrc", b"", "text/plain")},
         )
         assert response.status_code == 200
@@ -206,9 +214,7 @@ class TestApp:
         assert response.context["files"][0]["source"] == "local"
 
     def test_files_remove_file(self, mock_files):
-        response = self.client.post(
-            "/files/remove", data={"workflow_id": 1, "file_id": 1}
-        )
+        response = self.client.post("/files/remove", data={"file_id": 1})
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/files/remove"
         assert sorted(list(response.context.keys())) == sorted(["files", "request"])
@@ -354,11 +360,8 @@ class TestApp:
             "name": "foo",
             "agent": "bar",
             "id": 1,
-            "workflow_id": "1234",
         }
-        response = self.client.post(
-            f"/pvf/{record_type}/process-vendor-file", data=context
-        )
+        response = self.client.post("/pvf/process-order-records", data=context)
         assert response.status_code == 200
 
     @pytest.mark.parametrize(
@@ -372,35 +375,50 @@ class TestApp:
             "library": library,
             "collection": collection,
             "record_type": record_type,
-            "workflow_id": "1234",
         }
-        response = self.client.post("/pvf/cat/process-vendor-file", data=context)
+        response = self.client.post("/pvf/process-full-records", data=context)
         assert response.status_code == 200
 
-    @pytest.mark.parametrize(
-        "library, record_type", [("nypl", "acq"), ("nypl", "cat"), ("nypl", "sel")]
-    )
-    def test_pvf_router_process_nypl_collection_error(self, library, record_type):
+    @pytest.mark.parametrize("library, record_type", [("nypl", "acq"), ("nypl", "sel")])
+    def test_pvf_router_process_order_records_nypl_collection_error(
+        self, library, record_type
+    ):
         """Tests incorrect collection passed to `ProcessingContext` called in `deps.py`"""
         context = {
             "library": library,
             "collection": "",
             "record_type": record_type,
             "vendor": "FOO",
-            "workflow_id": "1234",
         }
         with pytest.raises(ValidationError) as exc:
-            self.client.post(f"/pvf/{record_type}/process-vendor-file", data=context)
+            self.client.post("/pvf/process-order-records", data=context)
+        assert (
+            exc.value.errors()[0]["msg"]
+            == "Value error, Collection is required for NYPL records."
+        )
+
+    @pytest.mark.parametrize("library, record_type", [("nypl", "cat")])
+    def test_pvf_router_process_full_records_nypl_collection_error(
+        self, library, record_type
+    ):
+        """Tests incorrect collection passed to `ProcessingContext` called in `deps.py`"""
+        context = {
+            "library": library,
+            "collection": "",
+            "record_type": record_type,
+            "vendor": "FOO",
+        }
+        with pytest.raises(ValidationError) as exc:
+            self.client.post("/pvf/process-full-records", data=context)
         assert (
             exc.value.errors()[0]["msg"]
             == "Value error, Collection is required for NYPL records."
         )
 
     @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("bpl", "BL", "acq"), ("bpl", "BL", "cat"), ("bpl", "BL", "sel")],
+        "library, collection, record_type", [("bpl", "BL", "acq"), ("bpl", "BL", "sel")]
     )
-    def test_pvf_router_process_bpl_collection_error(
+    def test_pvf_router_process_order_records_bpl_collection_error(
         self, library, collection, record_type
     ):
         """Tests incorrect collection passed to `ProcessingContext` called in `deps.py`"""
@@ -409,10 +427,27 @@ class TestApp:
             "collection": collection,
             "record_type": record_type,
             "vendor": "FOO",
-            "workflow_id": "1234",
         }
         with pytest.raises(ValidationError) as exc:
-            self.client.post(f"/pvf/{record_type}/process-vendor-file", data=context)
+            self.client.post("/pvf/process-order-records", data=context)
+        assert (
+            exc.value.errors()[0]["msg"]
+            == "Value error, Collection should be `None` for BPL records."
+        )
+
+    @pytest.mark.parametrize("library, collection, record_type", [("bpl", "BL", "cat")])
+    def test_pvf_router_process_full_records_bpl_collection_error(
+        self, library, collection, record_type
+    ):
+        """Tests incorrect collection passed to `ProcessingContext` called in `deps.py`"""
+        context = {
+            "library": library,
+            "collection": collection,
+            "record_type": record_type,
+            "vendor": "FOO",
+        }
+        with pytest.raises(ValidationError) as exc:
+            self.client.post("/pvf/process-full-records", data=context)
         assert (
             exc.value.errors()[0]["msg"]
             == "Value error, Collection should be `None` for BPL records."

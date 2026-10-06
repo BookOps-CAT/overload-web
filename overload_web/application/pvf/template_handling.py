@@ -27,7 +27,7 @@ class SaveNewOrderTemplate:
             The saved template as an `OrderTemplate` domain object.
         """
         with uow:
-            save_template = uow.order_templates.save(obj=obj)
+            save_template = uow.order_templates.save(obj=obj).model_dump()
             uow.commit()
             return order_templates.OrderTemplate(**save_template)
 
@@ -50,7 +50,7 @@ class GetOrderTemplate:
         with uow:
             data = uow.order_templates.get(id=template_id)
             if data:
-                return order_templates.OrderTemplate(**data)
+                return order_templates.OrderTemplate(**data.model_dump())
         return None
 
 
@@ -71,7 +71,9 @@ class ListOrderTemplates:
         """
         with uow:
             template_list = uow.order_templates.list(offset=offset, limit=limit)
-            return [order_templates.OrderTemplate(**i) for i in template_list]
+            return [
+                order_templates.OrderTemplate(**i.model_dump()) for i in template_list
+            ]
 
 
 class UpdateOrderTemplate:
@@ -94,7 +96,8 @@ class UpdateOrderTemplate:
         """
         with uow:
             data = uow.order_templates.update(id=template_id, data=obj)
-            uow.commit()
             if data:
-                return order_templates.OrderTemplate(**data)
+                template = data.model_dump()
+                uow.commit()
+                return order_templates.OrderTemplate(**template)
         return None

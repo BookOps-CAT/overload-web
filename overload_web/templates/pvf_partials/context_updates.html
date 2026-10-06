@@ -23,9 +23,18 @@
     {% include "pvf_partials/template_source.html" %}
   {% endif %}
 </div>
-{% if record_type %}
+{% if record_type == "cat" %}
   <form id="pvf-form"
-        hx-post="/pvf/{{ record_type }}/process-vendor-file"
+        hx-post="/pvf/process-full-records"
+        hx-encoding="multipart/form-data"
+        hx-target="#pvf_output"
+        hx-swap-oob="true"
+        autocomplete="off"
+        hx-on::after-request="if(event.detail.successful) this.reset()">
+  </form>
+{% else %}
+  <form id="pvf-form"
+        hx-post="/pvf/process-order-records"
         hx-encoding="multipart/form-data"
         hx-target="#pvf_output"
         hx-swap-oob="true"

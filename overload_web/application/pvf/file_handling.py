@@ -92,7 +92,8 @@ class UploadFileToWorkflow:
 
             uow.commit()
 
-        return uow.incoming_files.list_by_id(workflow_id)
+        out = uow.incoming_files.list_by_id(workflow_id)
+        return [i.model_dump() for i in out]
 
 
 class DeleteFileFromWorkflow:
@@ -119,4 +120,4 @@ class DeleteFileFromWorkflow:
             uow.incoming_files.delete(id)
             uow.commit()
             files = uow.incoming_files.list_by_id(workflow_id)
-            return files
+            return [i.model_dump() for i in files]

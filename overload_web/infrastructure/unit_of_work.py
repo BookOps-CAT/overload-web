@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Sequence
+from typing import Sequence
 
 from sqlmodel import Session, SQLModel, select
 
@@ -19,10 +19,11 @@ class SqlModelUnitOfWork(ports.UnitOfWorkProtocol):
         self.session = None
 
     def __enter__(self):
-        self.session = Session(self.engine)
+        self.session = Session(self.engine, expire_on_commit=False)
         self.incoming_files = IncomingFileRepository(session=self.session)
         self.order_templates = OrderTemplateRepository(session=self.session)
         self.processed_batches = PVFBatchRepository(session=self.session)
+        self.workflow_states = WorkflowStatusRepository(session=self.session)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -37,11 +38,12 @@ class SqlModelUnitOfWork(ports.UnitOfWorkProtocol):
         self.session.rollback()
 
 
-class OrderTemplateRepository(ports.SqlRepositoryProtocol):
+class OrderTemplateRepository(ports.TemplateRepositoryProtocol):
     """
     `SQLModel` repository for `TemplateModel` objects.
 
-    This class is a concrete implementation of the `SqlRepositoryProtocol` protocol.
+    This class is a concrete implementation of the `TemplateRepositoryProtocol`
+    protocol.
 
     Args:
         session: a `sqlmodel.Session`.
@@ -50,7 +52,7 @@ class OrderTemplateRepository(ports.SqlRepositoryProtocol):
     def __init__(self, session: Session):
         self.session = session
 
-    def get(self, id: str | int) -> dict[str, Any] | None:
+    def get(self, id: str | int) -> tables.TemplateModel | None:
         """
         Retrieve an `OrderTemplate` object by its ID.
 
@@ -61,11 +63,11 @@ class OrderTemplateRepository(ports.SqlRepositoryProtocol):
             a `OrderTemplate` instance as a dictionary or `None` if not found.
         """
         template = self.session.get(tables.TemplateModel, id)
-        return template.model_dump() if template else None
+        return template if template else None
 
     def list(
         self, offset: int | None = 0, limit: int | None = 0
-    ) -> Sequence[dict[str, Any]]:
+    ) -> Sequence[tables.TemplateModel]:
         """
         Retrieve all `OrderTemplate` objects in the database.
 
@@ -79,9 +81,9 @@ class OrderTemplateRepository(ports.SqlRepositoryProtocol):
         statement = select(tables.TemplateModel).offset(offset).limit(limit)
         results = self.session.exec(statement)
         all_templates = results.all()
-        return [i.model_dump() for i in all_templates]
+        return all_templates
 
-    def save(self, obj: tables.TemplateModel) -> dict[str, Any]:
+    def save(self, obj: tables.TemplateModel) -> tables.TemplateModel:
         """
         Adds a new `TemplateModel` to the database.
 
@@ -95,9 +97,9 @@ class OrderTemplateRepository(ports.SqlRepositoryProtocol):
         self.session.add(valid_obj)
         self.session.flush()
         self.session.refresh(valid_obj)
-        return valid_obj.model_dump()
+        return valid_obj
 
-    def update(self, data: SQLModel, id: str) -> dict[str, Any] | None:
+    def update(self, data: SQLModel, id: str) -> tables.TemplateModel | None:
         """
         Updates an existing `OrderTemplate` in the database.
 
@@ -116,14 +118,14 @@ class OrderTemplateRepository(ports.SqlRepositoryProtocol):
             self.session.add(template)
             self.session.flush()
             self.session.refresh(template)
-        return template.model_dump() if template else None
+        return template if template else None
 
 
-class PVFBatchRepository(ports.SqlRepositoryProtocol):
+class PVFBatchRepository(ports.BatchRepositoryProtocol):
     """
     `SQLModel` repository for `PVFBatch` objects.
 
-    This class is a concrete implementation of the `SqlRepositoryProtocol` protocol.
+    This class is a concrete implementation of the `BatchRepositoryProtocol` protocol.
 
     Args:
         session: a `sqlmodel.Session`.
@@ -132,7 +134,7 @@ class PVFBatchRepository(ports.SqlRepositoryProtocol):
     def __init__(self, session: Session):
         self.session = session
 
-    def get(self, id: str | int) -> dict[str, Any] | None:
+    def get(self, id: str | int) -> tables.PVFBatch | None:
         """
         Retrieve a `PVFBatch` object by its ID.
 
@@ -144,18 +146,10 @@ class PVFBatchRepository(ports.SqlRepositoryProtocol):
         """
         batch = self.session.get(tables.PVFBatch, id)
         if batch:
-            return {
-                "files": [f.model_dump() for f in batch.files],
-                "stats": batch.stats,
-                "file_names": batch.file_names,
-                "total_files": batch.total_files,
-                "total_records": batch.total_records,
-                "missing_barcodes": batch.missing_barcodes,
-                "processing_integrity": batch.processing_integrity,
-            }
+            return batch
         return None
 
-    def save(self, obj: tables.PVFBatch) -> dict[str, Any]:
+    def save(self, obj: tables.PVFBatch) -> tables.PVFBatch:
         """
         Adds a new `PVFBatch` to the database.
 
@@ -181,10 +175,10 @@ class PVFBatchRepository(ports.SqlRepositoryProtocol):
         self.session.add(valid_batch)
         self.session.flush()
         self.session.refresh(valid_batch)
-        return valid_batch.model_dump()
+        return valid_batch
 
 
-class IncomingFileRepository(ports.SqlRepositoryProtocol):
+class IncomingFileRepository(ports.IncomingFileRepositoryProtocol):
     def __init__(self, session: Session):
         self.session = session
 
@@ -205,7 +199,7 @@ class IncomingFileRepository(ports.SqlRepositoryProtocol):
         file = results.one_or_none()
         self.session.delete(file)
 
-    def list_by_id(self, id: str | int) -> Sequence[dict[str, Any]]:
+    def list_by_id(self, id: str | int) -> Sequence[tables.IncomingFileModel]:
         """
         Retrieve all `IncomingFileModel` objects in the database.
 
@@ -220,9 +214,9 @@ class IncomingFileRepository(ports.SqlRepositoryProtocol):
         )
         results = self.session.exec(statement)
         all_files = results.all()
-        return [i.model_dump() for i in all_files]
+        return all_files
 
-    def save(self, obj: tables.IncomingFileModel) -> dict[str, Any]:
+    def save(self, obj: tables.IncomingFileModel) -> tables.IncomingFileModel:
         """
         Adds a new `IncomingFileModel` to the database.
 
@@ -236,4 +230,59 @@ class IncomingFileRepository(ports.SqlRepositoryProtocol):
         self.session.add(valid_obj)
         self.session.flush()
         self.session.refresh(valid_obj)
-        return valid_obj.model_dump()
+        return valid_obj
+
+
+class WorkflowStatusRepository(ports.WorkflowRepositoryProtocol):
+    def __init__(self, session: Session):
+        self.session = session
+
+    def get(self, id: str | int) -> tables.WorkflowState | None:
+        """
+        Retrieve an `WorkflowState` object by its ID.
+
+        Args:
+            id: the primary key of the `WorkflowState`.
+
+        Returns:
+            a `WorkflowState` instance as a dictionary or `None` if not found.
+        """
+        workflow = self.session.get(tables.WorkflowState, id)
+        return workflow if workflow else None
+
+    def save(self, obj: tables.WorkflowState) -> tables.WorkflowState:
+        """
+        Adds a new `WorkflowState` to the database.
+
+        Args:
+            obj: the `WorkflowState` object to save.
+
+        Returns:
+            The `WorkflowState` data as a dictionary.
+        """
+        valid_obj = tables.WorkflowState.model_validate(obj, from_attributes=True)
+        self.session.add(valid_obj)
+        self.session.flush()
+        self.session.refresh(valid_obj)
+        return valid_obj
+
+    def update(self, data: SQLModel, id: str) -> tables.WorkflowState | None:
+        """
+        Updates an existing `WorkflowState` in the database.
+
+        Args:
+            data: the data to be used to update the existing workflow.
+            id: the id of the workflow to be updated
+        Returns:
+            a `WorkflowState` instance or `None` if not found.
+        """
+        workflow = self.session.get(tables.WorkflowState, id)
+        if not workflow:
+            logger.error(f"Workflow '{id}' does not exist")
+        else:
+            patch_data = data.model_dump(exclude_unset=True)
+            workflow.sqlmodel_update(patch_data)
+            self.session.add(workflow)
+            self.session.flush()
+            self.session.refresh(workflow)
+        return workflow if workflow else None

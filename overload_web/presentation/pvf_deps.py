@@ -11,6 +11,8 @@ from typing import Annotated, Any
 from fastapi import Depends, Form, Request
 from sqlmodel import SQLModel, create_engine
 
+from overload_web.application.pvf import process_manager
+from overload_web.bootstrap import bootstrap_message_bus
 from overload_web.domain.pvf import services
 from overload_web.infrastructure import (
     file_io,
@@ -134,3 +136,23 @@ def get_updater(
         collection=context.collection,
         record_type=context.record_type,
     )
+
+
+def get_message_bus(
+    parser: Annotated[Any, Depends(get_parser)],
+    matcher: Annotated[Any, Depends(get_matcher)],
+    uow: Annotated[Any, Depends(get_uow)],
+    updater: Annotated[Any, Depends(get_updater)],
+    storage: Annotated[Any, Depends(local_file_storage)],
+):
+    """Instantiates the bus and registers all command/event handlers."""
+    return bootstrap_message_bus(
+        uow=uow, storage=storage, parser=parser, matcher=matcher, updater=updater
+    )
+
+
+def get_process_manager(
+    bus: Annotated[Any, Depends(get_message_bus)], uow: Annotated[Any, Depends(get_uow)]
+) -> process_manager.OrderLevelWorkflowManager:
+    """Provides the Process Manager to the FastAPI endpoints."""
+    return process_manager.OrderLevelWorkflowManager(bus=bus, uow=uow)

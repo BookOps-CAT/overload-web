@@ -3,6 +3,18 @@ from __future__ import annotations
 from enum import StrEnum
 
 
+class Message:
+    pass
+
+
+class Command(Message):
+    pass
+
+
+class Event(Message):
+    pass
+
+
 class Collection(StrEnum):
     """Valid values for NYPL and BPL collections"""
 

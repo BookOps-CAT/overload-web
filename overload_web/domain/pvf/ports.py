@@ -4,7 +4,17 @@ from __future__ import annotations
 
 import logging
 from types import TracebackType
-from typing import Any, Iterator, Protocol, Sequence, TypeVar, runtime_checkable
+from typing import (
+    Any,
+    Callable,
+    Iterator,
+    Protocol,
+    Sequence,
+    TypeVar,
+    runtime_checkable,
+)
+
+from overload_web.domain.shared import Command, Event
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +85,7 @@ class FileRetriever(Protocol):
 
 
 @runtime_checkable
-class FileStorage(Protocol):
+class FileStorage(Protocol[U]):
     """
     A protocol for a service which saves files to storage and loads them for processing
     within Overload.
@@ -109,6 +119,12 @@ class FileStorage(Protocol):
     Returns:
         the path where the file was saved as a string
     """
+
+    def save_intermediate_records(
+        self, id: str, job: U
+    ) -> None: ...  # pragma: no branch
+
+    def load_intermediate_records(self, id: str) -> U: ...  # pragma: no branch
 
 
 @runtime_checkable
@@ -199,6 +215,29 @@ class MarcUpdaterPort(Protocol[U]):
 
 
 @runtime_checkable
+class MessageBusPort(Protocol):
+    def register_command(
+        self, command_type: type[Command], handler: Callable
+    ) -> None: ...  # pragma:no branch
+
+    """Register a handler for a command."""
+
+    def register_event(
+        self, command_type: type[Event], handler: Callable
+    ) -> None: ...  # pragma:no branch
+
+    """Register a listener for an event."""
+
+    def send(self, command: Command) -> None: ...  # pragma:no branch
+
+    """Route a command to its handler."""
+
+    def publish(self, event: Event) -> None: ...  # pragma:no branch
+
+    """Publish and event to all listeners."""
+
+
+@runtime_checkable
 class ReportWriter(Protocol):
     """A protocol defining a service used to write report data."""
 
@@ -214,53 +253,99 @@ class ReportWriter(Protocol):
 
 
 @runtime_checkable
-class SqlRepositoryProtocol(Protocol[T]):
+class TemplateRepositoryProtocol(Protocol[U]):
     """
     Interface for repository operations on generic objects.
 
     Includes methods for fetching and saving generic objects.
     """
 
-    session: Any
-
-    def delete(self, id: str) -> None: ...  # pragma: no branch
-
-    """Delete an object from a database."""
-
-    def get(self, id: str) -> dict[str, Any] | None: ...  # pragma: no branch
+    def get(self, id: str) -> U | None: ...  # pragma: no branch
 
     """Get objects from a database."""
 
     def list(
         self, offset: int | None = 0, limit: int | None = 0
-    ) -> Sequence[dict[str, Any]]: ...  # pragma: no branch
+    ) -> Sequence[U]: ...  # pragma: no branch
 
     """List all objects in a database."""
 
-    def list_by_id(
-        self, id: str | int
-    ) -> Sequence[dict[str, Any]]: ...  # pragma: no branch
-
-    """List all objects in a database filtering by a specific id."""
-
-    def save(self, obj: T) -> dict[str, Any]: ...  # pragma: no branch
+    def save(self, obj: U) -> U: ...  # pragma: no branch
 
     """Save a new object to a database."""
 
-    def update(
-        self, data: T, id: str
-    ) -> dict[str, Any] | None: ...  # pragma: no branch
+    def update(self, data: U, id: str) -> U | None: ...  # pragma: no branch
 
     """Update an existing object in a database."""
+
+
+@runtime_checkable
+class BatchRepositoryProtocol(Protocol[U]):
+    """
+    Interface for repository operations on generic objects.
+
+    Includes methods for fetching and saving generic objects.
+    """
+
+    def get(self, id: str) -> U | None: ...  # pragma: no branch
+
+    """Get objects from a database."""
+
+    def save(self, obj: U) -> U: ...  # pragma: no branch
+
+    """Save a new object to a database."""
+
+
+@runtime_checkable
+class IncomingFileRepositoryProtocol(Protocol[U]):
+    """
+    Interface for repository operations on generic objects.
+
+    Includes methods for fetching and saving generic objects.
+    """
+
+    def delete(self, id: str) -> None: ...  # pragma: no branch
+
+    """Delete an object from a database."""
+
+    def list_by_id(self, id: str | int) -> Sequence[U]: ...  # pragma: no branch
+
+    """List all objects in a database filtering by a specific id."""
+
+    def save(self, obj: U) -> U: ...  # pragma: no branch
+
+    """Save a new object to a database."""
+
+
+@runtime_checkable
+class WorkflowRepositoryProtocol(Protocol[U]):
+    """
+    Interface for repository operations on generic objects.
+
+    Includes methods for fetching and saving generic objects.
+    """
+
+    def get(self, id: str) -> U | None: ...  # pragma: no branch
+
+    """Get objects from a database."""
+
+    def update(self, data: U, id: str) -> U | None: ...  # pragma: no branch
+
+    """Update an existing object in a database."""
+
+    def save(self, obj: U) -> U: ...  # pragma: no branch
+
+    """Save a new object to a database."""
 
 
 @runtime_checkable
 class UnitOfWorkProtocol(Protocol):
     """Protocol defining the Unit of Work for database transactions."""
 
-    incoming_files: SqlRepositoryProtocol
-    order_templates: SqlRepositoryProtocol
-    processed_batches: SqlRepositoryProtocol
+    incoming_files: IncomingFileRepositoryProtocol
+    order_templates: TemplateRepositoryProtocol
+    processed_batches: BatchRepositoryProtocol
+    workflow_states: WorkflowRepositoryProtocol
 
     def __enter__(self) -> UnitOfWorkProtocol: ...  # pragma: no branch
 

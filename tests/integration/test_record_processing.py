@@ -5,7 +5,7 @@ from overload_web.application.pvf.process import (
     ProcessFullRecords,
     ProcessOrderLevelRecords,
 )
-from overload_web.domain.pvf import services
+from overload_web.domain.pvf import files, services
 from overload_web.infrastructure import file_io, marc_handler, unit_of_work
 
 
@@ -37,7 +37,11 @@ def marc_stubs(monkeypatch, mocker, tmp_path):
         pass
 
     def fake_file_reference(*args, **kwargs):
-        return [{"filename": "foo.mrc", "reference": "bar"}]
+        return [
+            files.IncomingFile(
+                filename="foo.mrc", reference="bar", id=1, source="ftp", workflow_id=1
+            )
+        ]
 
     def fake_path(*args, **kwargs):
         return tmp_path / "uploads"
@@ -143,7 +147,7 @@ class TestProcessCommands:
             storage=file_io.LocalFileStorage(base_path=path),
             uow=stub_uow,
         )
-        assert out["id"] is not None
+        assert out is not None
         assert "Integrity validation: True, missing_barcodes: []" in [
             i.msg for i in caplog.records
         ]
@@ -169,7 +173,7 @@ class TestProcessCommands:
             storage=file_io.LocalFileStorage(base_path=path),
             uow=stub_uow,
         )
-        assert out["id"] is not None
+        assert out is not None
         assert "Integrity validation: False, missing_barcodes: ['333330987654321']" in [
             i.msg for i in caplog.records
         ]
@@ -198,7 +202,7 @@ class TestProcessCommands:
             storage=file_io.LocalFileStorage(base_path=path),
             uow=stub_uow,
         )
-        assert out["id"] is not None
+        assert out is not None
 
     @pytest.mark.workflow(record_type="cat")
     def test_full_records_process_vendor_file_dupes(

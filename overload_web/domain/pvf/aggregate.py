@@ -1,9 +1,12 @@
 import datetime
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
 
-from overload_web.domain.pvf import services
+from overload_web.domain.pvf import models, services
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -14,23 +17,27 @@ class ProcessedFile:
     records: bytes
 
 
+@dataclass
 class ProcessedFileBatch:
     """A dataclass representing a batch of processed files and their statistics"""
 
-    def __init__(
-        self,
-        stats: list[dict[str, Any]],
-        file_names: list[str],
-        files: list[ProcessedFile],
-        missing_barcodes: list[str] | None = None,
-    ) -> None:
-        self.files = files
-        self.stats = stats
-        self.file_names = file_names
-        self.total_files = len(file_names)
-        self.total_records = len(stats)
-        self.missing_barcodes = missing_barcodes
-        self.processing_integrity = missing_barcodes in [[], None]
+    file_names: list[str]
+    files: list[ProcessedFile]
+    # id: str
+    stats: list[dict[str, Any]]
+    missing_barcodes: list[str] | None = None
+
+    @property
+    def processing_integrity(self) -> bool:
+        return self.missing_barcodes in [[], None]
+
+    @property
+    def total_files(self) -> int:
+        return len(self.file_names)
+
+    @property
+    def total_records(self) -> int:
+        return len(self.stats)
 
 
 class AbstractProcessingJob(ABC):
@@ -53,7 +60,7 @@ class AbstractProcessingJob(ABC):
         )
 
 
-class AcquisitionsSelectionJob(AbstractProcessingJob):
+class OrderLevelJob(AbstractProcessingJob):
     """Aggregate Root representing a batch processing job for order-level workflow."""
 
     def __init__(self, workflow_id: str, vendor: str):
@@ -61,10 +68,51 @@ class AcquisitionsSelectionJob(AbstractProcessingJob):
         self.vendor = vendor
 
         self.file_names: list[str] = []
+        self.file_records: dict[str, list[models.DomainBib]] = {}
         self.missing_barcodes: list[str] = []
         self.processed_files: list[ProcessedFile] = []
         self.report_data: list[dict[str, Any]] = []
         self.validator = services.BarcodeValidator()
+
+    def parse_files(
+        self, batches_data: dict[str, bytes], parser: services.BibParser
+    ) -> None:
+        for file_name, data in batches_data.items():
+            self.file_names.append(file_name)
+            parsed = parser.parse_marc_data(data=data, vendor=self.vendor)
+            self.validator.validate_unique([bib.barcodes for bib in parsed])
+            self.file_records[file_name] = parsed
+
+    def match_records(
+        self, matcher: services.BibMatcher, matchpoints: dict[str, str]
+    ) -> None:
+        for file_name, records in self.file_records.items():
+            for bib in records:
+                matches = matcher.match_order_record(
+                    record=bib, matchpoints=matchpoints
+                )
+                analysis = matcher.review_matches(bib=bib, matches=matches)
+                bib.apply_match(bib_id=analysis.target_bib_id, action=analysis.action)
+                self.report_data.append(analysis.to_dict())
+
+    def apply_updates_and_create_batch(
+        self,
+        parser: services.BibParser,
+        template_data: dict[str, Any],
+        updater: services.BibUpdater,
+    ) -> ProcessedFileBatch:
+        """The core domain logic loop."""
+        for file_name, records in self.file_records.items():
+            for bib in records:
+                updates = updater.get_order_level_updates(
+                    record=bib, template_data=template_data
+                )
+                updater.apply_field_updates(record=bib, updates=updates)
+            out_binary = parser.write(records)
+            self.processed_files.append(
+                ProcessedFile(file_name=file_name, records=out_binary)
+            )
+        return self.create_batch()
 
     def process(
         self,
@@ -101,7 +149,7 @@ class AcquisitionsSelectionJob(AbstractProcessingJob):
             )
 
 
-class CatalogingJob(AbstractProcessingJob):
+class FullRecordJob(AbstractProcessingJob):
     """Aggregate Root representing a batch processing job for cataloging workflow."""
 
     def __init__(self, workflow_id: str):

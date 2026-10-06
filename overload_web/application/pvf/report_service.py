@@ -29,15 +29,15 @@ class CreatePVFOutputReport:
         with uow:
             data = uow.processed_batches.get(batch_id)
             if data:
-                stats = reporting.ProcessingStatistics(data["stats"])
+                stats = reporting.ProcessingStatistics(data.stats)
                 return {
-                    "total_records": data["total_records"],
-                    "file_names": data["file_names"],
-                    "total_files": len(data["file_names"]),
+                    "total_records": data.total_records,
+                    "file_names": data.file_names,
+                    "total_files": len(data.file_names),
                     "vendor_report": stats.create_vendor_report(),
                     "dupes_report": stats.create_duplicate_report(),
-                    "missing_barcodes": data.get("missing_barcodes", []),
-                    "processing_integrity": data.get("processing_integrity", True),
+                    "missing_barcodes": getattr(data, "missing_barcodes", []),
+                    "processing_integrity": getattr(data, "processing_integrity", True),
                     "call_no_report": stats.create_call_number_report(
                         record_type=record_type
                     ),
@@ -62,7 +62,7 @@ class GetDetailedReportData:
         with uow:
             data = uow.processed_batches.get(batch_id)
             if data:
-                return data["stats"]
+                return data.stats
             return []
 
 
@@ -92,7 +92,7 @@ class WriteOutputReport:
         with uow:
             data = uow.processed_batches.get(batch_id)
             if data:
-                stats = reporting.ProcessingStatistics(data["stats"])
+                stats = reporting.ProcessingStatistics(data.stats)
                 call_no_report = stats.create_call_number_report(
                     record_type=record_type
                 )

@@ -55,7 +55,6 @@ def select_ftp_file(
     retriever: Annotated[Any, Depends(pvf_deps.remote_file_retriever)],
     storage: Annotated[Any, Depends(pvf_deps.local_file_storage)],
     uow: Annotated[Any, Depends(pvf_deps.get_uow)],
-    workflow_id: Annotated[str, Form(...)],
 ):
     """
     Load a file from remote storage and upload it to the workflow.
@@ -69,6 +68,7 @@ def select_ftp_file(
     Returns:
         the list of files wrapped in a `HTMLResponse` object
     """
+    workflow_id = request.app.state.workflow_id
     vendor_dir = os.environ[f"{retriever.client.name.upper()}_SRC"]
     file_content = DownloadRemoteFile.execute(
         name=remote_file, dir=vendor_dir, retriever=retriever
@@ -94,7 +94,6 @@ def upload_file(
     file: UploadFile,
     storage: Annotated[Any, Depends(pvf_deps.local_file_storage)],
     uow: Annotated[Any, Depends(pvf_deps.get_uow)],
-    workflow_id: Annotated[str, Form(...)],
 ):
     """
     Upload a local file to the workflow.
@@ -108,6 +107,7 @@ def upload_file(
     Returns:
         the list of files wrapped in a `HTMLResponse` object
     """
+    workflow_id = request.app.state.workflow_id
     selected = UploadFileToWorkflow.execute(
         workflow_id=workflow_id,
         filename=str(file.filename),
@@ -129,7 +129,6 @@ def remove_file(
     request: Request,
     file_id: Annotated[str, Form(...)],
     uow: Annotated[Any, Depends(pvf_deps.get_uow)],
-    workflow_id: Annotated[str, Form(...)],
 ):
     """
     Rempve a file from the workflow.
@@ -142,6 +141,7 @@ def remove_file(
     Returns:
         the list of remaining files wrapped in a `HTMLResponse` object
     """
+    workflow_id = request.app.state.workflow_id
     selected = DeleteFileFromWorkflow.execute(
         id=file_id, uow=uow, workflow_id=workflow_id
     )
