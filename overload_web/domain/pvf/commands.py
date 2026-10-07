@@ -33,7 +33,6 @@ class ParseFullLevelFiles(Command):
     """Command to parse full MARC records from incoming files."""
 
     workflow_id: str
-    vendor: str
 
 
 @dataclass

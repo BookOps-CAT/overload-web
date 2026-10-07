@@ -153,6 +153,6 @@ def get_message_bus(
 
 def get_process_manager(
     bus: Annotated[Any, Depends(get_message_bus)], uow: Annotated[Any, Depends(get_uow)]
-) -> process_manager.OrderLevelWorkflowManager:
+) -> process_manager.WorkflowManager:
     """Provides the Process Manager to the FastAPI endpoints."""
-    return process_manager.OrderLevelWorkflowManager(bus=bus, uow=uow)
+    return process_manager.WorkflowManager(bus=bus, uow=uow)

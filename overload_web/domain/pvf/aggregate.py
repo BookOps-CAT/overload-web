@@ -23,7 +23,6 @@ class ProcessedFileBatch:
 
     file_names: list[str]
     files: list[ProcessedFile]
-    # id: str
     stats: list[dict[str, Any]]
     missing_barcodes: list[str] | None = None
 
@@ -49,7 +48,15 @@ class AbstractProcessingJob(ABC):
     missing_barcodes: list[str]
 
     @abstractmethod
-    def process(self, *args, **kwargs) -> None: ...  # pragma:no branch
+    def parse_files(self, *args, **kwargs) -> None: ...  # pragma:no branch
+
+    @abstractmethod
+    def match_records(self, *args, **kwargs) -> None: ...  # pragma:no branch
+
+    @abstractmethod
+    def apply_updates_and_create_batch(
+        self, *args, **kwargs
+    ) -> ProcessedFileBatch: ...  # pragma:no branch
 
     def create_batch(self) -> ProcessedFileBatch:
         return ProcessedFileBatch(
@@ -92,6 +99,7 @@ class OrderLevelJob(AbstractProcessingJob):
                     record=bib, matchpoints=matchpoints
                 )
                 analysis = matcher.review_matches(bib=bib, matches=matches)
+                print(analysis.target_bib_id)
                 bib.apply_match(bib_id=analysis.target_bib_id, action=analysis.action)
                 self.report_data.append(analysis.to_dict())
 
@@ -114,40 +122,6 @@ class OrderLevelJob(AbstractProcessingJob):
             )
         return self.create_batch()
 
-    def process(
-        self,
-        batches_data: dict[str, bytes],
-        matcher: services.BibMatcher,
-        matchpoints: dict[str, str],
-        parser: services.BibParser,
-        template_data: dict[str, Any],
-        updater: services.BibUpdater,
-    ) -> None:
-        """The core domain logic loop."""
-
-        for file_name, data in batches_data.items():
-            self.file_names.append(file_name)
-            records = parser.parse_marc_data(data=data, vendor=self.vendor)
-            barcodes = self.validator.validate_unique([bib.barcodes for bib in records])
-            for bib in records:
-                matches = matcher.match_order_record(
-                    record=bib, matchpoints=matchpoints
-                )
-                analysis = matcher.review_matches(bib=bib, matches=matches)
-                bib.apply_match(bib_id=analysis.target_bib_id, action=analysis.action)
-                updates = updater.get_order_level_updates(
-                    record=bib, template_data=template_data
-                )
-                updater.apply_field_updates(record=bib, updates=updates)
-                self.report_data.append(analysis.to_dict())
-            self.validator.validate_preserved(
-                original_barcodes=barcodes,
-                processed_barcodes=[bib.barcodes for bib in records],
-            )
-            self.processed_files.append(
-                ProcessedFile(file_name=file_name, records=parser.write(records))
-            )
-
 
 class FullRecordJob(AbstractProcessingJob):
     """Aggregate Root representing a batch processing job for cataloging workflow."""
@@ -156,42 +130,50 @@ class FullRecordJob(AbstractProcessingJob):
         self.workflow_id = workflow_id
 
         self.file_names: list[str] = []
+        self.records: list[models.DomainBib] = []
         self.missing_barcodes: list[str] = []
+        self.original_barcodes: list[str] = []
         self.processed_files: list[ProcessedFile] = []
         self.report_data: list[dict[str, Any]] = []
         self.out_file_name = datetime.datetime.today().strftime("%y%m%d")
         self.validator = services.BarcodeValidator()
 
-    def process(
-        self,
-        batches_data: dict[str, bytes],
-        matcher: services.BibMatcher,
-        parser: services.BibParser,
-        updater: services.BibUpdater,
+    def parse_files(
+        self, batches_data: dict[str, bytes], parser: services.BibParser
     ) -> None:
-        """The core domain logic loop."""
-        reviewer = services.BibReviewer(handler=updater.handler)
         data_list = []
         for file_name, file_data in batches_data.items():
             self.file_names.append(file_name)
             data_list.append(file_data)
         data = parser.combine_marc_files(data_list)
         records = parser.parse_marc_data(data=data)
-        barcodes = self.validator.validate_unique([bib.barcodes for bib in records])
-        for bib in records:
+        self.original_barcodes = self.validator.validate_unique(
+            [bib.barcodes for bib in records]
+        )
+        self.records = records
+
+    def match_records(self, matcher: services.BibMatcher) -> None:
+        for bib in self.records:
             matches = matcher.match_full_record(bib)
             analysis = matcher.review_matches(bib=bib, matches=matches)
+            print(analysis.target_bib_id)
             bib.apply_match(bib_id=analysis.target_bib_id, action=analysis.action)
+            self.report_data.append(analysis.to_dict())
+
+    def apply_updates_and_create_batch(
+        self, parser: services.BibParser, updater: services.BibUpdater
+    ) -> ProcessedFileBatch:
+        reviewer = services.BibReviewer(handler=updater.handler)
+        for bib in self.records:
             updates = updater.get_full_record_updates(record=bib)
             updater.apply_field_updates(record=bib, updates=updates)
-            self.report_data.append(analysis.to_dict())
         self.missing_barcodes.extend(
             self.validator.validate_preserved(
-                original_barcodes=barcodes,
-                processed_barcodes=[bib.barcodes for bib in records],
+                original_barcodes=self.original_barcodes,
+                processed_barcodes=[bib.barcodes for bib in self.records],
             )
         )
-        reviewed = reviewer.review_batch(records=records)
+        reviewed = reviewer.review_batch(records=self.records)
         deduplicated = reviewer.deduplicate(reviewed)
         files = [
             ProcessedFile(
@@ -200,3 +182,4 @@ class FullRecordJob(AbstractProcessingJob):
             for k, v in deduplicated.items()
         ]
         self.processed_files.extend(files)
+        return self.create_batch()

@@ -1,4 +1,5 @@
 import copy
+import datetime
 import random
 
 import pytest
@@ -10,8 +11,125 @@ from overload_web.infrastructure import marc_handler
 
 
 @pytest.fixture
+def create_marc_record():
+    def create_marc(library, collection):
+        bib = Bib()
+        bib.leader = "00000cam  2200517 i 4500"
+        bib.library = library
+        bib.add_field(Field(tag="005", data="20000101010001.0"))
+        bib.add_field(
+            Field(
+                tag="020",
+                indicators=Indicators(" ", " "),
+                subfields=[Subfield(code="a", value="9781234567890")],
+            )
+        )
+        if library == "bpl":
+            bib.add_field(
+                Field(
+                    tag="037",
+                    indicators=Indicators(" ", " "),
+                    subfields=[
+                        Subfield(code="a", value="123"),
+                        Subfield(code="b", value="OverDrive, Inc."),
+                    ],
+                )
+            )
+            bib.add_field(
+                Field(
+                    tag="099",
+                    indicators=Indicators(" ", " "),
+                    subfields=[Subfield(code="a", value="Foo")],
+                )
+            )
+        else:
+            if collection == "BL":
+                bib.add_field(
+                    Field(
+                        tag="091",
+                        indicators=Indicators(" ", " "),
+                        subfields=[Subfield(code="a", value="Foo")],
+                    )
+                )
+            else:
+                bib.add_field(
+                    Field(
+                        tag="852",
+                        indicators=Indicators("8", " "),
+                        subfields=[Subfield(code="a", value="Foo")],
+                    )
+                )
+            bib.add_field(
+                Field(
+                    tag="910",
+                    indicators=Indicators(" ", " "),
+                    subfields=[Subfield(code="a", value=collection)],
+                )
+            )
+        bib.add_field(
+            Field(
+                tag="949",
+                indicators=Indicators(" ", "1"),
+                subfields=[Subfield(code="i", value="333331234567890")],
+            )
+        )
+        bib.add_field(
+            Field(
+                tag="960",
+                indicators=Indicators(" ", " "),
+                subfields=[
+                    Subfield(code="a", value="l"),
+                    Subfield(code="b", value="-"),
+                    Subfield(code="c", value="j"),
+                    Subfield(code="d", value="c"),
+                    Subfield(code="e", value="d"),
+                    Subfield(code="f", value="a"),
+                    Subfield(code="g", value="b"),
+                    Subfield(code="h", value="-"),
+                    Subfield(code="i", value="l"),
+                    Subfield(code="j", value="-"),
+                    Subfield(code="k", value="A01"),
+                    Subfield(code="m", value="o"),
+                    Subfield(code="n", value="-"),
+                    Subfield(code="o", value="13"),
+                    Subfield(code="p", value="  -  -  "),
+                    Subfield(code="q", value="01-01-25"),
+                    Subfield(code="r", value="  -  -  "),
+                    Subfield(code="s", value="{{dollar}}13.20"),
+                    Subfield(code="t", value="agj0y"),
+                    Subfield(code="u", value="lease"),
+                    Subfield(code="v", value="btlea"),
+                    Subfield(code="w", value="eng"),
+                    Subfield(code="x", value="xxu"),
+                    Subfield(code="y", value="1"),
+                    Subfield(code="z", value=".o10000010"),
+                ],
+            )
+        )
+        bib.add_field(
+            Field(
+                tag="961",
+                indicators=Indicators(" ", " "),
+                subfields=[
+                    Subfield(code="d", value="foo"),
+                    Subfield(code="f", value="bar"),
+                    Subfield(code="m", value="baz"),
+                ],
+            )
+        )
+        return bib
+
+    return create_marc
+
+
+@pytest.fixture(params=[("nypl", "BL"), ("nypl", "RL"), ("bpl", None)])
+def mock_marc(request, create_marc_record) -> Bib:
+    return create_marc_record(request.param[0], request.param[1])
+
+
+@pytest.fixture
 def stub_full_bib(stub_bib):
-    def create_bib(library, collection, control_number, item_tag):
+    def create_bib(library, collection, control_number, item_tag) -> models.DomainBib:
         number = random.randint(0, 100)
         barcode = f"33333{str(number).zfill(10)}"
         if item_tag == "960":
@@ -51,7 +169,7 @@ def stub_full_bib(stub_bib):
             bib.add_field(
                 Field(
                     tag=field["tag"],
-                    indicators=(field["ind1"], field["ind2"]),
+                    indicators=Indicators(field["ind1"], field["ind2"]),
                     subfields=[
                         Subfield(code=i["code"], value=i["value"])
                         for i in field["subfields"]
@@ -79,45 +197,11 @@ def stub_full_bib(stub_bib):
     return create_bib
 
 
-@pytest.fixture(params=[("nypl", "BL"), ("nypl", "RL"), ("bpl", None)])
-def full_bib_949_item(stub_full_bib, request):
-    def create_bib(control_number):
-        return stub_full_bib(request.param[0], request.param[1], control_number, "949")
-
-    return create_bib
-
-
-@pytest.fixture
-def full_bib_960_item(stub_full_bib):
-    def create_bib(control_number):
-        return stub_full_bib("bpl", None, control_number, "960")
-
-    return create_bib
-
-
-@pytest.fixture
-def stub_updater(request, get_constants):
-    marker = request.node.get_closest_marker("workflow")
-    collection = marker.kwargs["collection"]
-    library = marker.kwargs["library"]
-    record_type = marker.kwargs["record_type"]
-    constants = get_constants["constants"]
-    return services.BibUpdater(
-        library=library,
-        default_loc=constants["default_locations"][library].get(collection),
-        bib_id_tag=constants["bib_id_tag"][library],
-        order_mapping=constants["order_mapping"],
-        handler=marc_handler.MarcUpdater(),
-        record_type=record_type,
-        collection=collection,
-    )
-
-
 @pytest.fixture
 def stub_domain_bib(request, stub_bib):
     marker = request.node.get_closest_marker("workflow")
 
-    def make_bib(record_type):
+    def make_bib(record_type) -> models.DomainBib:
         bib = stub_bib(
             marker.kwargs["library"], marker.kwargs["collection"], record_type
         )
@@ -168,7 +252,356 @@ def stub_domain_bib(request, stub_bib):
     return make_bib
 
 
-class TestGetBibUpdatesBPL:
+@pytest.fixture(params=[("nypl", "BL"), ("nypl", "RL"), ("bpl", None)])
+def full_bib_949_item(stub_full_bib, request):
+    def create_bib(control_number):
+        return stub_full_bib(request.param[0], request.param[1], control_number, "949")
+
+    return create_bib
+
+
+@pytest.fixture
+def full_bib_960_item(stub_full_bib):
+    def create_bib(control_number):
+        return stub_full_bib("bpl", None, control_number, "960")
+
+    return create_bib
+
+
+@pytest.fixture
+def stub_updater(request, get_constants):
+    marker = request.node.get_closest_marker("workflow")
+    collection = marker.kwargs["collection"]
+    library = marker.kwargs["library"]
+    record_type = marker.kwargs["record_type"]
+    constants = get_constants["constants"]
+    return services.BibUpdater(
+        library=library,
+        default_loc=constants["default_locations"][library].get(collection),
+        bib_id_tag=constants["bib_id_tag"][library],
+        order_mapping=constants["order_mapping"],
+        handler=marc_handler.MarcUpdater(),
+        record_type=record_type,
+        collection=collection,
+    )
+
+
+@pytest.fixture(params=[("nypl", "BL"), ("nypl", "RL"), ("bpl", None)])
+def mock_bib(stub_bib, request):
+    marker = request.node.get_closest_marker("workflow")
+    record_type = marker.kwargs["record_type"]
+
+    return stub_bib(request.param[0], request.param[1], record_type)
+
+
+@pytest.fixture
+def stub_matcher(fake_fetcher):
+    return services.BibMatcher(fetcher=fake_fetcher)
+
+
+@pytest.fixture
+def stub_matcher_no_matches(fake_fetcher, monkeypatch):
+    def empty_response(*args, **kwargs):
+        return []
+
+    monkeypatch.setattr(
+        "overload_web.infrastructure.sierra_clients.SierraBibFetcher.get_bibs_by_id",
+        empty_response,
+    )
+    return services.BibMatcher(fetcher=fake_fetcher)
+
+
+class TestBarcodeValidator:
+    VALIDATOR = services.BarcodeValidator()
+
+    def test_validate_unique(self):
+        validated = self.VALIDATOR.validate_unique(
+            barcodes=[
+                ["333331234567890", "333330987654321"],
+                ["333331111111111", "333332222222222"],
+            ]
+        )
+        assert sorted(validated) == sorted(
+            ["333331234567890", "333330987654321", "333331111111111", "333332222222222"]
+        )
+
+    def test_validate_unique_dupes(self):
+        with pytest.raises(ValueError) as exc:
+            self.VALIDATOR.validate_unique(
+                barcodes=[
+                    ["333331234567890", "333330987654321"],
+                    ["333331111111111", "333331111111111"],
+                ]
+            )
+        assert str(exc.value) == "Duplicate barcodes found in file: ['333331111111111']"
+
+    def test_validate_preserved(self):
+        missing = self.VALIDATOR.validate_preserved(
+            processed_barcodes=[
+                ["333331234567890", "333330987654321"],
+                ["333331111111111", "333332222222222"],
+            ],
+            original_barcodes=[
+                "333331234567890",
+                "333330987654321",
+                "333331111111111",
+                "333332222222222",
+            ],
+        )
+        assert missing == []
+
+    def test_validate_preserved_missing(self, caplog):
+        caplog.set_level("DEBUG")
+        missing = self.VALIDATOR.validate_preserved(
+            processed_barcodes=[
+                ["333331234567890", "333330987654321"],
+                ["333331111111111"],
+            ],
+            original_barcodes=[
+                "333331234567890",
+                "333330987654321",
+                "333331111111111",
+                "333332222222222",
+            ],
+        )
+        assert missing == ["333332222222222"]
+        assert [i.msg for i in caplog.records] == [
+            "Integrity validation: False, missing_barcodes: ['333332222222222']",
+            "Barcodes integrity error: ['333332222222222']",
+        ]
+
+
+class TestBibMatcher:
+    @pytest.mark.workflow(record_type="cat")
+    def test_match_full(self, mock_bib, stub_matcher):
+        candidates = stub_matcher.match_full_record(mock_bib)
+        assert len(candidates) == 1
+
+    @pytest.mark.workflow(record_type="cat")
+    def test_match_full_no_candidates(self, stub_matcher_no_matches, mock_bib):
+        candidates = stub_matcher_no_matches.match_full_record(mock_bib)
+        assert len(candidates) == 0
+
+    @pytest.mark.workflow(record_type="cat")
+    def test_match_full_no_vendor_index(self, mock_bib, stub_matcher):
+        mock_bib.vendor_info = None
+        with pytest.raises(ValueError) as exc:
+            stub_matcher.match_full_record(mock_bib)
+        assert str(exc.value) == "Vendor index required for cataloging workflow."
+
+    @pytest.mark.workflow(record_type="acq")
+    def test_match_order_level(self, mock_bib, stub_matcher):
+        candidates = stub_matcher.match_order_record(
+            record=mock_bib, matchpoints={"primary_matchpoint": "isbn"}
+        )
+        assert len(candidates) == 1
+
+    @pytest.mark.workflow(record_type="acq")
+    def test_match_order_level_no_matches(self, mock_bib, stub_matcher_no_matches):
+        candidates = stub_matcher_no_matches.match_order_record(
+            record=mock_bib, matchpoints={"primary_matchpoint": "isbn"}
+        )
+        assert len(candidates) == 0
+
+    @pytest.mark.workflow(record_type="acq")
+    def test_match_order_level_matchpoint_none(self, mock_bib, stub_matcher):
+        candidates = stub_matcher.match_order_record(
+            record=mock_bib, matchpoints={"primary_matchpoint": None}
+        )
+        assert len(candidates) == 0
+
+    @pytest.mark.workflow(record_type="acq")
+    def test_match_order_level_no_matchpoints(self, mock_bib, stub_matcher):
+        with pytest.raises(TypeError) as exc:
+            stub_matcher.match_order_record(record=mock_bib)
+        assert (
+            str(exc.value)
+            == "BibMatcher.match_order_record() missing 1 required positional argument: 'matchpoints'"
+        )
+
+
+class TestBibParser:
+    ENGINE = marc_handler.MarcParser()
+
+    @pytest.mark.workflow(record_type="cat")
+    def test_combine_marc_files(self, mock_marc, get_constants, request):
+        rules = get_constants["parsing_rules"]
+        marker = request.node.get_closest_marker("workflow")
+        record_type = marker.kwargs["record_type"]
+        parser = services.BibParser(
+            bib_mapping=rules["bib_mapping"],
+            library=mock_marc.library,
+            collection=mock_marc.collection,
+            record_type=record_type,
+            order_mapping=rules["order_mapping"],
+            vendor_mapping=rules["vendor_mapping"],
+            handler=self.ENGINE,
+        )
+        combined = parser.combine_marc_files(data=[mock_marc.as_marc()])
+        assert len([i for i in combined]) > 1
+
+    @pytest.mark.workflow(record_type="sel")
+    def test_parse_marc_data_order_level_record(
+        self, mock_marc, get_constants, request, caplog
+    ):
+        rules = get_constants["parsing_rules"]
+        marker = request.node.get_closest_marker("workflow")
+        record_type = marker.kwargs["record_type"]
+        parser = services.BibParser(
+            bib_mapping=rules["bib_mapping"],
+            library=mock_marc.library,
+            collection=mock_marc.collection,
+            record_type=record_type,
+            order_mapping=rules["order_mapping"],
+            vendor_mapping=rules["vendor_mapping"],
+            handler=self.ENGINE,
+        )
+        records = parser.parse_marc_data(data=mock_marc.as_marc())
+        assert len(records) == 1
+        assert records[0].library == mock_marc.library
+        assert records[0].record_type == record_type
+        assert records[0].vendor_info is None
+        assert records[0].vendor == "UNKNOWN"
+        assert records[0].update_date == "20000101010001.0"
+        assert records[0].update_datetime == datetime.datetime(2000, 1, 1, 1, 0, 1, 0)
+        assert len(caplog.records) == 1
+        assert "Vendor record parsed: " in caplog.records[0].msg
+
+    @pytest.mark.workflow(record_type="cat")
+    def test_parse_marc_data_cat_record(
+        self, mock_marc, get_constants, request, caplog
+    ):
+        rules = get_constants["parsing_rules"]
+        marker = request.node.get_closest_marker("workflow")
+        record_type = marker.kwargs["record_type"]
+        parser = services.BibParser(
+            bib_mapping=rules["bib_mapping"],
+            library=mock_marc.library,
+            collection=mock_marc.collection,
+            record_type=record_type,
+            order_mapping=rules["order_mapping"],
+            vendor_mapping=rules["vendor_mapping"],
+            handler=self.ENGINE,
+        )
+        records = parser.parse_marc_data(data=mock_marc.as_marc())
+        assert len(records) == 1
+        assert records[0].library == mock_marc.library
+        assert records[0].record_type == record_type
+        assert records[0].vendor_info.name == "UNKNOWN"
+        assert records[0].update_date == "20000101010001.0"
+        assert records[0].update_datetime == datetime.datetime(2000, 1, 1, 1, 0, 1, 0)
+        assert len(caplog.records) == 1
+        assert "Vendor record parsed: " in caplog.records[0].msg
+
+    @pytest.mark.workflow(library="nypl", collection="BL", record_type="acq")
+    def test_write(self, get_constants, stub_domain_bib):
+        record = stub_domain_bib("acq")
+        rules = get_constants["parsing_rules"]
+        parser = services.BibParser(
+            bib_mapping=rules["bib_mapping"],
+            library=record.library,
+            collection=record.collection,
+            record_type="acq",
+            order_mapping=rules["order_mapping"],
+            vendor_mapping=rules["vendor_mapping"],
+            handler=self.ENGINE,
+        )
+        out = parser.write(records=[record])
+        assert isinstance(out, bytes)
+
+
+class TestBibReviewer:
+    REVIEWER = services.BibReviewer(handler=marc_handler.MarcUpdater())
+
+    def test_dedupe_attach(self, full_bib_949_item):
+        bib = full_bib_949_item("123456789")
+        bib.action = "attach"
+        reviewed = self.REVIEWER.review_batch(records=[bib])
+        processed = self.REVIEWER.deduplicate(reviewed)
+        assert len(processed["NEW"]) == 0
+        assert len(processed["DUP"]) == 1
+        assert len(processed["DEDUPED"]) == 0
+
+    def test_dedupe_insert(self, full_bib_949_item):
+        bib = full_bib_949_item("123456789")
+        reviewed = self.REVIEWER.review_batch(records=[bib])
+        processed = self.REVIEWER.deduplicate(reviewed)
+        assert len(processed["NEW"]) == 1
+        assert len(processed["DUP"]) == 0
+        assert len(processed["DEDUPED"]) == 0
+
+    def test_dedupe_combine_bibs(self, full_bib_949_item):
+        bib1 = full_bib_949_item("123456789")
+        bib2 = full_bib_949_item("123456789")
+        reviewed = self.REVIEWER.review_batch(records=[bib1, bib2])
+        processed = self.REVIEWER.deduplicate(reviewed)
+        combined_rec = processed["DEDUPED"][0]
+        deduped = Bib(combined_rec.binary_data, library=combined_rec.library)
+        new_ctrl_nums = [i.control_number for i in processed["NEW"]]
+        deduped_ctrl_nums = [i.control_number for i in processed["DEDUPED"]]
+        assert len(processed["NEW"]) == 2
+        assert len(processed["DUP"]) == 0
+        assert len(processed["DEDUPED"]) == 1
+        assert sorted([i.value() for i in deduped.get_fields("949")]) == [
+            "*b2=a;"
+        ] + sorted(bib1.barcodes + bib2.barcodes)
+        assert new_ctrl_nums == ["123456789", "123456789"]
+        assert deduped_ctrl_nums == ["123456789"]
+
+    def test_dedupe_combine_bpl_bibs(self, full_bib_960_item):
+        bib1 = full_bib_960_item("123456789")
+        bib2 = full_bib_960_item("123456789")
+        reviewed = self.REVIEWER.review_batch(records=[bib1, bib2])
+        processed = self.REVIEWER.deduplicate(reviewed)
+        combined_rec = processed["DEDUPED"][0]
+        deduped = Bib(combined_rec.binary_data, library=combined_rec.library)
+        new_ctrl_nums = [i.control_number for i in processed["NEW"]]
+        deduped_ctrl_nums = [i.control_number for i in processed["DEDUPED"]]
+        assert len(processed["NEW"]) == 2
+        assert len(processed["DUP"]) == 0
+        assert len(processed["DEDUPED"]) == 1
+        assert [i.value() for i in deduped.get_fields("949")] == ["*b2=a;"]
+        assert sorted([i.value() for i in deduped.get_fields("960")]) == sorted(
+            bib1.barcodes + bib2.barcodes
+        )
+        assert new_ctrl_nums == ["123456789", "123456789"]
+        assert deduped_ctrl_nums == ["123456789"]
+
+    def test_dedupe_other_recs(self, full_bib_949_item):
+        bib1a = full_bib_949_item("123456789")
+        bib1b = full_bib_949_item("123456789")
+        bib2 = full_bib_949_item("987654321")
+        reviewed = self.REVIEWER.review_batch(records=[bib1a, bib1b, bib2])
+        processed = self.REVIEWER.deduplicate(reviewed)
+        new_ctrl_nums = [i.control_number for i in processed["NEW"]]
+        deduped_ctrl_nums = [i.control_number for i in processed["DEDUPED"]]
+        assert len(processed["NEW"]) == 3
+        assert len(processed["DUP"]) == 0
+        assert len(processed["DEDUPED"]) == 2
+        assert sorted(new_ctrl_nums) == ["123456789", "123456789", "987654321"]
+        assert sorted(deduped_ctrl_nums) == ["123456789", "987654321"]
+
+    def test_dedupe_multiple_groups(self, full_bib_949_item):
+        bib_1a = full_bib_949_item("123456789")
+        bib_1b = full_bib_949_item("123456789")
+        bib2 = full_bib_949_item(None)
+        bib3 = full_bib_949_item(None)
+        bib4 = full_bib_949_item("987654321")
+        bib4.control_number = "987654321"
+        reviewed = self.REVIEWER.review_batch(
+            records=[bib_1a, bib_1b, bib2, bib3, bib4]
+        )
+        processed = self.REVIEWER.deduplicate(reviewed)
+        new_ctrl_nums = [i.control_number for i in processed["NEW"]]
+        deduped_ctrl_nums = [i.control_number for i in processed["DEDUPED"]]
+        assert len(processed["NEW"]) == 5
+        assert len(processed["DUP"]) == 0
+        assert len(processed["DEDUPED"]) == 4
+        assert new_ctrl_nums == ["123456789", "123456789", None, None, "987654321"]
+        assert deduped_ctrl_nums == ["123456789", None, None, "987654321"]
+
+
+class TestBibUpdaterBPL:
     @pytest.mark.workflow(library="bpl", collection=None, record_type="acq")
     def test_get_order_level_updates_acq(self, stub_updater, stub_domain_bib):
         acq_bib = stub_domain_bib("acq")
@@ -260,7 +693,7 @@ class TestGetBibUpdatesBPL:
         }
 
 
-class TestGetBibUpdatesNYPLBranch:
+class TestBibUpdaterNYPLBranch:
     @pytest.mark.workflow(library="nypl", collection="BL", record_type="acq")
     def test_get_order_level_updates_acq(self, stub_updater, stub_domain_bib):
         acq_bib = stub_domain_bib("acq")
@@ -463,7 +896,7 @@ class TestGetBibUpdatesNYPLBranch:
         )
 
 
-class TestGetBibUpdatesNYPLResearch:
+class TestBibUpdaterNYPLResearch:
     @pytest.mark.workflow(library="nypl", collection="RL", record_type="acq")
     def test_get_order_level_updates_acq(self, stub_updater, stub_domain_bib):
         acq_bib = stub_domain_bib("acq")
@@ -602,107 +1035,3 @@ class TestGetBibUpdatesNYPLResearch:
             "subfields": [{"code": "a", "value": "12345"}],
         }
         assert updates[2].tag == "910"
-
-
-class TestMarcUpdater:
-    ENGINE = marc_handler.MarcUpdater()
-
-    @pytest.mark.workflow(library="bpl", collection=None, record_type="cat")
-    def test_update_record_add_vendor_fields(self, stub_domain_bib, stub_updater):
-        cat_bib = stub_domain_bib("cat")
-        cat_bib.vendor_info = models.VendorInfo(
-            name="INGRAM",
-            matchpoints={},
-            vendor_tags=[],
-            bib_fields=[
-                {"tag": "949", "ind1": " ", "ind2": " ", "code": "a", "value": "*b2=a;"}
-            ],
-        )
-        stub_updater.apply_field_updates(
-            cat_bib,
-            updates=models.FieldUpdates.add_vendor_fields(
-                cat_bib.vendor_info.bib_fields
-            ),
-        )
-        updated_bib = Bib(cat_bib.binary_data, library=cat_bib.library)
-        assert [i.format_field() for i in updated_bib.get_fields("949")] == ["*b2=a;"]
-
-    @pytest.mark.workflow(library="nypl", collection="RL", record_type="cat")
-    def test_update_record_add_bib_id(self, stub_domain_bib, stub_updater):
-        cat_bib = stub_domain_bib("cat")
-        cat_bib.bib_id = "12345"
-        stub_updater.apply_field_updates(
-            cat_bib, updates=[models.FieldUpdates.add_bib_id(cat_bib.bib_id, "945")]
-        )
-        updated_bib = Bib(cat_bib.binary_data, library=cat_bib.library)
-        assert updated_bib["945"].format_field() == "12345"
-
-    @pytest.mark.workflow(library="nypl", collection="BL", record_type="cat")
-    def test_update_record_command_tag(self, stub_domain_bib, stub_updater):
-        field_949 = "*b2=a;"
-        sel_bib = stub_domain_bib("sel")
-        sel_bib.parsed_fields = [
-            models.ParsedField(
-                tag="949",
-                indicators=(" ", " "),
-                subfields=[models.ParsedSubfield(code="a", value=field_949)],
-            )
-        ]
-        marc_data = Bib()
-        marc_data.leader = "00000cam  2200517 i 4500"
-        marc_data.library = sel_bib.library
-        marc_data.add_field(
-            Field(
-                tag="949",
-                indicators=Indicators(" ", "1"),
-                subfields=[Subfield(code="a", value="333339876543210")],
-            )
-        )
-        marc_data.add_field(
-            Field(
-                tag="949",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value=field_949)],
-            )
-        )
-        sel_bib.binary_data = marc_data.as_marc()
-        stub_updater.apply_field_updates(
-            sel_bib,
-            updates=[
-                models.FieldUpdates.add_command_tag(
-                    format="a", default_loc="zzzzz", fields=sel_bib.parsed_fields
-                )
-            ],
-        )
-        updated_bib = Bib(sel_bib.binary_data, library=sel_bib.library)
-        fields_949 = [i.format_field() for i in updated_bib.get_fields("949")]
-        assert len(fields_949) == 2
-        assert "333339876543210" in fields_949
-        assert "*b2=a;bn=zzzzz;" in fields_949
-
-    @pytest.mark.workflow(library="nypl", collection="BL", record_type="cat")
-    def test_update_record_original_command_tag_not_found(
-        self, stub_domain_bib, stub_updater
-    ):
-        sel_bib = stub_domain_bib("sel")
-        original = copy.deepcopy(sel_bib)
-        stub_updater.apply_field_updates(
-            sel_bib,
-            updates=[
-                models.MarcFieldUpdateValues(
-                    tag="949",
-                    ind1=" ",
-                    ind2=" ",
-                    subfields=[{"code": "a", "value": "*b2=a;bn=zzzzz;"}],
-                    target_field_to_delete=models.TargetFieldCriteria(
-                        tag="949", indicators=(" ", " "), code="a", value="*"
-                    ),
-                )
-            ],
-        )
-        updated_bib = Bib(sel_bib.binary_data, library=sel_bib.library)
-        original_bib = Bib(original.binary_data, library=original.library)
-        assert [i.format_field() for i in original_bib.get_fields("949")] == []
-        assert [i.format_field() for i in updated_bib.get_fields("949")] == [
-            "*b2=a;bn=zzzzz;"
-        ]

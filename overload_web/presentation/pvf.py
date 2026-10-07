@@ -9,7 +9,6 @@ from typing import Annotated, Any
 from fastapi import APIRouter, BackgroundTasks, Depends, Form, Request
 from fastapi.responses import HTMLResponse
 
-from overload_web.application.pvf.process_manager import FullLevelWorkflowManager
 from overload_web.domain.pvf import models
 from overload_web.presentation import pvf_deps, schemas
 
@@ -78,7 +77,7 @@ def process_order_records(
     """
     workflow_id = request.app.state.workflow_id
     background_tasks.add_task(
-        process_manager.handle_workflow_started,
+        process_manager.handle_workflow_started_order_level,
         workflow_id=workflow_id,
         vendor=getattr(order_template, "vendor", "UNKNOWN"),
         matchpoints=matchpoints.model_dump(),
@@ -95,12 +94,8 @@ def process_order_records(
 def process_full_records(
     request: Request,
     background_tasks: BackgroundTasks,
-    matcher: Annotated[Any, Depends(pvf_deps.get_matcher)],
-    parser: Annotated[Any, Depends(pvf_deps.get_parser)],
+    process_manager: Annotated[Any, Depends(pvf_deps.get_process_manager)],
     record_type: Annotated[str, Form(...)],
-    storage: Annotated[Any, Depends(pvf_deps.local_file_storage)],
-    uow: Annotated[Any, Depends(pvf_deps.get_uow)],
-    updater: Annotated[Any, Depends(pvf_deps.get_updater)],
 ) -> HTMLResponse:
     """
     Process one or more files of full-level MARC records using the cat workflow.
@@ -127,13 +122,7 @@ def process_full_records(
     """
     workflow_id = request.app.state.workflow_id
     background_tasks.add_task(
-        FullLevelWorkflowManager.start_full_level_workflow,
-        storage=storage,
-        workflow_id=workflow_id,
-        matcher=matcher,
-        updater=updater,
-        parser=parser,
-        uow=uow,
+        process_manager.handle_workflow_started_full_level, workflow_id=workflow_id
     )
     return request.app.state.templates.TemplateResponse(
         request=request,

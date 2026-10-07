@@ -20,13 +20,13 @@ def processed_records(monkeypatch):
         pass
 
     monkeypatch.setattr(
-        process_manager.OrderLevelWorkflowManager,
-        "handle_workflow_started",
+        process_manager.WorkflowManager,
+        "handle_workflow_started_order_level",
         fake_response,
     )
     monkeypatch.setattr(
-        process_manager.FullLevelWorkflowManager,
-        "start_full_level_workflow",
+        process_manager.WorkflowManager,
+        "handle_workflow_started_full_level",
         fake_response,
     )
 

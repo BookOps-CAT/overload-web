@@ -54,7 +54,7 @@ class LocalFileStorage(ports.FileStorage):
         file_path = self.base_path / f"{id}_state.pkl"
 
         if not file_path.exists():
-            raise FileNotFoundError(f"No intermediate state found for {id}")
+            raise FileNotFoundError(f"No intermediate state found for {id}.")
         with open(file_path, "rb") as f:
             return pickle.load(f)
 

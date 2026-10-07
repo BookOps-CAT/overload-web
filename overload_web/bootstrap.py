@@ -20,7 +20,7 @@ def bootstrap_message_bus(
 ) -> message_bus.MessageBus:
     bus = message_bus.MessageBus()
 
-    pm = process_manager.OrderLevelWorkflowManager(bus=bus, uow=uow)
+    pm = process_manager.WorkflowManager(bus=bus, uow=uow)
 
     bus.register_command(
         commands.ParseOrderLevelFiles,
@@ -41,8 +41,39 @@ def bootstrap_message_bus(
         ),
     )
 
-    bus.register_event(events.OrderLevelFilesParsed, pm.handle_files_parsed)
-    bus.register_event(events.OrderLevelRecordsMatched, pm.handle_records_matched)
-    bus.register_event(events.OrderLevelWorkflowCompleted, pm.handle_workflow_completed)
+    bus.register_command(
+        commands.ParseFullLevelFiles,
+        lambda cmd: handlers.ParseFullLevelFilesHandler.handle(
+            bus=bus, cmd=cmd, storage=storage, parser=parser, uow=uow
+        ),
+    )
+    bus.register_command(
+        commands.MatchFullLevelRecords,
+        lambda cmd: handlers.MatchFullLevelRecordsHandler.handle(
+            bus=bus, cmd=cmd, matcher=matcher, storage=storage
+        ),
+    )
+    bus.register_command(
+        commands.UpdateAndOutputFullLevelRecords,
+        lambda cmd: handlers.UpdateAndOutputFullLevelRecordsHandler.handle(
+            bus=bus, cmd=cmd, parser=parser, uow=uow, updater=updater, storage=storage
+        ),
+    )
+
+    bus.register_event(events.OrderLevelFilesParsed, pm.handle_files_parsed_order_level)
+    bus.register_event(
+        events.OrderLevelRecordsMatched, pm.handle_records_matched_order_level
+    )
+    bus.register_event(
+        events.OrderLevelWorkflowCompleted, pm.handle_workflow_completed_order_level
+    )
+
+    bus.register_event(events.FullLevelFilesParsed, pm.handle_files_parsed_full_level)
+    bus.register_event(
+        events.FullLevelRecordsMatched, pm.handle_records_matched_full_level
+    )
+    bus.register_event(
+        events.FullLevelWorkflowCompleted, pm.handle_workflow_completed_full_level
+    )
 
     return bus
