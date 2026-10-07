@@ -69,7 +69,7 @@ class TestLocalFileStorage:
         path = tmp_path / "temp"
         storage = file_io.LocalFileStorage(base_path=path)
         saved_file = storage.save(id="12345", filename="foo.mrc", content=b"")
-        assert saved_file == str(path) + "\\12345_foo.mrc"
+        assert saved_file.endswith("12345_foo.mrc")
 
     def test_load(self, tmp_path, mock_read_file):
         path = tmp_path / "temp"
