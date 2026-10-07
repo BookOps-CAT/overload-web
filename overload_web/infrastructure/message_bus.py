@@ -33,8 +33,8 @@ class MessageBus(ports.MessageBusPort):
         logger.info(f"Handling command: {type(command).__name__}")
         handler = self.command_handlers.get(type(command))
         if not handler:
-            raise Exception(
-                f"No handler registered for command {type(command).__name__}"
+            raise ValueError(
+                f"No handler registered for command {type(command).__name__}."
             )
 
         handler(command)
@@ -47,5 +47,5 @@ class MessageBus(ports.MessageBusPort):
         for handler in handlers:
             try:
                 handler(event)
-            except Exception as e:
+            except ValueError as e:
                 logger.exception(f"Error handling event {type(event).__name__}: {e}")

@@ -2,7 +2,7 @@ import random
 
 import pytest
 
-from overload_web.domain.pvf import aggregate, models, services
+from overload_web.domain.pvf import aggregate, models
 
 
 def create_stub_bib(library, collection, record_type):
@@ -22,58 +22,6 @@ def create_stub_bib(library, collection, record_type):
         ),
         parsed_fields=[],
     )
-
-
-class FakeMatcher(services.BibMatcher):
-    RESPONSE = {
-        "call_number": "Foo",
-        "id": "12345",
-        "isbn": ["9781234567890"],
-        "sm_bib_varfields": ["005 || 20200101000001.0", "024 || {{a}} 12345"],
-        "sm_item_data": ['{"barcode": "33333123456789"}'],
-        "ss_marc_tag_001": "ocn123456789",
-        "ss_marc_tag_003": "OCoLC",
-        "ss_marc_tag_005": "20000101010000.0",
-        "title": "Record 1",
-    }
-
-    def __init__(self):
-        self.fetcher = None
-
-    def match_order_record(self, record, matchpoints):
-        return [self.RESPONSE]
-
-    def match_full_record(self, record):
-        return [self.RESPONSE]
-
-
-class FakeParser(services.BibParser):
-    def __init__(self):
-        self.count = 1
-
-    def combine_marc_files(self, data):
-        self.count = len(data)
-        return b""
-
-    def parse_marc_data(self, data, vendor="UNKNOWN"):
-        return [create_stub_bib("nypl", "BL", "cat") for _ in [None] * self.count]
-
-    def write(self, records):
-        return b""
-
-
-class FakeUpdater(services.BibUpdater):
-    def __init__(self):
-        self.handler = None
-
-    def apply_field_updates(self, record, updates):
-        pass
-
-    def get_full_record_updates(self, record):
-        return []
-
-    def get_order_level_updates(self, record, template_data):
-        return []
 
 
 @pytest.fixture
@@ -109,15 +57,11 @@ def stub_matched_aggregate(request):
 
 
 class TestOrderLevelJob:
-    MATCHER = FakeMatcher()
-    PARSER = FakeParser()
-    UPDATER = FakeUpdater()
-
     @pytest.mark.workflow(record_type="acq")
-    def test_parse_files(self):
+    def test_parse_files(self, fake_parser):
         job = aggregate.OrderLevelJob(workflow_id="1", vendor="UNKNOWN")
         job.parse_files(
-            parser=self.PARSER, batches_data={"foo.mrc": b"", "bar.mrc": b""}
+            parser=fake_parser, batches_data={"foo.mrc": b"", "bar.mrc": b""}
         )
         assert isinstance(job.file_records, dict)
         assert list(job.file_records.keys()) == ["foo.mrc", "bar.mrc"]
@@ -125,17 +69,19 @@ class TestOrderLevelJob:
         assert job.file_names == ["foo.mrc", "bar.mrc"]
 
     @pytest.mark.workflow(record_type="acq")
-    def test_match_records(self, stub_parsed_aggregate):
+    def test_match_records(self, stub_parsed_aggregate, fake_matcher):
         stub_parsed_aggregate.match_records(
-            matcher=self.MATCHER, matchpoints={"primary_matchpoint": "isbn"}
+            matcher=fake_matcher, matchpoints={"primary_matchpoint": "isbn"}
         )
         assert len(stub_parsed_aggregate.file_records["foo.mrc"]) == 1
         assert stub_parsed_aggregate.file_records["foo.mrc"][0].bib_id is None
 
     @pytest.mark.workflow(record_type="acq")
-    def test_apply_updates_and_create_batch(self, stub_matched_aggregate):
+    def test_apply_updates_and_create_batch(
+        self, stub_matched_aggregate, fake_parser, fake_updater
+    ):
         processed_batch = stub_matched_aggregate.apply_updates_and_create_batch(
-            parser=self.PARSER, template_data={"format": "a"}, updater=self.UPDATER
+            parser=fake_parser, template_data={"format": "a"}, updater=fake_updater
         )
         assert stub_matched_aggregate.missing_barcodes == []
         assert len(stub_matched_aggregate.processed_files) == 1
@@ -146,15 +92,11 @@ class TestOrderLevelJob:
 
 
 class TestFullRecordJob:
-    MATCHER = FakeMatcher()
-    PARSER = FakeParser()
-    UPDATER = FakeUpdater()
-
     @pytest.mark.workflow(record_type="cat")
-    def test_parse_files(self):
+    def test_parse_files(self, fake_parser):
         job = aggregate.FullRecordJob(workflow_id="1")
         job.parse_files(
-            parser=self.PARSER, batches_data={"foo.mrc": b"", "bar.mrc": b""}
+            parser=fake_parser, batches_data={"foo.mrc": b"", "bar.mrc": b""}
         )
         assert isinstance(job.records, list)
         assert len(job.records) == 2
@@ -162,15 +104,17 @@ class TestFullRecordJob:
         assert len(job.original_barcodes) == 2
 
     @pytest.mark.workflow(record_type="cat")
-    def test_match_records(self, stub_parsed_aggregate):
-        stub_parsed_aggregate.match_records(matcher=self.MATCHER)
+    def test_match_records(self, stub_parsed_aggregate, fake_matcher):
+        stub_parsed_aggregate.match_records(matcher=fake_matcher)
         assert len(stub_parsed_aggregate.records) == 1
         assert stub_parsed_aggregate.records[0].bib_id == "12345"
 
     @pytest.mark.workflow(record_type="cat")
-    def test_apply_updates_and_create_batch(self, stub_matched_aggregate):
+    def test_apply_updates_and_create_batch(
+        self, stub_matched_aggregate, fake_parser, fake_updater
+    ):
         processed_batch = stub_matched_aggregate.apply_updates_and_create_batch(
-            parser=self.PARSER, updater=self.UPDATER
+            parser=fake_parser, updater=fake_updater
         )
         assert stub_matched_aggregate.missing_barcodes == []
         assert len(stub_matched_aggregate.processed_files) == 3
