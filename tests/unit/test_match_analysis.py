@@ -309,6 +309,7 @@ class TestAcquisitionsMatchAnalyzer:
         assert result.target_call_no == mock_bib.branch_call_number
         assert result.target_title == mock_bib.title
         assert result.vendor == mock_bib.vendor
+        assert isinstance(result.to_dict(), dict)
 
 
 class TestBPLCatMatchAnalyzer:
@@ -323,6 +324,7 @@ class TestBPLCatMatchAnalyzer:
         )
         result = self.MATCHER.analyze(mock_bib, candidates=candidates)
         assert result.call_number_match == match
+        assert isinstance(result.to_dict(), dict)
 
     @pytest.mark.workflow(record_type="cat", library="bpl", collection=None)
     def test_analyze_call_no(self, mock_bib, bpl_data):
@@ -370,6 +372,7 @@ class TestNYPLCatResearchMatchAnalyzer:
         result = self.MATCHER.analyze(mock_bib, candidates=candidates)
         assert result.call_number_match == match
         assert result.target_call_no == "Foo"
+        assert isinstance(result.to_dict(), dict)
 
     @pytest.mark.workflow(record_type="cat", library="nypl", collection="RL")
     def test_analyze_no_response_call_no(self, mock_bib, nypl_rl_data):
@@ -410,6 +413,7 @@ class TestNYPLCatBranchMatchAnalyzer:
         result = self.MATCHER.analyze(mock_bib, candidates=candidates)
         assert result.call_number_match == match
         assert result.target_call_no == "Foo"
+        assert isinstance(result.to_dict(), dict)
 
     @pytest.mark.workflow(record_type="cat", library="nypl", collection="BL")
     def test_analyze_no_response_call_no(self, mock_bib, nypl_bl_data):
@@ -446,6 +450,7 @@ class TestSelectionMatchAnalyzer:
         assert result.target_call_no == "Foo"
         assert result.action == "attach"
         assert result.call_number_match is True
+        assert isinstance(result.to_dict(), dict)
 
     @pytest.mark.workflow(record_type="sel", library="nypl", collection="BL")
     def test_analyze_bl(self, mock_bib, nypl_bl_data):

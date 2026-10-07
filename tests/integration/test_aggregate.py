@@ -1,174 +1,180 @@
+import random
+
 import pytest
 
 from overload_web.domain.pvf import aggregate, models, services
-from overload_web.infrastructure import marc_handler
 
 
-def create_stub_bib(record_type: str):
+def create_stub_bib(library, collection, record_type):
+    number = random.randint(0, 100)
+    barcode = f"33333{str(number).zfill(10)}"
     return models.DomainBib(
-        library="nypl",
-        collection="BL",
+        library=library,
+        collection=collection,
         isbn="9781234567890",
         title="Foo",
         record_type=record_type,
         binary_data=b"",
-        barcodes=["333331234567890"],
+        barcodes=[barcode],
         orders=[],
         vendor_info=models.VendorInfo(
-            name="UNKNOWN",
-            bib_fields=[],
-            matchpoints={
-                "primary_matchpoint": "isbn",
-                "secondary_matchpoint": "control_number",
-            },
+            name="UNKNOWN", bib_fields=[], matchpoints={"primary_matchpoint": "isbn"}
         ),
         parsed_fields=[],
     )
 
 
-@pytest.fixture
-def stub_updater_service():
-    return services.BibUpdater(
-        handler=marc_handler.MarcUpdater(),
-        order_mapping={},
-        default_loc="foo",
-        bib_id_tag="bar",
-        library="baz",
-        record_type="quz",
-        collection="spam",
-    )
+class FakeMatcher(services.BibMatcher):
+    RESPONSE = {
+        "call_number": "Foo",
+        "id": "12345",
+        "isbn": ["9781234567890"],
+        "sm_bib_varfields": ["005 || 20200101000001.0", "024 || {{a}} 12345"],
+        "sm_item_data": ['{"barcode": "33333123456789"}'],
+        "ss_marc_tag_001": "ocn123456789",
+        "ss_marc_tag_003": "OCoLC",
+        "ss_marc_tag_005": "20000101010000.0",
+        "title": "Record 1",
+    }
+
+    def __init__(self):
+        self.fetcher = None
+
+    def match_order_record(self, record, matchpoints):
+        return [self.RESPONSE]
+
+    def match_full_record(self, record):
+        return [self.RESPONSE]
 
 
-@pytest.fixture
-def stub_order_level_job():
-    job = aggregate.OrderLevelJob(workflow_id="1", vendor="UNKNOWN")
-    job.file_names = ["foo.mrc"]
-    job.report_data = []
-    job.file_records = {"foo.mrc": [create_stub_bib("acq")]}
-    job.file_records["foo.mrc"][0].action = "insert"
-    return job
+class FakeParser(services.BibParser):
+    def __init__(self):
+        self.count = 1
 
-
-@pytest.fixture
-def stub_full_record_job():
-    job = aggregate.FullRecordJob(workflow_id="1")
-    bib = create_stub_bib("cat")
-    job.file_names = ["foo.mrc"]
-    job.records = [bib]
-    job.records[0].action = "attach"
-    job.report_data = []
-    job.original_barcodes = bib.barcodes
-    return job
-
-
-@pytest.fixture
-def fake_matcher(fake_fetcher):
-    return services.BibMatcher(fetcher=fake_fetcher)
-
-
-@pytest.fixture
-def mock_parsing_service(monkeypatch):
-    def mock_parse_marc_data(*args, **kwargs):
-        return [create_stub_bib("acq")]
-
-    def mock_write(*args, **kwargs):
+    def combine_marc_files(self, data):
+        self.count = len(data)
         return b""
 
-    monkeypatch.setattr(services.BibParser, "parse_marc_data", mock_parse_marc_data)
-    monkeypatch.setattr(services.BibParser, "write", mock_write)
-    return services.BibParser(
-        handler=marc_handler.MarcParser(),
-        library="foo",
-        record_type="bar",
-        collection="baz",
-        vendor_mapping={},
-        bib_mapping={},
-        order_mapping={},
-    )
+    def parse_marc_data(self, data, vendor="UNKNOWN"):
+        return [create_stub_bib("nypl", "BL", "cat") for _ in [None] * self.count]
+
+    def write(self, records):
+        return b""
+
+
+class FakeUpdater(services.BibUpdater):
+    def __init__(self):
+        self.handler = None
+
+    def apply_field_updates(self, record, updates):
+        pass
+
+    def get_full_record_updates(self, record):
+        return []
+
+    def get_order_level_updates(self, record, template_data):
+        return []
+
+
+@pytest.fixture
+def stub_parsed_aggregate(request):
+    marker = request.node.get_closest_marker("workflow")
+    record_type = marker.kwargs["record_type"]
+    record = create_stub_bib("bpl", None, record_type)
+    if record_type == "cat":
+        job = aggregate.FullRecordJob(workflow_id="1")
+        job.records = [record]
+        job.original_barcodes = record.barcodes
+    else:
+        job = aggregate.OrderLevelJob(workflow_id="1", vendor="UNKNOWN")
+        job.file_records = {"foo.mrc": [record]}
+    return job
+
+
+@pytest.fixture
+def stub_matched_aggregate(request):
+    marker = request.node.get_closest_marker("workflow")
+    record_type = marker.kwargs["record_type"]
+    record = create_stub_bib("nypl", "RL", record_type)
+    record.action = "attach"
+    if record_type == "cat":
+        job = aggregate.FullRecordJob(workflow_id="1")
+        job.records = [record]
+        job.original_barcodes = record.barcodes
+    else:
+        job = aggregate.OrderLevelJob(workflow_id="1", vendor="UNKNOWN")
+        job.file_records = {"foo.mrc": [record]}
+    job.report_data = []
+    return job
 
 
 class TestOrderLevelJob:
-    def test_order_level_job(self):
+    MATCHER = FakeMatcher()
+    PARSER = FakeParser()
+    UPDATER = FakeUpdater()
+
+    @pytest.mark.workflow(record_type="acq")
+    def test_parse_files(self):
         job = aggregate.OrderLevelJob(workflow_id="1", vendor="UNKNOWN")
-        assert job.file_names == []
-        assert job.file_records == {}
-        assert job.missing_barcodes == []
-        assert job.processed_files == []
-        assert job.report_data == []
-        assert hasattr(job.validator, "validate_unique")
-
-    def test_order_level_job_parse_files(self, mock_parsing_service):
-        job = aggregate.OrderLevelJob(workflow_id="1", vendor="UNKNOWN")
-        job.parse_files(batches_data={"foo.mrc": b""}, parser=mock_parsing_service)
-        assert job.file_names == ["foo.mrc"]
-        assert job.file_records["foo.mrc"][0].isbn == "9781234567890"
-        assert job.missing_barcodes == []
-        assert job.processed_files == []
-        assert job.report_data == []
-
-    def test_order_level_job_match_records(self, fake_matcher, stub_order_level_job):
-        stub_order_level_job.match_records(
-            matcher=fake_matcher, matchpoints={"primary_matchpoint": "isbn"}
+        job.parse_files(
+            parser=self.PARSER, batches_data={"foo.mrc": b"", "bar.mrc": b""}
         )
-        assert stub_order_level_job.missing_barcodes == []
-        assert stub_order_level_job.processed_files == []
-        assert len(stub_order_level_job.report_data) == 1
-        assert stub_order_level_job.report_data[0]["resource_id"] == "9781234567890"
+        assert isinstance(job.file_records, dict)
+        assert list(job.file_records.keys()) == ["foo.mrc", "bar.mrc"]
+        assert len(job.file_records["foo.mrc"]) == 1
+        assert job.file_names == ["foo.mrc", "bar.mrc"]
 
-    def test_order_level_job_apply_updates_and_create_batch(
-        self, mock_parsing_service, stub_order_level_job, stub_updater_service
-    ):
-        processed_batch = stub_order_level_job.apply_updates_and_create_batch(
-            parser=mock_parsing_service,
-            template_data={"format": "a"},
-            updater=stub_updater_service,
+    @pytest.mark.workflow(record_type="acq")
+    def test_match_records(self, stub_parsed_aggregate):
+        stub_parsed_aggregate.match_records(
+            matcher=self.MATCHER, matchpoints={"primary_matchpoint": "isbn"}
         )
-        assert stub_order_level_job.missing_barcodes == []
-        assert len(stub_order_level_job.processed_files) == 1
-        assert processed_batch.files == stub_order_level_job.processed_files
+        assert len(stub_parsed_aggregate.file_records["foo.mrc"]) == 1
+        assert stub_parsed_aggregate.file_records["foo.mrc"][0].bib_id is None
+
+    @pytest.mark.workflow(record_type="acq")
+    def test_apply_updates_and_create_batch(self, stub_matched_aggregate):
+        processed_batch = stub_matched_aggregate.apply_updates_and_create_batch(
+            parser=self.PARSER, template_data={"format": "a"}, updater=self.UPDATER
+        )
+        assert stub_matched_aggregate.missing_barcodes == []
+        assert len(stub_matched_aggregate.processed_files) == 1
+        assert processed_batch.files == stub_matched_aggregate.processed_files
         assert processed_batch.processing_integrity is True
-        assert processed_batch.total_files == len(stub_order_level_job.file_names)
-        assert processed_batch.total_records == len(stub_order_level_job.report_data)
+        assert processed_batch.total_files == len(stub_matched_aggregate.file_names)
+        assert processed_batch.total_records == len(stub_matched_aggregate.report_data)
 
 
 class TestFullRecordJob:
-    def test_full_record_job(self):
+    MATCHER = FakeMatcher()
+    PARSER = FakeParser()
+    UPDATER = FakeUpdater()
+
+    @pytest.mark.workflow(record_type="cat")
+    def test_parse_files(self):
         job = aggregate.FullRecordJob(workflow_id="1")
-        assert job.file_names == []
-        assert job.records == []
-        assert job.missing_barcodes == []
-        assert job.original_barcodes == []
-        assert job.processed_files == []
-        assert job.report_data == []
-        assert isinstance(job.out_file_name, str)
-        assert hasattr(job.validator, "validate_unique")
-
-    def test_full_record_job_parse_files(self, mock_parsing_service):
-        job = aggregate.FullRecordJob(workflow_id="1")
-        job.parse_files(batches_data={"foo.mrc": b""}, parser=mock_parsing_service)
-        assert job.file_names == ["foo.mrc"]
-        assert job.records[0].isbn == "9781234567890"
-        assert job.missing_barcodes == []
-        assert job.original_barcodes == ["333331234567890"]
-        assert job.processed_files == []
-        assert job.report_data == []
-
-    def test_full_record_job_match_records(self, fake_matcher, stub_full_record_job):
-        stub_full_record_job.match_records(matcher=fake_matcher)
-        assert stub_full_record_job.missing_barcodes == []
-        assert stub_full_record_job.processed_files == []
-        assert len(stub_full_record_job.report_data) == 1
-        assert stub_full_record_job.report_data[0]["resource_id"] == "9781234567890"
-
-    def test_full_record_job_apply_updates_and_create_batch(
-        self, mock_parsing_service, stub_full_record_job, stub_updater_service
-    ):
-        processed_batch = stub_full_record_job.apply_updates_and_create_batch(
-            parser=mock_parsing_service, updater=stub_updater_service
+        job.parse_files(
+            parser=self.PARSER, batches_data={"foo.mrc": b"", "bar.mrc": b""}
         )
-        assert stub_full_record_job.missing_barcodes == []
-        assert len(stub_full_record_job.processed_files) == 3
-        assert processed_batch.files == stub_full_record_job.processed_files
+        assert isinstance(job.records, list)
+        assert len(job.records) == 2
+        assert job.file_names == ["foo.mrc", "bar.mrc"]
+        assert len(job.original_barcodes) == 2
+
+    @pytest.mark.workflow(record_type="cat")
+    def test_match_records(self, stub_parsed_aggregate):
+        stub_parsed_aggregate.match_records(matcher=self.MATCHER)
+        assert len(stub_parsed_aggregate.records) == 1
+        assert stub_parsed_aggregate.records[0].bib_id == "12345"
+
+    @pytest.mark.workflow(record_type="cat")
+    def test_apply_updates_and_create_batch(self, stub_matched_aggregate):
+        processed_batch = stub_matched_aggregate.apply_updates_and_create_batch(
+            parser=self.PARSER, updater=self.UPDATER
+        )
+        assert stub_matched_aggregate.missing_barcodes == []
+        assert len(stub_matched_aggregate.processed_files) == 3
+        assert processed_batch.files == stub_matched_aggregate.processed_files
         assert processed_batch.processing_integrity is True
-        assert processed_batch.total_files == len(stub_full_record_job.file_names)
-        assert processed_batch.total_records == len(stub_full_record_job.report_data)
+        assert processed_batch.total_files == len(stub_matched_aggregate.file_names)
+        assert processed_batch.total_records == len(stub_matched_aggregate.report_data)

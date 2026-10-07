@@ -99,7 +99,6 @@ class OrderLevelJob(AbstractProcessingJob):
                     record=bib, matchpoints=matchpoints
                 )
                 analysis = matcher.review_matches(bib=bib, matches=matches)
-                print(analysis.target_bib_id)
                 bib.apply_match(bib_id=analysis.target_bib_id, action=analysis.action)
                 self.report_data.append(analysis.to_dict())
 
@@ -156,7 +155,6 @@ class FullRecordJob(AbstractProcessingJob):
         for bib in self.records:
             matches = matcher.match_full_record(bib)
             analysis = matcher.review_matches(bib=bib, matches=matches)
-            print(analysis.target_bib_id)
             bib.apply_match(bib_id=analysis.target_bib_id, action=analysis.action)
             self.report_data.append(analysis.to_dict())
 

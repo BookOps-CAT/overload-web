@@ -419,6 +419,11 @@ class TestBibMatcher:
             == "BibMatcher.match_order_record() missing 1 required positional argument: 'matchpoints'"
         )
 
+    @pytest.mark.workflow(record_type="acq")
+    def test_review_matches(self, mock_bib, stub_matcher):
+        reviewed = stub_matcher.review_matches(bib=mock_bib, matches=[])
+        assert reviewed.target_bib_id is None
+
 
 class TestBibParser:
     ENGINE = marc_handler.MarcParser()
@@ -601,9 +606,9 @@ class TestBibReviewer:
         assert deduped_ctrl_nums == ["123456789", None, None, "987654321"]
 
 
-class TestBibUpdaterBPL:
+class TestBibUpdater:
     @pytest.mark.workflow(library="bpl", collection=None, record_type="acq")
-    def test_get_order_level_updates_acq(self, stub_updater, stub_domain_bib):
+    def test_get_order_level_updates_acq_bpl(self, stub_updater, stub_domain_bib):
         acq_bib = stub_domain_bib("acq")
         original_orders = copy.deepcopy(acq_bib.orders)
         updates = stub_updater.get_order_level_updates(
@@ -617,7 +622,7 @@ class TestBibUpdaterBPL:
         assert updates[1].tag == "961"
 
     @pytest.mark.workflow(library="bpl", collection=None, record_type="sel")
-    def test_get_order_level_updates_sel(self, stub_updater, stub_domain_bib):
+    def test_get_order_level_updates_sel_bpl(self, stub_updater, stub_domain_bib):
         sel_bib = stub_domain_bib("sel")
         original_orders = copy.deepcopy(sel_bib.orders)
         updates = stub_updater.get_order_level_updates(
@@ -633,7 +638,7 @@ class TestBibUpdaterBPL:
         assert updates[2].target_field_to_delete is None
 
     @pytest.mark.workflow(library="bpl", collection=None, record_type="sel")
-    def test_get_order_level_updates_sel_with_command_tag(
+    def test_get_order_level_updates_sel_bpl_with_command_tag(
         self, stub_updater, stub_domain_bib
     ):
         sel_bib = stub_domain_bib("sel")
@@ -652,7 +657,7 @@ class TestBibUpdaterBPL:
         assert updates[1].tag == "961"
 
     @pytest.mark.workflow(library="bpl", collection=None, record_type="sel")
-    def test_get_order_level_updates_sel_no_command_tag(
+    def test_get_order_level_updates_sel_bpl_no_command_tag(
         self, stub_updater, stub_domain_bib
     ):
         sel_bib = stub_domain_bib("sel")
@@ -662,7 +667,7 @@ class TestBibUpdaterBPL:
         assert updates[1].tag == "961"
 
     @pytest.mark.workflow(library="bpl", collection=None, record_type="cat")
-    def test_get_full_record_updates(self, stub_updater, stub_domain_bib):
+    def test_get_full_record_updates_bpl(self, stub_updater, stub_domain_bib):
         cat_bib = stub_domain_bib("cat")
         cat_bib.bib_id = "12345"
         cat_bib.vendor_info = models.VendorInfo(
@@ -692,10 +697,8 @@ class TestBibUpdaterBPL:
             "subfields": [{"code": "a", "value": "12345"}],
         }
 
-
-class TestBibUpdaterNYPLBranch:
     @pytest.mark.workflow(library="nypl", collection="BL", record_type="acq")
-    def test_get_order_level_updates_acq(self, stub_updater, stub_domain_bib):
+    def test_get_order_level_updates_acq_nypl_bl(self, stub_updater, stub_domain_bib):
         acq_bib = stub_domain_bib("acq")
         original_orders = copy.deepcopy(acq_bib.orders)
         updates = stub_updater.get_order_level_updates(
@@ -724,7 +727,7 @@ class TestBibUpdaterNYPLBranch:
         ],
     )
     @pytest.mark.workflow(library="nypl", collection="BL", record_type="sel")
-    def test_get_order_level_updates_sel(
+    def test_get_order_level_updates_sel_nypl_bl(
         self, stub_updater, stub_domain_bib, template, command_tag
     ):
         sel_bib = stub_domain_bib("sel")
@@ -754,7 +757,7 @@ class TestBibUpdaterNYPLBranch:
         [("*b2=a;", "*b2=a;bn=zzzzz;"), ("*b2=a", "*b2=a;bn=zzzzz;")],
     )
     @pytest.mark.workflow(library="nypl", collection="BL", record_type="sel")
-    def test_get_order_level_updates_sel_check_command_tag(
+    def test_get_order_level_updates_sel_nypl_bl_check_command_tag(
         self, stub_updater, stub_domain_bib, original, output
     ):
         sel_bib = stub_domain_bib("sel")
@@ -782,7 +785,7 @@ class TestBibUpdaterNYPLBranch:
         assert updates[3].tag == "910"
 
     @pytest.mark.workflow(library="nypl", collection="BL", record_type="sel")
-    def test_get_order_level_updates_sel_skip_command_tag(
+    def test_get_order_level_updates_sel_nypl_bl_skip_command_tag(
         self, stub_updater, stub_domain_bib
     ):
         sel_bib = stub_domain_bib("sel")
@@ -802,7 +805,7 @@ class TestBibUpdaterNYPLBranch:
         assert updates[2].tag == "910"
 
     @pytest.mark.workflow(library="nypl", collection="BL", record_type="cat")
-    def test_get_full_record_updates(self, stub_updater, stub_domain_bib):
+    def test_get_full_record_updates_nypl_bl(self, stub_updater, stub_domain_bib):
         cat_bib = stub_domain_bib("cat")
         cat_bib.bib_id = "12345"
         cat_bib.vendor_info = models.VendorInfo(
@@ -863,7 +866,7 @@ class TestBibUpdaterNYPLBranch:
         ],
     )
     @pytest.mark.workflow(library="nypl", collection="BL", record_type="cat")
-    def test_get_full_record_updates_bt_series_call_no(
+    def test_get_full_record_updates_nypl_bl_bt_series_call_no(
         self, stub_updater, stub_domain_bib, input, output
     ):
         cat_bib = stub_domain_bib("cat")
@@ -882,7 +885,7 @@ class TestBibUpdaterNYPLBranch:
         ]
 
     @pytest.mark.workflow(library="nypl", collection="BL", record_type="cat")
-    def test_get_full_record_updates_bt_series_call_no_error(
+    def test_get_full_record_updates_nypl_bl_bt_series_call_no_error(
         self, stub_domain_bib, stub_updater
     ):
         cat_bib = stub_domain_bib("cat")
@@ -895,10 +898,8 @@ class TestBibUpdaterNYPLBranch:
             == "Constructed call number does not match original. New=FIC SNICKET, Original=FOO J FIC SNICKET"
         )
 
-
-class TestBibUpdaterNYPLResearch:
     @pytest.mark.workflow(library="nypl", collection="RL", record_type="acq")
-    def test_get_order_level_updates_acq(self, stub_updater, stub_domain_bib):
+    def test_get_order_level_updates_acq_nypl_rl(self, stub_updater, stub_domain_bib):
         acq_bib = stub_domain_bib("acq")
         original_orders = copy.deepcopy(acq_bib.orders)
         updates = stub_updater.get_order_level_updates(
@@ -927,7 +928,7 @@ class TestBibUpdaterNYPLResearch:
         ],
     )
     @pytest.mark.workflow(library="nypl", collection="RL", record_type="sel")
-    def test_get_order_level_updates_sel(
+    def test_get_order_level_updates_sel_nypl_rl(
         self, stub_updater, stub_domain_bib, template, command_tag
     ):
         sel_bib = stub_domain_bib("sel")
@@ -956,7 +957,7 @@ class TestBibUpdaterNYPLResearch:
         "original, output", [("*b2=a;", "*b2=a;bn=xxx;"), ("*b2=a", "*b2=a;bn=xxx;")]
     )
     @pytest.mark.workflow(library="nypl", collection="RL", record_type="sel")
-    def test_get_order_level_updates_sel_check_command_tag(
+    def test_get_order_level_updates_sel_nypl_rl_check_command_tag(
         self, stub_updater, stub_domain_bib, original, output
     ):
         sel_bib = stub_domain_bib("sel")
@@ -985,7 +986,7 @@ class TestBibUpdaterNYPLResearch:
         assert updates[3].tag == "910"
 
     @pytest.mark.workflow(library="nypl", collection="RL", record_type="sel")
-    def test_get_order_level_updates_sel_skip_command_tag(
+    def test_get_order_level_updates_sel_nypl_rl_skip_command_tag(
         self, stub_updater, stub_domain_bib
     ):
         sel_bib = stub_domain_bib("sel")
@@ -1005,7 +1006,7 @@ class TestBibUpdaterNYPLResearch:
         assert updates[2].tag == "910"
 
     @pytest.mark.workflow(library="nypl", collection="RL", record_type="cat")
-    def test_get_full_record_updates(self, stub_updater, stub_domain_bib):
+    def test_get_full_record_updates_nypl_rl(self, stub_updater, stub_domain_bib):
         cat_bib = stub_domain_bib("cat")
         cat_bib.bib_id = "12345"
         cat_bib.vendor_info = models.VendorInfo(
@@ -1035,3 +1036,9 @@ class TestBibUpdaterNYPLResearch:
             "subfields": [{"code": "a", "value": "12345"}],
         }
         assert updates[2].tag == "910"
+
+    @pytest.mark.workflow(library="nypl", collection="BL", record_type="cat")
+    def test_apply_field_updates(self, stub_updater, stub_domain_bib):
+        cat_bib = stub_domain_bib("cat")
+        updates = stub_updater.get_full_record_updates(record=cat_bib)
+        stub_updater.apply_field_updates(record=cat_bib, updates=updates)
