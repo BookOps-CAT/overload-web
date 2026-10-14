@@ -1,7 +1,6 @@
 import inspect
 
 import pytest
-from sqlmodel import SQLModel, create_engine
 
 from overload_web.application.pvf.template_handling import (
     GetOrderTemplate,
@@ -21,14 +20,6 @@ def make_template():
         return template
 
     return _make_template
-
-
-@pytest.fixture
-def mock_engine():
-    engine = create_engine("sqlite:///:memory:")
-    SQLModel.metadata.create_all(engine)
-    yield engine
-    engine.dispose()
 
 
 @pytest.fixture

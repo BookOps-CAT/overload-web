@@ -1,19 +1,24 @@
 import datetime
 import io
 import json
+import random
 from typing import Any
 
 import pytest
 import requests
 from bookops_worldcat.errors import BookopsWorldcatError
 from file_retriever import Client, File, FileInfo
+from sqlmodel import SQLModel, create_engine
 
-from overload_web.domain.pvf import models
-from overload_web.infrastructure import oclc, sierra_clients
+from overload_web.application.pvf import handlers
+from overload_web.application.pvf.process_manager import WorkflowManager
+from overload_web.bootstrap import bootstrap_message_bus
+from overload_web.domain.pvf import aggregate, commands, files, models, ports, services
+from overload_web.infrastructure import oclc, sierra_clients, tables, unit_of_work
 
 
 @pytest.fixture(autouse=True)
-def test_setup(caplog, monkeypatch):
+def test_env(caplog, monkeypatch):
     caplog.set_level("DEBUG")
     monkeypatch.setenv("NYPL_PLATFORM_CLIENT", "foo")
     monkeypatch.setenv("NYPL_PLATFORM_SECRET", "bar")
@@ -339,3 +344,330 @@ def fake_oclc_fetcher_no_matches(monkeypatch):
 
     monkeypatch.setattr(oclc.WorldcatFetcher, "get_brief_bibs_by_id", empty_list)
     return oclc.WorldcatFetcher(session=FakeOCLCSession())
+
+
+class FakeFileRetriever:
+    def __init__(self) -> None:
+        pass
+
+    def list(self, dir: str) -> list[str]:
+        return ["foo.mrc"]
+
+    def download(self, name: str, dir: str) -> bytes:
+        return b""
+
+
+@pytest.fixture
+def mock_engine():
+    engine = create_engine("sqlite:///:memory:")
+    SQLModel.metadata.create_all(engine)
+    yield engine
+    engine.dispose()
+
+
+@pytest.fixture
+def mock_engine_with_workflow(mock_engine, mocker):
+    mock_obj = mocker.Mock()
+    batch = mocker.Mock(
+        return_value=tables.PVFBatch(
+            files=[tables.ProcessedFileModel(file_name="foo.mrc", records=b"")],
+            stats=[
+                {
+                    "action": "insert",
+                    "call_number": "Foo",
+                    "call_number_match": True,
+                    "duplicate_records": [],
+                    "mixed": [],
+                    "other": [],
+                    "resource_id": "12345",
+                    "target_bib_id": "23456",
+                    "target_call_no": "Foo",
+                    "target_title": None,
+                    "updated_by_vendor": False,
+                    "vendor": "UNKNOWN",
+                }
+            ],
+            file_names=["foo.mrc"],
+            total_files=1,
+            total_records=1,
+            missing_barcodes=[],
+            processing_integrity=True,
+        )
+    )
+    workflow = mocker.Mock(
+        return_value=tables.WorkflowState(id="1", status="UPDATING", batch_id=1)
+    )
+    mocker.patch("overload_web.infrastructure.unit_of_work.Session.get", workflow)
+    mocker.patch("overload_web.infrastructure.unit_of_work.Session.flush", mock_obj)
+    mocker.patch("overload_web.infrastructure.unit_of_work.Session.refresh", mock_obj)
+    mocker.patch("overload_web.infrastructure.unit_of_work.Session.add", batch)
+    yield mock_engine
+    mock_engine.dispose()
+
+
+@pytest.fixture
+def mocked_order_level_manager(mock_engine_with_workflow):
+    uow = unit_of_work.SqlModelUnitOfWork(engine=mock_engine_with_workflow)
+
+    bus = bootstrap_message_bus(
+        matcher=FakeMatcher(),
+        parser=FakeParser(),
+        updater=FakeUpdater(),
+        uow=uow,
+        storage=FakeFileStorageWithOrderLevelParsedFiles(),
+    )
+
+    manager = WorkflowManager(bus=bus, uow=uow)
+    return manager
+
+
+@pytest.fixture
+def mocked_full_record_manager(mock_engine_with_workflow):
+    uow = unit_of_work.SqlModelUnitOfWork(engine=mock_engine_with_workflow)
+
+    bus = bootstrap_message_bus(
+        matcher=FakeMatcher(),
+        parser=FakeParser(),
+        updater=FakeUpdater(),
+        uow=uow,
+        storage=FakeFileStorageWithFullParsedFiles(),
+    )
+
+    manager = WorkflowManager(bus=bus, uow=uow)
+    return manager
+
+
+def create_stub_bib(record_type: str):
+    number = random.randint(0, 100)
+    barcode = f"33333{str(number).zfill(10)}"
+    return models.DomainBib(
+        library="nypl",
+        collection="BL",
+        isbn="9781234567890",
+        title="Foo",
+        record_type=record_type,
+        binary_data=b"",
+        barcodes=[barcode],
+        orders=[],
+        vendor_info=models.VendorInfo(
+            name="UNKNOWN", bib_fields=[], matchpoints={"primary_matchpoint": "isbn"}
+        ),
+        parsed_fields=[],
+    )
+
+
+class FakeMatcher(services.BibMatcher):
+    RESPONSE = {
+        "call_number": "Foo",
+        "id": "12345",
+        "isbn": ["9781234567890"],
+        "sm_bib_varfields": ["005 || 20200101000001.0", "024 || {{a}} 12345"],
+        "sm_item_data": ['{"barcode": "33333123456789"}'],
+        "ss_marc_tag_001": "ocn123456789",
+        "ss_marc_tag_003": "OCoLC",
+        "ss_marc_tag_005": "20000101010000.0",
+        "title": "Record 1",
+    }
+
+    def __init__(self):
+        self.fetcher = None
+
+    def match_order_record(self, record, matchpoints):
+        return [self.RESPONSE]
+
+    def match_full_record(self, record):
+        return [self.RESPONSE]
+
+
+class FakeParser(services.BibParser):
+    def __init__(self):
+        self.count = 1
+
+    def combine_marc_files(self, data):
+        self.count = len(data)
+        return b""
+
+    def parse_marc_data(self, data, vendor="UNKNOWN"):
+        return [create_stub_bib("cat") for _ in [None] * self.count]
+
+    def write(self, records):
+        return b""
+
+
+class FakeUpdater(services.BibUpdater):
+    def __init__(self):
+        self.handler = None
+
+    def apply_field_updates(self, record, updates):
+        pass
+
+    def get_full_record_updates(self, record):
+        return []
+
+    def get_order_level_updates(self, record, template_data):
+        return []
+
+
+class FakeBatchRepository(unit_of_work.PVFBatchRepository):
+    def __init__(self):
+        self.session = None
+
+    def save(self, obj):
+        batch = obj
+        batch.id = 1
+        return batch
+
+
+class FakeIncomingFileRepository(unit_of_work.IncomingFileRepository):
+    FILE = files.IncomingFile(
+        id="1",
+        filename="foo.mrc",
+        workflow_id="1",
+        source="local",
+        reference="temp/foo.mrc",
+    )
+
+    def __init__(self):
+        self.session = None
+
+    def list_by_id(self, id):
+        files = self.FILE
+        files.workflow_id = id
+        return [files]
+
+
+class FakeWorkflowRepository(unit_of_work.WorkflowStatusRepository):
+    WORKFLOW = models.WorkflowState(id="1", status=models.WorkflowStatus.PENDING)
+
+    def __init__(self):
+        self.session = None
+
+    def get(self, id):
+        self.WORKFLOW.id = id
+        return self.WORKFLOW
+
+    def update(self, data, id):
+        self.WORKFLOW = data
+        self.WORKFLOW.id = id
+
+
+class FakeUnitOfWork(ports.UnitOfWorkProtocol):
+    processed_batches = FakeBatchRepository()
+    incoming_files = FakeIncomingFileRepository()
+    workflow_states = FakeWorkflowRepository()
+
+    def commit(self) -> None:
+        pass
+
+
+class FakeFileStorage(ports.FileStorage):
+    def load(*args, **kwargs):
+        return b""
+
+    def load_intermediate_records(*args, **kwargs):
+        pass
+
+    def save(*args, **kwargs):
+        return "foo"
+
+    def save_intermediate_records(*args, **kwargs):
+        pass
+
+
+class FakeFileStorageWithFullParsedFiles(FakeFileStorage):
+    def load_intermediate_records(*args, **kwargs):
+        job = aggregate.FullRecordJob(workflow_id=kwargs["id"])
+        job.file_names = ["foo.mrc"]
+        job.records = [create_stub_bib("cat")]
+        job.report_data = [{"foo": "bar"}]
+        job.records[0].action = "attach"
+        return job
+
+
+class FakeFileStorageWithOrderLevelParsedFiles(FakeFileStorage):
+    def load_intermediate_records(*args, **kwargs):
+        job = aggregate.OrderLevelJob(workflow_id=kwargs["id"], vendor="UNKNOWN")
+        job.file_names = ["foo.mrc"]
+        job.file_records = {"foo.mrc": [create_stub_bib("acq")]}
+        job.report_data = [{"foo": "bar"}]
+        return job
+
+
+@pytest.fixture
+def fake_matcher():
+    return FakeMatcher()
+
+
+@pytest.fixture
+def fake_parser():
+    return FakeParser()
+
+
+@pytest.fixture
+def fake_updater():
+    return FakeUpdater()
+
+
+@pytest.fixture
+def stub_manager():
+    uow = FakeUnitOfWork()
+    updater = FakeUpdater()
+    matcher = FakeMatcher()
+    parser = FakeParser()
+    bus = bootstrap_message_bus(
+        matcher=matcher,
+        parser=parser,
+        uow=uow,
+        updater=updater,
+        storage=FakeFileStorage(),
+    )
+    bus.register_command(
+        commands.MatchOrderLevelRecords,
+        lambda cmd: handlers.MatchOrderLevelRecordsHandler.handle(
+            bus=bus,
+            cmd=cmd,
+            matcher=matcher,
+            storage=FakeFileStorageWithOrderLevelParsedFiles(),
+        ),
+    )
+    bus.register_command(
+        commands.UpdateAndOutputOrderLevelRecords,
+        lambda cmd: handlers.UpdateAndOutputOrderLevelRecordsHandler.handle(
+            bus=bus,
+            cmd=cmd,
+            parser=parser,
+            uow=uow,
+            updater=updater,
+            storage=FakeFileStorageWithOrderLevelParsedFiles(),
+        ),
+    )
+    bus.register_command(
+        commands.MatchFullLevelRecords,
+        lambda cmd: handlers.MatchFullLevelRecordsHandler.handle(
+            bus=bus,
+            cmd=cmd,
+            matcher=matcher,
+            storage=FakeFileStorageWithFullParsedFiles(),
+        ),
+    )
+    bus.register_command(
+        commands.UpdateAndOutputFullLevelRecords,
+        lambda cmd: handlers.UpdateAndOutputFullLevelRecordsHandler.handle(
+            bus=bus,
+            cmd=cmd,
+            parser=parser,
+            uow=uow,
+            updater=updater,
+            storage=FakeFileStorageWithFullParsedFiles(),
+        ),
+    )
+    return WorkflowManager(bus=bus, uow=uow)
+
+
+@pytest.fixture
+def stub_manager_no_workflows(monkeypatch, stub_manager):
+    def mock_get_workflows(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(FakeWorkflowRepository, "get", mock_get_workflows)
+    return stub_manager

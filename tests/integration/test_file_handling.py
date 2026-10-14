@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-from sqlmodel import SQLModel, create_engine
 
 from overload_web.application.pvf.file_handling import (
     DeleteFileFromWorkflow,
@@ -21,14 +20,6 @@ class FakeFileRetriever:
 
     def download(self, name: str, dir: str) -> bytes:
         return b""
-
-
-@pytest.fixture
-def mock_engine():
-    engine = create_engine("sqlite:///:memory:")
-    SQLModel.metadata.create_all(engine)
-    yield engine
-    engine.dispose()
 
 
 class MockSqlResult:

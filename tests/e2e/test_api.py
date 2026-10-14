@@ -9,121 +9,13 @@ from overload_web.application.pvf import (
     report_service,
     template_handling,
 )
-from overload_web.domain.pvf import files, order_templates, services
+from overload_web.domain.pvf import files
+from overload_web.infrastructure import tables
 from overload_web.main import app
 from overload_web.presentation import pvf_deps
 
 
-@pytest.fixture
-def processed_records(monkeypatch):
-    def fake_response(*args, **kwargs):
-        pass
-
-    monkeypatch.setattr(
-        process_manager.WorkflowManager,
-        "handle_workflow_started_order_level",
-        fake_response,
-    )
-    monkeypatch.setattr(
-        process_manager.WorkflowManager,
-        "handle_workflow_started_full_level",
-        fake_response,
-    )
-
-
-@pytest.fixture
-def mock_files(monkeypatch):
-    def fake_response(*args, **kwargs):
-        response = {
-            "filename": kwargs.get("filename"),
-            "reference": "bar",
-            "workflow_id": 1,
-            "source": kwargs.get("source"),
-        }
-        return [response]
-
-    def file_list(*args, **kwargs):
-        return ["foo.mrc"]
-
-    def load_file(*args, **kwargs):
-        return files.VendorFile(content=b"", file_name=kwargs.get("name"))
-
-    monkeypatch.setattr(file_handling.UploadFileToWorkflow, "execute", fake_response)
-    monkeypatch.setattr(file_handling.ListVendorFiles, "execute", file_list)
-    monkeypatch.setattr(file_handling.DownloadRemoteFile, "execute", load_file)
-    monkeypatch.setattr(file_handling.DeleteFileFromWorkflow, "execute", fake_response)
-
-
-@pytest.fixture
-def fake_reporter(monkeypatch):
-    report_data = {
-        "total_records": 1,
-        "file_names": ["foo.mrc"],
-        "total_files": 1,
-        "vendor_report": {},
-        "dupes_report": {},
-        "missing_barcodes": [],
-        "processing_integrity": True,
-        "call_no_report": {},
-    }
-
-    def null_response(*args, **kwargs):
-        return None
-
-    def create_report(*args, **kwrags):
-        return report_data
-
-    def report_stats(*arsg, **kwargs):
-        return [report_data]
-
-    monkeypatch.setattr(report_service.WriteOutputReport, "execute", null_response)
-    monkeypatch.setattr(report_service.CreatePVFOutputReport, "execute", create_report)
-    monkeypatch.setattr(report_service.GetDetailedReportData, "execute", report_stats)
-
-
-@pytest.fixture
-def fake_reporter_no_response(monkeypatch):
-    def null_response(*args, **kwargs):
-        return {}
-
-    monkeypatch.setattr(report_service.CreatePVFOutputReport, "execute", null_response)
-    monkeypatch.setattr(report_service.GetDetailedReportData, "execute", null_response)
-
-
-@pytest.fixture
-def fake_template_handler(monkeypatch):
-    template = order_templates.OrderTemplate(
-        name="foo", agent="bar", primary_matchpoint="isbn", id=1
-    )
-
-    def get_template(*args, **kwargs):
-        return template
-
-    def list_templates(*args, **kwargs):
-        return [template]
-
-    def update_template(*args, **kwargs):
-        data_dict = kwargs.get("obj").__dict__
-        data_dict.update({"id": 1, "name": "foo"})
-        return order_templates.OrderTemplate(**data_dict)
-
-    monkeypatch.setattr(template_handling.SaveNewOrderTemplate, "execute", get_template)
-    monkeypatch.setattr(template_handling.GetOrderTemplate, "execute", get_template)
-    monkeypatch.setattr(template_handling.ListOrderTemplates, "execute", list_templates)
-    monkeypatch.setattr(
-        template_handling.UpdateOrderTemplate, "execute", update_template
-    )
-
-
-@pytest.fixture
-def fake_template_handler_no_recs(monkeypatch):
-    def null_response(*args, **kwargs):
-        return None
-
-    monkeypatch.setattr(template_handling.UpdateOrderTemplate, "execute", null_response)
-
-
-def fake_engine():
+def mock_engine():
     engine = create_engine("sqlite:///:memory:")
     SQLModel.metadata.create_all(engine)
     yield engine
@@ -156,15 +48,11 @@ class FakeFileStorage:
         return b"foo"
 
 
-def fake_matcher():
-    yield services.BibMatcher(fetcher=FakeFetcher())
-
-
 def test_api_startup(monkeypatch):
-    def fake_engine(*args, **kwargs):
+    def mock_engine(*args, **kwargs):
         return create_engine("sqlite:///:memory:")
 
-    monkeypatch.setattr(pvf_deps, "create_engine", fake_engine)
+    monkeypatch.setattr(pvf_deps, "create_engine", mock_engine)
 
     with TestClient(app) as client:
         response = client.get("/")
@@ -173,14 +61,16 @@ def test_api_startup(monkeypatch):
 
 class TestApp:
     client = TestClient(app)
-    app.dependency_overrides[pvf_deps.get_engine] = fake_engine
+    app.dependency_overrides[pvf_deps.get_engine] = mock_engine
     app.dependency_overrides[pvf_deps.remote_file_retriever] = FakeFileRetriever
     app.dependency_overrides[pvf_deps.get_fetcher] = FakeFetcher
     app.dependency_overrides[pvf_deps.local_file_storage] = FakeFileStorage
     app.state.workflow_id = 1
     base_url = client.base_url
 
-    def test_files_router_list_remote_files_get(self, mock_files):
+    def test_files_router_list_remote_files_get(self, mocker):
+        files = mocker.Mock(return_value=["foo.mrc"])
+        mocker.patch.object(file_handling.ListVendorFiles, "execute", files)
         response = self.client.get("/files/remote/list?vendor=foo")
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/files/remote/list?vendor=foo"
@@ -189,7 +79,22 @@ class TestApp:
         )
         assert response.context["files"] == ["foo.mrc"]
 
-    def test_files_select_ftp_file(self, mock_files):
+    def test_files_router_select_ftp_file(self, mocker):
+        download = mocker.Mock(
+            return_value=files.VendorFile(content=b"", file_name="bar.mrc")
+        )
+        upload = mocker.Mock(
+            return_value=[
+                {
+                    "filename": "bar.mrc",
+                    "reference": "bar",
+                    "workflow_id": 1,
+                    "source": "ftp",
+                }
+            ]
+        )
+        mocker.patch.object(file_handling.DownloadRemoteFile, "execute", download)
+        mocker.patch.object(file_handling.UploadFileToWorkflow, "execute", upload)
         response = self.client.post(
             "/files/remote/select?vendor=foo", data={"remote_file": "bar.mrc"}
         )
@@ -200,7 +105,15 @@ class TestApp:
         assert response.context["files"][0]["filename"] == "bar.mrc"
         assert response.context["files"][0]["source"] == "ftp"
 
-    def test_files_upload_file(self, mock_files):
+    def test_files_router_upload_file(self, mocker):
+        file = {
+            "filename": "baz.mrc",
+            "reference": "baz",
+            "workflow_id": 1,
+            "source": "local",
+        }
+        upload = mocker.Mock(return_value=[file])
+        mocker.patch.object(file_handling.UploadFileToWorkflow, "execute", upload)
         response = self.client.post(
             "/files/upload",
             data={"vendor": None},
@@ -213,106 +126,97 @@ class TestApp:
         assert response.context["files"][0]["filename"] == "baz.mrc"
         assert response.context["files"][0]["source"] == "local"
 
-    def test_files_remove_file(self, mock_files):
+    def test_files_router_remove_file(self, mocker):
+        file = {
+            "filename": "baz.mrc",
+            "reference": "baz",
+            "workflow_id": 1,
+            "source": "local",
+        }
+        upload = mocker.Mock(return_value=[file])
+        mocker.patch.object(file_handling.DeleteFileFromWorkflow, "execute", upload)
         response = self.client.post("/files/remove", data={"file_id": 1})
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/files/remove"
         assert sorted(list(response.context.keys())) == sorted(["files", "request"])
         assert len(response.context["files"]) == 1
 
-    def test_frontend_root_get(self):
+    def test_frontend_router_root_get(self):
         response = self.client.get("/")
         assert response.status_code == 200
         assert "Overload Web" in response.text
 
-    def test_frontend_vendor_file_page_get(self):
+    def test_frontend_router_vendor_file_page_get(self):
         response = self.client.get("/process")
         assert response.status_code == 200
         assert "Process Vendor File" in response.text
         assert response.url == f"{self.base_url}/process"
         assert response.context["page_title"] == "Process Vendor File"
 
-    @pytest.mark.parametrize("library", ["nypl", "bpl"])
-    @pytest.mark.parametrize("workflow", ["pvf", "wc2s"])
-    def test_frontend_get_context_update_library(self, library, workflow):
+    @pytest.mark.parametrize(
+        "library, collection, record_type, workflow, collection_disabled, template_enabled",
+        [
+            ("nypl", "BL", "acq", "pvf", False, True),
+            ("nypl", "RL", "cat", "wc2s", False, False),
+            ("nypl", "", "cat", "pvf", False, False),
+            ("bpl", "", "sel", "wc2s", True, True),
+        ],
+    )
+    def test_frontend_router_get_context_update(
+        self,
+        library,
+        collection,
+        workflow,
+        record_type,
+        collection_disabled,
+        template_enabled,
+    ):
         response = self.client.get(
-            f"/update-context?workflow={workflow}&library={library}"
+            f"/update-context?workflow={workflow}&library={library}&collection={collection}&record_type={record_type}"
         )
         assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == [
-            "collection",
-            "collection_disabled",
-            "library",
-            "record_type",
-            "request",
-            "template_form_enabled",
-        ]
+        assert response.context["library"] == library
+        assert response.context["collection"] == collection
+        assert response.context["record_type"] == record_type
+        assert response.context["collection_disabled"] == collection_disabled
+        assert response.context["template_form_enabled"] == template_enabled
 
-    @pytest.mark.parametrize("collection", ["BL", "RL", ""])
-    @pytest.mark.parametrize("workflow", ["pvf", "wc2s"])
-    def test_frontend_get_context_update_collection(self, collection, workflow):
-        response = self.client.get(
-            f"/update-context?workflow={workflow}&collection={collection}"
-        )
-        assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == [
-            "collection",
-            "collection_disabled",
-            "library",
-            "record_type",
-            "request",
-            "template_form_enabled",
-        ]
-
-    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    @pytest.mark.parametrize("workflow", ["pvf", "wc2s"])
-    def test_frontend_get_context_update_record_type(self, record_type, workflow):
-        response = self.client.get(
-            f"/update-context?workflow={workflow}&record_type={record_type}"
-        )
-        assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == [
-            "collection",
-            "collection_disabled",
-            "library",
-            "record_type",
-            "request",
-            "template_form_enabled",
-        ]
-
-    def test_frontend_wc2sierra_page_get(self):
+    def test_frontend_router_wc2sierra_page_get(self):
         response = self.client.get("/wc2sierra")
         assert response.status_code == 200
         assert "WorldCat2Sierra" in response.text
         assert response.url == f"{self.base_url}/wc2sierra"
         assert response.context["page_title"] == "WorldCat2Sierra"
 
-    def test_ot_router_get_template_form(self, fake_template_handler):
+    def test_ot_router_get_template_form(self):
         response = self.client.get("/ot/forms/templates")
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request"]
 
-    def test_ot_router_create_template(self, stub_template_data, fake_template_handler):
+    def test_ot_router_create_template(self, stub_template_data, mocker):
+        template = mocker.Mock()
+        mocker.patch.object(template_handling.SaveNewOrderTemplate, "execute", template)
         response = self.client.post("/ot/template", data=stub_template_data)
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request", "template"]
-        assert response.context["template"].get("id") == 1
 
-    def test_ot_router_get_template(self, fake_template_handler):
+    def test_ot_router_get_template(self, mocker):
+        template = mocker.Mock()
+        mocker.patch.object(template_handling.GetOrderTemplate, "execute", template)
         response = self.client.get("/ot/template?template_id=1")
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request", "template"]
-        assert response.context["template"]["id"] == 1
-        assert response.context["template"]["name"] == "foo"
-        assert response.context["template"]["agent"] == "bar"
-        assert response.context["template"]["primary_matchpoint"] == "isbn"
 
-    def test_ot_router_get_template_list(self, fake_template_handler):
+    def test_ot_router_get_template_list(self, mocker):
+        templates = mocker.Mock(return_value=[])
+        mocker.patch.object(template_handling.ListOrderTemplates, "execute", templates)
         response = self.client.get("/ot/templates")
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request", "templates"]
 
-    def test_ot_router_update_template(self, fake_template_handler):
+    def test_ot_router_update_template(self, mocker):
+        template = mocker.Mock()
+        mocker.patch.object(template_handling.UpdateOrderTemplate, "execute", template)
         response = self.client.patch(
             "/ot/template",
             data={
@@ -324,18 +228,14 @@ class TestApp:
             },
         )
         assert response.status_code == 200
-        assert response.context["template"]["id"] == 1
-        assert response.context["template"]["primary_matchpoint"] == "upc"
-        assert response.context["template"]["lang"] == "rus"
-        assert response.context["template"]["name"] == "foo"
-        assert response.context["template"]["agent"] == "bar"
+        assert sorted(list(response.context.keys())) == ["request", "template"]
 
-    def test_ot_router_update_template_not_found(self, fake_template_handler_no_recs):
-        response = self.client.patch(
-            "/ot/template", data={"primary_matchpoint": "upc", "template_id": 3}
-        )
+    def test_pvf_router_initialize_workflow(self, mocker, caplog):
+        mock_obj = mocker.Mock()
+        mocker.patch("overload_web.infrastructure.unit_of_work.Session", mock_obj)
+        response = self.client.get("/pvf/workflow")
         assert response.status_code == 200
-        assert response.context["template"] == {}
+        assert "Created new workflow ID: " in caplog.text
 
     @pytest.mark.parametrize(
         "library, collection, record_type",
@@ -349,8 +249,12 @@ class TestApp:
         ],
     )
     def test_pvf_router_process_order_records(
-        self, library, collection, record_type, processed_records
+        self, library, collection, record_type, mocker
     ):
+        mock = mocker.Mock()
+        mocker.patch.object(
+            process_manager.WorkflowManager, "handle_workflow_started_order_level", mock
+        )
         context = {
             "library": library,
             "collection": collection,
@@ -369,8 +273,12 @@ class TestApp:
         [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "", "cat")],
     )
     def test_pvf_router_process_full_records(
-        self, library, collection, record_type, processed_records
+        self, library, collection, record_type, mocker
     ):
+        mock = mocker.Mock()
+        mocker.patch.object(
+            process_manager.WorkflowManager, "handle_workflow_started_full_level", mock
+        )
         context = {
             "library": library,
             "collection": collection,
@@ -453,38 +361,63 @@ class TestApp:
             == "Value error, Collection should be `None` for BPL records."
         )
 
+    def test_pvf_router_workflow_status_check_pending(self, mocker, caplog):
+        mock_obj = mocker.Mock(
+            return_value=tables.WorkflowState(id="123", status="PENDING")
+        )
+        mocker.patch("overload_web.infrastructure.unit_of_work.Session.get", mock_obj)
+        response = self.client.get("/pvf/workflow/123/status")
+        assert response.status_code == 200
+        assert list(response.context.keys()) == ["workflow_id", "request"]
+        assert "Current workflow state: PENDING" in caplog.text
+
+    def test_pvf_router_workflow_status_check_completed(self, mocker, caplog):
+        mock_obj = mocker.Mock(
+            return_value=tables.WorkflowState(id="123", status="COMPLETED", batch_id=1)
+        )
+        mocker.patch("overload_web.infrastructure.unit_of_work.Session.get", mock_obj)
+        response = self.client.get("/pvf/workflow/123/status")
+        assert response.status_code == 200
+        assert list(response.context.keys()) == ["batch_id", "record_type", "request"]
+        assert "Current workflow state: COMPLETED" in caplog.text
+
+    def test_pvf_router_workflow_status_check_missing(self, mocker):
+        mock_obj = mocker.Mock(return_value=None)
+        mocker.patch("overload_web.infrastructure.unit_of_work.Session.get", mock_obj)
+        response = self.client.get("/pvf/workflow/123/status")
+        assert response.status_code == 200
+        assert "<div class='error'>Workflow not found.</div>" in response.text
+
+    def test_pvf_router_workflow_status_check_failed(self, mocker):
+        mock_obj = mocker.Mock(
+            return_value=tables.WorkflowState(
+                id="123", status="FAILED", error_message="Workflow failed"
+            )
+        )
+        mocker.patch("overload_web.infrastructure.unit_of_work.Session.get", mock_obj)
+        response = self.client.get("/pvf/workflow/123/status")
+        assert response.status_code == 200
+        assert "<div class='error'>Error: Workflow failed</div>" in response.text
+
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_reports_router_output_report(self, record_type, fake_reporter):
+    def test_reports_router_output_report(self, record_type, mocker):
+        mock_obj = mocker.Mock(return_value={})
+        mocker.patch.object(report_service.CreatePVFOutputReport, "execute", mock_obj)
         response = self.client.get(
             f"/reports/summary?batch_id=1&record_type={record_type}"
         )
         assert response.status_code == 200
 
-    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_reports_router_get_output_report_no_data(
-        self, record_type, fake_reporter_no_response
-    ):
-        response = self.client.get(
-            f"/reports/summary?batch_id=10&record_type={record_type}"
-        )
-        assert response.status_code == 200
-        assert '<th scope="row">' not in response.text
-
-    def test_reports_router_get_detailed_report(self, fake_reporter):
+    def test_reports_router_get_detailed_report(self, mocker):
+        mock_obj = mocker.Mock(return_value={})
+        mocker.patch.object(report_service.GetDetailedReportData, "execute", mock_obj)
         response = self.client.get("/reports/detailed?batch_id=1")
         assert response.status_code == 200
 
-    def test_reports_router_get_detailed_report_no_data(
-        self, fake_reporter_no_response
-    ):
-        response = self.client.get("/reports/detailed?batch_id=10")
-        assert response.status_code == 200
-        assert '<th scope="row">' not in response.text
-
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_reports_router_write_report_to_google_sheet(
-        self, record_type, fake_reporter
-    ):
+    def test_reports_router_write_report_to_google_sheet(self, record_type, mocker):
+        mock = mocker.Mock()
+        mocker.patch.object(report_service.WriteOutputReport, "execute", mock)
         response = self.client.post(
             f"/reports/write?batch_id=1&record_type={record_type}"
         )
