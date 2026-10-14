@@ -138,11 +138,10 @@ def workflow_status_check(
     """HTMX endpoint to poll workflow progress."""
     with uow:
         state = uow.workflow_states.get(workflow_id)
-        logger.info(f"Current workflow state {state.status}")
     if not state:
         return HTMLResponse("<div class='error'>Workflow not found.</div>")
+    logger.info(f"Current workflow state: {state.status}")
     if state.status == models.WorkflowStatus.COMPLETED:
-        # Swap out the polling indicator for the final results
         return request.app.state.templates.TemplateResponse(
             request=request,
             name="pvf_partials/pvf_results.html",
@@ -151,7 +150,6 @@ def workflow_status_check(
     elif state.status == models.WorkflowStatus.FAILED:
         return HTMLResponse(f"<div class='error'>Error: {state.error_message}</div>")
 
-    # Still processing, return the polling indicator again
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/polling_indicator.html",

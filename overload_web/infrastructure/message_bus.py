@@ -47,5 +47,5 @@ class MessageBus(ports.MessageBusPort):
         for handler in handlers:
             try:
                 handler(event)
-            except ValueError as e:
-                logger.exception(f"Error handling event {type(event).__name__}: {e}")
+            except Exception as e:
+                logger.error(f"Error handling event {type(event).__name__}: {e}")
