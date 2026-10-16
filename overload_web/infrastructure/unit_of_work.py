@@ -168,7 +168,10 @@ class OrderTemplateRepository(ports.TemplateRepositoryProtocol):
         if not template:
             logger.error(f"Template '{id}' does not exist")
         else:
-            patch_data = data.model_dump(exclude_unset=True)
+            valid_obj = tables.TemplateUpdateModel.model_validate(
+                data, from_attributes=True
+            )
+            patch_data = valid_obj.model_dump(exclude_unset=True)
             template.sqlmodel_update(patch_data)
             self.session.add(template)
             self.session.flush()

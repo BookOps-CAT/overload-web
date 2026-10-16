@@ -7,7 +7,7 @@ Models:
 
 `ProcessedFileModel`
     A pydantic/sqlmodel model that defines a processed MARC file.
-`_TemplateModelBase`
+`TemplateUpdateModel`
     The base data model used to represent an order template and fields that are shared
     by all models within this module.
 `TemplateModel`
@@ -66,7 +66,7 @@ class PVFBatch(SQLModel, table=True):
     processing_integrity: bool | None
 
 
-class _TemplateModelBase(SQLModel):
+class TemplateUpdateModel(SQLModel):
     """
     A reusable template for applying consistent values to orders.
 
@@ -79,7 +79,7 @@ class _TemplateModelBase(SQLModel):
     """
 
     acquisition_type: str | None = Field(default=None)
-    agent: str = Field(nullable=False, index=True)
+    agent: str | None = Field(default=None)
     blanket_po: str | None = Field(default=None)
     claim_code: str | None = Field(default=None)
     country: str | None = Field(default=None)
@@ -87,7 +87,7 @@ class _TemplateModelBase(SQLModel):
     internal_note: str | None = Field(default=None)
     lang: str | None = Field(default=None)
     material_form: str | None = Field(default=None)
-    name: str = Field(nullable=False, unique=True, index=True)
+    name: str | None = Field(default=None)
     order_code_1: str | None = Field(default=None)
     order_code_2: str | None = Field(default=None)
     order_code_3: str | None = Field(default=None)
@@ -99,20 +99,23 @@ class _TemplateModelBase(SQLModel):
     vendor_code: str | None = Field(default=None)
     vendor_notes: str | None = Field(default=None)
     vendor_title_no: str | None = Field(default=None)
-    primary_matchpoint: str = Field(nullable=False)
+    primary_matchpoint: str | None = Field(default=None)
     secondary_matchpoint: str | None = Field(default=None)
     tertiary_matchpoint: str | None = Field(default=None)
 
 
-class TemplateModel(_TemplateModelBase, table=True):
+class TemplateModel(TemplateUpdateModel, table=True):
     """
     A table model representing order templates including all fields required
-    for persistence (i.e., all fields present in a `_TemplateModelBase` object
+    for persistence (i.e., all fields present in a `TemplateUpdateModel` object
     with the addition of the unique identifier).
     """
 
     __tablename__ = "templates"
     id: int = Field(default=None, primary_key=True, index=True)
+    agent: str = Field(nullable=False, index=True)
+    name: str = Field(nullable=False, unique=True, index=True)
+    primary_matchpoint: str = Field(nullable=False)
 
 
 class WorkflowUpdateModel(SQLModel):

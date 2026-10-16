@@ -15,12 +15,12 @@ from overload_web.presentation import schemas
 
 def test_template_attrs():
     """
-    _TemplateModelBase, TemplatePatchModel and OrderTemplateBase are the same
+    TemplateUpdateModel, TemplatePatchModel and OrderTemplateBase are the same
     OrderTemplate and TemplateModel are the same
 
     """
     sql_base = [
-        name for name in inspect.signature(tables._TemplateModelBase).parameters.keys()
+        name for name in inspect.signature(tables.TemplateUpdateModel).parameters.keys()
     ]
     pydantic_patch = [
         name for name in inspect.signature(schemas.TemplatePatchModel).parameters.keys()
