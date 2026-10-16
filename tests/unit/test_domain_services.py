@@ -128,10 +128,36 @@ def mock_marc(request, create_marc_record) -> Bib:
 
 
 @pytest.fixture
+def stub_bib():
+    def make_bib(library, collection, record_type):
+        return models.DomainBib(
+            library=library,
+            collection=collection,
+            isbn="9781234567890",
+            title="Foo",
+            record_type=record_type,
+            binary_data=b"",
+            barcodes=["333331234567890"],
+            orders=[],
+            vendor_info=models.VendorInfo(
+                name="UNKNOWN",
+                bib_fields=[],
+                matchpoints={
+                    "primary_matchpoint": "isbn",
+                    "secondary_matchpoint": "control_number",
+                },
+            ),
+            parsed_fields=[],
+        )
+
+    return make_bib
+
+
+@pytest.fixture
 def stub_full_bib(stub_bib):
     def create_bib(library, collection, control_number, item_tag) -> models.DomainBib:
-        number = random.randint(0, 100)
-        barcode = f"33333{str(number).zfill(10)}"
+        number = random.randint(0, 10000)
+        barcode = f"33333{str(number).zfill(8)}"
         if item_tag == "960":
             field_037b = "Foo"
             item_ind2 = " "

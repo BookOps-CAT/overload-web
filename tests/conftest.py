@@ -99,32 +99,6 @@ def mock_sierra_session(monkeypatch):
     return FakeSierraSession()
 
 
-@pytest.fixture
-def stub_bib():
-    def make_bib(library, collection, record_type):
-        return models.DomainBib(
-            library=library,
-            collection=collection,
-            isbn="9781234567890",
-            title="Foo",
-            record_type=record_type,
-            binary_data=b"",
-            barcodes=["333331234567890"],
-            orders=[],
-            vendor_info=models.VendorInfo(
-                name="UNKNOWN",
-                bib_fields=[],
-                matchpoints={
-                    "primary_matchpoint": "isbn",
-                    "secondary_matchpoint": "control_number",
-                },
-            ),
-            parsed_fields=[],
-        )
-
-    return make_bib
-
-
 @pytest.fixture(scope="session")
 def fake_fetcher():
     return sierra_clients.SierraBibFetcher(session=FakeSierraSession())
@@ -351,8 +325,8 @@ def mocked_full_record_manager(mock_engine_with_workflow):
 
 
 def create_stub_bib(record_type: str):
-    number = random.randint(0, 100)
-    barcode = f"33333{str(number).zfill(10)}"
+    number = random.randint(0, 10000)
+    barcode = f"33333{str(number).zfill(8)}"
     return models.DomainBib(
         library="nypl",
         collection="BL",

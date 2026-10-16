@@ -6,8 +6,8 @@ from overload_web.domain.pvf import aggregate, models
 
 
 def create_stub_bib(library, collection, record_type):
-    number = random.randint(0, 100)
-    barcode = f"33333{str(number).zfill(10)}"
+    number = random.randint(0, 10000)
+    barcode = f"33333{str(number).zfill(8)}"
     return models.DomainBib(
         library=library,
         collection=collection,
