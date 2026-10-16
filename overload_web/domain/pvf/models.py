@@ -547,7 +547,7 @@ class WorkflowStateBase:
     batch_id: str | None = None
     error_message: str | None = None
     record_type: str | None = None
-    matchpoints: dict[str, str | None] = field(default_factory=dict)
+    matchpoints: dict[str, str] = field(default_factory=dict)
     template_data: dict[str, Any] = field(default_factory=dict)
 
 
