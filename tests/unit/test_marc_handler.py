@@ -221,16 +221,11 @@ class TestMarcParser:
             "blanket_po",
         ]
 
-    def test_write(self, mock_marc):
-        out = self.ENGINE.write([mock_marc.as_marc()])
-        assert isinstance(out, bytes)
-
 
 class TestMarcUpdater:
-    ENGINE = marc_handler.MarcUpdater()
-
     def test_create_bib_from_domain(self, mock_marc):
-        bib = self.ENGINE.create_bib_from_domain(
+        updater = marc_handler.MarcUpdater()
+        bib = updater.create_bib_from_domain(
             library=mock_marc.library, binary_data=mock_marc.as_marc()
         )
         assert hasattr(bib, "control_number")
@@ -242,7 +237,8 @@ class TestMarcUpdater:
         updates = models.FieldUpdates.add_vendor_fields(
             [{"tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;"}]
         )
-        self.ENGINE.update_fields(bib=bib, field_updates=updates)
+        updater = marc_handler.MarcUpdater()
+        updater.update_fields(bib=bib, field_updates=updates)
         assert [i.format_field() for i in bib.get_fields("949")] == [
             "333331234567890",
             "*b2=a;",
@@ -254,7 +250,8 @@ class TestMarcUpdater:
         bib = copy.deepcopy(stub_marc)
         original_945s = bib.get_fields("945")
         update = models.FieldUpdates.add_bib_id("b12345", "945")
-        self.ENGINE.update_fields(bib=bib, field_updates=[update])
+        updater = marc_handler.MarcUpdater()
+        updater.update_fields(bib=bib, field_updates=[update])
         assert [i.format_field() for i in bib.get_fields("945")] == ["b12345"]
         assert len(bib.get_fields("945")) > len(original_945s)
 
@@ -270,7 +267,8 @@ class TestMarcUpdater:
             )
         )
         original_949s = bib.get_fields("949")
-        self.ENGINE.update_fields(
+        updater = marc_handler.MarcUpdater()
+        updater.update_fields(
             bib,
             field_updates=[
                 models.FieldUpdates.add_command_tag(
@@ -297,7 +295,8 @@ class TestMarcUpdater:
     @pytest.mark.workflow(library="nypl", collection="BL", record_type="cat")
     def test_apply_field_updates_original_command_tag_not_found(self, stub_marc):
         bib = copy.deepcopy(stub_marc)
-        self.ENGINE.update_fields(
+        updater = marc_handler.MarcUpdater()
+        updater.update_fields(
             bib,
             field_updates=[
                 models.MarcFieldUpdateValues(
@@ -318,5 +317,6 @@ class TestMarcUpdater:
 
     def test_update_leader_encoding(self, mock_marc):
         bib = copy.deepcopy(mock_marc)
-        self.ENGINE.update_leader_encoding(bib=bib, leader="00000cam  2200517 i 4500")
+        updater = marc_handler.MarcUpdater()
+        updater.update_leader_encoding(bib=bib, leader="00000cam  2200517 i 4500")
         assert bib.leader == "00000cam a2200517 i 4500"

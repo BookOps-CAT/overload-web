@@ -289,9 +289,6 @@ class BibParser:
             parsed.append(parsed_bib)
         return parsed
 
-    def write(self, records: list[models.DomainBib]) -> bytes:
-        return self.handler.write(records=[i.binary_data for i in records])
-
 
 class BibReviewer:
     def __init__(self, handler: ports.MarcUpdaterPort) -> None:
@@ -444,3 +441,21 @@ class BibUpdater:
         if self.library == "nypl" and self.collection is not None:
             updates.append(models.FieldUpdates.update_910_field(self.collection))
         return [i for i in updates if i]
+
+    def write(self, records: list[models.DomainBib]) -> bytes:
+        """
+        Serialize `DomainBib` objects into a binary MARC stream.
+
+        Args:
+            records:
+                A list `DomainBib` objects.
+
+        Returns:
+            MARC binary as an an in-memory file stream.
+        """
+        io_data = io.BytesIO()
+        for record in records:
+            io_data.write(record.binary_data)
+        io_data.seek(0)
+        out = io_data.getvalue()
+        return out

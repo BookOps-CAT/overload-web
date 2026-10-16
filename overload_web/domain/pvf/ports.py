@@ -188,10 +188,6 @@ class MarcParserPort(Protocol[U]):
 
     """Map an order to a dictionary following a set of rules."""
 
-    def write(self, records: list[bytes]) -> bytes: ...  # pragma:no branch
-
-    """Write `DomainBib` objects to single binary object."""
-
 
 @runtime_checkable
 class MarcUpdaterPort(Protocol[U]):

@@ -22,7 +22,6 @@ Classes:
 
 from __future__ import annotations
 
-import io
 import logging
 from typing import Any, BinaryIO, Protocol
 
@@ -160,24 +159,6 @@ class MarcParser(ports.MarcParserPort):
                 field = getattr(obj, k)
                 for code, attr in v.items():
                     out[attr] = field.get(code) if field else None
-        return out
-
-    def write(self, records: list[bytes]) -> bytes:
-        """
-        Serialize `DomainBib` objects into a binary MARC stream.
-
-        Args:
-            records:
-                A list `DomainBib` objects.
-
-        Returns:
-            MARC binary as an an in-memory file stream.
-        """
-        io_data = io.BytesIO()
-        for record in records:
-            io_data.write(record)
-        io_data.seek(0)
-        out = io_data.getvalue()
         return out
 
 

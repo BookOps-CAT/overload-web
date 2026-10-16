@@ -37,7 +37,7 @@ def bootstrap_message_bus(
     bus.register_command(
         commands.UpdateAndOutputOrderLevelRecords,
         lambda cmd: handlers.UpdateAndOutputOrderLevelRecordsHandler.handle(
-            bus=bus, cmd=cmd, parser=parser, uow=uow, updater=updater, storage=storage
+            bus=bus, cmd=cmd, uow=uow, updater=updater, storage=storage
         ),
     )
 
@@ -56,7 +56,7 @@ def bootstrap_message_bus(
     bus.register_command(
         commands.UpdateAndOutputFullLevelRecords,
         lambda cmd: handlers.UpdateAndOutputFullLevelRecordsHandler.handle(
-            bus=bus, cmd=cmd, parser=parser, uow=uow, updater=updater, storage=storage
+            bus=bus, cmd=cmd, uow=uow, updater=updater, storage=storage
         ),
     )
 

@@ -84,14 +84,13 @@ class UpdateAndOutputOrderLevelRecordsHandler:
     def handle(
         bus: ports.MessageBusPort,
         cmd: commands.UpdateAndOutputOrderLevelRecords,
-        parser: services.BibParser,
         uow: ports.UnitOfWorkProtocol,
         updater: services.BibUpdater,
         storage: ports.FileStorage,
     ):
         job = storage.load_intermediate_records(id=cmd.workflow_id)
         processed_batch = job.apply_updates_and_create_batch(
-            parser=parser, template_data=cmd.template_data, updater=updater
+            template_data=cmd.template_data, updater=updater
         )
         with uow:
             db_batch = uow.processed_batches.save(processed_batch)
@@ -109,15 +108,12 @@ class UpdateAndOutputFullLevelRecordsHandler:
     def handle(
         bus: ports.MessageBusPort,
         cmd: commands.UpdateAndOutputFullLevelRecords,
-        parser: services.BibParser,
         uow: ports.UnitOfWorkProtocol,
         updater: services.BibUpdater,
         storage: ports.FileStorage,
     ):
         job = storage.load_intermediate_records(id=cmd.workflow_id)
-        processed_batch = job.apply_updates_and_create_batch(
-            parser=parser, updater=updater
-        )
+        processed_batch = job.apply_updates_and_create_batch(updater=updater)
         with uow:
             db_batch = uow.processed_batches.save(processed_batch)
             batch_id = db_batch.id

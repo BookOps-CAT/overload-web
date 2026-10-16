@@ -77,11 +77,9 @@ class TestOrderLevelJob:
         assert stub_parsed_aggregate.file_records["foo.mrc"][0].bib_id is None
 
     @pytest.mark.workflow(record_type="acq")
-    def test_apply_updates_and_create_batch(
-        self, stub_matched_aggregate, fake_parser, fake_updater
-    ):
+    def test_apply_updates_and_create_batch(self, stub_matched_aggregate, fake_updater):
         processed_batch = stub_matched_aggregate.apply_updates_and_create_batch(
-            parser=fake_parser, template_data={"format": "a"}, updater=fake_updater
+            template_data={"format": "a"}, updater=fake_updater
         )
         assert stub_matched_aggregate.missing_barcodes == []
         assert len(stub_matched_aggregate.processed_files) == 1
@@ -110,11 +108,9 @@ class TestFullRecordJob:
         assert stub_parsed_aggregate.records[0].bib_id == "12345"
 
     @pytest.mark.workflow(record_type="cat")
-    def test_apply_updates_and_create_batch(
-        self, stub_matched_aggregate, fake_parser, fake_updater
-    ):
+    def test_apply_updates_and_create_batch(self, stub_matched_aggregate, fake_updater):
         processed_batch = stub_matched_aggregate.apply_updates_and_create_batch(
-            parser=fake_parser, updater=fake_updater
+            updater=fake_updater
         )
         assert stub_matched_aggregate.missing_barcodes == []
         assert len(stub_matched_aggregate.processed_files) == 3

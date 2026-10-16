@@ -103,10 +103,7 @@ class OrderLevelJob(AbstractProcessingJob):
                 self.report_data.append(analysis.to_dict())
 
     def apply_updates_and_create_batch(
-        self,
-        parser: services.BibParser,
-        template_data: dict[str, Any],
-        updater: services.BibUpdater,
+        self, template_data: dict[str, Any], updater: services.BibUpdater
     ) -> ProcessedFileBatch:
         """The core domain logic loop."""
         for file_name, records in self.file_records.items():
@@ -115,7 +112,7 @@ class OrderLevelJob(AbstractProcessingJob):
                     record=bib, template_data=template_data
                 )
                 updater.apply_field_updates(record=bib, updates=updates)
-            out_binary = parser.write(records)
+            out_binary = updater.write(records)
             self.processed_files.append(
                 ProcessedFile(file_name=file_name, records=out_binary)
             )
@@ -159,7 +156,7 @@ class FullRecordJob(AbstractProcessingJob):
             self.report_data.append(analysis.to_dict())
 
     def apply_updates_and_create_batch(
-        self, parser: services.BibParser, updater: services.BibUpdater
+        self, updater: services.BibUpdater
     ) -> ProcessedFileBatch:
         reviewer = services.BibReviewer(handler=updater.handler)
         for bib in self.records:
@@ -175,7 +172,7 @@ class FullRecordJob(AbstractProcessingJob):
         deduplicated = reviewer.deduplicate(reviewed)
         files = [
             ProcessedFile(
-                file_name=f"{self.out_file_name}-{k}.mrc", records=parser.write(v)
+                file_name=f"{self.out_file_name}-{k}.mrc", records=updater.write(v)
             )
             for k, v in deduplicated.items()
         ]

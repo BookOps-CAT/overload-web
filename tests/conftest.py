@@ -490,9 +490,6 @@ class FakeParser(services.BibParser):
     def parse_marc_data(self, data, vendor="UNKNOWN"):
         return [create_stub_bib("cat") for _ in [None] * self.count]
 
-    def write(self, records):
-        return b""
-
 
 class FakeUpdater(services.BibUpdater):
     def __init__(self):
@@ -506,6 +503,9 @@ class FakeUpdater(services.BibUpdater):
 
     def get_order_level_updates(self, record, template_data):
         return []
+
+    def write(self, records):
+        return b""
 
 
 class FakeBatchRepository(unit_of_work.PVFBatchRepository):
@@ -635,7 +635,6 @@ def stub_manager():
         lambda cmd: handlers.UpdateAndOutputOrderLevelRecordsHandler.handle(
             bus=bus,
             cmd=cmd,
-            parser=parser,
             uow=uow,
             updater=updater,
             storage=FakeFileStorageWithOrderLevelParsedFiles(),
@@ -655,7 +654,6 @@ def stub_manager():
         lambda cmd: handlers.UpdateAndOutputFullLevelRecordsHandler.handle(
             bus=bus,
             cmd=cmd,
-            parser=parser,
             uow=uow,
             updater=updater,
             storage=FakeFileStorageWithFullParsedFiles(),

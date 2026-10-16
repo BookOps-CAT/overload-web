@@ -498,39 +498,23 @@ class TestBibParser:
         assert len(caplog.records) == 1
         assert "Vendor record parsed: " in caplog.records[0].msg
 
-    @pytest.mark.workflow(library="nypl", collection="BL", record_type="acq")
-    def test_write(self, get_constants, stub_domain_bib):
-        record = stub_domain_bib("acq")
-        rules = get_constants["parsing_rules"]
-        parser = services.BibParser(
-            bib_mapping=rules["bib_mapping"],
-            library=record.library,
-            collection=record.collection,
-            record_type="acq",
-            order_mapping=rules["order_mapping"],
-            vendor_mapping=rules["vendor_mapping"],
-            handler=self.ENGINE,
-        )
-        out = parser.write(records=[record])
-        assert isinstance(out, bytes)
-
 
 class TestBibReviewer:
-    REVIEWER = services.BibReviewer(handler=marc_handler.MarcUpdater())
-
     def test_dedupe_attach(self, full_bib_949_item):
         bib = full_bib_949_item("123456789")
         bib.action = "attach"
-        reviewed = self.REVIEWER.review_batch(records=[bib])
-        processed = self.REVIEWER.deduplicate(reviewed)
+        reviewer = services.BibReviewer(handler=marc_handler.MarcUpdater())
+        reviewed = reviewer.review_batch(records=[bib])
+        processed = reviewer.deduplicate(reviewed)
         assert len(processed["NEW"]) == 0
         assert len(processed["DUP"]) == 1
         assert len(processed["DEDUPED"]) == 0
 
     def test_dedupe_insert(self, full_bib_949_item):
+        reviewer = services.BibReviewer(handler=marc_handler.MarcUpdater())
         bib = full_bib_949_item("123456789")
-        reviewed = self.REVIEWER.review_batch(records=[bib])
-        processed = self.REVIEWER.deduplicate(reviewed)
+        reviewed = reviewer.review_batch(records=[bib])
+        processed = reviewer.deduplicate(reviewed)
         assert len(processed["NEW"]) == 1
         assert len(processed["DUP"]) == 0
         assert len(processed["DEDUPED"]) == 0
@@ -538,8 +522,9 @@ class TestBibReviewer:
     def test_dedupe_combine_bibs(self, full_bib_949_item):
         bib1 = full_bib_949_item("123456789")
         bib2 = full_bib_949_item("123456789")
-        reviewed = self.REVIEWER.review_batch(records=[bib1, bib2])
-        processed = self.REVIEWER.deduplicate(reviewed)
+        reviewer = services.BibReviewer(handler=marc_handler.MarcUpdater())
+        reviewed = reviewer.review_batch(records=[bib1, bib2])
+        processed = reviewer.deduplicate(reviewed)
         combined_rec = processed["DEDUPED"][0]
         deduped = Bib(combined_rec.binary_data, library=combined_rec.library)
         new_ctrl_nums = [i.control_number for i in processed["NEW"]]
@@ -556,8 +541,9 @@ class TestBibReviewer:
     def test_dedupe_combine_bpl_bibs(self, full_bib_960_item):
         bib1 = full_bib_960_item("123456789")
         bib2 = full_bib_960_item("123456789")
-        reviewed = self.REVIEWER.review_batch(records=[bib1, bib2])
-        processed = self.REVIEWER.deduplicate(reviewed)
+        reviewer = services.BibReviewer(handler=marc_handler.MarcUpdater())
+        reviewed = reviewer.review_batch(records=[bib1, bib2])
+        processed = reviewer.deduplicate(reviewed)
         combined_rec = processed["DEDUPED"][0]
         deduped = Bib(combined_rec.binary_data, library=combined_rec.library)
         new_ctrl_nums = [i.control_number for i in processed["NEW"]]
@@ -576,8 +562,9 @@ class TestBibReviewer:
         bib1a = full_bib_949_item("123456789")
         bib1b = full_bib_949_item("123456789")
         bib2 = full_bib_949_item("987654321")
-        reviewed = self.REVIEWER.review_batch(records=[bib1a, bib1b, bib2])
-        processed = self.REVIEWER.deduplicate(reviewed)
+        reviewer = services.BibReviewer(handler=marc_handler.MarcUpdater())
+        reviewed = reviewer.review_batch(records=[bib1a, bib1b, bib2])
+        processed = reviewer.deduplicate(reviewed)
         new_ctrl_nums = [i.control_number for i in processed["NEW"]]
         deduped_ctrl_nums = [i.control_number for i in processed["DEDUPED"]]
         assert len(processed["NEW"]) == 3
@@ -593,10 +580,9 @@ class TestBibReviewer:
         bib3 = full_bib_949_item(None)
         bib4 = full_bib_949_item("987654321")
         bib4.control_number = "987654321"
-        reviewed = self.REVIEWER.review_batch(
-            records=[bib_1a, bib_1b, bib2, bib3, bib4]
-        )
-        processed = self.REVIEWER.deduplicate(reviewed)
+        reviewer = services.BibReviewer(handler=marc_handler.MarcUpdater())
+        reviewed = reviewer.review_batch(records=[bib_1a, bib_1b, bib2, bib3, bib4])
+        processed = reviewer.deduplicate(reviewed)
         new_ctrl_nums = [i.control_number for i in processed["NEW"]]
         deduped_ctrl_nums = [i.control_number for i in processed["DEDUPED"]]
         assert len(processed["NEW"]) == 5
@@ -1042,3 +1028,9 @@ class TestBibUpdater:
         cat_bib = stub_domain_bib("cat")
         updates = stub_updater.get_full_record_updates(record=cat_bib)
         stub_updater.apply_field_updates(record=cat_bib, updates=updates)
+
+    @pytest.mark.workflow(library="nypl", collection="BL", record_type="acq")
+    def test_write(self, stub_updater, stub_domain_bib):
+        record = stub_domain_bib("acq")
+        out = stub_updater.write(records=[record])
+        assert isinstance(out, bytes)
