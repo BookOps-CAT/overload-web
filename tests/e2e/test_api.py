@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
-from sqlmodel import SQLModel, create_engine
+from sqlmodel import create_engine
 
 from overload_web.application.pvf import (
     file_handling,
@@ -12,14 +12,6 @@ from overload_web.application.pvf import (
 from overload_web.domain.pvf import files
 from overload_web.infrastructure import tables
 from overload_web.main import app
-from overload_web.presentation import pvf_deps
-
-
-def mock_engine():
-    engine = create_engine("sqlite:///:memory:")
-    SQLModel.metadata.create_all(engine)
-    yield engine
-    engine.dispose()
 
 
 class FakeFetcher:
@@ -48,24 +40,36 @@ class FakeFileStorage:
         return b"foo"
 
 
-def test_api_startup(monkeypatch):
-    def mock_engine(*args, **kwargs):
-        return create_engine("sqlite:///:memory:")
+@pytest.fixture
+def overrides(monkeypatch):
+    def fetcher(*args, **kwargs):
+        return FakeFetcher()
 
-    monkeypatch.setattr(pvf_deps, "create_engine", mock_engine)
+    def retriever(*args, **kwargs):
+        return FakeFileRetriever()
 
-    with TestClient(app) as client:
-        response = client.get("/")
-        assert response.status_code == 200
+    def storage(*args, **kwargs):
+        return FakeFileStorage()
+
+    monkeypatch.setattr(
+        "overload_web.infrastructure.sierra_clients.FetcherFactory.make", fetcher
+    )
+    monkeypatch.setattr(
+        "overload_web.infrastructure.file_io.SFTPFileRetriever.create_retriever_for_vendor",
+        retriever,
+    )
+    monkeypatch.setattr("overload_web.infrastructure.file_io.LocalFileStorage", storage)
 
 
+@pytest.mark.usefixtures("overrides")
 class TestApp:
     client = TestClient(app)
-    app.dependency_overrides[pvf_deps.get_engine] = mock_engine
-    app.dependency_overrides[pvf_deps.remote_file_retriever] = FakeFileRetriever
-    app.dependency_overrides[pvf_deps.get_fetcher] = FakeFetcher
-    app.dependency_overrides[pvf_deps.local_file_storage] = FakeFileStorage
+    # app.dependency_overrides[pvf_deps.get_engine] = mock_engine
+    # app.dependency_overrides[pvf_deps.remote_file_retriever] = FakeFileRetriever
+    # app.dependency_overrides[pvf_deps.get_fetcher] = FakeFetcher
+    # app.dependency_overrides[pvf_deps.local_file_storage] = FakeFileStorage
     app.state.workflow_id = 1
+    app.state.engine = create_engine("sqlite:///:memory:")
     base_url = client.base_url
 
     def test_files_router_list_remote_files_get(self, mocker):
@@ -450,3 +454,15 @@ class TestApp:
         context = response.context
         assert response.status_code == 200
         assert len(context["wc2s_results"]) > 0
+
+    def test_api_startup(self, monkeypatch):
+        def mock_engine(*args, **kwargs):
+            return create_engine("sqlite:///:memory:")
+
+        monkeypatch.setattr(
+            "overload_web.presentation.pvf_deps.create_engine", mock_engine
+        )
+
+        with TestClient(app) as client:
+            response = client.get("/")
+            assert response.status_code == 200
