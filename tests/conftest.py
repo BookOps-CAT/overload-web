@@ -509,8 +509,36 @@ class FakeUpdater(services.BibUpdater):
 
 
 class FakeBatchRepository(unit_of_work.PVFBatchRepository):
+    BATCH = tables.PVFBatch(
+        files=[tables.ProcessedFileModel(file_name="foo.mrc", records=b"")],
+        stats=[
+            {
+                "action": "insert",
+                "call_number": "Foo",
+                "call_number_match": False,
+                "duplicate_records": [],
+                "mixed": [],
+                "other": [],
+                "resource_id": "12345",
+                "target_bib_id": "23456",
+                "target_call_no": "Foo",
+                "target_title": None,
+                "updated_by_vendor": False,
+                "vendor": "UNKNOWN",
+            }
+        ],
+        file_names=["foo.mrc"],
+        total_files=1,
+        total_records=1,
+        missing_barcodes=[],
+        processing_integrity=True,
+    )
+
     def __init__(self):
         self.session = None
+
+    def get(self, id):
+        return self.BATCH
 
     def save(self, obj):
         batch = obj
