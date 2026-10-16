@@ -363,7 +363,7 @@ class TestApp:
 
     def test_pvf_router_workflow_status_check_pending(self, mocker, caplog):
         mock_obj = mocker.Mock(
-            return_value=tables.WorkflowState(id="123", status="PENDING")
+            return_value=tables.WorkflowStateModel(id="123", status="PENDING")
         )
         mocker.patch("overload_web.infrastructure.unit_of_work.Session.get", mock_obj)
         response = self.client.get("/pvf/workflow/123/status")
@@ -373,7 +373,9 @@ class TestApp:
 
     def test_pvf_router_workflow_status_check_completed(self, mocker, caplog):
         mock_obj = mocker.Mock(
-            return_value=tables.WorkflowState(id="123", status="COMPLETED", batch_id=1)
+            return_value=tables.WorkflowStateModel(
+                id="123", status="COMPLETED", batch_id=1
+            )
         )
         mocker.patch("overload_web.infrastructure.unit_of_work.Session.get", mock_obj)
         response = self.client.get("/pvf/workflow/123/status")
@@ -390,7 +392,7 @@ class TestApp:
 
     def test_pvf_router_workflow_status_check_failed(self, mocker):
         mock_obj = mocker.Mock(
-            return_value=tables.WorkflowState(
+            return_value=tables.WorkflowStateModel(
                 id="123", status="FAILED", error_message="Workflow failed"
             )
         )

@@ -84,7 +84,7 @@ class IncomingFileRepository(ports.IncomingFileRepositoryProtocol):
             obj: the `IncomingFileModel` object to save.
 
         Returns:
-            The `IncomingFileModel` data as a dictionary.
+            The new `IncomingFileModel` data.
         """
         valid_obj = tables.IncomingFileModel.model_validate(obj, from_attributes=True)
         self.session.add(valid_obj)
@@ -109,13 +109,13 @@ class OrderTemplateRepository(ports.TemplateRepositoryProtocol):
 
     def get(self, id: str | int) -> tables.TemplateModel | None:
         """
-        Retrieve an `OrderTemplate` object by its ID.
+        Retrieve an `TemplateModel` object by its ID.
 
         Args:
-            id: the primary key of the `OrderTemplate`.
+            id: the primary key of the `TemplateModel`.
 
         Returns:
-            a `OrderTemplate` instance as a dictionary or `None` if not found.
+            a `TemplateModel` or `None` if not found.
         """
         template = self.session.get(tables.TemplateModel, id)
         return template if template else None
@@ -124,14 +124,14 @@ class OrderTemplateRepository(ports.TemplateRepositoryProtocol):
         self, offset: int | None = 0, limit: int | None = 5
     ) -> Sequence[tables.TemplateModel]:
         """
-        Retrieve all `OrderTemplate` objects in the database.
+        Retrieve all `TemplateModel` objects in the database.
 
         Args:
-            offset: start position of `OrderTemplate` objects to return
-            limit: the maximum number of `OrderTemplate` objects to return
+            offset: start position of `TemplateModel` objects to return
+            limit: the maximum number of `TemplateModel` objects to return
 
         Returns:
-            a sequence of `OrderTemplate` objects.
+            a sequence of `TemplateModel` objects.
         """
         statement = select(tables.TemplateModel).offset(offset).limit(limit)
         results = self.session.exec(statement)
@@ -146,7 +146,7 @@ class OrderTemplateRepository(ports.TemplateRepositoryProtocol):
             obj: the `TemplateModel` object to save.
 
         Returns:
-            The `TemplateModel` data as a dictionary.
+            The new `TemplateModel` object.
         """
         valid_obj = tables.TemplateModel.model_validate(obj, from_attributes=True)
         self.session.add(valid_obj)
@@ -156,7 +156,7 @@ class OrderTemplateRepository(ports.TemplateRepositoryProtocol):
 
     def update(self, data: SQLModel, id: str) -> tables.TemplateModel | None:
         """
-        Updates an existing `OrderTemplate` in the database.
+        Updates an existing `TemplateModel` in the database.
 
         Args:
             data: the data to be used to update the existing template.
@@ -197,7 +197,7 @@ class PVFBatchRepository(ports.BatchRepositoryProtocol):
             id: the primary key of the `PVFBatch`.
 
         Returns:
-            a `PVFBatch` instance as a dictionary or `None` if not found.
+            a `PVFBatch` object or `None` if not found.
         """
         batch = self.session.get(tables.PVFBatch, id)
         return batch if batch else None
@@ -210,7 +210,7 @@ class PVFBatchRepository(ports.BatchRepositoryProtocol):
             obj: the `PVFBatch` object to save.
 
         Returns:
-            The `PVFBatch` data as a dictionary.
+            The new `PVFBatch` object.
         """
         valid_files = [
             tables.ProcessedFileModel.model_validate(i, from_attributes=True)
@@ -235,50 +235,53 @@ class WorkflowStatusRepository(ports.WorkflowRepositoryProtocol):
     def __init__(self, session: Session):
         self.session = session
 
-    def get(self, id: str | int) -> tables.WorkflowState | None:
+    def get(self, id: str | int) -> tables.WorkflowStateModel | None:
         """
-        Retrieve an `WorkflowState` object by its ID.
+        Retrieve an `WorkflowStateModel` object by its ID.
 
         Args:
-            id: the primary key of the `WorkflowState`.
+            id: the primary key of the `WorkflowStateModel`.
 
         Returns:
-            a `WorkflowState` instance as a dictionary or `None` if not found.
+            a `WorkflowStateModel` or `None` if not found.
         """
-        workflow = self.session.get(tables.WorkflowState, id)
+        workflow = self.session.get(tables.WorkflowStateModel, id)
         return workflow if workflow else None
 
-    def save(self, obj: tables.WorkflowState) -> tables.WorkflowState:
+    def save(self, obj: tables.WorkflowStateModel) -> tables.WorkflowStateModel:
         """
-        Adds a new `WorkflowState` to the database.
+        Adds a new `WorkflowStateModel` to the database.
 
         Args:
-            obj: the `WorkflowState` object to save.
+            obj: the `WorkflowStateModel` object to save.
 
         Returns:
-            The `WorkflowState` data as a dictionary.
+            The new `WorkflowStateModel` object.
         """
-        valid_obj = tables.WorkflowState.model_validate(obj, from_attributes=True)
+        valid_obj = tables.WorkflowStateModel.model_validate(obj, from_attributes=True)
         self.session.add(valid_obj)
         self.session.flush()
         self.session.refresh(valid_obj)
         return valid_obj
 
-    def update(self, data: SQLModel, id: str) -> tables.WorkflowState | None:
+    def update(self, data: SQLModel, id: str) -> tables.WorkflowStateModel | None:
         """
-        Updates an existing `WorkflowState` in the database.
+        Updates an existing `WorkflowStateModel` in the database.
 
         Args:
             data: the data to be used to update the existing workflow.
             id: the id of the workflow to be updated
         Returns:
-            a `WorkflowState` instance or `None` if not found.
+            a `WorkflowStateModel` instance or `None` if not found.
         """
-        workflow = self.session.get(tables.WorkflowState, id)
+        workflow = self.session.get(tables.WorkflowStateModel, id)
         if not workflow:
             logger.error(f"Workflow '{id}' does not exist")
         else:
-            patch_data = data.model_dump(exclude_unset=True)
+            valid_obj = tables.WorkflowUpdateModel.model_validate(
+                data, from_attributes=True
+            )
+            patch_data = valid_obj.model_dump(exclude_unset=True)
             workflow.sqlmodel_update(patch_data)
             self.session.add(workflow)
             self.session.flush()

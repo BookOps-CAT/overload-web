@@ -395,7 +395,7 @@ def mock_engine_with_workflow(mock_engine, mocker):
         )
     )
     workflow = mocker.Mock(
-        return_value=tables.WorkflowState(id="1", status="UPDATING", batch_id=1)
+        return_value=tables.WorkflowStateModel(id="1", status="UPDATING", batch_id=1)
     )
     mocker.patch("overload_web.infrastructure.unit_of_work.Session.get", workflow)
     mocker.patch("overload_web.infrastructure.unit_of_work.Session.flush", mock_obj)

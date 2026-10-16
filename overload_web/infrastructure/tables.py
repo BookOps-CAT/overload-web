@@ -23,6 +23,49 @@ from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 logger = logging.getLogger(__name__)
 
 
+class IncomingFileModel(SQLModel, table=True):
+    __tablename__ = "incoming_files"
+    id: str = Field(default=None, primary_key=True, index=True)
+    filename: str = Field(nullable=False)
+    workflow_id: str = Field(nullable=False, index=True, foreign_key="workflows.id")
+    source: str = Field(nullable=False)
+    reference: str = Field(nullable=False)
+    workflow: "WorkflowStateModel" = Relationship(back_populates="files")
+
+
+class ProcessedFileModel(SQLModel, table=True):
+    """A table model representing a processed MARC file."""
+
+    __tablename__ = "files"
+
+    id: int | None = Field(default=None, primary_key=True, index=True, exclude=True)
+    file_name: str = Field(nullable=False, index=True)
+    records: bytes = Field(nullable=False)
+
+    batch_id: int = Field(default=None, foreign_key="batches.id", exclude=True)
+    batch: "PVFBatch" = Relationship(back_populates="files")
+
+
+class PVFBatch(SQLModel, table=True):
+    """
+    A table model representing a one or more MARC files and their associated
+    processing statistics for a single process vendor file workflow.
+    """
+
+    __tablename__ = "batches"
+
+    id: int = Field(default=None, primary_key=True, index=True)
+    files: list["ProcessedFileModel"] = Relationship(
+        back_populates="batch", sa_relationship_kwargs={"lazy": "selectin"}
+    )
+    stats: list[dict[str, Any]] = Field(sa_column=Column(JSON))
+    file_names: list[str | None] = Field(sa_column=Column(JSON))
+    total_files: int
+    total_records: int
+    missing_barcodes: list[str | None] | None = Field(sa_column=Column(JSON))
+    processing_integrity: bool | None
+
+
 class _TemplateModelBase(SQLModel):
     """
     A reusable template for applying consistent values to orders.
@@ -72,60 +115,22 @@ class TemplateModel(_TemplateModelBase, table=True):
     id: int = Field(default=None, primary_key=True, index=True)
 
 
-class IncomingFileModel(SQLModel, table=True):
-    __tablename__ = "incoming_files"
-    id: str = Field(default=None, primary_key=True, index=True)
-    filename: str = Field(nullable=False)
-    workflow_id: str = Field(nullable=False, index=True, foreign_key="workflows.id")
-    source: str = Field(nullable=False)
-    reference: str = Field(nullable=False)
-    workflow: "WorkflowState" = Relationship(back_populates="files")
-
-
-class ProcessedFileModel(SQLModel, table=True):
-    """A table model representing a processed MARC file."""
-
-    __tablename__ = "files"
-
-    id: int | None = Field(default=None, primary_key=True, index=True, exclude=True)
-    file_name: str = Field(nullable=False, index=True)
-    records: bytes = Field(nullable=False)
-
-    batch_id: int = Field(default=None, foreign_key="batches.id", exclude=True)
-    batch: "PVFBatch" = Relationship(back_populates="files")
-
-
-class PVFBatch(SQLModel, table=True):
-    """
-    A table model representing a one or more MARC files and their associated
-    processing statistics for a single process vendor file workflow.
-    """
-
-    __tablename__ = "batches"
-
-    id: int = Field(default=None, primary_key=True, index=True)
-    files: list["ProcessedFileModel"] = Relationship(
-        back_populates="batch", sa_relationship_kwargs={"lazy": "selectin"}
-    )
-    stats: list[dict[str, Any]] = Field(sa_column=Column(JSON))
-    file_names: list[str | None] = Field(sa_column=Column(JSON))
-    total_files: int
-    total_records: int
-    missing_barcodes: list[str | None] | None = Field(sa_column=Column(JSON))
-    processing_integrity: bool | None
-
-
-class WorkflowState(SQLModel, table=True):
+class WorkflowUpdateModel(SQLModel):
     """Tracks the state of a long-running process."""
 
-    __tablename__ = "workflows"
-    id: str = Field(primary_key=True, index=True)
     status: str = Field(nullable=False, index=True)
     batch_id: int | None = Field(default=None)
     error_message: str | None = Field(default=None)
     matchpoints: dict[str, str | None] | None = Field(default=None, sa_type=JSON)
     record_type: str | None = Field(default=None)
     template_data: dict[str, Any] | None = Field(default=None, sa_type=JSON)
+
+
+class WorkflowStateModel(WorkflowUpdateModel, table=True):
+    """Tracks the state of a long-running process."""
+
+    __tablename__ = "workflows"
+    id: str = Field(primary_key=True, index=True)
     files: list["IncomingFileModel"] = Relationship(
         back_populates="workflow", sa_relationship_kwargs={"lazy": "selectin"}
     )
