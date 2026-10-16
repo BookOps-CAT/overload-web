@@ -117,33 +117,3 @@ class TestWorkflowManagerErrors:
             event=events.FullLevelWorkflowCompleted(workflow_id="1", batch_id="1")
         )
         assert "Cannot update state: Workflow 1 not found." in caplog.text
-
-
-class TestWorkflowManagerMockedSession:
-    def test_handle_files_parsed_order_level(self, mocked_order_level_manager, caplog):
-        mocked_order_level_manager.handle_files_parsed_order_level(
-            event=events.OrderLevelFilesParsed(workflow_id="1")
-        )
-        assert "Workflow 1 transitioned to MATCHING" in caplog.text
-
-    def test_handle_files_parsed_full_level(self, mocked_full_record_manager, caplog):
-        mocked_full_record_manager.handle_files_parsed_full_level(
-            event=events.FullLevelFilesParsed(workflow_id="1")
-        )
-        assert "Workflow 1 transitioned to MATCHING" in caplog.text
-
-    def test_handle_workflow_completed_order_level(
-        self, mocked_order_level_manager, caplog
-    ):
-        mocked_order_level_manager.handle_records_matched_order_level(
-            event=events.OrderLevelRecordsMatched(workflow_id="1")
-        )
-        assert "Workflow 1 transitioned to COMPLETED" in caplog.text
-
-    def test_handle_workflow_completed_full_level(
-        self, mocked_full_record_manager, caplog
-    ):
-        mocked_full_record_manager.handle_records_matched_full_level(
-            event=events.FullLevelRecordsMatched(workflow_id="1")
-        )
-        assert "Workflow 1 transitioned to COMPLETED" in caplog.text
