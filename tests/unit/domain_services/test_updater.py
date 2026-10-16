@@ -9,30 +9,24 @@ from overload_web.infrastructure import marc_handler
 @pytest.fixture
 def stub_domain_bib(request):
     marker = request.node.get_closest_marker("workflow")
+    barcode = "333331234567890"
     bib = models.DomainBib(
         library=marker.kwargs["library"],
         collection=marker.kwargs["collection"],
-        isbn="9781234567890",
         title="Foo",
         record_type=marker.kwargs["record_type"],
         binary_data=b"",
-        barcodes=["333331234567890"],
+        barcodes=[barcode],
         orders=[],
         vendor_info=models.VendorInfo(name="UNKNOWN", bib_fields=[], matchpoints={}),
         parsed_fields=[],
     )
     bib.parsed_fields = [
-        models.ParsedField(tag="005", value="20200101010000.0"),
-        models.ParsedField(
-            tag="020",
-            indicators=(" ", " "),
-            subfields=[models.ParsedSubfield(code="i", value="9781234567890")],
-        ),
         models.ParsedField(
             tag="949",
             indicators=(" ", "1"),
-            subfields=[models.ParsedSubfield(code="i", value="333331234567890")],
-        ),
+            subfields=[models.ParsedSubfield(code="i", value=barcode)],
+        )
     ]
     bib.orders = [
         models.Order(
@@ -71,17 +65,16 @@ def stub_updater(request, get_constants):
     marker = request.node.get_closest_marker("workflow")
     collection = marker.kwargs["collection"]
     library = marker.kwargs["library"]
-    record_type = marker.kwargs["record_type"]
     constants = get_constants["constants"]
-    return services.BibUpdater(
-        library=library,
-        default_loc=constants["default_locations"][library].get(collection),
-        bib_id_tag=constants["bib_id_tag"][library],
-        order_mapping=constants["order_mapping"],
-        handler=marc_handler.MarcUpdater(),
-        record_type=record_type,
-        collection=collection,
-    )
+    kwargs = {
+        "default_loc": constants["default_locations"][library].get(collection),
+        "bib_id_tag": constants["bib_id_tag"][library],
+        "order_mapping": constants["order_mapping"],
+        "record_type": marker.kwargs["record_type"],
+        "collection": collection,
+        "library": library,
+    }
+    return services.BibUpdater(handler=marc_handler.MarcUpdater(), **kwargs)
 
 
 class TestBibUpdater:

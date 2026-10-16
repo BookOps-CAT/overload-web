@@ -122,43 +122,25 @@ def mock_marc(request) -> Bib:
 class TestBibParser:
     ENGINE = marc_handler.MarcParser()
 
-    @pytest.mark.workflow(record_type="cat")
-    def test_combine_marc_files(self, mock_marc, get_constants, request):
+    def test_combine_marc_files(self, mock_marc, get_constants):
         rules = get_constants["parsing_rules"]
-        marker = request.node.get_closest_marker("workflow")
-        record_type = marker.kwargs["record_type"]
-        parser = services.BibParser(
-            bib_mapping=rules["bib_mapping"],
-            library=mock_marc.library,
-            collection=mock_marc.collection,
-            record_type=record_type,
-            order_mapping=rules["order_mapping"],
-            vendor_mapping=rules["vendor_mapping"],
-            handler=self.ENGINE,
-        )
+        rules["library"] = mock_marc.library
+        rules["collection"] = mock_marc.collection
+        rules["record_type"] = "cat"
+        parser = services.BibParser(handler=marc_handler.MarcParser(), **rules)
         combined = parser.combine_marc_files(data=[mock_marc.as_marc()])
         assert len([i for i in combined]) > 1
 
-    @pytest.mark.workflow(record_type="sel")
-    def test_parse_marc_data_order_level_record(
-        self, mock_marc, get_constants, request, caplog
-    ):
+    def test_parse_marc_data_order_level_record(self, mock_marc, get_constants, caplog):
         rules = get_constants["parsing_rules"]
-        marker = request.node.get_closest_marker("workflow")
-        record_type = marker.kwargs["record_type"]
-        parser = services.BibParser(
-            bib_mapping=rules["bib_mapping"],
-            library=mock_marc.library,
-            collection=mock_marc.collection,
-            record_type=record_type,
-            order_mapping=rules["order_mapping"],
-            vendor_mapping=rules["vendor_mapping"],
-            handler=self.ENGINE,
-        )
+        rules["library"] = mock_marc.library
+        rules["collection"] = mock_marc.collection
+        rules["record_type"] = "sel"
+        parser = services.BibParser(handler=marc_handler.MarcParser(), **rules)
         records = parser.parse_marc_data(data=mock_marc.as_marc())
         assert len(records) == 1
         assert records[0].library == mock_marc.library
-        assert records[0].record_type == record_type
+        assert records[0].record_type == "sel"
         assert records[0].vendor_info is None
         assert records[0].vendor == "UNKNOWN"
         assert records[0].update_date == "20000101010001.0"
@@ -167,25 +149,16 @@ class TestBibParser:
         assert "Vendor record parsed: " in caplog.records[0].msg
 
     @pytest.mark.workflow(record_type="cat")
-    def test_parse_marc_data_cat_record(
-        self, mock_marc, get_constants, request, caplog
-    ):
+    def test_parse_marc_data_full_record(self, mock_marc, get_constants, caplog):
         rules = get_constants["parsing_rules"]
-        marker = request.node.get_closest_marker("workflow")
-        record_type = marker.kwargs["record_type"]
-        parser = services.BibParser(
-            bib_mapping=rules["bib_mapping"],
-            library=mock_marc.library,
-            collection=mock_marc.collection,
-            record_type=record_type,
-            order_mapping=rules["order_mapping"],
-            vendor_mapping=rules["vendor_mapping"],
-            handler=self.ENGINE,
-        )
+        rules["library"] = mock_marc.library
+        rules["collection"] = mock_marc.collection
+        rules["record_type"] = "cat"
+        parser = services.BibParser(handler=marc_handler.MarcParser(), **rules)
         records = parser.parse_marc_data(data=mock_marc.as_marc())
         assert len(records) == 1
         assert records[0].library == mock_marc.library
-        assert records[0].record_type == record_type
+        assert records[0].record_type == "cat"
         assert records[0].vendor_info.name == "UNKNOWN"
         assert records[0].update_date == "20000101010001.0"
         assert records[0].update_datetime == datetime.datetime(2000, 1, 1, 1, 0, 1, 0)
