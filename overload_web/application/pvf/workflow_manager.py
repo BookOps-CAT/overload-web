@@ -13,6 +13,19 @@ class WorkflowManager:
         self.bus = bus
         self.uow = uow
 
+    def handle_workflow_event(
+        self, id: str, state: models.WorkflowStateBase
+    ) -> models.WorkflowState | None:
+        """Handle an event triggered by the workflow."""
+        with self.uow:
+            new_state = self.uow.workflow_states.update(id=id, data=state)
+            self.uow.commit()
+            if not new_state:
+                logger.error(f"Cannot update state: Workflow {id} not found.")
+            else:
+                logger.info(f"Workflow {id} transitioned to {state.status}")
+        return new_state
+
     def handle_workflow_started_order_level(
         self,
         workflow_id: str,
@@ -21,17 +34,16 @@ class WorkflowManager:
         template_data: dict[str, Any],
     ) -> None:
         """Triggered by the FastAPI endpoint."""
-        new_status = models.WorkflowStatus.PROCESSING
-        new_state = models.WorkflowStateBase(
-            status=new_status, matchpoints=matchpoints, template_data=template_data
+        state = self.handle_workflow_event(
+            id=workflow_id,
+            state=models.WorkflowStateBase(
+                status=models.WorkflowStatus.PROCESSING,
+                matchpoints=matchpoints,
+                template_data=template_data,
+            ),
         )
-        with self.uow:
-            state = self.uow.workflow_states.update(id=workflow_id, data=new_state)
-            if not state:
-                logger.error(f"Cannot update state: Workflow {workflow_id} not found.")
-                return
-            self.uow.commit()
-            logger.info(f"Workflow {workflow_id} transitioned to {new_status}")
+        if not state:
+            return
         self.bus.send(
             commands.ParseOrderLevelFiles(workflow_id=workflow_id, vendor=vendor)
         )
@@ -39,113 +51,73 @@ class WorkflowManager:
     def handle_files_parsed_order_level(
         self, event: events.OrderLevelFilesParsed
     ) -> None:
-        new_status = models.WorkflowStatus.MATCHING
-        new_state = models.WorkflowStateBase(status=new_status)
-        with self.uow:
-            state = self.uow.workflow_states.update(
-                id=event.workflow_id, data=new_state
-            )
-            if not state:
-                logger.error(
-                    f"Cannot update state: Workflow {event.workflow_id} not found."
-                )
-                return
-            matchpoints = state.matchpoints
-            self.uow.commit()
-            logger.info(f"Workflow {event.workflow_id} transitioned to {new_status}")
+        state = self.handle_workflow_event(
+            id=event.workflow_id,
+            state=models.WorkflowStateBase(status=models.WorkflowStatus.MATCHING),
+        )
+        if not state:
+            return
         self.bus.send(
             commands.MatchOrderLevelRecords(
-                workflow_id=event.workflow_id, matchpoints=matchpoints
+                workflow_id=event.workflow_id, matchpoints=state.matchpoints
             )
         )
 
     def handle_records_matched_order_level(
         self, event: events.OrderLevelRecordsMatched
     ) -> None:
-        new_status = models.WorkflowStatus.UPDATING
-        new_state = models.WorkflowStateBase(status=new_status)
-        with self.uow:
-            state = self.uow.workflow_states.update(
-                id=event.workflow_id, data=new_state
-            )
-            if not state:
-                logger.error(
-                    f"Cannot update state: Workflow {event.workflow_id} not found."
-                )
-                return
-            template_data = state.template_data
-            self.uow.commit()
-            logger.info(f"Workflow {event.workflow_id} transitioned to {new_status}")
+        state = self.handle_workflow_event(
+            id=event.workflow_id,
+            state=models.WorkflowStateBase(status=models.WorkflowStatus.UPDATING),
+        )
+        if not state:
+            return
         self.bus.send(
             commands.UpdateAndOutputOrderLevelRecords(
-                workflow_id=event.workflow_id, template_data=template_data
+                workflow_id=event.workflow_id, template_data=state.template_data
             )
         )
 
     def handle_workflow_completed_order_level(
         self, event: events.OrderLevelWorkflowCompleted
     ) -> None:
-        new_status = models.WorkflowStatus.COMPLETED
-        new_state = models.WorkflowStateBase(status=new_status, batch_id=event.batch_id)
-        with self.uow:
-            state = self.uow.workflow_states.update(
-                id=event.workflow_id, data=new_state
-            )
-            if not state:
-                logger.error(
-                    f"Cannot update state: Workflow {event.workflow_id} not found."
-                )
-                return
-            self.uow.commit()
-            logger.info(f"Workflow {event.workflow_id} transitioned to {new_status}")
+        self.handle_workflow_event(
+            id=event.workflow_id,
+            state=models.WorkflowStateBase(
+                status=models.WorkflowStatus.COMPLETED, batch_id=event.batch_id
+            ),
+        )
 
     def handle_workflow_started_full_level(self, workflow_id: str) -> None:
         """Triggered by the FastAPI endpoint."""
-        new_status = models.WorkflowStatus.PROCESSING
-        new_state = models.WorkflowStateBase(status=new_status)
-        with self.uow:
-            state = self.uow.workflow_states.update(id=workflow_id, data=new_state)
-            if not state:
-                logger.error(f"Cannot update state: Workflow {workflow_id} not found.")
-                return
-            self.uow.commit()
-            logger.info(f"Workflow {workflow_id} transitioned to {new_status}")
+        state = self.handle_workflow_event(
+            id=workflow_id,
+            state=models.WorkflowStateBase(status=models.WorkflowStatus.PROCESSING),
+        )
+        if not state:
+            return
         self.bus.send(commands.ParseFullLevelFiles(workflow_id=workflow_id))
 
     def handle_files_parsed_full_level(
         self, event: events.FullLevelFilesParsed
     ) -> None:
-        new_status = models.WorkflowStatus.MATCHING
-        new_state = models.WorkflowStateBase(status=new_status)
-        with self.uow:
-            state = self.uow.workflow_states.update(
-                id=event.workflow_id, data=new_state
-            )
-            if not state:
-                logger.error(
-                    f"Cannot update state: Workflow {event.workflow_id} not found."
-                )
-                return
-            self.uow.commit()
-            logger.info(f"Workflow {event.workflow_id} transitioned to {new_status}")
+        state = self.handle_workflow_event(
+            id=event.workflow_id,
+            state=models.WorkflowStateBase(status=models.WorkflowStatus.MATCHING),
+        )
+        if not state:
+            return
         self.bus.send(commands.MatchFullLevelRecords(workflow_id=event.workflow_id))
 
     def handle_records_matched_full_level(
         self, event: events.FullLevelRecordsMatched
     ) -> None:
-        new_status = models.WorkflowStatus.UPDATING
-        new_state = models.WorkflowStateBase(status=new_status)
-        with self.uow:
-            state = self.uow.workflow_states.update(
-                id=event.workflow_id, data=new_state
-            )
-            if not state:
-                logger.error(
-                    f"Cannot update state: Workflow {event.workflow_id} not found."
-                )
-                return
-            self.uow.commit()
-            logger.info(f"Workflow {event.workflow_id} transitioned to {new_status}")
+        state = self.handle_workflow_event(
+            id=event.workflow_id,
+            state=models.WorkflowStateBase(status=models.WorkflowStatus.UPDATING),
+        )
+        if not state:
+            return
         self.bus.send(
             commands.UpdateAndOutputFullLevelRecords(workflow_id=event.workflow_id)
         )
@@ -153,16 +125,9 @@ class WorkflowManager:
     def handle_workflow_completed_full_level(
         self, event: events.FullLevelWorkflowCompleted
     ) -> None:
-        new_status = models.WorkflowStatus.COMPLETED
-        new_state = models.WorkflowStateBase(status=new_status, batch_id=event.batch_id)
-        with self.uow:
-            state = self.uow.workflow_states.update(
-                id=event.workflow_id, data=new_state
-            )
-            if not state:
-                logger.error(
-                    f"Cannot update state: Workflow {event.workflow_id} not found."
-                )
-                return
-            self.uow.commit()
-            logger.info(f"Workflow {event.workflow_id} transitioned to {new_status}")
+        self.handle_workflow_event(
+            id=event.workflow_id,
+            state=models.WorkflowStateBase(
+                status=models.WorkflowStatus.COMPLETED, batch_id=event.batch_id
+            ),
+        )
