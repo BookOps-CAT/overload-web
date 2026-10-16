@@ -121,7 +121,7 @@ class OrderTemplateRepository(ports.TemplateRepositoryProtocol):
         return template if template else None
 
     def list(
-        self, offset: int | None = 0, limit: int | None = 0
+        self, offset: int | None = 0, limit: int | None = 5
     ) -> Sequence[tables.TemplateModel]:
         """
         Retrieve all `OrderTemplate` objects in the database.
@@ -200,9 +200,7 @@ class PVFBatchRepository(ports.BatchRepositoryProtocol):
             a `PVFBatch` instance as a dictionary or `None` if not found.
         """
         batch = self.session.get(tables.PVFBatch, id)
-        if batch:
-            return batch
-        return None
+        return batch if batch else None
 
     def save(self, obj: tables.PVFBatch) -> tables.PVFBatch:
         """

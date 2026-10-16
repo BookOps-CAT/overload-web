@@ -539,14 +539,20 @@ class WorkflowStatus(StrEnum):
     FAILED = "FAILED"
 
 
-@dataclass
-class WorkflowState:
-    """Tracks the state of a long-running process."""
+@dataclass(kw_only=True)
+class WorkflowStateBase:
+    """Defines a base entity for a long-running process."""
 
-    id: str
     status: WorkflowStatus
     batch_id: str | None = None
     error_message: str | None = None
     record_type: str | None = None
     matchpoints: dict[str, str | None] = field(default_factory=dict)
     template_data: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(kw_only=True)
+class WorkflowState(WorkflowStateBase):
+    """Defines workflow state domain entity."""
+
+    id: str
