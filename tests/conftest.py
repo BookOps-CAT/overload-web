@@ -13,7 +13,7 @@ from sqlmodel import SQLModel, create_engine
 from overload_web.application.pvf import handlers
 from overload_web.application.pvf.process_manager import WorkflowManager
 from overload_web.bootstrap import bootstrap_message_bus
-from overload_web.domain.pvf import aggregate, commands, files, models, ports, services
+from overload_web.domain.pvf import aggregate, commands, models, ports, services
 from overload_web.infrastructure import oclc, sierra_clients, tables, unit_of_work
 
 
@@ -519,7 +519,7 @@ class FakeBatchRepository(unit_of_work.PVFBatchRepository):
 
 
 class FakeIncomingFileRepository(unit_of_work.IncomingFileRepository):
-    FILE = files.IncomingFile(
+    FILE = tables.IncomingFileModel(
         id="1",
         filename="foo.mrc",
         workflow_id="1",
@@ -530,10 +530,16 @@ class FakeIncomingFileRepository(unit_of_work.IncomingFileRepository):
     def __init__(self):
         self.session = None
 
+    def delete(self, id):
+        pass
+
     def list_by_id(self, id):
         files = self.FILE
         files.workflow_id = id
         return [files]
+
+    def save(self, obj):
+        return obj
 
 
 class FakeWorkflowRepository(unit_of_work.WorkflowStatusRepository):
@@ -660,6 +666,20 @@ def stub_manager():
         ),
     )
     return WorkflowManager(bus=bus, uow=uow)
+
+
+@pytest.fixture
+def fake_uow():
+    return FakeUnitOfWork()
+
+
+@pytest.fixture
+def fake_uow_no_data(monkeypatch, fake_uow):
+    def mock_get_data(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(FakeBatchRepository, "get", mock_get_data)
+    return fake_uow
 
 
 @pytest.fixture
