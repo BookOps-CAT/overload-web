@@ -1,124 +1,157 @@
 from __future__ import annotations
 
 import logging
+from typing import Protocol
 
 from overload_web.domain.pvf import aggregate, commands, events, ports, services
 
 logger = logging.getLogger(__name__)
 
 
-class ParseOrderLevelFilesHandler:
-    @staticmethod
-    def handle(
+class AbstractCommandHandler(Protocol):
+    def __call__(self, *args, **kwargs) -> None: ...  # pragma: no branch
+
+
+class ParseOrderLevelFilesHandler(AbstractCommandHandler):
+    def __init__(
+        self,
         bus: ports.MessageBusPort,
-        cmd: commands.ParseOrderLevelFiles,
+        uow: ports.UnitOfWorkProtocol,
         parser: services.BibParser,
         storage: ports.FileStorage,
-        uow: ports.UnitOfWorkProtocol,
     ):
+        self.bus = bus
+        self.uow = uow
+        self.storage = storage
+        self.parser = parser
+
+    def __call__(self, cmd: commands.ParseOrderLevelFiles):
         job = aggregate.OrderLevelJob(workflow_id=cmd.workflow_id, vendor=cmd.vendor)
 
-        with uow:
-            incoming_files = uow.incoming_files.list_by_id(id=cmd.workflow_id)
+        with self.uow:
+            incoming_files = self.uow.incoming_files.list_by_id(id=cmd.workflow_id)
             batches_data = {
-                i.filename: storage.load(i.reference) for i in incoming_files
+                i.filename: self.storage.load(i.reference) for i in incoming_files
             }
-            job.parse_files(batches_data=batches_data, parser=parser)
-            storage.save_intermediate_records(id=cmd.workflow_id, job=job)
-            uow.commit()
-        bus.publish(events.OrderLevelFilesParsed(workflow_id=cmd.workflow_id))
+            job.parse_files(batches_data=batches_data, parser=self.parser)
+            self.storage.save_intermediate_records(id=cmd.workflow_id, job=job)
+            self.uow.commit()
+        self.bus.publish(events.OrderLevelFilesParsed(workflow_id=cmd.workflow_id))
 
 
-class ParseFullLevelFilesHandler:
-    @staticmethod
-    def handle(
+class ParseFullLevelFilesHandler(AbstractCommandHandler):
+    def __init__(
+        self,
         bus: ports.MessageBusPort,
-        cmd: commands.ParseFullLevelFiles,
+        uow: ports.UnitOfWorkProtocol,
         parser: services.BibParser,
         storage: ports.FileStorage,
-        uow: ports.UnitOfWorkProtocol,
     ):
+        self.bus = bus
+        self.uow = uow
+        self.storage = storage
+        self.parser = parser
+
+    def __call__(self, cmd: commands.ParseFullLevelFiles):
         job = aggregate.FullRecordJob(workflow_id=cmd.workflow_id)
 
-        with uow:
-            incoming_files = uow.incoming_files.list_by_id(id=cmd.workflow_id)
+        with self.uow:
+            incoming_files = self.uow.incoming_files.list_by_id(id=cmd.workflow_id)
             batches_data = {
-                i.filename: storage.load(i.reference) for i in incoming_files
+                i.filename: self.storage.load(i.reference) for i in incoming_files
             }
-            job.parse_files(batches_data=batches_data, parser=parser)
-            storage.save_intermediate_records(id=cmd.workflow_id, job=job)
-            uow.commit()
-        bus.publish(events.FullLevelFilesParsed(workflow_id=cmd.workflow_id))
+            job.parse_files(batches_data=batches_data, parser=self.parser)
+            self.storage.save_intermediate_records(id=cmd.workflow_id, job=job)
+            self.uow.commit()
+        self.bus.publish(events.FullLevelFilesParsed(workflow_id=cmd.workflow_id))
 
 
-class MatchOrderLevelRecordsHandler:
-    @staticmethod
-    def handle(
+class MatchOrderLevelRecordsHandler(AbstractCommandHandler):
+    def __init__(
+        self,
         bus: ports.MessageBusPort,
-        cmd: commands.MatchOrderLevelRecords,
         matcher: services.BibMatcher,
         storage: ports.FileStorage,
     ):
-        job = storage.load_intermediate_records(id=cmd.workflow_id)
-        job.match_records(matcher=matcher, matchpoints=cmd.matchpoints)
-        storage.save_intermediate_records(id=cmd.workflow_id, job=job)
-        bus.publish(events.OrderLevelRecordsMatched(workflow_id=cmd.workflow_id))
+        self.bus = bus
+        self.storage = storage
+        self.matcher = matcher
+
+    def __call__(self, cmd: commands.MatchOrderLevelRecords):
+        job = self.storage.load_intermediate_records(id=cmd.workflow_id)
+        job.match_records(matcher=self.matcher, matchpoints=cmd.matchpoints)
+        self.storage.save_intermediate_records(id=cmd.workflow_id, job=job)
+        self.bus.publish(events.OrderLevelRecordsMatched(workflow_id=cmd.workflow_id))
 
 
-class MatchFullLevelRecordsHandler:
-    @staticmethod
-    def handle(
+class MatchFullLevelRecordsHandler(AbstractCommandHandler):
+    def __init__(
+        self,
         bus: ports.MessageBusPort,
-        cmd: commands.MatchFullLevelRecords,
         matcher: services.BibMatcher,
         storage: ports.FileStorage,
     ):
-        job = storage.load_intermediate_records(id=cmd.workflow_id)
-        job.match_records(matcher=matcher)
-        storage.save_intermediate_records(id=cmd.workflow_id, job=job)
-        bus.publish(events.FullLevelRecordsMatched(workflow_id=cmd.workflow_id))
+        self.bus = bus
+        self.storage = storage
+        self.matcher = matcher
+
+    def __call__(self, cmd: commands.MatchFullLevelRecords):
+        job = self.storage.load_intermediate_records(id=cmd.workflow_id)
+        job.match_records(matcher=self.matcher)
+        self.storage.save_intermediate_records(id=cmd.workflow_id, job=job)
+        self.bus.publish(events.FullLevelRecordsMatched(workflow_id=cmd.workflow_id))
 
 
-class UpdateAndOutputOrderLevelRecordsHandler:
-    @staticmethod
-    def handle(
+class UpdateAndOutputOrderLevelRecordsHandler(AbstractCommandHandler):
+    def __init__(
+        self,
         bus: ports.MessageBusPort,
-        cmd: commands.UpdateAndOutputOrderLevelRecords,
         uow: ports.UnitOfWorkProtocol,
         updater: services.BibUpdater,
         storage: ports.FileStorage,
     ):
-        job = storage.load_intermediate_records(id=cmd.workflow_id)
-        processed_batch = job.apply_updates_and_create_batch(
-            template_data=cmd.template_data, updater=updater
+        self.bus = bus
+        self.uow = uow
+        self.storage = storage
+        self.updater = updater
+
+    def __call__(self, cmd: commands.UpdateAndOutputOrderLevelRecords):
+        job = self.storage.load_intermediate_records(id=cmd.workflow_id)
+        job.apply_updates_and_create_batch(
+            template_data=cmd.template_data, updater=self.updater
         )
-        with uow:
-            db_batch = uow.processed_batches.save(processed_batch)
+        with self.uow:
+            db_batch = self.uow.processed_batches.save(job.processed)
             batch_id = db_batch.id
-            uow.commit()
-        bus.publish(
+            self.uow.commit()
+        self.bus.publish(
             events.OrderLevelWorkflowCompleted(
                 workflow_id=cmd.workflow_id, batch_id=batch_id
             )
         )
 
 
-class UpdateAndOutputFullLevelRecordsHandler:
-    @staticmethod
-    def handle(
+class UpdateAndOutputFullLevelRecordsHandler(AbstractCommandHandler):
+    def __init__(
+        self,
         bus: ports.MessageBusPort,
-        cmd: commands.UpdateAndOutputFullLevelRecords,
         uow: ports.UnitOfWorkProtocol,
         updater: services.BibUpdater,
         storage: ports.FileStorage,
     ):
-        job = storage.load_intermediate_records(id=cmd.workflow_id)
-        processed_batch = job.apply_updates_and_create_batch(updater=updater)
-        with uow:
-            db_batch = uow.processed_batches.save(processed_batch)
+        self.bus = bus
+        self.uow = uow
+        self.updater = updater
+        self.storage = storage
+
+    def __call__(self, cmd: commands.UpdateAndOutputFullLevelRecords):
+        job = self.storage.load_intermediate_records(id=cmd.workflow_id)
+        job.apply_updates_and_create_batch(updater=self.updater)
+        with self.uow:
+            db_batch = self.uow.processed_batches.save(job.processed)
             batch_id = db_batch.id
-            uow.commit()
-        bus.publish(
+            self.uow.commit()
+        self.bus.publish(
             events.FullLevelWorkflowCompleted(
                 workflow_id=cmd.workflow_id, batch_id=batch_id
             )

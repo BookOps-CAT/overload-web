@@ -487,18 +487,14 @@ def stub_manager():
     )
     bus.register_command(
         commands.MatchOrderLevelRecords,
-        lambda cmd: handlers.MatchOrderLevelRecordsHandler.handle(
-            bus=bus,
-            cmd=cmd,
-            matcher=matcher,
-            storage=FakeFileStorageWithOrderLevelParsedFiles(),
+        handlers.MatchOrderLevelRecordsHandler(
+            bus=bus, matcher=matcher, storage=FakeFileStorageWithOrderLevelParsedFiles()
         ),
     )
     bus.register_command(
         commands.UpdateAndOutputOrderLevelRecords,
-        lambda cmd: handlers.UpdateAndOutputOrderLevelRecordsHandler.handle(
+        handlers.UpdateAndOutputOrderLevelRecordsHandler(
             bus=bus,
-            cmd=cmd,
             uow=uow,
             updater=updater,
             storage=FakeFileStorageWithOrderLevelParsedFiles(),
@@ -506,18 +502,14 @@ def stub_manager():
     )
     bus.register_command(
         commands.MatchFullLevelRecords,
-        lambda cmd: handlers.MatchFullLevelRecordsHandler.handle(
-            bus=bus,
-            cmd=cmd,
-            matcher=matcher,
-            storage=FakeFileStorageWithFullParsedFiles(),
+        handlers.MatchFullLevelRecordsHandler(
+            bus=bus, matcher=matcher, storage=FakeFileStorageWithFullParsedFiles()
         ),
     )
     bus.register_command(
         commands.UpdateAndOutputFullLevelRecords,
-        lambda cmd: handlers.UpdateAndOutputFullLevelRecordsHandler.handle(
+        handlers.UpdateAndOutputFullLevelRecordsHandler(
             bus=bus,
-            cmd=cmd,
             uow=uow,
             updater=updater,
             storage=FakeFileStorageWithFullParsedFiles(),

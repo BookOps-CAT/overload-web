@@ -24,39 +24,39 @@ def bootstrap_message_bus(
 
     bus.register_command(
         commands.ParseOrderLevelFiles,
-        lambda cmd: handlers.ParseOrderLevelFilesHandler.handle(
-            bus=bus, cmd=cmd, storage=storage, parser=parser, uow=uow
+        handlers.ParseOrderLevelFilesHandler(
+            bus=bus, storage=storage, parser=parser, uow=uow
         ),
     )
     bus.register_command(
         commands.MatchOrderLevelRecords,
-        lambda cmd: handlers.MatchOrderLevelRecordsHandler.handle(
-            bus=bus, cmd=cmd, matcher=matcher, storage=storage
+        handlers.MatchOrderLevelRecordsHandler(
+            bus=bus, matcher=matcher, storage=storage
         ),
     )
     bus.register_command(
         commands.UpdateAndOutputOrderLevelRecords,
-        lambda cmd: handlers.UpdateAndOutputOrderLevelRecordsHandler.handle(
-            bus=bus, cmd=cmd, uow=uow, updater=updater, storage=storage
+        handlers.UpdateAndOutputOrderLevelRecordsHandler(
+            bus=bus, uow=uow, updater=updater, storage=storage
         ),
     )
 
     bus.register_command(
         commands.ParseFullLevelFiles,
-        lambda cmd: handlers.ParseFullLevelFilesHandler.handle(
-            bus=bus, cmd=cmd, storage=storage, parser=parser, uow=uow
+        handlers.ParseFullLevelFilesHandler(
+            bus=bus, storage=storage, parser=parser, uow=uow
         ),
     )
     bus.register_command(
         commands.MatchFullLevelRecords,
-        lambda cmd: handlers.MatchFullLevelRecordsHandler.handle(
-            bus=bus, cmd=cmd, matcher=matcher, storage=storage
+        handlers.MatchFullLevelRecordsHandler(
+            bus=bus, matcher=matcher, storage=storage
         ),
     )
     bus.register_command(
         commands.UpdateAndOutputFullLevelRecords,
-        lambda cmd: handlers.UpdateAndOutputFullLevelRecordsHandler.handle(
-            bus=bus, cmd=cmd, uow=uow, updater=updater, storage=storage
+        handlers.UpdateAndOutputFullLevelRecordsHandler(
+            bus=bus, uow=uow, updater=updater, storage=storage
         ),
     )
 

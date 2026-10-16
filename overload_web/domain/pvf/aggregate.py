@@ -46,6 +46,7 @@ class AbstractProcessingJob(ABC):
     report_data: list[dict[str, Any]]
     file_names: list[str]
     missing_barcodes: list[str]
+    processed: ProcessedFileBatch | None
 
     @abstractmethod
     def parse_files(self, *args, **kwargs) -> None: ...  # pragma:no branch
@@ -56,15 +57,7 @@ class AbstractProcessingJob(ABC):
     @abstractmethod
     def apply_updates_and_create_batch(
         self, *args, **kwargs
-    ) -> ProcessedFileBatch: ...  # pragma:no branch
-
-    def create_batch(self) -> ProcessedFileBatch:
-        return ProcessedFileBatch(
-            files=self.processed_files,
-            stats=self.report_data,
-            file_names=self.file_names,
-            missing_barcodes=self.missing_barcodes,
-        )
+    ) -> None: ...  # pragma:no branch
 
 
 class OrderLevelJob(AbstractProcessingJob):
@@ -77,6 +70,7 @@ class OrderLevelJob(AbstractProcessingJob):
         self.file_names: list[str] = []
         self.file_records: dict[str, list[models.DomainBib]] = {}
         self.missing_barcodes: list[str] = []
+        self.processed: ProcessedFileBatch | None = None
         self.processed_files: list[ProcessedFile] = []
         self.report_data: list[dict[str, Any]] = []
         self.validator = services.BarcodeValidator()
@@ -104,7 +98,7 @@ class OrderLevelJob(AbstractProcessingJob):
 
     def apply_updates_and_create_batch(
         self, template_data: dict[str, Any], updater: services.BibUpdater
-    ) -> ProcessedFileBatch:
+    ) -> None:
         """The core domain logic loop."""
         for file_name, records in self.file_records.items():
             for bib in records:
@@ -116,7 +110,12 @@ class OrderLevelJob(AbstractProcessingJob):
             self.processed_files.append(
                 ProcessedFile(file_name=file_name, records=out_binary)
             )
-        return self.create_batch()
+        self.processed = ProcessedFileBatch(
+            files=self.processed_files,
+            stats=self.report_data,
+            file_names=self.file_names,
+            missing_barcodes=self.missing_barcodes,
+        )
 
 
 class FullRecordJob(AbstractProcessingJob):
@@ -129,6 +128,7 @@ class FullRecordJob(AbstractProcessingJob):
         self.records: list[models.DomainBib] = []
         self.missing_barcodes: list[str] = []
         self.original_barcodes: list[str] = []
+        self.processed: ProcessedFileBatch | None = None
         self.processed_files: list[ProcessedFile] = []
         self.report_data: list[dict[str, Any]] = []
         self.out_file_name = datetime.datetime.today().strftime("%y%m%d")
@@ -155,9 +155,7 @@ class FullRecordJob(AbstractProcessingJob):
             bib.apply_match(bib_id=analysis.target_bib_id, action=analysis.action)
             self.report_data.append(analysis.to_dict())
 
-    def apply_updates_and_create_batch(
-        self, updater: services.BibUpdater
-    ) -> ProcessedFileBatch:
+    def apply_updates_and_create_batch(self, updater: services.BibUpdater) -> None:
         reviewer = services.BibReviewer(handler=updater.handler)
         for bib in self.records:
             updates = updater.get_full_record_updates(record=bib)
@@ -170,11 +168,15 @@ class FullRecordJob(AbstractProcessingJob):
         )
         reviewed = reviewer.review_batch(records=self.records)
         deduplicated = reviewer.deduplicate(reviewed)
-        files = [
-            ProcessedFile(
-                file_name=f"{self.out_file_name}-{k}.mrc", records=updater.write(v)
+        for k, v in deduplicated.items():
+            self.processed_files.append(
+                ProcessedFile(
+                    file_name=f"{self.out_file_name}-{k}.mrc", records=updater.write(v)
+                )
             )
-            for k, v in deduplicated.items()
-        ]
-        self.processed_files.extend(files)
-        return self.create_batch()
+        self.processed = ProcessedFileBatch(
+            files=self.processed_files,
+            stats=self.report_data,
+            file_names=self.file_names,
+            missing_barcodes=self.missing_barcodes,
+        )

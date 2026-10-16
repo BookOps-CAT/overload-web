@@ -78,15 +78,22 @@ class TestOrderLevelJob:
 
     @pytest.mark.workflow(record_type="acq")
     def test_apply_updates_and_create_batch(self, stub_matched_aggregate, fake_updater):
-        processed_batch = stub_matched_aggregate.apply_updates_and_create_batch(
+        stub_matched_aggregate.apply_updates_and_create_batch(
             template_data={"format": "a"}, updater=fake_updater
         )
         assert stub_matched_aggregate.missing_barcodes == []
         assert len(stub_matched_aggregate.processed_files) == 1
-        assert processed_batch.files == stub_matched_aggregate.processed_files
-        assert processed_batch.processing_integrity is True
-        assert processed_batch.total_files == len(stub_matched_aggregate.file_names)
-        assert processed_batch.total_records == len(stub_matched_aggregate.report_data)
+        assert (
+            stub_matched_aggregate.processed.files
+            == stub_matched_aggregate.processed_files
+        )
+        assert stub_matched_aggregate.processed.processing_integrity is True
+        assert stub_matched_aggregate.processed.total_files == len(
+            stub_matched_aggregate.file_names
+        )
+        assert stub_matched_aggregate.processed.total_records == len(
+            stub_matched_aggregate.report_data
+        )
 
 
 class TestFullRecordJob:
@@ -109,12 +116,17 @@ class TestFullRecordJob:
 
     @pytest.mark.workflow(record_type="cat")
     def test_apply_updates_and_create_batch(self, stub_matched_aggregate, fake_updater):
-        processed_batch = stub_matched_aggregate.apply_updates_and_create_batch(
-            updater=fake_updater
-        )
+        stub_matched_aggregate.apply_updates_and_create_batch(updater=fake_updater)
         assert stub_matched_aggregate.missing_barcodes == []
         assert len(stub_matched_aggregate.processed_files) == 3
-        assert processed_batch.files == stub_matched_aggregate.processed_files
-        assert processed_batch.processing_integrity is True
-        assert processed_batch.total_files == len(stub_matched_aggregate.file_names)
-        assert processed_batch.total_records == len(stub_matched_aggregate.report_data)
+        assert (
+            stub_matched_aggregate.processed.files
+            == stub_matched_aggregate.processed_files
+        )
+        assert stub_matched_aggregate.processed.processing_integrity is True
+        assert stub_matched_aggregate.processed.total_files == len(
+            stub_matched_aggregate.file_names
+        )
+        assert stub_matched_aggregate.processed.total_records == len(
+            stub_matched_aggregate.report_data
+        )
