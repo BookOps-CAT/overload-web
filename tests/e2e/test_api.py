@@ -193,10 +193,12 @@ class TestApp:
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request"]
 
-    def test_ot_router_create_template(self, stub_template_data, mocker):
+    def test_ot_router_create_template(self, mocker):
         template = mocker.Mock()
         mocker.patch.object(template_handling.SaveNewOrderTemplate, "execute", template)
-        response = self.client.post("/ot/template", data=stub_template_data)
+        response = self.client.post(
+            "/ot/template", data={"name": "Foo", "agent": "Bar", "id": 1}
+        )
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request", "template"]
 

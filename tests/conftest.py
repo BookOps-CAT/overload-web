@@ -100,38 +100,6 @@ def mock_sierra_session(monkeypatch):
 
 
 @pytest.fixture
-def stub_template_data() -> dict:
-    return {
-        "name": "Foo",
-        "agent": "Bar",
-        "blanket_po": None,
-        "copies": "5",
-        "country": "xxu",
-        "create_date": "2024-01-01",
-        "format": "a",
-        "fund": "10001adbk",
-        "id": 1,
-        "internal_note": "foo",
-        "lang": "spa",
-        "order_code_1": "b",
-        "order_code_2": None,
-        "order_code_3": "d",
-        "order_code_4": "a",
-        "order_type": "p",
-        "price": "$20.00",
-        "selector_note": None,
-        "status": "o",
-        "var_field_isbn": None,
-        "vendor_code": "0049",
-        "vendor_notes": "bar",
-        "vendor_title_no": None,
-        "primary_matchpoint": "isbn",
-        "secondary_matchpoint": None,
-        "tertiary_matchpoint": None,
-    }
-
-
-@pytest.fixture
 def stub_bib():
     def make_bib(library, collection, record_type):
         return models.DomainBib(
