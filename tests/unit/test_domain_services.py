@@ -7,7 +7,7 @@ from bookops_marc import Bib
 from pymarc import Field, Indicators, Subfield
 
 from overload_web.domain.pvf import models, services
-from overload_web.infrastructure import marc_handler
+from overload_web.infrastructure import marc_handler, sierra_clients
 
 
 @pytest.fixture
@@ -321,18 +321,20 @@ def mock_bib(stub_bib, request):
 
 
 @pytest.fixture
-def stub_matcher(fake_fetcher):
-    return services.BibMatcher(fetcher=fake_fetcher)
+def stub_matcher(mock_sierra_session):
+    fetcher = sierra_clients.SierraBibFetcher(session=mock_sierra_session)
+    return services.BibMatcher(fetcher=fetcher)
 
 
 @pytest.fixture
-def stub_matcher_no_matches(fake_fetcher, monkeypatch):
+def stub_matcher_no_matches(mock_sierra_session, monkeypatch):
+    fake_fetcher = sierra_clients.SierraBibFetcher(session=mock_sierra_session)
+
     def empty_response(*args, **kwargs):
         return []
 
     monkeypatch.setattr(
-        "overload_web.infrastructure.sierra_clients.SierraBibFetcher.get_bibs_by_id",
-        empty_response,
+        sierra_clients.SierraBibFetcher, "get_bibs_by_id", empty_response
     )
     return services.BibMatcher(fetcher=fake_fetcher)
 

@@ -6,7 +6,6 @@ from typing import Any
 import pytest
 import requests
 from bookops_worldcat.errors import BookopsWorldcatError
-from sqlmodel import SQLModel, create_engine
 
 from overload_web.application.pvf import handlers
 from overload_web.application.pvf.workflow_manager import WorkflowManager
@@ -97,11 +96,6 @@ def mock_sierra_session(monkeypatch):
     monkeypatch.setattr("requests.Session.get", response)
     monkeypatch.setattr("requests.post", token_response)
     return FakeSierraSession()
-
-
-@pytest.fixture(scope="session")
-def fake_fetcher():
-    return sierra_clients.SierraBibFetcher(session=FakeSierraSession())
 
 
 @pytest.fixture(scope="session")
@@ -231,97 +225,6 @@ def fake_oclc_fetcher_no_matches(monkeypatch):
 
     monkeypatch.setattr(oclc.WorldcatFetcher, "get_brief_bibs_by_id", empty_list)
     return oclc.WorldcatFetcher(session=FakeOCLCSession())
-
-
-class FakeFileRetriever:
-    def __init__(self) -> None:
-        pass
-
-    def list(self, dir: str) -> list[str]:
-        return ["foo.mrc"]
-
-    def download(self, name: str, dir: str) -> bytes:
-        return b""
-
-
-@pytest.fixture
-def mock_engine():
-    engine = create_engine("sqlite:///:memory:")
-    SQLModel.metadata.create_all(engine)
-    yield engine
-    engine.dispose()
-
-
-@pytest.fixture
-def mock_engine_with_workflow(mock_engine, mocker):
-    mock_obj = mocker.Mock()
-    batch = mocker.Mock(
-        return_value=tables.PVFBatch(
-            files=[tables.ProcessedFileModel(file_name="foo.mrc", records=b"")],
-            stats=[
-                {
-                    "action": "insert",
-                    "call_number": "Foo",
-                    "call_number_match": True,
-                    "duplicate_records": [],
-                    "mixed": [],
-                    "other": [],
-                    "resource_id": "12345",
-                    "target_bib_id": "23456",
-                    "target_call_no": "Foo",
-                    "target_title": None,
-                    "updated_by_vendor": False,
-                    "vendor": "UNKNOWN",
-                }
-            ],
-            file_names=["foo.mrc"],
-            total_files=1,
-            total_records=1,
-            missing_barcodes=[],
-            processing_integrity=True,
-        )
-    )
-    workflow = mocker.Mock(
-        return_value=tables.WorkflowStateModel(id="1", status="UPDATING", batch_id=1)
-    )
-    mocker.patch("overload_web.infrastructure.unit_of_work.Session.get", workflow)
-    mocker.patch("overload_web.infrastructure.unit_of_work.Session.flush", mock_obj)
-    mocker.patch("overload_web.infrastructure.unit_of_work.Session.refresh", mock_obj)
-    mocker.patch("overload_web.infrastructure.unit_of_work.Session.add", batch)
-    yield mock_engine
-    mock_engine.dispose()
-
-
-@pytest.fixture
-def mocked_order_level_manager(mock_engine_with_workflow):
-    uow = unit_of_work.SqlModelUnitOfWork(engine=mock_engine_with_workflow)
-
-    bus = bootstrap_message_bus(
-        matcher=FakeMatcher(),
-        parser=FakeParser(),
-        updater=FakeUpdater(),
-        uow=uow,
-        storage=FakeFileStorageWithOrderLevelParsedFiles(),
-    )
-
-    manager = WorkflowManager(bus=bus, uow=uow)
-    return manager
-
-
-@pytest.fixture
-def mocked_full_record_manager(mock_engine_with_workflow):
-    uow = unit_of_work.SqlModelUnitOfWork(engine=mock_engine_with_workflow)
-
-    bus = bootstrap_message_bus(
-        matcher=FakeMatcher(),
-        parser=FakeParser(),
-        updater=FakeUpdater(),
-        uow=uow,
-        storage=FakeFileStorageWithFullParsedFiles(),
-    )
-
-    manager = WorkflowManager(bus=bus, uow=uow)
-    return manager
 
 
 def create_stub_bib(record_type: str):
