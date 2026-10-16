@@ -92,7 +92,8 @@ class UploadFileToWorkflow:
 
             uow.commit()
 
-        out = uow.incoming_files.list_by_id(workflow_id)
+            out_query = uow.incoming_files.list_by_id(workflow_id)
+            out = list(out_query)
         return [i.model_dump() for i in out]
 
 
