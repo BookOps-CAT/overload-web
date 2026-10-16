@@ -2,16 +2,21 @@ import copy
 
 import pytest
 
-from overload_web.domain.pvf import matching, sierra_responses
+from overload_web.domain.pvf import matching, models, sierra_responses
 
 
 @pytest.fixture
-def mock_bib(stub_bib, request):
+def mock_bib(request):
     marker = request.node.get_closest_marker("workflow")
-    record_type = marker.kwargs["record_type"]
-    collection = marker.kwargs["collection"]
-    library = marker.kwargs["library"]
-    return stub_bib(library, collection, record_type)
+    return models.DomainBib(
+        binary_data=b"",
+        collection=marker.kwargs["collection"],
+        library=marker.kwargs["library"],
+        barcodes=["333331234567890"],
+        parsed_fields=[],
+        record_type=marker.kwargs["record_type"],
+        title="Foo",
+    )
 
 
 @pytest.fixture
@@ -81,7 +86,7 @@ def bpl_data():
 
 class TestClassifyMatches:
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_classify_matches_bpl(self, stub_bib, bpl_data, record_type):
+    def test_classify_matches_bpl(self, bpl_data, record_type):
         matcher = matching.MatchAnalyzerFactory.make("bpl", record_type, None)
         classified = matcher.classify_matches(
             library="bpl", collection=None, matches=[bpl_data, bpl_data]
