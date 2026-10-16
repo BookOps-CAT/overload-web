@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from overload_web.application.pvf import handlers, process_manager
+from overload_web.application.pvf import handlers, workflow_manager
 from overload_web.domain.pvf import commands, events, ports, services
 from overload_web.infrastructure import message_bus
 
@@ -20,7 +20,7 @@ def bootstrap_message_bus(
 ) -> message_bus.MessageBus:
     bus = message_bus.MessageBus()
 
-    pm = process_manager.WorkflowManager(bus=bus, uow=uow)
+    pm = workflow_manager.WorkflowManager(bus=bus, uow=uow)
 
     bus.register_command(
         commands.ParseOrderLevelFiles,

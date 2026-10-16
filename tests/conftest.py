@@ -9,7 +9,7 @@ from bookops_worldcat.errors import BookopsWorldcatError
 from sqlmodel import SQLModel, create_engine
 
 from overload_web.application.pvf import handlers
-from overload_web.application.pvf.process_manager import WorkflowManager
+from overload_web.application.pvf.workflow_manager import WorkflowManager
 from overload_web.bootstrap import bootstrap_message_bus
 from overload_web.domain.pvf import aggregate, commands, models, ports, services
 from overload_web.infrastructure import oclc, sierra_clients, tables, unit_of_work

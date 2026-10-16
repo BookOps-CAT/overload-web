@@ -5,9 +5,9 @@ from sqlmodel import create_engine
 
 from overload_web.application.pvf import (
     file_handling,
-    process_manager,
     report_service,
     template_handling,
+    workflow_manager,
 )
 from overload_web.domain.pvf import files
 from overload_web.infrastructure import tables
@@ -255,7 +255,9 @@ class TestApp:
     ):
         mock = mocker.Mock()
         mocker.patch.object(
-            process_manager.WorkflowManager, "handle_workflow_started_order_level", mock
+            workflow_manager.WorkflowManager,
+            "handle_workflow_started_order_level",
+            mock,
         )
         context = {
             "library": library,
@@ -279,7 +281,7 @@ class TestApp:
     ):
         mock = mocker.Mock()
         mocker.patch.object(
-            process_manager.WorkflowManager, "handle_workflow_started_full_level", mock
+            workflow_manager.WorkflowManager, "handle_workflow_started_full_level", mock
         )
         context = {
             "library": library,

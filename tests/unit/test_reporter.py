@@ -145,6 +145,14 @@ class TestReporter:
         assert "Unable to send data to google sheet:" in caplog.text
         assert "Data not written to sheet." in caplog.text
 
+    def test_write_data_to_sheet(self, mocker, stub_report, caplog):
+        mock = mocker.Mock()
+        mocker.patch("googleapiclient.discovery.build", mock)
+        mocker.patch("googleapiclient.discovery.build_from_document", mock)
+        mocker.patch.object(reporter.GoogleSheetsReporter, "configure_sheet", mock)
+        self.REPORT_HANDLER.write_report(stub_report.create_duplicate_report())
+        assert "Data written to Google Sheet: " in caplog.text
+
 
 class TestProcessingStatistics:
     @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
