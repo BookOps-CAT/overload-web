@@ -63,7 +63,7 @@ class GetDetailedReportData:
             data = uow.processed_batches.get(batch_id)
             if data:
                 return data.stats
-            return []
+        return []
 
 
 class WriteOutputReport:
