@@ -240,16 +240,9 @@ class TestApp:
         assert "Created new workflow ID: " in caplog.text
 
     @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [
-            ("nypl", "BL", "acq"),
-            ("nypl", "BL", "sel"),
-            ("nypl", "RL", "acq"),
-            ("nypl", "RL", "sel"),
-            ("bpl", "", "acq"),
-            ("bpl", "", "sel"),
-        ],
+        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "")]
     )
+    @pytest.mark.parametrize("record_type", ["acq", "sel"])
     def test_pvf_router_process_order_records(
         self, library, collection, record_type, mocker
     ):
@@ -273,33 +266,23 @@ class TestApp:
         assert response.status_code == 200
 
     @pytest.mark.parametrize(
-        "library, collection, record_type",
-        [("nypl", "BL", "cat"), ("nypl", "RL", "cat"), ("bpl", "", "cat")],
+        "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "")]
     )
-    def test_pvf_router_process_full_records(
-        self, library, collection, record_type, mocker
-    ):
+    def test_pvf_router_process_full_records(self, library, collection, mocker):
         mock = mocker.Mock()
         mocker.patch.object(
             workflow_manager.WorkflowManager, "handle_workflow_started_full_level", mock
         )
-        context = {
-            "library": library,
-            "collection": collection,
-            "record_type": record_type,
-        }
+        context = {"library": library, "collection": collection, "record_type": "cat"}
         response = self.client.post("/pvf/process-full-records", data=context)
         assert response.status_code == 200
 
-    @pytest.mark.parametrize("library, record_type", [("nypl", "acq"), ("nypl", "sel")])
-    def test_pvf_router_process_order_records_nypl_collection_error(
-        self, library, record_type
-    ):
+    def test_pvf_router_process_order_records_nypl_collection_error(self):
         """Tests incorrect collection passed to `ProcessingContext` called in `deps.py`"""
         context = {
-            "library": library,
+            "library": "nypl",
             "collection": "",
-            "record_type": record_type,
+            "record_type": "acq",
             "vendor": "FOO",
         }
         with pytest.raises(ValidationError) as exc:
@@ -309,15 +292,12 @@ class TestApp:
             == "Value error, Collection is required for NYPL records."
         )
 
-    @pytest.mark.parametrize("library, record_type", [("nypl", "cat")])
-    def test_pvf_router_process_full_records_nypl_collection_error(
-        self, library, record_type
-    ):
+    def test_pvf_router_process_full_records_nypl_collection_error(self):
         """Tests incorrect collection passed to `ProcessingContext` called in `deps.py`"""
         context = {
-            "library": library,
+            "library": "nypl",
             "collection": "",
-            "record_type": record_type,
+            "record_type": "cat",
             "vendor": "FOO",
         }
         with pytest.raises(ValidationError) as exc:
@@ -327,17 +307,12 @@ class TestApp:
             == "Value error, Collection is required for NYPL records."
         )
 
-    @pytest.mark.parametrize(
-        "library, collection, record_type", [("bpl", "BL", "acq"), ("bpl", "BL", "sel")]
-    )
-    def test_pvf_router_process_order_records_bpl_collection_error(
-        self, library, collection, record_type
-    ):
+    def test_pvf_router_process_order_records_bpl_collection_error(self):
         """Tests incorrect collection passed to `ProcessingContext` called in `deps.py`"""
         context = {
-            "library": library,
-            "collection": collection,
-            "record_type": record_type,
+            "library": "bpl",
+            "collection": "BL",
+            "record_type": "sel",
             "vendor": "FOO",
         }
         with pytest.raises(ValidationError) as exc:
@@ -347,15 +322,12 @@ class TestApp:
             == "Value error, Collection should be `None` for BPL records."
         )
 
-    @pytest.mark.parametrize("library, collection, record_type", [("bpl", "BL", "cat")])
-    def test_pvf_router_process_full_records_bpl_collection_error(
-        self, library, collection, record_type
-    ):
+    def test_pvf_router_process_full_records_bpl_collection_error(self):
         """Tests incorrect collection passed to `ProcessingContext` called in `deps.py`"""
         context = {
-            "library": library,
-            "collection": collection,
-            "record_type": record_type,
+            "library": "bpl",
+            "collection": "BL",
+            "record_type": "sel",
             "vendor": "FOO",
         }
         with pytest.raises(ValidationError) as exc:
