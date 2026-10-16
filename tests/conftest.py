@@ -642,5 +642,5 @@ def stub_manager_no_workflows(monkeypatch, stub_manager):
     def mock_get_workflows(*args, **kwargs):
         return None
 
-    monkeypatch.setattr(FakeWorkflowRepository, "get", mock_get_workflows)
+    monkeypatch.setattr(FakeWorkflowRepository, "update", mock_get_workflows)
     return stub_manager
