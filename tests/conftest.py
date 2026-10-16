@@ -1,5 +1,4 @@
 import datetime
-import io
 import json
 import random
 from typing import Any
@@ -7,7 +6,6 @@ from typing import Any
 import pytest
 import requests
 from bookops_worldcat.errors import BookopsWorldcatError
-from file_retriever import Client, File, FileInfo
 from sqlmodel import SQLModel, create_engine
 
 from overload_web.application.pvf import handlers
@@ -121,37 +119,6 @@ def mock_nypl_session_error(monkeypatch, mock_sierra_session):
     monkeypatch.setattr("requests.post", mock_nypl_error)
     monkeypatch.setattr(FakeSierraSession, "_get_bibs_by_isbn", mock_error)
     return FakeSierraSession()
-
-
-@pytest.fixture
-def mock_sftp_client(monkeypatch):
-    file_data = {"file_size": 140401, "file_mtime": 1704070800, "file_mode": 33188}
-
-    def _get_file(*args, **kwargs):
-        return File.from_fileinfo(file=kwargs["file"], file_stream=io.BytesIO(b""))
-
-    def _get_file_info(*args, **kwargs):
-        file_data["file_name"] = kwargs["file_name"]
-        return FileInfo(**file_data)
-
-    def _list_files(*args, **kwargs):
-        return ["foo.mrc"]
-
-    def _put_file(*args, **kwargs):
-        file_data["file_name"] = kwargs["file"].file_name
-        return FileInfo(**file_data)
-
-    def null_return(*args, **kwargs):
-        return None
-
-    monkeypatch.setattr(Client, "get_file", _get_file)
-    monkeypatch.setattr(Client, "get_file_info", _get_file_info)
-    monkeypatch.setattr(Client, "list_files", _list_files)
-    monkeypatch.setattr(Client, "put_file", _put_file)
-    monkeypatch.setattr(Client, "_Client__connect_to_server", null_return)
-    return Client(
-        name="FOO", username="foo", password="bar", host="sftp.baz.com", port="22"
-    )
 
 
 @pytest.fixture

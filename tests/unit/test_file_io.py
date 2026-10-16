@@ -1,6 +1,8 @@
+import io
 import os
 
 import pytest
+from file_retriever import Client, File, FileInfo
 
 from overload_web.domain.pvf import aggregate
 from overload_web.infrastructure import file_io
@@ -18,6 +20,37 @@ def tmp_files(tmp_path):
 def mock_read_file(mocker) -> None:
     mock_read = mocker.mock_open(read_data=b"foo")
     mocker.patch("overload_web.infrastructure.file_io.open", mock_read)
+
+
+@pytest.fixture
+def mock_sftp_client(monkeypatch):
+    file_data = {"file_size": 140401, "file_mtime": 1704070800, "file_mode": 33188}
+
+    def _get_file(*args, **kwargs):
+        return File.from_fileinfo(file=kwargs["file"], file_stream=io.BytesIO(b""))
+
+    def _get_file_info(*args, **kwargs):
+        file_data["file_name"] = kwargs["file_name"]
+        return FileInfo(**file_data)
+
+    def _list_files(*args, **kwargs):
+        return ["foo.mrc"]
+
+    def _put_file(*args, **kwargs):
+        file_data["file_name"] = kwargs["file"].file_name
+        return FileInfo(**file_data)
+
+    def null_return(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(Client, "get_file", _get_file)
+    monkeypatch.setattr(Client, "get_file_info", _get_file_info)
+    monkeypatch.setattr(Client, "list_files", _list_files)
+    monkeypatch.setattr(Client, "put_file", _put_file)
+    monkeypatch.setattr(Client, "_Client__connect_to_server", null_return)
+    return Client(
+        name="FOO", username="foo", password="bar", host="sftp.baz.com", port="22"
+    )
 
 
 class TestLocalFileRetriever:
@@ -62,6 +95,10 @@ class TestSFTPFileRetriever:
         retriever = file_io.SFTPFileRetriever(client=mock_sftp_client)
         file = retriever.download(name="foo.mrc", dir="test")
         assert file == b""
+
+    def test_create_retriever_for_vendor(self, mock_sftp_client):
+        retriever = file_io.SFTPFileRetriever.create_retriever_for_vendor(vendor="FOO")
+        assert retriever.client.name == "FOO"
 
 
 class TestLocalFileStorage:
