@@ -191,11 +191,9 @@ class MarcParserPort(Protocol[U]):
 
 @runtime_checkable
 class MarcUpdaterPort(Protocol[U]):
-    def create_bib_from_domain(
-        self, binary_data: bytes, library: str
-    ) -> U: ...  # pragma:no branch
+    def create_bib(self, binary_data: bytes, library: str) -> U: ...  # pragma:no branch
 
-    """Create a `bookops_marc.Bib` object from a `DomainBib` object"""
+    """Create a `bookops_marc.Bib` object from a `bytes` object"""
 
     def update_fields(
         self, bib: U, field_updates: list[Any]

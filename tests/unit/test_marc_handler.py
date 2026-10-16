@@ -11,61 +11,14 @@ from overload_web.infrastructure import marc_handler
 @pytest.fixture
 def stub_marc(request) -> Bib:
     marker = request.node.get_closest_marker("workflow")
-    library = marker.kwargs["library"]
-    collection = marker.kwargs["collection"]
+    if marker:
+        library = marker.kwargs["library"]
+    else:
+        library = "foo"
     bib = Bib()
     bib.leader = "00000cam  2200517 i 4500"
     bib.library = library
     bib.add_field(Field(tag="005", data="20000101010001.0"))
-    bib.add_field(
-        Field(
-            tag="020",
-            indicators=Indicators(" ", " "),
-            subfields=[Subfield(code="a", value="9781234567890")],
-        )
-    )
-    if library == "bpl":
-        bib.add_field(
-            Field(
-                tag="037",
-                indicators=Indicators(" ", " "),
-                subfields=[
-                    Subfield(code="a", value="123"),
-                    Subfield(code="b", value="OverDrive, Inc."),
-                ],
-            )
-        )
-        bib.add_field(
-            Field(
-                tag="099",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value="Foo")],
-            )
-        )
-    else:
-        if collection == "BL":
-            bib.add_field(
-                Field(
-                    tag="091",
-                    indicators=Indicators(" ", " "),
-                    subfields=[Subfield(code="a", value="Foo")],
-                )
-            )
-        else:
-            bib.add_field(
-                Field(
-                    tag="852",
-                    indicators=Indicators("8", " "),
-                    subfields=[Subfield(code="a", value="Foo")],
-                )
-            )
-        bib.add_field(
-            Field(
-                tag="910",
-                indicators=Indicators(" ", " "),
-                subfields=[Subfield(code="a", value=collection)],
-            )
-        )
     bib.add_field(
         Field(
             tag="949",
@@ -81,27 +34,6 @@ def stub_marc(request) -> Bib:
                 Subfield(code="a", value="l"),
                 Subfield(code="b", value="-"),
                 Subfield(code="c", value="j"),
-                Subfield(code="d", value="c"),
-                Subfield(code="e", value="d"),
-                Subfield(code="f", value="a"),
-                Subfield(code="g", value="b"),
-                Subfield(code="h", value="-"),
-                Subfield(code="i", value="l"),
-                Subfield(code="j", value="-"),
-                Subfield(code="k", value="A01"),
-                Subfield(code="m", value="o"),
-                Subfield(code="n", value="-"),
-                Subfield(code="o", value="13"),
-                Subfield(code="p", value="  -  -  "),
-                Subfield(code="q", value="01-01-25"),
-                Subfield(code="r", value="  -  -  "),
-                Subfield(code="s", value="{{dollar}}13.20"),
-                Subfield(code="t", value="agj0y"),
-                Subfield(code="u", value="lease"),
-                Subfield(code="v", value="btlea"),
-                Subfield(code="w", value="eng"),
-                Subfield(code="x", value="xxu"),
-                Subfield(code="y", value="1"),
                 Subfield(code="z", value=".o10000010"),
             ],
         )
@@ -121,7 +53,6 @@ def stub_marc(request) -> Bib:
 
 
 class TestMarcParser:
-    @pytest.mark.workflow(library="nypl", collection="BL")
     def test_get_reader(self, stub_marc):
         handler = marc_handler.MarcParser()
         combined = handler.get_reader(
@@ -129,7 +60,7 @@ class TestMarcParser:
         )
         assert len([i for i in combined]) >= 1
 
-    @pytest.mark.workflow(library="nypl", collection="RL")
+    @pytest.mark.workflow(library="nypl")
     def test_identify_vendor(self, stub_marc, get_constants):
         handler = marc_handler.MarcParser()
         vendor_mapping = get_constants["parsing_rules"]["vendor_mapping"]
@@ -142,7 +73,7 @@ class TestMarcParser:
         ]
         assert vendor_info["name"] == "UNKNOWN"
 
-    @pytest.mark.workflow(library="bpl", collection=None)
+    @pytest.mark.workflow(library="bpl")
     @pytest.mark.parametrize(
         "field,vendor", [("B&amp;T SERIES", "BT SERIES"), ("INGRAM", "INGRAM")]
     )
@@ -161,7 +92,7 @@ class TestMarcParser:
         vendor_info = handler.identify_vendor(obj=stub_marc, mapping=vendor_mapping)
         assert vendor_info["name"] == vendor
 
-    @pytest.mark.workflow(library="nypl", collection="BL")
+    @pytest.mark.workflow(library="nypl")
     def test_map_bib_data(self, stub_marc, get_constants):
         handler = marc_handler.MarcParser()
         bib_mapping = get_constants["parsing_rules"]["bib_mapping"]
@@ -182,7 +113,6 @@ class TestMarcParser:
             "parsed_fields",
         ]
 
-    @pytest.mark.workflow(library="bpl", collection=None)
     def test_map_order_data(self, stub_marc, get_constants):
         handler = marc_handler.MarcParser()
         order_mapping = get_constants["parsing_rules"]["order_mapping"]
@@ -217,42 +147,54 @@ class TestMarcParser:
 
 
 class TestMarcUpdater:
-    @pytest.mark.workflow(library="bpl", collection=None)
-    def test_create_bib_from_domain(self, stub_marc):
+    def test_create_bib(self, stub_marc):
         updater = marc_handler.MarcUpdater()
-        bib = updater.create_bib_from_domain(
+        bib = updater.create_bib(
             library=stub_marc.library, binary_data=stub_marc.as_marc()
         )
         assert hasattr(bib, "control_number")
 
-    @pytest.mark.workflow(library="nypl", collection="BL")
     def test_update_fields(self, stub_marc):
         bib = copy.deepcopy(stub_marc)
         original_949s = bib.get_fields("949")
-        updates = models.FieldUpdates.add_vendor_fields(
-            [{"tag": "949", "ind1": "", "ind2": "", "code": "a", "value": "*b2=a;"}]
-        )
         updater = marc_handler.MarcUpdater()
-        updater.update_fields(bib=bib, field_updates=updates)
+        updater.update_fields(
+            bib=bib,
+            field_updates=[
+                models.MarcFieldUpdateValues(
+                    tag="949",
+                    ind1="",
+                    ind2="",
+                    subfields=[{"code": "a", "value": "*b2=a;"}],
+                )
+            ],
+        )
         assert [i.format_field() for i in bib.get_fields("949")] == [
             "333331234567890",
             "*b2=a;",
         ]
         assert len(bib.get_fields("949")) > len(original_949s)
 
-    @pytest.mark.workflow(library="nypl", collection="RL")
-    def test_apply_field_updates_add_bib_id(self, stub_marc):
+    def test_update_fields_delete_fields_by_tag(self, stub_marc):
         bib = copy.deepcopy(stub_marc)
         original_945s = bib.get_fields("945")
-        update = models.FieldUpdates.add_bib_id("b12345", "945")
         updater = marc_handler.MarcUpdater()
-        updater.update_fields(bib=bib, field_updates=[update])
+        updater.update_fields(
+            bib=bib,
+            field_updates=[
+                models.MarcFieldUpdateValues(
+                    delete_fields_by_tag=True,
+                    tag="945",
+                    ind1=" ",
+                    ind2=" ",
+                    subfields=[{"code": "a", "value": "b12345"}],
+                )
+            ],
+        )
         assert [i.format_field() for i in bib.get_fields("945")] == ["b12345"]
         assert len(bib.get_fields("945")) > len(original_945s)
 
-    @pytest.mark.workflow(library="nypl", collection="BL")
-    def test_apply_field_updates_command_tag(self, stub_marc):
-        field_949 = "*b2=a;"
+    def test_update_fields_target_field_to_delete(self, stub_marc):
         bib = copy.deepcopy(stub_marc)
         bib.add_field(
             Field(
@@ -266,18 +208,14 @@ class TestMarcUpdater:
         updater.update_fields(
             bib,
             field_updates=[
-                models.FieldUpdates.add_command_tag(
-                    format="a",
-                    default_loc="zzzzz",
-                    fields=[
-                        models.ParsedField(
-                            tag="949",
-                            indicators=(" ", " "),
-                            subfields=[
-                                models.ParsedSubfield(code="a", value=field_949)
-                            ],
-                        )
-                    ],
+                models.MarcFieldUpdateValues(
+                    tag="949",
+                    ind1=" ",
+                    ind2=" ",
+                    subfields=[{"code": "a", "value": "*b2=a;bn=zzzzz;"}],
+                    target_field_to_delete=models.TargetFieldCriteria(
+                        tag="949", indicators=(" ", " "), code="a", value="*b2=a;"
+                    ),
                 )
             ],
         )
@@ -287,8 +225,7 @@ class TestMarcUpdater:
         ]
         assert "*b2=a;bn=zzzzz;" not in original_949s
 
-    @pytest.mark.workflow(library="nypl", collection="RL")
-    def test_apply_field_updates_original_command_tag_not_found(self, stub_marc):
+    def test_update_fields_target_field_to_delete_not_found(self, stub_marc):
         bib = copy.deepcopy(stub_marc)
         updater = marc_handler.MarcUpdater()
         updater.update_fields(
@@ -310,7 +247,6 @@ class TestMarcUpdater:
             "*b2=a;bn=zzzzz;",
         ]
 
-    @pytest.mark.workflow(library="bpl", collection=None)
     def test_update_leader_encoding(self, stub_marc):
         bib = copy.deepcopy(stub_marc)
         updater = marc_handler.MarcUpdater()
