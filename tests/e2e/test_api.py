@@ -64,10 +64,6 @@ def overrides(monkeypatch):
 @pytest.mark.usefixtures("overrides")
 class TestApp:
     client = TestClient(app)
-    # app.dependency_overrides[pvf_deps.get_engine] = mock_engine
-    # app.dependency_overrides[pvf_deps.remote_file_retriever] = FakeFileRetriever
-    # app.dependency_overrides[pvf_deps.get_fetcher] = FakeFetcher
-    # app.dependency_overrides[pvf_deps.local_file_storage] = FakeFileStorage
     app.state.workflow_id = 1
     app.state.engine = create_engine("sqlite:///:memory:")
     base_url = client.base_url
