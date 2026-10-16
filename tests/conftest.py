@@ -100,28 +100,6 @@ def mock_sierra_session(monkeypatch):
 
 
 @pytest.fixture
-def mock_bpl_session_error(monkeypatch, mock_sierra_session):
-    def mock_error(*args, **kwargs):
-        raise sierra_clients.BookopsSolrError
-
-    monkeypatch.setattr(FakeSierraSession, "_get_bibs_by_isbn", mock_error)
-    return FakeSierraSession()
-
-
-@pytest.fixture
-def mock_nypl_session_error(monkeypatch, mock_sierra_session):
-    def mock_error(*args, **kwargs):
-        raise sierra_clients.BookopsPlatformError
-
-    def mock_nypl_error(*args, **kwargs):
-        raise requests.exceptions.Timeout
-
-    monkeypatch.setattr("requests.post", mock_nypl_error)
-    monkeypatch.setattr(FakeSierraSession, "_get_bibs_by_isbn", mock_error)
-    return FakeSierraSession()
-
-
-@pytest.fixture
 def stub_template_data() -> dict:
     return {
         "name": "Foo",
