@@ -399,7 +399,7 @@ class FakeTemplateRepository(unit_of_work.OrderTemplateRepository):
 
 
 class FakeWorkflowRepository(unit_of_work.WorkflowStatusRepository):
-    WORKFLOW = models.WorkflowState(id="1", status=models.WorkflowStatus.PENDING)
+    WORKFLOW = tables.WorkflowUpdateModel(id="1", status="PENDING")
 
     def __init__(self):
         self.session = None
