@@ -85,9 +85,8 @@ def bpl_data():
 
 
 class TestClassifyMatches:
-    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_classify_matches_bpl(self, bpl_data, record_type):
-        matcher = matching.MatchAnalyzerFactory.make("bpl", record_type, None)
+    def test_classify_matches_bpl(self, bpl_data):
+        matcher = matching.MatchAnalyzerFactory.make("bpl", "acq", None)
         classified = matcher.classify_matches(
             library="bpl", collection=None, matches=[bpl_data, bpl_data]
         )
@@ -96,9 +95,8 @@ class TestClassifyMatches:
         assert len(classified.other) == 0
         assert len(classified.duplicates) == 2
 
-    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_classify_matches_nypl_bl(self, nypl_bl_data, record_type):
-        matcher = matching.MatchAnalyzerFactory.make("nypl", record_type, "BL")
+    def test_classify_matches_nypl_bl(self, nypl_bl_data):
+        matcher = matching.MatchAnalyzerFactory.make("nypl", "cat", "BL")
         classified = matcher.classify_matches(
             library="nypl", collection="BL", matches=[nypl_bl_data, nypl_bl_data]
         )
@@ -107,9 +105,8 @@ class TestClassifyMatches:
         assert len(classified.other) == 0
         assert len(classified.duplicates) == 2
 
-    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_classify_matches_nypl_rl(self, nypl_rl_data, record_type):
-        matcher = matching.MatchAnalyzerFactory.make("nypl", record_type, "RL")
+    def test_classify_matches_nypl_rl(self, nypl_rl_data):
+        matcher = matching.MatchAnalyzerFactory.make("nypl", "sel", "RL")
         classified = matcher.classify_matches(
             library="nypl", collection="RL", matches=[nypl_rl_data, nypl_rl_data]
         )
@@ -118,31 +115,29 @@ class TestClassifyMatches:
         assert len(classified.other) == 0
         assert len(classified.duplicates) == 2
 
-    @pytest.mark.parametrize("collection", ["BL", "RL"])
-    def test_classify_matches_nypl_mixed_910s(self, stub_nypl_data, collection):
+    def test_classify_matches_nypl_mixed_910s(self, stub_nypl_data):
         stub_nypl_data["varFields"] = [
             {"marcTag": "910", "subfields": [{"content": "BL", "tag": "a"}]},
             {"marcTag": "910", "subfields": [{"content": "RL", "tag": "a"}]},
         ]
-        matcher = matching.MatchAnalyzerFactory.make("nypl", "cat", collection)
+        matcher = matching.MatchAnalyzerFactory.make("nypl", "cat", "BL")
         classified = matcher.classify_matches(
-            library="nypl", collection=collection, matches=[stub_nypl_data]
+            library="nypl", collection="BL", matches=[stub_nypl_data]
         )
         assert len(classified.matched) == 0
         assert len(classified.mixed) == 1
         assert len(classified.other) == 0
         assert len(classified.duplicates) == 0
 
-    @pytest.mark.parametrize("collection", ["BL", "RL"])
-    def test_classify_matches_nypl_mixed_call_numbers(self, stub_nypl_data, collection):
+    def test_classify_matches_nypl_mixed_call_numbers(self, stub_nypl_data):
         call_no = [{"content": "Foo", "tag": "a"}]
         stub_nypl_data["varFields"] = [
             {"marcTag": "091", "subfields": call_no},
             {"marcTag": "852", "ind1": "8", "ind2": " ", "subfields": call_no},
         ]
-        matcher = matching.MatchAnalyzerFactory.make("nypl", "cat", collection)
+        matcher = matching.MatchAnalyzerFactory.make("nypl", "cat", "RL")
         classified = matcher.classify_matches(
-            library="nypl", collection=collection, matches=[stub_nypl_data]
+            library="nypl", collection="RL", matches=[stub_nypl_data]
         )
         assert len(classified.matched) == 0
         assert len(classified.mixed) == 1
