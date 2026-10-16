@@ -38,6 +38,61 @@ class SqlModelUnitOfWork(ports.UnitOfWorkProtocol):
         self.session.rollback()
 
 
+class IncomingFileRepository(ports.IncomingFileRepositoryProtocol):
+    def __init__(self, session: Session):
+        self.session = session
+
+    def delete(self, id: str | int) -> None:
+        """
+        Delete an `IncomingFileModel` object from the workflow's list of files.
+
+        Args:
+            id: the ID of the file to delete.
+
+        Returns:
+            None
+        """
+        statement = select(tables.IncomingFileModel).where(
+            tables.IncomingFileModel.id == id
+        )
+        results = self.session.exec(statement)
+        file = results.one_or_none()
+        self.session.delete(file)
+
+    def list_by_id(self, id: str | int) -> Sequence[tables.IncomingFileModel]:
+        """
+        Retrieve all `IncomingFileModel` objects in the database.
+
+        Args:
+            id: the `workflow_id` whose files to retrieve.
+
+        Returns:
+            a sequence of `IncomingFileModel` objects.
+        """
+        statement = select(tables.IncomingFileModel).where(
+            tables.IncomingFileModel.workflow_id == id
+        )
+        results = self.session.exec(statement)
+        all_files = results.all()
+        return all_files
+
+    def save(self, obj: tables.IncomingFileModel) -> tables.IncomingFileModel:
+        """
+        Adds a new `IncomingFileModel` to the database.
+
+        Args:
+            obj: the `IncomingFileModel` object to save.
+
+        Returns:
+            The `IncomingFileModel` data as a dictionary.
+        """
+        valid_obj = tables.IncomingFileModel.model_validate(obj, from_attributes=True)
+        self.session.add(valid_obj)
+        self.session.flush()
+        self.session.refresh(valid_obj)
+        return valid_obj
+
+
 class OrderTemplateRepository(ports.TemplateRepositoryProtocol):
     """
     `SQLModel` repository for `TemplateModel` objects.
@@ -176,61 +231,6 @@ class PVFBatchRepository(ports.BatchRepositoryProtocol):
         self.session.flush()
         self.session.refresh(valid_batch)
         return valid_batch
-
-
-class IncomingFileRepository(ports.IncomingFileRepositoryProtocol):
-    def __init__(self, session: Session):
-        self.session = session
-
-    def delete(self, id: str | int) -> None:
-        """
-        Delete an `IncomingFileModel` object from the workflow's list of files.
-
-        Args:
-            id: the ID of the file to delete.
-
-        Returns:
-            None
-        """
-        statement = select(tables.IncomingFileModel).where(
-            tables.IncomingFileModel.id == id
-        )
-        results = self.session.exec(statement)
-        file = results.one_or_none()
-        self.session.delete(file)
-
-    def list_by_id(self, id: str | int) -> Sequence[tables.IncomingFileModel]:
-        """
-        Retrieve all `IncomingFileModel` objects in the database.
-
-        Args:
-            id: the `workflow_id` whose files to retrieve.
-
-        Returns:
-            a sequence of `IncomingFileModel` objects.
-        """
-        statement = select(tables.IncomingFileModel).where(
-            tables.IncomingFileModel.workflow_id == id
-        )
-        results = self.session.exec(statement)
-        all_files = results.all()
-        return all_files
-
-    def save(self, obj: tables.IncomingFileModel) -> tables.IncomingFileModel:
-        """
-        Adds a new `IncomingFileModel` to the database.
-
-        Args:
-            obj: the `IncomingFileModel` object to save.
-
-        Returns:
-            The `IncomingFileModel` data as a dictionary.
-        """
-        valid_obj = tables.IncomingFileModel.model_validate(obj, from_attributes=True)
-        self.session.add(valid_obj)
-        self.session.flush()
-        self.session.refresh(valid_obj)
-        return valid_obj
 
 
 class WorkflowStatusRepository(ports.WorkflowRepositoryProtocol):
