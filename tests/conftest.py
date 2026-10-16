@@ -570,6 +570,44 @@ class FakeIncomingFileRepository(unit_of_work.IncomingFileRepository):
         return obj
 
 
+class FakeTemplateRepository(unit_of_work.OrderTemplateRepository):
+    TEMPLATES: list = []
+
+    def __init__(self):
+        self.session = None
+
+    def get(self, id):
+        templates = [i for i in self.TEMPLATES if i.id in [id, int(id)]]
+        if templates:
+            return templates[0]
+        return None
+
+    def list(self, offset, limit):
+        return self.TEMPLATES
+
+    def save(self, obj):
+        if not getattr(obj, "id"):
+            obj.id = self.TEMPLATES[-1].id + 1
+        template = self.get(obj.id)
+        if template:
+            self.TEMPLATES = [i for i in self.TEMPLATES if i != template]
+        self.TEMPLATES.append(obj)
+        return obj
+
+    def update(self, data, id):
+        obj = self.get(id)
+        if not obj:
+            return None
+        updates = {"id": id}
+        self.TEMPLATES = [i for i in self.TEMPLATES if i != obj]
+        for k, v in data.model_dump().items():
+            if not getattr(obj, k):
+                updates[k] = v
+        new = tables.TemplateModel(**updates)
+        self.TEMPLATES.append(new)
+        return new
+
+
 class FakeWorkflowRepository(unit_of_work.WorkflowStatusRepository):
     WORKFLOW = models.WorkflowState(id="1", status=models.WorkflowStatus.PENDING)
 
@@ -577,17 +615,19 @@ class FakeWorkflowRepository(unit_of_work.WorkflowStatusRepository):
         self.session = None
 
     def get(self, id):
-        self.WORKFLOW.id = id
         return self.WORKFLOW
 
     def update(self, data, id):
-        self.WORKFLOW = data
-        self.WORKFLOW.id = id
+        for k, v in data.__dict__.items():
+            if not getattr(self.WORKFLOW, k):
+                setattr(self.WORKFLOW, k, v)
+        return self.WORKFLOW
 
 
 class FakeUnitOfWork(ports.UnitOfWorkProtocol):
     processed_batches = FakeBatchRepository()
     incoming_files = FakeIncomingFileRepository()
+    order_templates = FakeTemplateRepository()
     workflow_states = FakeWorkflowRepository()
 
     def commit(self) -> None:

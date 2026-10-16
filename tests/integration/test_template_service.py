@@ -9,22 +9,8 @@ from overload_web.application.pvf.template_handling import (
     UpdateOrderTemplate,
 )
 from overload_web.domain.pvf import order_templates
-from overload_web.infrastructure import tables, unit_of_work
+from overload_web.infrastructure import tables
 from overload_web.presentation import schemas
-
-
-@pytest.fixture
-def make_template():
-    def _make_template(data):
-        template = tables.TemplateModel(**data)
-        return template
-
-    return _make_template
-
-
-@pytest.fixture
-def stub_uow(mock_engine):
-    return unit_of_work.SqlModelUnitOfWork(mock_engine)
 
 
 def test_template_attrs():
@@ -61,20 +47,20 @@ def test_template_attrs():
 
 
 class TestTemplateService:
-    def test_get_template(self, stub_uow):
-        template_obj = GetOrderTemplate.execute(uow=stub_uow, template_id="foo")
+    def test_get_template(self, fake_uow):
+        template_obj = GetOrderTemplate.execute(uow=fake_uow, template_id=1)
         assert template_obj is None
 
-    def test_list_templates(self, stub_uow):
-        template_list = ListOrderTemplates.execute(uow=stub_uow)
+    def test_list_templates(self, fake_uow):
+        template_list = ListOrderTemplates.execute(uow=fake_uow)
         assert template_list == []
 
-    def test_save_template(self, stub_uow, stub_template_data, make_template):
-        template = make_template(stub_template_data)
-        template_saver = SaveNewOrderTemplate.execute(uow=stub_uow, obj=template)
-        assert template_saver.name == stub_template_data["name"]
-        assert template_saver.agent == stub_template_data["agent"]
-        assert template_saver.blanket_po == stub_template_data["blanket_po"]
+    def test_save_template(self, fake_uow):
+        template = tables.TemplateModel(name="Foo", agent="Bar", blanket_po=None, id=1)
+        template_saver = SaveNewOrderTemplate.execute(uow=fake_uow, obj=template)
+        assert template_saver.name == "Foo"
+        assert template_saver.agent == "Bar"
+        assert template_saver.blanket_po is None
 
     @pytest.mark.parametrize(
         "id, name, agent",
@@ -85,41 +71,30 @@ class TestTemplateService:
             (4, "Qux Template", "user3"),
         ],
     )
-    def test_save_template_check(self, id, name, agent, make_template, stub_uow):
-        template = make_template(
-            data={
-                "id": id,
-                "name": name,
-                "agent": agent,
-                "country": "xxu",
-                "primary_matchpoint": "isbn",
-            }
+    def test_save_template_check(self, id, name, agent, fake_uow):
+        template = tables.TemplateModel(
+            id=id, name=name, agent=agent, country="xxu", primary_matchpoint="isbn"
         )
-        SaveNewOrderTemplate.execute(uow=stub_uow, obj=template)
-        saved_template = GetOrderTemplate.execute(uow=stub_uow, template_id=id)
+        SaveNewOrderTemplate.execute(uow=fake_uow, obj=template)
+        saved_template = GetOrderTemplate.execute(uow=fake_uow, template_id=id)
         assert saved_template.__dict__ == template.model_dump()
 
-    def test_update_template(self, make_template, stub_uow):
-        template = make_template(
-            data={
-                "id": "1",
-                "name": "foo",
-                "agent": "bar",
-                "country": "xxu",
-                "primary_matchpoint": "isbn",
-            }
+    def test_update_template(self, fake_uow):
+        template = tables.TemplateModel(
+            id=1, name="foo", agent="bar", country="xxu", primary_matchpoint="isbn"
         )
         template_patch = schemas.TemplatePatchModel(
             primary_matchpoint="upc", lang="eng"
         )
-        SaveNewOrderTemplate.execute(uow=stub_uow, obj=template)
-        original_template = GetOrderTemplate.execute(uow=stub_uow, template_id="1")
+        SaveNewOrderTemplate.execute(uow=fake_uow, obj=template)
+        original_template = GetOrderTemplate.execute(uow=fake_uow, template_id=1)
         updated_template = UpdateOrderTemplate.execute(
-            uow=stub_uow, template_id="1", obj=template_patch
+            uow=fake_uow, template_id=1, obj=template_patch
         )
         no_update = UpdateOrderTemplate.execute(
-            uow=stub_uow, template_id="2", obj=template_patch
+            uow=fake_uow, template_id="10", obj=template_patch
         )
+        assert updated_template.id == original_template.id
         assert updated_template.lang != original_template.lang
         assert (
             updated_template.primary_matchpoint != original_template.primary_matchpoint
