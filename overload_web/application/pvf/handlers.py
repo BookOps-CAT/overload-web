@@ -16,14 +16,14 @@ class ParseOrderLevelFilesHandler(AbstractCommandHandler):
     def __init__(
         self,
         bus: ports.MessageBusPort,
-        uow: ports.UnitOfWorkProtocol,
         parser: services.BibParser,
         storage: ports.FileStorage,
+        uow: ports.UnitOfWorkProtocol,
     ):
         self.bus = bus
-        self.uow = uow
-        self.storage = storage
         self.parser = parser
+        self.storage = storage
+        self.uow = uow
 
     def __call__(self, cmd: commands.ParseOrderLevelFiles):
         job = aggregate.OrderLevelJob(workflow_id=cmd.workflow_id, vendor=cmd.vendor)
@@ -43,14 +43,14 @@ class ParseFullLevelFilesHandler(AbstractCommandHandler):
     def __init__(
         self,
         bus: ports.MessageBusPort,
-        uow: ports.UnitOfWorkProtocol,
         parser: services.BibParser,
         storage: ports.FileStorage,
+        uow: ports.UnitOfWorkProtocol,
     ):
         self.bus = bus
-        self.uow = uow
-        self.storage = storage
         self.parser = parser
+        self.storage = storage
+        self.uow = uow
 
     def __call__(self, cmd: commands.ParseFullLevelFiles):
         job = aggregate.FullRecordJob(workflow_id=cmd.workflow_id)
@@ -74,8 +74,8 @@ class MatchOrderLevelRecordsHandler(AbstractCommandHandler):
         storage: ports.FileStorage,
     ):
         self.bus = bus
-        self.storage = storage
         self.matcher = matcher
+        self.storage = storage
 
     def __call__(self, cmd: commands.MatchOrderLevelRecords):
         job = self.storage.load_intermediate_records(id=cmd.workflow_id)
@@ -92,8 +92,8 @@ class MatchFullLevelRecordsHandler(AbstractCommandHandler):
         storage: ports.FileStorage,
     ):
         self.bus = bus
-        self.storage = storage
         self.matcher = matcher
+        self.storage = storage
 
     def __call__(self, cmd: commands.MatchFullLevelRecords):
         job = self.storage.load_intermediate_records(id=cmd.workflow_id)
@@ -106,13 +106,13 @@ class UpdateAndOutputOrderLevelRecordsHandler(AbstractCommandHandler):
     def __init__(
         self,
         bus: ports.MessageBusPort,
-        uow: ports.UnitOfWorkProtocol,
-        updater: services.BibUpdater,
         storage: ports.FileStorage,
+        updater: services.BibUpdater,
+        uow: ports.UnitOfWorkProtocol,
     ):
         self.bus = bus
-        self.uow = uow
         self.storage = storage
+        self.uow = uow
         self.updater = updater
 
     def __call__(self, cmd: commands.UpdateAndOutputOrderLevelRecords):
@@ -135,14 +135,14 @@ class UpdateAndOutputFullLevelRecordsHandler(AbstractCommandHandler):
     def __init__(
         self,
         bus: ports.MessageBusPort,
-        uow: ports.UnitOfWorkProtocol,
-        updater: services.BibUpdater,
         storage: ports.FileStorage,
+        updater: services.BibUpdater,
+        uow: ports.UnitOfWorkProtocol,
     ):
         self.bus = bus
+        self.storage = storage
         self.uow = uow
         self.updater = updater
-        self.storage = storage
 
     def __call__(self, cmd: commands.UpdateAndOutputFullLevelRecords):
         job = self.storage.load_intermediate_records(id=cmd.workflow_id)

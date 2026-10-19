@@ -27,9 +27,10 @@ class IncomingFileModel(SQLModel, table=True):
     __tablename__ = "incoming_files"
     id: str = Field(default=None, primary_key=True, index=True)
     filename: str = Field(nullable=False)
-    workflow_id: str = Field(nullable=False, index=True, foreign_key="workflows.id")
-    source: str = Field(nullable=False)
     reference: str = Field(nullable=False)
+    source: str = Field(nullable=False)
+    workflow_id: str = Field(nullable=False, index=True, foreign_key="workflows.id")
+
     workflow: "WorkflowStateModel" = Relationship(back_populates="files")
 
 
@@ -39,10 +40,10 @@ class ProcessedFileModel(SQLModel, table=True):
     __tablename__ = "files"
 
     id: int | None = Field(default=None, primary_key=True, index=True, exclude=True)
+    batch_id: int = Field(default=None, foreign_key="batches.id", exclude=True)
     file_name: str = Field(nullable=False, index=True)
     records: bytes = Field(nullable=False)
 
-    batch_id: int = Field(default=None, foreign_key="batches.id", exclude=True)
     batch: "PVFBatch" = Relationship(back_populates="files")
 
 
@@ -55,15 +56,16 @@ class PVFBatch(SQLModel, table=True):
     __tablename__ = "batches"
 
     id: int = Field(default=None, primary_key=True, index=True)
+    file_names: list[str | None] = Field(sa_column=Column(JSON))
+    missing_barcodes: list[str | None] | None = Field(sa_column=Column(JSON))
+    processing_integrity: bool | None
+    stats: list[dict[str, Any]] = Field(sa_column=Column(JSON))
+    total_files: int
+    total_records: int
+
     files: list["ProcessedFileModel"] = Relationship(
         back_populates="batch", sa_relationship_kwargs={"lazy": "selectin"}
     )
-    stats: list[dict[str, Any]] = Field(sa_column=Column(JSON))
-    file_names: list[str | None] = Field(sa_column=Column(JSON))
-    total_files: int
-    total_records: int
-    missing_barcodes: list[str | None] | None = Field(sa_column=Column(JSON))
-    processing_integrity: bool | None
 
 
 class TemplateUpdateModel(SQLModel):
@@ -121,11 +123,11 @@ class TemplateModel(TemplateUpdateModel, table=True):
 class WorkflowUpdateModel(SQLModel):
     """Tracks the state of a long-running process."""
 
-    status: str = Field(nullable=False, index=True)
     batch_id: int | None = Field(default=None)
     error_message: str | None = Field(default=None)
     matchpoints: dict[str, str] | None = Field(default=None, sa_type=JSON)
     record_type: str | None = Field(default=None)
+    status: str = Field(nullable=False, index=True)
     template_data: dict[str, Any] | None = Field(default=None, sa_type=JSON)
 
 
@@ -134,6 +136,7 @@ class WorkflowStateModel(WorkflowUpdateModel, table=True):
 
     __tablename__ = "workflows"
     id: str = Field(primary_key=True, index=True)
+
     files: list["IncomingFileModel"] = Relationship(
         back_populates="workflow", sa_relationship_kwargs={"lazy": "selectin"}
     )
