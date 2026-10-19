@@ -26,6 +26,13 @@ class WorkflowManager:
                 logger.info(f"Workflow {id} transitioned to {state.status}")
         return new_state
 
+    def handle_workflow_initialized(self, workflow_id: str) -> None:
+        """Triggered by the FastAPI endpoint."""
+        self.handle_workflow_event(
+            id=workflow_id,
+            state=models.WorkflowStateBase(status=models.WorkflowStatus.PENDING),
+        )
+
     def handle_workflow_started_order_level(
         self,
         workflow_id: str,

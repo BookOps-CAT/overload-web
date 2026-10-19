@@ -2,9 +2,9 @@ import datetime
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Sequence
 
-from overload_web.domain.pvf import models, services
+from overload_web.domain.pvf import files, models, ports, services
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +45,14 @@ class AbstractProcessingJob(ABC):
     processed_files: list[ProcessedFile]
     report_data: list[dict[str, Any]]
     file_names: list[str]
+    batches_data: dict[str, bytes]
     missing_barcodes: list[str]
     processed: ProcessedFileBatch | None
+
+    def load_files(
+        self, files: Sequence[files.IncomingFile], storage: ports.FileStorage
+    ) -> None:
+        self.batches_data = {i.filename: storage.load(i.reference) for i in files}
 
     @abstractmethod
     def parse_files(self, *args, **kwargs) -> None: ...  # pragma:no branch
@@ -67,6 +73,7 @@ class OrderLevelJob(AbstractProcessingJob):
         self.workflow_id = workflow_id
         self.vendor = vendor
 
+        self.batches_data: dict[str, bytes] = {}
         self.file_names: list[str] = []
         self.file_records: dict[str, list[models.DomainBib]] = {}
         self.missing_barcodes: list[str] = []
@@ -75,10 +82,8 @@ class OrderLevelJob(AbstractProcessingJob):
         self.report_data: list[dict[str, Any]] = []
         self.validator = services.BarcodeValidator()
 
-    def parse_files(
-        self, batches_data: dict[str, bytes], parser: services.BibParser
-    ) -> None:
-        for file_name, data in batches_data.items():
+    def parse_files(self, parser: services.BibParser) -> None:
+        for file_name, data in self.batches_data.items():
             self.file_names.append(file_name)
             parsed = parser.parse_marc_data(data=data, vendor=self.vendor)
             self.validator.validate_unique([bib.barcodes for bib in parsed])
@@ -124,6 +129,7 @@ class FullRecordJob(AbstractProcessingJob):
     def __init__(self, workflow_id: str):
         self.workflow_id = workflow_id
 
+        self.batches_data: dict[str, bytes] = {}
         self.file_names: list[str] = []
         self.records: list[models.DomainBib] = []
         self.missing_barcodes: list[str] = []
@@ -134,11 +140,9 @@ class FullRecordJob(AbstractProcessingJob):
         self.out_file_name = datetime.datetime.today().strftime("%y%m%d")
         self.validator = services.BarcodeValidator()
 
-    def parse_files(
-        self, batches_data: dict[str, bytes], parser: services.BibParser
-    ) -> None:
+    def parse_files(self, parser: services.BibParser) -> None:
         data_list = []
-        for file_name, file_data in batches_data.items():
+        for file_name, file_data in self.batches_data.items():
             self.file_names.append(file_name)
             data_list.append(file_data)
         data = parser.combine_marc_files(data_list)

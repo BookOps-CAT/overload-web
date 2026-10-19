@@ -4,6 +4,20 @@ from overload_web.domain.shared import Event
 
 
 @dataclass
+class WorkflowInitialized(Event):
+    """Event marking creation of new workflow."""
+
+    workflow_id: str
+
+
+@dataclass
+class OrderLevelWorkflowStarted(Event):
+    """Event marking start of order-level record processing workflow."""
+
+    workflow_id: str
+
+
+@dataclass
 class OrderLevelFilesParsed(Event):
     """Event marking completion of order-level record parsing."""
 
@@ -23,6 +37,13 @@ class OrderLevelWorkflowCompleted(Event):
 
     workflow_id: str
     batch_id: str
+
+
+@dataclass
+class FullLevelWorkflowStarted(Event):
+    """Event marking start of full MARC record processing workflow."""
+
+    workflow_id: str
 
 
 @dataclass

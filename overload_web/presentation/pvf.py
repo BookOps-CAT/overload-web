@@ -6,10 +6,10 @@ import logging
 import uuid
 from typing import Annotated, Any
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Form, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from fastapi.responses import HTMLResponse
 
-from overload_web.domain.pvf import models
+from overload_web.domain.pvf import commands, models
 from overload_web.presentation import pvf_deps, schemas
 
 logger = logging.getLogger(__name__)
@@ -20,15 +20,10 @@ api_router = APIRouter()
 
 @api_router.get("/workflow", response_class=HTMLResponse)
 def initialize_workflow(
-    request: Request, uow: Annotated[Any, Depends(pvf_deps.get_uow)]
+    request: Request, bus: Annotated[Any, Depends(pvf_deps.get_message_bus)]
 ) -> HTMLResponse:
     workflow_id = str(uuid.uuid4())
-    with uow:
-        state = models.WorkflowState(
-            id=workflow_id, status=models.WorkflowStatus.PENDING
-        )
-        uow.workflow_states.save(state)
-        uow.commit()
+    bus.send(commands.InitializeWorkflow(workflow_id=workflow_id))
     logger.info(f"Created new workflow ID: {workflow_id}")
     request.app.state.workflow_id = workflow_id
     return request.app.state.templates.TemplateResponse(
@@ -42,10 +37,12 @@ def initialize_workflow(
 def process_order_records(
     request: Request,
     background_tasks: BackgroundTasks,
+    bus: Annotated[Any, Depends(pvf_deps.get_message_bus)],
+    context: Annotated[
+        schemas.ProcessingContext, Depends(schemas.ProcessingContext.from_form)
+    ],
     matchpoints: Annotated[Any, Depends(schemas.MatchpointsModel.from_form)],
     order_template: Annotated[Any, Depends(schemas.TemplateDataModel.from_form)],
-    process_manager: Annotated[Any, Depends(pvf_deps.get_process_manager)],
-    record_type: Annotated[str, Form(...)],
 ) -> HTMLResponse:
     """
     Process one or more files of order-level MARC records using the acq workflow.
@@ -77,16 +74,21 @@ def process_order_records(
     """
     workflow_id = request.app.state.workflow_id
     background_tasks.add_task(
-        process_manager.handle_workflow_started_order_level,
-        workflow_id=workflow_id,
-        vendor=getattr(order_template, "vendor", "UNKNOWN"),
-        matchpoints=matchpoints.model_dump(),
-        template_data=order_template.model_dump(),
+        bus.send,
+        commands.StartOrderLevelRecordsWorkflow(
+            collection=context.collection,
+            library=context.library,
+            matchpoints=matchpoints.model_dump(),
+            record_type=context.record_type,
+            template_data=order_template.model_dump(),
+            vendor=getattr(order_template, "vendor", "UNKNOWN"),
+            workflow_id=workflow_id,
+        ),
     )
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/polling_indicator.html",
-        context={"workflow_id": workflow_id, "record_type": record_type},
+        context={"workflow_id": workflow_id, "record_type": context.record_type},
     )
 
 
@@ -94,8 +96,10 @@ def process_order_records(
 def process_full_records(
     request: Request,
     background_tasks: BackgroundTasks,
-    process_manager: Annotated[Any, Depends(pvf_deps.get_process_manager)],
-    record_type: Annotated[str, Form(...)],
+    bus: Annotated[Any, Depends(pvf_deps.get_message_bus)],
+    context: Annotated[
+        schemas.ProcessingContext, Depends(schemas.ProcessingContext.from_form)
+    ],
 ) -> HTMLResponse:
     """
     Process one or more files of full-level MARC records using the cat workflow.
@@ -122,12 +126,18 @@ def process_full_records(
     """
     workflow_id = request.app.state.workflow_id
     background_tasks.add_task(
-        process_manager.handle_workflow_started_full_level, workflow_id=workflow_id
+        bus.send,
+        commands.StartFullLevelRecordsWorkflow(
+            collection=context.collection,
+            library=context.library,
+            record_type=context.record_type,
+            workflow_id=workflow_id,
+        ),
     )
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="pvf_partials/polling_indicator.html",
-        context={"workflow_id": workflow_id, "record_type": record_type},
+        context={"workflow_id": workflow_id, "record_type": context.record_type},
     )
 
 

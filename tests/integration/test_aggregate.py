@@ -2,7 +2,7 @@ import random
 
 import pytest
 
-from overload_web.domain.pvf import aggregate, models
+from overload_web.domain.pvf import aggregate, files, models
 
 
 def create_stub_bib(library, collection, record_type):
@@ -22,6 +22,18 @@ def create_stub_bib(library, collection, record_type):
         ),
         parsed_fields=[],
     )
+
+
+@pytest.fixture
+def stub_aggregate(request):
+    marker = request.node.get_closest_marker("workflow")
+    record_type = marker.kwargs["record_type"]
+    if record_type == "cat":
+        job = aggregate.FullRecordJob(workflow_id="1")
+    else:
+        job = aggregate.OrderLevelJob(workflow_id="1", vendor="UNKNOWN")
+    job.batches_data = {"foo.mrc": b""}
+    return job
 
 
 @pytest.fixture
@@ -58,15 +70,29 @@ def stub_matched_aggregate(request):
 
 class TestOrderLevelJob:
     @pytest.mark.workflow(record_type="acq")
-    def test_parse_files(self, fake_parser):
+    def test_parse_files(self, fake_parser, stub_aggregate):
+        stub_aggregate.parse_files(parser=fake_parser)
+        assert isinstance(stub_aggregate.file_records, dict)
+        assert list(stub_aggregate.file_records.keys()) == ["foo.mrc"]
+        assert len(stub_aggregate.file_records["foo.mrc"]) == 1
+        assert stub_aggregate.file_names == ["foo.mrc"]
+
+    @pytest.mark.workflow(record_type="acq")
+    def test_load_files(self, fake_storage):
         job = aggregate.OrderLevelJob(workflow_id="1", vendor="UNKNOWN")
-        job.parse_files(
-            parser=fake_parser, batches_data={"foo.mrc": b"", "bar.mrc": b""}
+        job.load_files(
+            files=[
+                files.IncomingFile(
+                    filename="foo.mrc",
+                    id="1",
+                    source="ftp",
+                    reference="bar/foo.mrc",
+                    workflow_id="1",
+                )
+            ],
+            storage=fake_storage,
         )
-        assert isinstance(job.file_records, dict)
-        assert list(job.file_records.keys()) == ["foo.mrc", "bar.mrc"]
-        assert len(job.file_records["foo.mrc"]) == 1
-        assert job.file_names == ["foo.mrc", "bar.mrc"]
+        assert list(job.batches_data.keys()) == ["foo.mrc"]
 
     @pytest.mark.workflow(record_type="acq")
     def test_match_records(self, stub_parsed_aggregate, fake_matcher):
@@ -98,15 +124,12 @@ class TestOrderLevelJob:
 
 class TestFullRecordJob:
     @pytest.mark.workflow(record_type="cat")
-    def test_parse_files(self, fake_parser):
-        job = aggregate.FullRecordJob(workflow_id="1")
-        job.parse_files(
-            parser=fake_parser, batches_data={"foo.mrc": b"", "bar.mrc": b""}
-        )
-        assert isinstance(job.records, list)
-        assert len(job.records) == 2
-        assert job.file_names == ["foo.mrc", "bar.mrc"]
-        assert len(job.original_barcodes) == 2
+    def test_parse_files(self, fake_parser, stub_aggregate):
+        stub_aggregate.parse_files(parser=fake_parser)
+        assert isinstance(stub_aggregate.records, list)
+        assert len(stub_aggregate.records) == 1
+        assert stub_aggregate.file_names == ["foo.mrc"]
+        assert len(stub_aggregate.original_barcodes) == 1
 
     @pytest.mark.workflow(record_type="cat")
     def test_match_records(self, stub_parsed_aggregate, fake_matcher):

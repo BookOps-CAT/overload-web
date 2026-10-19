@@ -441,6 +441,7 @@ class FakeFileStorage(ports.FileStorage):
 class FakeFileStorageWithFullParsedFiles(FakeFileStorage):
     def load_intermediate_records(*args, **kwargs):
         job = aggregate.FullRecordJob(workflow_id=kwargs["id"])
+        job.batches_data = {"foo.mrc": b""}
         job.file_names = ["foo.mrc"]
         job.records = [create_stub_bib("cat")]
         job.report_data = [{"foo": "bar"}]
@@ -451,6 +452,7 @@ class FakeFileStorageWithFullParsedFiles(FakeFileStorage):
 class FakeFileStorageWithOrderLevelParsedFiles(FakeFileStorage):
     def load_intermediate_records(*args, **kwargs):
         job = aggregate.OrderLevelJob(workflow_id=kwargs["id"], vendor="UNKNOWN")
+        job.batches_data = {"foo.mrc": b""}
         job.file_names = ["foo.mrc"]
         job.file_records = {"foo.mrc": [create_stub_bib("acq")]}
         job.report_data = [{"foo": "bar"}]
@@ -465,6 +467,11 @@ def fake_matcher():
 @pytest.fixture
 def fake_parser():
     return FakeParser()
+
+
+@pytest.fixture
+def fake_storage():
+    return FakeFileStorage()
 
 
 @pytest.fixture
@@ -514,6 +521,38 @@ def stub_manager():
             updater=updater,
             storage=FakeFileStorageWithFullParsedFiles(),
         ),
+    )
+    return WorkflowManager(bus=bus, uow=uow)
+
+
+@pytest.fixture
+def stub_order_level_manager():
+    uow = FakeUnitOfWork()
+    updater = FakeUpdater()
+    matcher = FakeMatcher()
+    parser = FakeParser()
+    bus = bootstrap_message_bus(
+        matcher=matcher,
+        parser=parser,
+        uow=uow,
+        updater=updater,
+        storage=FakeFileStorageWithOrderLevelParsedFiles(),
+    )
+    return WorkflowManager(bus=bus, uow=uow)
+
+
+@pytest.fixture
+def stub_full_level_manager():
+    uow = FakeUnitOfWork()
+    updater = FakeUpdater()
+    matcher = FakeMatcher()
+    parser = FakeParser()
+    bus = bootstrap_message_bus(
+        matcher=matcher,
+        parser=parser,
+        uow=uow,
+        updater=updater,
+        storage=FakeFileStorageWithFullParsedFiles(),
     )
     return WorkflowManager(bus=bus, uow=uow)
 
