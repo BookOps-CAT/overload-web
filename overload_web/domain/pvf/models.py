@@ -552,9 +552,6 @@ class WorkflowStateBase:
     matchpoints: dict[str, str] = field(default_factory=dict)
     template_data: dict[str, Any] = field(default_factory=dict)
 
-    def __repr__(self) -> str:
-        return f"WorkflowStateBase(status: {self.status}, batch_id: {self.batch_id}, collection: {self.collection}, error_message: {self.error_message}, library: {self.library}, record_type: {self.record_type}, matchpoints: {self.matchpoints}, template_data: {self.template_data})"  # noqa: E501
-
 
 @dataclass(kw_only=True)
 class WorkflowStateInitial(WorkflowStateBase):

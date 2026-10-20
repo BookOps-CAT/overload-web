@@ -339,7 +339,6 @@ class TestApp:
         mocker.patch("overload_web.infrastructure.unit_of_work.Session.get", mock_obj)
         response = self.client.get("/pvf/workflow/123/status")
         assert response.status_code == 200
-        assert list(response.context.keys()) == ["workflow_id", "request"]
         assert "Processing vendor file..." in response.text
 
     def test_pvf_router_workflow_status_check_completed(self, mocker):

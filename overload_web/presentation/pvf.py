@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse
 
 from overload_web.domain.pvf import commands, models
 from overload_web.presentation import pvf_deps, schemas
+from overload_web.presentation.utils import safe_html
 
 logger = logging.getLogger(__name__)
 
@@ -83,11 +84,14 @@ def process_order_records(
             workflow_id=workflow_id,
         ),
     )
-    return request.app.state.templates.TemplateResponse(
-        request=request,
-        name="pvf_partials/polling_indicator.html",
-        context={"workflow_id": workflow_id, "record_type": context.record_type},
-    )
+    partial = """
+    <div hx-get="/pvf/workflow/{workflow_id}/status"
+        hx-trigger="every 2s"
+        hx-swap="outerHTML">
+        <span class="spinner"></span> Processing vendor file...
+    </div>"""
+    html_str = safe_html(partial, workflow_id=workflow_id)
+    return HTMLResponse(html_str)
 
 
 @api_router.post("/process-full-records", response_class=HTMLResponse)
@@ -132,11 +136,14 @@ def process_full_records(
             workflow_id=workflow_id,
         ),
     )
-    return request.app.state.templates.TemplateResponse(
-        request=request,
-        name="pvf_partials/polling_indicator.html",
-        context={"workflow_id": workflow_id, "record_type": context.record_type},
-    )
+    partial = """
+    <div hx-get="/pvf/workflow/{workflow_id}/status"
+        hx-trigger="every 2s"
+        hx-swap="outerHTML">
+        <span class="spinner"></span> Processing vendor file...
+    </div>"""
+    html_str = safe_html(partial, workflow_id=workflow_id)
+    return HTMLResponse(html_str)
 
 
 @api_router.get("/workflow/{workflow_id}/status", response_class=HTMLResponse)
@@ -155,10 +162,16 @@ def workflow_status_check(
             context={"batch_id": state.batch_id, "record_type": state.record_type},
         )
     elif state.status == models.WorkflowStatus.FAILED:
-        return HTMLResponse(f"<div class='error'>Error: {state.error_message}</div>")
-
-    return request.app.state.templates.TemplateResponse(
-        request=request,
-        name="pvf_partials/polling_indicator.html",
-        context={"workflow_id": workflow_id},
-    )
+        html_str = safe_html(
+            "<div class='error'>Error: {error_message}</div>",
+            error_message=state.error_message,
+        )
+        return HTMLResponse(html_str)
+    partial = """
+    <div hx-get="/pvf/workflow/{workflow_id}/status"
+        hx-trigger="every 2s"
+        hx-swap="outerHTML">
+        <span class="spinner"></span> Processing vendor file...
+    </div>"""
+    html_str = safe_html(partial, workflow_id=workflow_id)
+    return HTMLResponse(html_str)
