@@ -38,6 +38,9 @@ class StartFullLevelRecordsWorkflow(Command):
 class ParseOrderLevelFiles(Command):
     """Command to parse order-level records from incoming files."""
 
+    collection: str | None
+    library: str
+    record_type: str
     workflow_id: str
     vendor: str
 
@@ -46,6 +49,7 @@ class ParseOrderLevelFiles(Command):
 class MatchOrderLevelRecords(Command):
     """Command to match order-level records after they have been parsed."""
 
+    library: str
     workflow_id: str
     matchpoints: dict[str, str]
 
@@ -54,14 +58,20 @@ class MatchOrderLevelRecords(Command):
 class UpdateAndOutputOrderLevelRecords(Command):
     """Command to update and output order-level records."""
 
-    workflow_id: str
+    collection: str | None
+    library: str
+    record_type: str
     template_data: dict[str, Any]
+    workflow_id: str
 
 
 @dataclass
 class ParseFullLevelFiles(Command):
     """Command to parse full MARC records from incoming files."""
 
+    collection: str | None
+    library: str
+    record_type: str
     workflow_id: str
 
 
@@ -69,6 +79,7 @@ class ParseFullLevelFiles(Command):
 class MatchFullLevelRecords(Command):
     """Command to match full MARC records after they have been parsed."""
 
+    library: str
     workflow_id: str
 
 
@@ -76,4 +87,7 @@ class MatchFullLevelRecords(Command):
 class UpdateAndOutputFullLevelRecords(Command):
     """Command to update and output full MARC records."""
 
+    collection: str | None
+    library: str
+    record_type: str
     workflow_id: str

@@ -38,7 +38,17 @@ class StartOrderLevelRecordsWorkflowHandler(AbstractCommandHandler):
             incoming_files = self.uow.incoming_files.list_by_id(id=cmd.workflow_id)
             job.load_files(files=incoming_files, storage=self.storage)
         self.storage.save_intermediate_records(id=cmd.workflow_id, job=job)
-        self.bus.publish(events.OrderLevelWorkflowStarted(workflow_id=cmd.workflow_id))
+        self.bus.publish(
+            events.OrderLevelWorkflowStarted(
+                workflow_id=cmd.workflow_id,
+                vendor=cmd.vendor,
+                matchpoints=cmd.matchpoints,
+                template_data=cmd.template_data,
+                library=cmd.library,
+                collection=cmd.collection,
+                record_type=cmd.record_type,
+            )
+        )
 
 
 class StartFullLevelRecordsWorkflowHandler(AbstractCommandHandler):
@@ -58,7 +68,14 @@ class StartFullLevelRecordsWorkflowHandler(AbstractCommandHandler):
             incoming_files = self.uow.incoming_files.list_by_id(id=cmd.workflow_id)
             job.load_files(files=incoming_files, storage=self.storage)
         self.storage.save_intermediate_records(id=cmd.workflow_id, job=job)
-        self.bus.publish(events.FullLevelWorkflowStarted(workflow_id=cmd.workflow_id))
+        self.bus.publish(
+            events.FullLevelWorkflowStarted(
+                workflow_id=cmd.workflow_id,
+                library=cmd.library,
+                collection=cmd.collection,
+                record_type=cmd.record_type,
+            )
+        )
 
 
 class ParseOrderLevelFilesHandler(AbstractCommandHandler):
@@ -74,7 +91,12 @@ class ParseOrderLevelFilesHandler(AbstractCommandHandler):
 
     def __call__(self, cmd: commands.ParseOrderLevelFiles):
         job = self.storage.load_intermediate_records(id=cmd.workflow_id)
-        job.parse_files(parser=self.parser)
+        job.parse_files(
+            parser=self.parser,
+            library=cmd.library,
+            record_type=cmd.record_type,
+            vendor=cmd.vendor,
+        )
         self.storage.save_intermediate_records(id=cmd.workflow_id, job=job)
         self.bus.publish(events.OrderLevelFilesParsed(workflow_id=cmd.workflow_id))
 
@@ -92,7 +114,9 @@ class ParseFullLevelFilesHandler(AbstractCommandHandler):
 
     def __call__(self, cmd: commands.ParseFullLevelFiles):
         job = self.storage.load_intermediate_records(id=cmd.workflow_id)
-        job.parse_files(parser=self.parser)
+        job.parse_files(
+            parser=self.parser, library=cmd.library, record_type=cmd.record_type
+        )
         self.storage.save_intermediate_records(id=cmd.workflow_id, job=job)
         self.bus.publish(events.FullLevelFilesParsed(workflow_id=cmd.workflow_id))
 
@@ -110,7 +134,9 @@ class MatchOrderLevelRecordsHandler(AbstractCommandHandler):
 
     def __call__(self, cmd: commands.MatchOrderLevelRecords):
         job = self.storage.load_intermediate_records(id=cmd.workflow_id)
-        job.match_records(matcher=self.matcher, matchpoints=cmd.matchpoints)
+        job.match_records(
+            matcher=self.matcher, matchpoints=cmd.matchpoints, library=cmd.library
+        )
         self.storage.save_intermediate_records(id=cmd.workflow_id, job=job)
         self.bus.publish(events.OrderLevelRecordsMatched(workflow_id=cmd.workflow_id))
 
@@ -128,7 +154,7 @@ class MatchFullLevelRecordsHandler(AbstractCommandHandler):
 
     def __call__(self, cmd: commands.MatchFullLevelRecords):
         job = self.storage.load_intermediate_records(id=cmd.workflow_id)
-        job.match_records(matcher=self.matcher)
+        job.match_records(matcher=self.matcher, library=cmd.library)
         self.storage.save_intermediate_records(id=cmd.workflow_id, job=job)
         self.bus.publish(events.FullLevelRecordsMatched(workflow_id=cmd.workflow_id))
 
@@ -149,7 +175,11 @@ class UpdateAndOutputOrderLevelRecordsHandler(AbstractCommandHandler):
     def __call__(self, cmd: commands.UpdateAndOutputOrderLevelRecords):
         job = self.storage.load_intermediate_records(id=cmd.workflow_id)
         job.apply_updates_and_create_batch(
-            template_data=cmd.template_data, updater=self.updater
+            collection=cmd.collection,
+            library=cmd.library,
+            template_data=cmd.template_data,
+            updater=self.updater,
+            record_type=cmd.record_type,
         )
         with self.uow:
             db_batch = self.uow.processed_batches.save(job.processed)
@@ -177,7 +207,9 @@ class UpdateAndOutputFullLevelRecordsHandler(AbstractCommandHandler):
 
     def __call__(self, cmd: commands.UpdateAndOutputFullLevelRecords):
         job = self.storage.load_intermediate_records(id=cmd.workflow_id)
-        job.apply_updates_and_create_batch(updater=self.updater)
+        job.apply_updates_and_create_batch(
+            updater=self.updater, collection=cmd.collection, library=cmd.library
+        )
         with self.uow:
             db_batch = self.uow.processed_batches.save(job.processed)
             batch_id = db_batch.id

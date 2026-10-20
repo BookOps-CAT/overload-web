@@ -8,10 +8,9 @@ import os
 from functools import lru_cache
 from typing import Annotated, Any
 
-from fastapi import Depends, Form, Request
+from fastapi import Depends, Request
 from sqlmodel import SQLModel, create_engine
 
-from overload_web.application.pvf import workflow_manager
 from overload_web.bootstrap import bootstrap_message_bus
 from overload_web.domain.pvf import services
 from overload_web.infrastructure import (
@@ -21,7 +20,6 @@ from overload_web.infrastructure import (
     sierra_clients,
     unit_of_work,
 )
-from overload_web.presentation import schemas
 
 logger = logging.getLogger(__name__)
 
@@ -46,14 +44,14 @@ def get_engine(uri: str):
 
 
 @lru_cache
-def parser_rules() -> dict[str, Any]:
+def get_parser_rules() -> dict[str, Any]:
     """Open and cache parsing rules"""
     with open("overload_web/data/parsing_rules.json", "r", encoding="utf-8") as fh:
         return json.load(fh)
 
 
 @lru_cache
-def updater_rules() -> dict[str, Any]:
+def get_updater_rules() -> dict[str, Any]:
     """Open and cache updater rules"""
     with open("overload_web/data/update_rules.json", "r", encoding="utf-8") as fh:
         return json.load(fh)
@@ -88,71 +86,27 @@ def get_uow(request: Request) -> unit_of_work.SqlModelUnitOfWork:
     return unit_of_work.SqlModelUnitOfWork(engine=request.app.state.engine)
 
 
-def get_fetcher(library: Annotated[str, Form(...)]) -> sierra_clients.SierraBibFetcher:
-    """Create a SierraBibFetcher service for a library."""
-    return sierra_clients.FetcherFactory.make(library)
-
-
-def get_matcher(fetcher: Any = Depends(get_fetcher)) -> services.BibMatcher:
-    """Create a BibMatcher service for a library."""
-    return services.BibMatcher(fetcher=fetcher)
-
-
-def get_parser(
-    context: Annotated[
-        schemas.ProcessingContext, Depends(schemas.ProcessingContext.from_form)
-    ],
-    parser_rules: Annotated[dict[str, Any], Depends(parser_rules)],
-) -> services.BibParser:
-    """Create a BibParser service for a library."""
-    parser = marc_handler.MarcParser()
-    return services.BibParser(
-        handler=parser,
-        bib_mapping=parser_rules["bib_mapping"],
-        library=context.library,
-        collection=context.collection,
-        record_type=context.record_type,
-        order_mapping=parser_rules["order_mapping"],
-        vendor_mapping=parser_rules["vendor_mapping"],
-    )
-
-
-def get_updater(
-    context: Annotated[
-        schemas.ProcessingContext, Depends(schemas.ProcessingContext.from_form)
-    ],
-    updater_rules: Annotated[dict[str, Any], Depends(updater_rules)],
-) -> services.BibUpdater:
-    """Create a BibUpdater service for a library."""
-    updater = marc_handler.MarcUpdater()
-    return services.BibUpdater(
-        handler=updater,
-        bib_id_tag=updater_rules["bib_id_tag"][context.library],
-        library=context.library,
-        order_mapping=updater_rules["order_mapping"],
-        default_loc=updater_rules["default_locations"][context.library].get(
-            context.collection
-        ),
-        collection=context.collection,
-        record_type=context.record_type,
-    )
-
-
 def get_message_bus(
-    parser: Annotated[Any, Depends(get_parser)],
-    matcher: Annotated[Any, Depends(get_matcher)],
     uow: Annotated[Any, Depends(get_uow)],
-    updater: Annotated[Any, Depends(get_updater)],
     storage: Annotated[Any, Depends(local_file_storage)],
 ):
     """Instantiates the bus and registers all command/event handlers."""
+    parser_rules = get_parser_rules()
+    updater_rules = get_updater_rules()
     return bootstrap_message_bus(
-        uow=uow, storage=storage, parser=parser, matcher=matcher, updater=updater
+        uow=uow,
+        storage=storage,
+        parser=services.BibParser(
+            handler=marc_handler.MarcParser(),
+            bib_mapping=parser_rules["bib_mapping"],
+            order_mapping=parser_rules["order_mapping"],
+            vendor_mapping=parser_rules["vendor_mapping"],
+        ),
+        matcher=services.BibMatcher(fetcher_factory=sierra_clients.FetcherFactory.make),
+        updater=services.BibUpdater(
+            handler=marc_handler.MarcUpdater(),
+            bib_id_tags=updater_rules["bib_id_tag"],
+            order_mapping=updater_rules["order_mapping"],
+            default_locations=updater_rules["default_locations"],
+        ),
     )
-
-
-def get_process_manager(
-    bus: Annotated[Any, Depends(get_message_bus)], uow: Annotated[Any, Depends(get_uow)]
-) -> workflow_manager.WorkflowManager:
-    """Provides the Process Manager to the FastAPI endpoints."""
-    return workflow_manager.WorkflowManager(bus=bus, uow=uow)

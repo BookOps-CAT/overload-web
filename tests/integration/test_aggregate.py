@@ -71,7 +71,9 @@ def stub_matched_aggregate(request):
 class TestOrderLevelJob:
     @pytest.mark.workflow(record_type="acq")
     def test_parse_files(self, fake_parser, stub_aggregate):
-        stub_aggregate.parse_files(parser=fake_parser)
+        stub_aggregate.parse_files(
+            parser=fake_parser, library="foo", record_type="acq", vendor="bar"
+        )
         assert isinstance(stub_aggregate.file_records, dict)
         assert list(stub_aggregate.file_records.keys()) == ["foo.mrc"]
         assert len(stub_aggregate.file_records["foo.mrc"]) == 1
@@ -97,7 +99,9 @@ class TestOrderLevelJob:
     @pytest.mark.workflow(record_type="acq")
     def test_match_records(self, stub_parsed_aggregate, fake_matcher):
         stub_parsed_aggregate.match_records(
-            matcher=fake_matcher, matchpoints={"primary_matchpoint": "isbn"}
+            matcher=fake_matcher,
+            matchpoints={"primary_matchpoint": "isbn"},
+            library="nypl",
         )
         assert len(stub_parsed_aggregate.file_records["foo.mrc"]) == 1
         assert stub_parsed_aggregate.file_records["foo.mrc"][0].bib_id is None
@@ -105,7 +109,11 @@ class TestOrderLevelJob:
     @pytest.mark.workflow(record_type="acq")
     def test_apply_updates_and_create_batch(self, stub_matched_aggregate, fake_updater):
         stub_matched_aggregate.apply_updates_and_create_batch(
-            template_data={"format": "a"}, updater=fake_updater
+            template_data={"format": "a"},
+            updater=fake_updater,
+            collection="foo",
+            library="bar",
+            record_type="baz",
         )
         assert stub_matched_aggregate.missing_barcodes == []
         assert len(stub_matched_aggregate.processed_files) == 1
@@ -125,7 +133,7 @@ class TestOrderLevelJob:
 class TestFullRecordJob:
     @pytest.mark.workflow(record_type="cat")
     def test_parse_files(self, fake_parser, stub_aggregate):
-        stub_aggregate.parse_files(parser=fake_parser)
+        stub_aggregate.parse_files(parser=fake_parser, library="foo", record_type="acq")
         assert isinstance(stub_aggregate.records, list)
         assert len(stub_aggregate.records) == 1
         assert stub_aggregate.file_names == ["foo.mrc"]
@@ -133,13 +141,15 @@ class TestFullRecordJob:
 
     @pytest.mark.workflow(record_type="cat")
     def test_match_records(self, stub_parsed_aggregate, fake_matcher):
-        stub_parsed_aggregate.match_records(matcher=fake_matcher)
+        stub_parsed_aggregate.match_records(matcher=fake_matcher, library="nypl")
         assert len(stub_parsed_aggregate.records) == 1
         assert stub_parsed_aggregate.records[0].bib_id == "12345"
 
     @pytest.mark.workflow(record_type="cat")
     def test_apply_updates_and_create_batch(self, stub_matched_aggregate, fake_updater):
-        stub_matched_aggregate.apply_updates_and_create_batch(updater=fake_updater)
+        stub_matched_aggregate.apply_updates_and_create_batch(
+            updater=fake_updater, collection="foo", library="bar"
+        )
         assert stub_matched_aggregate.missing_barcodes == []
         assert len(stub_matched_aggregate.processed_files) == 3
         assert (

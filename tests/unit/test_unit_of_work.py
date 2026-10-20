@@ -135,7 +135,13 @@ class TestSqlModelUnitOfWork:
         assert invalid_batch is None
 
     def test_workflow_states(self, mock_engine, caplog):
-        workflow = models.WorkflowState(status=models.WorkflowStatus.PENDING, id="1")
+        workflow = models.WorkflowState(
+            status=models.WorkflowStatus.PENDING,
+            id="1",
+            library="foo",
+            collection="bar",
+            record_type="baz",
+        )
         update_data = models.WorkflowStateBase(status=models.WorkflowStatus.PROCESSING)
         uow = unit_of_work.SqlModelUnitOfWork(engine=mock_engine)
         with uow:

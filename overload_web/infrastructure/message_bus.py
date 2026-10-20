@@ -44,7 +44,6 @@ class MessageBus(ports.MessageBusPort):
         """Broadcast an event to all registered listeners."""
         logger.info(f"Publishing event: {type(event).__name__}")
         handlers = self.event_handlers.get(type(event), [])
-
         for handler in handlers:
             try:
                 handler(event)

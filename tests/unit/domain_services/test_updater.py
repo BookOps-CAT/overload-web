@@ -61,20 +61,15 @@ def stub_domain_bib(request):
 
 
 @pytest.fixture
-def stub_updater(request, get_constants):
-    marker = request.node.get_closest_marker("workflow")
-    collection = marker.kwargs["collection"]
-    library = marker.kwargs["library"]
+def stub_updater(get_constants):
     constants = get_constants["constants"]
-    kwargs = {
-        "default_loc": constants["default_locations"][library].get(collection),
-        "bib_id_tag": constants["bib_id_tag"][library],
-        "order_mapping": constants["order_mapping"],
-        "record_type": marker.kwargs["record_type"],
-        "collection": collection,
-        "library": library,
-    }
-    return services.BibUpdater(handler=marc_handler.MarcUpdater(), **kwargs)
+
+    return services.BibUpdater(
+        handler=marc_handler.MarcUpdater(),
+        default_locations=constants["default_locations"],
+        bib_id_tags=constants["bib_id_tag"],
+        order_mapping=constants["order_mapping"],
+    )
 
 
 class TestBibUpdater:
@@ -83,6 +78,9 @@ class TestBibUpdater:
         original_orders = copy.deepcopy(stub_domain_bib.orders)
         updates = stub_updater.get_order_level_updates(
             record=stub_domain_bib,
+            library="bpl",
+            collection=None,
+            record_type="acq",
             template_data={"name": "Foo", "order_code_1": "b", "format": "a"},
         )
         assert [i.order_code_1 for i in original_orders] == ["j"]
@@ -95,7 +93,11 @@ class TestBibUpdater:
     def test_get_order_level_updates_sel_bpl(self, stub_updater, stub_domain_bib):
         original_orders = copy.deepcopy(stub_domain_bib.orders)
         updates = stub_updater.get_order_level_updates(
-            record=stub_domain_bib, template_data={"order_code_1": "b", "format": "a"}
+            library="bpl",
+            collection=None,
+            record_type="sel",
+            record=stub_domain_bib,
+            template_data={"order_code_1": "b", "format": "a"},
         )
         assert [i.order_code_1 for i in original_orders] == ["j"]
         assert [i.order_code_1 for i in stub_domain_bib.orders] == ["b"]
@@ -118,7 +120,11 @@ class TestBibUpdater:
             )
         ]
         updates = stub_updater.get_order_level_updates(
-            record=stub_domain_bib, template_data={"format": "a"}
+            library="bpl",
+            collection=None,
+            record_type="sel",
+            record=stub_domain_bib,
+            template_data={"format": "a"},
         )
         assert len(updates) == 2
         assert updates[0].tag == "960"
@@ -129,7 +135,11 @@ class TestBibUpdater:
         self, stub_updater, stub_domain_bib
     ):
         updates = stub_updater.get_order_level_updates(
-            record=stub_domain_bib, template_data={}
+            library="bpl",
+            collection=None,
+            record_type="sel",
+            record=stub_domain_bib,
+            template_data={},
         )
         assert len(updates) == 2
         assert updates[0].tag == "960"
@@ -146,7 +156,9 @@ class TestBibUpdater:
                 {"tag": "949", "ind1": " ", "ind2": " ", "code": "a", "value": "*b2=a;"}
             ],
         )
-        updates = stub_updater.get_full_record_updates(record=stub_domain_bib)
+        updates = stub_updater.get_full_record_updates(
+            library="bpl", collection=None, record=stub_domain_bib
+        )
         assert len(updates) == 2
         assert updates[0].__dict__ == {
             "tag": "949",
@@ -170,6 +182,9 @@ class TestBibUpdater:
         original_orders = copy.deepcopy(stub_domain_bib.orders)
         updates = stub_updater.get_order_level_updates(
             record=stub_domain_bib,
+            library="nypl",
+            collection="BL",
+            record_type="acq",
             template_data={"name": "Foo", "order_code_1": "b", "format": "a"},
         )
         assert [i.order_code_1 for i in original_orders] == ["j"]
@@ -206,7 +221,11 @@ class TestBibUpdater:
         ]
         original_orders = copy.deepcopy(stub_domain_bib.orders)
         updates = stub_updater.get_order_level_updates(
-            record=stub_domain_bib, template_data=template
+            library="nypl",
+            collection="BL",
+            record_type="sel",
+            record=stub_domain_bib,
+            template_data=template,
         )
         assert [i.order_code_1 for i in original_orders] == ["j"]
         assert [i.order_code_1 for i in stub_domain_bib.orders] == ["b"]
@@ -234,7 +253,11 @@ class TestBibUpdater:
             )
         ]
         updates = stub_updater.get_order_level_updates(
-            record=stub_domain_bib, template_data={"order_code_1": "b", "format": "a"}
+            library="nypl",
+            collection="BL",
+            record_type="sel",
+            record=stub_domain_bib,
+            template_data={"order_code_1": "b", "format": "a"},
         )
         assert len(updates) == 4
         assert updates[0].tag == "960"
@@ -261,7 +284,11 @@ class TestBibUpdater:
             )
         ]
         updates = stub_updater.get_order_level_updates(
-            record=stub_domain_bib, template_data={"order_code_1": "b", "format": "a"}
+            library="nypl",
+            collection="BL",
+            record_type="sel",
+            record=stub_domain_bib,
+            template_data={"order_code_1": "b", "format": "a"},
         )
         assert len(updates) == 3
         assert updates[0].tag == "960"
@@ -279,7 +306,9 @@ class TestBibUpdater:
                 {"tag": "949", "ind1": " ", "ind2": " ", "code": "a", "value": "*b2=a;"}
             ],
         )
-        updates = stub_updater.get_full_record_updates(record=stub_domain_bib)
+        updates = stub_updater.get_full_record_updates(
+            library="nypl", collection="BL", record=stub_domain_bib
+        )
         assert len(updates) == 3
         assert updates[0].__dict__ == {
             "tag": "949",
@@ -334,7 +363,9 @@ class TestBibUpdater:
     ):
         stub_domain_bib.vendor = "BT SERIES"
         stub_domain_bib.branch_call_number = " ".join([i for i in input.values()])
-        updates = stub_updater.get_full_record_updates(record=stub_domain_bib)
+        updates = stub_updater.get_full_record_updates(
+            library="nypl", collection="BL", record=stub_domain_bib
+        )
         assert len(updates) == 2
         assert updates[0].tag == "910"
         assert updates[1].tag == "091"
@@ -354,7 +385,9 @@ class TestBibUpdater:
         stub_domain_bib.vendor = "BT SERIES"
         stub_domain_bib.branch_call_number = "FOO J FIC SNICKET"
         with pytest.raises(ValueError) as exc:
-            stub_updater.get_full_record_updates(record=stub_domain_bib)
+            stub_updater.get_full_record_updates(
+                library="nypl", collection="BL", record=stub_domain_bib
+            )
         assert (
             str(exc.value)
             == "Constructed call number does not match original. New=FIC SNICKET, Original=FOO J FIC SNICKET"
@@ -364,6 +397,9 @@ class TestBibUpdater:
     def test_get_order_level_updates_acq_nypl_rl(self, stub_updater, stub_domain_bib):
         original_orders = copy.deepcopy(stub_domain_bib.orders)
         updates = stub_updater.get_order_level_updates(
+            library="nypl",
+            collection="RL",
+            record_type="acq",
             record=stub_domain_bib,
             template_data={"name": "Foo", "order_code_1": "b", "format": "a"},
         )
@@ -401,7 +437,11 @@ class TestBibUpdater:
         ]
         original_orders = copy.deepcopy(stub_domain_bib.orders)
         updates = stub_updater.get_order_level_updates(
-            record=stub_domain_bib, template_data=template
+            library="nypl",
+            collection="RL",
+            record_type="sel",
+            record=stub_domain_bib,
+            template_data=template,
         )
         assert [i.order_code_1 for i in original_orders] == ["j"]
         assert [i.order_code_1 for i in stub_domain_bib.orders] == ["b"]
@@ -428,7 +468,11 @@ class TestBibUpdater:
             )
         ]
         updates = stub_updater.get_order_level_updates(
-            record=stub_domain_bib, template_data={"order_code_1": "b", "format": "a"}
+            library="nypl",
+            collection="RL",
+            record_type="sel",
+            record=stub_domain_bib,
+            template_data={"order_code_1": "b", "format": "a"},
         )
         assert len(updates) == 4
         assert updates[0].tag == "960"
@@ -456,7 +500,11 @@ class TestBibUpdater:
             )
         ]
         updates = stub_updater.get_order_level_updates(
-            record=stub_domain_bib, template_data={"order_code_1": "b", "format": "a"}
+            library="nypl",
+            collection="RL",
+            record_type="sel",
+            record=stub_domain_bib,
+            template_data={"order_code_1": "b", "format": "a"},
         )
         assert len(updates) == 3
         assert updates[0].tag == "960"
@@ -474,7 +522,9 @@ class TestBibUpdater:
                 {"tag": "949", "ind1": " ", "ind2": " ", "code": "a", "value": "*b2=a;"}
             ],
         )
-        updates = stub_updater.get_full_record_updates(record=stub_domain_bib)
+        updates = stub_updater.get_full_record_updates(
+            library="nypl", collection="RL", record=stub_domain_bib
+        )
         assert len(updates) == 3
         assert updates[0].__dict__ == {
             "tag": "949",
@@ -496,7 +546,9 @@ class TestBibUpdater:
 
     @pytest.mark.workflow(library="nypl", collection="BL", record_type="cat")
     def test_apply_field_updates(self, stub_updater, stub_domain_bib):
-        updates = stub_updater.get_full_record_updates(record=stub_domain_bib)
+        updates = stub_updater.get_full_record_updates(
+            library="nypl", collection="BL", record=stub_domain_bib
+        )
         stub_updater.apply_field_updates(record=stub_domain_bib, updates=updates)
 
     @pytest.mark.workflow(library="nypl", collection="BL", record_type="acq")

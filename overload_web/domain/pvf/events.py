@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 
 from overload_web.domain.shared import Event
 
@@ -14,6 +15,12 @@ class WorkflowInitialized(Event):
 class OrderLevelWorkflowStarted(Event):
     """Event marking start of order-level record processing workflow."""
 
+    collection: str | None
+    library: str
+    matchpoints: dict[str, str]
+    record_type: str
+    template_data: dict[str, Any]
+    vendor: str
     workflow_id: str
 
 
@@ -43,6 +50,9 @@ class OrderLevelWorkflowCompleted(Event):
 class FullLevelWorkflowStarted(Event):
     """Event marking start of full MARC record processing workflow."""
 
+    collection: str | None
+    library: str
+    record_type: str
     workflow_id: str
 
 

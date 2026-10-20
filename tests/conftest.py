@@ -7,10 +7,9 @@ import pytest
 import requests
 from bookops_worldcat.errors import BookopsWorldcatError
 
-from overload_web.application.pvf import handlers
 from overload_web.application.pvf.workflow_manager import WorkflowManager
 from overload_web.bootstrap import bootstrap_message_bus
-from overload_web.domain.pvf import aggregate, commands, models, ports, services
+from overload_web.domain.pvf import aggregate, models, ports, services
 from overload_web.infrastructure import oclc, sierra_clients, tables, unit_of_work
 
 
@@ -262,10 +261,10 @@ class FakeMatcher(services.BibMatcher):
     def __init__(self):
         self.fetcher = None
 
-    def match_order_record(self, record, matchpoints):
+    def match_order_record(self, *args, **kwargs):
         return [self.RESPONSE]
 
-    def match_full_record(self, record):
+    def match_full_record(self, *args, **kwargs):
         return [self.RESPONSE]
 
 
@@ -273,11 +272,11 @@ class FakeParser(services.BibParser):
     def __init__(self):
         self.count = 1
 
-    def combine_marc_files(self, data):
+    def combine_marc_files(self, data, *args, **kwargs):
         self.count = len(data)
         return b""
 
-    def parse_marc_data(self, data, vendor="UNKNOWN"):
+    def parse_marc_data(self, *args, **kwargs):
         return [create_stub_bib("cat") for _ in [None] * self.count]
 
 
@@ -285,16 +284,16 @@ class FakeUpdater(services.BibUpdater):
     def __init__(self):
         self.handler = None
 
-    def apply_field_updates(self, record, updates):
+    def apply_field_updates(self, *args, **kwargs):
         pass
 
-    def get_full_record_updates(self, record):
+    def get_full_record_updates(self, *args, **kwargs):
         return []
 
-    def get_order_level_updates(self, record, template_data):
+    def get_order_level_updates(self, *args, **kwargs):
         return []
 
-    def write(self, records):
+    def write(self, *args, **kwargs):
         return b""
 
 
@@ -404,6 +403,9 @@ class FakeWorkflowRepository(unit_of_work.WorkflowStatusRepository):
     def __init__(self):
         self.session = None
 
+    def save(self, obj):
+        return obj
+
     def get(self, id):
         return self.WORKFLOW
 
@@ -480,52 +482,6 @@ def fake_updater():
 
 
 @pytest.fixture
-def stub_manager():
-    uow = FakeUnitOfWork()
-    updater = FakeUpdater()
-    matcher = FakeMatcher()
-    parser = FakeParser()
-    bus = bootstrap_message_bus(
-        matcher=matcher,
-        parser=parser,
-        uow=uow,
-        updater=updater,
-        storage=FakeFileStorage(),
-    )
-    bus.register_command(
-        commands.MatchOrderLevelRecords,
-        handlers.MatchOrderLevelRecordsHandler(
-            bus=bus, matcher=matcher, storage=FakeFileStorageWithOrderLevelParsedFiles()
-        ),
-    )
-    bus.register_command(
-        commands.UpdateAndOutputOrderLevelRecords,
-        handlers.UpdateAndOutputOrderLevelRecordsHandler(
-            bus=bus,
-            uow=uow,
-            updater=updater,
-            storage=FakeFileStorageWithOrderLevelParsedFiles(),
-        ),
-    )
-    bus.register_command(
-        commands.MatchFullLevelRecords,
-        handlers.MatchFullLevelRecordsHandler(
-            bus=bus, matcher=matcher, storage=FakeFileStorageWithFullParsedFiles()
-        ),
-    )
-    bus.register_command(
-        commands.UpdateAndOutputFullLevelRecords,
-        handlers.UpdateAndOutputFullLevelRecordsHandler(
-            bus=bus,
-            uow=uow,
-            updater=updater,
-            storage=FakeFileStorageWithFullParsedFiles(),
-        ),
-    )
-    return WorkflowManager(bus=bus, uow=uow)
-
-
-@pytest.fixture
 def stub_order_level_manager():
     uow = FakeUnitOfWork()
     updater = FakeUpdater()
@@ -572,9 +528,8 @@ def fake_uow_no_data(monkeypatch, fake_uow):
 
 
 @pytest.fixture
-def stub_manager_no_workflows(monkeypatch, stub_manager):
+def manager_no_workflows(monkeypatch):
     def mock_get_workflows(*args, **kwargs):
         return None
 
     monkeypatch.setattr(FakeWorkflowRepository, "update", mock_get_workflows)
-    return stub_manager

@@ -123,21 +123,21 @@ class TestBibParser:
     ENGINE = marc_handler.MarcParser()
 
     def test_combine_marc_files(self, mock_marc, get_constants):
-        rules = get_constants["parsing_rules"]
-        rules["library"] = mock_marc.library
-        rules["collection"] = mock_marc.collection
-        rules["record_type"] = "cat"
-        parser = services.BibParser(handler=marc_handler.MarcParser(), **rules)
-        combined = parser.combine_marc_files(data=[mock_marc.as_marc()])
+        parser = services.BibParser(
+            handler=marc_handler.MarcParser(), **get_constants["parsing_rules"]
+        )
+        combined = parser.combine_marc_files(
+            data=[mock_marc.as_marc()], library=mock_marc.library
+        )
         assert len([i for i in combined]) > 1
 
     def test_parse_marc_data_order_level_record(self, mock_marc, get_constants, caplog):
-        rules = get_constants["parsing_rules"]
-        rules["library"] = mock_marc.library
-        rules["collection"] = mock_marc.collection
-        rules["record_type"] = "sel"
-        parser = services.BibParser(handler=marc_handler.MarcParser(), **rules)
-        records = parser.parse_marc_data(data=mock_marc.as_marc())
+        parser = services.BibParser(
+            handler=marc_handler.MarcParser(), **get_constants["parsing_rules"]
+        )
+        records = parser.parse_marc_data(
+            data=mock_marc.as_marc(), library=mock_marc.library, record_type="sel"
+        )
         assert len(records) == 1
         assert records[0].library == mock_marc.library
         assert records[0].record_type == "sel"
@@ -150,12 +150,12 @@ class TestBibParser:
 
     @pytest.mark.workflow(record_type="cat")
     def test_parse_marc_data_full_record(self, mock_marc, get_constants, caplog):
-        rules = get_constants["parsing_rules"]
-        rules["library"] = mock_marc.library
-        rules["collection"] = mock_marc.collection
-        rules["record_type"] = "cat"
-        parser = services.BibParser(handler=marc_handler.MarcParser(), **rules)
-        records = parser.parse_marc_data(data=mock_marc.as_marc())
+        parser = services.BibParser(
+            handler=marc_handler.MarcParser(), **get_constants["parsing_rules"]
+        )
+        records = parser.parse_marc_data(
+            data=mock_marc.as_marc(), library=mock_marc.library, record_type="cat"
+        )
         assert len(records) == 1
         assert records[0].library == mock_marc.library
         assert records[0].record_type == "cat"

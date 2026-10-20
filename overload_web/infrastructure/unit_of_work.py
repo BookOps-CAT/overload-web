@@ -284,7 +284,8 @@ class WorkflowStatusRepository(ports.WorkflowRepositoryProtocol):
             valid_obj = tables.WorkflowUpdateModel.model_validate(
                 data, from_attributes=True
             )
-            patch_data = valid_obj.model_dump(exclude_unset=True)
+            patch_data = valid_obj.model_dump(exclude_unset=True, exclude_defaults=True)
+            logger.info(f"Update data: {patch_data}")
             workflow.sqlmodel_update(patch_data)
             self.session.add(workflow)
             self.session.flush()

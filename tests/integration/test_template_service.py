@@ -15,7 +15,7 @@ from overload_web.presentation import schemas
 
 def test_template_attrs():
     """
-    TemplateUpdateModel, TemplatePatchModel and OrderTemplateBase are the same
+    TemplateUpdateModel, TemplateDataModel and OrderTemplateBase are the same
     OrderTemplate and TemplateModel are the same
 
     """
@@ -23,7 +23,7 @@ def test_template_attrs():
         name for name in inspect.signature(tables.TemplateUpdateModel).parameters.keys()
     ]
     pydantic_patch = [
-        name for name in inspect.signature(schemas.TemplatePatchModel).parameters.keys()
+        name for name in inspect.signature(schemas.TemplateDataModel).parameters.keys()
     ]
     pydantic_create = [
         name
@@ -83,9 +83,7 @@ class TestTemplateService:
         template = tables.TemplateModel(
             id=1, name="foo", agent="bar", country="xxu", primary_matchpoint="isbn"
         )
-        template_patch = schemas.TemplatePatchModel(
-            primary_matchpoint="upc", lang="eng"
-        )
+        template_patch = schemas.TemplateDataModel(primary_matchpoint="upc", lang="eng")
         SaveNewOrderTemplate.execute(uow=fake_uow, obj=template)
         original_template = GetOrderTemplate.execute(uow=fake_uow, template_id=1)
         updated_template = UpdateOrderTemplate.execute(

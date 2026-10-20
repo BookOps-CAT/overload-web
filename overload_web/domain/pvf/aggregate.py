@@ -82,33 +82,50 @@ class OrderLevelJob(AbstractProcessingJob):
         self.report_data: list[dict[str, Any]] = []
         self.validator = services.BarcodeValidator()
 
-    def parse_files(self, parser: services.BibParser) -> None:
+    def parse_files(
+        self,
+        library: str,
+        parser: services.BibParser,
+        record_type: str,
+        vendor: str | None,
+    ) -> None:
         for file_name, data in self.batches_data.items():
             self.file_names.append(file_name)
-            parsed = parser.parse_marc_data(data=data, vendor=self.vendor)
+            parsed = parser.parse_marc_data(
+                library=library, record_type=record_type, data=data, vendor=vendor
+            )
             self.validator.validate_unique([bib.barcodes for bib in parsed])
             self.file_records[file_name] = parsed
 
     def match_records(
-        self, matcher: services.BibMatcher, matchpoints: dict[str, str]
+        self, library: str, matcher: services.BibMatcher, matchpoints: dict[str, str]
     ) -> None:
         for file_name, records in self.file_records.items():
             for bib in records:
                 matches = matcher.match_order_record(
-                    record=bib, matchpoints=matchpoints
+                    record=bib, matchpoints=matchpoints, library=library
                 )
                 analysis = matcher.review_matches(bib=bib, matches=matches)
                 bib.apply_match(bib_id=analysis.target_bib_id, action=analysis.action)
                 self.report_data.append(analysis.to_dict())
 
     def apply_updates_and_create_batch(
-        self, template_data: dict[str, Any], updater: services.BibUpdater
+        self,
+        collection: str | None,
+        library: str,
+        record_type: str,
+        template_data: dict[str, Any],
+        updater: services.BibUpdater,
     ) -> None:
         """The core domain logic loop."""
         for file_name, records in self.file_records.items():
             for bib in records:
                 updates = updater.get_order_level_updates(
-                    record=bib, template_data=template_data
+                    collection=collection,
+                    library=library,
+                    record_type=record_type,
+                    record=bib,
+                    template_data=template_data,
                 )
                 updater.apply_field_updates(record=bib, updates=updates)
             out_binary = updater.write(records)
@@ -140,29 +157,37 @@ class FullRecordJob(AbstractProcessingJob):
         self.out_file_name = datetime.datetime.today().strftime("%y%m%d")
         self.validator = services.BarcodeValidator()
 
-    def parse_files(self, parser: services.BibParser) -> None:
+    def parse_files(
+        self, library: str, parser: services.BibParser, record_type: str
+    ) -> None:
         data_list = []
         for file_name, file_data in self.batches_data.items():
             self.file_names.append(file_name)
             data_list.append(file_data)
-        data = parser.combine_marc_files(data_list)
-        records = parser.parse_marc_data(data=data)
+        data = parser.combine_marc_files(data=data_list, library=library)
+        records = parser.parse_marc_data(
+            data=data, library=library, record_type=record_type
+        )
         self.original_barcodes = self.validator.validate_unique(
             [bib.barcodes for bib in records]
         )
         self.records = records
 
-    def match_records(self, matcher: services.BibMatcher) -> None:
+    def match_records(self, library: str, matcher: services.BibMatcher) -> None:
         for bib in self.records:
-            matches = matcher.match_full_record(bib)
+            matches = matcher.match_full_record(record=bib, library=library)
             analysis = matcher.review_matches(bib=bib, matches=matches)
             bib.apply_match(bib_id=analysis.target_bib_id, action=analysis.action)
             self.report_data.append(analysis.to_dict())
 
-    def apply_updates_and_create_batch(self, updater: services.BibUpdater) -> None:
+    def apply_updates_and_create_batch(
+        self, collection: str | None, library: str, updater: services.BibUpdater
+    ) -> None:
         reviewer = services.BibReviewer(handler=updater.handler)
         for bib in self.records:
-            updates = updater.get_full_record_updates(record=bib)
+            updates = updater.get_full_record_updates(
+                record=bib, collection=collection, library=library
+            )
             updater.apply_field_updates(record=bib, updates=updates)
         self.missing_barcodes.extend(
             self.validator.validate_preserved(

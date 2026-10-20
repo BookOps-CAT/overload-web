@@ -100,7 +100,7 @@ def get_template_list(
 def update_template(
     request: Request,
     template_id: Annotated[str, Form(...)],
-    template_patch: Annotated[Any, Depends(schemas.TemplatePatchModel.from_form)],
+    template_patch: Annotated[Any, Depends(schemas.TemplateDataModel.from_form)],
     uow: Annotated[Any, Depends(pvf_deps.get_uow)],
 ) -> HTMLResponse:
     """
@@ -112,7 +112,7 @@ def update_template(
         template_id:
             the template's ID as a string.
         template_patch:
-            data to be updated in the template as an `TemplatePatchModel` object
+            data to be updated in the template as an `TemplateDataModel` object
 
     Returns:
         the updated order template as a dict wrapped in an `HTMLResponse` object

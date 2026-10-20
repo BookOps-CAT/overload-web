@@ -24,7 +24,6 @@ def initialize_workflow(
 ) -> HTMLResponse:
     workflow_id = str(uuid.uuid4())
     bus.send(commands.InitializeWorkflow(workflow_id=workflow_id))
-    logger.info(f"Created new workflow ID: {workflow_id}")
     request.app.state.workflow_id = workflow_id
     return request.app.state.templates.TemplateResponse(
         request=request,
@@ -41,7 +40,6 @@ def process_order_records(
     context: Annotated[
         schemas.ProcessingContext, Depends(schemas.ProcessingContext.from_form)
     ],
-    matchpoints: Annotated[Any, Depends(schemas.MatchpointsModel.from_form)],
     order_template: Annotated[Any, Depends(schemas.TemplateDataModel.from_form)],
 ) -> HTMLResponse:
     """
@@ -78,9 +76,9 @@ def process_order_records(
         commands.StartOrderLevelRecordsWorkflow(
             collection=context.collection,
             library=context.library,
-            matchpoints=matchpoints.model_dump(),
+            matchpoints=order_template.matchpoints,
             record_type=context.record_type,
-            template_data=order_template.model_dump(),
+            template_data=order_template.template_data,
             vendor=getattr(order_template, "vendor", "UNKNOWN"),
             workflow_id=workflow_id,
         ),
@@ -150,7 +148,6 @@ def workflow_status_check(
         state = uow.workflow_states.get(workflow_id)
     if not state:
         return HTMLResponse("<div class='error'>Workflow not found.</div>")
-    logger.info(f"Current workflow state: {state.status}")
     if state.status == models.WorkflowStatus.COMPLETED:
         return request.app.state.templates.TemplateResponse(
             request=request,

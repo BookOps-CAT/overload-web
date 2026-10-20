@@ -60,7 +60,7 @@ def overrides(monkeypatch):
     monkeypatch.setattr("overload_web.infrastructure.file_io.LocalFileStorage", storage)
 
 
-@pytest.mark.usefixtures("overrides", "stub_manager")
+@pytest.mark.usefixtures("overrides")
 class TestApp:
     client = TestClient(app)
     app.state.workflow_id = 1
@@ -231,12 +231,12 @@ class TestApp:
         assert response.status_code == 200
         assert sorted(list(response.context.keys())) == ["request", "template"]
 
-    # def test_pvf_router_initialize_workflow(self, mocker, stub_manager, caplog):
-    #     mock_obj = mocker.Mock()
-    #     mocker.patch.object(message_bus.MessageBus, "send", mock_obj)
-    #     response = self.client.get("/pvf/workflow")
-    #     assert response.status_code == 200
-    #     assert "Created new workflow ID: " in caplog.text
+    def test_pvf_router_initialize_workflow(self, mocker):
+        mock_obj = mocker.Mock()
+        mocker.patch.object(message_bus.MessageBus, "send", mock_obj)
+        response = self.client.get("/pvf/workflow")
+        assert response.status_code == 200
+        assert list(response.context.keys()) == ["workflow_id", "request"]
 
     @pytest.mark.parametrize(
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "")]
@@ -332,7 +332,7 @@ class TestApp:
             == "Value error, Collection should be `None` for BPL records."
         )
 
-    def test_pvf_router_workflow_status_check_pending(self, mocker, caplog):
+    def test_pvf_router_workflow_status_check_pending(self, mocker):
         mock_obj = mocker.Mock(
             return_value=tables.WorkflowStateModel(id="123", status="PENDING")
         )
@@ -340,9 +340,9 @@ class TestApp:
         response = self.client.get("/pvf/workflow/123/status")
         assert response.status_code == 200
         assert list(response.context.keys()) == ["workflow_id", "request"]
-        assert "Current workflow state: PENDING" in caplog.text
+        assert "Processing vendor file..." in response.text
 
-    def test_pvf_router_workflow_status_check_completed(self, mocker, caplog):
+    def test_pvf_router_workflow_status_check_completed(self, mocker):
         mock_obj = mocker.Mock(
             return_value=tables.WorkflowStateModel(
                 id="123", status="COMPLETED", batch_id=1
@@ -352,7 +352,6 @@ class TestApp:
         response = self.client.get("/pvf/workflow/123/status")
         assert response.status_code == 200
         assert list(response.context.keys()) == ["batch_id", "record_type", "request"]
-        assert "Current workflow state: COMPLETED" in caplog.text
 
     def test_pvf_router_workflow_status_check_missing(self, mocker):
         mock_obj = mocker.Mock(return_value=None)

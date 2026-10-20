@@ -124,7 +124,9 @@ class WorkflowUpdateModel(SQLModel):
     """Tracks the state of a long-running process."""
 
     batch_id: int | None = Field(default=None)
+    collection: str | None = Field(default=None)
     error_message: str | None = Field(default=None)
+    library: str | None = Field(default=None)
     matchpoints: dict[str, str] | None = Field(default=None, sa_type=JSON)
     record_type: str | None = Field(default=None)
     status: str = Field(nullable=False, index=True)

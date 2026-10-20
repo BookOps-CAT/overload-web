@@ -25,7 +25,7 @@ import io
 import itertools
 import logging
 from collections import Counter, defaultdict
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
 from overload_web.domain.pvf import matching, models, ports
 
@@ -73,19 +73,22 @@ class BibMatcher:
     were found.
     """
 
-    def __init__(self, fetcher: ports.BibFetcher) -> None:
+    def __init__(self, fetcher_factory: Callable[[str], ports.BibFetcher]) -> None:
         """
         Initialize the match service with a fetcher.
 
         Args:
-            fetcher:
-                An injected `ports.BibFetcher` that retrieves candidate bibs
-                from Sierra.
+            fetcher_factory:
+                An injected factory function to create a `ports.BibFetcher`
+                object that retrieves candidate bibs from Sierra.
         """
-        self.fetcher = fetcher
+        self.fetcher_factory = fetcher_factory
 
     def _match_bib(
-        self, matchpoints: dict[str, str], record: models.DomainBib
+        self,
+        fetcher: ports.BibFetcher,
+        matchpoints: dict[str, str],
+        record: models.DomainBib,
     ) -> Sequence[dict[str, Any]]:
         """
         Find all matches in Sierra for a given bib record.
@@ -112,13 +115,13 @@ class BibMatcher:
             if not value:
                 continue
             else:
-                candidates = self.fetcher.get_bibs_by_id(value=value, key=matchpoint)
+                candidates = fetcher.get_bibs_by_id(value=value, key=matchpoint)
                 if candidates:
                     return candidates
         return []
 
     def match_order_record(
-        self, matchpoints: dict[str, str], record: models.DomainBib
+        self, library: str, matchpoints: dict[str, str], record: models.DomainBib
     ) -> Sequence[dict[str, Any]]:
         """
         Match an order-level bibliographic record against Sierra.
@@ -134,12 +137,15 @@ class BibMatcher:
             A list of the record's matches as dictionaries representing Sierra
             responses, or an empty list if no matches were found.
         """
+        fetcher = self.fetcher_factory(library)
         responses: Sequence[dict[str, Any]] = self._match_bib(
-            record=record, matchpoints=matchpoints
+            fetcher=fetcher, record=record, matchpoints=matchpoints
         )
         return responses
 
-    def match_full_record(self, record: models.DomainBib) -> Sequence[dict[str, Any]]:
+    def match_full_record(
+        self, library: str, record: models.DomainBib
+    ) -> Sequence[dict[str, Any]]:
         """
         Match a full-level bibliographic record against Sierra.
 
@@ -156,8 +162,9 @@ class BibMatcher:
         """
         if record.vendor_info is None:
             raise ValueError("Vendor index required for cataloging workflow.")
+        fetcher = self.fetcher_factory(library)
         responses: Sequence[dict[str, Any]] = self._match_bib(
-            record=record, matchpoints=record.vendor_info.matchpoints
+            fetcher=fetcher, record=record, matchpoints=record.vendor_info.matchpoints
         )
         return responses
 
@@ -189,11 +196,8 @@ class BibParser:
     def __init__(
         self,
         bib_mapping: dict[str, Any],
-        collection: str | None,
         handler: ports.MarcParserPort,
-        library: str,
         order_mapping: dict[str, Any],
-        record_type: str,
         vendor_mapping: dict[str, Any],
     ) -> None:
         """
@@ -216,18 +220,15 @@ class BibParser:
                 rules for identifying the vendor to whom a record belongs
         """
         self.bib_mapping = bib_mapping
-        self.collection = collection
         self.handler = handler
-        self.library = library
         self.order_mapping = order_mapping
-        self.record_type = record_type
         self.vendor_mapping = vendor_mapping
 
-    def combine_marc_files(self, data: list[bytes]) -> bytes:
+    def combine_marc_files(self, data: list[bytes], library: str) -> bytes:
         """Combine multiple bytes objects (ie. MARC files) into one for processing."""
         records = []
         for batch in data:
-            reader = self.handler.get_reader(batch, library=self.library)
+            reader = self.handler.get_reader(batch, library=library)
             for record in reader:
                 records.append(record)
         io_data = io.BytesIO()
@@ -242,36 +243,41 @@ class BibParser:
         binary_data: bytes,
         collection: str | None,
         order_data: list[dict[str, Any]],
+        record_type: str,
         vendor: str | None,
         vendor_info: dict[str, Any] | None,
     ) -> models.DomainBib:
         """Parse MARC binary to a list of `DomainBib` domain objects."""
         bib_dict["orders"] = [models.Order(**i) for i in order_data]
         bib_dict["binary_data"] = binary_data
-        bib_dict["record_type"] = self.record_type
+        bib_dict["record_type"] = record_type
         if isinstance(vendor_info, dict):
             bib_dict["vendor_info"] = models.VendorInfo(**vendor_info)
         else:
             bib_dict["vendor"] = vendor
         if not collection:
-            bib_dict["collection"] = self.collection
+            bib_dict["collection"] = collection
         bib = models.DomainBib(**bib_dict)
         return bib
 
     def parse_marc_data(
-        self, data: bytes, vendor: str | None = "UNKNOWN"
+        self,
+        data: bytes,
+        library: str,
+        record_type: str,
+        vendor: str | None = "UNKNOWN",
     ) -> list[models.DomainBib]:
         """Parse MARC binary to a list of `DomainBib` domain objects."""
         vendor_info: dict[str, Any] | None
         parsed = []
-        reader = self.handler.get_reader(data, library=self.library)
+        reader = self.handler.get_reader(data, library=library)
         for record in reader:
             bib_dict = self.handler.map_bib_data(obj=record, mapping=self.bib_mapping)
             order_data = [
                 self.handler.map_order_data(obj=i, mapping=self.order_mapping)
                 for i in record.orders
             ]
-            if self.record_type == "cat":
+            if record_type == "cat":
                 vendor_info = self.handler.identify_vendor(
                     obj=record, mapping=self.vendor_mapping
                 )
@@ -283,6 +289,7 @@ class BibParser:
                 binary_data=record.as_marc(),
                 vendor_info=vendor_info,
                 vendor=vendor,
+                record_type=record_type,
                 collection=bib_dict.get("collection"),
             )
             logger.info(f"Vendor record parsed: {parsed_bib}")
@@ -342,13 +349,10 @@ class BibReviewer:
 class BibUpdater:
     def __init__(
         self,
-        bib_id_tag: str,
-        collection: str | None,
-        default_loc: str | None,
+        bib_id_tags: dict[str, str],
+        default_locations: dict[str, Any],
         handler: ports.MarcUpdaterPort,
-        library: str,
         order_mapping: dict[str, Any],
-        record_type: str,
     ) -> None:
         """
         Initialize `BibUpdater` using a set of rules and inputs.
@@ -370,13 +374,10 @@ class BibUpdater:
             record_type:
                 the workflow two whom this record belongs
         """
-        self.bib_id_tag = bib_id_tag
-        self.collection = collection
-        self.default_loc = default_loc
+        self.bib_id_tags = bib_id_tags
+        self.default_locations = default_locations
         self.handler = handler
-        self.library = library
         self.order_mapping = order_mapping
-        self.record_type = record_type
 
     def apply_field_updates(
         self, record: models.DomainBib, updates: list[models.MarcFieldUpdateValues]
@@ -390,10 +391,11 @@ class BibUpdater:
         record.binary_data = bib.as_marc()
 
     def get_full_record_updates(
-        self, record: models.DomainBib
+        self, collection: str | None, library: str, record: models.DomainBib
     ) -> list[models.MarcFieldUpdateValues]:
         """Get list of MARC fields to add to or update in processed bib record"""
         updates: list[Any] = []
+        bib_id_tag = self.bib_id_tags[library]
 
         updates.extend(
             models.FieldUpdates.add_vendor_fields(
@@ -401,45 +403,50 @@ class BibUpdater:
             )
         )
         updates.append(
-            models.FieldUpdates.add_bib_id(bib_id=record.bib_id, tag=self.bib_id_tag)
+            models.FieldUpdates.add_bib_id(bib_id=record.bib_id, tag=bib_id_tag)
         )
-        if self.library == "nypl" and self.collection is not None:
-            updates.append(models.FieldUpdates.update_910_field(self.collection))
+        if library == "nypl" and collection is not None:
+            updates.append(models.FieldUpdates.update_910_field(collection))
             updates.append(
                 models.FieldUpdates.update_bt_series_call_no(
                     call_no=record.branch_call_number,
                     vendor=record.vendor,
-                    collection=self.collection,
+                    collection=collection,
                 )
             )
         return [i for i in updates if i]
 
     def get_order_level_updates(
-        self, record: models.DomainBib, template_data: dict[str, Any]
+        self,
+        collection: str | None,
+        library: str,
+        record_type: str,
+        record: models.DomainBib,
+        template_data: dict[str, Any],
     ) -> list[models.MarcFieldUpdateValues]:
         """Get list of MARC fields to add to or update in processed bib record"""
         updates: list[Any] = []
+        bib_id_tag = self.bib_id_tags[library]
+        default_loc = self.default_locations[library].get(collection)
         record.apply_order_template(template_data)
         updates.extend(
             models.FieldUpdates.update_order_fields(
                 orders=record.orders, mapping=self.order_mapping
             )
         )
-        if self.record_type == "sel":
+        if record_type == "sel":
             updates.append(
                 models.FieldUpdates.add_command_tag(
                     fields=record.parsed_fields,
                     format=template_data.get("format"),
-                    default_loc=self.default_loc,
+                    default_loc=default_loc,
                 )
             )
             updates.append(
-                models.FieldUpdates.add_bib_id(
-                    bib_id=record.bib_id, tag=self.bib_id_tag
-                )
+                models.FieldUpdates.add_bib_id(bib_id=record.bib_id, tag=bib_id_tag)
             )
-        if self.library == "nypl" and self.collection is not None:
-            updates.append(models.FieldUpdates.update_910_field(self.collection))
+        if library == "nypl" and collection is not None:
+            updates.append(models.FieldUpdates.update_910_field(collection))
         return [i for i in updates if i]
 
     def write(self, records: list[models.DomainBib]) -> bytes:
