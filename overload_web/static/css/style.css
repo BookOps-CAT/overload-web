@@ -119,6 +119,47 @@ h6 { font-size: 1rem; }
   padding-bottom: 0.25rem;
 }
 
+.row-equal {
+    display: flex;
+    gap: 16px; /* Gutter space between columns */
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.row-equal > .col {
+    flex: 1 1 0; /* Forces all .col items to share space exactly equally */
+    min-width: 0; /* Prevents long text from blowing out the column width */
+}
+
+/* Option 2: Proportional Columns (12-Column Grid) */
+.row-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr); /* Divides the row into 12 equal slices */
+    gap: 16px;
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+/* Span classes for the 12-column grid */
+.col-12 { grid-column: span 12; } /* 100% width */
+.col-9  { grid-column: span 9; }  /* 75% width */
+.col-8  { grid-column: span 8; }  /* 66% width */
+.col-6  { grid-column: span 6; }  /* 50% width */
+.col-4  { grid-column: span 4; }  /* 33% width */
+.col-3  { grid-column: span 3; }  /* 25% width */
+
+/* Mobile Responsiveness: Stack everything on screens smaller than 768px */
+@media (max-width: 768px) {
+    .row-equal {
+        flex-direction: column; /* Stacks the flex row */
+    }
+    
+    /* Selects any class inside .row-grid that starts with "col-" and forces it to full width */
+    .row-grid > [class*="col-"] {
+        grid-column: span 12;
+    }
+}
+
 /*other components*/
 .page-title {
   padding-top: 0.5rem;
@@ -270,4 +311,14 @@ select.form-control:disabled {
 .btn-nypl:hover {
   background-color: var(--nypl-brand-color);
   color: white;
+}
+
+.vertical-rule {
+  display: inline-block;
+  align-self: stretch;
+  width: 1px;
+  min-height: 1em;
+  background-color: currentColor; 
+  opacity: 0.25;
+  margin: 0 0.5rem;
 }

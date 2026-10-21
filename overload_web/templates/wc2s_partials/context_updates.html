@@ -1,4 +1,4 @@
-{% import "macros/main.html" as macro %}
+{% import "components/macros.html" as macro %}
 <div id="library-img" hx-swap-oob="true">
   {% if library %}
     <img src="{{ url_for('static', path='images/' ~ library ~ 'Logo.png') }}"

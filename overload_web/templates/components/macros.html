@@ -55,3 +55,21 @@
            value="{{ field_input if field_input else value|e }}" />
   </div>
 {% endmacro %}
+{% macro report_table(report) %}
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th scope="col">#</th>
+        {% for key in report[0].keys() %}<th scope="col">{{ " ".join(key.title().split("_")) }}</th>{% endfor %}
+      </tr>
+    </thead>
+    <tbody class="table-group-divider">
+      {% for row in report %}
+        <tr>
+          <th scope="row">{{ loop.index }}</th>
+          {% for value in row.values() %}<td>{{ value }}</td>{% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endmacro %}

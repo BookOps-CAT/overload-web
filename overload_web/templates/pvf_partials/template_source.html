@@ -1,24 +1,22 @@
-<div class="grid-container">
-  <div class="card">
-    <div class="row">
-      <div class="col-3">
-        <h5 class="mb-2 mt-1">Select order template</h5>
-        <div id="templates"
-             hx-get="/ot/templates"
-             hx-trigger="load"
-             name="templates"></div>
-      </div>
-      <div class="vr p-0"></div>
-      <div class="col">
-        <h5 class="mb-2 mt-1">Create/Update order template</h5>
-        <div hx-get="/ot/forms/templates"
-             hx-target="#template-form"
-             name="template-source"
-             value="input"
-             id="template-source"
-             hx-trigger="revealed">
-          <div id="template-form"></div>
-        </div>
+<div class="grid-container card">
+  <div class="row-equal">
+    <div class="col-3">
+      <h5>Select order template</h5>
+      <div id="templates"
+           hx-get="/ot/templates"
+           hx-trigger="load"
+           name="templates"></div>
+    </div>
+    <div class="vertical-rule"></div>
+    <div class="col">
+      <h5>Create/Update order template</h5>
+      <div hx-get="/ot/forms/templates"
+           hx-target="#template-form"
+           name="template-source"
+           value="input"
+           id="template-source"
+           hx-trigger="revealed">
+        <div id="template-form"></div>
       </div>
     </div>
   </div>

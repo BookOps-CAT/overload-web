@@ -1,4 +1,4 @@
-{% import "macros/main.html" as macro %}
+{% import "components/macros.html" as macro %}
 {% if not template %}
   {% set template = {} %}
 {% endif %}
@@ -9,24 +9,18 @@
          form="pvf-form"
          value='{{ template.get("id") }}' />
   <div class="col">{{ macro.input_field('name', {'label': 'Template Name'}, template.get('name'), "pvf-form") }}</div>
-  <div class="col">{{ macro.input_field('agent', {'label': 'User'}, template.get('agent')) }}</div>
+  <div class="col">{{ macro.input_field('agent', {'label': 'User'}, template.get('agent'), "pvf-form") }}</div>
 </div>
 <h5 class="mb-2 mt-1">Order Fixed Fields</h5>
 <div class="row row-cols-4 g-2">
-  {% for field_id, field_data in fixed_fields.items() %}
-    <div class="col">
-      {{ macro.select_field(field_id, field_data,
-        template.get(field_id), "pvf-form") }}
-    </div>
+  {% for id, data in fixed_fields.items() %}
+    <div class="col">{{ macro.select_field(id, data, template.get(id), "pvf-form") }}</div>
   {% endfor %}
 </div>
 <h5 class="mb-2 mt-1">Order Variable Fields</h5>
 <div class="row row-cols-4 g-2">
-  {% for field_id, field_data in var_fields.items() %}
-    <div class="col">
-      {{ macro.input_field(field_id, field_data,
-        template.get(field_id), "pvf-form") }}
-    </div>
+  {% for id, data in var_fields.items() %}
+    <div class="col">{{ macro.input_field(id, data, template.get(id), "pvf-form") }}</div>
   {% endfor %}
 </div>
 <div class="row g-2">
@@ -39,11 +33,8 @@
   <div class="col-9">
     <h5 class="mb-2 mt-1">Sierra Matchpoints</h5>
     <div class="row g-2">
-      {% for field_id, field_data in matchpoints.items() %}
-        <div class="col">
-          {{ macro.select_field(field_id, field_data,
-            template.get(field_id), "pvf-form") }}
-        </div>
+      {% for id, data in matchpoints.items() %}
+        <div class="col">{{ macro.select_field(id, data, template.get(id), "pvf-form") }}</div>
       {% endfor %}
     </div>
   </div>
