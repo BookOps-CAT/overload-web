@@ -1,6 +1,7 @@
 <div class="d-flex justify-content-around flex-wrap">
   {% for file in files %}
     <div class="form-check">
+      <label class="form-check-label" for="{{ file }}">{{ file }}</label>
       <input class="form-check-input"
              hx-post="/files/remote/select?vendor={{ vendor }}"
              name="remote_file"
@@ -9,7 +10,6 @@
              hx-include="#vendor"
              form="pvf-form"
              value="{{ file }}" />
-      <label class="form-check-label" for="{{ file }}">{{ file }}</label>
     </div>
   {% endfor %}
   <input name="vendor" type="hidden" value="{{ vendor }}" />

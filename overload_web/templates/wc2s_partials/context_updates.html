@@ -1,4 +1,4 @@
-{% import "macros/wc2s.html" as macro %}
+{% import "macros/main.html" as macro %}
 <div id="library-img" hx-swap-oob="true">
   {% if library %}
     <img src="{{ url_for('static', path='images/' ~ library ~ 'Logo.png') }}"
@@ -8,13 +8,13 @@
          alt="library logo" />
   {% endif %}
 </div>
-<div id="collection-display" class="mb-1" hx-swap-oob="true">
+<div id="collection-display" hx-swap-oob="true">
   {% if collection %}
     <h4>{{ context_fields["collection"]['options'][collection] }}</h4>
   {% endif %}
 </div>
 {% if collection_disabled or not collection %}
-  <div id="collection-select" hx-swap-oob="true" class="w-100">
-    {{ macro.context_select("collection", context_fields["collection"], disabled=collection_disabled) }}
+  <div id="collection-select" hx-swap-oob="true" class="grid-item">
+    {{ macro.context_select("collection", context_fields["collection"], form="pvf-form", disabled=collection_disabled) }}
   </div>
 {% endif %}

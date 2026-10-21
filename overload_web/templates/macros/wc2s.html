@@ -1,7 +1,8 @@
 {% macro context_select(field_id, data, disabled=False) %}
-  <div class="form-floating">
+  <div class="form-group">
+    <label for="{{ field_id }}">{{ data['label'] }}</label>
     <select id="{{ field_id }}"
-            class="form-select"
+            class="form-control"
             name="{{ field_id }}"
             {% if disabled %}disabled{% endif %}
             form="wc2s-form"
@@ -10,17 +11,17 @@
       <option value="" selected></option>
       {% for k, v in data['options'].items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}
     </select>
-    <label for="{{ field_id }}">{{ data['label'] }}</label>
     {% if disabled %}
       <input type="hidden" name="{{ field_id }}"  form="wc2s-form" value="" />
     {% endif %}
   </div>
 {% endmacro %}
 {% macro select_field(field_id, data, field_input) %}
-  <div class="form-floating">
+  <div class="form-group">
+    <label for="{{ field_id }}">{{ data['label'] }}</label>
     <select id="{{ field_id }}"
             form="wc2s-form"
-            class="form-select"
+            class="form-control"
             name="{{ field_id }}"
             autocomplete="off">
       {% if field_input %}
@@ -34,6 +35,5 @@
         {% for k, v in data['options'].items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}
       {% endif %}
     </select>
-    <label for="{{ field_id }}">{{ data['label'] }}</label>
   </div>
 {% endmacro %}

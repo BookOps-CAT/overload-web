@@ -1,7 +1,57 @@
 {% macro app_card(title, text, href="#") %}
-  <div class="card w-100 p-3">
+  <div class="card card-hover">
     <h4 class="card-title">{{ title }}</h4>
     <p class="card-text">{{ text }}</p>
     <a class="stretched-link" href="{{ href }}"></a>
+  </div>
+{% endmacro %}
+{% macro context_select(field_id, data, form, disabled=False) %}
+  <div class="form-group">
+    <label for="{{ field_id }}">{{ data['label'] }}</label>
+    <select id="{{ field_id }}"
+            class="form-control"
+            name="{{ field_id }}"
+            {% if disabled %}disabled{% endif %}
+            form="{{ form }}"
+            autocomplete="off"
+            required>
+      <option value="" selected></option>
+      {% for k, v in data['options'].items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}
+    </select>
+    {% if disabled %}
+      <input type="hidden" name="{{ field_id }}" form="{{ form }}" value="" />
+    {% endif %}
+  </div>
+{% endmacro %}
+{% macro select_field(field_id, data, field_input, form) %}
+  <div class="form-group">
+    <label for="{{ field_id }}">{{ data['label'] }}</label>
+    <select id="{{ field_id }}"
+            form="{{ form }}"
+            class="form-control"
+            name="{{ field_id }}">
+      {% if field_input %}
+        <option value=""></option>
+        <option value="{{ field_input }}" selected>{{ field_input }} ({{ data['options'][field_input] }})</option>
+        {% for k, v in data['options'].items() %}
+          {% if k != field_input %}<option value="{{ k }}">{{ k }} ({{ v }})</option>{% endif %}
+        {% endfor %}
+      {% else %}
+        <option value="" selected></option>
+        {% for k, v in data['options'].items() %}<option value="{{ k }}">{{ k }} ({{ v }})</option>{% endfor %}
+      {% endif %}
+    </select>
+  </div>
+{% endmacro %}
+{% macro input_field(field_id, data, field_input, form) %}
+  <div class="form-group">
+    <label for="{{ field_id }}">{{ data['label'] }}</label>
+    <input id="{{ field_id }}"
+           class="form-control"
+           name="{{ field_id }}"
+           type="text"
+           form="{{ form }}"
+           placeholder=" "
+           value="{{ field_input if field_input else value|e }}" />
   </div>
 {% endmacro %}

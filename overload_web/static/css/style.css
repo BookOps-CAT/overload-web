@@ -1,45 +1,288 @@
-:root {
-  --page-title-padding-top: 40px;
-  --page-title-padding-bottom: 10px;
-  --nypl-brand-color: #d52828;
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
-.navbar {
-  background-color: var(--nypl-brand-color);
-  color: white;
-  padding-bottom: 10px;
+:root {
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
+  --nypl-brand-color: #d52828;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --text-muted: #212529; 
+  --border: rgba(0, 0, 0, 0.125); 
 }
-.navbar .navbar-brand {
-  font-size: 2rem;
+
+body {
+    font-family: var(--font);
+    background-color: #ffffff;
+    color: #000000;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.75rem; }
+h4 { font-size: 1.5rem; }
+h5 { font-size: 1.25rem; }
+h6 { font-size: 1rem; }
+
+.container {
+    max-width: 1200px; 
+    margin: 0 auto; 
+    padding: 0 20px;
+    width: 100%;
+}
+
+/* navbar components */
+.navbar {
+    background-color: var(--nypl-brand-color);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    width: 100%;  
+    height: 180px; 
+    color: #ffffff;
+}
+
+.navbar-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+}
+
+.nav-left {
+    align-self: flex-end; 
+    padding-bottom: 15px;  
+}
+.nav-left h3 {
+    margin-bottom: 0;
+}
+
+.nav-left h3 a {
+    color: inherit; 
+    text-decoration: none;  
+    transition: opacity 0.2s ease;
+}
+
+.nav-left h3 a:hover {
+    opacity: 0.9;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center; 
+    justify-content: flex-end;
+    gap: 15px;           
+    width: 325px;  
+    height: 150px;
+}
+
+.nav-logo {
+    width: 150px;
+    height: 150px;
+    object-fit: none; 
+}
+
+.nav-text-stacked {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    font-size: 16px;
+    line-height: 1.4;
+    width: 160px;
+    text-align: left;
+}
+
+
+/* grid/layout components */
+.main-content {
+    width: 100%;
+    background-color: #ffffff;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.grid-item {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+/*other components*/
+.page-title {
+  padding-top: 0.5rem;
+  padding-bottom: 0.3rem;
+}
+
+.card {
+    position: relative;
+    border: 1px solid var(--border);
+    background: var(--surface);    
+    padding: 1rem 1rem 1.75rem 1rem; 
+    border-radius: 0.375rem;
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Forces the card to stretch to the grid row height */    
+}
+
+.card-title {
+    color: #000000;
+    margin-bottom: 12px;
+}
+
+.card-text {
+    color: #555555;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.card-hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.2s ease-in-out;
+}
+
+.card-hover:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.stretched-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.stretched-link::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.flex-container-stretch .card {
+    flex: 1 1 280px;
+}
+
+/* form components */
+.form-group {
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Pico uses standard, bold labels */
+.form-group label {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #374151; /* Dark gray */
+    margin-bottom: 0.5rem;
+    margin-top: 0.5rem;    
+}
+
+/* The Core Input Style */
+.form-control {
+    width: 100%;
+    /* Pico uses generous padding to match button heights */
+    padding: 0.75rem 1rem; 
+    font-size: 1rem;
+    color: #111827; /* Near black text */
+    
+    /* Pico's signature soft look: a very subtle background with a delicate border */
+    background-color: #fbfbfc; 
+    border: 1px solid #c8d0d9;
+    border-radius: 0.25rem; /* Slight rounding */
+    
+    /* Smooth transitions for hovering and clicking */
+    transition: background-color 0.2s ease-in-out, 
+                border-color 0.2s ease-in-out, 
+                box-shadow 0.2s ease-in-out;
+    appearance: none;
+}
+
+/* Pico's Hover State */
+.form-control:not(:disabled):hover {
+    border-color: #a0a8b4; 
+    background-color: #ffffff;
+}
+
+/* Pico's Focus State: Bright border with a soft, semi-transparent outer glow */
+.form-control:focus {
+    outline: none;
+    border-color: #d52828; /* Your theme red */
+    background-color: #ffffff;
+    /* This creates the signature Pico "halo" effect around the input */
+    box-shadow: 0 0 0 0.2rem rgba(213, 40, 40, 0.25); 
+}
+
+/* Pico's subtle placeholder text */
+.form-control::placeholder {
+    color: #9ca3af;
+    opacity: 1;
+}
+
+/* Pico's Helper Text (small muted text below the input) */
+.form-text {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.375rem;
+}
+
+/* Custom Dropdown Arrow (Pico style) */
+select.form-control {
+    /* Pico uses a clean, minimal chevron */
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 12px;
+    padding-right: 2.5rem;
+    cursor: pointer;
+}
+.form-control:disabled,
+.form-control[readonly] {
+    background-color: #f3f4f6; /* Darker gray background */
+    border-color: #e5e7eb;     /* Softer border */
+    color: #9ca3af;            /* Dimmed text */
+    cursor: not-allowed;       /* Changes the mouse pointer */
+    opacity: 0.8;
+}
+
+/* Dim the custom dropdown arrow for disabled selects */
+select.form-control:disabled {
+    opacity: 0.6;
+}
+/* buttons */
+.btn-nypl {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  font-size: 1rem;
   font-weight: 500;
   text-align: center;
-  display: block;
-  color: white;
-}
-.form-floating .form-select {
-  height: auto;
-  min-height: 3.5rem;
-  padding-top: 1.25rem;
-  padding-bottom: 0.25rem;
-  line-height: 1.5;
-}
-.page-title {
-  padding-top: var(--page-title-padding-top);
-  padding-bottom: var(--page-title-padding-bottom);
-}
-.page-title h2 {
-  font-size: 2rem;
-  font-weight: 500;
-}
-.btn-nypl {
-  border-color: var(--nypl-brand-color);
+  text-decoration: none;
+  cursor: pointer;
+  background-color: transparent;
+  border: 1px solid var(--nypl-brand-color);
+  border-radius: 0.375rem;
   margin-top: 1rem !important;
   margin-bottom: 1rem !important;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
 }
+
 .btn-nypl:hover {
   background-color: var(--nypl-brand-color);
   color: white;
-}
-.library-logo {
-  min-height: 150px;
 }

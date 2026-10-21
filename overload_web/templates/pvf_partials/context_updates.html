@@ -1,14 +1,14 @@
-{% import "macros/pvf.html" as macro %}
+{% import "macros/main.html" as macro %}
 <div id="library-img" hx-swap-oob="true">
   {% if library %}
     <img src="{{ url_for('static', path='images/' ~ library ~ 'Logo.png') }}"
          height="auto"
          width="auto"
-         class="object-fit-scale"
+         class="nav-logo"
          alt="library logo" />
   {% endif %}
 </div>
-<div id="collection-display" class="mb-1" hx-swap-oob="true">
+<div id="collection-display" hx-swap-oob="true">
   {% if collection %}
     <h4>{{ context_fields["collection"]['options'][collection] }}</h4>
   {% endif %}
@@ -18,7 +18,7 @@
     <h4>{{ context_fields["record_type"]['options'][record_type] }}</h4>
   {% endif %}
 </div>
-<div id="template-section" class="d-flex flex-column" hx-swap-oob="true">
+<div id="template-section" hx-swap-oob="true">
   {% if template_form_enabled %}
     {% include "pvf_partials/template_source.html" %}
   {% endif %}
@@ -43,7 +43,7 @@
   </form>
 {% endif %}
 {% if collection_disabled or not collection %}
-  <div id="collection-select" hx-swap-oob="true" class="w-100">
-    {{ macro.context_select("collection", context_fields["collection"], disabled=collection_disabled) }}
+  <div id="collection-select" hx-swap-oob="true" class="grid-item">
+    {{ macro.context_select("collection", context_fields["collection"], "pvf-form", disabled=collection_disabled) }}
   </div>
 {% endif %}
