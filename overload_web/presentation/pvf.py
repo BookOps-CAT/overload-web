@@ -86,7 +86,7 @@ def process_order_records(
     )
     partial = """
     <div hx-get="/pvf/workflow/{workflow_id}/status"
-        hx-trigger="every 2s"
+        hx-trigger="every 1s"
         hx-swap="outerHTML">
         <span class="spinner"></span> Processing vendor file...
     </div>"""
@@ -138,7 +138,7 @@ def process_full_records(
     )
     partial = """
     <div hx-get="/pvf/workflow/{workflow_id}/status"
-        hx-trigger="every 2s"
+        hx-trigger="every 1s"
         hx-swap="outerHTML">
         <span class="spinner"></span> Processing vendor file...
     </div>"""
@@ -169,7 +169,7 @@ def workflow_status_check(
         return HTMLResponse(html_str)
     partial = """
     <div hx-get="/pvf/workflow/{workflow_id}/status"
-        hx-trigger="every 2s"
+        hx-trigger="every 1s"
         hx-swap="outerHTML">
         <span class="spinner"></span> Processing vendor file...
     </div>"""
