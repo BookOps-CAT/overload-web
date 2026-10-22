@@ -18,11 +18,11 @@
     <h4>{{ context_fields["record_type"]['options'][record_type] }}</h4>
   {% endif %}
 </div>
-<div id="template-section" hx-swap-oob="true">
-  {% if template_form_enabled %}
-    {% include "pvf_partials/template_source.html" %}
-  {% endif %}
-</div>
+{% if template_form_enabled %}
+  <div id="template-section"
+       class="grid-container cols-1 card"
+       hx-swap-oob="true">{% include "pvf_partials/template_source.html" %}</div>
+{% endif %}
 {% if record_type == "cat" %}
   <form id="pvf-form"
         hx-post="/pvf/process-full-records"
@@ -43,7 +43,7 @@
   </form>
 {% endif %}
 {% if collection_disabled or not collection %}
-  <div id="collection-select" hx-swap-oob="true" class="grid-item">
+  <div id="collection-select" hx-swap-oob="true"  class="flex-1">
     {{ macro.context_select("collection", context_fields["collection"], "pvf-form", disabled=collection_disabled) }}
   </div>
 {% endif %}

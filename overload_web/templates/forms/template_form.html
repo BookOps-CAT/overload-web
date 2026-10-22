@@ -1,30 +1,26 @@
-<div class="row">
-  <div class="col">
-    <div id="template-form-fields">{% include "order_templates/rendered.html" %}</div>
-    <div id="template-buttons" class="row row-cols-3">
-      <div class="col" hx-include="#template-form-fields">
-        <button class="btn btn-nypl"
-                hx-post="/ot/template"
-                hx-target="#template-form"
-                type="submit">Save Template as New</button>
-      </div>
-      <div class="col" hx-include="#template-form-fields">
-        <button class="btn btn-nypl"
-                hx-patch="/ot/template"
-                hx-target="#template-form"
-                type="submit">Update Template</button>
-      </div>
-      <div class="col">
-        <button class="btn btn-nypl"
-                hx-get="/ot/forms/templates"
-                hx-target="#template-form"
-                type="reset">Clear Template Form</button>
-      </div>
-    </div>
-  </div>
-</div>
 <div id="templates"
      hx-get="/ot/templates"
      hx-trigger="load"
      name="templates"
      hx-swap-oob="true"></div>
+<div id="template-form-fields">{% include "order_templates/rendered.html" %}</div>
+<div id="template-buttons" class="flex-row justify-center">
+  <div class="flex-1" hx-include="#template-form-fields">
+    <button class="btn btn-nypl"
+            hx-post="/ot/template"
+            hx-target="#template-form"
+            type="submit">Save Template as New</button>
+  </div>
+  <div class="flex-1" hx-include="#template-form-fields">
+    <button class="btn btn-nypl"
+            hx-patch="/ot/template"
+            hx-target="#template-form"
+            type="submit">Update Template</button>
+  </div>
+  <div class="flex-1">
+    <button class="btn btn-nypl"
+            hx-get="/ot/forms/templates"
+            hx-target="#template-form"
+            type="reset">Clear Template Form</button>
+  </div>
+</div>

@@ -1,11 +1,10 @@
 {% extends 'base.html' %}{% from "components/macros.html" import app_card %}
 {% block page_title %}<h2>BookOps Cataloging Department toolbox</h2>{% endblock %}
 {% block content %}
-  <div class="grid-container">
-    <div class="grid-item" id="get-bib-app">{{ app_card('Get Bib', 'Get bib record from Sierra') }}</div>
-    <div class="grid-item" id="pvf-app">
+  <div class="grid-container cols-2">
+    <div id="pvf-app">
       {{ app_card('Process Vendor File', 'Process files from a vendor', url_for("vendor_file_page")) }}
     </div>
-    <div class="grid-item" id="wc2sierra-app">{{ app_card('Worldcat2Sierra', 'Search for Sierra records in WorldCat', url_for("wc2sierra_page")) }}</div>
+    <div id="wc2sierra-app">{{ app_card('Worldcat2Sierra', 'Search for Sierra records in WorldCat', url_for("wc2sierra_page")) }}</div>
   </div>
 {% endblock %}

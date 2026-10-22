@@ -6,10 +6,12 @@
        hx-get="/pvf/workflow"
        hx-trigger="load"
        hx-swap="none"></div>
-  <div id="context-section">{% include "pvf_partials/context_source.html" %}</div>
-  <div id="file-section">{% include "pvf_partials/file_source.html" %}</div>
-  <div id="template-section"></div>
-  <div id="pvf_output">
-    <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
+  <div class="flex-col">
+    {% include "pvf_partials/context_source.html" %}
+    {% include "pvf_partials/file_source.html" %}
+    <div id="template-section"></div>
+    <div id="pvf_output" class="flex-row">
+      <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
+    </div>
   </div>
 {% endblock %}

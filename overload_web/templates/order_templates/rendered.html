@@ -2,7 +2,7 @@
 {% if not template %}
   {% set template = {} %}
 {% endif %}
-<div class="row row-cols-4 g-2">
+<div class="flex-row cols-2">
   <input id="template_id"
          name="template_id"
          type="hidden"
@@ -11,7 +11,7 @@
   <div class="col">{{ macro.input_field('name', {'label': 'Template Name'}, template.get('name'), "pvf-form") }}</div>
   <div class="col">{{ macro.input_field('agent', {'label': 'User'}, template.get('agent'), "pvf-form") }}</div>
 </div>
-<h5 class="mb-2 mt-1">Order Fixed Fields</h5>
+<h5>Order Fixed Fields</h5>
 <div class="row row-cols-4 g-2">
   {% for id, data in fixed_fields.items() %}
     <div class="col">{{ macro.select_field(id, data, template.get(id), "pvf-form") }}</div>

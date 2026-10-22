@@ -14,7 +14,7 @@
   {% endif %}
 </div>
 {% if collection_disabled or not collection %}
-  <div id="collection-select" hx-swap-oob="true" class="grid-item">
+  <div id="collection-select" hx-swap-oob="true"  class="flex-1">
     {{ macro.context_select("collection", context_fields["collection"], form="pvf-form", disabled=collection_disabled) }}
   </div>
 {% endif %}
