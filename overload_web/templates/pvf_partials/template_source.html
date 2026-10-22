@@ -3,19 +3,12 @@
     <h5>Select order template</h5>
     <div id="templates"
          hx-get="/ot/templates"
-         hx-trigger="load"
+         hx-trigger="load, templatesChanged from:body"
          name="templates"></div>
   </div>
   <div class="vertical-rule"></div>
   <div class="flex-col">
     <h5>Create/Update order template</h5>
-    <div hx-get="/ot/forms/templates"
-         hx-target="#template-form"
-         name="template-source"
-         value="input"
-         id="template-source"
-         hx-trigger="revealed">
-      <div id="template-form"></div>
-    </div>
+    <div id="template-form">{% include "forms/template_form.html" %}</div>
   </div>
 </div>

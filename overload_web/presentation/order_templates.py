@@ -39,11 +39,13 @@ def create_template(
         the saved order template as a dict wrapped in an `HTMLResponse` object
     """
     saved_template = SaveNewOrderTemplate.execute(obj=template, uow=uow)
-    return request.app.state.templates.TemplateResponse(
+    response = request.app.state.templates.TemplateResponse(
         request=request,
         name="forms/template_form.html",
         context={"template": saved_template.__dict__},
     )
+    response.headers["HX-Trigger"] = "templatesChanged"
+    return response
 
 
 @api_router.get("/template", response_class=HTMLResponse)
@@ -64,7 +66,7 @@ def get_template(
     template_out = {k: v for k, v in template.__dict__.items() if v} if template else {}
     return request.app.state.templates.TemplateResponse(
         request=request,
-        name="order_templates/rendered.html",
+        name="forms/template_form.html",
         context={"template": template_out},
     )
 
@@ -125,11 +127,13 @@ def update_template(
         if updated_template
         else {}
     )
-    return request.app.state.templates.TemplateResponse(
+    response = request.app.state.templates.TemplateResponse(
         request=request,
         name="forms/template_form.html",
         context={"template": template_out},
     )
+    response.headers["HX-Trigger"] = "templatesChanged"
+    return response
 
 
 @api_router.get("/forms/templates", response_class=HTMLResponse)
