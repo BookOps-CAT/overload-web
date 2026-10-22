@@ -8,40 +8,38 @@
          type="hidden"
          form="pvf-form"
          value='{{ template.get("id") }}' />
-  <div class="flex-row cols-2">
-    <div class="col">{{ macro.input_field('name', {'label': 'Template Name'}, template.get('name'), "pvf-form") }}</div>
-    <div class="col">{{ macro.input_field('agent', {'label': 'User'}, template.get('agent'), "pvf-form") }}</div>
+  <div class="flex-row row-gap-none cols-2">
+    <div class="w-1-3">{{ macro.input_field('name', {'label': 'Template Name'}, template.get('name'), "pvf-form") }}</div>
+    <div class="w-1-3">{{ macro.input_field('agent', {'label': 'User'}, template.get('agent'), "pvf-form") }}</div>
   </div>
-  <h5>Order Fixed Fields</h5>
-  <div class="row row-cols-4 g-2">
+  <h5 class="gap-sm">Order Fixed Fields</h5>
+  <div class="flex-row row-gap-none">
     {% for id, data in fixed_fields.items() %}
-      <div class="col">{{ macro.select_field(id, data, template.get(id), "pvf-form") }}</div>
+      <div class="w-1-3">{{ macro.select_field(id, data, template.get(id), "pvf-form") }}</div>
     {% endfor %}
   </div>
-  <h5 class="mb-2 mt-1">Order Variable Fields</h5>
-  <div class="row row-cols-4 g-2">
+  <h5 class="gap-sm">Order Variable Fields</h5>
+  <div class="flex-row row-gap-none">
     {% for id, data in var_fields.items() %}
-      <div class="col">{{ macro.input_field(id, data, template.get(id), "pvf-form") }}</div>
+      <div class="w-1-3">{{ macro.input_field(id, data, template.get(id), "pvf-form") }}</div>
     {% endfor %}
   </div>
-  <div class="row g-2">
-    <div class="col-3">
-      <h5 class="mb-2 mt-1">Sierra Bib Format</h5>
-      <div class="row g-2">
-        <div class="col">{{ macro.select_field('material_form', bib_formats, template.get('material_form'), "pvf-form") }}</div>
-      </div>
+  <div class="flex-row row-gap-none">
+    <div class="w-1-4">
+      <h5 class="gap-sm">Sierra Bib Format</h5>
+      <div class="flex-1">{{ macro.select_field('material_form', bib_formats, template.get('material_form'), "pvf-form") }}</div>
     </div>
-    <div class="col-9">
-      <h5 class="mb-2 mt-1">Sierra Matchpoints</h5>
-      <div class="row g-2">
+    <div class="w-3-4">
+      <h5 class="gap-sm">Sierra Matchpoints</h5>
+      <div class="flex-row row-gap-none">
         {% for id, data in matchpoints.items() %}
-          <div class="col">{{ macro.select_field(id, data, template.get(id), "pvf-form") }}</div>
+          <div class="flex-1">{{ macro.select_field(id, data, template.get(id), "pvf-form") }}</div>
         {% endfor %}
       </div>
     </div>
   </div>
 </div>
-<div id="template-buttons" class="flex-row justify-center">
+<div class="flex-row cols-3">
   <div class="flex-1" hx-include="#template-form-fields">
     <button class="btn btn-nypl"
             hx-post="/ot/template"
