@@ -1,23 +1,21 @@
 {% if files %}
   <div class="list-group">
     {% for f in files %}
-      <div class="list-group-item d-flex justify-content-between align-items-center">
-        <input type="hidden" name="file_id" id="file_id" value="{{ f.id }}">
-        <strong>{{ f.filename }}</strong>
-        <br>
-        <small class="text-muted">
-          {% if f.source == "local" %}
-            Local file
-          {% else %}
-            FTP file
-          {% endif %}
-        </small>
-        <button class="btn btn-sm btn-outline-danger"
-                hx-post="/files/remove"
-                hx-target="#selected-files"
-                hx-include="#file_id"
-                hx-swap="outerHTML">Remove</button>
-      </div>
+      <input type="hidden" name="file_id" id="file_id" value="{{ f.id }}">
+      <strong>{{ f.filename }}</strong>
+      <br>
+      <small class="text-muted">
+        {% if f.source == "local" %}
+          Local file
+        {% else %}
+          FTP file
+        {% endif %}
+      </small>
+      <button class="btn btn-sm btn-outline-danger"
+              hx-post="/files/remove"
+              hx-target="#selected-files"
+              hx-include="#file_id"
+              hx-swap="outerHTML">Remove</button>
     {% endfor %}
   </div>
 {% else %}

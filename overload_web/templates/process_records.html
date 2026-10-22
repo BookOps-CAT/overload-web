@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %}{% import "components/macros.html" as macro %}
 {% block page_title %}<h2>{{ page_title }}</h2>{% endblock %}
 {% block content %}
   <div id="pvf-form"></div>
@@ -7,8 +7,57 @@
        hx-trigger="load"
        hx-swap="none"></div>
   <div class="flex-col">
-    {% include "pvf_partials/context_source.html" %}
-    {% include "pvf_partials/file_source.html" %}
+    <div id="context-section"
+         hx-get="/update-context?workflow=pvf"
+         hx-trigger="change delay:200ms, load"
+         hx-include="this"
+         hx-swap="none"
+         class="flex-row">
+      <div id="library-select" class="flex-1">{{ macro.context_select("library", context_fields["library"], "pvf-form") }}</div>
+      <div id="collection-select" class="flex-1">{{ macro.context_select("collection", context_fields["collection"], "pvf-form") }}</div>
+      <div id="record-type-select" class="flex-1">{{ macro.context_select("record_type", context_fields["record_type"], "pvf-form") }}</div>
+    </div>
+    <div id="file-section" class="grid-container cols-3">
+      <div class="card">
+        <h5 class="card-title">Local Files</h5>
+        <div class="form-group">
+          <label for="local_files">Upload from your computer</label>
+          <input id="local_files"
+                 hx-post="/files/upload"
+                 hx-trigger="change"
+                 hx-target="#selected-files"
+                 hx-swap="outerHTML"
+                 hx-include="#workflow_id"
+                 class="form-control"
+                 name="file"
+                 type="file"
+                 hx-encoding="multipart/form-data"
+                 multiple />
+        </div>
+      </div>
+      <div class="card">
+        <h5 class="card-title">FTP Files</h5>
+        <p class="card-text">Browse vendor files</p>
+        <div class="form-group">
+          <label for="vendor">Vendors</label>
+          <select id="vendor"
+                  class="form-control"
+                  name="vendor"
+                  form="pvf-form"
+                  hx-get="/files/remote/list"
+                  hx-target="#file_list"
+                  hx-trigger="change">
+            <option value="" selected></option>
+            {% for id, name in vendors.items() %}<option value="{{ id }}">{{ name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div id="file_list"></div>
+      </div>
+      <div class="card">
+        <h5 class="card-title">Selected Files</h5>
+        <div id="selected-files">{% include "pvf_partials/selected_files.html" %}</div>
+      </div>
+    </div>
     <div id="template-section"></div>
     <div id="pvf_output" class="flex-row">
       <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
