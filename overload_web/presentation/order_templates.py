@@ -41,7 +41,7 @@ def create_template(
     saved_template = SaveNewOrderTemplate.execute(obj=template, uow=uow)
     response = request.app.state.templates.TemplateResponse(
         request=request,
-        name="forms/template_form.html",
+        name="pvf_partials/template_form.html",
         context={"template": saved_template.__dict__},
     )
     response.headers["HX-Trigger"] = "templatesChanged"
@@ -66,7 +66,7 @@ def get_template(
     template_out = {k: v for k, v in template.__dict__.items() if v} if template else {}
     return request.app.state.templates.TemplateResponse(
         request=request,
-        name="forms/template_form.html",
+        name="pvf_partials/template_form.html",
         context={"template": template_out},
     )
 
@@ -93,7 +93,7 @@ def get_template_list(
     template_list = ListOrderTemplates.execute(uow=uow, offset=offset, limit=limit)
     return request.app.state.templates.TemplateResponse(
         request=request,
-        name="order_templates/template_list.html",
+        name="pvf_partials/template_list.html",
         context={"templates": template_list},
     )
 
@@ -129,7 +129,7 @@ def update_template(
     )
     response = request.app.state.templates.TemplateResponse(
         request=request,
-        name="forms/template_form.html",
+        name="pvf_partials/template_form.html",
         context={"template": template_out},
     )
     response.headers["HX-Trigger"] = "templatesChanged"
@@ -140,5 +140,5 @@ def update_template(
 def get_template_form(request: Request) -> HTMLResponse:
     """Renders html form used to create/edit order templates."""
     return request.app.state.templates.TemplateResponse(
-        request=request, name="forms/template_form.html"
+        request=request, name="pvf_partials/template_form.html"
     )

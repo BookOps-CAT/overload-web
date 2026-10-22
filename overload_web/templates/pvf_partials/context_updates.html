@@ -1,49 +1,42 @@
 {% import "components/macros.html" as macro %}
-<div id="library-img" hx-swap-oob="true">
-  {% if library %}
-    <img src="{{ url_for('static', path='images/' ~ library ~ 'Logo.png') }}"
-         height="auto"
-         width="auto"
-         class="nav-logo"
-         alt="library logo" />
-  {% endif %}
-</div>
-<div id="collection-display" hx-swap-oob="true">
-  {% if collection %}
-    <h4>{{ context_fields["collection"]['options'][collection] }}</h4>
-  {% endif %}
-</div>
-<div id="record-type-display" hx-swap-oob="true">
-  {% if record_type %}
-    <h4>{{ context_fields["record_type"]['options'][record_type] }}</h4>
-  {% endif %}
+<div class="nav-right" id="context-slot" hx-swap-oob="true">
+  <div class="nav-logo" id="library-img">
+    {% if library %}
+      <img src="{{ url_for('static', path='images/' ~ library ~ 'Logo.png') }}"
+           height="auto"
+           width="auto"
+           class="nav-logo"
+           alt="library logo" />
+    {% endif %}
+  </div>
+  <div class="nav-text-stacked" id="context-text">
+    <div id="collection-display">
+      {% if collection %}
+        <h4>{{ context_fields.record_type.options[collection] }}</h4>
+      {% endif %}
+    </div>
+    <div id="record-type-display">
+      {% if record_type %}
+        <h4>{{ context_fields.record_type.options[record_type] }}</h4>
+      {% endif %}
+    </div>
+  </div>
 </div>
 {% if template_form_enabled %}
   <div id="template-section"
        class="grid-container cols-1 card"
        hx-swap-oob="true">{% include "pvf_partials/template_source.html" %}</div>
 {% endif %}
-{% if record_type == "cat" %}
-  <form id="pvf-form"
-        hx-post="/pvf/process-full-records"
-        hx-encoding="multipart/form-data"
-        hx-target="#pvf_output"
-        hx-swap-oob="true"
-        autocomplete="off"
-        hx-on::after-request="if(event.detail.successful) this.reset()">
-  </form>
-{% else %}
-  <form id="pvf-form"
-        hx-post="/pvf/process-order-records"
-        hx-encoding="multipart/form-data"
-        hx-target="#pvf_output"
-        hx-swap-oob="true"
-        autocomplete="off"
-        hx-on::after-request="if(event.detail.successful) this.reset()">
-  </form>
-{% endif %}
+<form id="pvf-form"
+      hx-post="/pvf/process-{% if record_type == 'cat' %}full{% else %}order{% endif %}-records"
+      hx-encoding="multipart/form-data"
+      hx-target="#pvf_output"
+      hx-swap-oob="true"
+      autocomplete="off"
+      hx-on::after-request="if(event.detail.successful) this.reset()">
+</form>
 {% if collection_disabled or not collection %}
   <div id="collection-select" hx-swap-oob="true"  class="flex-1">
-    {{ macro.context_select("collection", context_fields["collection"], "pvf-form", disabled=collection_disabled) }}
+    {{ macro.context_select("collection", context_fields.collection, "pvf-form", disabled=collection_disabled) }}
   </div>
 {% endif %}

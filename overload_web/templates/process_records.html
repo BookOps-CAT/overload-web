@@ -13,9 +13,9 @@
          hx-trigger="change delay:200ms, load"
          hx-include="this"
          hx-swap="none">
-      <div id="library-select" class="flex-1">{{ macro.context_select("library", context_fields["library"], "pvf-form") }}</div>
-      <div id="collection-select" class="flex-1">{{ macro.context_select("collection", context_fields["collection"], "pvf-form") }}</div>
-      <div id="record-type-select" class="flex-1">{{ macro.context_select("record_type", context_fields["record_type"], "pvf-form") }}</div>
+      <div id="library-select" class="flex-1">{{ macro.context_select("library", context_fields.library, "pvf-form") }}</div>
+      <div id="collection-select" class="flex-1">{{ macro.context_select("collection", context_fields.collection, "pvf-form") }}</div>
+      <div id="record-type-select" class="flex-1">{{ macro.context_select("record_type", context_fields.record_type, "pvf-form") }}</div>
     </div>
     <div id="file-section" class="grid-container cols-3">
       <div class="card">

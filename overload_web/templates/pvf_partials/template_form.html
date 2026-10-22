@@ -3,12 +3,12 @@
   {% set template = {} %}
 {% endif %}
 <div id="template-form-fields">
+  <input id="template_id"
+         name="template_id"
+         type="hidden"
+         form="pvf-form"
+         value='{{ template.get("id") }}' />
   <div class="flex-row cols-2">
-    <input id="template_id"
-           name="template_id"
-           type="hidden"
-           form="pvf-form"
-           value='{{ template.get("id") }}' />
     <div class="col">{{ macro.input_field('name', {'label': 'Template Name'}, template.get('name'), "pvf-form") }}</div>
     <div class="col">{{ macro.input_field('agent', {'label': 'User'}, template.get('agent'), "pvf-form") }}</div>
   </div>

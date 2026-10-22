@@ -43,7 +43,7 @@ def list_remote_files(
     )
     return request.app.state.templates.TemplateResponse(
         request=request,
-        name="forms/remote_list.html",
+        name="pvf_partials/remote_file_list.html",
         context={"files": files, "vendor": vendor},
     )
 
