@@ -9,12 +9,13 @@ logger = logging.getLogger(__name__)
 
 
 class CreatePVFOutputReport:
+    """Create a report summary for a batch of processed records."""
+
     @staticmethod
     def execute(
         batch_id: str, record_type: str, uow: ports.UnitOfWorkProtocol
     ) -> dict[str, Any]:
-        """
-        Create a report summary for a batch of processed records.
+        """Execute `CreatePVFOutputReport` command.
 
         Args:
             batch_id:
@@ -23,8 +24,10 @@ class CreatePVFOutputReport:
                 The record type for the operation as a string.
             uow:
                 A `ports.UnitOfWorkProcotol` object used by the command.
+
         Returns:
             The report data as a dictionary.
+
         """
         with uow:
             data = uow.processed_batches.get(batch_id)
@@ -46,18 +49,21 @@ class CreatePVFOutputReport:
 
 
 class GetDetailedReportData:
+    """Create a detailed processing report for a batch of processed records."""
+
     @staticmethod
     def execute(batch_id: str, uow: ports.UnitOfWorkProtocol) -> list[dict[str, Any]]:
-        """
-        Create a detailed processing report for a batch of processed records.
+        """Execute `GetDetailedReportData` command.
 
         Args:
             batch_id:
                 The ID for the `ProcessedFileBatch` object in the database.
             uow:
                 A `ports.UnitOfWorkProcotol` object used by the command.
+
         Returns:
             The report data as a list of dictionaries.
+
         """
         with uow:
             data = uow.processed_batches.get(batch_id)
@@ -67,6 +73,8 @@ class GetDetailedReportData:
 
 
 class WriteOutputReport:
+    """Write processing statistics to a google sheet."""
+
     @staticmethod
     def execute(
         batch_id: str,
@@ -74,8 +82,7 @@ class WriteOutputReport:
         uow: ports.UnitOfWorkProtocol,
         writer: ports.ReportWriter,
     ) -> None:
-        """
-        Write processing statistics to a google sheet.
+        """Execute `WriteOutputReport` command.
 
         Args:
             batch_id:
@@ -86,8 +93,10 @@ class WriteOutputReport:
                 A `ports.UnitOfWorkProcotol` object used by the command.
             writer:
                 a `ports.ReportWriter` object used by the command.
+
         Returns:
             The report data as a dictionary.
+
         """
         with uow:
             data = uow.processed_batches.get(batch_id)
