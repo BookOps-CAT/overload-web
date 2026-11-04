@@ -8,7 +8,7 @@ from overload_web.domain.pvf import order_templates, ports
 logger = logging.getLogger(__name__)
 
 
-class SaveNewOrderTemplate:
+class CreateOrderTemplate:
     @staticmethod
     def execute(
         obj: order_templates.OrderTemplateBase, uow: ports.UnitOfWorkProtocol
@@ -19,9 +19,6 @@ class SaveNewOrderTemplate:
         Args:
             obj: the template data as an `OrderTemplateBase` object.
             uow: a `ports.UnitOfWorkProcotol` object.
-
-        Raises:
-            ValidationError: If the template lacks a name, agent, or primary_matchpoint.
 
         Returns:
             The saved template as an `OrderTemplate` domain object.
@@ -45,7 +42,7 @@ class GetOrderTemplate:
             uow: a `ports.UnitOfWorkProcotol` object.
 
         Returns:
-            The retrieved template as a `OrderTemplate` object or None.
+            The retrieved template as a `OrderTemplate` domain object or None.
         """
         with uow:
             data = uow.order_templates.get(id=template_id)
@@ -63,11 +60,11 @@ class ListOrderTemplates:
         Retrieve a list of templates in the database.
 
         Args:
+            uow: a `ports.UnitOfWorkProcotol` object.
             offset: start position of first `OrderTemplate` object to return.
             limit: the maximum number of `OrderTemplate` objects to return.
-            uow: a `ports.UnitOfWorkProcotol` object.
         Returns:
-            A list of `OrderTemplate` objects.
+            A list of `OrderTemplate` domain objects.
         """
         with uow:
             template_list = uow.order_templates.list(offset=offset, limit=limit)
@@ -87,12 +84,16 @@ class UpdateOrderTemplate:
         Update an existing order template.
 
         Args:
-            obj: the data to be replaces as an `OrderTemplateBase` object.
-            template_id: unique identifier for the template to be updated.
-            uow: a `ports.UnitOfWorkProcotol` object.
+            obj:
+                the data to be replaced within the existing template as
+                an `OrderTemplateBase` object.
+            template_id:
+                unique identifier for the template to be updated.
+            uow:
+                a `ports.UnitOfWorkProcotol` object.
         Returns:
-            The updated template as an `OrderTemplate` or None if the template
-            does not exist.
+            The updated template as an `OrderTemplate` domain object or None
+            if the template does not exist.
         """
         with uow:
             data = uow.order_templates.update(id=template_id, data=obj)

@@ -3,9 +3,9 @@ import inspect
 import pytest
 
 from overload_web.application.pvf.template_handling import (
+    CreateOrderTemplate,
     GetOrderTemplate,
     ListOrderTemplates,
-    SaveNewOrderTemplate,
     UpdateOrderTemplate,
 )
 from overload_web.domain.pvf import order_templates
@@ -57,7 +57,7 @@ class TestTemplateService:
 
     def test_save_template(self, fake_uow):
         template = tables.TemplateModel(name="Foo", agent="Bar", blanket_po=None, id=1)
-        template_saver = SaveNewOrderTemplate.execute(uow=fake_uow, obj=template)
+        template_saver = CreateOrderTemplate.execute(uow=fake_uow, obj=template)
         assert template_saver.name == "Foo"
         assert template_saver.agent == "Bar"
         assert template_saver.blanket_po is None
@@ -75,7 +75,7 @@ class TestTemplateService:
         template = tables.TemplateModel(
             id=id, name=name, agent=agent, country="xxu", primary_matchpoint="isbn"
         )
-        SaveNewOrderTemplate.execute(uow=fake_uow, obj=template)
+        CreateOrderTemplate.execute(uow=fake_uow, obj=template)
         saved_template = GetOrderTemplate.execute(uow=fake_uow, template_id=id)
         assert saved_template.__dict__ == template.model_dump()
 
@@ -84,7 +84,7 @@ class TestTemplateService:
             id=1, name="foo", agent="bar", country="xxu", primary_matchpoint="isbn"
         )
         template_patch = schemas.TemplateDataModel(primary_matchpoint="upc", lang="eng")
-        SaveNewOrderTemplate.execute(uow=fake_uow, obj=template)
+        CreateOrderTemplate.execute(uow=fake_uow, obj=template)
         original_template = GetOrderTemplate.execute(uow=fake_uow, template_id=1)
         updated_template = UpdateOrderTemplate.execute(
             uow=fake_uow, template_id=1, obj=template_patch

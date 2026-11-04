@@ -194,7 +194,7 @@ class TestApp:
 
     def test_ot_router_create_template(self, mocker):
         template = mocker.Mock()
-        mocker.patch.object(template_handling.SaveNewOrderTemplate, "execute", template)
+        mocker.patch.object(template_handling.CreateOrderTemplate, "execute", template)
         response = self.client.post(
             "/ot/template", data={"name": "Foo", "agent": "Bar", "id": 1}
         )

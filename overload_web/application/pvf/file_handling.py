@@ -75,7 +75,7 @@ class UploadFileToWorkflow:
             workflow_id:
                 The id of the workflow to which the file belongs.
         Returns:
-            A list of dictionariess representing the files saved to the workflow.
+            A list of dictionaries representing the files saved to the workflow.
         """
         file_id = str(uuid.uuid4())
         reference = storage.save(id=file_id, filename=filename, content=content)
