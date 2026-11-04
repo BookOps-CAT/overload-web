@@ -1,4 +1,4 @@
-"""Domain models that define of vendor-supplied MARC files.
+"""Domain models that define vendor-supplied MARC files.
 
 Classes:
 
@@ -6,7 +6,7 @@ Classes:
     Represents a file uploaded to a processing workflow.
 
 `VendorFile`
-    Represents a vendor file.
+    Represents a vendor file during processing.
 """
 
 from __future__ import annotations

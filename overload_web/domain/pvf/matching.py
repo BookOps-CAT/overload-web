@@ -23,7 +23,7 @@ class ClassifiedCandidates:
 
     @property
     def duplicates(self) -> list[str]:
-        """A list of bib IDs for all matched records."""
+        """All bib IDs from all matched records."""
         duplicates: list[str] = []
         if len(self.matched) > 1:
             return [i.bib_id for i in self.matched]
@@ -46,6 +46,34 @@ class MatchAnalysis:
         target_title: str | None = None,
         updated_by_vendor: bool = False,
     ) -> None:
+        """
+        Initates a MatchAnalysis object.
+
+        Args:
+            action:
+                the cataloging action for the incoming record
+                (ie. whether it should be merged, inserted, or overlaid)
+            call_number:
+                the call number from the incoming record
+            call_number_match:
+                whether or not the call number the incoming record matches the
+                target bib record
+            classified:
+                an object containing bib record matches and whether or not they
+                are matches, mixed bibs, or records for a different collection
+            resource_id:
+                the resource ID from the incoming record that was matched
+            target_bib_id:
+                the bib ID of the target bib record
+            target_call_no:
+                the call number of the target bib record
+            target_title:
+                the title of the target bib record
+            updated_by_vendor:
+                whether or not the record has been updated by the vendor
+            vendor:
+                the vendor whose records are being processed
+        """
         self.action = action
         self.call_number = call_number
         self.call_number_match = call_number_match
@@ -60,6 +88,7 @@ class MatchAnalysis:
         self.vendor = vendor
 
     def to_dict(self) -> dict[str, Any]:
+        """Returns the analysis data as a dictionary."""
         return {
             "action": self.action,
             "call_number": self.call_number,
@@ -83,6 +112,8 @@ class BaseMatchAnalyzer(ABC):
     def analyze(
         self, record: models.DomainBib, candidates: ClassifiedCandidates
     ) -> MatchAnalysis: ...  # pragma: no branch
+
+    """Analyze a list of candidate matches for a given `DomainBib`."""
 
     def classify_matches(
         self, collection: str | None, library: str, matches: Sequence[dict[str, Any]]
@@ -143,6 +174,8 @@ class MatchAnalyzerFactory:
 
 
 class AcquisitionsMatchAnalyzer(BaseMatchAnalyzer):
+    """Match analyzer for all acquisitions processing workflows."""
+
     def analyze(
         self, record: models.DomainBib, candidates: ClassifiedCandidates
     ) -> MatchAnalysis:
@@ -160,6 +193,8 @@ class AcquisitionsMatchAnalyzer(BaseMatchAnalyzer):
 
 
 class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
+    """Match analyzer for BPL cataloging processing workflows."""
+
     def analyze(
         self, record: models.DomainBib, candidates: ClassifiedCandidates
     ) -> MatchAnalysis:
@@ -215,6 +250,8 @@ class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
 
 
 class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
+    """Match analyzer for NYPL Research collections cataloging processing workflows."""
+
     def analyze(
         self, record: models.DomainBib, candidates: ClassifiedCandidates
     ) -> MatchAnalysis:
@@ -260,6 +297,8 @@ class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
 
 
 class NYPLCatBranchMatchAnalyzer(BaseMatchAnalyzer):
+    """Match analyzer for NYPL Branch collections cataloging processing workflows."""
+
     def analyze(
         self, record: models.DomainBib, candidates: ClassifiedCandidates
     ) -> MatchAnalysis:
@@ -313,6 +352,8 @@ class NYPLCatBranchMatchAnalyzer(BaseMatchAnalyzer):
 
 
 class SelectionMatchAnalyzer(BaseMatchAnalyzer):
+    """Match analyzer for all selection processing workflows."""
+
     def analyze(
         self, record: models.DomainBib, candidates: ClassifiedCandidates
     ) -> MatchAnalysis:

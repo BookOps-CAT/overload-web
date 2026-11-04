@@ -1,3 +1,5 @@
+"""Commands used in vendor processing workflows."""
+
 from dataclasses import dataclass
 from typing import Any
 
@@ -13,7 +15,7 @@ class InitializeWorkflow(Command):
 
 @dataclass
 class StartOrderLevelRecordsWorkflow(Command):
-    """Command to start order-level processing workflow."""
+    """Command to start an order-level processing workflow."""
 
     collection: str | None
     library: str
@@ -26,7 +28,7 @@ class StartOrderLevelRecordsWorkflow(Command):
 
 @dataclass
 class StartFullLevelRecordsWorkflow(Command):
-    """Command to start full MARC record processing workflow."""
+    """Command to start a full MARC record processing workflow."""
 
     collection: str | None
     library: str

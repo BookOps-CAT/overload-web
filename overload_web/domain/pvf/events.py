@@ -1,3 +1,5 @@
+"""Events describing stages of vendor processing workflows."""
+
 from dataclasses import dataclass
 from typing import Any
 
