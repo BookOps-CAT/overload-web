@@ -10,28 +10,31 @@ logger = logging.getLogger(__name__)
 
 
 class ListVendorFiles:
+    """List files in a directory."""
+
     @staticmethod
     def execute(dir: str, retriever: ports.FileRetriever) -> list[str]:
-        """
-        List files in a directory.
+        """Execute `ListVendorFiles` command.
 
         Args:
             dir: The directory whose files to list as a string.
             retriever: Concrete implementation of `FileRetriever` protocol
         Returns:
             a list of filenames contained within the given directory as strings.
+
         """
         files = retriever.list(dir=dir)
         return files
 
 
 class DownloadRemoteFile:
+    """Load a file from a directory."""
+
     @staticmethod
     def execute(
         name: str, dir: str, retriever: ports.FileRetriever
     ) -> files.VendorFile:
-        """
-        Load a file from a directory.
+        """Execute `DownloadRemoteFile` command.
 
         Args:
             name: The name of the file as a string.
@@ -40,13 +43,14 @@ class DownloadRemoteFile:
 
         Returns:
             The loaded file as a `files.VendorFile` object.
+
         """
         file = retriever.download(name=name, dir=dir)
         return files.VendorFile(file_name=name, content=file)
 
 
 class UploadFileToWorkflow:
-    """Saves incoming vendor file bytes and ensures a DRAFT WorkflowJob exists."""
+    """Save file data to storage and file metadata to database."""
 
     @staticmethod
     def execute(
@@ -57,7 +61,7 @@ class UploadFileToWorkflow:
         uow: ports.UnitOfWorkProtocol,
         workflow_id: str,
     ) -> Sequence[dict[str, Any]]:
-        """Saves file data to storage and persists database metadata within a UoW.
+        """Excecute `UploadFileToWorkflow` command.
 
         Args:
             content:
@@ -74,8 +78,10 @@ class UploadFileToWorkflow:
                 handling vendor files.
             workflow_id:
                 The id of the workflow to which the file belongs.
+
         Returns:
             A list of dictionaries representing the files saved to the workflow.
+
         """
         file_id = str(uuid.uuid4())
         reference = storage.save(id=file_id, filename=filename, content=content)
@@ -98,13 +104,13 @@ class UploadFileToWorkflow:
 
 
 class DeleteFileFromWorkflow:
+    """Delete an incoming file from the workflow's list of files."""
+
     @staticmethod
     def execute(
         id: str, uow: ports.UnitOfWorkProtocol, workflow_id: str
     ) -> Sequence[dict[str, Any]]:
-        """
-        Delete an incoming file from the workflow's list of files.
-
+        """Execute `DeleteFileFromWorkflow` command.
 
         Args:
             id:
@@ -114,8 +120,10 @@ class DeleteFileFromWorkflow:
                 handling vendor files.
             workflow_id:
                 The id of the workflow to which the file belongs.
+
         Returns:
             The list of files remaining for the workflow as a list of dictionaries.
+
         """
         with uow:
             uow.incoming_files.delete(id)
