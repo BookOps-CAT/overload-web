@@ -46,8 +46,7 @@ class DomainBib:
         vendor: str | None = None,
         vendor_info: VendorInfo | None = None,
     ) -> None:
-        """
-        Initialize a `DomainBib` object.
+        """Initialize a `DomainBib` object.
 
         Args:
             barcodes:
@@ -75,6 +74,9 @@ class DomainBib:
                 if present.
             orders:
                 The list of orders associated with the record as `Order` domain objects.
+            parsed_fields:
+                A list of fields parsed from the MARC record as a list of dictionaries
+                or `ParsedField` objects.
             record_type:
                 The workflow two whom this record belongs as a
                 `RecordType` enum, str, or None.
@@ -92,8 +94,8 @@ class DomainBib:
                 The vendor to whom the record belongs as a string, if applicable.
             vendor_info:
                 Info about the vendor as a `VendorInfo` object, if applicable.
-        """
 
+        """
         self.barcodes = barcodes
         self.bib_id = bib_id
         self.binary_data = binary_data
@@ -125,7 +127,7 @@ class DomainBib:
         return self._action
 
     @action.setter
-    def action(self, value) -> None:
+    def action(self, value: str) -> None:
         self._action = value
 
     @property
@@ -156,14 +158,13 @@ class DomainBib:
 
     @property
     def update_datetime(self) -> datetime.datetime | None:
-        """Creates `datetime.datetime` object from `update_date` string."""
+        """Create `datetime.datetime` object from `update_date` string."""
         if self.update_date:
             return datetime.datetime.strptime(self.update_date, "%Y%m%d%H%M%S.%f")
         return None
 
     def apply_match(self, action: str, bib_id: str | None) -> None:
-        """
-        Update a `DomainBib` object's bib_id.
+        """Update a `DomainBib` object's bib_id.
 
         Args:
             action: the action to take determined by match analysis
@@ -171,34 +172,36 @@ class DomainBib:
 
         Returns:
             None
+
         """
         if bib_id and self.bib_id is None:
             self.bib_id = bib_id
         self._action = action
 
     def apply_order_template(self, template_data: dict[str, Any]) -> None:
-        """
-        Apply template data to all orders in this bib record.
+        """Apply template data to all orders in this bib record.
 
         Args:
             template_data: dictionary of order fields and values to overwrite
 
         Returns:
             None
+
         """
         for order in self.orders:
             order.apply_template(template_data=template_data)
 
     def __repr__(self) -> str:
+        """Return `DomainBib` as a string."""
         return f"DomainBib(barcodes: {self.barcodes}, bib_id: {self.bib_id}, branch_call_number: {self.branch_call_number}, collection: {self.collection}, control_number: {self.control_number}, isbn: {self.isbn}, library: {self.library}, oclc_number: {self.oclc_number}, research_call_number: {self.research_call_number}, record_type: {self.record_type}, title: {self.title}, upc: {self.upc}, update_date: {self.update_date}, vendor: {self.vendor})"  # noqa: E501
 
 
 class FieldUpdates:
-    """Functions that create `MarcFieldUpdateValues` to be used to update MARC fields"""
+    """Functions that create MarcFieldUpdateValues to be used to update MARC fields."""
 
     @staticmethod
     def add_bib_id(bib_id: str | None, tag: str) -> MarcFieldUpdateValues | None:
-        """Creates a new bib ID field."""
+        """Create a new bib ID field."""
         if bib_id:
             return MarcFieldUpdateValues(
                 delete_fields_by_tag=True,
@@ -213,17 +216,17 @@ class FieldUpdates:
     def add_command_tag(
         format: str | None, default_loc: str | None, fields: list[ParsedField]
     ) -> MarcFieldUpdateValues | None:
-        """Creates a new or updated command tag field."""
+        """Create a new or updated command tag field."""
         if not format and not default_loc:
             return None
         command_tag: str | None = None
-        for marc_field in fields:
-            if marc_field.tag == "949" and marc_field.indicators == (" ", " "):
-                for sf in marc_field.subfields:
-                    if sf.code == "a" and sf.value[0] == "*" and command_tag is None:
-                        command_tag = sf.value.strip()
-                        if "bn=" in command_tag:
-                            return None
+        marc_949 = [i for i in fields if i.tag == "949" and i.indicators == (" ", " ")]
+        for marc_field in marc_949:
+            for sf in marc_field.subfields:
+                if sf.code == "a" and sf.value[0] == "*" and command_tag is None:
+                    command_tag = sf.value.strip()
+                    if "bn=" in command_tag:
+                        return None
 
         if not command_tag:
             if not format:
@@ -257,7 +260,7 @@ class FieldUpdates:
 
     @staticmethod
     def add_vendor_fields(fields: list[dict[str, Any]]) -> list[MarcFieldUpdateValues]:
-        """Creates a list of fields for a full MARC record based on `VendorInfo`."""
+        """Create a list of fields for a full MARC record based on `VendorInfo`."""
         field_objs = []
         for field_data in fields:
             field_objs.append(
@@ -296,7 +299,7 @@ class FieldUpdates:
     def get_item_fields(
         fields: list[list[ParsedField]], criteria: tuple[str, str, str]
     ) -> list[MarcFieldUpdateValues]:
-        """Creates list of item fields to add to combined duplicate records."""
+        """Create list of item fields to add to combined duplicate records."""
         all_items = []
         for field_list in fields:
             for item in field_list:
@@ -320,7 +323,7 @@ class FieldUpdates:
 
     @staticmethod
     def update_910_field(collection: str) -> MarcFieldUpdateValues:
-        """Adds 910 field for branches or research if applicable."""
+        """Add appropriate 910 field for branches or research if applicable."""
         return MarcFieldUpdateValues(
             delete_fields_by_tag=True,
             tag="910",
@@ -333,7 +336,7 @@ class FieldUpdates:
     def update_bt_series_call_no(
         call_no: str | None, collection: str | None, vendor: str | None
     ) -> MarcFieldUpdateValues | None:
-        """Updates call number for B&T Series materials."""
+        """Update call number for B&T Series materials."""
         if not vendor == "BT SERIES" or not call_no or not collection == "BL":
             return None
         new_subfields = []
@@ -386,7 +389,7 @@ class FieldUpdates:
     def update_order_fields(
         orders: Sequence[Order], mapping: dict[str, Any]
     ) -> list[MarcFieldUpdateValues]:
-        """Updates order record fields based on template data applied to DomainBib"""
+        """Update order record fields based on template data applied to DomainBib."""
         fields = []
         for order in orders:
             order_data = order.map_to_marc(rules=mapping)
@@ -450,14 +453,14 @@ class Order:
     vendor_title_no: str | None
 
     def apply_template(self, template_data: dict[str, Any]) -> None:
-        """
-        Apply template data to the order.
+        """Apply template data to the order.
 
         Identifies fields based on the key of a key/value pair and overwrites
         it with the value from the key/value pair if the attribute is not empty.
 
         Args:
             template_data: Field-value pairs to apply.
+
         """
         for k, v in template_data.items():
             if v and k in self.__dict__.keys():
@@ -466,16 +469,15 @@ class Order:
     def map_to_marc(
         self, rules: dict[str, Any]
     ) -> dict[str, dict[str, str | int | list[str] | None]]:
-        """
-        Map order data to MARC using a set of mapping rules
+        """Map order data to MARC using a set of mapping rules.
 
         Args:
             rules: a dict defining the fields and subfields to map `Order` attributes to
 
         Returns:
             the attributes of the `Order` as a dict mapped to MARC fields and subfields
-        """
 
+        """
         out = {}
         for key in rules.keys():
             tag_dict = {}
@@ -486,13 +488,29 @@ class Order:
 
 
 class ParsedField:
+    """Value object representing a parsed MARC field."""
+
     def __init__(
         self,
         tag: str,
         indicators: tuple[str, str] | None = None,
         subfields: list[ParsedSubfield] | list[dict[str, str]] = [],
         value: str | None = None,
-    ):
+    ) -> None:
+        """Initialize a `ParsedField` object.
+
+        Args:
+            tag:
+                the MARC tag as a string
+            indicators:
+                a tuple of two strings for datafields or None for controlfields.
+            subfields:
+                a list of dictionaries of str/str pairs or a list of `ParsedSubfield`
+                objects for datafields or None for controlfields.
+            value:
+                a string for controlfields or None for datafields
+
+        """
         self.tag = tag
         self.indicators = indicators
         self.subfields = [
@@ -504,7 +522,7 @@ class ParsedField:
 
 @dataclass(frozen=True)
 class ParsedSubfield:
-    """A pure Python representation of a MARC subfield."""
+    """Value object representing a MARC subfield."""
 
     code: str
     value: str
@@ -522,7 +540,7 @@ class TargetFieldCriteria:
 
 @dataclass
 class VendorInfo:
-    """A dataclass to define a vendor rules as an entity"""
+    """Information for how to parse, match and update records for a given vendor."""
 
     bib_fields: list[dict[str, str]]
     matchpoints: dict[str, str]
@@ -531,6 +549,8 @@ class VendorInfo:
 
 
 class WorkflowStatus(StrEnum):
+    """Statuses used in vendor file processing workflows."""
+
     PENDING = "PENDING"
     PROCESSING = "PROCESSING"
     MATCHING = "MATCHING"
@@ -555,14 +575,14 @@ class WorkflowStateBase:
 
 @dataclass(kw_only=True)
 class WorkflowStateInitial(WorkflowStateBase):
-    """Defines workflow state domain entity."""
+    """Domain entity representing workflow state when it is first created."""
 
     id: str
 
 
 @dataclass(kw_only=True)
 class WorkflowState(WorkflowStateBase):
-    """Defines workflow state domain entity."""
+    """Domain entity representing workflow state."""
 
     collection: str | None
     id: str

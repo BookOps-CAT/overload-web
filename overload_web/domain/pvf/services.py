@@ -5,6 +5,7 @@ MARC records as part of the process vendor file application.
 
 Classes:
 `BarcodeValidator`:
+    a domain service that validates the presence and uniqueness of barcodes.
 
 `BibMatcher`:
     a domain service responsible for finding duplicate records in Sierra for a
@@ -12,11 +13,13 @@ Classes:
     ISBN, or Sierra Bib ID.
 
 `BibParser`:
+    a domain service that parses MARC records to domain objects
 
 `BibReviewer`:
+    a domain service that reviews full-MARC records after they have been processed.
 
 `BibUpdater`:
-
+    a domain service that updates and outputs MARC records from domain objects.
 """
 
 from __future__ import annotations
@@ -33,6 +36,8 @@ logger = logging.getLogger(__name__)
 
 
 class BarcodeValidator:
+    """Validate barcodes from a batch of files (used before and after processing)."""
+
     def validate_unique(self, barcodes: list[list[str]]) -> list[str]:
         """Confirm barcodes in a file are all unique."""
         barcode_list = list(itertools.chain.from_iterable(barcodes))
@@ -45,7 +50,7 @@ class BarcodeValidator:
     def validate_preserved(
         self, processed_barcodes: list[list[str]], original_barcodes: list[str]
     ) -> list[str]:
-        """Confirm all barcodes extracted from file are present in processed records"""
+        """Confirm all barcodes extracted from file are present in processed records."""
         missing_barcodes = set()
         processed = list(itertools.chain.from_iterable(processed_barcodes))
         for barcode in original_barcodes:
@@ -62,8 +67,7 @@ class BarcodeValidator:
 
 
 class BibMatcher:
-    """
-    Domain service for retrieving records from Sierra that match a bib record.
+    """Domain service for retrieving records from Sierra that match a bib record.
 
     This service compares a `DomainBib` instance against external candidates using
     specified matchpoints (e.g., ISBN, OCLC number, UPC). The services queries Sierra
@@ -74,13 +78,13 @@ class BibMatcher:
     """
 
     def __init__(self, fetcher_factory: Callable[[str], ports.BibFetcher]) -> None:
-        """
-        Initialize the match service with a fetcher.
+        """Initialize the match service with a fetcher.
 
         Args:
             fetcher_factory:
                 An injected factory function to create a `ports.BibFetcher`
                 object that retrieves candidate bibs from Sierra.
+
         """
         self.fetcher_factory = fetcher_factory
 
@@ -90,22 +94,25 @@ class BibMatcher:
         matchpoints: dict[str, str],
         record: models.DomainBib,
     ) -> Sequence[dict[str, Any]]:
-        """
-        Find all matches in Sierra for a given bib record.
+        """Find all matches in Sierra for a given bib record.
 
         This method queries the fetcher object for candidates using each matchpoint.
         The first non-empty match that returns candidates is used for comparison.
 
         Args:
+            fetcher:
+                a `ports.BibFetcher` object.
             matchpoints:
                 a dictionary containing matchpoints and their priority e.g.
                 `{"primary_matchpoint": "isbn", "secondary_matchpoint": "bib_id"}`
             record:
                 The bibliographic record to match against Sierra represented as a
                 `DomainBib` object.
+
         Returns:
             A list of the record's matches as dictionaries representing Sierra
             responses, or an empty list if no matches were found.
+
         """
         candidates: Sequence[dict[str, Any]]
         for matchpoint in matchpoints.values():
@@ -123,19 +130,22 @@ class BibMatcher:
     def match_order_record(
         self, library: str, matchpoints: dict[str, str], record: models.DomainBib
     ) -> Sequence[dict[str, Any]]:
-        """
-        Match an order-level bibliographic record against Sierra.
+        """Match an order-level bibliographic record against Sierra.
 
         Args:
+            library:
+                the library to whom the record belongs as a string
             matchpoints:
                 a dictionary containing matchpoints and their priority e.g.
                 `{"primary_matchpoint": "isbn", "secondary_matchpoint": "bib_id"}`
             record:
                 The bibliographic record to match against Sierra represented as a
                 `DomainBib` object.
+
         Returns:
             A list of the record's matches as dictionaries representing Sierra
             responses, or an empty list if no matches were found.
+
         """
         fetcher = self.fetcher_factory(library)
         responses: Sequence[dict[str, Any]] = self._match_bib(
@@ -146,10 +156,11 @@ class BibMatcher:
     def match_full_record(
         self, library: str, record: models.DomainBib
     ) -> Sequence[dict[str, Any]]:
-        """
-        Match a full-level bibliographic record against Sierra.
+        """Match a full-level bibliographic record against Sierra.
 
         Args:
+            library:
+                the library to whom the record belongs as a string
             record:
                 A parsed bibliographic record as a `DomainBib` object.
 
@@ -159,6 +170,7 @@ class BibMatcher:
 
         Raises:
             ValueError: if the value of a record's `vendor_info` attribute is None.
+
         """
         if record.vendor_info is None:
             raise ValueError("Vendor index required for cataloging workflow.")
@@ -171,8 +183,7 @@ class BibMatcher:
     def review_matches(
         self, bib: models.DomainBib, matches: Sequence[dict[str, Any]]
     ) -> matching.MatchAnalysis:
-        """
-        Review and categorize match candidates returned from Sierra.
+        """Review and categorize match candidates returned from Sierra.
 
         Args:
             bib:
@@ -182,6 +193,7 @@ class BibMatcher:
 
         Returns:
             A `MatchAnalysis` object containing classified matches.
+
         """
         analyzer = matching.MatchAnalyzerFactory.make(
             library=bib.library, record_type=bib.record_type, collection=bib.collection
@@ -193,6 +205,8 @@ class BibMatcher:
 
 
 class BibParser:
+    """An domain service that to parses MARC records to domain objects."""
+
     def __init__(
         self,
         bib_mapping: dict[str, Any],
@@ -200,8 +214,7 @@ class BibParser:
         order_mapping: dict[str, Any],
         vendor_mapping: dict[str, Any],
     ) -> None:
-        """
-        Initialize `BibParser` using a set of mapping rules and inputs.
+        """Initialize `BibParser` using a set of mapping rules and inputs.
 
         Args:
             bib_mapping:
@@ -218,6 +231,7 @@ class BibParser:
                 the workflow two whom this record belongs
             vendor_mapping:
                 rules for identifying the vendor to whom a record belongs
+
         """
         self.bib_mapping = bib_mapping
         self.handler = handler
@@ -298,11 +312,19 @@ class BibParser:
 
 
 class BibReviewer:
+    """A domain service that reviews processed full-level MARC records."""
+
     def __init__(self, handler: ports.MarcUpdaterPort) -> None:
+        """Initialize a `BibReviewer` object.
+
+        Args:
+            handler: a `ports.MarcUpdaterPort` object.
+
+        """
         self.handler = handler
 
     def review_batch(self, records: list[models.DomainBib]) -> dict[str, Any]:
-        """Merges item fields from duplicate records into a base record."""
+        """Merge item fields from duplicate records into a base record."""
         out: dict[str, list[models.DomainBib]] = {"NEW": [], "DUP": [], "DEDUPED": []}
         dup_groups = defaultdict(list)
 
@@ -347,6 +369,8 @@ class BibReviewer:
 
 
 class BibUpdater:
+    """A domain service that updates bib records during processing."""
+
     def __init__(
         self,
         bib_id_tags: dict[str, str],
@@ -354,25 +378,20 @@ class BibUpdater:
         handler: ports.MarcUpdaterPort,
         order_mapping: dict[str, Any],
     ) -> None:
-        """
-        Initialize `BibUpdater` using a set of rules and inputs.
+        """Initialize a `BibUpdater` using a set of rules and inputs.
 
         Args:
-            bib_id_tag:
-                MARC tag where bib ID should be writting in output record.
-            collection:
-                the collection to whom the records belong
-            default_loc:
-                The default location for a specific library/collection to be used
-                in output record
+            bib_id_tags:
+                A dictionary containing pairs of strings indicating a library
+                and the MARC tag where it stores bib IDs
+            default_locations:
+                A dictionary containing pairs of strings indicating a
+                library/collection and its default location code
             handler:
                 a `MarcUpdaterPort` object used to handle interactions with pymarc
-            library:
-                the library whose records are being parsed
             order_mapping:
                 rules for mapping domain objects MARC fields/subfields
-            record_type:
-                the workflow two whom this record belongs
+
         """
         self.bib_id_tags = bib_id_tags
         self.default_locations = default_locations
@@ -382,7 +401,7 @@ class BibUpdater:
     def apply_field_updates(
         self, record: models.DomainBib, updates: list[models.MarcFieldUpdateValues]
     ) -> None:
-        """Update and add MARC fields to bib record"""
+        """Update and add MARC fields to bib record."""
         bib = self.handler.create_bib(
             binary_data=record.binary_data, library=record.library
         )
@@ -393,7 +412,7 @@ class BibUpdater:
     def get_full_record_updates(
         self, collection: str | None, library: str, record: models.DomainBib
     ) -> list[models.MarcFieldUpdateValues]:
-        """Get list of MARC fields to add to or update in processed bib record"""
+        """Get list of MARC fields to add to or update in processed bib record."""
         updates: list[Any] = []
         bib_id_tag = self.bib_id_tags[library]
 
@@ -424,7 +443,7 @@ class BibUpdater:
         record: models.DomainBib,
         template_data: dict[str, Any],
     ) -> list[models.MarcFieldUpdateValues]:
-        """Get list of MARC fields to add to or update in processed bib record"""
+        """Get list of MARC fields to add to or update in processed bib record."""
         updates: list[Any] = []
         bib_id_tag = self.bib_id_tags[library]
         default_loc = self.default_locations[library].get(collection)
@@ -450,8 +469,7 @@ class BibUpdater:
         return [i for i in updates if i]
 
     def write(self, records: list[models.DomainBib]) -> bytes:
-        """
-        Serialize `DomainBib` objects into a binary MARC stream.
+        """Serialize `DomainBib` objects into a binary MARC stream.
 
         Args:
             records:
@@ -459,6 +477,7 @@ class BibUpdater:
 
         Returns:
             MARC binary as an an in-memory file stream.
+
         """
         io_data = io.BytesIO()
         for record in records:

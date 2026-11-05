@@ -11,13 +11,26 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ProcessingStatistics:
-    """A value object representing a statistics for a batch of processed files"""
+    """A value object representing a statistics for a batch of processed files."""
 
     stats: list[dict[str, Any]]
 
     def create_call_number_report(
         self, record_type: str
     ) -> list[dict[str, Any]] | None:
+        """Generate a call number report.
+
+        The report indicates whether or not the call number was matched in Sierra
+        for each record in a batch of processed records.
+
+        Args:
+            record_type: the record type for the workflow (acq, cat, or sel)
+
+        Returns:
+            the report data as a list of dictionaries or None if the processing
+            statistics are empty.
+
+        """
         out_report = []
         for row in self.stats:
             row_report = {
@@ -42,6 +55,16 @@ class ProcessingStatistics:
         return None
 
     def create_duplicate_report(self) -> list[dict[str, Any]]:
+        """Generate a duplicate record report.
+
+        The report indicates whether or not there were duplicate, mixed, or other
+        records in Sierra for each record in a batch of processed records.
+
+        Returns:
+            the report data as a list of dictionaries or None if the processing
+            statistics are empty.
+
+        """
         out = []
         for row in self.stats:
             if row["duplicate_records"] or row["mixed"] or row["other"]:
@@ -58,6 +81,15 @@ class ProcessingStatistics:
         return out
 
     def create_vendor_report(self) -> list[dict[str, Any]]:
+        """Generate a report of processing statistics organized by vendor.
+
+        The report summarizes processing statistics listing how many records
+        per vendor are to be attached, inserted, and/or updated/overlaid.
+
+        Returns:
+            the report data as a list of dictionaries.
+
+        """
         vendor_data: dict[str, dict[str, Any]] = {}
         for row in self.stats:
             vendor = row["vendor"]

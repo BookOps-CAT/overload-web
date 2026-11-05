@@ -70,7 +70,7 @@ omit = [
 fix = true
 
 [tool.ruff.lint]
-select = ["C4", "D", "F", "E", "ANN"]
+select = ["C", "D", "F", "E", "ANN"]
 ignore = ["ANN401"]
 extend-safe-fixes = ["ANN204", "C4", "D"]
 
