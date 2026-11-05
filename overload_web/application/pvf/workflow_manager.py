@@ -10,13 +10,15 @@ logger = logging.getLogger(__name__)
 class WorkflowManager:
     """Orchestrates workflows and tracks state."""
 
-    def __init__(self, bus: ports.MessageBusPort, uow: ports.UnitOfWorkProtocol):
-        """
-        Initialize the workflow manager with a unit of work and message bus.
+    def __init__(
+        self, bus: ports.MessageBusPort, uow: ports.UnitOfWorkProtocol
+    ) -> None:
+        """Initialize the workflow manager with a unit of work and message bus.
 
         Args:
             bus: a `ports.MessageBusPort` object.
             uow: a `ports.UnitOfWorkProcotol` object.
+
         """
         self.bus = bus
         self.uow = uow
@@ -35,9 +37,7 @@ class WorkflowManager:
         return new_state
 
     def handle_workflow_initialized(self, event: events.WorkflowInitialized) -> None:
-        """
-        Handles a `WorkflowInitialized` event creating a new workflow.
-
+        """Handle a `WorkflowInitialized` event creating a new workflow.
 
         Args:
             event: an `events.WorkflowInitialized` object containing a workflow ID
@@ -60,8 +60,7 @@ class WorkflowManager:
     def handle_workflow_started_order_level(
         self, event: events.OrderLevelWorkflowStarted
     ) -> None:
-        """
-        Handles a `OrderLevelWorkflowStarted` event starting an initialized workflow.
+        """Handle a `OrderLevelWorkflowStarted` event starting an initialized workflow.
 
         Args:
             event:
@@ -78,6 +77,7 @@ class WorkflowManager:
         Returns:
             None. Workflow state is updated to `PROCESSING` and
             `ParseOrderLevelFiles` command is sent to message bus.
+
         """
         state = self._update_workflow_state(
             id=event.workflow_id,
@@ -105,9 +105,7 @@ class WorkflowManager:
     def handle_files_parsed_order_level(
         self, event: events.OrderLevelFilesParsed
     ) -> None:
-        """
-        Handles a `OrderLevelFilesParsed` event after a workflow's files
-        have been parsed.
+        """Handle a `OrderLevelFilesParsed` event after file parsing.
 
         Args:
             event:
@@ -117,6 +115,7 @@ class WorkflowManager:
         Returns:
             None. Workflow state is updated to `MATCHING` and
             `MatchOrderLevelRecords` command is sent to message bus.
+
         """
         state = self._update_workflow_state(
             id=event.workflow_id,
@@ -135,9 +134,7 @@ class WorkflowManager:
     def handle_records_matched_order_level(
         self, event: events.OrderLevelRecordsMatched
     ) -> None:
-        """
-        Handles a `OrderLevelRecordsMatched` event after a workflow's files
-        have been matched.
+        """Handle a `OrderLevelRecordsMatched` event after file parsing.
 
         Args:
             event:
@@ -147,6 +144,7 @@ class WorkflowManager:
         Returns:
             None. Workflow state is updated to `UPDATING` and
             `UpdateAndOutputOrderLevelRecords` command is sent to message bus.
+
         """
         state = self._update_workflow_state(
             id=event.workflow_id,
@@ -167,9 +165,7 @@ class WorkflowManager:
     def handle_workflow_completed_order_level(
         self, event: events.OrderLevelWorkflowCompleted
     ) -> None:
-        """
-        Handles a `OrderLevelWorkflowCompleted` event after a workflow's files
-        have been updated and saved to the processed files database.
+        """Handle a `OrderLevelWorkflowCompleted` event after processing has completed.
 
         Args:
             event:
@@ -180,6 +176,7 @@ class WorkflowManager:
 
         Returns:
             None. Workflow state is updated to `COMPLETED`.
+
         """
         self._update_workflow_state(
             id=event.workflow_id,
@@ -191,8 +188,7 @@ class WorkflowManager:
     def handle_workflow_started_full_level(
         self, event: events.FullLevelWorkflowStarted
     ) -> None:
-        """
-        Handles a `FullLevelWorkflowStarted` event starting an initialized workflow.
+        """Handle a `FullLevelWorkflowStarted` event starting an initialized workflow.
 
         Args:
             event:
@@ -206,6 +202,7 @@ class WorkflowManager:
         Returns:
             None. Workflow state is updated to `PROCESSING` and
             `ParseFullLevelFiles` command is sent to message bus.
+
         """
         state = self._update_workflow_state(
             id=event.workflow_id,
@@ -230,9 +227,7 @@ class WorkflowManager:
     def handle_files_parsed_full_level(
         self, event: events.FullLevelFilesParsed
     ) -> None:
-        """
-        Handles a `FullLevelFilesParsed` event after a workflow's files
-        have been parsed.
+        """Handle a `FullLevelFilesParsed` event after records have been matched.
 
         Args:
             event:
@@ -242,6 +237,7 @@ class WorkflowManager:
         Returns:
             None. Workflow state is updated to `MATCHING` and
             `MatchFullLevelRecords` command is sent to message bus.
+
         """
         state = self._update_workflow_state(
             id=event.workflow_id,
@@ -258,9 +254,7 @@ class WorkflowManager:
     def handle_records_matched_full_level(
         self, event: events.FullLevelRecordsMatched
     ) -> None:
-        """
-        Handles a `FullLevelRecordsMatched` event after a workflow's files
-        have been matched.
+        """Handle a `FullLevelRecordsMatched` event after records have been matched.
 
         Args:
             event:
@@ -270,6 +264,7 @@ class WorkflowManager:
         Returns:
             None. Workflow state is updated to `UPDATING` and
             `UpdateAndOutputFullLevelRecords` command is sent to message bus.
+
         """
         state = self._update_workflow_state(
             id=event.workflow_id,
@@ -289,9 +284,7 @@ class WorkflowManager:
     def handle_workflow_completed_full_level(
         self, event: events.FullLevelWorkflowCompleted
     ) -> None:
-        """
-        Handles a `FullLevelWorkflowCompleted` event after a workflow's files
-        have been updated and saved to the processed files database.
+        """Handle a `FullLevelWorkflowCompleted` event after processing has completed.
 
         Args:
             event:
@@ -302,6 +295,7 @@ class WorkflowManager:
 
         Returns:
             None. Workflow state is updated to `COMPLETED`.
+
         """
         self._update_workflow_state(
             id=event.workflow_id,

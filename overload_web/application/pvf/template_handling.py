@@ -9,12 +9,13 @@ logger = logging.getLogger(__name__)
 
 
 class CreateOrderTemplate:
+    """Save an order template."""
+
     @staticmethod
     def execute(
         obj: order_templates.OrderTemplateBase, uow: ports.UnitOfWorkProtocol
     ) -> order_templates.OrderTemplate:
-        """
-        Save an order template.
+        """Execute `CreateOrderTemplate` command.
 
         Args:
             obj: the template data as an `OrderTemplateBase` object.
@@ -22,6 +23,7 @@ class CreateOrderTemplate:
 
         Returns:
             The saved template as an `OrderTemplate` domain object.
+
         """
         with uow:
             save_template = uow.order_templates.save(obj=obj).model_dump()
@@ -30,12 +32,13 @@ class CreateOrderTemplate:
 
 
 class GetOrderTemplate:
+    """Retrieve an order template by its ID."""
+
     @staticmethod
     def execute(
         template_id: str, uow: ports.UnitOfWorkProtocol
     ) -> order_templates.OrderTemplate | None:
-        """
-        Retrieve an order template by its ID.
+        """Execute `GetOrderTemplate` command.
 
         Args:
             template_id: unique identifier for the template.
@@ -43,6 +46,7 @@ class GetOrderTemplate:
 
         Returns:
             The retrieved template as a `OrderTemplate` domain object or None.
+
         """
         with uow:
             data = uow.order_templates.get(id=template_id)
@@ -52,19 +56,22 @@ class GetOrderTemplate:
 
 
 class ListOrderTemplates:
+    """Execute `ListOrderTemplates` command."""
+
     @staticmethod
     def execute(
         uow: ports.UnitOfWorkProtocol, offset: int | None = 0, limit: int | None = 20
     ) -> Sequence[order_templates.OrderTemplate]:
-        """
-        Retrieve a list of templates in the database.
+        """Retrieve a list of templates in the database.
 
         Args:
             uow: a `ports.UnitOfWorkProcotol` object.
             offset: start position of first `OrderTemplate` object to return.
             limit: the maximum number of `OrderTemplate` objects to return.
+
         Returns:
             A list of `OrderTemplate` domain objects.
+
         """
         with uow:
             template_list = uow.order_templates.list(offset=offset, limit=limit)
@@ -74,14 +81,15 @@ class ListOrderTemplates:
 
 
 class UpdateOrderTemplate:
+    """Update an existing order template."""
+
     @staticmethod
     def execute(
         template_id: str,
         obj: order_templates.OrderTemplateBase,
         uow: ports.UnitOfWorkProtocol,
     ) -> order_templates.OrderTemplate | None:
-        """
-        Update an existing order template.
+        """Execute `UpdateOrderTemplate` command.
 
         Args:
             obj:
@@ -91,9 +99,11 @@ class UpdateOrderTemplate:
                 unique identifier for the template to be updated.
             uow:
                 a `ports.UnitOfWorkProcotol` object.
+
         Returns:
             The updated template as an `OrderTemplate` domain object or None
             if the template does not exist.
+
         """
         with uow:
             data = uow.order_templates.update(id=template_id, data=obj)
