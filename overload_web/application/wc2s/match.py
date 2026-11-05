@@ -9,12 +9,15 @@ logger = logging.getLogger(__name__)
 
 
 class MatchWorldcat2Sierra:
+    """Find OCLC records for files of Sierra records."""
+
     @staticmethod
     def execute(
         fetcher: ports.OCLCBibFetcher,
         parser: ports.MarcParserPort,
         source_data: list[dict[str, Any]],
     ) -> list[worldcat.MatchedResultFull]:
+        """Execute the `MatchWorldcat2Sierra` command."""
         batches = []
         matcher = oclc_matcher.WorldcatMatcher(fetcher)
         for record in source_data:
