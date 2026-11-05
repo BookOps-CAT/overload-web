@@ -1,3 +1,5 @@
+"""Domain services for the Worldcat2Sierra application."""
+
 from __future__ import annotations
 
 import logging
@@ -8,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 class WorldcatMatcher:
+    """A domain service for identifying matching records in WorldCat."""
+
     ID_INDEX = {
         "lccn": "sn",
         "oclc_number": "no",
@@ -23,11 +27,18 @@ class WorldcatMatcher:
     }
 
     def __init__(self, fetcher: ports.OCLCBibFetcher) -> None:
+        """Initialize `WorldcatMatcher` instance.
+
+        Args:
+            fetcher: a `ports.OCLCBibFetcher` object.
+
+        """
         self.fetcher = fetcher
 
     def get_update_date(
         self, responses: list[worldcat.BriefRecordResult]
     ) -> list[worldcat.BriefRecordResult]:
+        """Get update date for an OCLC record from the full record in JSON."""
         for response in responses:
             bib_json = self.fetcher.get_full_bib_json_by_id(
                 oclc_number=response.oclc_number
@@ -39,6 +50,7 @@ class WorldcatMatcher:
     def get_record_matches(
         self, source: worldcat.SourceData
     ) -> worldcat.MatchedResultBrief:
+        """Search WorldCat for matches and parse and evaluate responses."""
         evaluator = worldcat.RecordEvaluator(source.record_level)
         payload = {
             "q": f"{self.ID_INDEX[source.id_type]}={source.id}",
@@ -59,6 +71,7 @@ class WorldcatMatcher:
     def get_full_records(
         self, matches: list[worldcat.MatchedItem]
     ) -> list[worldcat.FullMatchedItem]:
+        """Retrieve full records from WorldCat for matched brief bib records."""
         full_records = []
         for item in matches:
             record = self.fetcher.get_full_bib_by_id(item.matched_oclc)
