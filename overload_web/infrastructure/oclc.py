@@ -20,21 +20,22 @@ AGENT = f"{__title__}/{__version__}"
 
 
 class WorldcatFetcher(MetadataSession, ports.OCLCBibFetcher):
-    """
-    Fetches bibliographic record data from OCLC.
+    """Fetches bibliographic record data from OCLC.
+
     This class is a concrete implementation of the `OCLCBibFetcher` protocol.
     """
 
     def __init__(self, session: OclcSessionProtocol) -> None:
-        """
-        Initialize a `WorldcatFetcher` with a Metadata API-compatible session.
+        """Initialize a `WorldcatFetcher` with a Metadata API-compatible session.
 
         Args:
             session: a `OclcSessionProtocol` instance to be used to query OCLC API.
+
         """
         self.session = session
 
     def get_brief_bibs_by_id(self, params: dict[str, Any]) -> list[dict[str, Any]]:
+        """Retrieve brief bibs based on a set of params."""
         try:
             response = self.session._brief_bibs_get_by_id(params=params)
         except BookopsWorldcatError as exc:
@@ -42,17 +43,19 @@ class WorldcatFetcher(MetadataSession, ports.OCLCBibFetcher):
             raise
         return self.session._parse_brief_record_response(response)
 
-    def get_full_bib_by_id(self, value: str) -> bytes:
+    def get_full_bib_by_id(self, oclc_number: str) -> bytes:
+        """Retrieve a full MARC record as a bytes object for a given OCLC number."""
         try:
-            response = self.session._full_bib_get_by_id(value)
+            response = self.session._full_bib_get_by_id(oclc_number)
             return response.content
         except BookopsWorldcatError as exc:
             logger.error(f"{exc.__class__.__name__} while running Worldcat queries.")
             raise
 
-    def get_full_bib_json_by_id(self, value: str) -> dict[str, Any]:
+    def get_full_bib_json_by_id(self, oclc_number: str) -> dict[str, Any]:
+        """Retrieve a full MARC record in JSON for a given OCLC number."""
         try:
-            response = self.session._full_bib_json_get_by_id(value)
+            response = self.session._full_bib_json_get_by_id(oclc_number)
             return response.json()
         except BookopsWorldcatError as exc:
             logger.error(f"{exc.__class__.__name__} while running Worldcat queries.")
@@ -60,7 +63,14 @@ class WorldcatFetcher(MetadataSession, ports.OCLCBibFetcher):
 
 
 class OclcSession(MetadataSession):
-    def __init__(self, library: str):
+    """Wrapper class for `MetadataSession`.
+
+    This class is used to override opinionated error handling that is present within
+    the bookops_worldcat library.
+    """
+
+    def __init__(self, library: str) -> None:
+        """Initialize `OclcSession` instance."""
         super().__init__(authorization=self._get_credentials(library), agent=AGENT)
 
     def _get_credentials(self, library: str) -> WorldcatAccessToken:
@@ -96,19 +106,21 @@ class OclcSession(MetadataSession):
         response = self._prepare_and_send_request(req)
         return response
 
-    def _full_bib_get_by_id(self, value: str) -> Response:
-        logger.debug(f"Querying WorldCat for full MARC record for {value}.")
+    def _full_bib_get_by_id(self, oclc_number: str) -> Response:
+        logger.debug(f"Querying WorldCat for full MARC record for {oclc_number}.")
         self._check_authorization()
-        url = self._url_manage_bibs(value)
+        url = self._url_manage_bibs(oclc_number)
         header = {"Accept": "application/marc"}
         req = Request("GET", url, headers=header)
         response = self._prepare_and_send_request(req)
         return response
 
-    def _full_bib_json_get_by_id(self, value: str) -> Response:
-        logger.debug(f"Querying WorldCat for full bib record in json for {value}.")
+    def _full_bib_json_get_by_id(self, oclc_number: str) -> Response:
+        logger.debug(
+            f"Querying WorldCat for full bib record in json for {oclc_number}."
+        )
         self._check_authorization()
-        url = self._url_search_bibs(value)
+        url = self._url_search_bibs(oclc_number)
         header = {"Accept": "application/json"}
         req = Request("GET", url, headers=header)
         response = self._prepare_and_send_request(req)
@@ -116,24 +128,15 @@ class OclcSession(MetadataSession):
 
 
 @runtime_checkable
-class OclcSessionProtocol(Protocol):
-    """
-    Protocol for Metadata API-compatible sessions, ensuring expected search
-    and response methods are implemented by all concrete sessions.
-    """
+class OclcSessionProtocol(Protocol):  # pragma: no branch
+    """Protocol for Metadata API-compatible sessions."""
 
-    def _get_credentials(
-        self, library: str
-    ) -> WorldcatAccessToken: ...  # pragma: no branch
-    def _check_authorization(self) -> None: ...  # pragma: no branch
+    def _get_credentials(self, library: str) -> WorldcatAccessToken: ...
+    def _check_authorization(self) -> None: ...
     def _parse_brief_record_response(
         self, response: Response
-    ) -> list[dict[str, Any]]: ...  # pragma: no branch
-    def _prepare_and_send_request(
-        self, request: Request
-    ) -> Response: ...  # pragma: no branch
-    def _brief_bibs_get_by_id(
-        self, params: dict[str, Any]
-    ) -> Response: ...  # pragma: no branch
-    def _full_bib_get_by_id(self, value: str) -> Response: ...  # pragma: no branch
-    def _full_bib_json_get_by_id(self, value: str) -> Response: ...  # pragma: no branch
+    ) -> list[dict[str, Any]]: ...
+    def _prepare_and_send_request(self, request: Request) -> Response: ...
+    def _brief_bibs_get_by_id(self, params: dict[str, Any]) -> Response: ...
+    def _full_bib_get_by_id(self, oclc_number: str) -> Response: ...
+    def _full_bib_json_get_by_id(self, oclc_number: str) -> Response: ...

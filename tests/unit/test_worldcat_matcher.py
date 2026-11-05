@@ -32,7 +32,7 @@ class TestWorldcatFetcher:
             "itemSubType": "book-printbook",
             "limit": 50,
         }
-        payload = {k: v for k, v in payload.items()}
+        payload = dict(payload.items())
         brief_bibs = fetcher.get_brief_bibs_by_id(params=payload)
         assert isinstance(brief_bibs, list)
         assert len(caplog.records) == 2
@@ -59,7 +59,7 @@ class TestWorldcatFetcher:
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_get_full_bib_by_id(self, mock_wc_session, library, caplog):
         fetcher = oclc.WorldcatFetcher(session=oclc.OclcSession(library=library))
-        fetcher.get_full_bib_by_id(value=1)
+        fetcher.get_full_bib_by_id(oclc_number=1)
         assert len(caplog.records) == 1
         assert "Querying WorldCat for full MARC record for" in caplog.records[0].msg
 
@@ -67,12 +67,12 @@ class TestWorldcatFetcher:
     def test_get_full_bib_by_id_error(self, mock_wc_session_error, library):
         fetcher = oclc.WorldcatFetcher(session=oclc.OclcSession(library=library))
         with pytest.raises(BookopsWorldcatError):
-            fetcher.get_full_bib_by_id(value=1)
+            fetcher.get_full_bib_by_id(oclc_number=1)
 
     @pytest.mark.parametrize("library", ["bpl", "nypl"])
     def test_get_full_bib_json_by_id(self, mock_wc_session, library, caplog):
         fetcher = oclc.WorldcatFetcher(session=oclc.OclcSession(library=library))
-        bib_json = fetcher.get_full_bib_json_by_id(value=1)
+        bib_json = fetcher.get_full_bib_json_by_id(oclc_number=1)
         assert isinstance(bib_json, dict)
         assert len(caplog.records) == 1
         assert (
@@ -83,7 +83,7 @@ class TestWorldcatFetcher:
     def test_get_full_bib_json_by_id_error(self, mock_wc_session_error, library):
         fetcher = oclc.WorldcatFetcher(session=oclc.OclcSession(library=library))
         with pytest.raises(BookopsWorldcatError):
-            fetcher.get_full_bib_json_by_id(value=1)
+            fetcher.get_full_bib_json_by_id(oclc_number=1)
 
 
 @pytest.mark.parametrize(

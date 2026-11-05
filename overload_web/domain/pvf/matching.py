@@ -105,13 +105,13 @@ class MatchAnalysis:
         }
 
 
-class BaseMatchAnalyzer(ABC):
+class BaseMatchAnalyzer(ABC):  # pragma: no branch
     """Review matches identified by the `BibMatcher` service."""
 
     @abstractmethod
     def analyze(
         self, record: models.DomainBib, candidates: ClassifiedCandidates
-    ) -> MatchAnalysis:  # pragma: no branch
+    ) -> MatchAnalysis:
         """Analyze candidate matches to determine best match for a given `DomainBib`."""
         ...
 

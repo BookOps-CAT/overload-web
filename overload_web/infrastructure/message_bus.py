@@ -1,3 +1,5 @@
+"""A message bus used to register and handle events and commands."""
+
 from __future__ import annotations
 
 import logging
@@ -12,6 +14,7 @@ class MessageBus(ports.MessageBusPort):
     """Routes commands to specific handlers and broadcasts events to listeners."""
 
     def __init__(self) -> None:
+        """Initialize a `MessageBus` instance."""
         self.command_handlers: dict[type[commands.Command], Callable] = {}
         self.event_handlers: dict[type[events.Event], list[Callable]] = {}
 

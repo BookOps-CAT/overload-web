@@ -43,7 +43,7 @@ AGENT = f"{__title__}/{__version__}"
 
 
 class FetcherFactory:
-    """Create a `SierraBibFetcher` object"""
+    """Create a `SierraBibFetcher` object."""
 
     @staticmethod
     def make(library: str) -> SierraBibFetcher:
@@ -62,24 +62,22 @@ class FetcherFactory:
 
 
 class SierraBibFetcher(ports.BibFetcher):
-    """
-    Fetches bibliographic records from Sierra and converts them into dictionaries
+    """Fetches bibliographic records from Sierra and converts them into dictionaries
     to be parsed into `BaseSierraResponse` objects for `DomainBib` construction.
     This class is a concrete implementation of the `BibFetcher` protocol.
     """
 
     def __init__(self, session: SierraSessionProtocol) -> None:
-        """
-        Initialize a `SierraBibFetcher` with a Sierra-compatible session.
+        """Initialize a `SierraBibFetcher` with a Sierra-compatible session.
 
         Args:
             session: a `SierraSessionProtocol` instance to be used to query Sierra.
+
         """
         self.session = session
 
     def get_bibs_by_id(self, value: str | int, key: str) -> list[dict[str, Any]]:
-        """
-        Retrieves bib records by a specific matchpoint (e.g., isbn, control_number)
+        """Retrieves bib records by a specific matchpoint (e.g., isbn, control_number).
 
         Args:
             value: identifier to search by.
@@ -87,6 +85,7 @@ class SierraBibFetcher(ports.BibFetcher):
 
         Returns:
             list of responses formatted as `BaseSierraResponse` objects.
+
         """
         match_methods = {
             "bib_id": self.session._get_bibs_by_bib_id,
@@ -100,7 +99,7 @@ class SierraBibFetcher(ports.BibFetcher):
             logger.error(f"Unsupported query matchpoint: '{key}'")
             raise ValueError(
                 f"Invalid matchpoint: '{key}'. Available matchpoints are: "
-                f"{sorted([i for i in match_methods.keys()])}"
+                f"{sorted(match_methods.keys())}"
             )
         bibs = []
         if value is None:
@@ -120,42 +119,30 @@ class SierraBibFetcher(ports.BibFetcher):
 
 
 @runtime_checkable
-class SierraSessionProtocol(Protocol):
-    """
-    Protocol for Sierra-compatible sessions, ensuring expected search and response
-    methods are implemented by all concrete sessions.
+class SierraSessionProtocol(Protocol):  # pragma: no branch
+    """Protocol for Sierra-compatible sessions.
+
+    Ensures expected search and response methods are implemented by
+    all concrete sessions.
     """
 
-    def _get_credentials(self) -> str | PlatformToken: ...  # pragma: no branch
-    def _get_bibs_by_bib_id(
-        self, value: str | int
-    ) -> requests.Response: ...  # pragma: no branch
-    def _get_bibs_by_isbn(
-        self, value: str | int
-    ) -> requests.Response: ...  # pragma: no branch
-    def _get_bibs_by_issn(
-        self, value: str | int
-    ) -> requests.Response: ...  # pragma: no branch
-    def _get_bibs_by_control_number(
-        self, value: str | int
-    ) -> requests.Response: ...  # pragma: no branch
-    def _get_bibs_by_upc(
-        self, value: str | int
-    ) -> requests.Response: ...  # pragma: no branch
-    def _parse_response(
-        self, response: requests.Response
-    ) -> list[dict[str, Any]]: ...  # pragma: no branch
+    def _get_credentials(self) -> str | PlatformToken: ...
+    def _get_bibs_by_bib_id(self, value: str | int) -> requests.Response: ...
+    def _get_bibs_by_isbn(self, value: str | int) -> requests.Response: ...
+    def _get_bibs_by_issn(self, value: str | int) -> requests.Response: ...
+    def _get_bibs_by_control_number(self, value: str | int) -> requests.Response: ...
+    def _get_bibs_by_upc(self, value: str | int) -> requests.Response: ...
+    def _parse_response(self, response: requests.Response) -> list[dict[str, Any]]: ...
 
 
 class BPLSolrSession(SolrSession):
-    """
-    Adapter for querying BPL's bibliographic data via `bookops_bpl_solr`.
+    """Adapter for querying BPL's bibliographic data via `bookops_bpl_solr`.
 
     Provides methods for searching by various identifiers and parsing solr responses.
     Inherits from `bookops_bpl_solr.SolrSession`.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             authorization=self._get_credentials(),
             endpoint=os.environ["BPL_SOLR_TARGET"],
@@ -172,8 +159,7 @@ class BPLSolrSession(SolrSession):
         return json_response["response"]["docs"]
 
     def _prep_sierra_number(self, id: str | int) -> str:
-        """
-        Formats Sierra ID numbers.
+        """Formats Sierra ID numbers.
 
         Overrides method in parent class that raises errors when the number
         doesn't look like a Sierra ID.
@@ -183,6 +169,7 @@ class BPLSolrSession(SolrSession):
 
         Returns:
             Sierra id number as a string.
+
         """
         id = str(id).strip(".")
         if id.casefold()[0] in ["b", "i", "o"]:
@@ -213,14 +200,13 @@ class BPLSolrSession(SolrSession):
 
 
 class NYPLPlatformSession(PlatformSession):
-    """
-    Adapter for querying NYPL's bibliographic data via `bookops_nypl_platform`.
+    """Adapter for querying NYPL's bibliographic data via `bookops_nypl_platform`.
 
     Implements credential handling, identifier-based searches, and response parsing.
     Inherits from `bookops_nypl_platform.PlatformSession`.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             authorization=self._get_credentials(),
             target=os.environ["NYPL_PLATFORM_TARGET"],
@@ -242,8 +228,7 @@ class NYPLPlatformSession(PlatformSession):
         return json_response.get("data", [])
 
     def _prep_sierra_number(self, id: str | int) -> str:
-        """
-        Formats Sierra ID numbers.
+        """Formats Sierra ID numbers.
 
         Overrides method in parent class that unnecessarily raises
         errors when the number doesn't look like a Sierra ID.
@@ -253,6 +238,7 @@ class NYPLPlatformSession(PlatformSession):
 
         Returns:
             Sierra id number as a string.
+
         """
         id = str(id).strip(".")
         if id.casefold()[0] in ["b", "i", "o"]:

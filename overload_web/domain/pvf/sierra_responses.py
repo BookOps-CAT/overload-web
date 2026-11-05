@@ -67,73 +67,73 @@ class BaseSierraResponse(ABC):
 
     @property
     @abstractmethod
-    def barcodes(self) -> list[str]:  # pragma: no branch
+    def barcodes(self) -> list[str]:
         """Barcodes from Sierra response as a list of strings."""
         ...
 
     @property
     @abstractmethod
-    def branch_call_number(self) -> str | None:  # pragma: no branch
+    def branch_call_number(self) -> str | None:
         """Branch call number from Sierra, if present."""
         ...
 
     @property
     @abstractmethod
-    def cat_source(self) -> str:  # pragma: no branch
+    def cat_source(self) -> str:
         """Source of cataloging. Either `'in_house'` or `'vendor'`."""
         ...
 
     @property
     @abstractmethod
-    def collection(self) -> str | None:  # pragma: no branch
+    def collection(self) -> str | None:
         """Collection to which the record belongs, if applicable."""
         ...
 
     @property
     @abstractmethod
-    def control_number(self) -> str | None:  # pragma: no branch
+    def control_number(self) -> str | None:
         """Record control number, if present."""
         ...
 
     @property
     @abstractmethod
-    def isbn(self) -> list[str]:  # pragma: no branch
+    def isbn(self) -> list[str]:
         """ISBNs as a list of strings."""
         ...
 
     @property
     @abstractmethod
-    def oclc_number(self) -> list[str]:  # pragma: no branch
+    def oclc_number(self) -> list[str]:
         """OCLC numbers as a list of strings."""
         ...
 
     @property
     @abstractmethod
-    def research_call_number(self) -> list[str]:  # pragma: no branch
+    def research_call_number(self) -> list[str]:
         """Reserach call number(s) as a list of strings, if present."""
         ...
 
     @property
     @abstractmethod
-    def upc(self) -> list[str]:  # pragma: no branch
+    def upc(self) -> list[str]:
         """UPC numbers as a list of strings."""
         ...
 
     @property
     @abstractmethod
-    def update_date(self) -> str | None:  # pragma: no branch
+    def update_date(self) -> str | None:
         """Update date as a string, if present."""
         ...
 
     @property
     @abstractmethod
-    def update_datetime(self) -> datetime.datetime | None:  # pragma: no branch
+    def update_datetime(self) -> datetime.datetime | None:
         """Update date converted to datetime object, if present."""
         ...
 
     @property
     @abstractmethod
-    def var_fields(self) -> list[dict[str, Any]]:  # pragma: no branch
+    def var_fields(self) -> list[dict[str, Any]]:
         """A list of dictionaries representing variable fields from MARC record."""
         ...
 

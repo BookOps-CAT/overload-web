@@ -29,7 +29,9 @@ class WorldcatMatcher:
         self, responses: list[worldcat.BriefRecordResult]
     ) -> list[worldcat.BriefRecordResult]:
         for response in responses:
-            bib_json = self.fetcher.get_full_bib_json_by_id(value=response.oclc_number)
+            bib_json = self.fetcher.get_full_bib_json_by_id(
+                oclc_number=response.oclc_number
+            )
             date = bib_json.get("date", {})
             response.update_datetime = date.get("replaceDate", date.get("createDate"))
         return responses

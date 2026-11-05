@@ -1,5 +1,4 @@
-"""
-Local and FTP/SFTP file I/O implementations for Overload.
+"""Local and FTP/SFTP file I/O implementations for Overload.
 
 This module contains classes to load files from and write files to local
 directories and remote FTP/SFTP servers. The classes that interact with remote
@@ -23,12 +22,21 @@ logger = logging.getLogger(__name__)
 
 
 class LocalFileStorage(ports.FileStorage):
-    def __init__(self, base_path: str = "temp/uploads"):
+    """Performs file I/O operations on local storage."""
+
+    def __init__(self, base_path: str = "temp/uploads") -> None:
+        """Initialize `LocalFileStorage` object.
+
+        Args:
+            base_path: directory where files should be read/written as a string.
+
+        """
         self.base_path = Path(base_path)
         self.base_path.mkdir(exist_ok=True)
         logger.info(f"Local file storage location: {self.base_path}")
 
     def save(self, id: str, filename: str, content: bytes) -> str:
+        """Write a file to a local directory."""
         path = self.base_path / f"{id}_{filename}"
 
         with open(path, "wb") as f:
@@ -37,6 +45,7 @@ class LocalFileStorage(ports.FileStorage):
         return str(path)
 
     def load(self, reference: str) -> bytes:
+        """Load a file from a local directory."""
         with open(reference, "rb") as fh:
             file = fh.read()
         return file
@@ -44,13 +53,13 @@ class LocalFileStorage(ports.FileStorage):
     def save_intermediate_records(
         self, id: str, job: aggregate.AbstractProcessingJob
     ) -> None:
-        """Serializes the intermediate domain objects to disk."""
+        """Serialize the intermediate domain objects to disk."""
         file_path = self.base_path / f"{id}_state.pkl"
         with open(file_path, "wb") as f:
             pickle.dump(job, f)
 
     def load_intermediate_records(self, id: str) -> aggregate.AbstractProcessingJob:
-        """Deserializes the domain objects back into memory."""
+        """Deserialize the domain objects back into memory."""
         file_path = self.base_path / f"{id}_state.pkl"
 
         if not file_path.exists():
@@ -60,8 +69,7 @@ class LocalFileStorage(ports.FileStorage):
 
 
 class LocalFileRetriever(ports.FileRetriever):
-    """
-    Loads files from the local filesystem.
+    """Loads files from the local filesystem.
 
     This class implements the `FileRetriever` protocol by listing and loading file
     contents from a specific directory on a local computer.
@@ -82,8 +90,7 @@ class LocalFileRetriever(ports.FileRetriever):
 
 
 class LocalFileWriter(ports.FileWriter):
-    """
-    Writes files to the local filesystem.
+    """Writes files to the local filesystem.
 
     This class implements the `FileWriter` protocol by writing binary content
     to files within a specific directory on a local computer.
@@ -99,14 +106,19 @@ class LocalFileWriter(ports.FileWriter):
 
 
 class SFTPFileRetriever(ports.FileRetriever):
-    """
-    Loads files from a remote FTP/SFTP server.
+    """Loads files from a remote FTP/SFTP server.
 
     Implements the `FileRetriever` protocol using the file-retriever library
     to connect to an FTP/SFTP server.
     """
 
     def __init__(self, client: Client) -> None:
+        """Initialize `SFTPFileRetriever` instance.
+
+        Args:
+            client: a `file_retriever.Client` object.
+
+        """
         self.client = client
 
     def list(self, dir: str) -> list[str]:
