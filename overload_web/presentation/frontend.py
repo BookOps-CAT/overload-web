@@ -10,6 +10,8 @@ import logging
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
+from overload_web.presentation.templates import templates
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,17 +20,17 @@ frontend_router = APIRouter(tags=["frontend"])
 
 @frontend_router.get("/", response_class=HTMLResponse)
 def root(request: Request, page_title: str = "Overload Web") -> HTMLResponse:
-    """
-    Renders the home page.
+    """Render the home page.
 
     Args:
-        request: `FastAPI` Request object.
+        request: the HTTP request sent by the app
         page_title: optional title to override the default.
 
     Returns:
         HTML template response for the home page.
+
     """
-    return request.app.state.templates.TemplateResponse(
+    return templates.TemplateResponse(
         request=request, name="home.html", context={"page_title": page_title}
     )
 
@@ -37,8 +39,7 @@ def root(request: Request, page_title: str = "Overload Web") -> HTMLResponse:
 def vendor_file_page(
     request: Request, page_title: str = "Process Vendor File"
 ) -> HTMLResponse:
-    """
-    Renders the 'Process Vendor File' page.
+    """Render the 'Process Vendor File' page.
 
     This is the first page users see after selecting the Process Vendor File app and
     it is where they  can input values for `library`, `collection`, and `record_type`
@@ -46,13 +47,14 @@ def vendor_file_page(
     `workflow_id` to be used while uploading and processing files.
 
     Args:
-        request: `FastAPI` Request object.
+        request: the HTTP request sent by the app
         page_title: optional title to override the default.
 
     Returns:
         HTML template response for the 'Process Vendor File' page.
+
     """
-    return request.app.state.templates.TemplateResponse(
+    return templates.TemplateResponse(
         request=request, name="process_records.html", context={"page_title": page_title}
     )
 
@@ -64,9 +66,8 @@ def get_context_update(
     library: str = "",
     collection: str = "",
     record_type: str = "",
-):
-    """
-    Updates header based on library, collection, record_type, and selected workflow.
+) -> HTMLResponse:
+    """Update header based on library, collection, record_type, and selected workflow.
 
     This endpoint adds the library's logo, collection and record_type to identify
     the system being used in the processing workflow. This endpoint also disables the
@@ -74,16 +75,19 @@ def get_context_update(
 
     Args:
         request:
-            `FastAPI` Request object.
+            the HTTP request sent by the app
         library:
             the library as a string (either `'nypl'` or `'bpl'`).
         collection:
             the collection as a string (either `'BL'`, `'RL'`, or '').
         record_type:
             the record_type as a string (either `'acq'`, `'cat'`, or `'sel'`).
+        workflow:
+            the workflow/tool calling the endpoint (either `'pvf'` or `'wc2s'`).
 
     Returns:
         HTML partial for updated header and select box.
+
     """
     collection_disabled = library == "bpl"
 
@@ -92,7 +96,7 @@ def get_context_update(
     if collection_disabled:
         collection = ""
 
-    return request.app.state.templates.TemplateResponse(
+    return templates.TemplateResponse(
         name=f"{workflow}_partials/context_updates.html",
         request=request,
         context={
@@ -109,8 +113,7 @@ def get_context_update(
 def wc2sierra_page(
     request: Request, page_title: str = "WorldCat2Sierra"
 ) -> HTMLResponse:
-    """
-    Renders the 'WorldCat2Sierra' page.
+    """Render the 'WorldCat2Sierra' page.
 
     This is the first page users see after selecting the WorldCat2Sierra app.
 
@@ -120,7 +123,8 @@ def wc2sierra_page(
 
     Returns:
         HTML template response for the 'Process Vendor File' page.
+
     """
-    return request.app.state.templates.TemplateResponse(
+    return templates.TemplateResponse(
         request=request, name="wc2sierra.html", context={"page_title": page_title}
     )

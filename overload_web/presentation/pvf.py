@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse
 
 from overload_web.domain.pvf import commands, models
 from overload_web.presentation import pvf_deps, schemas
+from overload_web.presentation.templates import templates
 from overload_web.presentation.utils import safe_html
 
 logger = logging.getLogger(__name__)
@@ -23,10 +24,11 @@ api_router = APIRouter()
 def initialize_workflow(
     request: Request, bus: Annotated[Any, Depends(pvf_deps.get_message_bus)]
 ) -> HTMLResponse:
+    """Initialize a workflow for processing vendor files."""
     workflow_id = str(uuid.uuid4())
     bus.send(commands.InitializeWorkflow(workflow_id=workflow_id))
     request.app.state.workflow_id = workflow_id
-    return request.app.state.templates.TemplateResponse(
+    return templates.TemplateResponse(
         request=request,
         name="pvf_partials/context_updates.html",
         context={"workflow_id": workflow_id},
@@ -43,33 +45,24 @@ def process_order_records(
     ],
     order_template: Annotated[Any, Depends(schemas.TemplateDataModel.from_form)],
 ) -> HTMLResponse:
-    """
-    Process one or more files of order-level MARC records using the acq workflow.
+    """Process one or more files of order-level MARC records using the acq workflow.
 
     Args:
-        fetcher:
-            a `ports.BibFetcher` object used by application service.
+        request:
+            the HTTP request sent by the app
+        background_tasks:
+            tasks run after returning the HTML template response
+        bus:
+            a `ports.MessageBusPort` object used by the workflow
+        context:
+            a `schemas.ProcessingContext` object containing the library, collection,
+            and record_type for the workflow.
         order_template:
             an order template loaded from the database or input via an html form.
-        marc_updater:
-            a `ports.MarcUpdaterPort` object used by application service.
-        marc_parser:
-            a `ports.MarcParserPort` object used by application service.
-        parsing_rules:
-            a `marc_updater.MarcParsingRulesModel` object representing cataloging rules.
-        update_rules:
-            a `marc_updater.MarcUpdateRulesModel` object representing cataloging rules.
-        matchpoints:
-            a list of matchpoints loaded from an order template in the database or
-            input via an html form.
-        repository:
-            a `repository.PVFBatchRepository` object where the processed files and
-            their associated statistics will be saved.
-        files:
-            a list of files to be processed.
 
     Returns:
         the ID for the processed files and stats wrapped in an `HTMLResponse` object
+
     """
     workflow_id = request.app.state.workflow_id
     background_tasks.add_task(
@@ -103,28 +96,22 @@ def process_full_records(
         schemas.ProcessingContext, Depends(schemas.ProcessingContext.from_form)
     ],
 ) -> HTMLResponse:
-    """
-    Process one or more files of full-level MARC records using the cat workflow.
+    """Process one or more files of full-level MARC records using the cat workflow.
 
     Args:
-        fetcher:
-            a `ports.BibFetcher` object used by application service.
-        marc_updater:
-            a `ports.MarcUpdaterPort` object used by application service.
-        marc_parser:
-            a `ports.MarcParserPort` object used by application service.
-        parsing_rules:
-            a `marc_updater.MarcParsingRulesModel` object representing cataloging rules.
-        update_rules:
-            a `marc_updater.MarcUpdateRulesModel` object representing cataloging rules.
-        repository:
-            a `repository.PVFBatchRepository` object where the processed files and
-            their associated statistics will be saved.
-        files:
-            a list of files to be processed.
+        request:
+            the HTTP request sent by the app
+        background_tasks:
+            tasks run after returning the HTML template response
+        bus:
+            a `ports.MessageBusPort` object used by the workflow
+        context:
+            a `schemas.ProcessingContext` object containing the library, collection,
+            and record_type for the workflow.
 
     Returns:
         the ID for the processed files and stats wrapped in an `HTMLResponse` object
+
     """
     workflow_id = request.app.state.workflow_id
     background_tasks.add_task(
@@ -156,7 +143,7 @@ def workflow_status_check(
     if not state:
         return HTMLResponse("<div class='error'>Workflow not found.</div>")
     if state.status == models.WorkflowStatus.COMPLETED:
-        return request.app.state.templates.TemplateResponse(
+        return templates.TemplateResponse(
             request=request,
             name="pvf_partials/pvf_results.html",
             context={"batch_id": state.batch_id, "record_type": state.record_type},

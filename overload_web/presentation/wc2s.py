@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse
 
 from overload_web.application.wc2s import match
 from overload_web.presentation import wc2s_deps
+from overload_web.presentation.templates import templates
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,7 @@ def match_record(
     source_data: Annotated[Any, Depends(wc2s_deps.source_data_from_load)],
     oclc_handler: Annotated[Any, Depends(wc2s_deps.oclc_fetcher)],
 ) -> HTMLResponse:
+    """Match a Sierra record against WorldCat with optional specifications."""
     out = match.MatchWorldcat2Sierra.execute(
         fetcher=oclc_handler,
         source_data=[i.model_dump() for i in source_data],
@@ -34,7 +36,7 @@ def match_record(
         out_dict[item.source_data.id] = [
             i.full_record for i in item.full_record_matches
         ]
-    return request.app.state.templates.TemplateResponse(
+    return templates.TemplateResponse(
         request=request,
         name="wc2s_partials/wc2s_results.html",
         context={"wc2s_results": out, "out_dict": out_dict},

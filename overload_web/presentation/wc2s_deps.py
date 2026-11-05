@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 class UserCriteria(BaseModel):
+    """Pydantic model used to validate form inputs for user search criteria."""
+
     id_type: Literal["isbn", "issn", "lccn", "upc", "oclc_number"]
     library: Literal["nypl", "bpl"]
     collection: Literal["BL", "RL", ""] | None
@@ -29,7 +31,7 @@ class UserCriteria(BaseModel):
     def parse_collection(
         cls, value: Literal["BL", "RL"] | None
     ) -> Literal["BL", "RL"] | None:
-        """Parses value of `collection` param from html forms."""
+        """Parse value of `collection` param from html forms."""
         if not value:
             return None
         else:
@@ -50,6 +52,7 @@ class UserCriteria(BaseModel):
         cat_rules: Literal["RDA", "any"] | None = Form(default=None),
         data_source: Literal["id", "export"] | None = Form(default="id"),
     ) -> UserCriteria:
+        """Create a `UserCriteria` object from an HTML form."""
         return UserCriteria(
             id_type=id_type,
             library=library,
@@ -77,17 +80,19 @@ class SourceDataModel(BaseModel):
 
 
 def get_marc_parser() -> marc_handler.MarcParser:
-    """Create a `MarcParser` service with injected dependencies."""
+    """Create a `MarcParser` to inject as a dependency."""
     return marc_handler.MarcParser()
 
 
 def oclc_fetcher(
     user_criteria: Annotated[UserCriteria, Depends(UserCriteria.from_form)],
 ) -> oclc.WorldcatFetcher:
+    """Create a `WorldcatFetcher` for use within Worldcat2Sierra app."""
     return oclc.WorldcatFetcher(session=oclc.OclcSession(library=user_criteria.library))
 
 
 def load_wc2s_file(file: UploadFile) -> list[str]:
+    """Load a file for processing within Worldcat2Sierra app."""
     lines = file.file.readlines()
     return [i.decode("utf-8").strip("\r\n") for i in lines]
 
@@ -95,7 +100,8 @@ def load_wc2s_file(file: UploadFile) -> list[str]:
 def source_data_from_load(
     ids: Annotated[list[str], Depends(load_wc2s_file)],
     data: Annotated[UserCriteria, Depends(UserCriteria.from_form)],
-) -> list:
+) -> list[SourceDataModel]:
+    """Create a list of `SourceDataModel` objects from an HTML form and loaded file."""
     return [
         SourceDataModel(
             id=i,

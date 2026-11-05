@@ -1,4 +1,4 @@
-"""API router for Overload Web backend services related to reporting"""
+"""API router for Overload Web backend services related to reporting."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ from overload_web.application.pvf.report_service import (
     WriteOutputReport,
 )
 from overload_web.presentation import pvf_deps
+from overload_web.presentation.templates import templates
 
 logger = logging.getLogger(__name__)
 
@@ -28,12 +29,12 @@ def get_output_report(
     record_type: str,
     uow: Annotated[Any, Depends(pvf_deps.get_uow)],
 ) -> HTMLResponse:
-    """
-    Create a report for a workflow based on processing statistics.
+    """Create a report for a workflow based on processing statistics.
 
     This report is used on the report summary page after pvf workflow.
 
     Args:
+        request: the HTTP request sent by the app
         batch_id: the id for the batch of processed files and their statistics
         record_type: the workflow used in the process (eg. "acq", "cat", or "sel").
         uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
@@ -45,7 +46,7 @@ def get_output_report(
     out = CreatePVFOutputReport.execute(
         batch_id=batch_id, uow=uow, record_type=record_type
     )
-    return request.app.state.templates.TemplateResponse(
+    return templates.TemplateResponse(
         request=request, name="reports/summary.html", context=out
     )
 
@@ -54,12 +55,12 @@ def get_output_report(
 def get_detailed_report(
     request: Request, batch_id: str, uow: Annotated[Any, Depends(pvf_deps.get_uow)]
 ) -> HTMLResponse:
-    """
-    Retrieve processing statistics and return a detailed report for a workflow.
+    """Retrieve processing statistics and return a detailed report for a workflow.
 
     This report is used on the report details page after pvf workflow.
 
     Args:
+        request: the HTTP request sent by the app
         batch_id: the id for the batch of processed files and their statistics
         uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
 
@@ -68,7 +69,7 @@ def get_detailed_report(
 
     """
     out = GetDetailedReportData.execute(batch_id=batch_id, uow=uow)
-    return request.app.state.templates.TemplateResponse(
+    return templates.TemplateResponse(
         request=request, name="reports/detailed.html", context={"detailed_report": out}
     )
 
@@ -81,10 +82,10 @@ def save_processing_statistics(
     uow: Annotated[Any, Depends(pvf_deps.get_uow)],
     writer: Annotated[Any, Depends(pvf_deps.get_report_writer)],
 ) -> HTMLResponse:
-    """
-    Save all processing statistics for a workflow to a google sheet.
+    """Save all processing statistics for a workflow to a google sheet.
 
     Args:
+        request: the HTTP request sent by the app
         batch_id: the id for the batch of processed files and their statistics
         record_type: the workflow used in the process (eg. "acq", "cat", or "sel").
         uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
@@ -98,6 +99,6 @@ def save_processing_statistics(
     WriteOutputReport.execute(
         batch_id=batch_id, uow=uow, writer=writer, record_type=record_type
     )
-    return request.app.state.templates.TemplateResponse(
+    return templates.TemplateResponse(
         request=request, name="reports/detailed.html", context={"written_report": True}
     )

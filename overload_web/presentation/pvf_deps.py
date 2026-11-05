@@ -9,6 +9,7 @@ from functools import lru_cache
 from typing import Annotated, Any
 
 from fastapi import Depends, Request
+from sqlalchemy import Engine
 from sqlmodel import SQLModel, create_engine
 
 from overload_web.bootstrap import bootstrap_message_bus
@@ -16,6 +17,7 @@ from overload_web.domain.pvf import services
 from overload_web.infrastructure import (
     file_io,
     marc_handler,
+    message_bus,
     reporter,
     sierra_clients,
     unit_of_work,
@@ -24,7 +26,7 @@ from overload_web.infrastructure import (
 logger = logging.getLogger(__name__)
 
 
-def get_uri_for_engine():
+def get_uri_for_engine() -> str:
     """Get the Postgres database URI from environment variables."""
     db_type = os.environ.get("DB_TYPE", "sqlite")
     user = os.environ.get("POSTGRES_USER")
@@ -37,7 +39,7 @@ def get_uri_for_engine():
     return uri
 
 
-def get_engine(uri: str):
+def get_engine(uri: str) -> Engine:
     """Build an engine for the URI."""
     engine = create_engine(uri)
     return engine
@@ -45,24 +47,25 @@ def get_engine(uri: str):
 
 @lru_cache
 def get_parser_rules() -> dict[str, Any]:
-    """Open and cache parsing rules"""
+    """Open and cache parsing rules."""
     with open("overload_web/data/parsing_rules.json", "r", encoding="utf-8") as fh:
         return json.load(fh)
 
 
 @lru_cache
 def get_updater_rules() -> dict[str, Any]:
-    """Open and cache updater rules"""
+    """Open and cache updater rules."""
     with open("overload_web/data/update_rules.json", "r", encoding="utf-8") as fh:
         return json.load(fh)
 
 
-def create_db_and_tables(engine) -> None:
+def create_db_and_tables(engine: Engine) -> None:
     """Create the database and tables if they do not exist."""
     SQLModel.metadata.create_all(engine)
 
 
 def local_file_storage() -> file_io.LocalFileStorage:
+    """Create a `LocalFileStorage` object for use within workflows."""
     return file_io.LocalFileStorage(base_path="temp/uploads")
 
 
@@ -77,8 +80,7 @@ def get_report_writer() -> reporter.GoogleSheetsReporter:
 
 
 def get_uow(request: Request) -> unit_of_work.SqlModelUnitOfWork:
-    """
-    Provide an un-entered Unit of Work instance.
+    """Provide an un-entered Unit of Work instance.
 
     The UoW takes the engine and manages its own session lifecycle when
     used in a context manager, making it safe to pass to BackgroundTasks.
@@ -89,8 +91,8 @@ def get_uow(request: Request) -> unit_of_work.SqlModelUnitOfWork:
 def get_message_bus(
     uow: Annotated[Any, Depends(get_uow)],
     storage: Annotated[Any, Depends(local_file_storage)],
-):
-    """Instantiates the bus and registers all command/event handlers."""
+) -> message_bus.MessageBus:
+    """Instantiate the message bus and register all command/event handlers."""
     parser_rules = get_parser_rules()
     updater_rules = get_updater_rules()
     return bootstrap_message_bus(

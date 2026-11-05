@@ -47,6 +47,7 @@ class FetcherFactory:
 
     @staticmethod
     def make(library: str) -> SierraBibFetcher:
+        """Create a SierraBibFetcher with an appropriate SierraSession object."""
         client: SierraSessionProtocol
         if library not in ["bpl", "nypl"]:
             raise ValueError(f"Invalid library: {library}. Must be 'bpl' or 'nypl'")
@@ -62,8 +63,8 @@ class FetcherFactory:
 
 
 class SierraBibFetcher(ports.BibFetcher):
-    """Fetches bibliographic records from Sierra and converts them into dictionaries
-    to be parsed into `BaseSierraResponse` objects for `DomainBib` construction.
+    """Fetch bibliographic records from Sierra and parse them into dictionaries.
+
     This class is a concrete implementation of the `BibFetcher` protocol.
     """
 
@@ -77,14 +78,16 @@ class SierraBibFetcher(ports.BibFetcher):
         self.session = session
 
     def get_bibs_by_id(self, value: str | int, key: str) -> list[dict[str, Any]]:
-        """Retrieves bib records by a specific matchpoint (e.g., isbn, control_number).
+        """Retrieve bib records by a specific matchpoint (e.g., isbn, control_number).
 
         Args:
-            value: identifier to search by.
-            key: name of identifier (e.g., 'isbn', 'bib_id').
+            value:
+                identifier to search by.
+            key:
+                name of identifier ('isbn', 'bib_id', 'control_number', 'issn' or 'upc')
 
         Returns:
-            list of responses formatted as `BaseSierraResponse` objects.
+            a list of dictionaries representing parsed responses from Sierra.
 
         """
         match_methods = {
@@ -143,6 +146,7 @@ class BPLSolrSession(SolrSession):
     """
 
     def __init__(self) -> None:
+        """Initialize a `BPLSolrSession` instance."""
         super().__init__(
             authorization=self._get_credentials(),
             endpoint=os.environ["BPL_SOLR_TARGET"],
@@ -159,7 +163,7 @@ class BPLSolrSession(SolrSession):
         return json_response["response"]["docs"]
 
     def _prep_sierra_number(self, id: str | int) -> str:
-        """Formats Sierra ID numbers.
+        """Format Sierra ID numbers.
 
         Overrides method in parent class that raises errors when the number
         doesn't look like a Sierra ID.
@@ -187,7 +191,7 @@ class BPLSolrSession(SolrSession):
         return self.search_isbns([str(value)], default_response_fields=False)
 
     def _get_bibs_by_issn(self, value: str | int) -> requests.Response:
-        """*Currently not implemented* Search BPL Solr by issn."""
+        """Search BPL Solr by issn. *Currently not implemented*."""
         raise NotImplementedError("Search by ISSN not implemented in BPL Solr")
 
     def _get_bibs_by_control_number(self, value: str | int) -> requests.Response:
@@ -207,6 +211,7 @@ class NYPLPlatformSession(PlatformSession):
     """
 
     def __init__(self) -> None:
+        """Initialize a `NYPLPlatformSession` instance."""
         super().__init__(
             authorization=self._get_credentials(),
             target=os.environ["NYPL_PLATFORM_TARGET"],
@@ -228,7 +233,7 @@ class NYPLPlatformSession(PlatformSession):
         return json_response.get("data", [])
 
     def _prep_sierra_number(self, id: str | int) -> str:
-        """Formats Sierra ID numbers.
+        """Format Sierra ID numbers.
 
         Overrides method in parent class that unnecessarily raises
         errors when the number doesn't look like a Sierra ID.
@@ -256,7 +261,7 @@ class NYPLPlatformSession(PlatformSession):
         return self.search_standardNos(str(value))
 
     def _get_bibs_by_issn(self, value: str | int) -> requests.Response:
-        """*Currently not implemented* Search NYPL Platform by issn."""
+        """Search NYPL Platform by issn. *Currently not implemented*."""
         raise NotImplementedError("Search by ISSN not implemented in NYPL Platform")
 
     def _get_bibs_by_control_number(self, value: str | int) -> requests.Response:

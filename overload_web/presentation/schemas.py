@@ -23,7 +23,7 @@ class ProcessingContext(BaseModel):
     def parse_collection(
         cls, value: Literal["BL", "RL"] | None
     ) -> Literal["BL", "RL"] | None:
-        """Parses value of `collection` param from html forms."""
+        """Parse value of `collection` param from html forms."""
         if not value:
             return None
         else:
@@ -31,7 +31,7 @@ class ProcessingContext(BaseModel):
 
     @model_validator(mode="after")
     def validate_values(self) -> ProcessingContext:
-        """Ensures `collection` is not passed when processing BPL records."""
+        """Ensure `collection` is not passed when processing BPL records."""
         if self.library == "nypl" and not self.collection:
             raise ValueError("Collection is required for NYPL records.")
         elif self.library == "bpl" and self.collection:
@@ -45,17 +45,14 @@ class ProcessingContext(BaseModel):
         library: Literal["nypl", "bpl"] = Form(...),
         record_type: Literal["acq", "cat", "sel"] = Form(...),
     ) -> ProcessingContext:
-        """Class method used to create a `ProcessingContext` object from an html form"""
+        """Create a `ProcessingContext` object from an html form."""
         return ProcessingContext(
             collection=collection, library=library, record_type=record_type
         )
 
 
 class TemplateDataModel(BaseModel):
-    """
-    Pydantic model for serializing/deserializing data used to update
-    an order template in the database.
-    """
+    """Pydantic model for serializing/deserializing order template data."""
 
     acquisition_type: str | None = None
     agent: str | None = None
@@ -85,6 +82,7 @@ class TemplateDataModel(BaseModel):
 
     @property
     def matchpoints(self) -> dict[str, str]:
+        """Identifiers used by `BibMatcher`."""
         matchpoints = {
             "primary_matchpoint": self.primary_matchpoint,
             "secondary_matchpoint": self.secondary_matchpoint,
@@ -94,6 +92,7 @@ class TemplateDataModel(BaseModel):
 
     @property
     def template_data(self) -> dict[str, Any]:
+        """Values used to update `Order` objects during processing."""
         return {
             "acquisition_type": self.acquisition_type,
             "agent": self.agent,
@@ -146,7 +145,7 @@ class TemplateDataModel(BaseModel):
         secondary_matchpoint: str | None = Form(default=None),
         tertiary_matchpoint: str | None = Form(default=None),
     ) -> TemplateDataModel:
-        """Class model used to create a `TemplateDataModel` from an html form."""
+        """Create a `TemplateDataModel` from an html form."""
         return TemplateDataModel(
             acquisition_type=acquisition_type,
             agent=agent,
@@ -176,9 +175,7 @@ class TemplateDataModel(BaseModel):
 
 
 class TemplateCreateModel(TemplateDataModel):
-    """
-    Pydantic model for serializing/deserializing data used to create
-    an order template in the database.
+    """Pydantic model for serializing/deserializing order template data.
 
     Inherits `from_from` class method from `TemplateDataModel` parent class
     which is used when creating a new order template from an html form.

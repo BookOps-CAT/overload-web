@@ -1,18 +1,35 @@
-"""Module that tables for process vendor file databases.
+"""Tables and data models for databases used within the process vendor file workflow.
 
 Models:
-`PVFBatch`
-    A pydantic/sqlmodel model that defines a batch containing one or more MARC files
-    and their associated processing statistics.
+
+`IncomingFileModel`
+    A pydantic/sqlmodel table model that defines a file that has been uploaded
+     o a workflow and will be processed as part of that workflow.
 
 `ProcessedFileModel`
-    A pydantic/sqlmodel model that defines a processed MARC file.
+    A pydantic/sqlmodel table model that defines a processed MARC file.
+
+`PVFBatch`
+    A pydantic/sqlmodel table model that defines a batch containing one or more MARC
+    files and their associated processing statistics.
+
 `TemplateUpdateModel`
-    The base data model used to represent an order template and fields that are shared
-    by all models within this module.
+    The pydantic/sqlmodel model used to represent an order template during updates
+    to that order template's record in a database.
+
 `TemplateModel`
-    The table model that includes all fields within an order template including fields
-    that are only required for the template to be saved to the database.
+    The pydantic/sqlmodel table model that includes all fields within an order
+    template including fields that are only required for the template to be saved
+    to the database.
+
+`WorkflowUpdateModel`
+    The pydantic/sqlmodel model used to represent a workflow during updates to the
+    workflow's record in a database.
+
+`WorkflowStateModel`
+    The pydantic/sqlmodel table model that includes all fields within workflow records
+    including fields that are only required for the workflow to be saved to the database
+    and links to the workflow's associated `IncomingFileModel` objects.
 """
 
 import logging
@@ -24,6 +41,8 @@ logger = logging.getLogger(__name__)
 
 
 class IncomingFileModel(SQLModel, table=True):
+    """A table model representing a file that has been uploaded to a workflow."""
+
     __tablename__ = "incoming_files"
     id: str = Field(default=None, primary_key=True, index=True)
     filename: str = Field(nullable=False)
@@ -48,10 +67,7 @@ class ProcessedFileModel(SQLModel, table=True):
 
 
 class PVFBatch(SQLModel, table=True):
-    """
-    A table model representing a one or more MARC files and their associated
-    processing statistics for a single process vendor file workflow.
-    """
+    """A table model representing MARC files and their associated processing stats."""
 
     __tablename__ = "batches"
 
@@ -69,14 +85,12 @@ class PVFBatch(SQLModel, table=True):
 
 
 class TemplateUpdateModel(SQLModel):
-    """
-    A reusable template for applying consistent values to orders.
+    """A model representing updates to be made to a `TemplateModel`.
 
     Attributes:
         agent: the user who created the `TemplateModel`
-        name: the name to be assigned to the `TemplateModel` in the database
 
-    All other fields correspond to those available in the `Order` domain model.
+    All other fields correspond to those available in the `OrderTemplate` domain model.
 
     """
 
@@ -107,10 +121,12 @@ class TemplateUpdateModel(SQLModel):
 
 
 class TemplateModel(TemplateUpdateModel, table=True):
-    """
-    A table model representing order templates including all fields required
+    """A reusable template for applying consistent values to orders.
+
+    This table model represents order templates including all fields required
     for persistence (i.e., all fields present in a `TemplateUpdateModel` object
-    with the addition of the unique identifier).
+    with the addition of the unique identifier, and required agent, name, and
+    primary_matchpoint values).
     """
 
     __tablename__ = "templates"
@@ -121,7 +137,7 @@ class TemplateModel(TemplateUpdateModel, table=True):
 
 
 class WorkflowUpdateModel(SQLModel):
-    """Tracks the state of a long-running process."""
+    """A model representing updates to be made to a `WorkflowStateModel`."""
 
     batch_id: int | None = Field(default=None)
     collection: str | None = Field(default=None)

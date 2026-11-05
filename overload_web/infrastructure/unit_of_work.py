@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import logging
-from typing import Sequence
+from types import TracebackType
+from typing import Self, Sequence
 
+from sqlalchemy import Engine
 from sqlmodel import Session, SQLModel, select
 
 from overload_web.domain.pvf import ports
@@ -14,11 +16,30 @@ logger = logging.getLogger(__name__)
 
 
 class SqlModelUnitOfWork(ports.UnitOfWorkProtocol):
-    def __init__(self, engine):
-        self.engine = engine
-        self.session = None
+    """Concrete implementation of `UnitOfWorkProtocol`.
 
-    def __enter__(self):
+    The unit of work pattern helps manage interactions with databases
+    within the application.
+
+    Attributes:
+        session:
+            a sqlmodel `Session` object that is created when creating
+            a context manager for the class.
+
+    """
+
+    def __init__(self, engine: Engine) -> None:
+        """Initialize a `SqlModelUnitOfWork` instance.
+
+        Args:
+            engine: a sqlalchemy `Engine` used to create a session.
+
+        """
+        self.engine = engine
+        self.session: Session | None = None
+
+    def __enter__(self) -> "Self":
+        """Open a `SqlModelUnitOfWork` object as a context manager."""
         self.session = Session(self.engine, expire_on_commit=False)
         self.incoming_files = IncomingFileRepository(session=self.session)
         self.order_templates = OrderTemplateRepository(session=self.session)
@@ -26,31 +47,47 @@ class SqlModelUnitOfWork(ports.UnitOfWorkProtocol):
         self.workflow_states = WorkflowStatusRepository(session=self.session)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        """Close the context manager."""
         if exc_type:
             self.rollback()
         self.session.close()
 
-    def commit(self):
+    def commit(self) -> None:
+        """Commit all changes to the database."""
         self.session.commit()
 
-    def rollback(self):
+    def rollback(self) -> None:
+        """Rollback changes and do not commit them to the database."""
         self.session.rollback()
 
 
 class IncomingFileRepository(ports.IncomingFileRepositoryProtocol):
-    def __init__(self, session: Session):
+    """Interact with `IncomingFileModel` objects within a database."""
+
+    def __init__(self, session: Session) -> None:
+        """Initialize `IncomingFileRepository` instance.
+
+        Args:
+            session: a sqlmodel `Session` object.
+
+        """
         self.session = session
 
     def delete(self, id: str | int) -> None:
-        """
-        Delete an `IncomingFileModel` object from the workflow's list of files.
+        """Delete an `IncomingFileModel` object from the workflow's list of files.
 
         Args:
             id: the ID of the file to delete.
 
         Returns:
             None
+
         """
         statement = select(tables.IncomingFileModel).where(
             tables.IncomingFileModel.id == id
@@ -60,14 +97,14 @@ class IncomingFileRepository(ports.IncomingFileRepositoryProtocol):
         self.session.delete(file)
 
     def list_by_id(self, id: str | int) -> Sequence[tables.IncomingFileModel]:
-        """
-        Retrieve all `IncomingFileModel` objects in the database.
+        """Retrieve all `IncomingFileModel` objects in the database.
 
         Args:
             id: the `workflow_id` whose files to retrieve.
 
         Returns:
             a sequence of `IncomingFileModel` objects.
+
         """
         statement = select(tables.IncomingFileModel).where(
             tables.IncomingFileModel.workflow_id == id
@@ -77,14 +114,14 @@ class IncomingFileRepository(ports.IncomingFileRepositoryProtocol):
         return all_files
 
     def save(self, obj: tables.IncomingFileModel) -> tables.IncomingFileModel:
-        """
-        Adds a new `IncomingFileModel` to the database.
+        """Add a new `IncomingFileModel` to the database.
 
         Args:
             obj: the `IncomingFileModel` object to save.
 
         Returns:
             The new `IncomingFileModel` data.
+
         """
         valid_obj = tables.IncomingFileModel.model_validate(obj, from_attributes=True)
         self.session.add(valid_obj)
@@ -94,28 +131,26 @@ class IncomingFileRepository(ports.IncomingFileRepositoryProtocol):
 
 
 class OrderTemplateRepository(ports.TemplateRepositoryProtocol):
-    """
-    `SQLModel` repository for `TemplateModel` objects.
+    """Interact with `TemplateModel` objects within a database."""
 
-    This class is a concrete implementation of the `TemplateRepositoryProtocol`
-    protocol.
+    def __init__(self, session: Session) -> None:
+        """Initialize `OrderTemplateRepository` instance.
 
-    Args:
-        session: a `sqlmodel.Session`.
-    """
+        Args:
+            session: a sqlmodel `Session` object.
 
-    def __init__(self, session: Session):
+        """
         self.session = session
 
     def get(self, id: str | int) -> tables.TemplateModel | None:
-        """
-        Retrieve an `TemplateModel` object by its ID.
+        """Retrieve a `TemplateModel` object by its ID.
 
         Args:
             id: the primary key of the `TemplateModel`.
 
         Returns:
             a `TemplateModel` or `None` if not found.
+
         """
         template = self.session.get(tables.TemplateModel, id)
         return template if template else None
@@ -123,8 +158,7 @@ class OrderTemplateRepository(ports.TemplateRepositoryProtocol):
     def list(
         self, offset: int | None = 0, limit: int | None = 5
     ) -> Sequence[tables.TemplateModel]:
-        """
-        Retrieve all `TemplateModel` objects in the database.
+        """Retrieve all `TemplateModel` objects in the database.
 
         Args:
             offset: start position of `TemplateModel` objects to return
@@ -132,6 +166,7 @@ class OrderTemplateRepository(ports.TemplateRepositoryProtocol):
 
         Returns:
             a sequence of `TemplateModel` objects.
+
         """
         statement = select(tables.TemplateModel).offset(offset).limit(limit)
         results = self.session.exec(statement)
@@ -139,14 +174,14 @@ class OrderTemplateRepository(ports.TemplateRepositoryProtocol):
         return all_templates
 
     def save(self, obj: tables.TemplateModel) -> tables.TemplateModel:
-        """
-        Adds a new `TemplateModel` to the database.
+        """Add a new `TemplateModel` to the database.
 
         Args:
             obj: the `TemplateModel` object to save.
 
         Returns:
             The new `TemplateModel` object.
+
         """
         valid_obj = tables.TemplateModel.model_validate(obj, from_attributes=True)
         self.session.add(valid_obj)
@@ -155,14 +190,14 @@ class OrderTemplateRepository(ports.TemplateRepositoryProtocol):
         return valid_obj
 
     def update(self, data: SQLModel, id: str) -> tables.TemplateModel | None:
-        """
-        Updates an existing `TemplateModel` in the database.
+        """Update an existing `TemplateModel` in the database.
 
         Args:
             data: the data to be used to update the existing template.
             id: the id of the template to be updated
         Returns:
-            a `TemplateModel` instance or `None` if not found.
+            a `TemplateModel` instance or None if not found.
+
         """
         template = self.session.get(tables.TemplateModel, id)
         if not template:
@@ -180,40 +215,39 @@ class OrderTemplateRepository(ports.TemplateRepositoryProtocol):
 
 
 class PVFBatchRepository(ports.BatchRepositoryProtocol):
-    """
-    `SQLModel` repository for `PVFBatch` objects.
+    """Interact with `PVFBatch` objects within a database."""
 
-    This class is a concrete implementation of the `BatchRepositoryProtocol` protocol.
+    def __init__(self, session: Session) -> None:
+        """Initialize `PVFBatchRepository` instance.
 
-    Args:
-        session: a `sqlmodel.Session`.
-    """
+        Args:
+            session: a sqlmodel `Session` object.
 
-    def __init__(self, session: Session):
+        """
         self.session = session
 
     def get(self, id: str | int) -> tables.PVFBatch | None:
-        """
-        Retrieve a `PVFBatch` object by its ID.
+        """Retrieve a `PVFBatch` object by its ID.
 
         Args:
             id: the primary key of the `PVFBatch`.
 
         Returns:
-            a `PVFBatch` object or `None` if not found.
+            a `PVFBatch` object or None if not found.
+
         """
         batch = self.session.get(tables.PVFBatch, id)
         return batch if batch else None
 
     def save(self, obj: tables.PVFBatch) -> tables.PVFBatch:
-        """
-        Adds a new `PVFBatch` to the database.
+        """Add a new `PVFBatch` to the database.
 
         Args:
             obj: the `PVFBatch` object to save.
 
         Returns:
             The new `PVFBatch` object.
+
         """
         valid_files = [
             tables.ProcessedFileModel.model_validate(i, from_attributes=True)
@@ -235,31 +269,39 @@ class PVFBatchRepository(ports.BatchRepositoryProtocol):
 
 
 class WorkflowStatusRepository(ports.WorkflowRepositoryProtocol):
-    def __init__(self, session: Session):
+    """Interact with `WorkflowStateModel` objects within a database."""
+
+    def __init__(self, session: Session) -> None:
+        """Initialize `WorkflowStatusRepository` instance.
+
+        Args:
+            session: a sqlmodel `Session` object.
+
+        """
         self.session = session
 
     def get(self, id: str | int) -> tables.WorkflowStateModel | None:
-        """
-        Retrieve an `WorkflowStateModel` object by its ID.
+        """Retrieve an `WorkflowStateModel` object by its ID.
 
         Args:
             id: the primary key of the `WorkflowStateModel`.
 
         Returns:
-            a `WorkflowStateModel` or `None` if not found.
+            a `WorkflowStateModel` or None if not found.
+
         """
         workflow = self.session.get(tables.WorkflowStateModel, id)
         return workflow if workflow else None
 
     def save(self, obj: tables.WorkflowStateModel) -> tables.WorkflowStateModel:
-        """
-        Adds a new `WorkflowStateModel` to the database.
+        """Add a new `WorkflowStateModel` to the database.
 
         Args:
             obj: the `WorkflowStateModel` object to save.
 
         Returns:
             The new `WorkflowStateModel` object.
+
         """
         valid_obj = tables.WorkflowStateModel.model_validate(obj, from_attributes=True)
         self.session.add(valid_obj)
@@ -268,14 +310,14 @@ class WorkflowStatusRepository(ports.WorkflowRepositoryProtocol):
         return valid_obj
 
     def update(self, data: SQLModel, id: str) -> tables.WorkflowStateModel | None:
-        """
-        Updates an existing `WorkflowStateModel` in the database.
+        """Update an existing `WorkflowStateModel` in the database.
 
         Args:
             data: the data to be used to update the existing workflow.
             id: the id of the workflow to be updated
         Returns:
-            a `WorkflowStateModel` instance or `None` if not found.
+            a `WorkflowStateModel` instance or None if not found.
+
         """
         workflow = self.session.get(tables.WorkflowStateModel, id)
         if not workflow:
