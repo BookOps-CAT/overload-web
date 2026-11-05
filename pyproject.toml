@@ -66,12 +66,16 @@ omit = [
     "**/*.html"
 ]
 
+[tool.ruff]
+fix = true
+
 [tool.ruff.lint]
-select = ["F", "E", "ANN"]
+select = ["C4", "D", "F", "E", "ANN"]
 ignore = ["ANN401"]
+extend-safe-fixes = ["ANN204", "C4", "D"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["E501", "ANN"]
+"tests/*" = ["E501", "ANN", "D"]
 
 [tool.ruff.format]
 skip-magic-trailing-comma = true

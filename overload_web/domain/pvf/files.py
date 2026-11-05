@@ -16,8 +16,7 @@ from dataclasses import dataclass
 
 @dataclass(kw_only=True)
 class IncomingFile:
-    """
-    Represents an incoming file uploaded to Overload.
+    """Represents an incoming file uploaded to Overload.
 
     Attributes:
         filename: name of the file.
@@ -37,12 +36,12 @@ class IncomingFile:
 
 @dataclass(kw_only=True)
 class VendorFile:
-    """
-    Represents a file retrieved from a vendor's FTP server.
+    """Represents a file retrieved from a vendor's FTP server.
 
     Attributes:
         content: binary content of the file.
         file_name: name of the file.
+
     """
 
     content: bytes

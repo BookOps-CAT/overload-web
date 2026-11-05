@@ -45,13 +45,13 @@ class BaseSierraResponse(ABC):
             The date the record was last updated as a datetime.datetime object.
         var_fields:
             MARC data fields present in the record as a list of strings.
+
     """
 
     library: str
 
     def __init__(self, data: dict[str, Any]) -> None:
-        """
-        Initialize a `BaseSierraResponse` object.
+        """Initialize a `BaseSierraResponse` object.
 
         The concrete implementations of this base class will parse the response
         retrieved from Sierra based on the format of the dictionary that is returned.
@@ -67,51 +67,75 @@ class BaseSierraResponse(ABC):
 
     @property
     @abstractmethod
-    def barcodes(self) -> list[str]: ...  # pragma: no branch
+    def barcodes(self) -> list[str]:  # pragma: no branch
+        """Barcodes from Sierra response as a list of strings."""
+        ...
 
     @property
     @abstractmethod
-    def branch_call_number(self) -> str | None: ...  # pragma: no branch
+    def branch_call_number(self) -> str | None:  # pragma: no branch
+        """Branch call number from Sierra, if present."""
+        ...
 
     @property
     @abstractmethod
-    def cat_source(self) -> str: ...  # pragma: no branch
+    def cat_source(self) -> str:  # pragma: no branch
+        """Source of cataloging. Either `'in_house'` or `'vendor'`."""
+        ...
 
     @property
     @abstractmethod
-    def collection(self) -> str | None: ...  # pragma: no branch
+    def collection(self) -> str | None:  # pragma: no branch
+        """Collection to which the record belongs, if applicable."""
+        ...
 
     @property
     @abstractmethod
-    def control_number(self) -> str | None: ...  # pragma: no branch
+    def control_number(self) -> str | None:  # pragma: no branch
+        """Record control number, if present."""
+        ...
 
     @property
     @abstractmethod
-    def isbn(self) -> list[str]: ...  # pragma: no branch
+    def isbn(self) -> list[str]:  # pragma: no branch
+        """ISBNs as a list of strings."""
+        ...
 
     @property
     @abstractmethod
-    def oclc_number(self) -> list[str]: ...  # pragma: no branch
+    def oclc_number(self) -> list[str]:  # pragma: no branch
+        """OCLC numbers as a list of strings."""
+        ...
 
     @property
     @abstractmethod
-    def research_call_number(self) -> list[str]: ...  # pragma: no branch
+    def research_call_number(self) -> list[str]:  # pragma: no branch
+        """Reserach call number(s) as a list of strings, if present."""
+        ...
 
     @property
     @abstractmethod
-    def upc(self) -> list[str]: ...  # pragma: no branch
+    def upc(self) -> list[str]:  # pragma: no branch
+        """UPC numbers as a list of strings."""
+        ...
 
     @property
     @abstractmethod
-    def update_date(self) -> str | None: ...  # pragma: no branch
+    def update_date(self) -> str | None:  # pragma: no branch
+        """Update date as a string, if present."""
+        ...
 
     @property
     @abstractmethod
-    def update_datetime(self) -> datetime.datetime | None: ...  # pragma: no branch
+    def update_datetime(self) -> datetime.datetime | None:  # pragma: no branch
+        """Update date converted to datetime object, if present."""
+        ...
 
     @property
     @abstractmethod
-    def var_fields(self) -> list[dict[str, Any]]: ...  # pragma: no branch
+    def var_fields(self) -> list[dict[str, Any]]:  # pragma: no branch
+        """A list of dictionaries representing variable fields from MARC record."""
+        ...
 
 
 class BPLSolrResponse(BaseSierraResponse):
@@ -121,6 +145,7 @@ class BPLSolrResponse(BaseSierraResponse):
 
     @property
     def barcodes(self) -> list[str]:
+        """Barcodes from Sierra response as a list of strings."""
         item_data = self._data.get("sm_item_data", [])
         items = []
         for item in item_data:
@@ -130,16 +155,18 @@ class BPLSolrResponse(BaseSierraResponse):
 
     @property
     def branch_call_number(self) -> str | None:
+        """Branch call number from Sierra, if present."""
         tag_099 = [i for i in self.var_fields if i["marc_tag"] == "099"]
         call_nos = [" ".join(i["content"] for i in j["subfields"]) for j in tag_099]
         call_nos.append(self._data.get("call_number", ""))
-        all_call_nos = list(set([i for i in call_nos if i]))
+        all_call_nos = list({i for i in call_nos if i})
         if all_call_nos:
             return all_call_nos[0]
         return None
 
     @property
     def cat_source(self) -> str:
+        """Source of cataloging. Either `'in_house'` or `'vendor'`."""
         cat_source = "vendor"
         tag_001 = self._data.get("ss_marc_tag_001")
         tag_003 = self._data.get("ss_marc_tag_003")
@@ -149,14 +176,17 @@ class BPLSolrResponse(BaseSierraResponse):
 
     @property
     def collection(self) -> str | None:
+        """Collection to which the record belongs, if applicable."""
         return None
 
     @property
     def control_number(self) -> str | None:
+        """Record control number, if present."""
         return self._data.get("ss_marc_tag_001")
 
     @property
     def isbn(self) -> list[str]:
+        """ISBNs as a list of strings."""
         isbns = [
             subfield["content"]
             for j in self.var_fields
@@ -165,10 +195,11 @@ class BPLSolrResponse(BaseSierraResponse):
             if subfield["tag"] == "a"
         ]
         isbns.extend(self._data.get("isbn", []))
-        return list(set([i for i in isbns if i]))
+        return list({i for i in isbns if i})
 
     @property
     def oclc_number(self) -> list[str]:
+        """OCLC numbers as a list of strings."""
         oclc_nums = [
             subfield["content"]
             for j in self.var_fields
@@ -177,14 +208,16 @@ class BPLSolrResponse(BaseSierraResponse):
             if subfield["tag"] == "a"
         ]
         oclc_nums.append(self._data.get("ss_marc_tag_001"))
-        return list(set([i for i in oclc_nums if i]))
+        return list({i for i in oclc_nums if i})
 
     @property
     def research_call_number(self) -> list[str]:
+        """Reserach call number(s) as a list of strings, if present."""
         return []
 
     @property
     def upc(self) -> list[str]:
+        """UPC numbers as a list of strings."""
         upcs = [
             subfield["content"]
             for j in self.var_fields
@@ -192,20 +225,23 @@ class BPLSolrResponse(BaseSierraResponse):
             for subfield in j["subfields"]
             if subfield["tag"] == "a"
         ]
-        return list(set([i for i in upcs if i]))
+        return list({i for i in upcs if i})
 
     @property
     def update_date(self) -> str | None:
+        """Update date as a string, if present."""
         return self._data.get("ss_marc_tag_005")
 
     @property
     def update_datetime(self) -> datetime.datetime | None:
+        """Update date converted to datetime object, if present."""
         if self.update_date:
             return datetime.datetime.strptime(self.update_date, "%Y%m%d%H%M%S.%f")
         return None
 
     @property
     def var_fields(self) -> list[dict[str, Any]]:
+        """A list of dictionaries representing variable fields from MARC record."""
         var_fields: list[dict[str, Any]] = []
         for field in self._data.get("sm_bib_varfields", []):
             tag, data = field.split(" || ", 1)
@@ -216,7 +252,7 @@ class BPLSolrResponse(BaseSierraResponse):
                     "tag": i.split("}}")[0].strip("{"),
                     "content": i.split("}}")[1].strip(),
                 }
-                for i in [i for i in data.split(" || ")]
+                for i in list(data.split(" || "))
             ]
             var_fields.append({"marc_tag": tag, "subfields": subfields})
         return var_fields
@@ -229,10 +265,12 @@ class NYPLPlatformResponse(BaseSierraResponse):
 
     @property
     def barcodes(self) -> list[str]:
+        """Barcodes from Sierra response as a list of strings."""
         return []
 
     @property
     def branch_call_number(self) -> str | None:
+        """Branch call number from Sierra, if present."""
         tag_091 = [i for i in self.var_fields if i["marcTag"] == "091"]
         call_no = [" ".join(i["content"] for i in j["subfields"]) for j in tag_091]
         if call_no:
@@ -241,6 +279,7 @@ class NYPLPlatformResponse(BaseSierraResponse):
 
     @property
     def cat_source(self) -> str:
+        """Source of cataloging. Either `'in_house'` or `'vendor'`."""
         cat_source = "vendor"
         tag_901_b = [
             subfield["content"]
@@ -249,12 +288,13 @@ class NYPLPlatformResponse(BaseSierraResponse):
             for subfield in j["subfields"]
             if subfield["tag"] == "b"
         ]
-        if any(["CAT" in i for i in tag_901_b]):
+        if any("CAT" in i for i in tag_901_b):
             cat_source = "inhouse"
         return cat_source
 
     @property
     def collection(self) -> str | None:
+        """Collection to which the record belongs, if applicable."""
         branch = False
         research = False
         collections = [
@@ -305,10 +345,12 @@ class NYPLPlatformResponse(BaseSierraResponse):
 
     @property
     def control_number(self) -> str | None:
+        """Record control number, if present."""
         return self._data.get("controlNumber")
 
     @property
     def isbn(self) -> list[str]:
+        """ISBNs as a list of strings."""
         isbns = [
             subfield["content"]
             for j in self.var_fields
@@ -321,6 +363,7 @@ class NYPLPlatformResponse(BaseSierraResponse):
 
     @property
     def oclc_number(self) -> list[str]:
+        """OCLC numbers as a list of strings."""
         oclcs = [
             subfield["content"]
             for j in self.var_fields
@@ -329,10 +372,11 @@ class NYPLPlatformResponse(BaseSierraResponse):
             if subfield["tag"] == "a"
         ]
         oclcs.append(self._data.get("controlNumber"))
-        return list(set([i for i in oclcs if i]))
+        return list({i for i in oclcs if i})
 
     @property
     def research_call_number(self) -> list[str]:
+        """Reserach call number(s) as a list of strings, if present."""
         tag_852 = [
             i for i in self.var_fields if i["marcTag"] == "852" and i["ind1"] == "8"
         ]
@@ -340,6 +384,7 @@ class NYPLPlatformResponse(BaseSierraResponse):
 
     @property
     def upc(self) -> list[str]:
+        """UPC numbers as a list of strings."""
         upcs = [
             subfield["content"]
             for j in self.var_fields
@@ -347,20 +392,23 @@ class NYPLPlatformResponse(BaseSierraResponse):
             for subfield in j["subfields"]
             if subfield["tag"] == "a"
         ]
-        return list(set([i for i in upcs if i]))
+        return list({i for i in upcs if i})
 
     @property
     def update_date(self) -> str | None:
+        """Update date as a string, if present."""
         return self._data.get("updatedDate")
 
     @property
     def update_datetime(self) -> datetime.datetime | None:
+        """Update date converted to datetime object, if present."""
         if self.update_date:
             return datetime.datetime.strptime(self.update_date, "%Y-%m-%dT%H:%M:%S")
         return None
 
     @property
     def var_fields(self) -> list[dict[str, Any]]:
+        """A list of dictionaries representing variable fields from MARC record."""
         return self._data.get("varFields", [])
 
 

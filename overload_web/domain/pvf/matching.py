@@ -23,7 +23,7 @@ class ClassifiedCandidates:
 
     @property
     def duplicates(self) -> list[str]:
-        """All bib IDs from all matched records."""
+        """A combined list of bib IDs from all matched records."""
         duplicates: list[str] = []
         if len(self.matched) > 1:
             return [i.bib_id for i in self.matched]
@@ -46,8 +46,7 @@ class MatchAnalysis:
         target_title: str | None = None,
         updated_by_vendor: bool = False,
     ) -> None:
-        """
-        Initates a MatchAnalysis object.
+        """Initialize a `MatchAnalysis` object.
 
         Args:
             action:
@@ -73,6 +72,7 @@ class MatchAnalysis:
                 whether or not the record has been updated by the vendor
             vendor:
                 the vendor whose records are being processed
+
         """
         self.action = action
         self.call_number = call_number
@@ -88,7 +88,7 @@ class MatchAnalysis:
         self.vendor = vendor
 
     def to_dict(self) -> dict[str, Any]:
-        """Returns the analysis data as a dictionary."""
+        """Return the match analysis data as a dictionary."""
         return {
             "action": self.action,
             "call_number": self.call_number,
@@ -111,9 +111,9 @@ class BaseMatchAnalyzer(ABC):
     @abstractmethod
     def analyze(
         self, record: models.DomainBib, candidates: ClassifiedCandidates
-    ) -> MatchAnalysis: ...  # pragma: no branch
-
-    """Analyze a list of candidate matches for a given `DomainBib`."""
+    ) -> MatchAnalysis:  # pragma: no branch
+        """Analyze candidate matches to determine best match for a given `DomainBib`."""
+        ...
 
     def classify_matches(
         self, collection: str | None, library: str, matches: Sequence[dict[str, Any]]
@@ -140,9 +140,24 @@ class BaseMatchAnalyzer(ABC):
         candidate: sierra_responses.BaseSierraResponse,
         update_datetime: datetime.datetime | None,
     ) -> tuple[models.CatalogAction, bool]:
-        """
-        Determine whether to insert, attach, or overlay/update a bib record in Sierra
-        based on matches
+        """Determine catalog action based on matches from Sierra.
+
+        Args:
+            candidate:
+                a response from sierra as a BPLSolrResponse or
+                NYPLPlatformResponse object.
+            update_datetime:
+                the update date from the DomainBib being matched as a
+                datetime object (used for comparison to update_datetime
+                in Sierra responses)
+
+        Returns:
+            A tuple containing a `CatalogAction` object and a boolean.
+            The `CatalogAction` indicates whether to insert, attach, or
+            overlay/update the Sierra record and the boolean represents
+            whether or not the Sierra record has been updated more recently
+            than the `DomainBib`.
+
         """
         if candidate.cat_source == "inhouse":
             return models.CatalogAction.ATTACH, False
@@ -160,6 +175,7 @@ class MatchAnalyzerFactory:
     def make(
         library: str, record_type: str, collection: str | None
     ) -> BaseMatchAnalyzer:
+        """Create a MatchAnalyzer object."""
         match record_type, library, collection:
             case "cat", "nypl", "BL":
                 return NYPLCatBranchMatchAnalyzer()
@@ -179,6 +195,7 @@ class AcquisitionsMatchAnalyzer(BaseMatchAnalyzer):
     def analyze(
         self, record: models.DomainBib, candidates: ClassifiedCandidates
     ) -> MatchAnalysis:
+        """Analyze candidate matches to determine best match for a given `DomainBib`."""
         return MatchAnalysis(
             action=models.CatalogAction.INSERT,
             call_number=record.call_number,
@@ -198,6 +215,7 @@ class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
     def analyze(
         self, record: models.DomainBib, candidates: ClassifiedCandidates
     ) -> MatchAnalysis:
+        """Analyze candidate matches to determine best match for a given `DomainBib`."""
         if not candidates.matched:
             if record.vendor in ["Midwest DVD", "Midwest Audio", "Midwest CD"]:
                 action = models.CatalogAction.ATTACH
@@ -255,6 +273,7 @@ class NYPLCatResearchMatchAnalyzer(BaseMatchAnalyzer):
     def analyze(
         self, record: models.DomainBib, candidates: ClassifiedCandidates
     ) -> MatchAnalysis:
+        """Analyze candidate matches to determine best match for a given `DomainBib`."""
         if not candidates.matched:
             return MatchAnalysis(
                 call_number_match=True,
@@ -302,6 +321,7 @@ class NYPLCatBranchMatchAnalyzer(BaseMatchAnalyzer):
     def analyze(
         self, record: models.DomainBib, candidates: ClassifiedCandidates
     ) -> MatchAnalysis:
+        """Analyze candidate matches to determine best match for a given `DomainBib`."""
         if not candidates.matched:
             return MatchAnalysis(
                 call_number_match=True,
@@ -357,6 +377,7 @@ class SelectionMatchAnalyzer(BaseMatchAnalyzer):
     def analyze(
         self, record: models.DomainBib, candidates: ClassifiedCandidates
     ) -> MatchAnalysis:
+        """Analyze candidate matches to determine best match for a given `DomainBib`."""
         if not candidates.matched:
             return MatchAnalysis(
                 call_number_match=True,
