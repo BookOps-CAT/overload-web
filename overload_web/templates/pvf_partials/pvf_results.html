@@ -8,6 +8,7 @@
 <div class="row row-cols-3" id="report-buttons">
   <div class="col">
     <button id="detailed-report-button"
+            type="submit"
             hx-get="/reports/detailed?batch_id={{ batch_id }}"
             hx-target="#detailed-report-container"
             class="btn btn-nypl">View detailed report</button>
@@ -15,12 +16,14 @@
   <div class="col">
     <div id="output-file-container">
       <button id="download-files-button"
+              type="submit"
               hx-target="#save-files-container"
               class="btn btn-nypl">Download Files</button>
     </div>
   </div>
   <div class="col">
     <button id="save-report-button"
+            type="submit"
             hx-post="/reports/write?batch_id={{ batch_id }}&record_type={{ record_type }}"
             hx-target="#report-save-container"
             class="btn btn-nypl">Save Processing Statistics</button>

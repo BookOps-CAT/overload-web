@@ -151,6 +151,7 @@ class BibMatcher:
         responses: Sequence[dict[str, Any]] = self._match_bib(
             fetcher=fetcher, record=record, matchpoints=matchpoints
         )
+        logger.info(f"Vendor records matched: {responses}")
         return responses
 
     def match_full_record(
@@ -178,6 +179,7 @@ class BibMatcher:
         responses: Sequence[dict[str, Any]] = self._match_bib(
             fetcher=fetcher, record=record, matchpoints=record.vendor_info.matchpoints
         )
+        logger.info(f"Vendor records matched: {responses}")
         return responses
 
     def review_matches(

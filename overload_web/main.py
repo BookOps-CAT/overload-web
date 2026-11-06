@@ -13,7 +13,6 @@ from typing import Any, AsyncGenerator
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 
 from overload_web.presentation import (
     files,
@@ -33,6 +32,7 @@ logger = logging.getLogger("overload_web")
 
 @lru_cache
 def get_log_config() -> dict[str, Any]:
+    """Load logger configuration."""
     with open(BASE_DIR / "data/logging_config.json", "r", encoding="utf-8") as fh:
         constants = json.load(fh)
     return constants
@@ -54,26 +54,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     engine.dispose()
 
 
-@lru_cache
-def get_templates() -> Jinja2Templates:
-    """Loads Jinja2 templates and sets env vars"""
-    with open(BASE_DIR / "data/form_constants.json", "r", encoding="utf-8") as fh:
-        constants = json.load(fh)
-    templates = Jinja2Templates(directory=BASE_DIR / "templates")
-    templates.env.globals["fixed_fields"] = constants["fixed_fields"]
-    templates.env.globals["var_fields"] = constants["var_fields"]
-    templates.env.globals["matchpoints"] = constants["matchpoints"]
-    templates.env.globals["bib_formats"] = constants["material_form"]
-    templates.env.globals["context_fields"] = constants["context_fields"]
-    templates.env.globals["vendors"] = constants["vendors"]
-    templates.env.globals["wc2sierra_fields"] = constants["wc2sierra_fields"]
-    templates.env.globals["application"] = "Overload Web"
-    return templates
-
-
 app = FastAPI(lifespan=lifespan)
 
-app.state.templates = get_templates()
+
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
 app.include_router(frontend.frontend_router)

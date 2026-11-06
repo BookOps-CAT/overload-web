@@ -1,6 +1,7 @@
 """Application service for managing full vendor file processing workflow."""
 
 import logging
+from typing import Any
 
 from overload_web.domain.pvf import commands, events, models, ports
 
@@ -24,7 +25,7 @@ class WorkflowManager:
         self.uow = uow
 
     def _update_workflow_state(
-        self, id: str, state: models.WorkflowStateBase
+        self, id: str, state: dict[str, Any]
     ) -> models.WorkflowState | None:
         """Update the workflow state based on an event triggered by the workflow."""
         with self.uow:
@@ -33,7 +34,7 @@ class WorkflowManager:
             if not new_state:
                 logger.error(f"Cannot update state: Workflow {id} not found.")
             else:
-                logger.info(f"Workflow {id} transitioned to {state.status}")
+                logger.info(f"Workflow {id} transitioned to {state['status']}")
         return new_state
 
     def handle_workflow_initialized(self, event: events.WorkflowInitialized) -> None:
@@ -48,7 +49,7 @@ class WorkflowManager:
 
         """
         with self.uow:
-            state = models.WorkflowStateInitial(
+            state = models.WorkflowStateBase(
                 status=models.WorkflowStatus.PENDING, id=event.workflow_id
             )
             self.uow.workflow_states.save(state)
@@ -81,14 +82,15 @@ class WorkflowManager:
         """
         state = self._update_workflow_state(
             id=event.workflow_id,
-            state=models.WorkflowStateBase(
-                status=models.WorkflowStatus.PROCESSING,
-                matchpoints=event.matchpoints,
-                template_data=event.template_data,
-                library=event.library,
-                collection=event.collection,
-                record_type=event.record_type,
-            ),
+            state={
+                "id": event.workflow_id,
+                "status": models.WorkflowStatus.PROCESSING,
+                "matchpoints": event.matchpoints,
+                "template_data": event.template_data,
+                "library": event.library,
+                "collection": event.collection,
+                "record_type": event.record_type,
+            },
         )
         if not state:
             return
@@ -118,8 +120,7 @@ class WorkflowManager:
 
         """
         state = self._update_workflow_state(
-            id=event.workflow_id,
-            state=models.WorkflowStateBase(status=models.WorkflowStatus.MATCHING),
+            id=event.workflow_id, state={"status": models.WorkflowStatus.MATCHING}
         )
         if not state:
             return
@@ -147,8 +148,7 @@ class WorkflowManager:
 
         """
         state = self._update_workflow_state(
-            id=event.workflow_id,
-            state=models.WorkflowStateBase(status=models.WorkflowStatus.UPDATING),
+            id=event.workflow_id, state={"status": models.WorkflowStatus.UPDATING}
         )
         if not state:
             return
@@ -160,29 +160,6 @@ class WorkflowManager:
                 collection=state.collection,
                 record_type=state.record_type,
             )
-        )
-
-    def handle_workflow_completed_order_level(
-        self, event: events.OrderLevelWorkflowCompleted
-    ) -> None:
-        """Handle a `OrderLevelWorkflowCompleted` event after processing has completed.
-
-        Args:
-            event:
-                an `events.OrderLevelWorkflowCompleted` object.
-                The event contains the following attributes:
-                    workflow_id: str
-                    batch_id: str
-
-        Returns:
-            None. Workflow state is updated to `COMPLETED`.
-
-        """
-        self._update_workflow_state(
-            id=event.workflow_id,
-            state=models.WorkflowStateBase(
-                status=models.WorkflowStatus.COMPLETED, batch_id=event.batch_id
-            ),
         )
 
     def handle_workflow_started_full_level(
@@ -206,12 +183,13 @@ class WorkflowManager:
         """
         state = self._update_workflow_state(
             id=event.workflow_id,
-            state=models.WorkflowStateBase(
-                status=models.WorkflowStatus.PROCESSING,
-                library=event.library,
-                collection=event.collection,
-                record_type=event.record_type,
-            ),
+            state={
+                "id": event.workflow_id,
+                "status": models.WorkflowStatus.PROCESSING,
+                "library": event.library,
+                "collection": event.collection,
+                "record_type": event.record_type,
+            },
         )
         if not state:
             return
@@ -240,8 +218,7 @@ class WorkflowManager:
 
         """
         state = self._update_workflow_state(
-            id=event.workflow_id,
-            state=models.WorkflowStateBase(status=models.WorkflowStatus.MATCHING),
+            id=event.workflow_id, state={"status": models.WorkflowStatus.MATCHING}
         )
         if not state:
             return
@@ -267,8 +244,7 @@ class WorkflowManager:
 
         """
         state = self._update_workflow_state(
-            id=event.workflow_id,
-            state=models.WorkflowStateBase(status=models.WorkflowStatus.UPDATING),
+            id=event.workflow_id, state={"status": models.WorkflowStatus.UPDATING}
         )
         if not state:
             return
@@ -281,14 +257,12 @@ class WorkflowManager:
             )
         )
 
-    def handle_workflow_completed_full_level(
-        self, event: events.FullLevelWorkflowCompleted
-    ) -> None:
-        """Handle a `FullLevelWorkflowCompleted` event after processing has completed.
+    def handle_workflow_completed(self, event: events.WorkflowCompleted) -> None:
+        """Handle a `WorkflowCompleted` event after processing has completed.
 
         Args:
             event:
-                an `events.FullLevelWorkflowCompleted` object.
+                an `events.WorkflowCompleted` object.
                 The event contains the following attributes:
                     workflow_id: str
                     batch_id: str
@@ -299,7 +273,8 @@ class WorkflowManager:
         """
         self._update_workflow_state(
             id=event.workflow_id,
-            state=models.WorkflowStateBase(
-                status=models.WorkflowStatus.COMPLETED, batch_id=event.batch_id
-            ),
+            state={
+                "status": models.WorkflowStatus.COMPLETED,
+                "batch_id": event.batch_id,
+            },
         )

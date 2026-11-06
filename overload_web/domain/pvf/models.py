@@ -563,6 +563,7 @@ class WorkflowStatus(StrEnum):
 class WorkflowStateBase:
     """Defines a base entity for a long-running process."""
 
+    id: str
     status: WorkflowStatus
     batch_id: str | None = None
     collection: str | None = None
@@ -574,10 +575,11 @@ class WorkflowStateBase:
 
 
 @dataclass(kw_only=True)
-class WorkflowStateInitial(WorkflowStateBase):
-    """Domain entity representing workflow state when it is first created."""
+class WorkflowStateMinimal:
+    """Defines a base entity for a long-running process."""
 
-    id: str
+    status: WorkflowStatus
+    batch_id: str | None = None
 
 
 @dataclass(kw_only=True)

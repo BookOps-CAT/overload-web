@@ -41,8 +41,8 @@ class OrderLevelRecordsMatched(Event):
 
 
 @dataclass
-class OrderLevelWorkflowCompleted(Event):
-    """Event marking completion of processing workflow for order-level records."""
+class WorkflowCompleted(Event):
+    """Event marking completion of processing workflow."""
 
     workflow_id: str
     batch_id: str
@@ -70,11 +70,3 @@ class FullLevelRecordsMatched(Event):
     """Event marking completion of full MARC record matching."""
 
     workflow_id: str
-
-
-@dataclass
-class FullLevelWorkflowCompleted(Event):
-    """Event marking completion of processing workflow for full MARC records."""
-
-    workflow_id: str
-    batch_id: str

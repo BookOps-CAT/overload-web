@@ -6,7 +6,7 @@ import logging
 import uuid
 from typing import Annotated, Any
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, Request
 from fastapi.responses import HTMLResponse
 
 from overload_web.domain.pvf import commands, models
@@ -27,29 +27,29 @@ def initialize_workflow(
     """Initialize a workflow for processing vendor files."""
     workflow_id = str(uuid.uuid4())
     bus.send(commands.InitializeWorkflow(workflow_id=workflow_id))
-    request.app.state.workflow_id = workflow_id
-    return templates.TemplateResponse(
-        request=request,
-        name="pvf_partials/context_updates.html",
-        context={"workflow_id": workflow_id},
-    )
+    partial = """
+    <input value={workflow_id}
+       name="workflow_id"
+       id="workflow_id"
+       form="pvf-form"
+       type="hidden">"""
+    html_str = safe_html(partial, workflow_id=workflow_id)
+    return HTMLResponse(html_str)
 
 
 @api_router.post("/process-order-records", response_class=HTMLResponse)
 def process_order_records(
-    request: Request,
     background_tasks: BackgroundTasks,
     bus: Annotated[Any, Depends(pvf_deps.get_message_bus)],
     context: Annotated[
         schemas.ProcessingContext, Depends(schemas.ProcessingContext.from_form)
     ],
     order_template: Annotated[Any, Depends(schemas.TemplateDataModel.from_form)],
+    workflow_id: Annotated[str, Form(...)],
 ) -> HTMLResponse:
     """Process one or more files of order-level MARC records using the acq workflow.
 
     Args:
-        request:
-            the HTTP request sent by the app
         background_tasks:
             tasks run after returning the HTML template response
         bus:
@@ -59,12 +59,15 @@ def process_order_records(
             and record_type for the workflow.
         order_template:
             an order template loaded from the database or input via an html form.
+        workflow_id:
+            the ID for the given workflow.
 
     Returns:
         the ID for the processed files and stats wrapped in an `HTMLResponse` object
 
     """
-    workflow_id = request.app.state.workflow_id
+    print(order_template.matchpoints)
+    print(order_template.template_data)
     background_tasks.add_task(
         bus.send,
         commands.StartOrderLevelRecordsWorkflow(
@@ -89,18 +92,16 @@ def process_order_records(
 
 @api_router.post("/process-full-records", response_class=HTMLResponse)
 def process_full_records(
-    request: Request,
     background_tasks: BackgroundTasks,
     bus: Annotated[Any, Depends(pvf_deps.get_message_bus)],
     context: Annotated[
         schemas.ProcessingContext, Depends(schemas.ProcessingContext.from_form)
     ],
+    workflow_id: Annotated[str, Form(...)],
 ) -> HTMLResponse:
     """Process one or more files of full-level MARC records using the cat workflow.
 
     Args:
-        request:
-            the HTTP request sent by the app
         background_tasks:
             tasks run after returning the HTML template response
         bus:
@@ -108,12 +109,13 @@ def process_full_records(
         context:
             a `schemas.ProcessingContext` object containing the library, collection,
             and record_type for the workflow.
+        workflow_id:
+            the ID for the given workflow.
 
     Returns:
         the ID for the processed files and stats wrapped in an `HTMLResponse` object
 
     """
-    workflow_id = request.app.state.workflow_id
     background_tasks.add_task(
         bus.send,
         commands.StartFullLevelRecordsWorkflow(

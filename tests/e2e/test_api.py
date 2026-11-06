@@ -63,7 +63,6 @@ def overrides(monkeypatch):
 @pytest.mark.usefixtures("overrides")
 class TestApp:
     client = TestClient(app)
-    app.state.workflow_id = 1
     app.state.engine = create_engine("sqlite:///:memory:")
     base_url = client.base_url
 
@@ -73,9 +72,7 @@ class TestApp:
         response = self.client.get("/files/remote/list?vendor=foo")
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/files/remote/list?vendor=foo"
-        assert sorted(list(response.context.keys())) == sorted(
-            ["files", "request", "vendor"]
-        )
+        assert sorted(response.context.keys()) == sorted(["files", "request", "vendor"])
         assert response.context["files"] == ["foo.mrc"]
 
     def test_files_router_select_ftp_file(self, mocker):
@@ -95,11 +92,12 @@ class TestApp:
         mocker.patch.object(file_handling.DownloadRemoteFile, "execute", download)
         mocker.patch.object(file_handling.UploadFileToWorkflow, "execute", upload)
         response = self.client.post(
-            "/files/remote/select?vendor=foo", data={"remote_file": "bar.mrc"}
+            "/files/remote/select?vendor=foo",
+            data={"remote_file": "bar.mrc", "workflow_id": "1"},
         )
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/files/remote/select?vendor=foo"
-        assert sorted(list(response.context.keys())) == sorted(["files", "request"])
+        assert sorted(response.context.keys()) == sorted(["files", "request"])
         assert len(response.context["files"]) == 1
         assert response.context["files"][0]["filename"] == "bar.mrc"
         assert response.context["files"][0]["source"] == "ftp"
@@ -115,12 +113,12 @@ class TestApp:
         mocker.patch.object(file_handling.UploadFileToWorkflow, "execute", upload)
         response = self.client.post(
             "/files/upload",
-            data={"vendor": None},
+            data={"vendor": None, "workflow_id": "1"},
             files={"file": ("baz.mrc", b"", "text/plain")},
         )
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/files/upload"
-        assert sorted(list(response.context.keys())) == sorted(["files", "request"])
+        assert sorted(response.context.keys()) == sorted(["files", "request"])
         assert len(response.context["files"]) == 1
         assert response.context["files"][0]["filename"] == "baz.mrc"
         assert response.context["files"][0]["source"] == "local"
@@ -134,10 +132,12 @@ class TestApp:
         }
         upload = mocker.Mock(return_value=[file])
         mocker.patch.object(file_handling.DeleteFileFromWorkflow, "execute", upload)
-        response = self.client.post("/files/remove", data={"file_id": 1})
+        response = self.client.post(
+            "/files/remove", data={"file_id": 1, "workflow_id": "1"}
+        )
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/files/remove"
-        assert sorted(list(response.context.keys())) == sorted(["files", "request"])
+        assert sorted(response.context.keys()) == sorted(["files", "request"])
         assert len(response.context["files"]) == 1
 
     def test_frontend_router_root_get(self):
@@ -190,7 +190,7 @@ class TestApp:
     def test_ot_router_get_template_form(self):
         response = self.client.get("/ot/forms/templates")
         assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == ["request"]
+        assert sorted(response.context.keys()) == ["request"]
 
     def test_ot_router_create_template(self, mocker):
         template = mocker.Mock()
@@ -199,21 +199,21 @@ class TestApp:
             "/ot/template", data={"name": "Foo", "agent": "Bar", "id": 1}
         )
         assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == ["request", "template"]
+        assert sorted(response.context.keys()) == ["request", "template"]
 
     def test_ot_router_get_template(self, mocker):
         template = mocker.Mock()
         mocker.patch.object(template_handling.GetOrderTemplate, "execute", template)
         response = self.client.get("/ot/template?template_id=1")
         assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == ["request", "template"]
+        assert sorted(response.context.keys()) == ["request", "template"]
 
     def test_ot_router_get_template_list(self, mocker):
         templates = mocker.Mock(return_value=[])
         mocker.patch.object(template_handling.ListOrderTemplates, "execute", templates)
         response = self.client.get("/ot/templates")
         assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == ["request", "templates"]
+        assert sorted(response.context.keys()) == ["request", "templates"]
 
     def test_ot_router_update_template(self, mocker):
         template = mocker.Mock()
@@ -229,14 +229,15 @@ class TestApp:
             },
         )
         assert response.status_code == 200
-        assert sorted(list(response.context.keys())) == ["request", "template"]
+        assert sorted(response.context.keys()) == ["request", "template"]
 
     def test_pvf_router_initialize_workflow(self, mocker):
         mock_obj = mocker.Mock()
         mocker.patch.object(message_bus.MessageBus, "send", mock_obj)
         response = self.client.get("/pvf/workflow")
         assert response.status_code == 200
-        assert list(response.context.keys()) == ["workflow_id", "request"]
+        assert response.status_code == 200
+        assert 'name="workflow_id"' in response.text
 
     @pytest.mark.parametrize(
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "")]
@@ -256,6 +257,7 @@ class TestApp:
             "name": "foo",
             "agent": "bar",
             "id": 1,
+            "workflow_id": "1",
         }
         response = self.client.post("/pvf/process-order-records", data=context)
         assert response.status_code == 200
@@ -268,7 +270,12 @@ class TestApp:
     ):
         mock = mocker.Mock()
         mocker.patch.object(message_bus.MessageBus, "send", mock)
-        context = {"library": library, "collection": collection, "record_type": "cat"}
+        context = {
+            "library": library,
+            "collection": collection,
+            "record_type": "cat",
+            "workflow_id": "1",
+        }
         response = self.client.post("/pvf/process-full-records", data=context)
         assert response.status_code == 200
 
@@ -279,6 +286,7 @@ class TestApp:
             "collection": "",
             "record_type": "acq",
             "vendor": "FOO",
+            "workflow_id": "1",
         }
         with pytest.raises(ValidationError) as exc:
             self.client.post("/pvf/process-order-records", data=context)
@@ -294,6 +302,7 @@ class TestApp:
             "collection": "",
             "record_type": "cat",
             "vendor": "FOO",
+            "workflow_id": "1",
         }
         with pytest.raises(ValidationError) as exc:
             self.client.post("/pvf/process-full-records", data=context)
@@ -309,6 +318,7 @@ class TestApp:
             "collection": "BL",
             "record_type": "sel",
             "vendor": "FOO",
+            "workflow_id": "1",
         }
         with pytest.raises(ValidationError) as exc:
             self.client.post("/pvf/process-order-records", data=context)
@@ -324,6 +334,7 @@ class TestApp:
             "collection": "BL",
             "record_type": "sel",
             "vendor": "FOO",
+            "workflow_id": "1",
         }
         with pytest.raises(ValidationError) as exc:
             self.client.post("/pvf/process-full-records", data=context)

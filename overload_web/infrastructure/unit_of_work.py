@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from types import TracebackType
-from typing import Self, Sequence
+from typing import Any, Self, Sequence
 
 from sqlalchemy import Engine
 from sqlmodel import Session, SQLModel, select
@@ -36,11 +36,24 @@ class SqlModelUnitOfWork(ports.UnitOfWorkProtocol):
 
         """
         self.engine = engine
-        self.session: Session | None = None
+        self._session: Session | None = None
 
-    def __enter__(self) -> "Self":
+    @property
+    def session(self) -> Session:
+        """SQLAlchemy session used within SqlModelUnitOfWork.
+
+        Handles errors caused by instantiating an unit of work without
+        opening a context manager.
+        """
+        if self._session is None:
+            raise RuntimeError(
+                "Cannot access session attribute outside of an active 'with' block."
+            )
+        return self._session
+
+    def __enter__(self) -> Self:
         """Open a `SqlModelUnitOfWork` object as a context manager."""
-        self.session = Session(self.engine, expire_on_commit=False)
+        self._session = Session(self.engine, expire_on_commit=False)
         self.incoming_files = IncomingFileRepository(session=self.session)
         self.order_templates = OrderTemplateRepository(session=self.session)
         self.processed_batches = PVFBatchRepository(session=self.session)
@@ -54,9 +67,11 @@ class SqlModelUnitOfWork(ports.UnitOfWorkProtocol):
         exc_tb: TracebackType | None,
     ) -> None:
         """Close the context manager."""
-        if exc_type:
-            self.rollback()
-        self.session.close()
+        if self._session is not None:
+            if exc_type:
+                self.rollback()
+            self._session.close()
+            self._session = None
 
     def commit(self) -> None:
         """Commit all changes to the database."""
@@ -309,7 +324,7 @@ class WorkflowStatusRepository(ports.WorkflowRepositoryProtocol):
         self.session.refresh(valid_obj)
         return valid_obj
 
-    def update(self, data: SQLModel, id: str) -> tables.WorkflowStateModel | None:
+    def update(self, data: dict[str, Any], id: str) -> tables.WorkflowStateModel | None:
         """Update an existing `WorkflowStateModel` in the database.
 
         Args:
@@ -323,9 +338,7 @@ class WorkflowStatusRepository(ports.WorkflowRepositoryProtocol):
         if not workflow:
             logger.error(f"Workflow '{id}' does not exist")
         else:
-            valid_obj = tables.WorkflowUpdateModel.model_validate(
-                data, from_attributes=True
-            )
+            valid_obj = tables.WorkflowUpdateModel(**data)
             patch_data = valid_obj.model_dump(exclude_unset=True, exclude_defaults=True)
             logger.info(f"Update data: {patch_data}")
             workflow.sqlmodel_update(patch_data)

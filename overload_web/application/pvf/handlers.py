@@ -358,7 +358,7 @@ class UpdateAndOutputOrderLevelRecordsHandler(AbstractCommandHandler):
                 record type, and template data for the workflow.
 
         Returns:
-            None. Workflow is completed and a  `OrderLevelWorkflowCompleted`
+            None. Workflow is completed and a  `WorkflowCompleted`
             event is published to the message bus.
 
         """
@@ -375,9 +375,7 @@ class UpdateAndOutputOrderLevelRecordsHandler(AbstractCommandHandler):
             batch_id = db_batch.id
             self.uow.commit()
         self.bus.publish(
-            events.OrderLevelWorkflowCompleted(
-                workflow_id=cmd.workflow_id, batch_id=batch_id
-            )
+            events.WorkflowCompleted(workflow_id=cmd.workflow_id, batch_id=batch_id)
         )
 
 
@@ -416,7 +414,7 @@ class UpdateAndOutputFullLevelRecordsHandler(AbstractCommandHandler):
                 and record type for the workflow.
 
         Returns:
-            None. Workflow is completed and a `FullLevelWorkflowCompleted`
+            None. Workflow is completed and a `WorkflowCompleted`
             event is published to the message bus.
 
         """
@@ -429,7 +427,5 @@ class UpdateAndOutputFullLevelRecordsHandler(AbstractCommandHandler):
             batch_id = db_batch.id
             self.uow.commit()
         self.bus.publish(
-            events.FullLevelWorkflowCompleted(
-                workflow_id=cmd.workflow_id, batch_id=batch_id
-            )
+            events.WorkflowCompleted(workflow_id=cmd.workflow_id, batch_id=batch_id)
         )

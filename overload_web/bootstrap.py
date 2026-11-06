@@ -80,17 +80,12 @@ def bootstrap_message_bus(
         events.OrderLevelRecordsMatched, pm.handle_records_matched_order_level
     )
     bus.register_event(
-        events.OrderLevelWorkflowCompleted, pm.handle_workflow_completed_order_level
-    )
-    bus.register_event(
         events.FullLevelWorkflowStarted, pm.handle_workflow_started_full_level
     )
     bus.register_event(events.FullLevelFilesParsed, pm.handle_files_parsed_full_level)
     bus.register_event(
         events.FullLevelRecordsMatched, pm.handle_records_matched_full_level
     )
-    bus.register_event(
-        events.FullLevelWorkflowCompleted, pm.handle_workflow_completed_full_level
-    )
+    bus.register_event(events.WorkflowCompleted, pm.handle_workflow_completed)
 
     return bus

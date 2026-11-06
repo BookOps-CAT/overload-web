@@ -18,17 +18,30 @@ def mock_engine():
 
 
 class TestSqlModelUnitOfWork:
-    def test_uow(self, mock_engine):
+    def test_uow__session(self, mock_engine):
         uow = unit_of_work.SqlModelUnitOfWork(engine=mock_engine)
-        assert uow.session is None
+        assert uow._session is None
+        with uow:
+            assert uow._session is not None
+        assert uow._session is None
+
+    def test_uow_session(self, mock_engine):
+        uow = unit_of_work.SqlModelUnitOfWork(engine=mock_engine)
         with uow:
             assert uow.session is not None
+            uow._session = None
+        with pytest.raises(RuntimeError) as exc:
+            uow.session
+        assert (
+            str(exc.value)
+            == "Cannot access session attribute outside of an active 'with' block."
+        )
 
     def test_uow_exit_with_rollback(self, mock_engine):
         uow = unit_of_work.SqlModelUnitOfWork(engine=mock_engine)
         with pytest.raises(IndexError):
             with uow:
-                empty = list()
+                empty = []
                 empty[1]
 
     def test_incoming_files(self, mock_engine):
@@ -120,7 +133,7 @@ class TestSqlModelUnitOfWork:
             uow.commit()
             invalid_batch = uow.processed_batches.get(id="2")
             uow.commit()
-        assert sorted(list(new_batch_data.keys())) == sorted(
+        assert sorted(new_batch_data.keys()) == sorted(
             [
                 "file_names",
                 "total_records",
@@ -142,7 +155,7 @@ class TestSqlModelUnitOfWork:
             collection="bar",
             record_type="baz",
         )
-        update_data = models.WorkflowStateBase(status=models.WorkflowStatus.PROCESSING)
+        update_data = {"status": models.WorkflowStatus.PROCESSING}
         uow = unit_of_work.SqlModelUnitOfWork(engine=mock_engine)
         with uow:
             new_workflow = uow.workflow_states.save(workflow)

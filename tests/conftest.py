@@ -398,7 +398,7 @@ class FakeTemplateRepository(unit_of_work.OrderTemplateRepository):
 
 
 class FakeWorkflowRepository(unit_of_work.WorkflowStatusRepository):
-    WORKFLOW = tables.WorkflowUpdateModel(id="1", status="PENDING")
+    WORKFLOW = tables.WorkflowStateModel(id="1", status="PENDING")
 
     def __init__(self):
         self.session = None
@@ -410,7 +410,7 @@ class FakeWorkflowRepository(unit_of_work.WorkflowStatusRepository):
         return self.WORKFLOW
 
     def update(self, data, id):
-        for k, v in data.__dict__.items():
+        for k, v in data.items():
             if not getattr(self.WORKFLOW, k):
                 setattr(self.WORKFLOW, k, v)
         return self.WORKFLOW

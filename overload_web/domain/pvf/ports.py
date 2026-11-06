@@ -9,6 +9,7 @@ from typing import (
     Callable,
     Iterator,
     Protocol,
+    Self,
     Sequence,
     TypeVar,
     runtime_checkable,
@@ -313,7 +314,7 @@ class UnitOfWorkProtocol(Protocol):  # pragma: no branch
     processed_batches: BatchRepositoryProtocol
     workflow_states: WorkflowRepositoryProtocol
 
-    def __enter__(self) -> UnitOfWorkProtocol:
+    def __enter__(self) -> Self:
         """Open a UnitOfWork object as a context manager."""
         ...
 
