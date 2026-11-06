@@ -1,3 +1,5 @@
+"""File I/O integration tests."""
+
 from __future__ import annotations
 
 import pytest

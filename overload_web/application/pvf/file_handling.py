@@ -2,7 +2,8 @@
 
 import logging
 import uuid
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from overload_web.domain.pvf import files, ports
 

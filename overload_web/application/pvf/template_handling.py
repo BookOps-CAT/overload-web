@@ -1,7 +1,7 @@
 """Application service commands for handling operations with order templates."""
 
 import logging
-from typing import Sequence
+from collections.abc import Sequence
 
 from overload_web.domain.pvf import order_templates, ports
 

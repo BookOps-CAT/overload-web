@@ -1,3 +1,5 @@
+"""Test `BibUpdater` domain service."""
+
 import copy
 
 import pytest
@@ -362,7 +364,7 @@ class TestBibUpdater:
         self, stub_updater, stub_domain_bib, input, output
     ):
         stub_domain_bib.vendor = "BT SERIES"
-        stub_domain_bib.branch_call_number = " ".join([i for i in input.values()])
+        stub_domain_bib.branch_call_number = " ".join(list(input.values()))
         updates = stub_updater.get_full_record_updates(
             library="nypl", collection="BL", record=stub_domain_bib
         )

@@ -1,3 +1,5 @@
+"""Worldcat2Sierra integration tests."""
+
 import copy
 
 import pytest

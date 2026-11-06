@@ -1,3 +1,5 @@
+"""Test db interactions via unit of work within infrastructure layer."""
+
 import logging
 
 import pytest
@@ -39,10 +41,9 @@ class TestSqlModelUnitOfWork:
 
     def test_uow_exit_with_rollback(self, mock_engine):
         uow = unit_of_work.SqlModelUnitOfWork(engine=mock_engine)
-        with pytest.raises(IndexError):
-            with uow:
-                empty = []
-                empty[1]
+        with pytest.raises(IndexError), uow:
+            empty = []
+            empty[1]
 
     def test_incoming_files(self, mock_engine):
         file = files.IncomingFile(

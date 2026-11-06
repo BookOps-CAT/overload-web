@@ -42,9 +42,7 @@ class ProcessingStatistics:
                 "target_call_no": row["target_call_no"],
                 "call_number_match": row["call_number_match"],
             }
-            if not row["call_number_match"]:
-                out_report.append(row_report)
-            elif (
+            if not row["call_number_match"] or (
                 record_type == "cat"
                 and row["call_number"] is None
                 and row["target_call_no"] is None

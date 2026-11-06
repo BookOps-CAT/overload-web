@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from types import TracebackType
-from typing import Any, Self, Sequence
+from typing import Any, Self
 
 from sqlalchemy import Engine
 from sqlmodel import Session, SQLModel, select

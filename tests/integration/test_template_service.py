@@ -1,3 +1,5 @@
+"""Test template handling application services."""
+
 import inspect
 
 import pytest
@@ -14,34 +16,24 @@ from overload_web.presentation import schemas
 
 
 def test_template_attrs():
-    """
-    TemplateUpdateModel, TemplateDataModel and OrderTemplateBase are the same
-    OrderTemplate and TemplateModel are the same
+    """TemplateUpdateModel, TemplateDataModel and OrderTemplateBase are the same
+    OrderTemplate and TemplateModel are the same.
 
     """
-    sql_base = [
-        name for name in inspect.signature(tables.TemplateUpdateModel).parameters.keys()
-    ]
-    pydantic_patch = [
-        name for name in inspect.signature(schemas.TemplateDataModel).parameters.keys()
-    ]
-    pydantic_create = [
-        name
-        for name in inspect.signature(schemas.TemplateCreateModel).parameters.keys()
-    ]
-    domain_base = [
-        name
-        for name in inspect.signature(
-            order_templates.OrderTemplateBase
-        ).parameters.keys()
-    ]
-    template_sql_model = [
-        name for name in inspect.signature(tables.TemplateModel).parameters.keys()
-    ]
-    template_domain_model = [
-        name
-        for name in inspect.signature(order_templates.OrderTemplate).parameters.keys()
-    ]
+    sql_base = list(inspect.signature(tables.TemplateUpdateModel).parameters.keys())
+    pydantic_patch = list(
+        inspect.signature(schemas.TemplateDataModel).parameters.keys()
+    )
+    pydantic_create = list(
+        inspect.signature(schemas.TemplateCreateModel).parameters.keys()
+    )
+    domain_base = list(
+        inspect.signature(order_templates.OrderTemplateBase).parameters.keys()
+    )
+    template_sql_model = list(inspect.signature(tables.TemplateModel).parameters.keys())
+    template_domain_model = list(
+        inspect.signature(order_templates.OrderTemplate).parameters.keys()
+    )
     assert sql_base == pydantic_patch == domain_base == pydantic_create
     assert template_sql_model == template_domain_model
 

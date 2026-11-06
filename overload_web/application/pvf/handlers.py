@@ -9,13 +9,13 @@ from overload_web.domain.pvf import aggregate, commands, events, ports, services
 
 logger = logging.getLogger(__name__)
 
-C = TypeVar("C", bound=commands.Command, contravariant=True)
+C_contra = TypeVar("C_contra", bound=commands.Command, contravariant=True)
 
 
-class AbstractCommandHandler(Protocol[C]):  # pragma: no branch
+class AbstractCommandHandler(Protocol[C_contra]):  # pragma: no branch
     """Base class for all command handlers used during vendor file processing."""
 
-    def __call__(self, cmd: C) -> None:
+    def __call__(self, cmd: C_contra) -> None:
         """Call a command."""
         ...
 

@@ -7,14 +7,14 @@ from typing import Any, Protocol, TypeVar, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar("T", covariant=True)  # variable for covariant `bookops_marc.Bib` type
+T_co = TypeVar("T_co", covariant=True)  # variable for covariant `bookops_marc.Bib` type
 
 
 @runtime_checkable
-class MarcParserPort(Protocol[T]):  # pragma: no branch
+class MarcParserPort(Protocol[T_co]):  # pragma: no branch
     """Parse a MARC record using external libraries."""
 
-    def create_bib_obj(self, data: bytes, library: str) -> T:
+    def create_bib_obj(self, data: bytes, library: str) -> T_co:
         """Instantiate a Bib object from binary data."""
         ...
 

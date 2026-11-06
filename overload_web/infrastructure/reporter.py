@@ -74,9 +74,9 @@ class GoogleSheetsReporter(ports.ReportWriter):
                 flow = InstalledAppFlow.from_client_config(flow_dict, scopes)
                 creds = flow.run_local_server()
             return creds
-        except (ValueError, RefreshError) as e:
-            logger.error(f"Unable to configure google sheet API credentials: {e}")
-            raise e
+        except (ValueError, RefreshError):
+            logger.error("Unable to configure google sheet API credentials.")
+            raise
 
     def prep_report(self, data: list[dict[str, Any]]) -> list[list[str]]:
         """Prep output for google sheet.

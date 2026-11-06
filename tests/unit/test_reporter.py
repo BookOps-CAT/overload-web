@@ -1,3 +1,5 @@
+"""Test reporting via infrastructure layer reporter."""
+
 import pytest
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
@@ -7,16 +9,16 @@ from overload_web.infrastructure import reporter
 
 
 class MockCreds:
-    def __init__(self):
+    def __init__(self) -> None:
         self.token = "foo"
         self.refresh_token = "bar"
 
     @property
-    def valid(self, *args, **kwargs):
+    def valid(self):
         return True
 
     @property
-    def expired(self, *args, **kwargs):
+    def expired(self):
         return False
 
     def refresh(self, *args, **kwargs):
@@ -124,7 +126,7 @@ class TestReporter:
     def test_configure_sheet_invalid_creds(self, mock_config_invalid_creds, caplog):
         with pytest.raises(ValueError):
             self.REPORT_HANDLER.configure_sheet()
-        assert "Unable to configure google sheet API credentials:" in caplog.text
+        assert "Unable to configure google sheet API credentials." in caplog.text
 
     def test_prep_report(self, stub_report):
         prepped_report = self.REPORT_HANDLER.prep_report(

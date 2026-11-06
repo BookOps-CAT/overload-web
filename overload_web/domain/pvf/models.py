@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import datetime
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any, Sequence
+from typing import Any
 
 from overload_web.domain import shared
 
@@ -32,14 +33,14 @@ class DomainBib:
         parsed_fields: list[ParsedField] | list[dict[str, Any]],
         record_type: shared.RecordType | str,
         title: str,
-        barcodes: list[str] = [],
+        barcodes: list[str] | None = None,
         bib_id: str | None = None,
         branch_call_number: str | None = None,
         command_tag: str | None = None,
         control_number: str | None = None,
         isbn: str | None = None,
         oclc_number: str | list[str] | None = None,
-        orders: list[Order] = [],
+        orders: list[Order] | None = None,
         research_call_number: str | list[str] | None = None,
         upc: str | None = None,
         update_date: str | None = None,
@@ -96,7 +97,7 @@ class DomainBib:
                 Info about the vendor as a `VendorInfo` object, if applicable.
 
         """
-        self.barcodes = barcodes
+        self.barcodes = barcodes if barcodes else []
         self.bib_id = bib_id
         self.binary_data = binary_data
         self.branch_call_number = branch_call_number
@@ -106,7 +107,7 @@ class DomainBib:
         self.isbn = isbn
         self.library = shared.LibrarySystem(library)
         self.oclc_number = oclc_number
-        self.orders = orders
+        self.orders = orders if orders else []
         self.parsed_fields = [
             i if isinstance(i, ParsedField) else ParsedField(**i) for i in parsed_fields
         ]
@@ -280,7 +281,7 @@ class FieldUpdates:
         fields: list[ParsedField], library: str
     ) -> tuple[str, str, str]:
         """Get appropriate item field tag and indicators."""
-        if not library == "bpl":
+        if library != "bpl":
             return ("949", " ", "1")
         fields_037 = [i for i in fields if i.tag == "037" and i.subfields]
         for marc_field in fields_037:
@@ -337,7 +338,7 @@ class FieldUpdates:
         call_no: str | None, collection: str | None, vendor: str | None
     ) -> MarcFieldUpdateValues | None:
         """Update call number for B&T Series materials."""
-        if not vendor == "BT SERIES" or not call_no or not collection == "BL":
+        if vendor != "BT SERIES" or not call_no or collection != "BL":
             return None
         new_subfields = []
         pos = 0
@@ -463,7 +464,7 @@ class Order:
 
         """
         for k, v in template_data.items():
-            if v and k in self.__dict__.keys():
+            if v and k in self.__dict__:
                 setattr(self, k, v)
 
     def map_to_marc(
@@ -479,9 +480,9 @@ class Order:
 
         """
         out = {}
-        for key in rules.keys():
+        for key, value in rules.items():
             tag_dict = {}
-            for k, v in rules[key].items():
+            for k, v in value.items():
                 tag_dict[k] = getattr(self, v)
             out[key] = tag_dict
         return out
@@ -494,7 +495,7 @@ class ParsedField:
         self,
         tag: str,
         indicators: tuple[str, str] | None = None,
-        subfields: list[ParsedSubfield] | list[dict[str, str]] = [],
+        subfields: list[ParsedSubfield] | list[dict[str, str]] | None = None,
         value: str | None = None,
     ) -> None:
         """Initialize a `ParsedField` object.
@@ -511,6 +512,8 @@ class ParsedField:
                 a string for controlfields or None for datafields
 
         """
+        if subfields is None:
+            subfields = []
         self.tag = tag
         self.indicators = indicators
         self.subfields = [

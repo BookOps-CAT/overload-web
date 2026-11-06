@@ -28,7 +28,8 @@ import io
 import itertools
 import logging
 from collections import Counter, defaultdict
-from typing import Any, Callable, Sequence
+from collections.abc import Callable, Sequence
+from typing import Any
 
 from overload_web.domain.pvf import matching, models, ports
 
@@ -242,14 +243,11 @@ class BibParser:
 
     def combine_marc_files(self, data: list[bytes], library: str) -> bytes:
         """Combine multiple bytes objects (ie. MARC files) into one for processing."""
-        records = []
+        io_data = io.BytesIO()
         for batch in data:
             reader = self.handler.get_reader(batch, library=library)
             for record in reader:
-                records.append(record)
-        io_data = io.BytesIO()
-        for record in records:
-            io_data.write(record.as_marc())
+                io_data.write(record.as_marc())
         io_data.seek(0)
         return io_data.getvalue()
 

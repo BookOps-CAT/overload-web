@@ -1,3 +1,5 @@
+"""Test domain commands and events via MessageBus within infrastrucure layer."""
+
 import logging
 from dataclasses import dataclass
 from typing import Any

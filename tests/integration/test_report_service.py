@@ -1,3 +1,5 @@
+"""Test application layer report services."""
+
 import pytest
 
 from overload_web.application.pvf.report_service import (
@@ -18,7 +20,7 @@ class MockResource:
         return self
 
     def execute(self, *args, **kwargs):
-        return dict(spreadsheetId=self.spreadsheetId, tableRange=self.range)
+        return {"spreadsheetId": self.spreadsheetId, "tableRange": self.range}
 
     def spreadsheets(self, *args, **kwargs):
         return self

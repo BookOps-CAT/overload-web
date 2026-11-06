@@ -1,3 +1,5 @@
+"""Test interactions with Sierra via SierraBibFetcher and session wrappers."""
+
 from contextlib import nullcontext as does_not_raise
 
 import pytest

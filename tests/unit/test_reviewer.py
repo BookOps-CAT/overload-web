@@ -1,3 +1,5 @@
+"""Test `BibReviewer` domain service."""
+
 import random
 
 import pytest

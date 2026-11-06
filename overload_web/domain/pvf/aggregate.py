@@ -3,8 +3,9 @@
 import datetime
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Sequence
+from typing import Any
 
 from overload_web.domain.pvf import files, models, ports, services
 
@@ -187,7 +188,7 @@ class OrderLevelJob(AbstractProcessingJob):
             assigned to each `DomainBib` object.
 
         """
-        for file_name, records in self.file_records.items():
+        for records in self.file_records.values():
             for bib in records:
                 matches = matcher.match_order_record(
                     record=bib, matchpoints=matchpoints, library=library
@@ -294,7 +295,7 @@ class FullRecordJob(AbstractProcessingJob):
         self.processed: ProcessedFileBatch | None = None
         self.processed_files: list[ProcessedFile] = []
         self.report_data: list[dict[str, Any]] = []
-        self.out_file_name = datetime.datetime.today().strftime("%y%m%d")
+        self.out_file_name = datetime.datetime.now(tz=datetime.UTC).strftime("%y%m%d")
         self.validator = services.BarcodeValidator()
 
     def parse_files(

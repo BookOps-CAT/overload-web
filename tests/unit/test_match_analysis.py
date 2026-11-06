@@ -1,3 +1,5 @@
+"""Test MatchAnalyzer domain services."""
+
 import copy
 
 import pytest

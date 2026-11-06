@@ -3,24 +3,15 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable, Iterator, Sequence
 from types import TracebackType
-from typing import (
-    Any,
-    Callable,
-    Iterator,
-    Protocol,
-    Self,
-    Sequence,
-    TypeVar,
-    runtime_checkable,
-)
+from typing import Any, Protocol, Self, TypeVar, runtime_checkable
 
 from overload_web.domain.shared import Command, Event
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar("T", contravariant=True)  # contravariant `DomainBib` and `SQLModel` types
-U = TypeVar("U")  # invariant `bookops_marc.Bib` and `SQLModel` types
+T = TypeVar("T")  # invariant `bookops_marc.Bib` and `SQLModel` types
 
 
 @runtime_checkable
@@ -82,7 +73,7 @@ class FileRetriever(Protocol):  # pragma: no branch
 
 
 @runtime_checkable
-class FileStorage(Protocol[U]):  # pragma: no branch
+class FileStorage(Protocol[T]):  # pragma: no branch
     """A protocol for a service which allows for file IO operations.
 
     Implementations may interact with an FTP/SFTP server or a local file directory.
@@ -114,11 +105,11 @@ class FileStorage(Protocol[U]):  # pragma: no branch
         """
         ...
 
-    def save_intermediate_records(self, id: str, job: U) -> None:
+    def save_intermediate_records(self, id: str, job: T) -> None:
         """Save records at intermediate stage of processing workflow."""
         ...
 
-    def load_intermediate_records(self, id: str) -> U:
+    def load_intermediate_records(self, id: str) -> T:
         """Load records from intermediate stage of processing workflow."""
         ...
 
@@ -146,14 +137,14 @@ class FileWriter(Protocol):  # pragma: no branch
 
 
 @runtime_checkable
-class MarcParserPort(Protocol[U]):  # pragma: no branch
+class MarcParserPort(Protocol[T]):  # pragma: no branch
     """Protocol for a class which parses MARC records."""
 
-    def compare_mapped_tags(self, obj: U, tags: dict[str, dict[str, str]]) -> bool:
+    def compare_mapped_tags(self, obj: T, tags: dict[str, dict[str, str]]) -> bool:
         """Match vendor tags from mapping to bib object."""
         ...
 
-    def create_bib_obj(self, data: bytes, library: str) -> U:
+    def create_bib_obj(self, data: bytes, library: str) -> T:
         """Instantiate a Bib object from binary data."""
         ...
 
@@ -161,32 +152,32 @@ class MarcParserPort(Protocol[U]):  # pragma: no branch
         """Instantiate an object that can read MARC binary as an iterator."""
         ...
 
-    def identify_vendor(self, obj: U, mapping: dict[str, Any]) -> dict[str, Any]:
+    def identify_vendor(self, obj: T, mapping: dict[str, Any]) -> dict[str, Any]:
         """Determine the vendor who created a `bookops_marc.Bib` record."""
         ...
 
-    def map_bib_data(self, obj: U, mapping: dict[str, Any]) -> dict[str, Any]:
+    def map_bib_data(self, obj: T, mapping: dict[str, Any]) -> dict[str, Any]:
         """Map an bib to a dictionary following a set of rules."""
         ...
 
-    def map_order_data(self, obj: U, mapping: dict[str, Any]) -> dict[str, Any]:
+    def map_order_data(self, obj: T, mapping: dict[str, Any]) -> dict[str, Any]:
         """Map an order to a dictionary following a set of rules."""
         ...
 
 
 @runtime_checkable
-class MarcUpdaterPort(Protocol[U]):  # pragma: no branch
+class MarcUpdaterPort(Protocol[T]):  # pragma: no branch
     """Protocol for a class which updates MARC records."""
 
-    def create_bib(self, binary_data: bytes, library: str) -> U:
+    def create_bib(self, binary_data: bytes, library: str) -> T:
         """Create a `bookops_marc.Bib` object from a `bytes` object."""
         ...
 
-    def update_fields(self, bib: U, field_updates: list[Any]) -> None:
+    def update_fields(self, bib: T, field_updates: list[Any]) -> None:
         """Update record in place."""
         ...
 
-    def update_leader_encoding(self, bib: U, leader: str) -> None:
+    def update_leader_encoding(self, bib: T, leader: str) -> None:
         """Update character encoding to unicode."""
         ...
 
@@ -226,47 +217,47 @@ class ReportWriter(Protocol):  # pragma: no branch
 
 
 @runtime_checkable
-class TemplateRepositoryProtocol(Protocol[U]):  # pragma: no branch
+class TemplateRepositoryProtocol(Protocol[T]):  # pragma: no branch
     """Interface for repository operations on generic objects.
 
     Includes methods for fetching and saving generic objects.
     """
 
-    def get(self, id: str) -> U | None:
+    def get(self, id: str) -> T | None:
         """Get objects from a database."""
         ...
 
-    def list(self, offset: int | None = 0, limit: int | None = 0) -> Sequence[U]:
+    def list(self, offset: int | None = 0, limit: int | None = 0) -> Sequence[T]:
         """List all objects in a database."""
         ...
 
-    def save(self, obj: U) -> U:
+    def save(self, obj: T) -> T:
         """Save a new object to a database."""
         ...
 
-    def update(self, data: U, id: str) -> U | None:
+    def update(self, data: T, id: str) -> T | None:
         """Update an existing object in a database."""
         ...
 
 
 @runtime_checkable
-class BatchRepositoryProtocol(Protocol[U]):  # pragma: no branch
+class BatchRepositoryProtocol(Protocol[T]):  # pragma: no branch
     """Interface for repository operations on generic objects.
 
     Includes methods for fetching and saving generic objects.
     """
 
-    def get(self, id: str) -> U | None:
+    def get(self, id: str) -> T | None:
         """Get objects from a database."""
         ...
 
-    def save(self, obj: U) -> U:
+    def save(self, obj: T) -> T:
         """Save a new object to a database."""
         ...
 
 
 @runtime_checkable
-class IncomingFileRepositoryProtocol(Protocol[U]):  # pragma: no branch
+class IncomingFileRepositoryProtocol(Protocol[T]):  # pragma: no branch
     """Interface for repository operations on generic objects.
 
     Includes methods for fetching and saving generic objects.
@@ -276,31 +267,31 @@ class IncomingFileRepositoryProtocol(Protocol[U]):  # pragma: no branch
         """Delete an object from a database."""
         ...
 
-    def list_by_id(self, id: str | int) -> Sequence[U]:
+    def list_by_id(self, id: str | int) -> Sequence[T]:
         """List all objects in a database filtering by a specific id."""
         ...
 
-    def save(self, obj: U) -> U:
+    def save(self, obj: T) -> T:
         """Save a new object to a database."""
         ...
 
 
 @runtime_checkable
-class WorkflowRepositoryProtocol(Protocol[U]):  # pragma: no branch
+class WorkflowRepositoryProtocol(Protocol[T]):  # pragma: no branch
     """Interface for repository operations on generic objects.
 
     Includes methods for fetching and saving generic objects.
     """
 
-    def get(self, id: str) -> U | None:
+    def get(self, id: str) -> T | None:
         """Get objects from a database."""
         ...
 
-    def update(self, data: U, id: str) -> U | None:
+    def update(self, data: T, id: str) -> T | None:
         """Update an existing object in a database."""
         ...
 
-    def save(self, obj: U) -> U:
+    def save(self, obj: T) -> T:
         """Save a new object to a database."""
         ...
 

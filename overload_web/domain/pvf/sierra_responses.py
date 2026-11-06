@@ -304,35 +304,29 @@ class NYPLPlatformResponse(BaseSierraResponse):
             for subfield in j["subfields"]
             if subfield["tag"] == "a"
         ]
-        if "BL" in collections:
+        if "BL" in collections or self.branch_call_number:
             branch = True
-        if "RL" in collections:
+        if "RL" in collections or self.research_call_number:
             research = True
-        if self.branch_call_number:
-            branch = True
-        if self.research_call_number:
-            research = True
-        locations = [i.get("code") for i in self._data.get("locations", [])]
+        locations = [
+            i.get("code")
+            for i in self._data.get("locations", [])
+            if len(i.get("code")) >= 3
+        ]
         for loc in locations:
-            if len(loc) < 3:
-                continue
-            if loc == "zzzzz":
-                branch = True
-            elif loc == "xxx":
+            if (
+                loc == "xxx"
+                or loc in ["myd", "myh", "mym", "myt"]
+                or loc[:2] == "sc"
+                or loc[:3] in ["lsx", "lsd"]
+                or (loc[:2] == "ma" and loc[:3] != "maj")
+            ):
                 research = True
-            elif loc in ["myd", "myh", "mym", "myt"]:
-                research = True
-            elif loc[:2] == "my" and loc not in ["myd", "myh", "mym", "myt"]:
-                branch = True
-            elif loc[:2] == "sc":
-                research = True
-            elif loc[:3] == "maj":
-                branch = True
-            elif loc[:2] == "ma" and loc[:3] != "maj":
-                research = True
-            elif loc[:3] in ["lsx", "lsd"]:
-                research = True
-            elif loc[:2] in NYPL_BRANCHES.keys():
+            elif (
+                loc == "zzzzz"
+                or loc[:3] == "maj"
+                or (loc[:2] == "my" and loc not in ["myd", "myh", "mym", "myt"])
+            ) or loc[:2] in NYPL_BRANCHES:
                 branch = True
         if branch and research:
             return "MIXED"

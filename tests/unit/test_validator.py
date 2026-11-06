@@ -1,3 +1,5 @@
+"""Test `BarcodeValidator` domain service."""
+
 import pytest
 
 from overload_web.domain.pvf import services

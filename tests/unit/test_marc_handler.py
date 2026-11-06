@@ -1,3 +1,5 @@
+"""Test pymarc and bookops_marc handling within infrastructure layer."""
+
 import copy
 
 import pytest
@@ -58,7 +60,7 @@ class TestMarcParser:
         combined = handler.get_reader(
             library=stub_marc.library, data=stub_marc.as_marc()
         )
-        assert len([i for i in combined]) >= 1
+        assert len(list(combined)) >= 1
 
     @pytest.mark.workflow(library="nypl")
     def test_identify_vendor(self, stub_marc, get_constants):

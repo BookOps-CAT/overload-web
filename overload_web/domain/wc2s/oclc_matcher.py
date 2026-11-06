@@ -3,28 +3,34 @@
 from __future__ import annotations
 
 import logging
+from enum import StrEnum
 
 from overload_web.domain.wc2s import ports, worldcat
 
 logger = logging.getLogger(__name__)
 
 
+class IdIndex(StrEnum):
+    """Metadata API index used by different unique identifier types."""
+
+    LCCN = "sn"
+    OCLC_NUMBER = "no"
+    ISBN = "sn"
+    ISSN = "sn"
+    UPC = "sn"
+
+
+class MaterialTypeMapping(StrEnum):
+    """Metadata API material type for differnet formats."""
+
+    PRINT = "book-printbook"
+    LARGE_PRINT = "book-largeprint"
+    DVD = "video-dvd"
+    BLURAY = "video-bluray"
+
+
 class WorldcatMatcher:
     """A domain service for identifying matching records in WorldCat."""
-
-    ID_INDEX = {
-        "lccn": "sn",
-        "oclc_number": "no",
-        "isbn": "sn",
-        "issn": "sn",
-        "upc": "sn",
-    }
-    MATERIAL_TYPE_MAPPING = {
-        "print": "book-printbook",
-        "large_print": "book-largeprint",
-        "dvd": "video-dvd",
-        "bluray": "video-bluray",
-    }
 
     def __init__(self, fetcher: ports.OCLCBibFetcher) -> None:
         """Initialize `WorldcatMatcher` instance.
@@ -53,10 +59,12 @@ class WorldcatMatcher:
         """Search WorldCat for matches and parse and evaluate responses."""
         evaluator = worldcat.RecordEvaluator(source.record_level)
         payload = {
-            "q": f"{self.ID_INDEX[source.id_type]}={source.id}",
+            "q": f"{IdIndex[source.id_type.upper()].value}={source.id}",
             "inCatalogLanguage": "eng",
             "catalogSource": source.required_cataloging_agency,
-            "itemSubType": self.MATERIAL_TYPE_MAPPING.get(source.material_type),
+            "itemSubType": MaterialTypeMapping.__members__.get(
+                source.material_type.upper(), None
+            ),
             "limit": 50,
         }
         responses = self.fetcher.get_brief_bibs_by_id(

@@ -1,3 +1,5 @@
+"""Test domain aggregates for process vendor file workflows."""
+
 import random
 
 import pytest

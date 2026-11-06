@@ -1,3 +1,5 @@
+"""Test `BibParser` domain service."""
+
 import datetime
 
 import pytest
@@ -129,7 +131,7 @@ class TestBibParser:
         combined = parser.combine_marc_files(
             data=[mock_marc.as_marc()], library=mock_marc.library
         )
-        assert len([i for i in combined]) > 1
+        assert len(list(combined)) > 1
 
     def test_parse_marc_data_order_level_record(self, mock_marc, get_constants, caplog):
         parser = services.BibParser(

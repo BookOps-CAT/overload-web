@@ -1,3 +1,5 @@
+"""Test `BibMatcher` domain service."""
+
 import pytest
 
 from overload_web.domain.pvf import models, services

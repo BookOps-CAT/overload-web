@@ -1,3 +1,5 @@
+"""Test interations with Sierra with live credentials."""
+
 import os
 
 import pytest
@@ -26,7 +28,7 @@ class TestLiveSierraSession:
             assert isinstance(matched_bibs, list)
             assert len(matched_bibs) > 0
             assert isinstance(matched_bibs[0], dict)
-            assert sorted(list(response.json()["response"]["docs"][0].keys())) == [
+            assert sorted(response.json()["response"]["docs"][0].keys()) == [
                 "_version_",
                 "additional_contributor",
                 "author",
@@ -88,7 +90,7 @@ class TestLiveSierraSession:
             assert isinstance(matched_bibs, list)
             assert len(matched_bibs) > 0
             assert isinstance(matched_bibs[0], dict)
-            assert sorted(list(response.json()["data"][0].keys())) == [
+            assert sorted(response.json()["data"][0].keys()) == [
                 "author",
                 "bibLevel",
                 "catalogDate",

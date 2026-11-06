@@ -8,19 +8,13 @@ from enum import StrEnum
 class Message:
     """Base class for Commands and Events."""
 
-    pass
-
 
 class Command(Message):
     """Base class for all commands."""
 
-    pass
-
 
 class Event(Message):
     """Base class for all events."""
-
-    pass
 
 
 class Collection(StrEnum):

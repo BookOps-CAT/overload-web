@@ -5,8 +5,9 @@ from __future__ import annotations
 import datetime
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Sequence
+from typing import Any
 
 from overload_web.domain.pvf import models, sierra_responses
 
@@ -231,23 +232,24 @@ class BPLCatMatchAnalyzer(BaseMatchAnalyzer):
                 vendor=record.vendor,
             )
         for candidate in candidates.matched:
-            if candidate.branch_call_number:
-                if record.branch_call_number == candidate.branch_call_number:
-                    action, updated = self.determine_catalog_action(
-                        candidate=candidate, update_datetime=record.update_datetime
-                    )
-                    return MatchAnalysis(
-                        call_number_match=True,
-                        call_number=record.call_number,
-                        action=action,
-                        resource_id=record.resource_id,
-                        classified=candidates,
-                        target_bib_id=candidate.bib_id,
-                        target_call_no=candidate.branch_call_number,
-                        target_title=candidate.title,
-                        updated_by_vendor=updated,
-                        vendor=record.vendor,
-                    )
+            if candidate.branch_call_number and (
+                record.branch_call_number == candidate.branch_call_number
+            ):
+                action, updated = self.determine_catalog_action(
+                    candidate=candidate, update_datetime=record.update_datetime
+                )
+                return MatchAnalysis(
+                    call_number_match=True,
+                    call_number=record.call_number,
+                    action=action,
+                    resource_id=record.resource_id,
+                    classified=candidates,
+                    target_bib_id=candidate.bib_id,
+                    target_call_no=candidate.branch_call_number,
+                    target_title=candidate.title,
+                    updated_by_vendor=updated,
+                    vendor=record.vendor,
+                )
 
         fallback = candidates.matched[-1]
         action, updated = self.determine_catalog_action(
