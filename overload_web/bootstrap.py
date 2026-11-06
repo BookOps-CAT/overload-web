@@ -18,6 +18,7 @@ def bootstrap_message_bus(
     updater: services.BibUpdater,
     storage: ports.FileStorage,
 ) -> message_bus.MessageBus:
+    """Create `MessageBus` and inject dependencies."""
     bus = message_bus.MessageBus()
 
     pm = workflow_manager.WorkflowManager(bus=bus, uow=uow)
