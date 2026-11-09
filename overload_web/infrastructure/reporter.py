@@ -20,13 +20,16 @@ from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
 from googleapiclient.discovery import build  # type: ignore
 from googleapiclient.errors import HttpError  # type: ignore
 
+from overload_web.domain.pvf import ports
+
 logger = logging.getLogger(__name__)
 
 
-class GoogleSheetsReporter:
+class GoogleSheetsReporter(ports.ReportWriter):
+    """Write processing statistics to a Google Sheet."""
+
     def configure_sheet(self) -> Credentials:
-        """
-        Get or update credentials for google sheets API and save token to file.
+        """Get or update credentials for google sheets API and save token to file.
 
         Args:
             None
@@ -34,6 +37,7 @@ class GoogleSheetsReporter:
         Returns:
             google.oauth2.credentials.Credentials: Credentials object for
             google sheet API.
+
         """
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
         token_uri = "https://oauth2.googleapis.com/token"
@@ -70,19 +74,19 @@ class GoogleSheetsReporter:
                 flow = InstalledAppFlow.from_client_config(flow_dict, scopes)
                 creds = flow.run_local_server()
             return creds
-        except (ValueError, RefreshError) as e:
-            logger.error(f"Unable to configure google sheet API credentials: {e}")
-            raise e
+        except (ValueError, RefreshError):
+            logger.error("Unable to configure google sheet API credentials.")
+            raise
 
     def prep_report(self, data: list[dict[str, Any]]) -> list[list[str]]:
-        """
-        Prep output for google sheet.
+        """Prep output for google sheet.
 
         Args:
-            data: dictionary containing report data to be written.
+            data: a list of dictionaries containing report data to be written.
 
         Returns:
             The data to be written as a list of lists
+
         """
         if not data:
             return []
@@ -93,14 +97,14 @@ class GoogleSheetsReporter:
         ]
 
     def write_report(self, data: list[list[str]]) -> None:
-        """
-        Write output to google sheet.
+        """Write output to google sheet.
 
         Args:
             data: dictionary containing report data to be written.
 
         Returns:
             None
+
         """
         creds = self.configure_sheet()
         sheet_name = os.environ["GOOGLE_SHEET_NAME"]

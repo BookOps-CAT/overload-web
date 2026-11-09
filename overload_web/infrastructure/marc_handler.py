@@ -1,14 +1,13 @@
 """Adapter module defining classes used to parse and update MARC records.
 
-Includes wrapper that allows for MARC records to be translated from pymarc/bookops_marc
-objects to domain objects. The `MarcUpdater`also updates fields and the
-`MarcParserEngine` also extracts values from fields.
+Includes wrappers that allow for MARC records to be translated from pymarc/bookops_marc
+objects to domain objects. The `MarcUpdater` updates fields and the
+`MarcParser` extracts values from fields.
 
 Protocols:
 
-`DomainBibProtocol`
-    A protocol that defines a `DomainBib` used in this application. Defined in order
-    to not have infrastructure layer dependent on domain layer.
+`MarcTarget`
+    A protocol that defines MARC field to be identified by a `MarcUpdater`.
 
 Classes:
 
@@ -22,9 +21,8 @@ Classes:
 
 from __future__ import annotations
 
-import io
 import logging
-from typing import Any, BinaryIO, Protocol, Sequence
+from typing import Any, BinaryIO, Protocol
 
 from bookops_marc import Bib, SierraBibReader
 from bookops_marc.models import Order
@@ -35,97 +33,18 @@ from overload_web.domain.pvf import ports
 logger = logging.getLogger(__name__)
 
 
-class DomainBibProtocol(Protocol):
-    library: str
-    binary_data: bytes
-
-
-class TargetProtocol(Protocol):
-    tag: str
-    indicators: tuple[str, str]
-    code: str
-    value: str
-
-
-class MarcUpdater(ports.MarcUpdaterPort):
-    """Interacts with binary MARC data using `bookops_marc`."""
-
-    def _find_specific_field(self, bib: Bib, target: TargetProtocol) -> Field | None:
-        """Find a field based on generic domain criteria."""
-        for field in bib.get_fields(target.tag):
-            subfield = field.get(target.code, "")
-            if field.indicators == target.indicators and subfield == target.value:
-                return field
-        return None
-
-    def create_bib_from_domain(self, record: DomainBibProtocol) -> Bib:
-        """Create a `bookops_marc.Bib` object from a `DomainBib` object"""
-        return Bib(data=record.binary_data, library=record.library)  # type: ignore
-
-    def update_fields(self, field_updates: list[Any], bib: Bib) -> None:
-        """
-        Update a bibliographic record.
-
-        Args:
-            bib:
-                A MARC record as a `bookops_marc.Bib` object
-            field_updates:
-                A list of updates to make to the record as `rules.MarcFieldUpdateValues`
-                objects
-
-        Returns:
-            None. The record's fields are updated in place.
-        """
-        for update in field_updates:
-            if update.delete_fields_by_tag is True:
-                bib.remove_fields(update.delete_fields_by_tag)
-            if update.target_field_to_delete is not None:
-                to_delete = self._find_specific_field(
-                    bib, update.target_field_to_delete
-                )
-                if to_delete:
-                    bib.remove_field(to_delete)
-            bib.add_ordered_field(
-                Field(
-                    tag=update.tag,
-                    indicators=Indicators(update.ind1, update.ind2),
-                    subfields=[
-                        Subfield(code=i["code"], value=i["value"])
-                        for i in update.subfields
-                    ],
-                )
-            )
-
-    def update_leader_encoding(self, leader: str, bib: Bib) -> None:
-        """
-        Update a bib record's leader[9] value to indicate unicode character encoding.
-
-        Args:
-            bib:
-                A MARC record as a `bookops_marc.Bib` object
-            leader:
-                A MARC leader as a string
-
-        Returns:
-            None. The record's leader is updated in place.
-        """
-        bib.leader = leader[:9] + "a" + leader[10:]
-
-
 class MarcParser(ports.MarcParserPort):
-    """Interacts with binary MARC data using `bookops_marc`."""
+    """Parse binary MARC data using `bookops_marc`."""
 
     def compare_mapped_tags(self, obj: Bib, tags: dict[str, dict[str, str]]) -> bool:
-        """
-        Get the MARC tag, subfield code, and subfield value from a record based on a
-        dictionary containing tags and subfield codes.
+        """Extract values from fields within a `Bib` and compare to values in a dict.
 
         Args:
             obj: A `bookops_marc.Bib` object
             tags: A dictionary containing MARC tags, subfield codes, and subfield values
 
         Returns:
-            A dictionary containing the values present in the MARC fields/subfields.
+            A boolean indicating whether or not the tags match.
 
         """
         bib_dict: dict = {}
@@ -143,7 +62,7 @@ class MarcParser(ports.MarcParserPort):
         return False
 
     def create_bib_obj(self, data: bytes | BinaryIO, library: str) -> Bib:
-        """Instantiate a `SierraBibReader` to read MARC binary data."""
+        """Create a `bookops_marc.Bib` object from binary data."""
         return Bib(data, library=library)  # type: ignore
 
     def get_reader(self, data: bytes | BinaryIO, library: str) -> SierraBibReader:
@@ -164,16 +83,16 @@ class MarcParser(ports.MarcParserPort):
         return mapping[obj.library]["UNKNOWN"]
 
     def map_bib_data(self, obj: Bib, mapping: dict[str, Any]) -> dict[str, Any]:
-        """
-        Build a dictionary representing a `DomainBib` object
-        from a `bookops_marc.Bib` object and a set of mapping rules.
+        """Map a `Bib` object to a dict representing a `DomainBib` using a set of rules.
 
         Args:
             obj: MARC record represented as a `bookops_marc.Bib` object.
+            mapping: a dictionary representing mapping of obj attrs to MARC fields.
 
         Returns:
             a dictionary containing a mapping between a `bookops_marc` object
             and a domain object.
+
         """
         out: dict[str, Any] = {}
         # Adds or removes OCLC prefix from `001` field based on library
@@ -208,16 +127,16 @@ class MarcParser(ports.MarcParserPort):
         return out
 
     def map_order_data(self, obj: Order, mapping: dict[str, Any]) -> dict[str, Any]:
-        """
-        Build a dictionary representing a domain `Order` object
-        from a `bookops_marc.Order` object and a set of mapping rules.
+        """Map a `bookops_marc.Order` to a a domain `Order` using a set of rules.
 
         Args:
             obj: a `bookops_marc.Order` object.
+            mapping: a dictionary representing mapping of obj attrs to MARC fields.
 
         Returns:
             a dictionary containing a mapping between a `bookops_marc` object
             and a domain object.
+
         """
         out: dict[str, Any] = {}
 
@@ -232,21 +151,76 @@ class MarcParser(ports.MarcParserPort):
                     out[attr] = field.get(code) if field else None
         return out
 
-    def write(self, records: Sequence[DomainBibProtocol]) -> bytes:
-        """
-        Serialize `DomainBib` objects into a binary MARC stream.
+
+class MarcTarget(Protocol):
+    """A MARC field containing specific values."""
+
+    tag: str
+    indicators: tuple[str, str]
+    code: str
+    value: str
+
+
+class MarcUpdater(ports.MarcUpdaterPort):
+    """Update binary MARC data using `bookops_marc`."""
+
+    def _find_specific_field(self, bib: Bib, target: MarcTarget) -> Field | None:
+        """Find a field based on generic domain criteria."""
+        for field in bib.get_fields(target.tag):
+            subfield = field.get(target.code, "")
+            if field.indicators == target.indicators and subfield == target.value:
+                return field
+        return None
+
+    def create_bib(self, binary_data: bytes, library: str) -> Bib:
+        """Create a `bookops_marc.Bib` object from a `bytes` object."""
+        return Bib(data=binary_data, library=library)  # type: ignore
+
+    def update_fields(self, bib: Bib, field_updates: list[Any]) -> None:
+        """Update a bibliographic record.
 
         Args:
-            records:
-                A list `DomainBib` objects.
+            bib:
+                A MARC record as a `bookops_marc.Bib` object
+            field_updates:
+                A list of updates to make to the record as `rules.MarcFieldUpdateValues`
+                objects
 
         Returns:
-            MARC binary as an an in-memory file stream.
+            None. The record's fields are updated in place.
+
         """
-        io_data = io.BytesIO()
-        for record in records:
-            logger.info(f"Writing MARC binary for record: {record}")
-            io_data.write(record.binary_data)
-        io_data.seek(0)
-        out = io_data.getvalue()
-        return out
+        for update in field_updates:
+            if update.delete_fields_by_tag is True:
+                bib.remove_fields(update.delete_fields_by_tag)
+            if update.target_field_to_delete is not None:
+                to_delete = self._find_specific_field(
+                    bib, update.target_field_to_delete
+                )
+                if to_delete:
+                    bib.remove_field(to_delete)
+            bib.add_ordered_field(
+                Field(
+                    tag=update.tag,
+                    indicators=Indicators(update.ind1, update.ind2),
+                    subfields=[
+                        Subfield(code=i["code"], value=i["value"])
+                        for i in update.subfields
+                    ],
+                )
+            )
+
+    def update_leader_encoding(self, bib: Bib, leader: str) -> None:
+        """Update a bib record's leader[9] value to indicate unicode character encoding.
+
+        Args:
+            bib:
+                A MARC record as a `bookops_marc.Bib` object
+            leader:
+                A MARC leader as a string
+
+        Returns:
+            None. The record's leader is updated in place.
+
+        """
+        bib.leader = leader[:9] + "a" + leader[10:]

@@ -1,0 +1,72 @@
+"""Events describing stages of vendor processing workflows."""
+
+from dataclasses import dataclass
+from typing import Any
+
+from overload_web.domain.shared import Event
+
+
+@dataclass
+class WorkflowInitialized(Event):
+    """Event marking creation of new workflow."""
+
+    workflow_id: str
+
+
+@dataclass
+class OrderLevelWorkflowStarted(Event):
+    """Event marking start of order-level record processing workflow."""
+
+    collection: str | None
+    library: str
+    matchpoints: dict[str, str]
+    record_type: str
+    template_data: dict[str, Any]
+    vendor: str
+    workflow_id: str
+
+
+@dataclass
+class OrderLevelFilesParsed(Event):
+    """Event marking completion of order-level record parsing."""
+
+    workflow_id: str
+
+
+@dataclass
+class OrderLevelRecordsMatched(Event):
+    """Event marking completion of order-level record matching."""
+
+    workflow_id: str
+
+
+@dataclass
+class WorkflowCompleted(Event):
+    """Event marking completion of processing workflow."""
+
+    workflow_id: str
+    batch_id: str
+
+
+@dataclass
+class FullLevelWorkflowStarted(Event):
+    """Event marking start of full MARC record processing workflow."""
+
+    collection: str | None
+    library: str
+    record_type: str
+    workflow_id: str
+
+
+@dataclass
+class FullLevelFilesParsed(Event):
+    """Event marking completion of full MARC record parsing."""
+
+    workflow_id: str
+
+
+@dataclass
+class FullLevelRecordsMatched(Event):
+    """Event marking completion of full MARC record matching."""
+
+    workflow_id: str

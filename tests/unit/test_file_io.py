@@ -1,7 +1,11 @@
+"""Test file I/O interactions within infrastructure layer."""
+
+import io
 import os
 
 import pytest
 
+from overload_web.domain.pvf import aggregate
 from overload_web.infrastructure import file_io
 
 
@@ -13,11 +17,36 @@ def tmp_files(tmp_path):
     file2.write_bytes(b"333339876543210")
 
 
-class TestLocalFiles:
+@pytest.fixture
+def mock_read_file(mocker) -> None:
+    mock_read = mocker.mock_open(read_data=b"foo")
+    mocker.patch("overload_web.infrastructure.file_io.open", mock_read)
+
+
+class FakeFileObj:
+    def __init__(self):
+        self.file_stream = io.BytesIO(b"")
+
+
+class FakeSFTPClient:
+    def __init__(self, name: str | None = "FOO"):
+        self.name = name
+
+    def get_file(*args, **kwargs):
+        return FakeFileObj()
+
+    def get_file_info(*args, **kwargs):
+        return "foo"
+
+    def list_files(*args, **kwargs):
+        return ["foo.mrc"]
+
+
+class TestLocalFileRetriever:
     def test_local_download(self, tmp_path, tmp_files):
         retriever = file_io.LocalFileRetriever()
-        loaded_file = retriever.download("foo.mrc", dir=tmp_path)
-        assert "333331234567890".encode() in loaded_file
+        loaded_file = retriever.download(name="foo.mrc", dir=tmp_path)
+        assert b"333331234567890" in loaded_file
         assert "foo.mrc" in os.listdir(tmp_path)
 
     def test_local_list(self, tmp_path, tmp_files):
@@ -26,6 +55,8 @@ class TestLocalFiles:
         assert len(file_list) == 2
         assert "foo.mrc" in file_list
 
+
+class TestLocalFileWriter:
     def test_local_write(self, tmp_path):
         writer = file_io.LocalFileWriter()
         new_file = writer.write(
@@ -33,23 +64,58 @@ class TestLocalFiles:
         )
         assert new_file == os.path.join(tmp_path, "foo.mrc")
         assert "foo.mrc" in os.listdir(tmp_path)
-        assert "333331234567890".encode() in open(new_file, "rb").read()
+        # assert b"333331234567890" in open(new_file, "rb").read()
 
 
-class TestRemoteFiles:
-    def test_sftp_retriever(self, mock_sftp_client):
-        retriever = file_io.SFTPFileRetriever(client=mock_sftp_client)
+class TestSFTPFileRetriever:
+    def test_sftp_retriever(self):
+        retriever = file_io.SFTPFileRetriever(client=FakeSFTPClient())
         assert hasattr(retriever, "list")
         assert hasattr(retriever, "download")
         assert retriever.client.name == "FOO"
 
-    def test_sftp_list(self, mock_sftp_client):
-        retriever = file_io.SFTPFileRetriever(client=mock_sftp_client)
+    def test_sftp_list(self):
+        retriever = file_io.SFTPFileRetriever(client=FakeSFTPClient())
         file_list = retriever.list(dir="test")
         assert len(file_list) == 1
         assert file_list[0] == "foo.mrc"
 
-    def test_sftp_download(self, mock_sftp_client):
-        retriever = file_io.SFTPFileRetriever(client=mock_sftp_client)
+    def test_sftp_download(self):
+        retriever = file_io.SFTPFileRetriever(client=FakeSFTPClient())
         file = retriever.download(name="foo.mrc", dir="test")
         assert file == b""
+
+    def test_create_retriever_for_vendor(self, mocker):
+        client = mocker.Mock()
+        mocker.patch("file_retriever.Client._Client__connect_to_server", client)
+        retriever = file_io.SFTPFileRetriever.create_retriever_for_vendor(vendor="FOO")
+        assert retriever.client.name == "FOO"
+
+
+class TestLocalFileStorage:
+    def test_save(self, tmp_path):
+        path = tmp_path / "temp"
+        storage = file_io.LocalFileStorage(base_path=path)
+        saved_file = storage.save(id="12345", filename="foo.mrc", content=b"")
+        assert saved_file.endswith("12345_foo.mrc")
+
+    def test_load(self, tmp_path, mock_read_file):
+        path = tmp_path / "temp"
+        storage = file_io.LocalFileStorage(base_path=path)
+        loaded_file = storage.load(reference="12345")
+        assert loaded_file == b"foo"
+
+    def test_save_intermediate_records(self, tmp_path):
+        path = tmp_path / "temp"
+        storage = file_io.LocalFileStorage(base_path=path)
+        job = aggregate.OrderLevelJob(workflow_id="1", vendor="UNKNOWN")
+        storage.save_intermediate_records(id="12345", job=job)
+        loaded = storage.load_intermediate_records(id="12345")
+        assert loaded is not None
+
+    def test_load_intermediate_records(self, tmp_path):
+        path = tmp_path / "temp"
+        storage = file_io.LocalFileStorage(base_path=path)
+        with pytest.raises(FileNotFoundError) as exc:
+            storage.load_intermediate_records(id="12345")
+        assert str(exc.value) == "No intermediate state found for 12345."

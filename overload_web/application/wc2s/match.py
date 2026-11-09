@@ -3,19 +3,21 @@
 import logging
 from typing import Any
 
-from overload_web.application import ports
-from overload_web.domain.wc2s import oclc_matcher, worldcat
+from overload_web.domain.wc2s import oclc_matcher, ports, worldcat
 
 logger = logging.getLogger(__name__)
 
 
 class MatchWorldcat2Sierra:
+    """Find OCLC records for files of Sierra records."""
+
     @staticmethod
     def execute(
         fetcher: ports.OCLCBibFetcher,
         parser: ports.MarcParserPort,
         source_data: list[dict[str, Any]],
     ) -> list[worldcat.MatchedResultFull]:
+        """Execute the `MatchWorldcat2Sierra` command."""
         batches = []
         matcher = oclc_matcher.WorldcatMatcher(fetcher)
         for record in source_data:

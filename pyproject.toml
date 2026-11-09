@@ -27,6 +27,7 @@ dependencies = [
     "itsdangerous>=2.2.0",
     "starlette>=1.3.1",
     "httpx2>=2.10.0",
+    "psycopg[binary]>=3.3.8",
 ]
 
 [dependency-groups]
@@ -66,12 +67,16 @@ omit = [
     "**/*.html"
 ]
 
+[tool.ruff]
+fix = true
+
 [tool.ruff.lint]
-select = ["F", "E", "ANN"]
+extend-select = ["C", "D", "F", "E", "ANN"]
 ignore = ["ANN401"]
+extend-safe-fixes = ["ANN204", "C4", "D"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["E501", "ANN"]
+"tests/*" = ["ANN","B", "D","E501", ]
 
 [tool.ruff.format]
 skip-magic-trailing-comma = true
@@ -90,13 +95,13 @@ indent = 2
 cluster = true
 exclude_exact = [
     "overload_web.application",
-    "overload_web.application.ports",
     "overload_web.application.pvf",
     "overload_web.application.wc2s",
     "overload_web.domain",
     "overload_web.domain.pvf",
-    "overload_web.domain.wc2s",
+    "overload_web.domain.wc2s",    
+    "overload_web.domain.pvf.ports",
+    "overload_web.domain.wc2s.ports",
     "overload_web.infrastructure",
     "overload_web.presentation",
-    "overload_web.presentation.routers"
 ]

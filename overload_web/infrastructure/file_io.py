@@ -1,33 +1,42 @@
-"""
-Local and FTP/SFTP file I/O implementations for Overload.
+"""Local and FTP/SFTP file I/O implementations for Overload.
 
 This module contains classes to load files from and write files to local
 directories and remote FTP/SFTP servers. The classes that interact with remote
 directories within this module use the BookOps/file-retriever library.
-The classes within this module are concrete implementations of the `FileRetriever` and
-`FileWriter` protocols within the domain model.
+The classes within this module are concrete implementations of the `FileRetriever`,
+`FileStorage` and `FileWriter` protocols within the domain model.
 """
 
 from __future__ import annotations
 
 import logging
 import os
+import pickle
 from pathlib import Path
-from typing import Any, Sequence
 
 from file_retriever import Client
-from sqlmodel import Field, Session, SQLModel, select
+
+from overload_web.domain.pvf import aggregate, ports
 
 logger = logging.getLogger(__name__)
 
 
-class LocalFileStorage:
-    def __init__(self, base_path: str = "temp/uploads"):
+class LocalFileStorage(ports.FileStorage):
+    """Performs file I/O operations on local storage."""
+
+    def __init__(self, base_path: str = "temp/uploads") -> None:
+        """Initialize `LocalFileStorage` object.
+
+        Args:
+            base_path: directory where files should be read/written as a string.
+
+        """
         self.base_path = Path(base_path)
         self.base_path.mkdir(exist_ok=True)
         logger.info(f"Local file storage location: {self.base_path}")
 
     def save(self, id: str, filename: str, content: bytes) -> str:
+        """Write a file to a local directory."""
         path = self.base_path / f"{id}_{filename}"
 
         with open(path, "wb") as f:
@@ -36,18 +45,42 @@ class LocalFileStorage:
         return str(path)
 
     def load(self, reference: str) -> bytes:
+        """Load a file from a local directory."""
         with open(reference, "rb") as fh:
             file = fh.read()
         return file
 
+    def save_intermediate_records(
+        self, id: str, job: aggregate.AbstractProcessingJob
+    ) -> None:
+        """Serialize the intermediate domain objects to disk."""
+        file_path = self.base_path / f"{id}_state.pkl"
+        with open(file_path, "wb") as f:
+            pickle.dump(job, f)
 
-class LocalFileRetriever:
-    """
-    Loads files from the local filesystem.
+    def load_intermediate_records(self, id: str) -> aggregate.AbstractProcessingJob:
+        """Deserialize the domain objects back into memory."""
+        file_path = self.base_path / f"{id}_state.pkl"
+
+        if not file_path.exists():
+            raise FileNotFoundError(f"No intermediate state found for {id}.")
+        with open(file_path, "rb") as f:
+            return pickle.load(f)
+
+
+class LocalFileRetriever(ports.FileRetriever):
+    """Loads files from the local filesystem.
 
     This class implements the `FileRetriever` protocol by listing and loading file
     contents from a specific directory on a local computer.
     """
+
+    def download(self, dir: str, name: str) -> bytes:
+        """Load a file from a local directory."""
+        with open(os.path.join(dir, name), "rb") as fh:
+            file = fh.read()
+        logger.info(f"File loaded: {name}")
+        return file
 
     def list(self, dir: str) -> list[str]:
         """List available files in a local directory."""
@@ -55,23 +88,15 @@ class LocalFileRetriever:
         logger.info(f"Files in {dir}: {files}")
         return files
 
-    def download(self, name: str, dir: str) -> bytes:
-        """Load a file from a local directory."""
-        with open(os.path.join(dir, name), "rb") as fh:
-            file = fh.read()
-        logger.info(f"File loaded: {name}")
-        return file
 
-
-class LocalFileWriter:
-    """
-    Writes files to the local filesystem.
+class LocalFileWriter(ports.FileWriter):
+    """Writes files to the local filesystem.
 
     This class implements the `FileWriter` protocol by writing binary content
     to files within a specific directory on a local computer.
     """
 
-    def write(self, file: bytes, file_name: str, dir: str) -> str:
+    def write(self, dir: str, file: bytes, file_name: str) -> str:
         """Write a file to a local directory."""
         path = os.path.join(dir, file_name)
         with open(path, "wb") as f:
@@ -80,15 +105,20 @@ class LocalFileWriter:
         return path
 
 
-class SFTPFileRetriever:
-    """
-    Loads files from a remote FTP/SFTP server.
+class SFTPFileRetriever(ports.FileRetriever):
+    """Loads files from a remote FTP/SFTP server.
 
     Implements the `FileRetriever` protocol using the file-retriever library
     to connect to an FTP/SFTP server.
     """
 
     def __init__(self, client: Client) -> None:
+        """Initialize `SFTPFileRetriever` instance.
+
+        Args:
+            client: a `file_retriever.Client` object.
+
+        """
         self.client = client
 
     def list(self, dir: str) -> list[str]:
@@ -97,7 +127,7 @@ class SFTPFileRetriever:
         logger.info(f"Files in {dir}: {files}")
         return files
 
-    def download(self, name: str, dir: str) -> bytes:
+    def download(self, dir: str, name: str) -> bytes:
         """Load a file from a remote directory."""
         file_info = self.client.get_file_info(file_name=name, remote_dir=dir)
         file = self.client.get_file(file=file_info, remote_dir=dir)
@@ -116,63 +146,3 @@ class SFTPFileRetriever:
             port=os.environ[f"{vendor.upper()}_PORT"],
         )
         return SFTPFileRetriever(client=client)
-
-
-class IncomingFileModel(SQLModel, table=True):
-    __tablename__ = "incoming_files"
-    id: str = Field(default=None, primary_key=True, index=True)
-    filename: str = Field(nullable=False)
-    workflow_id: str = Field(nullable=False, index=True)
-    source: str = Field(nullable=False)
-    reference: str = Field(nullable=False)
-
-
-class IncomingFileRepository:
-    def __init__(self, session: Session):
-        self.session = session
-
-    def delete(self, id: str | int) -> None:
-        """
-        Delete an `IncomingFileModel` object from the workflow's list of files.
-
-        Args:
-            id: the ID of the file to delete.
-
-        Returns:
-            None
-        """
-        statement = select(IncomingFileModel).where(IncomingFileModel.id == id)
-        results = self.session.exec(statement)
-        file = results.one()
-        self.session.delete(file)
-
-    def list_by_id(self, id: str | int) -> Sequence[dict[str, Any]]:
-        """
-        Retrieve all `IncomingFileModel` objects in the database.
-
-        Args:
-            id: the `workflow_id` whose files to retrieve.
-
-        Returns:
-            a sequence of `IncomingFileModel` objects.
-        """
-        statement = select(IncomingFileModel).where(IncomingFileModel.workflow_id == id)
-        results = self.session.exec(statement)
-        all_files = results.all()
-        return [i.model_dump() for i in all_files]
-
-    def save(self, obj: IncomingFileModel) -> dict[str, Any]:
-        """
-        Adds a new `IncomingFileModel` to the database.
-
-        Args:
-            obj: the `IncomingFileModel` object to save.
-
-        Returns:
-            The `IncomingFileModel` data as a dictionary.
-        """
-        valid_obj = IncomingFileModel.model_validate(obj, from_attributes=True)
-        self.session.add(valid_obj)
-        self.session.commit()
-        self.session.refresh(valid_obj)
-        return valid_obj.model_dump()

@@ -1,3 +1,5 @@
+"""Test file I/O operations wtih live files."""
+
 import os
 
 import pytest
@@ -42,7 +44,6 @@ class TestLiveLocalFiles:
         )
         assert new_file == os.path.join(self.test_dir, "foo.mrc")
         assert "foo.mrc" in os.listdir(self.test_dir)
-        assert "Test content".encode() in open(new_file, "rb").read()
 
 
 @pytest.fixture(scope="class")

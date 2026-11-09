@@ -1,0 +1,12 @@
+<div class="form-group">
+  <label for="order_template">Order Templates</label>
+  <select class="form-control"
+          hx-get="/ot/template"
+          hx-target="#template-form"
+          name="template_id"
+          id="order_template">
+    <option value="" selected></option>
+    {% for template in templates %}<option value="{{ template.id }}">{{ template.name }}</option>{% endfor %}
+  </select>
+  <div id="template-item" class="row"></div>
+</div>

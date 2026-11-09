@@ -1,3 +1,5 @@
+"""Test reporting via infrastructure layer reporter."""
+
 import pytest
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
@@ -7,16 +9,16 @@ from overload_web.infrastructure import reporter
 
 
 class MockCreds:
-    def __init__(self):
+    def __init__(self) -> None:
         self.token = "foo"
         self.refresh_token = "bar"
 
     @property
-    def valid(self, *args, **kwargs):
+    def valid(self):
         return True
 
     @property
-    def expired(self, *args, **kwargs):
+    def expired(self):
         return False
 
     def refresh(self, *args, **kwargs):
@@ -124,7 +126,7 @@ class TestReporter:
     def test_configure_sheet_invalid_creds(self, mock_config_invalid_creds, caplog):
         with pytest.raises(ValueError):
             self.REPORT_HANDLER.configure_sheet()
-        assert "Unable to configure google sheet API credentials:" in caplog.text
+        assert "Unable to configure google sheet API credentials." in caplog.text
 
     def test_prep_report(self, stub_report):
         prepped_report = self.REPORT_HANDLER.prep_report(
@@ -144,6 +146,14 @@ class TestReporter:
         self.REPORT_HANDLER.write_report(stub_report.create_duplicate_report())
         assert "Unable to send data to google sheet:" in caplog.text
         assert "Data not written to sheet." in caplog.text
+
+    def test_write_data_to_sheet(self, mocker, stub_report, caplog):
+        mock = mocker.Mock()
+        mocker.patch("googleapiclient.discovery.build", mock)
+        mocker.patch("googleapiclient.discovery.build_from_document", mock)
+        mocker.patch.object(reporter.GoogleSheetsReporter, "configure_sheet", mock)
+        self.REPORT_HANDLER.write_report(stub_report.create_duplicate_report())
+        assert "Data written to Google Sheet: " in caplog.text
 
 
 class TestProcessingStatistics:

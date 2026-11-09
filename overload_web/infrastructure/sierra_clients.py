@@ -33,6 +33,8 @@ import requests
 from bookops_bpl_solr import BookopsSolrError, SolrSession
 from bookops_nypl_platform import BookopsPlatformError, PlatformSession, PlatformToken
 
+from overload_web.domain.pvf import ports
+
 from .. import __title__, __version__
 
 logger = logging.getLogger(__name__)
@@ -41,10 +43,11 @@ AGENT = f"{__title__}/{__version__}"
 
 
 class FetcherFactory:
-    """Create a `SierraBibFetcher` object"""
+    """Create a `SierraBibFetcher` object."""
 
     @staticmethod
     def make(library: str) -> SierraBibFetcher:
+        """Create a SierraBibFetcher with an appropriate SierraSession object."""
         client: SierraSessionProtocol
         if library not in ["bpl", "nypl"]:
             raise ValueError(f"Invalid library: {library}. Must be 'bpl' or 'nypl'")
@@ -59,32 +62,33 @@ class FetcherFactory:
         return SierraBibFetcher(client)
 
 
-class SierraBibFetcher:
-    """
-    Fetches bibliographic records from Sierra and converts them into dictionaries
-    to be parsed into `BaseSierraResponse` objects for `DomainBib` construction.
+class SierraBibFetcher(ports.BibFetcher):
+    """Fetch bibliographic records from Sierra and parse them into dictionaries.
+
     This class is a concrete implementation of the `BibFetcher` protocol.
     """
 
     def __init__(self, session: SierraSessionProtocol) -> None:
-        """
-        Initialize a `SierraBibFetcher` with a Sierra-compatible session.
+        """Initialize a `SierraBibFetcher` with a Sierra-compatible session.
 
         Args:
             session: a `SierraSessionProtocol` instance to be used to query Sierra.
+
         """
         self.session = session
 
     def get_bibs_by_id(self, value: str | int, key: str) -> list[dict[str, Any]]:
-        """
-        Retrieves bib records by a specific matchpoint (e.g., isbn, control_number)
+        """Retrieve bib records by a specific matchpoint (e.g., isbn, control_number).
 
         Args:
-            value: identifier to search by.
-            key: name of identifier (e.g., 'isbn', 'bib_id').
+            value:
+                identifier to search by.
+            key:
+                name of identifier ('isbn', 'bib_id', 'control_number', 'issn' or 'upc')
 
         Returns:
-            list of responses formatted as `BaseSierraResponse` objects.
+            a list of dictionaries representing parsed responses from Sierra.
+
         """
         match_methods = {
             "bib_id": self.session._get_bibs_by_bib_id,
@@ -98,7 +102,7 @@ class SierraBibFetcher:
             logger.error(f"Unsupported query matchpoint: '{key}'")
             raise ValueError(
                 f"Invalid matchpoint: '{key}'. Available matchpoints are: "
-                f"{sorted([i for i in match_methods.keys()])}"
+                f"{sorted(match_methods.keys())}"
             )
         bibs = []
         if value is None:
@@ -118,42 +122,31 @@ class SierraBibFetcher:
 
 
 @runtime_checkable
-class SierraSessionProtocol(Protocol):
-    """
-    Protocol for Sierra-compatible sessions, ensuring expected search and response
-    methods are implemented by all concrete sessions.
+class SierraSessionProtocol(Protocol):  # pragma: no branch
+    """Protocol for Sierra-compatible sessions.
+
+    Ensures expected search and response methods are implemented by
+    all concrete sessions.
     """
 
-    def _get_credentials(self) -> str | PlatformToken: ...  # pragma: no branch
-    def _get_bibs_by_bib_id(
-        self, value: str | int
-    ) -> requests.Response: ...  # pragma: no branch
-    def _get_bibs_by_isbn(
-        self, value: str | int
-    ) -> requests.Response: ...  # pragma: no branch
-    def _get_bibs_by_issn(
-        self, value: str | int
-    ) -> requests.Response: ...  # pragma: no branch
-    def _get_bibs_by_control_number(
-        self, value: str | int
-    ) -> requests.Response: ...  # pragma: no branch
-    def _get_bibs_by_upc(
-        self, value: str | int
-    ) -> requests.Response: ...  # pragma: no branch
-    def _parse_response(
-        self, response: requests.Response
-    ) -> list[dict[str, Any]]: ...  # pragma: no branch
+    def _get_credentials(self) -> str | PlatformToken: ...
+    def _get_bibs_by_bib_id(self, value: str | int) -> requests.Response: ...
+    def _get_bibs_by_isbn(self, value: str | int) -> requests.Response: ...
+    def _get_bibs_by_issn(self, value: str | int) -> requests.Response: ...
+    def _get_bibs_by_control_number(self, value: str | int) -> requests.Response: ...
+    def _get_bibs_by_upc(self, value: str | int) -> requests.Response: ...
+    def _parse_response(self, response: requests.Response) -> list[dict[str, Any]]: ...
 
 
 class BPLSolrSession(SolrSession):
-    """
-    Adapter for querying BPL's bibliographic data via `bookops_bpl_solr`.
+    """Adapter for querying BPL's bibliographic data via `bookops_bpl_solr`.
 
     Provides methods for searching by various identifiers and parsing solr responses.
     Inherits from `bookops_bpl_solr.SolrSession`.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize a `BPLSolrSession` instance."""
         super().__init__(
             authorization=self._get_credentials(),
             endpoint=os.environ["BPL_SOLR_TARGET"],
@@ -170,8 +163,7 @@ class BPLSolrSession(SolrSession):
         return json_response["response"]["docs"]
 
     def _prep_sierra_number(self, id: str | int) -> str:
-        """
-        Formats Sierra ID numbers.
+        """Format Sierra ID numbers.
 
         Overrides method in parent class that raises errors when the number
         doesn't look like a Sierra ID.
@@ -181,6 +173,7 @@ class BPLSolrSession(SolrSession):
 
         Returns:
             Sierra id number as a string.
+
         """
         id = str(id).strip(".")
         if id.casefold()[0] in ["b", "i", "o"]:
@@ -198,7 +191,7 @@ class BPLSolrSession(SolrSession):
         return self.search_isbns([str(value)], default_response_fields=False)
 
     def _get_bibs_by_issn(self, value: str | int) -> requests.Response:
-        """*Currently not implemented* Search BPL Solr by issn."""
+        """Search BPL Solr by issn. *Currently not implemented*."""
         raise NotImplementedError("Search by ISSN not implemented in BPL Solr")
 
     def _get_bibs_by_control_number(self, value: str | int) -> requests.Response:
@@ -211,14 +204,14 @@ class BPLSolrSession(SolrSession):
 
 
 class NYPLPlatformSession(PlatformSession):
-    """
-    Adapter for querying NYPL's bibliographic data via `bookops_nypl_platform`.
+    """Adapter for querying NYPL's bibliographic data via `bookops_nypl_platform`.
 
     Implements credential handling, identifier-based searches, and response parsing.
     Inherits from `bookops_nypl_platform.PlatformSession`.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize a `NYPLPlatformSession` instance."""
         super().__init__(
             authorization=self._get_credentials(),
             target=os.environ["NYPL_PLATFORM_TARGET"],
@@ -240,8 +233,7 @@ class NYPLPlatformSession(PlatformSession):
         return json_response.get("data", [])
 
     def _prep_sierra_number(self, id: str | int) -> str:
-        """
-        Formats Sierra ID numbers.
+        """Format Sierra ID numbers.
 
         Overrides method in parent class that unnecessarily raises
         errors when the number doesn't look like a Sierra ID.
@@ -251,6 +243,7 @@ class NYPLPlatformSession(PlatformSession):
 
         Returns:
             Sierra id number as a string.
+
         """
         id = str(id).strip(".")
         if id.casefold()[0] in ["b", "i", "o"]:
@@ -268,7 +261,7 @@ class NYPLPlatformSession(PlatformSession):
         return self.search_standardNos(str(value))
 
     def _get_bibs_by_issn(self, value: str | int) -> requests.Response:
-        """*Currently not implemented* Search NYPL Platform by issn."""
+        """Search NYPL Platform by issn. *Currently not implemented*."""
         raise NotImplementedError("Search by ISSN not implemented in NYPL Platform")
 
     def _get_bibs_by_control_number(self, value: str | int) -> requests.Response:

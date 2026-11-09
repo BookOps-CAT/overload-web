@@ -1,11 +1,24 @@
+"""Shared domain objects used within Overload."""
+
 from __future__ import annotations
 
-from dataclasses import dataclass
 from enum import StrEnum
 
 
+class Message:
+    """Base class for Commands and Events."""
+
+
+class Command(Message):
+    """Base class for all commands."""
+
+
+class Event(Message):
+    """Base class for all events."""
+
+
 class Collection(StrEnum):
-    """Valid values for NYPL and BPL collections"""
+    """Valid values for NYPL and BPL collections."""
 
     BRANCH = "BL"
     RESEARCH = "RL"
@@ -14,7 +27,7 @@ class Collection(StrEnum):
 
 
 class LibrarySystem(StrEnum):
-    """Valid values for library system"""
+    """Valid values for library system."""
 
     BPL = "bpl"
     NYPL = "nypl"
@@ -26,28 +39,3 @@ class RecordType(StrEnum):
     ACQUISITIONS = "acq"
     CATALOGING = "cat"
     SELECTION = "sel"
-
-
-@dataclass(frozen=True)
-class ParsedSubfield:
-    """A pure Python representation of a MARC subfield."""
-
-    code: str
-    value: str
-
-
-class ParsedField:
-    def __init__(
-        self,
-        tag: str,
-        indicators: tuple[str, str] | None = None,
-        subfields: list[ParsedSubfield] | list[dict[str, str]] = [],
-        value: str | None = None,
-    ):
-        self.tag = tag
-        self.indicators = indicators
-        self.subfields = [
-            i if isinstance(i, ParsedSubfield) else ParsedSubfield(**i)
-            for i in subfields
-        ]
-        self.value = value

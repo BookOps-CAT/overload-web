@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass(kw_only=True)
 class OrderTemplateBase:
-    """Defines a base entity for an order template"""
+    """Defines a base entity for an order template."""
 
     acquisition_type: str | None = None
     agent: str | None = None
@@ -53,6 +53,6 @@ class OrderTemplateBase:
 
 @dataclass(kw_only=True)
 class OrderTemplate(OrderTemplateBase):
-    """Defines an order template domain entity"""
+    """Defines an order template domain entity."""
 
     id: int

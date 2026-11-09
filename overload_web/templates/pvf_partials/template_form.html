@@ -1,0 +1,61 @@
+{% import "components/macros.html" as macro %}
+{% if not template %}
+  {% set template = {} %}
+{% endif %}
+<div id="template-form-fields">
+  <input id="template_id"
+         name="template_id"
+         type="hidden"
+         form="pvf-form"
+         value='{{ template.get("id") }}' />
+  <div class="flex-row row-gap-none cols-2">
+    <div class="w-1-3">{{ macro.input_field('name', {'label': 'Template Name'}, template.get('name'), "pvf-form") }}</div>
+    <div class="w-1-3">{{ macro.input_field('agent', {'label': 'User'}, template.get('agent'), "pvf-form") }}</div>
+  </div>
+  <h5 class="gap-sm">Order Fixed Fields</h5>
+  <div class="flex-row row-gap-none">
+    {% for id, data in fixed_fields.items() %}
+      <div class="w-1-3">{{ macro.select_field(id, data, template.get(id), "pvf-form") }}</div>
+    {% endfor %}
+  </div>
+  <h5 class="gap-sm">Order Variable Fields</h5>
+  <div class="flex-row row-gap-none">
+    {% for id, data in var_fields.items() %}
+      <div class="w-1-3">{{ macro.input_field(id, data, template.get(id), "pvf-form") }}</div>
+    {% endfor %}
+  </div>
+  <div class="flex-row row-gap-none">
+    <div class="w-1-4">
+      <h5 class="gap-sm">Sierra Bib Format</h5>
+      <div class="flex-1">{{ macro.select_field('material_form', bib_formats, template.get('material_form'), "pvf-form") }}</div>
+    </div>
+    <div class="w-3-4">
+      <h5 class="gap-sm">Sierra Matchpoints</h5>
+      <div class="flex-row row-gap-none">
+        {% for id, data in matchpoints.items() %}
+          <div class="flex-1">{{ macro.select_field(id, data, template.get(id), "pvf-form") }}</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+<div class="flex-row cols-3">
+  <div class="flex-1" hx-include="#template-form-fields">
+    <button class="btn btn-nypl"
+            hx-post="/ot/template"
+            hx-target="#template-form"
+            type="button">Save Template as New</button>
+  </div>
+  <div class="flex-1" hx-include="#template-form-fields">
+    <button class="btn btn-nypl"
+            hx-patch="/ot/template"
+            hx-target="#template-form"
+            type="button">Update Template</button>
+  </div>
+  <div class="flex-1">
+    <button class="btn btn-nypl"
+            hx-get="/ot/forms/templates"
+            hx-target="#template-form"
+            type="reset">Clear Template Form</button>
+  </div>
+</div>
