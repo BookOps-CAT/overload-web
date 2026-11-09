@@ -22,7 +22,24 @@ def bootstrap_message_bus(
     bus = message_bus.MessageBus()
 
     pm = workflow_manager.WorkflowManager(bus=bus, uow=uow)
+    # Register file handling commands
+    bus.register_command(
+        commands.UploadFileToWorkflow,
+        handlers.UploadFileToWorkflowHandler(uow=uow, storage=storage),
+    )
+    bus.register_command(
+        commands.DeleteFileFromWorkflow, handlers.DeleteFileFromWorkflowHandler(uow=uow)
+    )
 
+    # Register template commands
+    bus.register_command(
+        commands.CreateOrderTemplate, handlers.CreateOrderTemplateHandler(uow=uow)
+    )
+    bus.register_command(
+        commands.UpdateOrderTemplate, handlers.UpdateOrderTemplateHandler(uow=uow)
+    )
+
+    # Register workflow commands
     bus.register_command(
         commands.InitializeWorkflow,
         handlers.InitializeWorkflowHandler(bus=bus, uow=uow),

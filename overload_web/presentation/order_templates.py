@@ -6,14 +6,10 @@ import logging
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 
-from overload_web.application.pvf.template_handling import (
-    CreateOrderTemplate,
-    GetOrderTemplate,
-    ListOrderTemplates,
-    UpdateOrderTemplate,
-)
+from overload_web.application.pvf import queries
+from overload_web.domain.pvf import commands
 from overload_web.presentation import pvf_deps, schemas
 from overload_web.presentation.templates import templates
 
@@ -23,31 +19,23 @@ logger = logging.getLogger(__name__)
 api_router = APIRouter()
 
 
-@api_router.post("/template", response_class=HTMLResponse)
+@api_router.post("/template", response_class=Response)
 def create_template(
-    request: Request,
+    bus: Annotated[Any, Depends(pvf_deps.get_message_bus)],
     template: Annotated[Any, Depends(schemas.TemplateCreateModel.from_form)],
-    uow: Annotated[Any, Depends(pvf_deps.get_uow)],
-) -> HTMLResponse:
+) -> Response:
     """Save a new order template to the template database.
 
     Args:
-        request: the HTTP request sent by the app
+        bus: a `ports.MessageBusPort` object used by the workflow
         template: the order template as an `TemplateCreateModel` object.
-        uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
 
     Returns:
-        the saved order template as a dict wrapped in an `HTMLResponse` object
+        204 response with 'templatesChanged' in headers for htmx trigger.
 
     """
-    saved_template = CreateOrderTemplate.execute(obj=template, uow=uow)
-    response = templates.TemplateResponse(
-        request=request,
-        name="pvf_partials/template_form.html",
-        context={"template": saved_template.__dict__},
-    )
-    response.headers["HX-Trigger"] = "templatesChanged"
-    return response
+    bus.send(commands.CreateOrderTemplate(data=template))
+    return Response(status_code=204, headers={"HX-Trigger": "templatesChanged"})
 
 
 @api_router.get("/template", response_class=HTMLResponse)
@@ -65,7 +53,7 @@ def get_template(
         the retrieved order template as a dict wrapped in an `HTMLResponse` object
 
     """
-    template = GetOrderTemplate.execute(template_id=template_id, uow=uow)
+    template = queries.get_order_template(template_id=template_id, uow=uow)
     template_out = {k: v for k, v in template.__dict__.items() if v} if template else {}
     return templates.TemplateResponse(
         request=request,
@@ -94,7 +82,7 @@ def get_template_list(
         `HTMLResponse` object
 
     """
-    template_list = ListOrderTemplates.execute(uow=uow, offset=offset, limit=limit)
+    template_list = queries.list_order_templates(uow=uow, offset=offset, limit=limit)
     return templates.TemplateResponse(
         request=request,
         name="pvf_partials/template_list.html",
@@ -102,44 +90,28 @@ def get_template_list(
     )
 
 
-@api_router.patch("/template", response_class=HTMLResponse)
+@api_router.patch("/template", response_class=Response)
 def update_template(
-    request: Request,
+    bus: Annotated[Any, Depends(pvf_deps.get_message_bus)],
     template_id: Annotated[str, Form(...)],
     template_patch: Annotated[Any, Depends(schemas.TemplateDataModel.from_form)],
-    uow: Annotated[Any, Depends(pvf_deps.get_uow)],
-) -> HTMLResponse:
+) -> Response:
     """Apply patch updates to an order template in the database.
 
     Args:
-        request:
-            the HTTP request sent by the app
-        uow:
-            a `ports.UnitOfWorkProtocol` object used by the endpoint.
+        bus:
+            a `ports.MessageBusPort` object used by the workflow
         template_id:
             the template's ID as a string.
         template_patch:
             data to be updated in the template as an `TemplateDataModel` object
 
     Returns:
-        the updated order template as a dict wrapped in an `HTMLResponse` object
+        204 response with 'templatesChanged' in headers for htmx trigger.
 
     """
-    updated_template = UpdateOrderTemplate.execute(
-        uow=uow, template_id=template_id, obj=template_patch
-    )
-    template_out = (
-        {k: v for k, v in updated_template.__dict__.items() if v}
-        if updated_template
-        else {}
-    )
-    response = templates.TemplateResponse(
-        request=request,
-        name="pvf_partials/template_form.html",
-        context={"template": template_out},
-    )
-    response.headers["HX-Trigger"] = "templatesChanged"
-    return response
+    bus.send(commands.UpdateOrderTemplate(template_id=template_id, data=template_patch))
+    return Response(status_code=204, headers={"HX-Trigger": "templatesChanged"})
 
 
 @api_router.get("/forms/templates", response_class=HTMLResponse)

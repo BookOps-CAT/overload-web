@@ -4,7 +4,6 @@ import pytest
 
 from overload_web.application.pvf.report_service import (
     CreatePVFOutputReport,
-    GetDetailedReportData,
     WriteOutputReport,
 )
 from overload_web.domain.pvf import reporting
@@ -85,29 +84,6 @@ class TestReportCommands:
             batch_id="1", record_type="cat", uow=fake_uow_no_data
         )
         assert out == {}
-
-    def test_get_detailed_report_data(self, fake_uow):
-        out = GetDetailedReportData.execute(batch_id="1", uow=fake_uow)
-        assert sorted(out[0].keys()) == sorted(
-            [
-                "vendor",
-                "resource_id",
-                "action",
-                "target_bib_id",
-                "updated_by_vendor",
-                "target_title",
-                "call_number_match",
-                "call_number",
-                "target_call_no",
-                "duplicate_records",
-                "mixed",
-                "other",
-            ]
-        )
-
-    def test_get_detailed_report_data_no_data(self, fake_uow_no_data):
-        out = GetDetailedReportData.execute(batch_id="1", uow=fake_uow_no_data)
-        assert out == []
 
     def test_write_output_report(self, mock_sheet_service, caplog, fake_uow):
         WriteOutputReport.execute(

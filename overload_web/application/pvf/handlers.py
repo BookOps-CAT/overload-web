@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import logging
+import uuid
 from typing import Protocol, TypeVar
 
-from overload_web.domain.pvf import aggregate, commands, events, ports, services
+from overload_web.domain.pvf import aggregate, commands, events, files, ports, services
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,11 @@ class AbstractCommandHandler(Protocol[C_contra]):  # pragma: no branch
     def __call__(self, cmd: C_contra) -> None:
         """Call a command."""
         ...
+
+
+# ---------------------------------------------------------
+# Handlers for full process vendor file workflow
+# ---------------------------------------------------------
 
 
 class InitializeWorkflowHandler(AbstractCommandHandler):
@@ -429,3 +435,147 @@ class UpdateAndOutputFullLevelRecordsHandler(AbstractCommandHandler):
         self.bus.publish(
             events.WorkflowCompleted(workflow_id=cmd.workflow_id, batch_id=batch_id)
         )
+
+
+# ---------------------------------------------------------
+# Handlers for file I/O operations
+# ---------------------------------------------------------
+
+
+class UploadFileToWorkflowHandler:
+    """Save file data to storage and file metadata to database."""
+
+    def __init__(
+        self, uow: ports.UnitOfWorkProtocol, storage: ports.FileStorage
+    ) -> None:
+        """Initialize the handler with injected dependencies and application services.
+
+        Args:
+            storage: a `ports.FileStorage` object where files will be saved.
+            uow: a `ports.UnitOfWorkProcotol` object.
+
+        """
+        self.uow = uow
+        self.storage = storage
+
+    def __call__(self, cmd: commands.UploadFileToWorkflow) -> None:
+        """Excecute `UploadFileToWorkflow` command.
+
+        Args:
+            cmd:
+                a `commands.UploadFileToWorkflow` object. Command
+                contains the workflow ID (as a string), filename
+                (as a string), file source (either 'ftp' or 'local'),
+                and file content (as a bytes object)
+
+        Returns:
+            None. File is uploaded to workflow.
+
+        """
+        file_id = str(uuid.uuid4())
+        reference = self.storage.save(
+            id=file_id, filename=cmd.filename, content=cmd.content
+        )
+        with self.uow:
+            file = files.IncomingFile(
+                id=file_id,
+                workflow_id=cmd.workflow_id,
+                filename=cmd.filename,
+                source=cmd.source,
+                reference=reference,
+            )
+            self.uow.incoming_files.save(file)
+            logger.info(f"File added to workflow {cmd.workflow_id}: {file}.")
+
+            self.uow.commit()
+
+
+class DeleteFileFromWorkflowHandler:
+    """Delete an incoming file from the workflow's list of files."""
+
+    def __init__(self, uow: ports.UnitOfWorkProtocol) -> None:
+        """Initialize the handler with injected dependencies and application services.
+
+        Args:
+            uow: a `ports.UnitOfWorkProcotol` object.
+
+        """
+        self.uow = uow
+
+    def __call__(self, cmd: commands.DeleteFileFromWorkflow) -> None:
+        """Execute `DeleteFileFromWorkflow` command.
+
+        Args:
+            cmd:
+                a `commands.DeleteFileFromWorkflow` object. Command
+                contains the ID for the file to be deleted.
+
+        Returns:
+            None. File is deleted from workflow.
+
+        """
+        with self.uow:
+            self.uow.incoming_files.delete(cmd.file_id)
+            logger.info(f"File removed from workflow {cmd.workflow_id}: {cmd.file_id}.")
+            self.uow.commit()
+
+
+class CreateOrderTemplateHandler:
+    """Save an order template."""
+
+    def __init__(self, uow: ports.UnitOfWorkProtocol) -> None:
+        """Initialize the handler with injected dependencies and application services.
+
+        Args:
+            uow: a `ports.UnitOfWorkProcotol` object.
+
+        """
+        self.uow = uow
+
+    def __call__(self, cmd: commands.CreateOrderTemplate) -> None:
+        """Execute `CreateOrderTemplate` command.
+
+        Args:
+            cmd:
+                a `commands.CreateOrderTemplate` object. Command
+                contains order template's data as a domain object.
+
+        Returns:
+            None. The template is saved to the database.
+
+        """
+        with self.uow:
+            self.uow.order_templates.save(obj=cmd.data)
+            logger.info(f"New template saved to database: {cmd.data}.")
+            self.uow.commit()
+
+
+class UpdateOrderTemplateHandler:
+    """Save an order template."""
+
+    def __init__(self, uow: ports.UnitOfWorkProtocol) -> None:
+        """Initialize the handler with injected dependencies and application services.
+
+        Args:
+            uow: a `ports.UnitOfWorkProcotol` object.
+
+        """
+        self.uow = uow
+
+    def __call__(self, cmd: commands.UpdateOrderTemplate) -> None:
+        """Execute `UpdateOrderTemplate` command.
+
+        Args:
+            cmd:
+                a `commands.UpdateOrderTemplate` object. Command
+                contains order template ID as a string and data to be
+                updated as a domain object.
+
+        Returns:
+            None. The template is saved to the database.
+
+        """
+        with self.uow:
+            self.uow.order_templates.update(id=cmd.template_id, data=cmd.data)
+            logger.info(f"Order template {cmd.template_id} updated: {cmd.data}.")
+            self.uow.commit()

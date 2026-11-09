@@ -58,7 +58,11 @@
       </div>
       <div class="card">
         <h5 class="card-title">Selected Files</h5>
-        <div id="selected-files">{% include "pvf_partials/selected_files.html" %}</div>
+        <div id="selected-files"
+             name="selected-files"
+             hx-get="/files/list"
+             hx-include="#workflow_id"
+             hx-trigger="workflowFilesChanged from:body">{% include "pvf_partials/selected_files.html" %}</div>
       </div>
     </div>
     <div id="template-section"></div>

@@ -5,12 +5,10 @@ from __future__ import annotations
 import pytest
 
 from overload_web.application.pvf.file_handling import (
-    DeleteFileFromWorkflow,
-    DownloadRemoteFile,
+    DownloadVendorFile,
     ListVendorFiles,
-    UploadFileToWorkflow,
 )
-from overload_web.infrastructure import file_io
+from overload_web.domain.pvf import commands
 
 
 class FakeFileRetriever:
@@ -31,32 +29,31 @@ class TestFileHandling:
         assert file_list[0] == "foo.mrc"
 
     def test_download_remote_file(self):
-        file = DownloadRemoteFile.execute(
+        file = DownloadVendorFile.execute(
             name="foo.mrc", dir="foo", retriever=FakeFileRetriever()
         )
         assert file.file_name == "foo.mrc"
         assert file.content == b""
 
-    @pytest.mark.parametrize("source", ["local", "ftp"])
-    def test_upload_file_to_workflow(self, fake_uow, tmp_path, caplog, source):
-        file1 = tmp_path / "foo.mrc"
-        file1.write_bytes(b"333331234567890")
-        path = tmp_path / "temp"
-        storage = file_io.LocalFileStorage(base_path=path)
-        UploadFileToWorkflow.execute(
-            workflow_id="12345",
-            filename="qux.mrc",
-            content=b"",
-            source=source,
-            storage=storage,
-            uow=fake_uow,
-        )
-        assert "File added to workflow 12345: IncomingFile(filename=" in caplog.text
-        assert "Local file storage location: " in caplog.text
 
-    def test_delete_file_from_workflow(self, fake_uow):
-        files = DeleteFileFromWorkflow.execute(
-            id="1", uow=fake_uow, workflow_id="12345"
+class TestFileIOHandlers:
+    @pytest.mark.parametrize("source", ["local", "ftp"])
+    def test_upload_file_to_workflow(self, stub_order_level_manager, source, caplog):
+        bus = stub_order_level_manager.bus
+        bus.send(
+            commands.UploadFileToWorkflow(
+                workflow_id="12345", filename="foo.mrc", content=b"", source=source
+            )
         )
-        assert len(files) == 1
-        assert files[0]["filename"] == "foo.mrc"
+        assert len(caplog.records) == 2
+        assert "Handling command: UploadFileToWorkflow" == caplog.records[0].msg
+        assert caplog.records[1].msg.startswith(
+            "File added to workflow 12345: IncomingFile(filename='foo.mrc'"
+        )
+
+    def test_delete_file_from_workflow(self, stub_order_level_manager, caplog):
+        bus = stub_order_level_manager.bus
+        bus.send(commands.DeleteFileFromWorkflow(workflow_id="12345", file_id=1))
+        assert len(caplog.records) == 2
+        assert "Handling command: DeleteFileFromWorkflow" == caplog.records[0].msg
+        assert "File removed from workflow 12345: 1." == caplog.records[1].msg

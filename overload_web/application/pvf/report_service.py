@@ -48,30 +48,6 @@ class CreatePVFOutputReport:
         return {}
 
 
-class GetDetailedReportData:
-    """Create a detailed processing report for a batch of processed records."""
-
-    @staticmethod
-    def execute(batch_id: str, uow: ports.UnitOfWorkProtocol) -> list[dict[str, Any]]:
-        """Execute `GetDetailedReportData` command.
-
-        Args:
-            batch_id:
-                The ID for the `ProcessedFileBatch` object in the database.
-            uow:
-                A `ports.UnitOfWorkProcotol` object used by the command.
-
-        Returns:
-            The report data as a list of dictionaries.
-
-        """
-        with uow:
-            data = uow.processed_batches.get(batch_id)
-            if data:
-                return data.stats
-        return []
-
-
 class WriteOutputReport:
     """Write processing statistics to a google sheet."""
 

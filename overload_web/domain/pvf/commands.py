@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from typing import Any
 
+from overload_web.domain.pvf import order_templates
 from overload_web.domain.shared import Command
 
 
@@ -93,3 +94,44 @@ class UpdateAndOutputFullLevelRecords(Command):
     library: str
     record_type: str
     workflow_id: str
+
+
+@dataclass(frozen=True)
+class UploadFileToWorkflow(Command):
+    """Command to add an incoming file to a workflow."""
+
+    workflow_id: str
+    filename: str
+    content: bytes
+    source: str
+
+
+@dataclass(frozen=True)
+class DeleteFileFromWorkflow(Command):
+    """Command to remove a file from a workflow."""
+
+    workflow_id: str
+    file_id: str
+
+
+@dataclass(frozen=True)
+class CreateOrderTemplate(Command):
+    """Command to save a new order template to the database."""
+
+    data: order_templates.OrderTemplateBase
+
+
+@dataclass(frozen=True)
+class UpdateOrderTemplate(Command):
+    """Command to update an existing order template within the database."""
+
+    template_id: str
+    data: order_templates.OrderTemplateBase
+
+
+@dataclass(frozen=True)
+class CreateOutputReport(Command):
+    """Command a report summary for a batch of processed records."""
+
+    batch_id: str
+    record_type: str

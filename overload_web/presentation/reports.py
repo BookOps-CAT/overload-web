@@ -8,9 +8,9 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
+from overload_web.application.pvf import queries
 from overload_web.application.pvf.report_service import (
     CreatePVFOutputReport,
-    GetDetailedReportData,
     WriteOutputReport,
 )
 from overload_web.presentation import pvf_deps
@@ -68,7 +68,7 @@ def get_detailed_report(
         the report data wrapped in a `HTMLResponse` object
 
     """
-    out = GetDetailedReportData.execute(batch_id=batch_id, uow=uow)
+    out = queries.get_detailed_report_data(batch_id=batch_id, uow=uow)
     return templates.TemplateResponse(
         request=request, name="reports/detailed.html", context={"detailed_report": out}
     )

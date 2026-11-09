@@ -7,14 +7,14 @@ import os
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Form, Request, UploadFile
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 
+from overload_web.application.pvf import queries
 from overload_web.application.pvf.file_handling import (
-    DeleteFileFromWorkflow,
-    DownloadRemoteFile,
+    DownloadVendorFile,
     ListVendorFiles,
-    UploadFileToWorkflow,
 )
+from overload_web.domain.pvf import commands
 from overload_web.presentation import pvf_deps
 from overload_web.presentation.templates import templates
 
@@ -50,62 +50,48 @@ def list_remote_files(
     )
 
 
-@api_router.post("/remote/select", response_class=HTMLResponse)
+@api_router.post("/remote/select", response_class=Response)
 def select_ftp_file(
-    request: Request,
+    bus: Annotated[Any, Depends(pvf_deps.get_message_bus)],
     remote_file: Annotated[str, Form(...)],
     retriever: Annotated[Any, Depends(pvf_deps.remote_file_retriever)],
-    storage: Annotated[Any, Depends(pvf_deps.local_file_storage)],
-    uow: Annotated[Any, Depends(pvf_deps.get_uow)],
     workflow_id: Annotated[str, Form(...)],
-) -> HTMLResponse:
-    """Load a file from remote storage and upload it to the workflow.
+) -> Response:
+    """Upload a file from an SFTP client to the workflow.
 
     Args:
-        request: the HTTP request sent by the app
+        bus: a `ports.MessageBusPort` object used by the workflow
         remote_file: the name of the file to be loaded.
         retriever: a file retriever for the given vendor.
-        storage: file storage for the workflow.
-        uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
         workflow_id: the ID for the given workflow.
 
     Returns:
-        the list of files wrapped in a `HTMLResponse` object
+        204 response with 'workflowFilesChanged' in headers for htmx trigger.
 
     """
     vendor_dir = os.environ[f"{retriever.client.name.upper()}_SRC"]
-    file_content = DownloadRemoteFile.execute(
+    file_content = DownloadVendorFile.execute(
         name=remote_file, dir=vendor_dir, retriever=retriever
     )
-    selected = UploadFileToWorkflow.execute(
-        workflow_id=workflow_id,
-        filename=remote_file,
-        content=file_content.content,
-        source="ftp",
-        storage=storage,
-        uow=uow,
+    bus.send(
+        commands.UploadFileToWorkflow(
+            workflow_id=workflow_id,
+            filename=remote_file,
+            content=file_content.content,
+            source="ftp",
+        )
     )
-    return templates.TemplateResponse(
-        name="pvf_partials/selected_files.html",
-        request=request,
-        context={"files": selected},
-    )
+    return Response(status_code=204, headers={"HX-Trigger": "workflowFilesChanged"})
 
 
-@api_router.post("/upload", response_class=HTMLResponse)
-def upload_file(
-    request: Request,
-    file: UploadFile,
-    storage: Annotated[Any, Depends(pvf_deps.local_file_storage)],
-    uow: Annotated[Any, Depends(pvf_deps.get_uow)],
-    workflow_id: Annotated[str, Form(...)],
+@api_router.get("/list", response_class=HTMLResponse)
+def list_workflow_files(
+    request: Request, uow: Annotated[Any, Depends(pvf_deps.get_uow)], workflow_id: str
 ) -> HTMLResponse:
-    """Upload a local file to the workflow.
+    """List all files associated with a workflow ID.
 
     Args:
         request: the HTTP request sent by the app
-        file: the file to be loaded as an `UploadFile` object.
-        storage: file storage for the workflow.
         uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
         workflow_id: the ID for the given workflow.
 
@@ -113,47 +99,58 @@ def upload_file(
         the list of files wrapped in a `HTMLResponse` object
 
     """
-    selected = UploadFileToWorkflow.execute(
-        workflow_id=workflow_id,
-        filename=str(file.filename),
-        content=file.file.read(),
-        source="local",
-        storage=storage,
-        uow=uow,
-    )
-    logger.info(f"Current file list: {selected}")
+    files = queries.list_workflow_files(uow=uow, workflow_id=workflow_id)
     return templates.TemplateResponse(
         name="pvf_partials/selected_files.html",
         request=request,
-        context={"files": selected},
+        context={"files": files},
     )
 
 
-@api_router.post("/remove", response_class=HTMLResponse)
-def remove_file(
-    request: Request,
-    file_id: Annotated[str, Form(...)],
-    uow: Annotated[Any, Depends(pvf_deps.get_uow)],
+@api_router.post("/upload", response_class=Response)
+def upload_file(
+    bus: Annotated[Any, Depends(pvf_deps.get_message_bus)],
+    file: UploadFile,
     workflow_id: Annotated[str, Form(...)],
-) -> HTMLResponse:
-    """Rempve a file from the workflow.
+) -> Response:
+    """Upload a local file to the workflow.
 
     Args:
-        request: the HTTP request sent by the app
-        file_id: the ID for the file to be removed from the workflow.
-        uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
+        bus: a `ports.MessageBusPort` object used by the workflow
+        file: the file to be loaded as an `UploadFile` object.
         workflow_id: the ID for the given workflow.
 
     Returns:
-        the list of remaining files wrapped in a `HTMLResponse` object
+        204 response with 'workflowFilesChanged' in headers for htmx trigger.
 
     """
-    selected = DeleteFileFromWorkflow.execute(
-        id=file_id, uow=uow, workflow_id=workflow_id
+    bus.send(
+        commands.UploadFileToWorkflow(
+            workflow_id=workflow_id,
+            filename=str(file.filename),
+            content=file.file.read(),
+            source="local",
+        )
     )
-    logger.info(f"Current file list: {selected}")
-    return templates.TemplateResponse(
-        name="pvf_partials/selected_files.html",
-        request=request,
-        context={"files": selected},
-    )
+    return Response(status_code=204, headers={"HX-Trigger": "workflowFilesChanged"})
+
+
+@api_router.post("/remove", response_class=Response)
+def remove_file(
+    bus: Annotated[Any, Depends(pvf_deps.get_message_bus)],
+    file_id: Annotated[str, Form(...)],
+    workflow_id: Annotated[str, Form(...)],
+) -> Response:
+    """Rempve a file from the workflow.
+
+    Args:
+        bus: a `ports.MessageBusPort` object used by the workflow
+        file_id: the ID for the file to be removed from the workflow.
+        workflow_id: the ID for the given workflow.
+
+    Returns:
+        204 response with 'workflowFilesChanged' in headers for htmx trigger.
+
+    """
+    bus.send(commands.DeleteFileFromWorkflow(workflow_id=workflow_id, file_id=file_id))
+    return Response(status_code=204, headers={"HX-Trigger": "workflowFilesChanged"})

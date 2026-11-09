@@ -66,8 +66,6 @@ def process_order_records(
         the ID for the processed files and stats wrapped in an `HTMLResponse` object
 
     """
-    print(order_template.matchpoints)
-    print(order_template.template_data)
     background_tasks.add_task(
         bus.send,
         commands.StartOrderLevelRecordsWorkflow(
