@@ -246,26 +246,25 @@ def create_stub_bib(record_type: str):
 
 
 class FakeMatcher(services.BibMatcher):
-    RESPONSE = {
-        "call_number": "Foo",
-        "id": "12345",
-        "isbn": ["9781234567890"],
-        "sm_bib_varfields": ["005 || 20200101000001.0", "024 || {{a}} 12345"],
-        "sm_item_data": ['{"barcode": "33333123456789"}'],
-        "ss_marc_tag_001": "ocn123456789",
-        "ss_marc_tag_003": "OCoLC",
-        "ss_marc_tag_005": "20000101010000.0",
-        "title": "Record 1",
-    }
-
     def __init__(self):
         self.fetcher = None
+        self.response = {
+            "call_number": "Foo",
+            "id": "12345",
+            "isbn": ["9781234567890"],
+            "sm_bib_varfields": ["005 || 20200101000001.0", "024 || {{a}} 12345"],
+            "sm_item_data": ['{"barcode": "33333123456789"}'],
+            "ss_marc_tag_001": "ocn123456789",
+            "ss_marc_tag_003": "OCoLC",
+            "ss_marc_tag_005": "20000101010000.0",
+            "title": "Record 1",
+        }
 
     def match_order_record(self, *args, **kwargs):
-        return [self.RESPONSE]
+        return [self.response]
 
     def match_full_record(self, *args, **kwargs):
-        return [self.RESPONSE]
+        return [self.response]
 
 
 class FakeParser(services.BibParser):
@@ -360,27 +359,26 @@ class FakeIncomingFileRepository(unit_of_work.IncomingFileRepository):
 
 
 class FakeTemplateRepository(unit_of_work.OrderTemplateRepository):
-    TEMPLATES: list = []
-
     def __init__(self):
         self.session = None
+        self.templates = []
 
     def get(self, id):
-        templates = [i for i in self.TEMPLATES if i.id in [id, int(id)]]
+        templates = [i for i in self.templates if i.id in [id, int(id)]]
         if templates:
             return templates[0]
         return None
 
     def list(self, offset, limit):
-        return self.TEMPLATES
+        return self.templates
 
     def save(self, obj):
         if not getattr(obj, "id"):
-            obj.id = self.TEMPLATES[-1].id + 1
+            obj.id = self.templates[-1].id + 1
         template = self.get(obj.id)
         if template:
-            self.TEMPLATES = [i for i in self.TEMPLATES if i != template]
-        self.TEMPLATES.append(obj)
+            self.templates = [i for i in self.templates if i != template]
+        self.templates.append(obj)
         return obj
 
     def update(self, data, id):
@@ -388,12 +386,12 @@ class FakeTemplateRepository(unit_of_work.OrderTemplateRepository):
         if not obj:
             return None
         updates = {"id": id}
-        self.TEMPLATES = [i for i in self.TEMPLATES if i != obj]
+        self.templates = [i for i in self.templates if i != obj]
         for k, v in data.model_dump().items():
             if not getattr(obj, k):
                 updates[k] = v
         new = tables.TemplateModel(**updates)
-        self.TEMPLATES.append(new)
+        self.templates.append(new)
         return new
 
 
@@ -427,21 +425,21 @@ class FakeUnitOfWork(ports.UnitOfWorkProtocol):
 
 
 class FakeFileStorage(ports.FileStorage):
-    def load(*args, **kwargs):
+    def load(self, *args, **kwargs):
         return b""
 
-    def load_intermediate_records(*args, **kwargs):
+    def load_intermediate_records(self, *args, **kwargs):
         pass
 
-    def save(*args, **kwargs):
+    def save(self, *args, **kwargs):
         return "foo"
 
-    def save_intermediate_records(*args, **kwargs):
+    def save_intermediate_records(self, *args, **kwargs):
         pass
 
 
 class FakeFileStorageWithFullParsedFiles(FakeFileStorage):
-    def load_intermediate_records(*args, **kwargs):
+    def load_intermediate_records(self, *args, **kwargs):
         job = aggregate.FullRecordJob(workflow_id=kwargs["id"])
         job.batches_data = {"foo.mrc": b""}
         job.file_names = ["foo.mrc"]
@@ -452,7 +450,7 @@ class FakeFileStorageWithFullParsedFiles(FakeFileStorage):
 
 
 class FakeFileStorageWithOrderLevelParsedFiles(FakeFileStorage):
-    def load_intermediate_records(*args, **kwargs):
+    def load_intermediate_records(self, *args, **kwargs):
         job = aggregate.OrderLevelJob(workflow_id=kwargs["id"], vendor="UNKNOWN")
         job.batches_data = {"foo.mrc": b""}
         job.file_names = ["foo.mrc"]
