@@ -1,8 +1,10 @@
 {% import "components/macros.html" as macro %}
 {% if detailed_report %}
-  <div class="card">
-    <h5 class="card-title">Detailed Report Data:</h5>
-    {{ macro.report_table(detailed_report) }}
+  <div id="detailed-report-container">
+    <div class="card">
+      <h5>Detailed Report Data</h5>
+      {{ macro.report_table(detailed_report) }}
+    </div>
   </div>
 {% endif %}
 {% if written_report %}

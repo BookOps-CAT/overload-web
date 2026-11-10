@@ -56,20 +56,26 @@
   </div>
 {% endmacro %}
 {% macro report_table(report) %}
-  <table class="table table-sm">
-    <thead>
-      <tr>
-        <th scope="col">#</th>
-        {% for key in report[0].keys() %}<th scope="col">{{ " ".join(key.title().split("_")) }}</th>{% endfor %}
-      </tr>
-    </thead>
-    <tbody class="table-group-divider">
-      {% for row in report %}
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
         <tr>
-          <th scope="row">{{ loop.index }}</th>
-          {% for value in row.values() %}<td>{{ value }}</td>{% endfor %}
+          <th scope="col" class="col-index">#</th>
+          {% for key in report[0].keys() %}
+            <th scope="col">{{ " ".join(key.title().split("_")) }}</th>
+          {% endfor %}
         </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        {% for row in report %}
+          <tr>
+            <td class="col-index">{{ loop.index }}</td>
+            {% for value in row.values() %}
+              <td>{{ value }}</td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 {% endmacro %}

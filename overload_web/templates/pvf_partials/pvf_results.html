@@ -1,36 +1,28 @@
-<div id="summary-report-container"
-     hx-get="/reports/summary?batch_id={{ batch_id }}&record_type={{ record_type }}"
-     hx-trigger="load"
-     name="vendor_report"></div>
-<div id="detailed-report-container"></div>
-<div id="save-files-container"></div>
-<div id="report-save-container"></div>
-<div class="row row-cols-3" id="report-buttons">
-  <div class="col">
+<div id="report-section" class="grid-container">
+  <div id="summary-report-container"
+       hx-get="/reports/summary?batch_id={{ batch_id }}"
+       hx-trigger="load"
+       name="vendor_report"></div>
+</div>
+<div class="grid-container" id="output-buttons">
+  <div class="flex-row" id="report-buttons">
     <button id="detailed-report-button"
             type="submit"
             hx-get="/reports/detailed?batch_id={{ batch_id }}"
-            hx-target="#detailed-report-container"
+            hx-target="#summary-report-container"
+            hx-swap="afterend"
             class="btn btn-nypl">View detailed report</button>
-  </div>
-  <div class="col">
-    <div id="output-file-container">
-      <button id="download-files-button"
-              type="submit"
-              hx-target="#save-files-container"
-              class="btn btn-nypl">Download Files</button>
-    </div>
-  </div>
-  <div class="col">
+    <button id="download-files-button" type="submit" class="btn btn-nypl">Download Files</button>
     <button id="save-report-button"
             type="submit"
-            hx-post="/reports/write?batch_id={{ batch_id }}&record_type={{ record_type }}"
-            hx-target="#report-save-container"
+            hx-post="/reports/write?batch_id={{ batch_id }}"
             class="btn btn-nypl">Save Processing Statistics</button>
   </div>
+  <div class="flex-row">
+    <button type="button"
+            class="btn btn-nypl"
+            hx-get='{{ url_for("vendor_file_page") }}'
+            hx-target="body"
+            hx-push-url="true">Reset form</button>
+  </div>
 </div>
-<a id="pvf-button"
-   class="btn btn-nypl"
-   href='{{ url_for("vendor_file_page") }}'
-   type="submit"
-   role="button">Reset form</a>
