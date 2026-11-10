@@ -32,7 +32,7 @@ class TestFileHandling:
         file = DownloadVendorFile.execute(
             name="foo.mrc", dir="foo", retriever=FakeFileRetriever()
         )
-        assert file.file_name == "foo.mrc"
+        assert file.filename == "foo.mrc"
         assert file.content == b""
 
 

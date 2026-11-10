@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import io
 import logging
 import os
+import urllib.parse
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Form, Request, UploadFile
-from fastapi.responses import HTMLResponse, Response
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile, status
+from fastapi.responses import HTMLResponse, Response, StreamingResponse
 
 from overload_web.application.pvf import queries
 from overload_web.application.pvf.file_handling import (
@@ -84,6 +86,60 @@ def select_ftp_file(
     return Response(status_code=204, headers={"HX-Trigger": "workflowFilesChanged"})
 
 
+@api_router.get("/list/processed-files", response_class=HTMLResponse)
+def get_processed_file_list(
+    request: Request, batch_id: str, uow: Annotated[Any, Depends(pvf_deps.get_uow)]
+) -> HTMLResponse:
+    """Get a list of all processed files for a batch.
+
+    Args:
+        request: the HTTP request sent by the app
+        batch_id: the ID for the given processed batch.
+        uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
+
+    Returns:
+        the list of files wrapped in an HTMLResponse object
+
+    """
+    files = queries.get_processed_file_list(uow=uow, batch_id=batch_id)
+    return templates.TemplateResponse(
+        name="pvf_partials/processed_files.html",
+        request=request,
+        context={"files": files},
+    )
+
+
+@api_router.get("/download/{file_id}", response_class=StreamingResponse)
+def download_file(
+    file_id: str, uow: Annotated[Any, Depends(pvf_deps.get_uow)]
+) -> StreamingResponse:
+    """Download a file.
+
+    Args:
+        file_id: ID of the file to be downloaded.
+        uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
+
+    Returns:
+        the list of files wrapped in an HTMLResponse object
+
+    """
+    file = queries.get_processed_file(uow=uow, file_id=file_id)
+    if not file:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
+        )
+    encoded_name = urllib.parse.quote(file.filename)
+    byte_stream = io.BytesIO(file.content)
+    return StreamingResponse(
+        content=byte_stream,
+        media_type="application/octet-stream",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_name}",
+            "Content-Length": str(len(file.content)),
+        },
+    )
+
+
 @api_router.get("/list", response_class=HTMLResponse)
 def list_workflow_files(
     request: Request, uow: Annotated[Any, Depends(pvf_deps.get_uow)], workflow_id: str
@@ -105,6 +161,27 @@ def list_workflow_files(
         request=request,
         context={"files": files},
     )
+
+
+@api_router.post("/remove", response_class=Response)
+def remove_file(
+    bus: Annotated[Any, Depends(pvf_deps.get_message_bus)],
+    file_id: Annotated[str, Form(...)],
+    workflow_id: Annotated[str, Form(...)],
+) -> Response:
+    """Rempve a file from the workflow.
+
+    Args:
+        bus: a `ports.MessageBusPort` object used by the workflow
+        file_id: the ID for the file to be removed from the workflow.
+        workflow_id: the ID for the given workflow.
+
+    Returns:
+        204 response with 'workflowFilesChanged' in headers for htmx trigger.
+
+    """
+    bus.send(commands.DeleteFileFromWorkflow(workflow_id=workflow_id, file_id=file_id))
+    return Response(status_code=204, headers={"HX-Trigger": "workflowFilesChanged"})
 
 
 @api_router.post("/upload", response_class=Response)
@@ -132,25 +209,4 @@ def upload_file(
             source="local",
         )
     )
-    return Response(status_code=204, headers={"HX-Trigger": "workflowFilesChanged"})
-
-
-@api_router.post("/remove", response_class=Response)
-def remove_file(
-    bus: Annotated[Any, Depends(pvf_deps.get_message_bus)],
-    file_id: Annotated[str, Form(...)],
-    workflow_id: Annotated[str, Form(...)],
-) -> Response:
-    """Rempve a file from the workflow.
-
-    Args:
-        bus: a `ports.MessageBusPort` object used by the workflow
-        file_id: the ID for the file to be removed from the workflow.
-        workflow_id: the ID for the given workflow.
-
-    Returns:
-        204 response with 'workflowFilesChanged' in headers for htmx trigger.
-
-    """
-    bus.send(commands.DeleteFileFromWorkflow(workflow_id=workflow_id, file_id=file_id))
     return Response(status_code=204, headers={"HX-Trigger": "workflowFilesChanged"})

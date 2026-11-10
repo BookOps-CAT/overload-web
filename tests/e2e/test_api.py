@@ -75,7 +75,7 @@ class TestApp:
 
     def test_files_router_select_ftp_file(self, mocker):
         download = mocker.Mock(
-            return_value=files.VendorFile(content=b"", file_name="bar.mrc")
+            return_value=files.VendorFile(content=b"", filename="bar.mrc")
         )
         upload = mocker.Mock()
         mocker.patch.object(file_handling.DownloadVendorFile, "execute", download)
@@ -87,6 +87,43 @@ class TestApp:
         assert response.status_code == 204
         assert response.url == f"{self.base_url}/files/remote/select?vendor=foo"
         assert dict(response.headers.items()) == {"hx-trigger": "workflowFilesChanged"}
+
+    def test_files_router_get_processed_file_list(self, mocker):
+        file = {
+            "filename": "baz.mrc",
+            "reference": "baz",
+            "workflow_id": 1,
+            "source": "local",
+        }
+        file_list = mocker.Mock(return_value=[file])
+        mocker.patch.object(queries, "get_processed_file_list", file_list)
+        response = self.client.get("/files/list/processed-files?batch_id=1")
+        assert response.status_code == 200
+        assert response.url == f"{self.base_url}/files/list/processed-files?batch_id=1"
+        assert len(response.context["files"]) == 1
+        assert response.context["files"][0]["filename"] == "baz.mrc"
+        assert response.context["files"][0]["source"] == "local"
+
+    def test_files_router_download_file(self, mocker):
+        file = mocker.Mock(
+            return_value=files.VendorFile(content=b"filecontent", filename="foo.mrc")
+        )
+        mocker.patch.object(queries, "get_processed_file", file)
+        response = self.client.get("/files/download/1")
+        assert response.status_code == 200
+        assert response.url == f"{self.base_url}/files/download/1"
+        assert dict(response.headers.items()) == {
+            "content-disposition": "attachment; filename*=UTF-8''foo.mrc",
+            "content-length": "11",
+            "content-type": "application/octet-stream",
+        }
+        assert response.content == b"filecontent"
+
+    def test_files_router_download_file_404(self, mocker):
+        file = mocker.Mock(return_value=None)
+        mocker.patch.object(queries, "get_processed_file", file)
+        response = self.client.get("/files/download/1")
+        assert response.status_code == 404
 
     def test_files_router_list_workflow_files(self, mocker):
         file = {

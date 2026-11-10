@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class ProcessedFile:
     """A value object representing a processed file of MARC records."""
 
-    file_name: str
+    filename: str
     records: bytes
 
 
@@ -264,13 +264,13 @@ class OrderLevelJob(AbstractProcessingJob):
             assigned to the `file_records` attribute of the class instance.
 
         """
-        for file_name, data in self.batches_data.items():
-            self.file_names.append(file_name)
+        for filename, data in self.batches_data.items():
+            self.file_names.append(filename)
             parsed = parser.parse_marc_data(
                 library=library, record_type=record_type, data=data, vendor=vendor
             )
             self.validator.validate_unique([bib.barcodes for bib in parsed])
-            self.file_records[file_name] = parsed
+            self.file_records[filename] = parsed
 
     def match_records(
         self, library: str, matcher: services.BibMatcher, matchpoints: dict[str, str]
@@ -335,7 +335,7 @@ class OrderLevelJob(AbstractProcessingJob):
             `ProcessedFileBatch` object.
 
         """
-        for file_name, records in self.file_records.items():
+        for filename, records in self.file_records.items():
             for bib in records:
                 updates = updater.get_order_level_updates(
                     collection=collection,
@@ -347,7 +347,7 @@ class OrderLevelJob(AbstractProcessingJob):
                 updater.apply_field_updates(record=bib, updates=updates)
             out_binary = updater.write(records)
             self.processed_files.append(
-                ProcessedFile(file_name=file_name, records=out_binary)
+                ProcessedFile(filename=filename, records=out_binary)
             )
         self.processed = ProcessedFileBatch(
             files=self.processed_files,
@@ -424,8 +424,8 @@ class FullRecordJob(AbstractProcessingJob):
 
         """
         data_list = []
-        for file_name, file_data in self.batches_data.items():
-            self.file_names.append(file_name)
+        for filename, file_data in self.batches_data.items():
+            self.file_names.append(filename)
             data_list.append(file_data)
         data = parser.combine_marc_files(data=data_list, library=library)
         records = parser.parse_marc_data(
@@ -509,7 +509,7 @@ class FullRecordJob(AbstractProcessingJob):
         for k, v in deduplicated.items():
             self.processed_files.append(
                 ProcessedFile(
-                    file_name=f"{self.out_file_name}-{k}.mrc", records=updater.write(v)
+                    filename=f"{self.out_file_name}-{k}.mrc", records=updater.write(v)
                 )
             )
         self.processed = ProcessedFileBatch(

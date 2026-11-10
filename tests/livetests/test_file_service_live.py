@@ -40,7 +40,7 @@ class TestLiveLocalFiles:
     def test_write(self, setup_dirs):
         writer = file_io.LocalFileWriter()
         new_file = writer.write(
-            file=b"Test content", file_name="foo.mrc", dir=self.test_dir
+            file=b"Test content", filename="foo.mrc", dir=self.test_dir
         )
         assert new_file == os.path.join(self.test_dir, "foo.mrc")
         assert "foo.mrc" in os.listdir(self.test_dir)

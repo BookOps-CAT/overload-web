@@ -298,7 +298,7 @@ class FakeUpdater(services.BibUpdater):
 
 class FakeBatchRepository(unit_of_work.PVFBatchRepository):
     BATCH = tables.PVFBatch(
-        files=[tables.ProcessedFileModel(file_name="foo.mrc", records=b"")],
+        files=[tables.ProcessedFileModel(filename="foo.mrc", records=b"")],
         stats=[
             {
                 "action": "insert",
@@ -361,6 +361,16 @@ class FakeIncomingFileRepository(unit_of_work.IncomingFileRepository):
         return obj
 
 
+class FakeProcessedFileRepository(unit_of_work.ProcessedFileRepository):
+    def __init__(self):
+        self.session = None
+
+    def get(self, id):
+        return tables.ProcessedFileModel(
+            id=id, batch_id=1, filename="foo.mrc", records=b""
+        )
+
+
 class FakeTemplateRepository(unit_of_work.OrderTemplateRepository):
     def __init__(self):
         self.session = None
@@ -421,6 +431,7 @@ class FakeUnitOfWork(ports.UnitOfWorkProtocol):
     processed_batches = FakeBatchRepository()
     incoming_files = FakeIncomingFileRepository()
     order_templates = FakeTemplateRepository()
+    processed_files = FakeProcessedFileRepository()
     workflow_states = FakeWorkflowRepository()
 
     def commit(self) -> None:
@@ -525,6 +536,7 @@ def fake_uow_no_data(monkeypatch, fake_uow):
         return None
 
     monkeypatch.setattr(FakeBatchRepository, "get", mock_get_data)
+    monkeypatch.setattr(FakeProcessedFileRepository, "get", mock_get_data)
     return fake_uow
 
 

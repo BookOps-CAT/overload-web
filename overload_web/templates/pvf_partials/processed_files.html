@@ -1,0 +1,27 @@
+<div class="grid-container">
+  {% for file in files %}
+    <div class="file-card">
+      <div class="file-card-body">
+        <h4 class="file-title" title="{{ file.filename }}">{{ file.filename }}</h4>
+      </div>
+      <div class="file-card-actions">
+        <a href="/files/download/{{ file.id }}"
+           hx-boost="false"
+           download="{{ file.filename }}"
+           class="btn-download">
+          <svg viewBox="0 0 24 24"
+               width="16"
+               height="16"
+               fill="none"
+               stroke="currentColor"
+               stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Save
+        </a>
+      </div>
+    </div>
+  {% endfor %}
+</div>

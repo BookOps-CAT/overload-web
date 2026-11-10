@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from overload_web.domain.pvf import order_templates, ports
+from overload_web.domain.pvf import files, order_templates, ports
 
 
 def get_detailed_report_data(
@@ -23,6 +23,26 @@ def get_order_template(
     with uow:
         data = uow.order_templates.get(id=template_id)
         return order_templates.OrderTemplate(**data.model_dump()) if data else None
+
+
+def get_processed_file(
+    file_id: str, uow: ports.UnitOfWorkProtocol
+) -> files.VendorFile | None:
+    """Get a processed file from the database."""
+    with uow:
+        file = uow.processed_files.get(file_id)
+        if file:
+            return files.VendorFile(filename=file.filename, content=file.records)
+    return None
+
+
+def get_processed_file_list(batch_id: str, uow: ports.UnitOfWorkProtocol) -> list:
+    """Get all processed files from a processed batch."""
+    with uow:
+        data = uow.processed_batches.get(batch_id)
+        if data:
+            return data.files
+    return []
 
 
 def get_processing_report(

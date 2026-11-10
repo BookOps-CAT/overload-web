@@ -60,7 +60,7 @@ class ProcessedFileModel(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True, index=True, exclude=True)
     batch_id: int = Field(default=None, foreign_key="batches.id", exclude=True)
-    file_name: str = Field(nullable=False, index=True)
+    filename: str = Field(nullable=False, index=True)
     records: bytes = Field(nullable=False)
 
     batch: "PVFBatch" = Relationship(back_populates="files")

@@ -12,6 +12,7 @@ from overload_web.domain.shared import Command, Event
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")  # invariant `bookops_marc.Bib` and `SQLModel` types
+T_co = TypeVar("T_co", covariant=True)  # covariant `SQLModel` types
 
 
 @runtime_checkable
@@ -121,13 +122,13 @@ class FileWriter(Protocol):  # pragma: no branch
     Implementations may interact with an FTP/SFTP server or a local file directory.
     """
 
-    def write(self, dir: str, file: bytes, file_name: str) -> str:
+    def write(self, dir: str, file: bytes, filename: str) -> str:
         """Write content to a specific file.
 
         Args:
             dir: the directory where the file should be written
             file: the file content to write as a `bytes` object
-            file_name: the name of the file to be writen
+            filename: the name of the file to be writen
 
         Returns:
             the name of the file that has just been written
@@ -277,6 +278,18 @@ class IncomingFileRepositoryProtocol(Protocol[T]):  # pragma: no branch
 
 
 @runtime_checkable
+class ProcessedFileRepositoryProtocol(Protocol[T_co]):  # pragma: no branch
+    """Interface for repository operations on generic objects.
+
+    Includes methods for fetching and saving generic objects.
+    """
+
+    def get(self, id: str) -> T_co | None:
+        """Get objects from a database."""
+        ...
+
+
+@runtime_checkable
 class WorkflowRepositoryProtocol(Protocol[T]):  # pragma: no branch
     """Interface for repository operations on generic objects.
 
@@ -303,6 +316,7 @@ class UnitOfWorkProtocol(Protocol):  # pragma: no branch
     incoming_files: IncomingFileRepositoryProtocol
     order_templates: TemplateRepositoryProtocol
     processed_batches: BatchRepositoryProtocol
+    processed_files: ProcessedFileRepositoryProtocol
     workflow_states: WorkflowRepositoryProtocol
 
     def __enter__(self) -> Self:

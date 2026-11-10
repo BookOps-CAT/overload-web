@@ -40,9 +40,9 @@ class VendorFile:
 
     Attributes:
         content: binary content of the file.
-        file_name: name of the file.
+        filename: name of the file.
 
     """
 
     content: bytes
-    file_name: str
+    filename: str

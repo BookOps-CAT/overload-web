@@ -12,7 +12,12 @@
             hx-target="#summary-report-container"
             hx-swap="afterend"
             class="btn btn-nypl">View detailed report</button>
-    <button id="download-files-button" type="submit" class="btn btn-nypl">Download Files</button>
+    <button id="download-files-button"
+            type="submit"
+            hx-get="/files/list/processed-files?batch_id={{ batch_id }}"
+            hx-target="#summary-report-container"
+            hx-swap="afterend"
+            class="btn btn-nypl">View Processed Files</button>
     <button id="save-report-button"
             type="submit"
             hx-post="/reports/write?batch_id={{ batch_id }}"

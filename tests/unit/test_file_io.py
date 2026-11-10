@@ -60,7 +60,7 @@ class TestLocalFileWriter:
     def test_local_write(self, tmp_path):
         writer = file_io.LocalFileWriter()
         new_file = writer.write(
-            file=b"333331234567890", file_name="foo.mrc", dir=tmp_path
+            file=b"333331234567890", filename="foo.mrc", dir=tmp_path
         )
         assert new_file == os.path.join(tmp_path, "foo.mrc")
         assert "foo.mrc" in os.listdir(tmp_path)

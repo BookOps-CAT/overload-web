@@ -44,4 +44,4 @@ class DownloadVendorFile:
 
         """
         file = retriever.download(name=name, dir=dir)
-        return files.VendorFile(file_name=name, content=file)
+        return files.VendorFile(filename=name, content=file)

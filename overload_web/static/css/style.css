@@ -500,3 +500,63 @@ select.form-control:disabled {
   stroke: #16a34a;
   flex-shrink: 0;
 }
+
+/* File download components */
+/* Card Grid Layout */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.file-card {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.file-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.file-card-preview {
+  margin-right: 0.75rem;
+}
+
+.file-card-body {
+  flex: 1;
+  min-width: 0; /* Ensures text-overflow ellipsis works */
+}
+
+.file-title {
+  margin: 0;
+  font-size: 0.925rem;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Download Buttons */
+.btn-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #2563eb;
+  background: #eff6ff;
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+.btn-download:hover {
+  background: #dbeafe;
+}

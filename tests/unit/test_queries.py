@@ -49,6 +49,22 @@ class TestQueries:
         out = queries.get_processing_report(batch_id="1", uow=fake_uow_no_data)
         assert out == {}
 
+    def test_get_processed_file(self, fake_uow):
+        out = queries.get_processed_file(file_id="1", uow=fake_uow)
+        assert out.filename == "foo.mrc"
+
+    def test_get_processed_file_no_data(self, fake_uow_no_data):
+        out = queries.get_processed_file(file_id="1", uow=fake_uow_no_data)
+        assert out is None
+
+    def test_get_processed_file_list(self, fake_uow):
+        out = queries.get_processed_file_list(batch_id="1", uow=fake_uow)
+        assert len(out) > 0
+
+    def test_get_processed_file_list_no_data(self, fake_uow_no_data):
+        out = queries.get_processed_file_list(batch_id="1", uow=fake_uow_no_data)
+        assert len(out) == 0
+
     def test_list_order_templates(self, fake_uow):
         templates = queries.list_order_templates(uow=fake_uow, offset=0, limit=20)
         assert len(templates) > 0

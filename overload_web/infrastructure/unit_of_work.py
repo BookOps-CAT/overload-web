@@ -58,6 +58,7 @@ class SqlModelUnitOfWork(ports.UnitOfWorkProtocol):
         self.incoming_files = IncomingFileRepository(session=self.session)
         self.order_templates = OrderTemplateRepository(session=self.session)
         self.processed_batches = PVFBatchRepository(session=self.session)
+        self.processed_files = ProcessedFileRepository(session=self.session)
         self.workflow_states = WorkflowStatusRepository(session=self.session)
         return self
 
@@ -285,6 +286,32 @@ class PVFBatchRepository(ports.BatchRepositoryProtocol):
         self.session.flush()
         self.session.refresh(valid_batch)
         return valid_batch
+
+
+class ProcessedFileRepository(ports.ProcessedFileRepositoryProtocol):
+    """Interact with `ProcessedFileModel` objects within a database."""
+
+    def __init__(self, session: Session) -> None:
+        """Initialize `PVFBatchRepository` instance.
+
+        Args:
+            session: a sqlmodel `Session` object.
+
+        """
+        self.session = session
+
+    def get(self, id: str | int) -> tables.ProcessedFileModel | None:
+        """Retrieve a `ProcessedFileModel` object by its ID.
+
+        Args:
+            id: the primary key of the `ProcessedFileModel`.
+
+        Returns:
+            a `ProcessedFileModel` object or None if not found.
+
+        """
+        file = self.session.get(tables.ProcessedFileModel, id)
+        return file if file else None
 
 
 class WorkflowStatusRepository(ports.WorkflowRepositoryProtocol):

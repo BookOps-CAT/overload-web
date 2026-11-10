@@ -104,7 +104,7 @@ class TestSqlModelUnitOfWork:
 
     def test_processed_batches(self, mock_engine):
         batch = aggregate.ProcessedFileBatch(
-            files=[aggregate.ProcessedFile(file_name="foo.mrc", records=b"")],
+            files=[aggregate.ProcessedFile(filename="foo.mrc", records=b"")],
             stats=[
                 {
                     "action": "insert",
@@ -151,6 +151,13 @@ class TestSqlModelUnitOfWork:
         )
         assert new_batch_data == saved_batch_data
         assert invalid_batch is None
+
+    def test_processed_files(self, mock_engine):
+        uow = unit_of_work.SqlModelUnitOfWork(engine=mock_engine)
+        with uow:
+            processed_file = uow.processed_files.get(1)
+            uow.commit()
+        assert processed_file is None
 
     def test_workflow_states(self, mock_engine, caplog):
         workflow = models.WorkflowState(
