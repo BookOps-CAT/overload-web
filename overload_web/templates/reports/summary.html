@@ -1,59 +1,57 @@
 {% import "components/macros.html" as macro %}
-<div class="card">
-  <div class="flex-col">
-    <section class="summary-section">
-      <h5>Processing Summary</h5>
-      <p class="card-text"><strong>Total processed files:</strong> {{ total_files }}</p>
-      <p class="card-text"><strong>File names:</strong> {{ file_names }}</p>
-      {% if not processing_integrity %}
-        <p class="card-text"><strong>Integrity of processed files:</strong> {{ processing_integrity }}</p>
-      {% endif %}
-      {% if missing_barcodes %}
-        <p class="card-text"><strong>Missing barcodes:</strong> {{ missing_barcodes }}</p>
-      {% endif %}
-      {% if duplicate_bibs %}
-        <p class="card-text"><strong>Duplicates:</strong> {{ duplicate_bibs }}</p>
-      {% endif %}
-    </section>
-  </div>
-  <div class="flex-col">
-    <section class="summary-section">
-      <h5>Vendor Breakdown</h5>
-      {% if vendor_report %}{{ macro.report_table(vendor_report) }}{% endif %}
-    </section>
-    <section class="summary-section">
-      <h5>Duplicates Report</h5>
-      {% if duplicate_report %}
-        {{ macro.report_table(duplicate_report) }}
-      {% else %}
-        <div class="empty-state-success">
-          <svg class="empty-icon"
-               fill="none"
-               stroke="currentColor"
-               viewBox="0 0 24 24"
-               aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg>
-          <span>No duplicate records found!</span>
-        </div>
-      {% endif %}
-    </section>
-    <section class="summary-section">
-      <h5>Call Number Issues</h5>
-      {% if call_number_report %}
-        {{ macro.report_table(call_number_report) }}
-      {% else %}
-        <div class="empty-state-success">
-          <svg class="empty-icon"
-               fill="none"
-               stroke="currentColor"
-               viewBox="0 0 24 24"
-               aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg>
-          <span>No call number issues found!</span>
-        </div>
-      {% endif %}
-    </section>
-  </div>
+<div class="flex-col">
+  <section class="summary-section">
+    <h5>Processing Summary</h5>
+    <p class="card-text"><strong>Total processed files:</strong> {{ total_files }}</p>
+    <p class="card-text"><strong>File names:</strong> {{ file_names }}</p>
+    {% if not processing_integrity %}
+      <p class="card-text"><strong>Integrity of processed files:</strong> {{ processing_integrity }}</p>
+    {% endif %}
+    {% if missing_barcodes %}
+      <p class="card-text"><strong>Missing barcodes:</strong> {{ missing_barcodes }}</p>
+    {% endif %}
+    {% if duplicate_bibs %}
+      <p class="card-text"><strong>Duplicates:</strong> {{ duplicate_bibs }}</p>
+    {% endif %}
+  </section>
+</div>
+<div class="flex-col">
+  <section class="summary-section">
+    <h5>Vendor Breakdown</h5>
+    {% if vendor_report %}{{ macro.report_table(vendor_report) }}{% endif %}
+  </section>
+  <section class="summary-section">
+    <h5>Duplicates Report</h5>
+    {% if duplicate_report %}
+      {{ macro.report_table(duplicate_report) }}
+    {% else %}
+      <div class="empty-state-success">
+        <svg class="empty-icon"
+             fill="none"
+             stroke="currentColor"
+             viewBox="0 0 24 24"
+             aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>No duplicate records found!</span>
+      </div>
+    {% endif %}
+  </section>
+  <section class="summary-section">
+    <h5>Call Number Issues</h5>
+    {% if call_number_report %}
+      {{ macro.report_table(call_number_report) }}
+    {% else %}
+      <div class="empty-state-success">
+        <svg class="empty-icon"
+             fill="none"
+             stroke="currentColor"
+             viewBox="0 0 24 24"
+             aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>No call number issues found!</span>
+      </div>
+    {% endif %}
+  </section>
 </div>

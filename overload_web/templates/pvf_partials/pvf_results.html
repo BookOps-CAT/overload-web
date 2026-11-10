@@ -1,8 +1,14 @@
 <div id="report-section" class="grid-container">
-  <div id="summary-report-container"
-       hx-get="/reports/summary?batch_id={{ batch_id }}"
-       hx-trigger="load"
-       name="vendor_report"></div>
+  <div class="card">
+    <div id="summary-report-container"
+         hx-get="/reports/summary?batch_id={{ batch_id }}"
+         hx-trigger="load"
+         name="vendor_report"></div>
+    <div id="output-files-container"
+         hx-get="/files/list/processed-files?batch_id={{ batch_id }}"
+         hx-trigger="load"
+         name="processed_file"></div>
+  </div>
 </div>
 <div class="grid-container" id="output-buttons">
   <div class="flex-row" id="report-buttons">
@@ -12,12 +18,6 @@
             hx-target="#summary-report-container"
             hx-swap="afterend"
             class="btn btn-nypl">View detailed report</button>
-    <button id="download-files-button"
-            type="submit"
-            hx-get="/files/list/processed-files?batch_id={{ batch_id }}"
-            hx-target="#summary-report-container"
-            hx-swap="afterend"
-            class="btn btn-nypl">View Processed Files</button>
     <button id="save-report-button"
             type="submit"
             hx-post="/reports/write?batch_id={{ batch_id }}"
