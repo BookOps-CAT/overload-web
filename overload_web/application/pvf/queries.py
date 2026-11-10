@@ -25,6 +25,26 @@ def get_order_template(
         return order_templates.OrderTemplate(**data.model_dump()) if data else None
 
 
+def get_processing_report(
+    batch_id: str, uow: ports.UnitOfWorkProtocol
+) -> dict[str, Any]:
+    """Create a report summary for a batch of processed records."""
+    with uow:
+        data = uow.processed_batches.get(batch_id)
+        if data:
+            return {
+                "total_records": data.total_records,
+                "file_names": data.file_names,
+                "total_files": data.total_files,
+                "vendor_report": data.vendor_report,
+                "duplicate_report": data.duplicate_report,
+                "missing_barcodes": data.missing_barcodes,
+                "processing_integrity": data.processing_integrity,
+                "call_number_report": data.call_number_report,
+            }
+    return {}
+
+
 def list_order_templates(
     uow: ports.UnitOfWorkProtocol, offset: int, limit: int
 ) -> list[order_templates.OrderTemplate]:

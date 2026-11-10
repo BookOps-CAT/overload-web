@@ -123,6 +123,7 @@ class TestSqlModelUnitOfWork:
             ],
             file_names=["foo.mrc"],
             missing_barcodes=[],
+            record_type="foo",
         )
         uow = unit_of_work.SqlModelUnitOfWork(engine=mock_engine)
         with uow:
@@ -143,6 +144,9 @@ class TestSqlModelUnitOfWork:
                 "id",
                 "stats",
                 "missing_barcodes",
+                "call_number_report",
+                "duplicate_report",
+                "vendor_report",
             ]
         )
         assert new_batch_data == saved_batch_data

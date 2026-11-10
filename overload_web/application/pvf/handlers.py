@@ -426,7 +426,10 @@ class UpdateAndOutputFullLevelRecordsHandler(AbstractCommandHandler):
         """
         job = self.storage.load_intermediate_records(id=cmd.workflow_id)
         job.apply_updates_and_create_batch(
-            updater=self.updater, collection=cmd.collection, library=cmd.library
+            updater=self.updater,
+            collection=cmd.collection,
+            library=cmd.library,
+            record_type=cmd.record_type,
         )
         with self.uow:
             db_batch = self.uow.processed_batches.save(job.processed)

@@ -15,16 +15,16 @@
     </li>
     <li class="list-group-item">
       <h5>Duplicates Report:</h5>
-      {% if dupes_report %}
-        {{ macro.report_table(dupes_report) }}
+      {% if duplicate_report %}
+        {{ macro.report_table(duplicate_report) }}
       {% else %}
         <b>All clear!</b>
       {% endif %}
     </li>
     <li class="list-group-item">
       <h5>Call Number Issues:</h5>
-      {% if call_no_report %}
-        {{ macro.report_table(call_no_report) }}
+      {% if call_number_report %}
+        {{ macro.report_table(call_number_report) }}
       {% else %}
         <b>All clear!</b>
       {% endif %}

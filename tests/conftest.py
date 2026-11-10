@@ -320,6 +320,9 @@ class FakeBatchRepository(unit_of_work.PVFBatchRepository):
         total_records=1,
         missing_barcodes=[],
         processing_integrity=True,
+        call_number_report=[],
+        duplicate_report=[],
+        vendor_report=[],
     )
 
     def __init__(self):

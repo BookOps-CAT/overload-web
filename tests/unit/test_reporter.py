@@ -1,10 +1,10 @@
-"""Test reporting via infrastructure layer reporter."""
+"""Test reporting via infrastructure layer reporter and application services."""
 
 import pytest
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
 
-from overload_web.domain.pvf import reporting
+from overload_web.application.pvf.report_service import WriteOutputReport
 from overload_web.infrastructure import reporter
 
 
@@ -77,25 +77,11 @@ def mock_sheet_timeout_error(monkeypatch, mock_config):
 
 
 @pytest.fixture
-def stub_report():
-    return reporting.ProcessingStatistics(
-        stats=[
-            {
-                "action": "attach",
-                "call_number": "Foo",
-                "call_number_match": False,
-                "duplicate_records": [],
-                "mixed": [],
-                "other": [],
-                "resource_id": "9781234567890",
-                "target_bib_id": "12345",
-                "target_call_no": "Bar",
-                "target_title": "Baz",
-                "updated_by_vendor": False,
-                "vendor": "BTSERIES",
-            }
-        ]
-    )
+def mock_sheet_service(mocker) -> None:
+    mock = mocker.Mock()
+    mocker.patch("googleapiclient.discovery.build", mock)
+    mocker.patch("googleapiclient.discovery.build_from_document", mock)
+    mocker.patch.object(reporter.GoogleSheetsReporter, "configure_sheet", mock)
 
 
 class TestReporter:
@@ -128,9 +114,19 @@ class TestReporter:
             self.REPORT_HANDLER.configure_sheet()
         assert "Unable to configure google sheet API credentials." in caplog.text
 
-    def test_prep_report(self, stub_report):
+    def test_prep_report(self):
         prepped_report = self.REPORT_HANDLER.prep_report(
-            stub_report.create_call_number_report(record_type="cat")
+            [
+                {
+                    "vendor": "BTSERIES",
+                    "resource_id": "9781234567890",
+                    "target_bib_id": "12345",
+                    "duplicate_records": [],
+                    "call_number": "Foo",
+                    "target_call_no": "Bar",
+                    "call_number_match": False,
+                }
+            ]
         )
         assert prepped_report == [
             ["BTSERIES", "9781234567890", "12345", "[]", "Foo", "Bar", "False"]
@@ -140,81 +136,56 @@ class TestReporter:
         prepped_report = self.REPORT_HANDLER.prep_report([])
         assert prepped_report == []
 
-    def test_write_data_to_sheet_timeout_error(
-        self, mock_sheet_timeout_error, stub_report, caplog
-    ):
-        self.REPORT_HANDLER.write_report(stub_report.create_duplicate_report())
+    def test_write_data_to_sheet_timeout_error(self, mock_sheet_timeout_error, caplog):
+        self.REPORT_HANDLER.write_report(
+            [["BTSERIES", "9781234567890", "12345", "[]", "Foo", "Bar", "False"]]
+        )
         assert "Unable to send data to google sheet:" in caplog.text
         assert "Data not written to sheet." in caplog.text
 
-    def test_write_data_to_sheet(self, mocker, stub_report, caplog):
+    def test_write_data_to_sheet(self, mocker, caplog):
         mock = mocker.Mock()
         mocker.patch("googleapiclient.discovery.build", mock)
         mocker.patch("googleapiclient.discovery.build_from_document", mock)
         mocker.patch.object(reporter.GoogleSheetsReporter, "configure_sheet", mock)
-        self.REPORT_HANDLER.write_report(stub_report.create_duplicate_report())
+        self.REPORT_HANDLER.write_report(
+            [["BTSERIES", "9781234567890", "12345", "[]", "Foo", "Bar", "False"]]
+        )
         assert "Data written to Google Sheet: " in caplog.text
 
 
-class TestProcessingStatistics:
-    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_call_number_report(self, stub_report, record_type):
-        report = stub_report.create_call_number_report(record_type)
-        assert report == [
-            {
-                "call_number": "Foo",
-                "call_number_match": False,
-                "duplicate_records": [],
-                "resource_id": "9781234567890",
-                "target_bib_id": "12345",
-                "target_call_no": "Bar",
-                "vendor": "BTSERIES",
-            }
-        ]
+class TestReportService:
+    def test_write_output_report(self, mock_sheet_service, caplog):
+        WriteOutputReport.execute(
+            report_data={
+                "total_records": 1,
+                "file_names": ["foo.mrc"],
+                "total_files": 1,
+                "vendor_report": [],
+                "duplicate_report": [{"foo": "bar"}],
+                "missing_barcodes": [],
+                "processing_integrity": True,
+                "call_number_report": [{"foo": "bar"}],
+            },
+            writer=reporter.GoogleSheetsReporter(),
+        )
+        assert len(caplog.records) == 2
+        assert caplog.records[0].message.startswith("Data written to Google Sheet:")
+        assert caplog.records[1].message.startswith("Data written to Google Sheet:")
 
-    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_call_number_report_no_issues(self, stub_report, record_type):
-        stub_report.stats[0]["call_number_match"] = True
-        report = stub_report.create_call_number_report(record_type)
-        assert report is None
-
-    def test_call_number_report_cat_missing_call_number(self, stub_report):
-        stub_report.stats[0]["call_number"] = None
-        stub_report.stats[0]["target_call_no"] = None
-        stub_report.stats[0]["call_number_match"] = True
-        report = stub_report.create_call_number_report("cat")
-        assert report == [
-            {
-                "call_number": None,
-                "call_number_match": True,
-                "duplicate_records": [],
-                "resource_id": "9781234567890",
-                "target_bib_id": "12345",
-                "target_call_no": None,
-                "vendor": "BTSERIES",
-            }
-        ]
-
-    def test_duplicate_report(self, stub_report):
-        stub_report.stats[0]["duplicate_records"] = ["3456"]
-        report = stub_report.create_duplicate_report()
-        assert report == [
-            {
-                "vendor": "BTSERIES",
-                "resource_id": "9781234567890",
-                "target_bib_id": "12345",
-                "duplicate_records": ["3456"],
-                "mixed": [],
-                "other": [],
-            }
-        ]
-
-    def test_duplicate_report_no_dupes(self, stub_report):
-        report = stub_report.create_duplicate_report()
-        assert report == []
-
-    def test_vendor_report(self, stub_report):
-        report = stub_report.create_vendor_report()
-        assert report == [
-            {"vendor": "BTSERIES", "attach": 1, "insert": 0, "update": 0, "total": 1}
-        ]
+    def test_write_output_report_no_call_no_report(self, mock_sheet_service, caplog):
+        WriteOutputReport.execute(
+            report_data={
+                "total_records": 1,
+                "file_names": ["foo.mrc"],
+                "total_files": 1,
+                "vendor_report": [],
+                "duplicate_report": [],
+                "missing_barcodes": [],
+                "processing_integrity": True,
+                "call_number_report": [],
+            },
+            writer=reporter.GoogleSheetsReporter(),
+        )
+        assert len(caplog.records) == 1
+        assert "Data written to Google Sheet: " in caplog.text

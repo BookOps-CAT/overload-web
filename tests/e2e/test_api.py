@@ -384,18 +384,12 @@ class TestApp:
         assert "<div class='error'>Error: Workflow failed</div>" in response.text
         assert response.url == f"{self.base_url}/pvf/workflow/123/status"
 
-    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_reports_router_output_report(self, record_type, mocker):
+    def test_reports_router_output_report(self, mocker):
         mock_obj = mocker.Mock(return_value={})
-        mocker.patch.object(report_service.CreatePVFOutputReport, "execute", mock_obj)
-        response = self.client.get(
-            f"/reports/summary?batch_id=1&record_type={record_type}"
-        )
+        mocker.patch.object(queries, "get_processing_report", mock_obj)
+        response = self.client.get("/reports/summary?batch_id=1")
         assert response.status_code == 200
-        assert (
-            response.url
-            == f"{self.base_url}/reports/summary?batch_id=1&record_type={record_type}"
-        )
+        assert response.url == f"{self.base_url}/reports/summary?batch_id=1"
 
     def test_reports_router_get_detailed_report(self, mocker):
         mock_obj = mocker.Mock(return_value={})
@@ -404,18 +398,19 @@ class TestApp:
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/reports/detailed?batch_id=1"
 
-    @pytest.mark.parametrize("record_type", ["acq", "cat", "sel"])
-    def test_reports_router_write_report_to_google_sheet(self, record_type, mocker):
+    def test_reports_router_write_report_to_google_sheet(self, mocker):
+        mock_data = mocker.Mock(
+            return_value={
+                "duplicate_report": [{"foo": "bar"}],
+                "call_number_report": [{"foo": "bar"}],
+            }
+        )
+        mocker.patch.object(queries, "get_processing_report", mock_data)
         mock = mocker.Mock()
         mocker.patch.object(report_service.WriteOutputReport, "execute", mock)
-        response = self.client.post(
-            f"/reports/write?batch_id=1&record_type={record_type}"
-        )
+        response = self.client.post("/reports/write?batch_id=1")
         assert response.status_code == 200
-        assert (
-            response.url
-            == f"{self.base_url}/reports/write?batch_id=1&record_type={record_type}"
-        )
+        assert response.url == f"{self.base_url}/reports/write?batch_id=1"
 
     @pytest.mark.parametrize(
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "")]

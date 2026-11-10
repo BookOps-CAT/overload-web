@@ -32,6 +32,23 @@ class TestQueries:
         assert template is not None
         assert template.id == 1
 
+    def test_get_processing_report(self, fake_uow):
+        out = queries.get_processing_report(batch_id="1", uow=fake_uow)
+        assert out == {
+            "total_records": 1,
+            "file_names": ["foo.mrc"],
+            "total_files": 1,
+            "vendor_report": [],
+            "duplicate_report": [],
+            "call_number_report": [],
+            "missing_barcodes": [],
+            "processing_integrity": True,
+        }
+
+    def test_get_processing_report_no_data(self, fake_uow_no_data):
+        out = queries.get_processing_report(batch_id="1", uow=fake_uow_no_data)
+        assert out == {}
+
     def test_list_order_templates(self, fake_uow):
         templates = queries.list_order_templates(uow=fake_uow, offset=0, limit=20)
         assert len(templates) > 0

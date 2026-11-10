@@ -72,12 +72,15 @@ class PVFBatch(SQLModel, table=True):
     __tablename__ = "batches"
 
     id: int = Field(default=None, primary_key=True, index=True)
-    file_names: list[str | None] = Field(sa_column=Column(JSON))
-    missing_barcodes: list[str | None] | None = Field(sa_column=Column(JSON))
-    processing_integrity: bool | None
+    call_number_report: list[dict[str, Any]] | None = Field(sa_column=Column(JSON))
+    duplicate_report: list[dict[str, Any]] = Field(sa_column=Column(JSON))
+    file_names: list[str] = Field(sa_column=Column(JSON))
+    missing_barcodes: list[str] | None = Field(sa_column=Column(JSON))
+    processing_integrity: bool
     stats: list[dict[str, Any]] = Field(sa_column=Column(JSON))
     total_files: int
     total_records: int
+    vendor_report: list[dict[str, Any]] = Field(sa_column=Column(JSON))
 
     files: list["ProcessedFileModel"] = Relationship(
         back_populates="batch", sa_relationship_kwargs={"lazy": "selectin"}

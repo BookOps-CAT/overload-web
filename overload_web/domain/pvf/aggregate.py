@@ -20,14 +20,98 @@ class ProcessedFile:
     records: bytes
 
 
-@dataclass
 class ProcessedFileBatch:
     """A dataclass representing a batch of processed files and their statistics."""
 
-    file_names: list[str]
-    files: list[ProcessedFile]
-    stats: list[dict[str, Any]]
-    missing_barcodes: list[str] | None = None
+    def __init__(
+        self,
+        file_names: list[str],
+        files: list[ProcessedFile],
+        record_type: str,
+        stats: list[dict[str, Any]],
+        missing_barcodes: list[str] | None = None,
+    ) -> None:
+        """Initialize a `ProcessedFileBatch` instance.
+
+        Args:
+            file_names:
+                a list of file names as strings
+            files:
+                a list of `ProcessedFile` objects
+            record_type:
+                the record type for the workflow (acq, cat, or sel)
+            stats:
+                a list of dictionaries representing processings statistics
+            missing_barcodes:
+                a list of barcodes present in original files but missing
+                from processed records, if present
+
+        """
+        self.file_names = file_names
+        self.files = files
+        self.record_type = record_type
+        self.stats = stats
+        self.missing_barcodes = missing_barcodes if missing_barcodes else []
+
+    @property
+    def call_number_report(self) -> list[dict[str, Any]] | None:
+        """A report summarizing call number matches found in processed records.
+
+        The report indicates whether or not the call number was matched in Sierra
+        for each record in a batch of processed records.
+
+        Returns:
+            the report data as a list of dictionaries or None if the processing
+            statistics are empty.
+
+        """
+        out_report = []
+        for row in self.stats:
+            if not row["call_number_match"] or (
+                self.record_type == "cat"
+                and row["call_number"] is None
+                and row["target_call_no"] is None
+            ):
+                out_report.append(
+                    {
+                        "vendor": row["vendor"],
+                        "resource_id": row["resource_id"],
+                        "target_bib_id": row["target_bib_id"],
+                        "duplicate_records": row["duplicate_records"],
+                        "call_number": row["call_number"],
+                        "target_call_no": row["target_call_no"],
+                        "call_number_match": row["call_number_match"],
+                    }
+                )
+        if out_report:
+            return out_report
+        return None
+
+    @property
+    def duplicate_report(self) -> list[dict[str, Any]]:
+        """A report summarizing duplicates found in processed records.
+
+        The report indicates whether or not there were duplicate, mixed, or other
+        records in Sierra for each record in a batch of processed records.
+
+        Returns:
+            the report data as a list of dictionaries.
+
+        """
+        out = []
+        for row in self.stats:
+            if row["duplicate_records"] or row["mixed"] or row["other"]:
+                out.append(
+                    {
+                        "vendor": row["vendor"],
+                        "resource_id": row["resource_id"],
+                        "target_bib_id": row["target_bib_id"],
+                        "duplicate_records": row["duplicate_records"],
+                        "mixed": row["mixed"],
+                        "other": row["other"],
+                    }
+                )
+        return out
 
     @property
     def processing_integrity(self) -> bool:
@@ -43,6 +127,28 @@ class ProcessedFileBatch:
     def total_records(self) -> int:
         """Total number of records processed."""
         return len(self.stats)
+
+    @property
+    def vendor_report(self) -> list[dict[str, Any]]:
+        """Report summarizing processing statistics by vendor.
+
+        The report summarizes processing statistics listing how many records
+        per vendor are to be attached, inserted, and/or updated/overlaid.
+
+        Returns:
+            the report data as a list of dictionaries.
+
+        """
+        vendor_data: dict[str, dict[str, Any]] = {}
+        for row in self.stats:
+            vendor = row["vendor"]
+            summary = vendor_data.setdefault(
+                vendor, {"vendor": vendor, "attach": 0, "insert": 0, "update": 0}
+            )
+            summary[row["action"]] += 1
+        for summary in vendor_data.values():
+            summary["total"] = summary["attach"] + summary["insert"] + summary["update"]
+        return list(vendor_data.values())
 
 
 class AbstractProcessingJob(ABC):  # pragma: no branch
@@ -248,6 +354,7 @@ class OrderLevelJob(AbstractProcessingJob):
             stats=self.report_data,
             file_names=self.file_names,
             missing_barcodes=self.missing_barcodes,
+            record_type=record_type,
         )
 
 
@@ -356,7 +463,11 @@ class FullRecordJob(AbstractProcessingJob):
             self.report_data.append(analysis.to_dict())
 
     def apply_updates_and_create_batch(
-        self, collection: str | None, library: str, updater: services.BibUpdater
+        self,
+        collection: str | None,
+        library: str,
+        record_type: str,
+        updater: services.BibUpdater,
     ) -> None:
         """Update `DomainBib` objects with appropriate MARC fields and output to MARC.
 
@@ -366,6 +477,8 @@ class FullRecordJob(AbstractProcessingJob):
                 processed as a string
             library:
                 the library whose records are being processed as a string
+            record_type:
+                the record_type (`cat`) for the workflow as a string
             updater:
                 a `BibUpdater` application service with an injected `MarcUpdater`.
 
@@ -404,4 +517,5 @@ class FullRecordJob(AbstractProcessingJob):
             stats=self.report_data,
             file_names=self.file_names,
             missing_barcodes=self.missing_barcodes,
+            record_type=record_type,
         )

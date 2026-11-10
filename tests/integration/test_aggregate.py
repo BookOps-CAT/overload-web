@@ -66,7 +66,22 @@ def stub_matched_aggregate(request):
     else:
         job = aggregate.OrderLevelJob(workflow_id="1", vendor="UNKNOWN")
         job.file_records = {"foo.mrc": [record]}
-    job.report_data = []
+    job.report_data = [
+        {
+            "action": "insert",
+            "call_number": "Foo",
+            "call_number_match": False,
+            "duplicate_records": [],
+            "mixed": [],
+            "other": [],
+            "resource_id": "12345",
+            "target_bib_id": "23456",
+            "target_call_no": "Foo",
+            "target_title": None,
+            "updated_by_vendor": False,
+            "vendor": "UNKNOWN",
+        }
+    ]
     return job
 
 
@@ -130,6 +145,29 @@ class TestOrderLevelJob:
         assert stub_matched_aggregate.processed.total_records == len(
             stub_matched_aggregate.report_data
         )
+        assert len(stub_matched_aggregate.processed.call_number_report) > 0
+        assert stub_matched_aggregate.processed.duplicate_report == []
+        assert stub_matched_aggregate.processed.vendor_report == [
+            {"vendor": "UNKNOWN", "attach": 0, "insert": 1, "update": 0, "total": 1}
+        ]
+
+    @pytest.mark.workflow(record_type="acq")
+    def test_apply_updates_and_create_batch_duplicate_records(
+        self, stub_matched_aggregate, fake_updater
+    ):
+        stub_matched_aggregate.report_data[0]["duplicate_records"] = ["23456"]
+        stub_matched_aggregate.apply_updates_and_create_batch(
+            template_data={"format": "a"},
+            updater=fake_updater,
+            collection="foo",
+            library="bar",
+            record_type="baz",
+        )
+        assert len(stub_matched_aggregate.processed.call_number_report) > 0
+        assert len(stub_matched_aggregate.processed.duplicate_report) > 0
+        assert stub_matched_aggregate.processed.vendor_report == [
+            {"vendor": "UNKNOWN", "attach": 0, "insert": 1, "update": 0, "total": 1}
+        ]
 
 
 class TestFullRecordJob:
@@ -150,7 +188,7 @@ class TestFullRecordJob:
     @pytest.mark.workflow(record_type="cat")
     def test_apply_updates_and_create_batch(self, stub_matched_aggregate, fake_updater):
         stub_matched_aggregate.apply_updates_and_create_batch(
-            updater=fake_updater, collection="foo", library="bar"
+            updater=fake_updater, collection="foo", library="bar", record_type="cat"
         )
         assert stub_matched_aggregate.missing_barcodes == []
         assert len(stub_matched_aggregate.processed_files) == 3
@@ -165,3 +203,22 @@ class TestFullRecordJob:
         assert stub_matched_aggregate.processed.total_records == len(
             stub_matched_aggregate.report_data
         )
+        assert len(stub_matched_aggregate.processed.call_number_report) > 0
+        assert stub_matched_aggregate.processed.duplicate_report == []
+        assert stub_matched_aggregate.processed.vendor_report == [
+            {"vendor": "UNKNOWN", "attach": 0, "insert": 1, "update": 0, "total": 1}
+        ]
+
+    @pytest.mark.workflow(record_type="cat")
+    def test_apply_updates_and_create_batch_duplicate_records(
+        self, stub_matched_aggregate, fake_updater
+    ):
+        stub_matched_aggregate.report_data[0]["duplicate_records"] = ["23456"]
+        stub_matched_aggregate.apply_updates_and_create_batch(
+            updater=fake_updater, collection="foo", library="bar", record_type="cat"
+        )
+        assert len(stub_matched_aggregate.processed.call_number_report) > 0
+        assert len(stub_matched_aggregate.processed.duplicate_report) > 0
+        assert stub_matched_aggregate.processed.vendor_report == [
+            {"vendor": "UNKNOWN", "attach": 0, "insert": 1, "update": 0, "total": 1}
+        ]
