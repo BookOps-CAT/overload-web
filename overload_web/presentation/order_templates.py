@@ -57,7 +57,7 @@ def get_template(
     template_out = {k: v for k, v in template.__dict__.items() if v} if template else {}
     return templates.TemplateResponse(
         request=request,
-        name="pvf/partials/files/template_form.html",
+        name="pvf/partials/order_templates/template_form.html",
         context={"template": template_out},
     )
 
