@@ -4,7 +4,9 @@
     <div id="templates"
          hx-get="/ot/templates"
          hx-trigger="load, templatesChanged from:body"
-         name="templates"></div>
+         name="templates"
+         hx-target="#template-list"></div>
+    <div id="template-list" class="row"></div>
   </div>
   <div class="vertical-rule"></div>
   <div class="flex-col row-gap-none flex-1 justify-center">

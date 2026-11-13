@@ -1,8 +1,12 @@
 {% extends "base.html" %}{% import "components/macros.html" as macro %}
 {% block page_title %}<h2>{{ page_title }}</h2>{% endblock %}
 {% block content %}
-  <div class="flex-col">
-    <div hidden id="pvf-form"></div>
+  <form id="pvf-form"
+        class="flex-col"
+        hx-post="/pvf/process"
+        hx-encoding="multipart/form-data"
+        hx-target="#pvf_output"
+        autocomplete="off">
     <div hidden
          id="get_workflow"
          hx-get="/pvf/workflow"
@@ -81,13 +85,16 @@
              name="selected-files"
              hx-get="/files/list"
              hx-include="#workflow_id"
-             hx-trigger="workflowFilesChanged from:body">{% include "pvf/partials/files/selected_files.html" %}</div>
+             hx-target="this"
+             hx-trigger="workflowFilesChanged from:body"></div>
       </div>
     </div>
     <div hidden  id="template-section"></div>
     <div id="pvf_button" class="flex-row">
       <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
     </div>
+  </form>
+  <div class="flex-col">
     <div hidden  id="pvf_output" class="flex-row"></div>
   </div>
 {% endblock %}

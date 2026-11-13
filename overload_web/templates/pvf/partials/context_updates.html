@@ -26,17 +26,7 @@
   <div id="template-section"
        class="grid-container cols-1 card"
        hx-swap-oob="true">{% include "pvf/partials/order_templates/template_source.html" %}</div>
-{% else %}
-  <div id="template-section"  hx-swap-oob="delete"></div>
 {% endif %}
-<form id="pvf-form"
-      hx-post="/pvf/process"
-      hx-encoding="multipart/form-data"
-      hx-target="#pvf_output"
-      hx-swap-oob="true"
-      autocomplete="off"
-      hx-on::after-request="if(event.detail.successful) this.reset()">
-</form>
 {% if collection_disabled or not collection %}
   <div id="collection-select" hx-swap-oob="true"  class="flex-1">
     {{ macro.context_select("collection", context_fields.collection, "pvf-form", disabled=collection_disabled) }}

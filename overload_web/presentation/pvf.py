@@ -38,7 +38,7 @@ def initialize_workflow(
 
 
 @api_router.post("/process", response_class=HTMLResponse)
-def process_full_records(
+def process_records(
     background_tasks: BackgroundTasks,
     bus: Annotated[Any, Depends(pvf_deps.get_message_bus)],
     context: Annotated[
@@ -111,6 +111,7 @@ def workflow_status_check(
             request=request,
             name="pvf/partials/results.html",
             context={"batch_id": state.batch_id, "record_type": state.record_type},
+            headers={"HX-Trigger": "workflowCompleted"},
         )
     elif state.status == models.WorkflowStatus.FAILED:
         html_str = safe_html(
