@@ -47,7 +47,7 @@ def list_remote_files(
     )
     return templates.TemplateResponse(
         request=request,
-        name="pvf/partials/files/remote_file_list.html",
+        name="pvf/partials/files/remote_list.html",
         context={"files": files, "vendor": vendor},
     )
 
@@ -103,7 +103,7 @@ def get_processed_file_list(
     """
     files = queries.get_processed_file_list(uow=uow, batch_id=batch_id)
     return templates.TemplateResponse(
-        name="pvf/partials/files/processed_files.html",
+        name="pvf/partials/files/processed.html",
         request=request,
         context={"files": files},
     )
@@ -157,7 +157,7 @@ def list_workflow_files(
     """
     files = queries.list_workflow_files(uow=uow, workflow_id=workflow_id)
     return templates.TemplateResponse(
-        name="pvf/partials/files/selected_files.html",
+        name="pvf/partials/files/selected.html",
         request=request,
         context={"files": files},
     )

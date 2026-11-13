@@ -61,11 +61,7 @@ def vendor_file_page(
 
 @frontend_router.get("/update-context", response_class=HTMLResponse)
 def get_context_update(
-    request: Request,
-    workflow: str,
-    library: str = "",
-    collection: str = "",
-    record_type: str = "",
+    request: Request, library: str = "", collection: str = "", record_type: str = ""
 ) -> HTMLResponse:
     """Update header based on library, collection, record_type, and selected workflow.
 
@@ -82,8 +78,6 @@ def get_context_update(
             the collection as a string (either `'BL'`, `'RL'`, or '').
         record_type:
             the record_type as a string (either `'acq'`, `'cat'`, or `'sel'`).
-        workflow:
-            the workflow/tool calling the endpoint (either `'pvf'` or `'wc2s'`).
 
     Returns:
         HTML partial for updated header and select box.
@@ -97,7 +91,7 @@ def get_context_update(
         collection = ""
 
     return templates.TemplateResponse(
-        name=f"{workflow}/partials/context_updates.html",
+        name="components/context_updates.html",
         request=request,
         context={
             "library": library,
