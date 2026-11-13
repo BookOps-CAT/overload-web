@@ -293,9 +293,9 @@ class TestApp:
             "id": 1,
             "workflow_id": "1",
         }
-        response = self.client.post("/pvf/process-order-records", data=context)
+        response = self.client.post("/pvf/process", data=context)
         assert response.status_code == 200
-        assert response.url == f"{self.base_url}/pvf/process-order-records"
+        assert response.url == f"{self.base_url}/pvf/process"
 
     @pytest.mark.parametrize(
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "")]
@@ -311,9 +311,9 @@ class TestApp:
             "record_type": "cat",
             "workflow_id": "1",
         }
-        response = self.client.post("/pvf/process-full-records", data=context)
+        response = self.client.post("/pvf/process", data=context)
         assert response.status_code == 200
-        assert response.url == f"{self.base_url}/pvf/process-full-records"
+        assert response.url == f"{self.base_url}/pvf/process"
 
     def test_pvf_router_process_order_records_nypl_collection_error(self):
         """Tests incorrect collection passed to `ProcessingContext` called in `deps.py`."""
@@ -325,7 +325,7 @@ class TestApp:
             "workflow_id": "1",
         }
         with pytest.raises(ValidationError) as exc:
-            self.client.post("/pvf/process-order-records", data=context)
+            self.client.post("/pvf/process", data=context)
         assert (
             exc.value.errors()[0]["msg"]
             == "Value error, Collection is required for NYPL records."
@@ -341,7 +341,7 @@ class TestApp:
             "workflow_id": "1",
         }
         with pytest.raises(ValidationError) as exc:
-            self.client.post("/pvf/process-full-records", data=context)
+            self.client.post("/pvf/process", data=context)
         assert (
             exc.value.errors()[0]["msg"]
             == "Value error, Collection is required for NYPL records."
@@ -357,7 +357,7 @@ class TestApp:
             "workflow_id": "1",
         }
         with pytest.raises(ValidationError) as exc:
-            self.client.post("/pvf/process-order-records", data=context)
+            self.client.post("/pvf/process", data=context)
         assert (
             exc.value.errors()[0]["msg"]
             == "Value error, Collection should be `None` for BPL records."
@@ -373,7 +373,7 @@ class TestApp:
             "workflow_id": "1",
         }
         with pytest.raises(ValidationError) as exc:
-            self.client.post("/pvf/process-full-records", data=context)
+            self.client.post("/pvf/process", data=context)
         assert (
             exc.value.errors()[0]["msg"]
             == "Value error, Collection should be `None` for BPL records."

@@ -28,7 +28,7 @@
        hx-swap-oob="true">{% include "pvf/partials/order_templates/template_source.html" %}</div>
 {% endif %}
 <form id="pvf-form"
-      hx-post="/pvf/process-{% if record_type == 'cat' %}full{% else %}order{% endif %}-records"
+      hx-post="/pvf/process"
       hx-encoding="multipart/form-data"
       hx-target="#pvf_output"
       hx-swap-oob="true"

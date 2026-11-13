@@ -37,8 +37,8 @@ def initialize_workflow(
     return HTMLResponse(html_str)
 
 
-@api_router.post("/process-order-records", response_class=HTMLResponse)
-def process_order_records(
+@api_router.post("/process", response_class=HTMLResponse)
+def process_full_records(
     background_tasks: BackgroundTasks,
     bus: Annotated[Any, Depends(pvf_deps.get_message_bus)],
     context: Annotated[
@@ -47,7 +47,7 @@ def process_order_records(
     order_template: Annotated[Any, Depends(schemas.TemplateDataModel.from_form)],
     workflow_id: Annotated[str, Form(...)],
 ) -> HTMLResponse:
-    """Process one or more files of order-level MARC records using the acq workflow.
+    """Process one or more files of MARC records.
 
     Args:
         background_tasks:
@@ -66,9 +66,18 @@ def process_order_records(
         the ID for the processed files and stats wrapped in an `HTMLResponse` object
 
     """
-    background_tasks.add_task(
-        bus.send,
-        commands.StartOrderLevelRecordsWorkflow(
+    command: (
+        commands.StartFullLevelRecordsWorkflow | commands.StartOrderLevelRecordsWorkflow
+    )
+    if context.record_type == "cat":
+        command = commands.StartFullLevelRecordsWorkflow(
+            collection=context.collection,
+            library=context.library,
+            record_type=context.record_type,
+            workflow_id=workflow_id,
+        )
+    else:
+        command = commands.StartOrderLevelRecordsWorkflow(
             collection=context.collection,
             library=context.library,
             matchpoints=order_template.matchpoints,
@@ -76,53 +85,8 @@ def process_order_records(
             template_data=order_template.template_data,
             vendor=getattr(order_template, "vendor", "UNKNOWN"),
             workflow_id=workflow_id,
-        ),
-    )
-    partial = """
-    <div hx-get="/pvf/workflow/{workflow_id}/status"
-        hx-trigger="every 1s"
-        hx-swap="outerHTML">
-        <span class="spinner"></span> Processing vendor file...
-    </div>"""
-    html_str = safe_html(partial, workflow_id=workflow_id)
-    return HTMLResponse(html_str)
-
-
-@api_router.post("/process-full-records", response_class=HTMLResponse)
-def process_full_records(
-    background_tasks: BackgroundTasks,
-    bus: Annotated[Any, Depends(pvf_deps.get_message_bus)],
-    context: Annotated[
-        schemas.ProcessingContext, Depends(schemas.ProcessingContext.from_form)
-    ],
-    workflow_id: Annotated[str, Form(...)],
-) -> HTMLResponse:
-    """Process one or more files of full-level MARC records using the cat workflow.
-
-    Args:
-        background_tasks:
-            tasks run after returning the HTML template response
-        bus:
-            a `ports.MessageBusPort` object used by the workflow
-        context:
-            a `schemas.ProcessingContext` object containing the library, collection,
-            and record_type for the workflow.
-        workflow_id:
-            the ID for the given workflow.
-
-    Returns:
-        the ID for the processed files and stats wrapped in an `HTMLResponse` object
-
-    """
-    background_tasks.add_task(
-        bus.send,
-        commands.StartFullLevelRecordsWorkflow(
-            collection=context.collection,
-            library=context.library,
-            record_type=context.record_type,
-            workflow_id=workflow_id,
-        ),
-    )
+        )
+    background_tasks.add_task(bus.send, command)
     partial = """
     <div hx-get="/pvf/workflow/{workflow_id}/status"
         hx-trigger="every 1s"
