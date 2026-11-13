@@ -88,22 +88,6 @@ class TestApp:
         assert response.url == f"{self.base_url}/files/remote/select?vendor=foo"
         assert dict(response.headers.items()) == {"hx-trigger": "workflowFilesChanged"}
 
-    def test_files_router_get_processed_file_list(self, mocker):
-        file = {
-            "filename": "baz.mrc",
-            "reference": "baz",
-            "workflow_id": 1,
-            "source": "local",
-        }
-        file_list = mocker.Mock(return_value=[file])
-        mocker.patch.object(queries, "get_processed_file_list", file_list)
-        response = self.client.get("/files/list/processed-files?batch_id=1")
-        assert response.status_code == 200
-        assert response.url == f"{self.base_url}/files/list/processed-files?batch_id=1"
-        assert len(response.context["files"]) == 1
-        assert response.context["files"][0]["filename"] == "baz.mrc"
-        assert response.context["files"][0]["source"] == "local"
-
     def test_files_router_download_file(self, mocker):
         file = mocker.Mock(
             return_value=files.VendorFile(content=b"filecontent", filename="foo.mrc")
@@ -383,7 +367,7 @@ class TestApp:
         mock_obj = mocker.Mock(
             return_value=tables.WorkflowStateModel(id="123", status="PENDING")
         )
-        mocker.patch("overload_web.infrastructure.unit_of_work.Session.get", mock_obj)
+        mocker.patch.object(queries, "get_workflow_state", mock_obj)
         response = self.client.get("/pvf/workflow/123/status")
         assert response.status_code == 200
         assert "Processing vendor file..." in response.text
@@ -395,15 +379,32 @@ class TestApp:
                 id="123", status="COMPLETED", batch_id=1
             )
         )
-        mocker.patch("overload_web.infrastructure.unit_of_work.Session.get", mock_obj)
+        mock_batch = mocker.Mock(
+            return_value=tables.PVFBatch(
+                id="123",
+                call_number_report=[],
+                duplicate_report=[],
+                file_names=[],
+                missing_barcodes=[],
+                processing_integrity=True,
+                stats=[],
+                total_files=1,
+                total_records=1,
+                vendor_report=[],
+                files=[],
+            )
+        )
+        mocker.patch.object(queries, "get_workflow_state", mock_obj)
+        mocker.patch.object(queries, "get_batch_data", mock_batch)
         response = self.client.get("/pvf/workflow/123/status")
         assert response.status_code == 200
-        assert list(response.context.keys()) == ["batch_id", "record_type", "request"]
+        assert "batch_id" in response.context
+        assert "vendor_report" in response.context
         assert response.url == f"{self.base_url}/pvf/workflow/123/status"
 
     def test_pvf_router_workflow_status_check_missing(self, mocker):
         mock_obj = mocker.Mock(return_value=None)
-        mocker.patch("overload_web.infrastructure.unit_of_work.Session.get", mock_obj)
+        mocker.patch.object(queries, "get_workflow_state", mock_obj)
         response = self.client.get("/pvf/workflow/123/status")
         assert response.status_code == 200
         assert "<div class='error'>Workflow not found.</div>" in response.text
@@ -415,7 +416,7 @@ class TestApp:
                 id="123", status="FAILED", error_message="Workflow failed"
             )
         )
-        mocker.patch("overload_web.infrastructure.unit_of_work.Session.get", mock_obj)
+        mocker.patch.object(queries, "get_workflow_state", mock_obj)
         response = self.client.get("/pvf/workflow/123/status")
         assert response.status_code == 200
         assert "<div class='error'>Error: Workflow failed</div>" in response.text

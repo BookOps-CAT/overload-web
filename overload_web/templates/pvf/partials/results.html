@@ -1,13 +1,8 @@
 <div id="report-section" class="grid-container">
   <div class="card">
-    <div id="summary-report-container"
-         hx-get="/reports/summary?batch_id={{ batch_id }}"
-         hx-trigger="load"
-         name="vendor_report"></div>
-    <div id="output-files-container"
-         hx-get="/files/list/processed-files?batch_id={{ batch_id }}"
-         hx-trigger="load"
-         name="processed_file"></div>
+    <div id="summary-report-container">{% include "pvf/partials/reports/summary.html" %}</div>
+    <div id="output-files-container">{% include "pvf/partials/files/processed.html" %}</div>
+    <div hidden id="detailed-report-container"></div>
   </div>
 </div>
 <div class="grid-container" id="output-buttons">
@@ -15,8 +10,7 @@
     <button id="detailed-report-button"
             type="submit"
             hx-get="/reports/detailed?batch_id={{ batch_id }}"
-            hx-target="#summary-report-container"
-            hx-swap="afterend"
+            hx-target="#detailed-report-container"
             class="btn btn-nypl">View detailed report</button>
     <button id="save-report-button"
             type="submit"

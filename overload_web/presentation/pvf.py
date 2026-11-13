@@ -9,6 +9,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, BackgroundTasks, Depends, Form, Request
 from fastapi.responses import HTMLResponse
 
+from overload_web.application.pvf import queries
 from overload_web.domain.pvf import commands, models
 from overload_web.presentation import pvf_deps, schemas
 from overload_web.presentation.templates import templates
@@ -102,18 +103,34 @@ def workflow_status_check(
     request: Request, workflow_id: str, uow: Annotated[Any, Depends(pvf_deps.get_uow)]
 ) -> HTMLResponse:
     """HTMX endpoint to poll workflow progress."""
-    with uow:
-        state = uow.workflow_states.get(workflow_id)
+    state = queries.get_workflow_state(workflow_id=workflow_id, uow=uow)
     if not state:
         return HTMLResponse("<div class='error'>Workflow not found.</div>")
-    if state.status == models.WorkflowStatus.COMPLETED:
+    if state.status == models.WorkflowStatus.COMPLETED and state.batch_id:
+        batch = queries.get_batch_data(batch_id=state.batch_id, uow=uow)
         return templates.TemplateResponse(
             request=request,
             name="pvf/partials/results.html",
-            context={"batch_id": state.batch_id, "record_type": state.record_type},
+            context={
+                "batch_id": state.batch_id,
+                "record_type": state.record_type,
+                "total_records": batch.total_records,
+                "file_names": batch.file_names,
+                "total_files": batch.total_files,
+                "vendor_report": batch.vendor_report,
+                "duplicate_report": batch.duplicate_report,
+                "missing_barcodes": batch.missing_barcodes,
+                "processing_integrity": batch.processing_integrity,
+                "call_number_report": batch.call_number_report,
+                "files": batch.files,
+            },
             headers={"HX-Trigger": "workflowCompleted"},
         )
-    elif state.status == models.WorkflowStatus.FAILED:
+    elif (
+        state.status == models.WorkflowStatus.COMPLETED
+        and not state.batch_id
+        or state.status == models.WorkflowStatus.FAILED
+    ):
         html_str = safe_html(
             "<div class='error'>Error: {error_message}</div>",
             error_message=state.error_message,

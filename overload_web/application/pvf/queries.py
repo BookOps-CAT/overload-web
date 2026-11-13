@@ -2,7 +2,18 @@
 
 from typing import Any
 
-from overload_web.domain.pvf import files, order_templates, ports
+from overload_web.domain.pvf import aggregate, files, models, order_templates, ports
+
+
+def get_batch_data(
+    batch_id: str, uow: ports.UnitOfWorkProtocol
+) -> aggregate.ProcessedFileBatch:
+    """Get all processed files and report data from a processed batch."""
+    with uow:
+        data = uow.processed_batches.get(batch_id)
+        if not data:
+            raise ValueError(f"Batch {batch_id} not found in database.")
+        return data
 
 
 def get_detailed_report_data(
@@ -36,13 +47,15 @@ def get_processed_file(
     return None
 
 
-def get_processed_file_list(batch_id: str, uow: ports.UnitOfWorkProtocol) -> list:
-    """Get all processed files from a processed batch."""
+def get_workflow_state(
+    workflow_id: str, uow: ports.UnitOfWorkProtocol
+) -> models.WorkflowState | None:
+    """Get current status of workflow."""
     with uow:
-        data = uow.processed_batches.get(batch_id)
+        data = uow.workflow_states.get(workflow_id)
         if data:
-            return data.files
-    return []
+            return data
+    return None
 
 
 def get_processing_report(

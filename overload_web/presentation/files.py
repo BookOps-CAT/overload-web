@@ -86,29 +86,6 @@ def select_ftp_file(
     return Response(status_code=204, headers={"HX-Trigger": "workflowFilesChanged"})
 
 
-@api_router.get("/list/processed-files", response_class=HTMLResponse)
-def get_processed_file_list(
-    request: Request, batch_id: str, uow: Annotated[Any, Depends(pvf_deps.get_uow)]
-) -> HTMLResponse:
-    """Get a list of all processed files for a batch.
-
-    Args:
-        request: the HTTP request sent by the app
-        batch_id: the ID for the given processed batch.
-        uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
-
-    Returns:
-        the list of files wrapped in an HTMLResponse object
-
-    """
-    files = queries.get_processed_file_list(uow=uow, batch_id=batch_id)
-    return templates.TemplateResponse(
-        name="pvf/partials/files/processed.html",
-        request=request,
-        context={"files": files},
-    )
-
-
 @api_router.get("/download/{file_id}", response_class=StreamingResponse)
 def download_file(
     file_id: str, uow: Annotated[Any, Depends(pvf_deps.get_uow)]

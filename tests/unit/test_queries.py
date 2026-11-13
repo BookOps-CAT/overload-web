@@ -1,9 +1,33 @@
 """Test read queries used in application services."""
 
+import pytest
+
 from overload_web.application.pvf import queries
 
 
 class TestQueries:
+    def test_get_batch_data(self, fake_uow):
+        out = queries.get_batch_data(batch_id="1", uow=fake_uow)
+        assert sorted(out.model_dump().keys()) == sorted(
+            [
+                "id",
+                "stats",
+                "total_records",
+                "file_names",
+                "total_files",
+                "vendor_report",
+                "duplicate_report",
+                "missing_barcodes",
+                "processing_integrity",
+                "call_number_report",
+            ]
+        )
+
+    def test_get_batch_data_no_batch(self, fake_uow_no_data):
+        with pytest.raises(ValueError) as exc:
+            queries.get_batch_data(batch_id="1", uow=fake_uow_no_data)
+        assert str(exc.value) == "Batch 1 not found in database."
+
     def test_get_detailed_report_data(self, fake_uow):
         out = queries.get_detailed_report_data(batch_id="1", uow=fake_uow)
         assert sorted(out[0].keys()) == sorted(
@@ -57,13 +81,13 @@ class TestQueries:
         out = queries.get_processed_file(file_id="1", uow=fake_uow_no_data)
         assert out is None
 
-    def test_get_processed_file_list(self, fake_uow):
-        out = queries.get_processed_file_list(batch_id="1", uow=fake_uow)
-        assert len(out) > 0
+    def test_get_workflow_state(self, fake_uow):
+        out = queries.get_workflow_state(workflow_id="1", uow=fake_uow)
+        assert out.status is not None
 
-    def test_get_processed_file_list_no_data(self, fake_uow_no_data):
-        out = queries.get_processed_file_list(batch_id="1", uow=fake_uow_no_data)
-        assert len(out) == 0
+    def test_get_workflow_state_no_data(self, fake_uow_no_data):
+        out = queries.get_workflow_state(workflow_id="1", uow=fake_uow_no_data)
+        assert out is None
 
     def test_list_order_templates(self, fake_uow):
         templates = queries.list_order_templates(uow=fake_uow, offset=0, limit=20)

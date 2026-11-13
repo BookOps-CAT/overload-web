@@ -537,6 +537,7 @@ def fake_uow_no_data(monkeypatch, fake_uow):
 
     monkeypatch.setattr(FakeBatchRepository, "get", mock_get_data)
     monkeypatch.setattr(FakeProcessedFileRepository, "get", mock_get_data)
+    monkeypatch.setattr(FakeWorkflowRepository, "get", mock_get_data)
     return fake_uow
 
 
