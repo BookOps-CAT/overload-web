@@ -57,7 +57,7 @@ def get_template(
     template_out = {k: v for k, v in template.__dict__.items() if v} if template else {}
     return templates.TemplateResponse(
         request=request,
-        name="pvf_partials/template_form.html",
+        name="pvf/partials/files/template_form.html",
         context={"template": template_out},
     )
 
@@ -85,7 +85,7 @@ def get_template_list(
     template_list = queries.list_order_templates(uow=uow, offset=offset, limit=limit)
     return templates.TemplateResponse(
         request=request,
-        name="pvf_partials/template_list.html",
+        name="pvf/partials/order_templates/template_list.html",
         context={"templates": template_list},
     )
 
@@ -118,5 +118,5 @@ def update_template(
 def get_template_form(request: Request) -> HTMLResponse:
     """Render html form used to create/edit order templates."""
     return templates.TemplateResponse(
-        request=request, name="pvf_partials/template_form.html"
+        request=request, name="pvf/partials/order_templates/template_form.html"
     )
