@@ -38,7 +38,7 @@ def get_output_report(
     """
     out = queries.get_processing_report(batch_id=batch_id, uow=uow)
     return templates.TemplateResponse(
-        request=request, name="reports/summary.html", context=out
+        request=request, name="pvf/partials/reports/summary.html", context=out
     )
 
 
@@ -61,7 +61,9 @@ def get_detailed_report(
     """
     out = queries.get_detailed_report_data(batch_id=batch_id, uow=uow)
     return templates.TemplateResponse(
-        request=request, name="reports/detailed.html", context={"detailed_report": out}
+        request=request,
+        name="pvf/partials/reports/detailed.html",
+        context={"detailed_report": out},
     )
 
 
@@ -88,5 +90,7 @@ def save_processing_statistics(
     report_data = queries.get_processing_report(batch_id=batch_id, uow=uow)
     WriteOutputReport.execute(report_data=report_data, writer=writer)
     return templates.TemplateResponse(
-        request=request, name="reports/detailed.html", context={"written_report": True}
+        request=request,
+        name="pvf/partials/reports/detailed.html",
+        context={"written_report": True},
     )

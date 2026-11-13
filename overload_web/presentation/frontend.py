@@ -55,7 +55,7 @@ def vendor_file_page(
 
     """
     return templates.TemplateResponse(
-        request=request, name="process_records.html", context={"page_title": page_title}
+        request=request, name="pvf/index.html", context={"page_title": page_title}
     )
 
 
@@ -97,7 +97,7 @@ def get_context_update(
         collection = ""
 
     return templates.TemplateResponse(
-        name=f"{workflow}_partials/context_updates.html",
+        name=f"{workflow}/partials/context_updates.html",
         request=request,
         context={
             "library": library,
@@ -126,5 +126,5 @@ def wc2sierra_page(
 
     """
     return templates.TemplateResponse(
-        request=request, name="wc2sierra.html", context={"page_title": page_title}
+        request=request, name="wc2s/index.html", context={"page_title": page_title}
     )

@@ -145,7 +145,7 @@ def workflow_status_check(
     if state.status == models.WorkflowStatus.COMPLETED:
         return templates.TemplateResponse(
             request=request,
-            name="pvf_partials/pvf_results.html",
+            name="pvf/partials/results.html",
             context={"batch_id": state.batch_id, "record_type": state.record_type},
         )
     elif state.status == models.WorkflowStatus.FAILED:

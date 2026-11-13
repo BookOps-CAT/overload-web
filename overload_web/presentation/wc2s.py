@@ -38,6 +38,6 @@ def match_record(
         ]
     return templates.TemplateResponse(
         request=request,
-        name="wc2s_partials/wc2s_results.html",
+        name="wc2s/partials/wc2s_results.html",
         context={"wc2s_results": out, "out_dict": out_dict},
     )

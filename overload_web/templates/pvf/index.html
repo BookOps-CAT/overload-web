@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% import "components/macros.html" as macro %}
+{% block page_title %}<h2>{{ page_title }}</h2>{% endblock %}
+{% block content %}
+  <form id="pvf-form"
+        hx-post="/pvf/process"
+        hx-encoding="multipart/form-data"
+        hx-target="#pvf_output"
+        autocomplete="off">
+    <input type="hidden"
+           id="workflow_id"
+           name="workflow_id"
+           value="{{ workflow_id }}" />
+    <div class="flex-col">
+      <div class="flex-row"
+           id="context-section"
+           hx-get="/update-context"
+           hx-trigger="change delay:200ms"
+           hx-include="this"
+           hx-swap="none">
+        <div id="library-select" class="flex-1">{{ macro.context_select("library", context_fields.library) }}</div>
+        <div id="collection-select"
+             class="flex-1">{{ macro.context_select("collection", context_fields.collection) }}</div>
+        <div id="record-type-select"
+             class="flex-1">{{ macro.context_select("record_type", context_fields.record_type) }}</div>
+      </div>
+      <div id="file-section" class="grid-container cols-3">
+        <div class="card">
+          <h5 class="card-title">Local Files</h5>
+          <div class="form-group">
+            <label for="local_files"
+                   class="file-dropzone"
+                   ondragover="event.preventDefault();"
+                   ondrop="
+           event.preventDefault();
+           const input = document.getElementById('local_files');
+           input.files = event.dataTransfer.files;
+           input.dispatchEvent(new Event('change', { bubbles: true }));
+         ">
+              <svg class="dropzone-icon"
+                   fill="none"
+                   stroke="currentColor"
+                   viewBox="0 0 24 24"
+                   aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h6a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2l-2 5a2 2 0 002 2z" />
+              </svg>
+              <span class="dropzone-title">Browse</span>
+              <span class="dropzone-subtitle">or drag & drop</span>
+              <input id="local_files"
+                     hx-post="/files/upload"
+                     hx-trigger="change"
+                     hx-target="#selected-files"
+                     hx-include="#workflow_id"
+                     name="file"
+                     type="file"
+                     hx-encoding="multipart/form-data"
+                     class="sr-only"
+                     multiple />
+            </label>
+          </div>
+        </div>
+        <div class="card">
+          <h5 class="card-title">FTP Files</h5>
+          <p class="card-text">Browse vendor files</p>
+          <div class="form-group">
+            <label for="vendor">Vendors</label>
+            <select id="vendor"
+                    class="form-control"
+                    name="vendor"
+                    hx-get="/files/remote/list"
+                    hx-target="#file_list"
+                    hx-trigger="change">
+              <option value="" selected></option>
+              {% for id, name in vendors.items() %}<option value="{{ id }}">{{ name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div id="file_list"></div>
+        </div>
+        <div class="card">
+          <h5 class="card-title">Selected Files</h5>
+          <div id="selected-files">{% include "pvf/partials/files/selected_list.html" %}</div>
+        </div>
+      </div>
+      <div id="template-section"></div>
+      <div id="pvf_output" class="flex-row">
+        <button id="pvf-button" class="btn btn-nypl" type="submit">Process Vendor File</button>
+      </div>
+    </div>
+  </form>
+{% endblock %}
