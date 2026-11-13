@@ -7,93 +7,14 @@
         hx-encoding="multipart/form-data"
         hx-target="#pvf_output"
         autocomplete="off">
-    <div hidden
-         id="get_workflow"
-         hx-get="/pvf/workflow"
-         hx-trigger="load"
-         hx-target="this"></div>
-    <div class="flex-row"
-         id="context-section"
-         hx-get="/update-context?workflow=pvf"
-         hx-trigger="change delay:200ms"
-         hx-include="this"
-         hx-swap="none">
-      <div id="library-select"
-           class="flex-1">{{ macro.context_select("library", context_fields.library, "pvf-form") }}</div>
-      <div id="collection-select"
-           class="flex-1">{{ macro.context_select("collection", context_fields.collection, "pvf-form") }}</div>
-      <div id="record-type-select"
-           class="flex-1">{{ macro.context_select("record_type", context_fields.record_type, "pvf-form") }}</div>
-    </div>
-    <div id="file-section" class="grid-container cols-3">
-      <div class="card">
-        <h5 class="card-title">Local Files</h5>
-        <div class="form-group">
-          <label for="local_files"
-                 class="file-dropzone"
-                 ondragover="event.preventDefault();"
-                 ondrop="
-         event.preventDefault();
-         const input = document.getElementById('local_files');
-         input.files = event.dataTransfer.files;
-         input.dispatchEvent(new Event('change', { bubbles: true }));
-       ">
-            <svg class="dropzone-icon"
-                 fill="none"
-                 stroke="currentColor"
-                 viewBox="0 0 24 24"
-                 aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h6a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2l-2 5a2 2 0 002 2z" />
-            </svg>
-            <span class="dropzone-title">Browse</span>
-            <span class="dropzone-subtitle">or drag & drop</span>
-            <input id="local_files"
-                   hx-post="/files/upload"
-                   hx-trigger="change"
-                   hx-target="#selected-files"
-                   hx-swap="outerHTML"
-                   hx-include="#workflow_id"
-                   name="file"
-                   type="file"
-                   hx-encoding="multipart/form-data"
-                   class="sr-only"
-                   multiple />
-          </label>
-        </div>
-      </div>
-      <div class="card">
-        <h5 class="card-title">FTP Files</h5>
-        <p class="card-text">Browse vendor files</p>
-        <div class="form-group">
-          <label for="vendor">Vendors</label>
-          <select id="vendor"
-                  class="form-control"
-                  name="vendor"
-                  form="pvf-form"
-                  hx-get="/files/remote/list"
-                  hx-target="#file_list"
-                  hx-trigger="change">
-            <option value="" selected></option>
-            {% for id, name in vendors.items() %}<option value="{{ id }}">{{ name }}</option>{% endfor %}
-          </select>
-        </div>
-        <div id="file_list"></div>
-      </div>
-      <div class="card">
-        <h5 class="card-title">Selected Files</h5>
-        <div id="selected-files"
-             hx-get="/files/list"
-             hx-include="#workflow_id"
-             hx-target="this"
-             hx-trigger="workflowFilesChanged from:body"></div>
-      </div>
-    </div>
-    <div hidden  id="template-section"></div>
+    {% include "pvf/partials/sections/context.html" %}
+    {% include "pvf/partials/sections/files.html" %}
+    {% include "pvf/partials/sections/order_template.html" %}
     <div id="pvf_button" class="flex-row">
-      <button id="pvf-button" class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
+      <button class="btn btn-nypl" form="pvf-form" type="submit">Process Vendor File</button>
     </div>
   </form>
   <div class="flex-col">
-    <div hidden  id="pvf_output" class="flex-row"></div>
+    <div hidden id="pvf_output" class="flex-row"></div>
   </div>
 {% endblock %}
