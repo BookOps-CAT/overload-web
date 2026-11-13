@@ -26,6 +26,8 @@
   <div id="template-section"
        class="grid-container cols-1 card"
        hx-swap-oob="true">{% include "pvf/partials/order_templates/template_source.html" %}</div>
+{% else %}
+  <div id="template-section"  hx-swap-oob="delete"></div>
 {% endif %}
 <form id="pvf-form"
       hx-post="/pvf/process"
