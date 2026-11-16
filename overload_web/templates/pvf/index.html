@@ -6,6 +6,7 @@
         hx-post="/pvf/process"
         hx-encoding="multipart/form-data"
         hx-target="#pvf_output"
+        hx-sync="this:queue last"
         autocomplete="off">
     {% include "pvf/partials/sections/context.html" %}
     {% include "pvf/partials/sections/files.html" %}

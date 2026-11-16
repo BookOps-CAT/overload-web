@@ -1,7 +1,10 @@
-<div id="file-section" class="grid-container cols-3">
+<div id="file-section"
+     class="grid-container cols-2"
+     hx-sync="#pvf-form:queue all">
   <div class="card">
-    <h5 class="card-title">Local Files</h5>
+    <h5 class="card-title">Vendor Files</h5>
     <div class="form-group">
+      <label for="local_files">Upload local files</label>
       <label for="local_files"
              class="file-dropzone"
              ondragover="event.preventDefault();"
@@ -18,8 +21,10 @@
              aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h6a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2l-2 5a2 2 0 002 2z" />
         </svg>
-        <span class="dropzone-title">Browse</span>
-        <span class="dropzone-subtitle">or drag & drop</span>
+        <div class="dropzone-text">
+          <span class="dropzone-title">Browse</span>
+          <span class="dropzone-subtitle">or drag & drop</span>
+        </div>
         <input id="local_files"
                hx-post="/files/upload"
                hx-trigger="change"
@@ -32,12 +37,9 @@
                multiple />
       </label>
     </div>
-  </div>
-  <div class="card">
-    <h5 class="card-title">FTP Files</h5>
-    <p class="card-text">Browse vendor files</p>
+    <div class="divider-or"><span>or</span></div>
     <div class="form-group">
-      <label for="vendor">Vendors</label>
+      <label for="vendor">Select files from vendor FTP</label>
       <select id="vendor"
               class="form-control"
               name="vendor"
