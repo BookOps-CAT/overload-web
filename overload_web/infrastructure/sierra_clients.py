@@ -57,7 +57,7 @@ class FetcherFactory:
             try:
                 client = NYPLPlatformSession()
             except BookopsPlatformError as exc:
-                logger.error(f"Trouble connecting: {str(exc)}")
+                logger.error(f"Trouble connecting: {exc}")
                 raise
         return SierraBibFetcher(client)
 

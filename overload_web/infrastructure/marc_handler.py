@@ -71,7 +71,7 @@ class MarcParser(ports.MarcParserPort):
 
     def identify_vendor(self, obj: Bib, mapping: dict[str, Any]) -> dict[str, Any]:
         """Determine the vendor who created a `bookops_marc.Bib` record."""
-        for vendor, info in mapping[obj.library].items():
+        for info in mapping[obj.library].values():
             tags = info["vendor_tags"].get("primary", {})
             tag_match = self.compare_mapped_tags(obj=obj, tags=tags)
             if tag_match:
