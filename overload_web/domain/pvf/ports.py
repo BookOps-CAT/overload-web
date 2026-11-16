@@ -60,7 +60,19 @@ class FileRetriever(Protocol):  # pragma: no branch
         """
         ...
 
-    def list(self, dir: str) -> list[str]:
+    def list_file_info(self, dir: str) -> list[dict[str, Any]]:
+        """List file metadata for files in a remote directory.
+
+        Args:
+            dir: the directory whose files to list
+
+        Returns:
+            a list of dictionaries containing file metadata
+
+        """
+        ...
+
+    def list_files(self, dir: str) -> list[str]:
         """List available files.
 
         Args:
@@ -228,7 +240,9 @@ class TemplateRepositoryProtocol(Protocol[T]):  # pragma: no branch
         """Get objects from a database."""
         ...
 
-    def list(self, offset: int | None = 0, limit: int | None = 0) -> Sequence[T]:
+    def list_templates(
+        self, offset: int | None = 0, limit: int | None = 0
+    ) -> Sequence[T]:
         """List all objects in a database."""
         ...
 

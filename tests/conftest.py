@@ -382,7 +382,7 @@ class FakeTemplateRepository(unit_of_work.OrderTemplateRepository):
             return templates[0]
         return None
 
-    def list(self, offset, limit):
+    def list_templates(self, offset, limit):
         return self.templates
 
     def save(self, obj):

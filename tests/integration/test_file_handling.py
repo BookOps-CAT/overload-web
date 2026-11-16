@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from overload_web.application.pvf.file_handling import (
@@ -15,7 +17,10 @@ class FakeFileRetriever:
     def __init__(self) -> None:
         pass
 
-    def list(self, dir: str) -> list[str]:
+    def list_file_info(self, dir: str) -> list[dict[str, Any]]:
+        return [{"filename": "foo.mrc", "update_date": 1794849966, "size": 1024}]
+
+    def list_files(self, dir: str) -> list[str]:
         return ["foo.mrc"]
 
     def download(self, name: str, dir: str) -> bytes:
@@ -26,7 +31,11 @@ class TestFileHandling:
     def test_list_vendor_files(self):
         file_list = ListVendorFiles.execute(dir="foo", retriever=FakeFileRetriever())
         assert len(file_list) == 1
-        assert file_list[0] == "foo.mrc"
+        assert file_list[0].filename == "foo.mrc"
+        assert file_list[0].formatted_bytes == "1.00 KB"
+        assert file_list[0].size == 1024
+        assert file_list[0].update_date == 1794849966
+        assert file_list[0].update_date_str == "11-16-2026 12:26 PM"
 
     def test_download_remote_file(self):
         file = DownloadVendorFile.execute(

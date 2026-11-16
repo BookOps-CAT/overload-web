@@ -3,7 +3,7 @@
 import os
 
 import pytest
-import yaml
+from dotenv import load_dotenv
 from file_retriever import Client
 
 from overload_web.infrastructure import file_io
@@ -33,7 +33,7 @@ class TestLiveLocalFiles:
 
     def test_list(self, setup_dirs):
         retriever = file_io.LocalFileRetriever()
-        files = retriever.list(dir=self.test_dir)
+        files = retriever.list_files(dir=self.test_dir)
         assert len(files) == 1
         assert files[0] == "test_bib.mrc"
 
@@ -48,12 +48,7 @@ class TestLiveLocalFiles:
 
 @pytest.fixture(scope="class")
 def live_test_client():
-    with open(
-        os.path.join(os.environ["USERPROFILE"], ".cred/.overload/live_creds.yaml")
-    ) as cred_file:
-        data = yaml.safe_load(cred_file)
-        for k, v in data.items():
-            os.environ[k] = v
+    load_dotenv("debug.env")
     client = Client(
         name="NSDROP",
         username=os.environ["NSDROP_USER"],

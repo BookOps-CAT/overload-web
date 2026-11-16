@@ -643,3 +643,83 @@ select.form-control:disabled {
 .btn-download:hover {
   background: #dbeafe;
 }
+
+/* Remote vendor file checklist */
+.remote-file-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.form-control-sm {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.remote-file-list {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  background-color: #ffffff;
+}
+
+.remote-file-header,
+.remote-file-row {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr) 6.5rem 4.5rem;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.remote-file-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: #f8fafc;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #475569;
+}
+
+.remote-file-row {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.remote-file-row:last-child {
+  border-bottom: none;
+}
+
+.remote-file-row:nth-child(odd) {
+  background-color: #fbfcfd;
+}
+
+.remote-file-row:hover {
+  background-color: #f1f5f9;
+}
+
+.remote-file-name {
+  font-size: 0.875rem;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.remote-file-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.text-right {
+  text-align: right;
+}

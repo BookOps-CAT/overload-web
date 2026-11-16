@@ -172,7 +172,7 @@ class OrderTemplateRepository(ports.TemplateRepositoryProtocol):
         template = self.session.get(tables.TemplateModel, id)
         return template if template else None
 
-    def list(
+    def list_templates(
         self, offset: int | None = 0, limit: int | None = 5
     ) -> Sequence[tables.TemplateModel]:
         """Retrieve all `TemplateModel` objects in the database.

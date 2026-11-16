@@ -4,6 +4,7 @@ import io
 import os
 
 import pytest
+from file_retriever.file import FileInfo
 
 from overload_web.domain.pvf import aggregate
 from overload_web.infrastructure import file_io
@@ -38,6 +39,16 @@ class FakeSFTPClient:
     def get_file_info(*args, **kwargs):
         return "foo"
 
+    def list_file_info(*args, **kwargs):
+        return [
+            FileInfo(
+                file_name="foo.mrc",
+                file_size=1024,
+                file_mtime=1794849966,
+                file_mode=None,
+            )
+        ]
+
     def list_files(*args, **kwargs):
         return ["foo.mrc"]
 
@@ -51,7 +62,7 @@ class TestLocalFileRetriever:
 
     def test_local_list(self, tmp_path, tmp_files):
         retriever = file_io.LocalFileRetriever()
-        file_list = retriever.list(dir=tmp_path)
+        file_list = retriever.list_files(dir=tmp_path)
         assert len(file_list) == 2
         assert "foo.mrc" in file_list
 
@@ -64,19 +75,25 @@ class TestLocalFileWriter:
         )
         assert new_file == os.path.join(tmp_path, "foo.mrc")
         assert "foo.mrc" in os.listdir(tmp_path)
-        # assert b"333331234567890" in open(new_file, "rb").read()
 
 
 class TestSFTPFileRetriever:
     def test_sftp_retriever(self):
         retriever = file_io.SFTPFileRetriever(client=FakeSFTPClient())
-        assert hasattr(retriever, "list")
+        assert hasattr(retriever, "list_file_info")
+        assert hasattr(retriever, "list_files")
         assert hasattr(retriever, "download")
         assert retriever.client.name == "FOO"
 
-    def test_sftp_list(self):
+    def test_sftp_list_file_info(self):
         retriever = file_io.SFTPFileRetriever(client=FakeSFTPClient())
-        file_list = retriever.list(dir="test")
+        file_list = retriever.list_file_info(dir="test")
+        assert len(file_list) == 1
+        assert file_list[0]["filename"] == "foo.mrc"
+
+    def test_sftp_list_files(self):
+        retriever = file_io.SFTPFileRetriever(client=FakeSFTPClient())
+        file_list = retriever.list_files(dir="test")
         assert len(file_list) == 1
         assert file_list[0] == "foo.mrc"
 

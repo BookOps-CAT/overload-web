@@ -11,18 +11,20 @@ class ListVendorFiles:
     """List files in a directory."""
 
     @staticmethod
-    def execute(dir: str, retriever: ports.FileRetriever) -> list[str]:
+    def execute(dir: str, retriever: ports.FileRetriever) -> list[files.VendorFileInfo]:
         """Execute `ListVendorFiles` command.
 
         Args:
             dir: The directory whose files to list as a string.
             retriever: Concrete implementation of `FileRetriever` protocol
         Returns:
-            a list of filenames contained within the given directory as strings.
+            a list of dicts containing file metadatat for the files contained
+            within the given directory.
 
         """
-        files = retriever.list(dir=dir)
-        return files
+        file_list = retriever.list_file_info(dir=dir)
+        sorted_files = sorted(file_list, key=lambda x: x["update_date"], reverse=True)
+        return [files.VendorFileInfo(**i) for i in sorted_files]
 
 
 class DownloadVendorFile:

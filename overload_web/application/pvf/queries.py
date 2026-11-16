@@ -83,7 +83,7 @@ def list_order_templates(
 ) -> list[order_templates.OrderTemplate]:
     """List all order templates."""
     with uow:
-        template_list = uow.order_templates.list(offset=offset, limit=limit)
+        template_list = uow.order_templates.list_templates(offset=offset, limit=limit)
         return [order_templates.OrderTemplate(**i.model_dump()) for i in template_list]
 
 

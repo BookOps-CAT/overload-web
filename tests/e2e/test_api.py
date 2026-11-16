@@ -65,13 +65,13 @@ class TestApp:
     base_url = client.base_url
 
     def test_files_router_list_remote_files_get(self, mocker):
-        files = mocker.Mock(return_value=["foo.mrc"])
+        files = mocker.Mock(return_value=[{"filename": "foo.mrc"}])
         mocker.patch.object(file_handling.ListVendorFiles, "execute", files)
         response = self.client.get("/files/remote/list?vendor=foo")
         assert response.status_code == 200
         assert response.url == f"{self.base_url}/files/remote/list?vendor=foo"
         assert sorted(response.context.keys()) == sorted(["files", "request", "vendor"])
-        assert response.context["files"] == ["foo.mrc"]
+        assert response.context["files"] == [{"filename": "foo.mrc"}]
 
     def test_files_router_select_ftp_file(self, mocker):
         download = mocker.Mock(

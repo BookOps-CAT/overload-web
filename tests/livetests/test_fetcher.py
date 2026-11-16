@@ -1,21 +1,14 @@
 """Test interations with Sierra with live credentials."""
 
-import os
-
 import pytest
-import yaml
+from dotenv import load_dotenv
 
 from overload_web.infrastructure import sierra_clients
 
 
 @pytest.fixture
 def live_creds() -> None:
-    with open(
-        os.path.join(os.environ["USERPROFILE"], ".cred/.overload/live_creds.yaml")
-    ) as cred_file:
-        data = yaml.safe_load(cred_file)
-        for k, v in data.items():
-            os.environ[k] = v
+    load_dotenv("debug.env")
 
 
 @pytest.mark.livetest

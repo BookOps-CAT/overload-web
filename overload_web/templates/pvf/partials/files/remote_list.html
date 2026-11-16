@@ -1,16 +1,32 @@
 {% if files %}
-  <div class="checkbox-list">
+  <div class="remote-file-list">
+    <div class="remote-file-header" aria-hidden="true">
+      <span class="header-check">
+        <svg width="14"
+             height="14"
+             fill="none"
+             stroke="currentColor"
+             viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.25" d="M5 13l4 4L19 7" />
+        </svg>
+      </span>
+      <span>Filename</span>
+      <span class="text-right">Created</span>
+      <span class="text-right">Size</span>
+    </div>
     {% for file in files %}
-      <label class="checkbox-item" for="{{ file }}">
-        <input id="{{ file }}"
+      <label class="remote-file-row" for="remote-file-{{ loop.index }}">
+        <input id="remote-file-{{ loop.index }}"
                type="checkbox"
                hx-post="/files/remote/select?vendor={{ vendor }}"
                hx-trigger="change[this.checked]"
-               hx-vals='{{ {"remote_file": file} | tojson | forceescape }}'
+               hx-vals='{{ {"remote_file": file.filename} | tojson | forceescape }}'
                hx-include="#workflow_id"
                hx-params="remote_file,workflow_id"
                hx-swap="none" />
-        <span>{{ file }}</span>
+        <span class="remote-file-name" title="{{ file.filename }}">{{ file.filename }}</span>
+        <span class="remote-file-meta">{{ file.update_date_str }}</span>
+        <span class="remote-file-meta">{{ file.formatted_bytes }}</span>
       </label>
     {% endfor %}
   </div>

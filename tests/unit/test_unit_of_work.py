@@ -92,7 +92,7 @@ class TestSqlModelUnitOfWork:
             uow.commit()
             invalid_template = uow.order_templates.update(data=update_data, id="2")
             uow.commit()
-            all_templates = uow.order_templates.list()
+            all_templates = uow.order_templates.list_templates()
         assert new_template_data["primary_matchpoint"] == "isbn"
         assert new_template_data["format"] is None
         assert saved_workflow_id == 1

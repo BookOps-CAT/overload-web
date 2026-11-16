@@ -13,6 +13,7 @@ import logging
 import os
 import pickle
 from pathlib import Path
+from typing import Any
 
 from file_retriever import Client
 
@@ -82,7 +83,7 @@ class LocalFileRetriever(ports.FileRetriever):
         logger.info(f"File loaded: {name}")
         return file
 
-    def list(self, dir: str) -> list[str]:
+    def list_files(self, dir: str) -> list[str]:
         """List available files in a local directory."""
         files = os.listdir(dir)
         logger.info(f"Files in {dir}: {files}")
@@ -121,11 +122,26 @@ class SFTPFileRetriever(ports.FileRetriever):
         """
         self.client = client
 
-    def list(self, dir: str) -> list[str]:
+    def list_file_info(self, dir: str) -> list[dict[str, Any]]:
         """List files in a remote directory."""
-        files = self.client.list_files(remote_dir=dir)
-        logger.info(f"Files in {dir}: {files}")
-        return files
+        out: list[dict[str, Any]] = []
+        file_list = self.client.list_file_info(remote_dir=dir)
+        for file in file_list:
+            out.append(
+                {
+                    "filename": file.file_name,
+                    "size": file.file_size,
+                    "update_date": file.file_mtime,
+                }
+            )
+        logger.info(f"Files in {dir}: {out}")
+        return out
+
+    def list_files(self, dir: str) -> list[str]:
+        """List files in a remote directory."""
+        file_list = self.client.list_files(remote_dir=dir)
+        logger.info(f"Files in {dir}: {file_list}")
+        return file_list
 
     def download(self, dir: str, name: str) -> bytes:
         """Load a file from a remote directory."""
