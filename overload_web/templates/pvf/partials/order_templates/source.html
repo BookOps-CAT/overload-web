@@ -1,16 +1,15 @@
-<div class="flex-row row-gap-none">
-  <div class="flex-col row-gap-none">
-    <h5 class="gap-sm">Select order template</h5>
-    <div id="templates"
+<div class="flex-row">
+  <div class="flex-col">
+    <h5>Select order template</h5>
+    <div id="template-list"
          hx-get="/ot/templates"
          hx-trigger="load, templatesChanged from:body"
          name="templates"
-         hx-target="#template-list"></div>
-    <div id="template-list" class="row"></div>
+         hx-target="this"></div>
   </div>
   <div class="vertical-rule"></div>
-  <div class="flex-col row-gap-none flex-1 justify-center">
-    <h5 class="gap-sm">Create/Update order template</h5>
-    <div id="template-form">{% include "pvf/partials/order_templates/form.html" %}</div>
+  <div class="flex-col flex-1">
+    <h5>Create/Update order template</h5>
+    <div id="template-form" class="flex-col">{% include "pvf/partials/order_templates/form.html" %}</div>
   </div>
 </div>

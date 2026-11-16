@@ -1,23 +1,24 @@
 {% if files %}
-  <div class="list-group">
+  <div class="selected-file-list">
     {% for f in files %}
-      <div id="file-{{ f.id }}">
-        <input type="hidden" name="file_id" id="file_id" value="{{ f.id }}">
-        <strong>{{ f.filename }}</strong>
-        <br>
-        <small class="text-muted">
-          {% if f.source == "local" %}
-            Local file
-          {% else %}
-            FTP file
-          {% endif %}
-        </small>
-        <button class="btn btn-sm btn-outline-danger"
-                type="submit"
+      <div id="file-{{ f.id }}" class="selected-file-item">
+        <div class="selected-file-info">
+          <input type="hidden" name="file_id" value="{{ f.id }}">
+          <strong>{{ f.filename }}</strong>
+          <small class="text-muted">
+            {% if f.source == "local" %}
+              Local file
+            {% else %}
+              FTP file
+            {% endif %}
+          </small>
+        </div>
+        <button class="btn btn-nypl btn-sm"
+                type="button"
                 hx-post="/files/remove"
                 hx-vals='{"file_id": "{{ f.id }}"}'
                 hx-include="#workflow_id"
-                hx-swap="outerHTML">Remove</button>
+                hx-swap="none">Remove</button>
       </div>
     {% endfor %}
   </div>

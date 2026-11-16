@@ -4,6 +4,14 @@
     padding: 0;
 }
 
+[hidden] {
+    display: none !important;
+}
+
+div:empty {
+  display: none;
+}
+
 :root {
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
   --nypl-brand-color: #d52828;
@@ -11,7 +19,10 @@
   --surface: #ffffff;
   --text-muted: #212529; 
   --border: rgba(0, 0, 0, 0.125); 
+  --spacing-xs: 0.375rem;
+  --spacing-sm: 0.75rem;
   --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
 }
 
 body {
@@ -137,11 +148,12 @@ h6 { font-size: 1rem; }
 .justify-center  { justify-content: center; }
 .justify-end     { justify-content: flex-end; }
 .justify-between { justify-content: space-between; }
-.justify-around { justify-content: space-around; }
+.justify-around  { justify-content: space-around; }
 
 .gap-none { gap: 0; }
-.gap-sm   { gap: 1rem; }
-.gap-lg   { gap: 2rem; }
+.gap-sm   { gap: var(--spacing-sm); }
+.gap-md   { gap: var(--spacing-md); }
+.gap-lg   { gap: var(--spacing-lg); }
 
 .row-gap-none { row-gap: 0; }
 .row-gap-sm   { row-gap: 1rem; }
@@ -202,6 +214,8 @@ h6 { font-size: 1rem; }
 
 .card {
     position: relative;
+    display: flex;
+    flex-direction: column;
     padding: var(--spacing-md);
     background: white;
     border: 1px solid var(--border);
@@ -215,7 +229,7 @@ h6 { font-size: 1rem; }
 
 .card-title {
     color: #000000;
-    margin-bottom: 12px;
+    margin-bottom: 0;
 }
 
 .card-text {
@@ -256,6 +270,7 @@ h6 { font-size: 1rem; }
 .form-group {
     display: flex;
     flex-direction: column;
+    gap: var(--spacing-xs);
     width: 100%;
 }
 
@@ -263,8 +278,6 @@ h6 { font-size: 1rem; }
     font-weight: 600;
     font-size: 0.875rem;
     color: #374151;
-    margin-bottom: 0.5rem;
-    margin-top: 0.5rem;    
 }
 
 .form-control {
@@ -381,6 +394,51 @@ select.form-control:disabled {
   margin-top: 0.25rem;
 }
 
+/* File selection lists */
+.checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #1f2937;
+  cursor: pointer;
+}
+
+.selected-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.selected-file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  padding: 0.5rem 0.75rem;
+  background-color: #fbfbfc;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.selected-file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.text-muted {
+  color: var(--text-muted);
+  font-size: 0.825rem;
+}
+
 /* buttons */
 .btn-nypl {
   display: inline-block;
@@ -401,6 +459,11 @@ select.form-control:disabled {
   color: white;
 }
 
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.825rem;
+}
+
 .vertical-rule {
   display: inline-block;
   align-self: stretch;
@@ -414,13 +477,10 @@ select.form-control:disabled {
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
-  margin-top: 0.75rem;
-  margin-bottom: 0.75rem;
   border: 1px solid var(--border);
   border-radius: 6px;
   background-color: #ffffff;
 }
-
 
 .data-table {
   width: 100%;
@@ -443,7 +503,6 @@ select.form-control:disabled {
   padding: 0.5rem;
   border-bottom: 1px solid var(--border);
   word-break: normal; 
- 
 }
 
 .data-table tbody td {
@@ -473,11 +532,10 @@ select.form-control:disabled {
   font-size: 0.825rem;
 }
 
-.summary-sections {
+.summary-section {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  margin-top: 1.25rem;
+  gap: var(--spacing-sm);
 }
 
 .empty-state-success {
@@ -485,7 +543,6 @@ select.form-control:disabled {
   align-items: center;
   gap: 0.6rem;
   padding: 0.75rem;
-  margin-top: 0.5rem;
   background-color: #f0fdf4;
   border: 1px solid #bbf7d0;
   border-radius: 6px;
@@ -512,6 +569,7 @@ select.form-control:disabled {
 .file-card {
   display: flex;
   align-items: center;
+  gap: var(--spacing-sm);
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
