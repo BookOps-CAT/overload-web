@@ -129,7 +129,7 @@ class SFTPFileRetriever(ports.FileRetriever):
 
     def download(self, dir: str, name: str) -> bytes:
         """Load a file from a remote directory."""
-        file_info = self.client.get_file_info(filename=name, remote_dir=dir)
+        file_info = self.client.get_file_info(file_name=name, remote_dir=dir)
         file = self.client.get_file(file=file_info, remote_dir=dir)
         file.file_stream.seek(0)
         logger.info(f"File loaded: {name}")

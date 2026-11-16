@@ -126,10 +126,8 @@ def workflow_status_check(
             },
             headers={"HX-Trigger": "workflowCompleted"},
         )
-    elif (
-        state.status == models.WorkflowStatus.COMPLETED
-        and not state.batch_id
-        or state.status == models.WorkflowStatus.FAILED
+    elif state.status == models.WorkflowStatus.FAILED or (
+        state.status == models.WorkflowStatus.COMPLETED and not state.batch_id
     ):
         html_str = safe_html(
             "<div class='error'>Error: {error_message}</div>",
