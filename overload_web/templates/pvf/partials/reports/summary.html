@@ -3,7 +3,8 @@
   <section class="summary-section">
     <h5>Processing Summary</h5>
     <p class="card-text"><strong>Total processed files:</strong> {{ total_files }}</p>
-    <p class="card-text"><strong>File names:</strong> {{ file_names }}</p>
+    <p class="card-text"><strong>Total processed records:</strong> {{ total_records }}</p>
+    <p class="card-text"><strong>Files processed:</strong> {{ file_names }}</p>
     {% if not processing_integrity %}
       <p class="card-text"><strong>Integrity of processed files:</strong> {{ processing_integrity }}</p>
     {% endif %}
