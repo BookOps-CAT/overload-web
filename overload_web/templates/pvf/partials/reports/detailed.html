@@ -1,7 +1,10 @@
 {% import "components/macros.html" as macro %}
 {% if detailed_report %}
-  <h5>Detailed Report Data</h5>
-  {{ macro.report_table(detailed_report) }}
+  <hr class="horizontal-rule" />
+  <section class="summary-section">
+    <h5>Detailed Report Data</h5>
+    {{ macro.report_table(detailed_report) }}
+  </section>
 {% endif %}
 {% if written_report %}
   <div id="report-save-container" class="empty-state-success">

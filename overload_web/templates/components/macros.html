@@ -62,7 +62,8 @@
         <tr>
           <th scope="col" class="col-index">#</th>
           {% for key in report[0].keys() %}
-            <th scope="col">{{ " ".join(key.title().split("_")) }}</th>
+            {% set is_wide = 'title' in key.lower() or 'description' in key.lower() or 'message' in key.lower() %}
+            <th scope="col" class="{{ 'col-title' if is_wide else '' }}">{{ " ".join(key.title().split("_")) }}</th>
           {% endfor %}
         </tr>
       </thead>
@@ -70,8 +71,9 @@
         {% for row in report %}
           <tr>
             <td class="col-index">{{ loop.index }}</td>
-            {% for value in row.values() %}
-              <td>{{ value }}</td>
+            {% for key, value in row.items() %}
+              {% set is_wide = 'title' in key.lower() or 'description' in key.lower() or 'message' in key.lower() %}
+              <td class="{{ 'col-title' if is_wide else '' }}" title="{{ value }}">{{ value }}</td>
             {% endfor %}
           </tr>
         {% endfor %}

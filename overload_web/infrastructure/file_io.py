@@ -34,7 +34,6 @@ class LocalFileStorage(ports.FileStorage):
         """
         self.base_path = Path(base_path)
         self.base_path.mkdir(exist_ok=True)
-        logger.info(f"Local file storage location: {self.base_path}")
 
     def delete(self, reference: str) -> None:
         """Delete an uploaded file from local storage."""

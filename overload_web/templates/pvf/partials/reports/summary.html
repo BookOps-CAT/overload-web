@@ -1,21 +1,48 @@
 {% import "components/macros.html" as macro %}
-<div class="flex-col">
-  <section class="summary-section">
-    <h5>Processing Summary</h5>
-    <p class="card-text"><strong>Total processed files:</strong> {{ total_files }}</p>
-    <p class="card-text"><strong>Total processed records:</strong> {{ total_records }}</p>
-    <p class="card-text"><strong>Files processed:</strong> {{ file_names }}</p>
-    {% if not processing_integrity %}
-      <p class="card-text"><strong>Integrity of processed files:</strong> {{ processing_integrity }}</p>
-    {% endif %}
+<section class="summary-section">
+  <h5>Processing Summary</h5>
+  <div class="summary-stats-grid">
+    <div class="stat-box">
+      <span class="stat-label">Files Processed</span>
+      <span class="stat-value">{{ total_files }}</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-label">Records Processed</span>
+      <span class="stat-value">{{ total_records }}</span>
+    </div>
     {% if missing_barcodes %}
-      <p class="card-text"><strong>Missing barcodes:</strong> {{ missing_barcodes }}</p>
+      <div class="stat-box stat-box-warning">
+        <span class="stat-label">Missing Barcodes</span>
+        <span class="stat-value">{{ missing_barcodes }}</span>
+      </div>
     {% endif %}
     {% if duplicate_bibs %}
-      <p class="card-text"><strong>Duplicates:</strong> {{ duplicate_bibs }}</p>
+      <div class="stat-box stat-box-warning">
+        <span class="stat-label">Duplicates</span>
+        <span class="stat-value">{{ duplicate_bibs }}</span>
+      </div>
     {% endif %}
-  </section>
-</div>
+    {% if file_names %}
+      <div class="stat-box stat-box-sources">
+        <span class="stat-label">Source Files</span>
+        {% if file_names is iterable and file_names is not string %}
+          <ul class="file-pill-list">
+            {% for name in file_names %}
+              <li class="file-pill" title="{{ name }}">{{ name }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <span class="file-pill" title="{{ file_names }}">{{ file_names }}</span>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+  {% if not processing_integrity %}
+    <div class="alert-warning-banner">
+      <strong>Integrity of processed files:</strong> {{ processing_integrity }}
+    </div>
+  {% endif %}
+</section>
 <div class="flex-col">
   <section class="summary-section">
     <h5>Vendor Breakdown</h5>
