@@ -18,7 +18,8 @@
                 hx-post="/files/remove"
                 hx-vals='{"file_id": "{{ f.id }}"}'
                 hx-include="#workflow_id"
-                hx-swap="none">Remove</button>
+                hx-swap="none"
+                hx-confirm="Are you sure?">Remove</button>
       </div>
     {% endfor %}
   </div>

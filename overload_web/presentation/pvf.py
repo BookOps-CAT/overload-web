@@ -93,6 +93,8 @@ def process_records(
         hx-trigger="every 1s"
         hx-swap="outerHTML">
         <span class="spinner"></span> Processing vendor file...
+    </div>
+    <div id="pvf_button" hx-swap-oob="delete">
     </div>"""
     html_str = safe_html(partial, workflow_id=workflow_id)
     return HTMLResponse(html_str)
@@ -139,6 +141,8 @@ def workflow_status_check(
         hx-trigger="every 1s"
         hx-swap="outerHTML">
         <span class="spinner"></span> Processing vendor file...
+    </div>
+    <div id="pvf_button" hx-swap-oob="delete">
     </div>"""
     html_str = safe_html(partial, workflow_id=workflow_id)
     return HTMLResponse(html_str)

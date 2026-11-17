@@ -157,12 +157,12 @@ h6 { font-size: 1rem; }
 .gap-lg   { gap: var(--spacing-lg); }
 
 .row-gap-none { row-gap: 0; }
-.row-gap-sm   { row-gap: 1rem; }
-.row-gap-lg   { row-gap: 2rem; }
+.row-gap-sm   { row-gap: var(--spacing-sm); }
+.row-gap-lg   { row-gap: var(--spacing-lg); }
 
 .column-gap-none { column-gap: 0; }
-.column-gap-sm   { column-gap: 1rem; }
-.column-gap-lg   { column-gap: 2rem; }
+.column-gap-sm   { column-gap: var(--spacing-sm); }
+.column-gap-lg   { column-gap: var(--spacing-lg); }
 
 .grid-auto {
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -328,6 +328,12 @@ select.form-control:disabled {
     opacity: 0.6;
 }
 
+.grid-container:has(> .form-group),
+.flex-row:has(.form-group),
+.flex-col:has(> .form-group) {
+  row-gap: var(--spacing-sm);
+}
+
 /* Accessible screen-reader utility */
 .sr-only {
   position: absolute;
@@ -473,7 +479,7 @@ select.form-control:disabled {
   text-decoration: none;
   cursor: pointer;
   background-color: transparent;
-  border: 1px solid var(--nypl-brand-color);
+  border: 2px solid var(--nypl-brand-color);
   border-radius: 0.375rem;
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
 }
@@ -741,3 +747,4 @@ select.form-control:disabled {
 .text-right {
   text-align: right;
 }
+
