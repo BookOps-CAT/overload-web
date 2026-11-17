@@ -133,5 +133,5 @@ class UpdateOrderTemplate(Command):
 class CreateOutputReport(Command):
     """Command a report summary for a batch of processed records."""
 
-    batch_id: str
+    workflow_id: str
     record_type: str

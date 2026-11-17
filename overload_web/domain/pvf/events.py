@@ -45,7 +45,6 @@ class WorkflowCompleted(Event):
     """Event marking completion of processing workflow."""
 
     workflow_id: str
-    batch_id: str
 
 
 @dataclass

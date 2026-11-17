@@ -27,6 +27,7 @@ class ProcessedFileBatch:
         self,
         file_names: list[str],
         files: list[ProcessedFile],
+        id: str,
         record_type: str,
         stats: list[dict[str, Any]],
         missing_barcodes: list[str] | None = None,
@@ -38,6 +39,8 @@ class ProcessedFileBatch:
                 a list of file names as strings
             files:
                 a list of `ProcessedFile` objects
+            id:
+                the workflow ID associated with the batch of processed records
             record_type:
                 the record type for the workflow (acq, cat, or sel)
             stats:
@@ -49,6 +52,7 @@ class ProcessedFileBatch:
         """
         self.file_names = file_names
         self.files = files
+        self.id = id
         self.record_type = record_type
         self.stats = stats
         self.missing_barcodes = missing_barcodes if missing_barcodes else []
@@ -355,6 +359,7 @@ class OrderLevelJob(AbstractProcessingJob):
             file_names=self.file_names,
             missing_barcodes=self.missing_barcodes,
             record_type=record_type,
+            id=self.workflow_id,
         )
 
 
@@ -518,4 +523,5 @@ class FullRecordJob(AbstractProcessingJob):
             file_names=self.file_names,
             missing_barcodes=self.missing_barcodes,
             record_type=record_type,
+            id=self.workflow_id,
         )

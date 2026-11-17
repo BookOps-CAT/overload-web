@@ -7,7 +7,7 @@ from overload_web.application.pvf import queries
 
 class TestQueries:
     def test_get_batch_data(self, fake_uow):
-        out = queries.get_batch_data(batch_id="1", uow=fake_uow)
+        out = queries.get_batch_data(workflow_id="1", uow=fake_uow)
         assert sorted(out.model_dump().keys()) == sorted(
             [
                 "id",
@@ -25,11 +25,11 @@ class TestQueries:
 
     def test_get_batch_data_no_batch(self, fake_uow_no_data):
         with pytest.raises(ValueError) as exc:
-            queries.get_batch_data(batch_id="1", uow=fake_uow_no_data)
-        assert str(exc.value) == "Batch 1 not found in database."
+            queries.get_batch_data(workflow_id="1", uow=fake_uow_no_data)
+        assert str(exc.value) == "Batch not found in database for workflow 1."
 
     def test_get_detailed_report_data(self, fake_uow):
-        out = queries.get_detailed_report_data(batch_id="1", uow=fake_uow)
+        out = queries.get_detailed_report_data(workflow_id="1", uow=fake_uow)
         assert sorted(out[0].keys()) == sorted(
             [
                 "vendor",
@@ -48,7 +48,7 @@ class TestQueries:
         )
 
     def test_get_detailed_report_data_no_data(self, fake_uow_no_data):
-        out = queries.get_detailed_report_data(batch_id="1", uow=fake_uow_no_data)
+        out = queries.get_detailed_report_data(workflow_id="1", uow=fake_uow_no_data)
         assert out == []
 
     def test_get_order_template(self, fake_uow):
@@ -57,7 +57,7 @@ class TestQueries:
         assert template.id == 1
 
     def test_get_processing_report(self, fake_uow):
-        out = queries.get_processing_report(batch_id="1", uow=fake_uow)
+        out = queries.get_processing_report(workflow_id="1", uow=fake_uow)
         assert out == {
             "total_records": 1,
             "file_names": ["foo.mrc"],
@@ -70,7 +70,7 @@ class TestQueries:
         }
 
     def test_get_processing_report_no_data(self, fake_uow_no_data):
-        out = queries.get_processing_report(batch_id="1", uow=fake_uow_no_data)
+        out = queries.get_processing_report(workflow_id="1", uow=fake_uow_no_data)
         assert out == {}
 
     def test_get_processed_file(self, fake_uow):

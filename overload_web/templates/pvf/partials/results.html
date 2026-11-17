@@ -9,12 +9,12 @@
   <div class="flex-row" id="report-buttons">
     <button id="detailed-report-button"
             type="submit"
-            hx-get="/reports/detailed?batch_id={{ batch_id }}"
+            hx-get="/reports/detailed?workflow_id={{ workflow_id }}"
             hx-target="#detailed-report-container"
             class="btn btn-nypl">View detailed report</button>
     <button id="save-report-button"
             type="submit"
-            hx-post="/reports/write?batch_id={{ batch_id }}"
+            hx-post="/reports/write?workflow_id={{ workflow_id }}"
             hx-target="#detailed-report-container"
             hx-swap="beforeend"
             class="btn btn-nypl">Save Processing Statistics</button>

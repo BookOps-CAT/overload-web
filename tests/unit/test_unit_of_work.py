@@ -124,6 +124,7 @@ class TestSqlModelUnitOfWork:
             file_names=["foo.mrc"],
             missing_barcodes=[],
             record_type="foo",
+            id="1",
         )
         uow = unit_of_work.SqlModelUnitOfWork(engine=mock_engine)
         with uow:

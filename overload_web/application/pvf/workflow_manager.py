@@ -265,16 +265,11 @@ class WorkflowManager:
                 an `events.WorkflowCompleted` object.
                 The event contains the following attributes:
                     workflow_id: str
-                    batch_id: str
 
         Returns:
             None. Workflow state is updated to `COMPLETED`.
 
         """
         self._update_workflow_state(
-            id=event.workflow_id,
-            state={
-                "status": models.WorkflowStatus.COMPLETED,
-                "batch_id": event.batch_id,
-            },
+            id=event.workflow_id, state={"status": models.WorkflowStatus.COMPLETED}
         )

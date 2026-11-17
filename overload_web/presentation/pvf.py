@@ -108,13 +108,13 @@ def workflow_status_check(
     state = queries.get_workflow_state(workflow_id=workflow_id, uow=uow)
     if not state:
         return HTMLResponse("<div class='error'>Workflow not found.</div>")
-    if state.status == models.WorkflowStatus.COMPLETED and state.batch_id:
-        batch = queries.get_batch_data(batch_id=state.batch_id, uow=uow)
+    if state.status == models.WorkflowStatus.COMPLETED:
+        batch = queries.get_batch_data(workflow_id=state.id, uow=uow)
         return templates.TemplateResponse(
             request=request,
             name="pvf/partials/results.html",
             context={
-                "batch_id": state.batch_id,
+                "workflow_id": state.id,
                 "record_type": state.record_type,
                 "total_records": batch.total_records,
                 "file_names": batch.file_names,
@@ -128,9 +128,7 @@ def workflow_status_check(
             },
             headers={"HX-Trigger": "workflowCompleted"},
         )
-    elif state.status == models.WorkflowStatus.FAILED or (
-        state.status == models.WorkflowStatus.COMPLETED and not state.batch_id
-    ):
+    elif state.status == models.WorkflowStatus.FAILED:
         html_str = safe_html(
             "<div class='error'>Error: {error_message}</div>",
             error_message=state.error_message,

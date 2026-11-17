@@ -377,12 +377,9 @@ class UpdateAndOutputOrderLevelRecordsHandler(AbstractCommandHandler):
             record_type=cmd.record_type,
         )
         with self.uow:
-            db_batch = self.uow.processed_batches.save(job.processed)
-            batch_id = db_batch.id
+            self.uow.processed_batches.save(job.processed)
             self.uow.commit()
-        self.bus.publish(
-            events.WorkflowCompleted(workflow_id=cmd.workflow_id, batch_id=batch_id)
-        )
+        self.bus.publish(events.WorkflowCompleted(workflow_id=cmd.workflow_id))
 
 
 class UpdateAndOutputFullLevelRecordsHandler(AbstractCommandHandler):
@@ -432,12 +429,9 @@ class UpdateAndOutputFullLevelRecordsHandler(AbstractCommandHandler):
             record_type=cmd.record_type,
         )
         with self.uow:
-            db_batch = self.uow.processed_batches.save(job.processed)
-            batch_id = db_batch.id
+            self.uow.processed_batches.save(job.processed)
             self.uow.commit()
-        self.bus.publish(
-            events.WorkflowCompleted(workflow_id=cmd.workflow_id, batch_id=batch_id)
-        )
+        self.bus.publish(events.WorkflowCompleted(workflow_id=cmd.workflow_id))
 
 
 # ---------------------------------------------------------

@@ -281,6 +281,8 @@ class PVFBatchRepository(ports.BatchRepositoryProtocol):
             call_number_report=obj.call_number_report,
             duplicate_report=obj.duplicate_report,
             vendor_report=obj.vendor_report,
+            id=obj.id,
+            record_type=obj.record_type,
         )
         self.session.add(valid_batch)
         self.session.flush()

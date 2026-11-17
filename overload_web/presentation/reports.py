@@ -21,7 +21,7 @@ api_router = APIRouter()
 
 @api_router.get("/summary", response_class=HTMLResponse)
 def get_output_report(
-    request: Request, batch_id: str, uow: Annotated[Any, Depends(pvf_deps.get_uow)]
+    request: Request, uow: Annotated[Any, Depends(pvf_deps.get_uow)], workflow_id: str
 ) -> HTMLResponse:
     """Create a report for a workflow based on processing statistics.
 
@@ -29,14 +29,14 @@ def get_output_report(
 
     Args:
         request: the HTTP request sent by the app
-        batch_id: the id for the batch of processed files and their statistics
         uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
+        workflow_id: the workflow id for the processed files and their statistics
 
     Returns:
         the report data wrapped in a `HTMLResponse` object
 
     """
-    out = queries.get_processing_report(batch_id=batch_id, uow=uow)
+    out = queries.get_processing_report(workflow_id=workflow_id, uow=uow)
     return templates.TemplateResponse(
         request=request, name="pvf/partials/reports/summary.html", context=out
     )
@@ -44,7 +44,7 @@ def get_output_report(
 
 @api_router.get("/detailed", response_class=HTMLResponse)
 def get_detailed_report(
-    request: Request, batch_id: str, uow: Annotated[Any, Depends(pvf_deps.get_uow)]
+    request: Request, uow: Annotated[Any, Depends(pvf_deps.get_uow)], workflow_id: str
 ) -> HTMLResponse:
     """Retrieve processing statistics and return a detailed report for a workflow.
 
@@ -52,14 +52,14 @@ def get_detailed_report(
 
     Args:
         request: the HTTP request sent by the app
-        batch_id: the id for the batch of processed files and their statistics
         uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
+        workflow_id: the workflow id for the processed files and their statistics
 
     Returns:
         the report data wrapped in a `HTMLResponse` object
 
     """
-    out = queries.get_detailed_report_data(batch_id=batch_id, uow=uow)
+    out = queries.get_detailed_report_data(workflow_id=workflow_id, uow=uow)
     return templates.TemplateResponse(
         request=request,
         name="pvf/partials/reports/detailed.html",
@@ -70,16 +70,16 @@ def get_detailed_report(
 @api_router.post("/write", response_class=HTMLResponse)
 def save_processing_statistics(
     request: Request,
-    batch_id: str,
     uow: Annotated[Any, Depends(pvf_deps.get_uow)],
+    workflow_id: str,
     writer: Annotated[Any, Depends(pvf_deps.get_report_writer)],
 ) -> HTMLResponse:
     """Save all processing statistics for a workflow to a google sheet.
 
     Args:
         request: the HTTP request sent by the app
-        batch_id: the id for the batch of processed files and their statistics
         uow: a `ports.UnitOfWorkProtocol` object used by the endpoint.
+        workflow_id: the workflow id for the processed files and their statistics
         writer: a `ports.ReportWriter` object to interact with the Google Sheets API
 
     Returns:
@@ -87,7 +87,7 @@ def save_processing_statistics(
         in a `HTMLResponse` object.
 
     """
-    report_data = queries.get_processing_report(batch_id=batch_id, uow=uow)
+    report_data = queries.get_processing_report(workflow_id=workflow_id, uow=uow)
     WriteOutputReport.execute(report_data=report_data, writer=writer)
     return templates.TemplateResponse(
         request=request,

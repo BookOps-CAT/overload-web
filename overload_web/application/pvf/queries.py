@@ -6,22 +6,22 @@ from overload_web.domain.pvf import aggregate, files, models, order_templates, p
 
 
 def get_batch_data(
-    batch_id: str, uow: ports.UnitOfWorkProtocol
+    workflow_id: str, uow: ports.UnitOfWorkProtocol
 ) -> aggregate.ProcessedFileBatch:
     """Get all processed files and report data from a processed batch."""
     with uow:
-        data = uow.processed_batches.get(batch_id)
+        data = uow.processed_batches.get(workflow_id)
         if not data:
-            raise ValueError(f"Batch {batch_id} not found in database.")
+            raise ValueError(f"Batch not found in database for workflow {workflow_id}.")
         return data
 
 
 def get_detailed_report_data(
-    batch_id: str, uow: ports.UnitOfWorkProtocol
+    workflow_id: str, uow: ports.UnitOfWorkProtocol
 ) -> list[dict[str, Any]]:
     """Create a detailed processing report for a batch of processed records."""
     with uow:
-        data = uow.processed_batches.get(batch_id)
+        data = uow.processed_batches.get(workflow_id)
         if data:
             return data.stats
     return []
@@ -59,11 +59,11 @@ def get_workflow_state(
 
 
 def get_processing_report(
-    batch_id: str, uow: ports.UnitOfWorkProtocol
+    workflow_id: str, uow: ports.UnitOfWorkProtocol
 ) -> dict[str, Any]:
     """Create a report summary for a batch of processed records."""
     with uow:
-        data = uow.processed_batches.get(batch_id)
+        data = uow.processed_batches.get(workflow_id)
         if data:
             return {
                 "total_records": data.total_records,

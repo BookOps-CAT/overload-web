@@ -59,7 +59,7 @@ class ProcessedFileModel(SQLModel, table=True):
     __tablename__ = "files"
 
     id: int | None = Field(default=None, primary_key=True, index=True, exclude=True)
-    batch_id: int = Field(default=None, foreign_key="batches.id", exclude=True)
+    workflow_id: int = Field(default=None, foreign_key="batches.id", exclude=True)
     filename: str = Field(nullable=False, index=True)
     records: bytes = Field(nullable=False)
 
@@ -77,6 +77,7 @@ class PVFBatch(SQLModel, table=True):
     file_names: list[str] = Field(sa_column=Column(JSON))
     missing_barcodes: list[str] | None = Field(sa_column=Column(JSON))
     processing_integrity: bool
+    record_type: str = Field(nullable=False)
     stats: list[dict[str, Any]] = Field(sa_column=Column(JSON))
     total_files: int
     total_records: int
@@ -142,7 +143,6 @@ class TemplateModel(TemplateUpdateModel, table=True):
 class WorkflowUpdateModel(SQLModel):
     """A model representing updates to be made to a `WorkflowStateModel`."""
 
-    batch_id: int | None = Field(default=None)
     collection: str | None = Field(default=None)
     error_message: str | None = Field(default=None)
     library: str | None = Field(default=None)

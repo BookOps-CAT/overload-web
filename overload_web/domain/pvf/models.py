@@ -568,21 +568,12 @@ class WorkflowStateBase:
 
     id: str
     status: WorkflowStatus
-    batch_id: str | None = None
     collection: str | None = None
     error_message: str | None = None
     library: str | None = None
     record_type: str | None = None
     matchpoints: dict[str, str] = field(default_factory=dict)
     template_data: dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass(kw_only=True)
-class WorkflowStateMinimal:
-    """Defines a base entity for a long-running process."""
-
-    status: WorkflowStatus
-    batch_id: str | None = None
 
 
 @dataclass(kw_only=True)

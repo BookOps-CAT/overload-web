@@ -376,7 +376,7 @@ class TestApp:
     def test_pvf_router_workflow_status_check_completed(self, mocker):
         mock_obj = mocker.Mock(
             return_value=tables.WorkflowStateModel(
-                id="123", status="COMPLETED", batch_id=1
+                id="123", status="COMPLETED", workflow_id=1
             )
         )
         mock_batch = mocker.Mock(
@@ -398,7 +398,7 @@ class TestApp:
         mocker.patch.object(queries, "get_batch_data", mock_batch)
         response = self.client.get("/pvf/workflow/123/status")
         assert response.status_code == 200
-        assert "batch_id" in response.context
+        assert "workflow_id" in response.context
         assert "vendor_report" in response.context
         assert response.url == f"{self.base_url}/pvf/workflow/123/status"
 
@@ -425,16 +425,16 @@ class TestApp:
     def test_reports_router_output_report(self, mocker):
         mock_obj = mocker.Mock(return_value={})
         mocker.patch.object(queries, "get_processing_report", mock_obj)
-        response = self.client.get("/reports/summary?batch_id=1")
+        response = self.client.get("/reports/summary?workflow_id=1")
         assert response.status_code == 200
-        assert response.url == f"{self.base_url}/reports/summary?batch_id=1"
+        assert response.url == f"{self.base_url}/reports/summary?workflow_id=1"
 
     def test_reports_router_get_detailed_report(self, mocker):
         mock_obj = mocker.Mock(return_value={})
         mocker.patch.object(queries, "get_detailed_report_data", mock_obj)
-        response = self.client.get("/reports/detailed?batch_id=1")
+        response = self.client.get("/reports/detailed?workflow_id=1")
         assert response.status_code == 200
-        assert response.url == f"{self.base_url}/reports/detailed?batch_id=1"
+        assert response.url == f"{self.base_url}/reports/detailed?workflow_id=1"
 
     def test_reports_router_write_report_to_google_sheet(self, mocker):
         mock_data = mocker.Mock(
@@ -446,9 +446,9 @@ class TestApp:
         mocker.patch.object(queries, "get_processing_report", mock_data)
         mock = mocker.Mock()
         mocker.patch.object(report_service.WriteOutputReport, "execute", mock)
-        response = self.client.post("/reports/write?batch_id=1")
+        response = self.client.post("/reports/write?workflow_id=1")
         assert response.status_code == 200
-        assert response.url == f"{self.base_url}/reports/write?batch_id=1"
+        assert response.url == f"{self.base_url}/reports/write?workflow_id=1"
 
     @pytest.mark.parametrize(
         "library, collection", [("nypl", "BL"), ("nypl", "RL"), ("bpl", "")]

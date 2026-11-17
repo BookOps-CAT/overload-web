@@ -367,7 +367,7 @@ class FakeProcessedFileRepository(unit_of_work.ProcessedFileRepository):
 
     def get(self, id):
         return tables.ProcessedFileModel(
-            id=id, batch_id=1, filename="foo.mrc", records=b""
+            id=id, workflow_id=1, filename="foo.mrc", records=b""
         )
 
 
