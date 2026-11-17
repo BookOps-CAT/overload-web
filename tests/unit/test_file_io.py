@@ -140,9 +140,8 @@ class TestLocalFileStorage:
         path = tmp_path / "temp"
         storage = file_io.LocalFileStorage(base_path=path)
         storage.delete_intermediate_records(id="12345")
-        assert (
-            f"Deleted intermediate state file: {path}\\12345_state.pkl" in caplog.text
-        )
+        assert "Deleted intermediate state file: " in caplog.text
+        assert "12345_state.pkl" in caplog.text
 
     def test_delete_intermediate_records_not_found(self, tmp_path):
         path = tmp_path / "temp"
