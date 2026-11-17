@@ -148,6 +148,7 @@ class TestSqlModelUnitOfWork:
                 "call_number_report",
                 "duplicate_report",
                 "vendor_report",
+                "record_type",
             ]
         )
         assert new_batch_data == saved_batch_data
