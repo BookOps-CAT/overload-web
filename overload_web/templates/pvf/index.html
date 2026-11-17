@@ -16,4 +16,11 @@
     </div>
   </form>
   <div id="pvf_output" class="flex-col"></div>
+  <script>
+  document.body.addEventListener("workflowCompleted", () => {
+    ["files-section-details", "template-section-details"].forEach((id) => {
+      document.getElementById(id)?.removeAttribute("open");
+    });
+  });
+  </script>
 {% endblock %}

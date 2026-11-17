@@ -847,3 +847,72 @@ input[type="checkbox"]:focus-visible {
   text-align: right;
 }
 
+/* Collapsible sections */
+.collapsible-section {
+  width: 100%;
+}
+
+.section-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  padding: 0.25rem 0;
+}
+
+.section-summary::-webkit-details-marker {
+  display: none;
+}
+
+.section-summary:hover h5 {
+  color: var(--nypl-brand-color);
+}
+
+.section-summary-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.collapse-chevron {
+  width: 18px;
+  height: 18px;
+  color: #64748b;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.collapsible-section[open] > .section-summary .collapse-chevron {
+  transform: rotate(180deg);
+}
+
+.section-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+/* Optional status pill shown in collapsed summary headers */
+.status-badge-ok {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #166534;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+}
+
+.status-badge-warn {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #b45309;
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 999px;
+}

@@ -1,85 +1,144 @@
 {% import "components/macros.html" as macro %}
-<section class="summary-section">
-  <h5>Processing Summary</h5>
-  <div class="summary-stats-grid">
-    <div class="stat-box">
-      <span class="stat-label">Files Processed</span>
-      <span class="stat-value">{{ total_files }}</span>
-    </div>
-    <div class="stat-box">
-      <span class="stat-label">Records Processed</span>
-      <span class="stat-value">{{ total_records }}</span>
-    </div>
-    {% if missing_barcodes %}
-      <div class="stat-box stat-box-warning">
-        <span class="stat-label">Missing Barcodes</span>
-        <span class="stat-value">{{ missing_barcodes }}</span>
+<details class="collapsible-section" open>
+  <summary class="section-summary">
+    <h5>Processing Summary</h5>
+    <svg class="collapse-chevron"
+         viewBox="0 0 24 24"
+         fill="none"
+         stroke="currentColor"
+         stroke-width="2">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  </summary>
+  <div class="section-body">
+    <div class="summary-stats-grid">
+      <div class="stat-box">
+        <span class="stat-label">Files Processed</span>
+        <span class="stat-value">{{ total_files }}</span>
       </div>
-    {% endif %}
-    {% if duplicate_bibs %}
-      <div class="stat-box stat-box-warning">
-        <span class="stat-label">Duplicates</span>
-        <span class="stat-value">{{ duplicate_bibs }}</span>
+      <div class="stat-box">
+        <span class="stat-label">Records Processed</span>
+        <span class="stat-value">{{ total_records }}</span>
       </div>
-    {% endif %}
-    {% if file_names %}
-      <div class="stat-box stat-box-sources">
-        <span class="stat-label">Source Files</span>
-        {% if file_names is iterable and file_names is not string %}
-          <ul class="file-pill-list">
-            {% for name in file_names %}
-              <li class="file-pill" title="{{ name }}">{{ name }}</li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <span class="file-pill" title="{{ file_names }}">{{ file_names }}</span>
-        {% endif %}
+      {% if missing_barcodes %}
+        <div class="stat-box stat-box-warning">
+          <span class="stat-label">Missing Barcodes</span>
+          <span class="stat-value">{{ missing_barcodes }}</span>
+        </div>
+      {% endif %}
+      {% if duplicate_bibs %}
+        <div class="stat-box stat-box-warning">
+          <span class="stat-label">Duplicates</span>
+          <span class="stat-value">{{ duplicate_bibs }}</span>
+        </div>
+      {% endif %}
+      {% if file_names %}
+        <div class="stat-box stat-box-sources">
+          <span class="stat-label">Source Files</span>
+          {% if file_names is iterable and file_names is not string %}
+            <ul class="file-pill-list">
+              {% for name in file_names %}
+                <li class="file-pill" title="{{ name }}">{{ name }}</li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <span class="file-pill" title="{{ file_names }}">{{ file_names }}</span>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+    {% if not processing_integrity %}
+      <div class="alert-warning-banner">
+        <strong>Integrity of processed files:</strong> {{ processing_integrity }}
       </div>
     {% endif %}
   </div>
-  {% if not processing_integrity %}
-    <div class="alert-warning-banner">
-      <strong>Integrity of processed files:</strong> {{ processing_integrity }}
-    </div>
-  {% endif %}
-</section>
+</details>
 <div class="flex-col">
-  <section class="summary-section">
-    <h5>Vendor Breakdown</h5>
-    {% if vendor_report %}{{ macro.report_table(vendor_report) }}{% endif %}
-  </section>
-  <section class="summary-section">
-    <h5>Duplicates Report</h5>
-    {% if duplicate_report %}
-      {{ macro.report_table(duplicate_report) }}
-    {% else %}
-      <div class="empty-state-success">
-        <svg class="empty-icon"
-             fill="none"
-             stroke="currentColor"
-             viewBox="0 0 24 24"
-             aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-        </svg>
-        <span>No duplicate records found!</span>
+  <hr class="horizontal-rule" />
+  <details class="collapsible-section" open>
+    <summary class="section-summary">
+      <h5>Vendor Breakdown</h5>
+      <svg class="collapse-chevron"
+           viewBox="0 0 24 24"
+           fill="none"
+           stroke="currentColor"
+           stroke-width="2">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </summary>
+    <div class="section-body">{% if vendor_report %}{{ macro.report_table(vendor_report) }}{% endif %}</div>
+  </details>
+  <hr class="horizontal-rule" />
+  <details class="collapsible-section" {{ 'open' if duplicate_report }}>
+    <summary class="section-summary">
+      <div class="section-summary-title">
+        <h5>Duplicates Report</h5>
+        {% if duplicate_report %}
+          <span class="status-badge-warn">{{ duplicate_report | length }} found</span>
+        {% else %}
+          <span class="status-badge-ok">None</span>
+        {% endif %}
       </div>
-    {% endif %}
-  </section>
-  <section class="summary-section">
-    <h5>Call Number Issues</h5>
-    {% if call_number_report %}
-      {{ macro.report_table(call_number_report) }}
-    {% else %}
-      <div class="empty-state-success">
-        <svg class="empty-icon"
-             fill="none"
-             stroke="currentColor"
-             viewBox="0 0 24 24"
-             aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-        </svg>
-        <span>No call number issues found!</span>
+      <svg class="collapse-chevron"
+           viewBox="0 0 24 24"
+           fill="none"
+           stroke="currentColor"
+           stroke-width="2">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </summary>
+    <div class="section-body">
+      {% if duplicate_report %}
+        {{ macro.report_table(duplicate_report) }}
+      {% else %}
+        <div class="empty-state-success">
+          <svg class="empty-icon"
+               fill="none"
+               stroke="currentColor"
+               viewBox="0 0 24 24"
+               aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span>No duplicate records found!</span>
+        </div>
+      {% endif %}
+    </div>
+  </details>
+  <hr class="horizontal-rule" />
+  <details class="collapsible-section" {{ 'open' if call_number_report }}>
+    <summary class="section-summary">
+      <div class="section-summary-title">
+        <h5>Call Number Issues</h5>
+        {% if call_number_report %}
+          <span class="status-badge-warn">{{ call_number_report | length }} found</span>
+        {% else %}
+          <span class="status-badge-ok">None</span>
+        {% endif %}
       </div>
-    {% endif %}
-  </section>
+      <svg class="collapse-chevron"
+           viewBox="0 0 24 24"
+           fill="none"
+           stroke="currentColor"
+           stroke-width="2">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </summary>
+    <div class="section-body">
+      {% if call_number_report %}
+        {{ macro.report_table(call_number_report) }}
+      {% else %}
+        <div class="empty-state-success">
+          <svg class="empty-icon"
+               fill="none"
+               stroke="currentColor"
+               viewBox="0 0 24 24"
+               aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span>No call number issues found!</span>
+        </div>
+      {% endif %}
+    </div>
+  </details>
 </div>

@@ -1,10 +1,19 @@
 {% import "components/macros.html" as macro %}
 {% if detailed_report %}
   <hr class="horizontal-rule" />
-  <section class="summary-section">
-    <h5>Detailed Report Data</h5>
-    {{ macro.report_table(detailed_report) }}
-  </section>
+  <details class="collapsible-section" open>
+    <summary class="section-summary">
+      <h5>Detailed Report Data</h5>
+      <svg class="collapse-chevron"
+           viewBox="0 0 24 24"
+           fill="none"
+           stroke="currentColor"
+           stroke-width="2">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </summary>
+    <div class="section-body">{{ macro.report_table(detailed_report) }}</div>
+  </details>
 {% endif %}
 {% if written_report %}
   <div id="report-save-container" class="empty-state-success">
