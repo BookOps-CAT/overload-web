@@ -71,6 +71,8 @@ class VendorFileInfo:
 
     @property
     def update_date_str(self) -> str:
-        """Update date of file as a string (MM/DD/YYYY )."""
-        datetime_stamp = datetime.datetime.fromtimestamp(self.update_date)
+        """Update date of file as a string (MM-DD-YYYY HH:MM PM)."""
+        datetime_stamp = datetime.datetime.fromtimestamp(
+            self.update_date, tz=datetime.UTC
+        )
         return datetime.datetime.strftime(datetime_stamp, "%m-%d-%Y %I:%M %p")

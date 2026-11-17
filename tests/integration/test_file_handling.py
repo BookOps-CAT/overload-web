@@ -35,7 +35,7 @@ class TestFileHandling:
         assert file_list[0].formatted_bytes == "1.00 KB"
         assert file_list[0].size == 1024
         assert file_list[0].update_date == 1794849966
-        assert file_list[0].update_date_str == "11-16-2026 12:26 PM"
+        assert file_list[0].update_date_str == "11-16-2026 05:26 PM"
 
     def test_download_remote_file(self):
         file = DownloadVendorFile.execute(
