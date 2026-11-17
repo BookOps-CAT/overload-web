@@ -30,6 +30,10 @@ def bootstrap_message_bus(
     bus.register_command(
         commands.DeleteFileFromWorkflow, handlers.DeleteFileFromWorkflowHandler(uow=uow)
     )
+    bus.register_command(
+        commands.CleanUpWorkflowFiles,
+        handlers.CleanUpWorkflowFilesHandler(uow=uow, storage=storage),
+    )
 
     # Register template commands
     bus.register_command(

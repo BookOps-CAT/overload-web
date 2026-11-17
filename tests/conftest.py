@@ -323,6 +323,7 @@ class FakeBatchRepository(unit_of_work.PVFBatchRepository):
         call_number_report=[],
         duplicate_report=[],
         vendor_report=[],
+        record_type="foo",
     )
 
     def __init__(self):
@@ -414,11 +415,14 @@ class FakeWorkflowRepository(unit_of_work.WorkflowStatusRepository):
     def __init__(self):
         self.session = None
 
-    def save(self, obj):
-        return obj
+    def delete(self, id):
+        pass
 
     def get(self, id):
         return self.WORKFLOW
+
+    def save(self, obj):
+        return obj
 
     def update(self, data, id):
         for k, v in data.items():

@@ -96,7 +96,7 @@ class IncomingFileRepository(ports.IncomingFileRepositoryProtocol):
         """
         self.session = session
 
-    def delete(self, id: str | int) -> None:
+    def delete(self, id: str) -> None:
         """Delete an `IncomingFileModel` object from the workflow's list of files.
 
         Args:
@@ -113,7 +113,7 @@ class IncomingFileRepository(ports.IncomingFileRepositoryProtocol):
         file = results.one_or_none()
         self.session.delete(file)
 
-    def list_by_id(self, id: str | int) -> Sequence[tables.IncomingFileModel]:
+    def list_by_id(self, id: str) -> Sequence[tables.IncomingFileModel]:
         """Retrieve all `IncomingFileModel` objects in the database.
 
         Args:
@@ -327,6 +327,23 @@ class WorkflowStatusRepository(ports.WorkflowRepositoryProtocol):
 
         """
         self.session = session
+
+    def delete(self, id: str) -> None:
+        """Delete a `WorkflowStateModel` and its cascaded incoming files.
+
+        Args:
+            id: the primary key of the `WorkflowStateModel`.
+
+        Returns:
+            None
+
+        """
+        statement = select(tables.WorkflowStateModel).where(
+            tables.WorkflowStateModel.id == id
+        )
+        results = self.session.exec(statement)
+        workflow = results.one_or_none()
+        self.session.delete(workflow)
 
     def get(self, id: str | int) -> tables.WorkflowStateModel | None:
         """Retrieve an `WorkflowStateModel` object by its ID.

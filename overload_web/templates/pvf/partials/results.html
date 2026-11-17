@@ -27,3 +27,7 @@
             hx-push-url="true">Reset form</button>
   </div>
 </div>
+<div hx-post="/files/cleanup"
+     hx-trigger="workflowCompleted from:body"
+     hx-include="#workflow_id"
+     hx-swap="none"></div>

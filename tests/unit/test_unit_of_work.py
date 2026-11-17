@@ -185,9 +185,13 @@ class TestSqlModelUnitOfWork:
             uow.commit()
             invalid_workflow = uow.workflow_states.update(data=update_data, id="2")
             uow.commit()
+            uow.workflow_states.delete("1")
+            uow.commit()
+            workflow = uow.workflow_states.get("1")
         assert new_workflow_status == "PENDING"
         assert saved_workflow_id == "1"
         assert saved_workflow_id == updated_workflow_id
         assert saved_workflow_status != updated_workflow_status
         assert invalid_workflow is None
         assert "Workflow '2' does not exist" in caplog.text
+        assert workflow is None

@@ -36,28 +36,25 @@ class LocalFileStorage(ports.FileStorage):
         self.base_path.mkdir(exist_ok=True)
         logger.info(f"Local file storage location: {self.base_path}")
 
-    def save(self, id: str, filename: str, content: bytes) -> str:
-        """Write a file to a local directory."""
-        path = self.base_path / f"{id}_{filename}"
+    def delete(self, reference: str) -> None:
+        """Delete an uploaded file from local storage."""
+        path = Path(reference)
+        if path.exists():
+            path.unlink()
+            logger.info(f"Deleted original file: {path}")
 
-        with open(path, "wb") as f:
-            f.write(content)
-
-        return str(path)
+    def delete_intermediate_records(self, id: str) -> None:
+        """Delete serialized intermediate domain state from disk."""
+        file_path = self.base_path / f"{id}_state.pkl"
+        if file_path.exists():
+            file_path.unlink()
+            logger.info(f"Deleted intermediate state file: {file_path}")
 
     def load(self, reference: str) -> bytes:
         """Load a file from a local directory."""
         with open(reference, "rb") as fh:
             file = fh.read()
         return file
-
-    def save_intermediate_records(
-        self, id: str, job: aggregate.AbstractProcessingJob
-    ) -> None:
-        """Serialize the intermediate domain objects to disk."""
-        file_path = self.base_path / f"{id}_state.pkl"
-        with open(file_path, "wb") as f:
-            pickle.dump(job, f)
 
     def load_intermediate_records(self, id: str) -> aggregate.AbstractProcessingJob:
         """Deserialize the domain objects back into memory."""
@@ -67,6 +64,23 @@ class LocalFileStorage(ports.FileStorage):
             raise FileNotFoundError(f"No intermediate state found for {id}.")
         with open(file_path, "rb") as f:
             return pickle.load(f)
+
+    def save(self, id: str, filename: str, content: bytes) -> str:
+        """Write a file to a local directory."""
+        path = self.base_path / f"{id}_{filename}"
+
+        with open(path, "wb") as f:
+            f.write(content)
+
+        return str(path)
+
+    def save_intermediate_records(
+        self, id: str, job: aggregate.AbstractProcessingJob
+    ) -> None:
+        """Serialize the intermediate domain objects to disk."""
+        file_path = self.base_path / f"{id}_state.pkl"
+        with open(file_path, "wb") as f:
+            pickle.dump(job, f)
 
 
 class LocalFileRetriever(ports.FileRetriever):

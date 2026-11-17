@@ -92,6 +92,22 @@ class FileStorage(Protocol[T]):  # pragma: no branch
     Implementations may interact with an FTP/SFTP server or a local file directory.
     """
 
+    def delete(self, reference: str) -> None:
+        """Delete a file.
+
+        Args:
+            reference: the path to the file
+
+        Returns:
+            None
+
+        """
+        ...
+
+    def delete_intermediate_records(self, id: str) -> None:
+        """Delete records from intermediate stage of processing workflow."""
+        ...
+
     def load(self, reference: str) -> bytes:
         """Load a file.
 
@@ -102,6 +118,10 @@ class FileStorage(Protocol[T]):  # pragma: no branch
             the content of the specified file as a `bytes` object
 
         """
+        ...
+
+    def load_intermediate_records(self, id: str) -> T:
+        """Load records from intermediate stage of processing workflow."""
         ...
 
     def save(self, id: str, filename: str, content: bytes) -> str:
@@ -120,10 +140,6 @@ class FileStorage(Protocol[T]):  # pragma: no branch
 
     def save_intermediate_records(self, id: str, job: T) -> None:
         """Save records at intermediate stage of processing workflow."""
-        ...
-
-    def load_intermediate_records(self, id: str) -> T:
-        """Load records from intermediate stage of processing workflow."""
         ...
 
 
@@ -282,7 +298,7 @@ class IncomingFileRepositoryProtocol(Protocol[T]):  # pragma: no branch
         """Delete an object from a database."""
         ...
 
-    def list_by_id(self, id: str | int) -> Sequence[T]:
+    def list_by_id(self, id: str) -> Sequence[T]:
         """List all objects in a database filtering by a specific id."""
         ...
 
@@ -309,6 +325,10 @@ class WorkflowRepositoryProtocol(Protocol[T]):  # pragma: no branch
 
     Includes methods for fetching and saving generic objects.
     """
+
+    def delete(self, id: str) -> None:
+        """Delete an object from a database."""
+        ...
 
     def get(self, id: str) -> T | None:
         """Get objects from a database."""

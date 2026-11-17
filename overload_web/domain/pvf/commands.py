@@ -135,3 +135,10 @@ class CreateOutputReport(Command):
 
     workflow_id: str
     record_type: str
+
+
+@dataclass(frozen=True)
+class CleanUpWorkflowFiles(Command):
+    """Delete all intermediate and files after processing."""
+
+    workflow_id: str

@@ -66,3 +66,13 @@ class TestFileIOHandlers:
         assert len(caplog.records) == 2
         assert "Handling command: DeleteFileFromWorkflow" == caplog.records[0].msg
         assert "File removed from workflow 12345: 1." == caplog.records[1].msg
+
+    def test_clean_up_workflow(self, stub_order_level_manager, caplog):
+        bus = stub_order_level_manager.bus
+        bus.send(commands.CleanUpWorkflowFiles(workflow_id="12345"))
+        assert len(caplog.records) == 2
+        assert "Handling command: CleanUpWorkflowFiles" == caplog.records[0].msg
+        assert (
+            "Removed workflow 12345 and 1 incoming file record(s)."
+            == caplog.records[1].msg
+        )

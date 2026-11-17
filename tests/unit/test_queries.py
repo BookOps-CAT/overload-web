@@ -20,6 +20,7 @@ class TestQueries:
                 "missing_barcodes",
                 "processing_integrity",
                 "call_number_report",
+                "record_type",
             ]
         )
 

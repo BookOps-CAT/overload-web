@@ -147,6 +147,14 @@ class TestApp:
         assert response.url == f"{self.base_url}/files/remove"
         assert dict(response.headers.items()) == {"hx-trigger": "workflowFilesChanged"}
 
+    def test_files_router_cleanup(self, mocker):
+        mock = mocker.Mock()
+        mocker.patch.object(message_bus.MessageBus, "send", mock)
+        response = self.client.post("/files/cleanup", data={"workflow_id": "1"})
+        assert response.status_code == 204
+        assert response.url == f"{self.base_url}/files/cleanup"
+        assert dict(response.headers.items()) == {"hx-trigger": "workflowFilesChanged"}
+
     def test_frontend_router_root_get(self):
         response = self.client.get("/")
         assert response.status_code == 200

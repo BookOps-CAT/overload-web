@@ -576,3 +576,48 @@ class UpdateOrderTemplateHandler:
             self.uow.order_templates.update(id=cmd.template_id, data=cmd.data)
             logger.info(f"Order template {cmd.template_id} updated: {cmd.data}.")
             self.uow.commit()
+
+
+class CleanUpWorkflowFilesHandler:
+    """Delete all intermediate files and database records for a completed workflow."""
+
+    def __init__(
+        self, storage: ports.FileStorage, uow: ports.UnitOfWorkProtocol
+    ) -> None:
+        """Initialize the handler with injected dependencies and application services.
+
+        Args:
+            storage: a `ports.FileStorage` object.
+            uow: a `ports.UnitOfWorkProcotol` object.
+
+        """
+        self.storage = storage
+        self.uow = uow
+
+    def __call__(self, cmd: commands.CleanUpWorkflowFiles) -> None:
+        """Execute `CleanUpWorkflowFiles` command.
+
+        Args:
+            cmd:
+                a `commands.CleanUpWorkflowFiles` object. Command
+                contains workflow ID as a string
+
+        Returns:
+            None. The intermediate files and database records for the
+            completed workflow are deleted.
+
+        """
+        with self.uow:
+            incoming_files = self.uow.incoming_files.list_by_id(cmd.workflow_id)
+            file_references = [f.reference for f in incoming_files]
+        # Delete physical files after DB transaction commits
+        for ref in file_references:
+            self.storage.delete(reference=ref)
+        self.storage.delete_intermediate_records(id=cmd.workflow_id)
+        with self.uow:
+            self.uow.workflow_states.delete(id=cmd.workflow_id)
+            self.uow.commit()
+        logger.info(
+            f"Removed workflow {cmd.workflow_id} and "
+            f"{len(incoming_files)} incoming file record(s)."
+        )

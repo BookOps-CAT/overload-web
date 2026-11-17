@@ -2,6 +2,8 @@
 
 import io
 import os
+import pathlib
+from contextlib import nullcontext as does_not_raise
 
 import pytest
 from file_retriever.file import FileInfo
@@ -22,6 +24,18 @@ def tmp_files(tmp_path):
 def mock_read_file(mocker) -> None:
     mock_read = mocker.mock_open(read_data=b"foo")
     mocker.patch("overload_web.infrastructure.file_io.open", mock_read)
+
+
+@pytest.fixture
+def mock_path(monkeypatch) -> None:
+    def mock_path_exists(*args, **kwargs):
+        return True
+
+    def mock_unlink(*args, **kwargs):
+        pass
+
+    monkeypatch.setattr(pathlib.Path, "exists", mock_path_exists)
+    monkeypatch.setattr(pathlib.Path, "unlink", mock_unlink)
 
 
 class FakeFileObj:
@@ -110,17 +124,50 @@ class TestSFTPFileRetriever:
 
 
 class TestLocalFileStorage:
+    def test_delete(self, tmp_path, mock_path, caplog):
+        path = tmp_path / "temp"
+        storage = file_io.LocalFileStorage(base_path=path)
+        storage.delete(reference="12345.mrc")
+        assert "Deleted original file: 12345.mrc" in caplog.text
+
+    def test_delete_file_not_found(self, tmp_path):
+        path = tmp_path / "temp"
+        storage = file_io.LocalFileStorage(base_path=path)
+        with does_not_raise():
+            storage.delete(reference="12345.mrc")
+
+    def test_delete_intermediate_records(self, tmp_path, mock_path, caplog):
+        path = tmp_path / "temp"
+        storage = file_io.LocalFileStorage(base_path=path)
+        storage.delete_intermediate_records(id="12345")
+        assert (
+            f"Deleted intermediate state file: {path}\\12345_state.pkl" in caplog.text
+        )
+
+    def test_delete_intermediate_records_not_found(self, tmp_path):
+        path = tmp_path / "temp"
+        storage = file_io.LocalFileStorage(base_path=path)
+        with does_not_raise():
+            storage.delete_intermediate_records(id="12345")
+
+    def test_load(self, tmp_path, mock_read_file):
+        path = tmp_path / "temp"
+        storage = file_io.LocalFileStorage(base_path=path)
+        loaded_file = storage.load(reference="12345.mrc")
+        assert loaded_file == b"foo"
+
+    def test_load_intermediate_records(self, tmp_path):
+        path = tmp_path / "temp"
+        storage = file_io.LocalFileStorage(base_path=path)
+        with pytest.raises(FileNotFoundError) as exc:
+            storage.load_intermediate_records(id="12345")
+        assert str(exc.value) == "No intermediate state found for 12345."
+
     def test_save(self, tmp_path):
         path = tmp_path / "temp"
         storage = file_io.LocalFileStorage(base_path=path)
         saved_file = storage.save(id="12345", filename="foo.mrc", content=b"")
         assert saved_file.endswith("12345_foo.mrc")
-
-    def test_load(self, tmp_path, mock_read_file):
-        path = tmp_path / "temp"
-        storage = file_io.LocalFileStorage(base_path=path)
-        loaded_file = storage.load(reference="12345")
-        assert loaded_file == b"foo"
 
     def test_save_intermediate_records(self, tmp_path):
         path = tmp_path / "temp"
@@ -129,10 +176,3 @@ class TestLocalFileStorage:
         storage.save_intermediate_records(id="12345", job=job)
         loaded = storage.load_intermediate_records(id="12345")
         assert loaded is not None
-
-    def test_load_intermediate_records(self, tmp_path):
-        path = tmp_path / "temp"
-        storage = file_io.LocalFileStorage(base_path=path)
-        with pytest.raises(FileNotFoundError) as exc:
-            storage.load_intermediate_records(id="12345")
-        assert str(exc.value) == "No intermediate state found for 12345."

@@ -59,7 +59,7 @@ class ProcessedFileModel(SQLModel, table=True):
     __tablename__ = "files"
 
     id: int | None = Field(default=None, primary_key=True, index=True, exclude=True)
-    workflow_id: int = Field(default=None, foreign_key="batches.id", exclude=True)
+    workflow_id: str = Field(default=None, foreign_key="batches.id", exclude=True)
     filename: str = Field(nullable=False, index=True)
     records: bytes = Field(nullable=False)
 
@@ -71,7 +71,7 @@ class PVFBatch(SQLModel, table=True):
 
     __tablename__ = "batches"
 
-    id: int = Field(default=None, primary_key=True, index=True)
+    id: str = Field(default=None, primary_key=True, index=True)
     call_number_report: list[dict[str, Any]] | None = Field(sa_column=Column(JSON))
     duplicate_report: list[dict[str, Any]] = Field(sa_column=Column(JSON))
     file_names: list[str] = Field(sa_column=Column(JSON))
@@ -159,5 +159,6 @@ class WorkflowStateModel(WorkflowUpdateModel, table=True):
     id: str = Field(primary_key=True, index=True)
 
     files: list["IncomingFileModel"] = Relationship(
-        back_populates="workflow", sa_relationship_kwargs={"lazy": "selectin"}
+        back_populates="workflow",
+        sa_relationship_kwargs={"lazy": "selectin", "cascade": "all, delete-orphan"},
     )

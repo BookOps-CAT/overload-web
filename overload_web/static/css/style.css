@@ -328,6 +328,16 @@ select.form-control:disabled {
     opacity: 0.6;
 }
 
+input[type="checkbox"] {
+  accent-color: var(--nypl-brand-color);
+  cursor: pointer;
+}
+
+input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--nypl-brand-color);
+  outline-offset: 2px;
+}
+
 .grid-container:has(> .form-group),
 .flex-row:has(.form-group),
 .flex-col:has(> .form-group) {

@@ -187,3 +187,13 @@ def upload_file(
         )
     )
     return Response(status_code=204, headers={"HX-Trigger": "workflowFilesChanged"})
+
+
+@api_router.post("/cleanup", response_class=Response)
+def cleanup_workflow_files(
+    bus: Annotated[Any, Depends(pvf_deps.get_message_bus)],
+    workflow_id: Annotated[str, Form(...)],
+) -> Response:
+    """Delete all staged incoming files after a workflow completes."""
+    bus.send(commands.CleanUpWorkflowFiles(workflow_id=workflow_id))
+    return Response(status_code=204, headers={"HX-Trigger": "workflowFilesChanged"})
