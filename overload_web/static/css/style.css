@@ -831,7 +831,7 @@ input[type="checkbox"]:focus-visible {
   border-bottom: none;
 }
 
-.data-table tbody tr:nth-child(odd) {
+.data-table tbody tr:nth-child(even) {
   background-color: var(--surface-subtle);
 }
 
