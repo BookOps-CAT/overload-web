@@ -2,9 +2,6 @@
 {% block page_title %}<h2>BookOps Cataloging Department toolbox</h2>{% endblock %}
 {% block content %}
   <div class="grid-container cols-2">
-    <div id="pvf-app">
-      {{ app_card('Process Vendor File', 'Process files from a vendor', url_for("vendor_file_page")) }}
-    </div>
-    <div id="wc2sierra-app">{{ app_card('Worldcat2Sierra', 'Search for Sierra records in WorldCat', url_for("wc2sierra_page")) }}</div>
+    {{ app_card('Process Vendor File', 'Process files from a vendor', url_for("vendor_file_page")) }}{{ app_card('Worldcat2Sierra', 'Search for Sierra records in WorldCat', url_for("wc2sierra_page")) }}
   </div>
 {% endblock %}

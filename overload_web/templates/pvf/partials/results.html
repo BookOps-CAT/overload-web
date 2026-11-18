@@ -14,7 +14,7 @@
       <div class="section-body">{% include "pvf/partials/files/processed.html" %}</div>
     </details>
     <hr class="horizontal-rule" />
-    <div id="summary-report-container" class="flex-col gap-lg">{% include "pvf/partials/reports/summary.html" %}</div>
+    <div id="summary-report-container" class="flex-col">{% include "pvf/partials/reports/summary.html" %}</div>
     <div id="detailed-report-container" class="flex-col"></div>
   </div>
 </div>
@@ -24,17 +24,17 @@
             type="button"
             hx-get="/reports/detailed?workflow_id={{ workflow_id }}"
             hx-target="#detailed-report-container"
-            class="btn btn-nypl">View detailed report</button>
+            class="btn-nypl">View detailed report</button>
     <button id="save-report-button"
             type="button"
             hx-post="/reports/write?workflow_id={{ workflow_id }}"
             hx-target="#detailed-report-container"
             hx-swap="beforeend"
-            class="btn btn-nypl">Save Processing Statistics</button>
+            class="btn-nypl">Save Processing Statistics</button>
   </div>
   <div class="flex-row">
     <button type="button"
-            class="btn btn-nypl"
+            class="btn-nypl"
             hx-get='{{ url_for("vendor_file_page") }}'
             hx-target="body"
             hx-push-url="true">Reset form</button>

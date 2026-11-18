@@ -8,12 +8,12 @@
        hx-include="this"
        hx-swap="none">
     <div id="library-select"
-         class="flex-1">{{ macro.context_select("library", context_fields.library, "pvf-form") }}</div>
+         class="flex-1">{{ macro.context_select("library", context_fields.library, "wc2s-form") }}</div>
     <div id="collection-select"
          class="flex-1">{{ macro.context_select("collection", context_fields.collection, "wc2s-form") }}</div>
   </div>
   <h5 class="mb-2 mt-2">MARC Rules</h5>
-  <div class="row row-cols-2 g-2">
+  <div class="grid-container cols-2">
     {% for field_id, field_data in wc2sierra_fields.items() %}
       <div class="col">{{ macro.select_field(field_id, field_data, form="wc2s-form") }}</div>
     {% endfor %}

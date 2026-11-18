@@ -13,55 +13,57 @@
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
       </summary>
-      <div class="form-group">
-        <label for="local_files">Upload local files</label>
-        <label for="local_files"
-               class="file-dropzone"
-               ondragover="event.preventDefault();"
-               ondrop="
+      <div class="section-body">
+        <div class="form-group">
+          <label for="local_files">Upload local files</label>
+          <label for="local_files"
+                 class="file-dropzone"
+                 ondragover="event.preventDefault();"
+                 ondrop="
          event.preventDefault();
          const input = document.getElementById('local_files');
          input.files = event.dataTransfer.files;
          input.dispatchEvent(new Event('change', { bubbles: true }));
        ">
-          <svg class="dropzone-icon"
-               fill="none"
-               stroke="currentColor"
-               viewBox="0 0 24 24"
-               aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h6a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2l-2 5a2 2 0 002 2z" />
-          </svg>
-          <div class="dropzone-text">
-            <span class="dropzone-title">Browse</span>
-            <span class="dropzone-subtitle">or drag & drop</span>
-          </div>
-          <input id="local_files"
-                 hx-post="/files/upload"
-                 hx-trigger="change"
-                 hx-target="#selected-files"
-                 hx-include="#workflow_id"
-                 name="file"
-                 type="file"
-                 hx-encoding="multipart/form-data"
-                 class="sr-only"
-                 multiple />
-        </label>
+            <svg class="dropzone-icon"
+                 fill="none"
+                 stroke="currentColor"
+                 viewBox="0 0 24 24"
+                 aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h6a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2l-2 5a2 2 0 002 2z" />
+            </svg>
+            <div class="dropzone-text">
+              <span class="dropzone-title">Browse</span>
+              <span class="dropzone-subtitle">or drag & drop</span>
+            </div>
+            <input id="local_files"
+                   hx-post="/files/upload"
+                   hx-trigger="change"
+                   hx-target="#selected-files"
+                   hx-include="#workflow_id"
+                   name="file"
+                   type="file"
+                   hx-encoding="multipart/form-data"
+                   class="sr-only"
+                   multiple />
+          </label>
+        </div>
+        <div class="divider-or"><span>or</span></div>
+        <div class="form-group">
+          <label for="vendor">Select files from vendor FTP</label>
+          <select id="vendor"
+                  class="form-control"
+                  name="vendor"
+                  form="pvf-form"
+                  hx-get="/files/remote/list"
+                  hx-target="#file_list"
+                  hx-trigger="change">
+            <option value="" selected></option>
+            {% for id, name in vendors.items() %}<option value="{{ id }}">{{ name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div id="file_list"></div>
       </div>
-      <div class="divider-or"><span>or</span></div>
-      <div class="form-group">
-        <label for="vendor">Select files from vendor FTP</label>
-        <select id="vendor"
-                class="form-control"
-                name="vendor"
-                form="pvf-form"
-                hx-get="/files/remote/list"
-                hx-target="#file_list"
-                hx-trigger="change">
-          <option value="" selected></option>
-          {% for id, name in vendors.items() %}<option value="{{ id }}">{{ name }}</option>{% endfor %}
-        </select>
-      </div>
-      <div id="file_list"></div>
     </details>
   </div>
   <div class="card">
@@ -76,11 +78,13 @@
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
       </summary>
-      <div id="selected-files"
-           hx-get="/files/list"
-           hx-include="#workflow_id"
-           hx-target="this"
-           hx-trigger="workflowFilesChanged from:body"></div>
+      <div class="section-body">
+        <div id="selected-files"
+             hx-get="/files/list"
+             hx-include="#workflow_id"
+             hx-target="this"
+             hx-trigger="workflowFilesChanged from:body"></div>
+      </div>
     </details>
   </div>
 </div>

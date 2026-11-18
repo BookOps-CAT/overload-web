@@ -9,16 +9,14 @@
       <polyline points="6 9 12 15 18 9"></polyline>
     </svg>
   </summary>
-  <div class="flex-col">
+  <div class="section-body">
     <div id="template-list"
          hx-get="/ot/templates"
          hx-trigger="load, templatesChanged from:body"
          name="templates"
          hx-target="this"></div>
-  </div>
-  <hr class="horizontal-rule" />
-  <div class="flex-col">
+    <hr class="horizontal-rule" />
     <h5>Create/Update order template</h5>
-    <div id="template-form" class="flex-row">{% include "pvf/partials/order_templates/form.html" %}</div>
+    <div id="template-form" class="template-form-layout">{% include "pvf/partials/order_templates/form.html" %}</div>
   </div>
 </details>

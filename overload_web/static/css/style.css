@@ -189,6 +189,10 @@ h6 {
   flex: 1 1 0%;
 }
 
+.flex-none {
+  flex: none;
+}
+
 .items-start {
   align-items: flex-start;
 }
@@ -350,13 +354,8 @@ h6 {
 .w-3-4 {
   width: calc(75% - (var(--spacing-md) / 4));
 }
-
 .w-auto {
   width: auto;
-}
-
-.flex-none {
-  flex: none;
 }
 
 .page-title {
@@ -414,10 +413,6 @@ h6 {
   z-index: 1;
 }
 
-.flex-container-stretch .card {
-  flex: 1 1 280px;
-}
-
 /* form components */
 .form-group {
   display: flex;
@@ -434,7 +429,7 @@ h6 {
 
 .form-control {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.75rem;
   font-size: 1rem;
   color: var(--main-text-color);
   background-color: var(--surface-subtle);
@@ -492,12 +487,6 @@ input[type="checkbox"]:focus-visible {
   outline-offset: 2px;
 }
 
-.grid-container:has(> .form-group),
-.flex-row:has(.form-group),
-.flex-col:has(> .form-group) {
-  row-gap: var(--spacing-sm);
-}
-
 /* Accessible screen-reader utility */
 .sr-only {
   position: absolute;
@@ -517,7 +506,7 @@ input[type="checkbox"]:focus-visible {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1.75rem 1rem;
+  padding: 1.15rem 1rem;
   border: 2px dashed var(--border-strong);
   border-radius: 6px;
   background-color: var(--surface-subtle);
@@ -586,24 +575,6 @@ input[type="checkbox"]:focus-visible {
 }
 
 /* File selection lists */
-.checkbox-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-  max-height: 220px;
-  overflow-y: auto;
-  padding: 0.25rem 0;
-}
-
-.checkbox-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: var(--main-text-color);
-  cursor: pointer;
-}
-
 .selected-file-list {
   display: flex;
   flex-direction: column;
@@ -737,16 +708,6 @@ input[type="checkbox"]:focus-visible {
   font-size: 0.875rem;
 }
 
-.processed-sources {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-  padding: 0.75rem 1rem;
-  background-color: var(--surface-subtle);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-}
-
 .file-pill-list {
   display: flex;
   flex-wrap: wrap;
@@ -847,12 +808,6 @@ input[type="checkbox"]:focus-visible {
   font-size: 0.8rem;
 }
 
-.summary-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
 .empty-state-success {
   display: flex;
   align-items: center;
@@ -891,10 +846,6 @@ input[type="checkbox"]:focus-visible {
   box-shadow: var(--shadow-sm);
 }
 
-.file-card-preview {
-  margin-right: 0.75rem;
-}
-
 .file-card-body {
   flex: 1;
   min-width: 0;
@@ -930,17 +881,6 @@ input[type="checkbox"]:focus-visible {
 }
 
 /* Remote vendor file checklist */
-.remote-file-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-.form-control-sm {
-  padding: 0.45rem 0.75rem;
-  font-size: 0.875rem;
-}
-
 .remote-file-list {
   border: 1px solid var(--border-color);
   border-radius: 6px;
@@ -1012,6 +952,9 @@ input[type="checkbox"]:focus-visible {
 /* Collapsible sections */
 .collapsible-section {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
 }
 
 .section-summary {
@@ -1077,4 +1020,29 @@ input[type="checkbox"]:focus-visible {
   background-color: var(--warning-bg);
   border: 1px solid var(--warning-border);
   border-radius: 999px;
+}
+
+.template-form-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-md);
+}
+
+.template-form-actions {
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-color);
+}
+
+@media (min-width: 992px) {
+  .template-form-layout {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .template-form-actions {
+    padding-top: 0;
+    padding-left: var(--spacing-md);
+    border-top: none;
+    border-left: 1px solid var(--border-color);
+  }
 }

@@ -24,12 +24,12 @@
       {{ macro.input_field(id, data, template.get(id), "pvf-form") }}
     {% endfor %}
   </div>
-  <div class="flex-row">
-    <div class="flex-col w-1-4">
+  <div class="grid-container cols-4">
+    <div class="flex-col">
       <h5>Sierra Bib Format</h5>
       {{ macro.select_field('material_form', bib_formats, template.get('material_form'), "pvf-form") }}
     </div>
-    <div class="flex-col w-3-4">
+    <div class="flex-col col-span-3">
       <h5>Sierra Matchpoints</h5>
       <div class="grid-container cols-3">
         {% for id, data in matchpoints.items() %}
@@ -39,22 +39,21 @@
     </div>
   </div>
 </div>
-<span class="vertical-rule"></span>
-<div class="flex-col">
+<div class="flex-col template-form-actions">
   <div hx-include="#template-form-fields">
-    <button class="btn btn-nypl w-full"
+    <button class="btn-nypl w-full"
             hx-post="/ot/template"
             hx-target="#template-form"
             type="button">Save Template as New</button>
   </div>
   <div hx-include="#template-form-fields">
-    <button class="btn btn-nypl w-full"
+    <button class="btn-nypl w-full"
             hx-patch="/ot/template"
             hx-target="#template-form"
             type="button">Update Template</button>
   </div>
   <div>
-    <button class="btn btn-nypl w-full"
+    <button class="btn-nypl w-full"
             hx-get="/ot/forms/templates"
             hx-target="#template-form"
             type="reset">Clear Template Form</button>
