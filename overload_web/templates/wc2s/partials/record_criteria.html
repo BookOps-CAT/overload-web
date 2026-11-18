@@ -1,27 +1,25 @@
 {% import "components/macros.html" as macro %}
 <div class="card">
   <h5 class="card-title">Record Criteria</h5>
-  <div class="flex-row"
+  <div class="grid-container cols-2"
        id="context-section"
        hx-get="/update-context?workflow=wc2s"
        hx-trigger="change delay:200ms"
        hx-include="this"
        hx-swap="none">
-    <div id="library-select"
-         class="flex-1">{{ macro.context_select("library", context_fields.library, "wc2s-form") }}</div>
-    <div id="collection-select"
-         class="flex-1">{{ macro.context_select("collection", context_fields.collection, "wc2s-form") }}</div>
+    <div id="library-select">{{ macro.context_select("library", context_fields.library, "wc2s-form") }}</div>
+    <div id="collection-select">{{ macro.context_select("collection", context_fields.collection, "wc2s-form") }}</div>
   </div>
-  <h5 class="mb-2 mt-2">MARC Rules</h5>
+  <h5>MARC Rules</h5>
   <div class="grid-container cols-2">
     {% for field_id, field_data in wc2sierra_fields.items() %}
       <div class="col">{{ macro.select_field(field_id, field_data, form="wc2s-form") }}</div>
     {% endfor %}
   </div>
-  <h5 class="mb-2 mt-2">Source Files</h5>
+  <h5>Source Files</h5>
   <p class="card-text">Upload from your computer</p>
   <input id="file"
-         class="form-control mb-3"
+         class="form-control"
          name="file"
          type="file"
          form="wc2s-form"

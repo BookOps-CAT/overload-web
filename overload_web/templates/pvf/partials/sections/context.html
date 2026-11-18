@@ -4,16 +4,13 @@
      hx-trigger="load"
      hx-target="this"
      hx-swap="outerHTML"></div>
-<div class="flex-row"
+<div class="grid-container cols-3"
      id="context-section"
      hx-get="/update-context?workflow=pvf"
      hx-trigger="change from:#context-section delay:200ms"
      hx-include="this"
      hx-swap="none">
-  <div id="library-select"
-       class="flex-1">{{ macro.context_select("library", context_fields.library, "pvf-form") }}</div>
-  <div id="collection-select"
-       class="flex-1">{{ macro.context_select("collection", context_fields.collection, "pvf-form") }}</div>
-  <div id="record-type-select"
-       class="flex-1">{{ macro.context_select("record_type", context_fields.record_type, "pvf-form") }}</div>
+  <div id="library-select">{{ macro.context_select("library", context_fields.library, "pvf-form") }}</div>
+  <div id="collection-select">{{ macro.context_select("collection", context_fields.collection, "pvf-form") }}</div>
+  <div id="record-type-select">{{ macro.context_select("record_type", context_fields.record_type, "pvf-form") }}</div>
 </div>
