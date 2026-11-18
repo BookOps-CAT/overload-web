@@ -1,18 +1,9 @@
+{% import "components/macros.html" as macro %}
 <div id="report-section" class="grid-container">
   <div class="card">
-    <details id="output-files-container" class="collapsible-section" open>
-      <summary class="section-summary">
-        <h5>Processed Files</h5>
-        <svg class="collapse-chevron"
-             viewBox="0 0 24 24"
-             fill="none"
-             stroke="currentColor"
-             stroke-width="2">
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-      </summary>
-      <div class="section-body">{% include "pvf/partials/files/processed.html" %}</div>
-    </details>
+    {% call macro.collapsible_section("Processed Files", id="output-files-container") %}
+      {% include "pvf/partials/files/processed.html" %}
+    {% endcall %}
     <hr class="horizontal-rule" />
     <div id="summary-report-container" class="flex-col">{% include "pvf/partials/reports/summary.html" %}</div>
     <div id="detailed-report-container" class="flex-col"></div>

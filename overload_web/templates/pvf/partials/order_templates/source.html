@@ -1,22 +1,11 @@
-<details id="template-section-details" class="collapsible-section" open>
-  <summary class="section-summary">
-    <h5>Select order template</h5>
-    <svg class="collapse-chevron"
-         viewBox="0 0 24 24"
-         fill="none"
-         stroke="currentColor"
-         stroke-width="2">
-      <polyline points="6 9 12 15 18 9"></polyline>
-    </svg>
-  </summary>
-  <div class="section-body">
-    <div id="template-list"
-         hx-get="/ot/templates"
-         hx-trigger="load, templatesChanged from:body"
-         name="templates"
-         hx-target="this"></div>
-    <hr class="horizontal-rule" />
-    <h5>Create/Update order template</h5>
-    <div id="template-form" class="template-form-layout">{% include "pvf/partials/order_templates/form.html" %}</div>
-  </div>
-</details>
+{% import "components/macros.html" as macro %}
+{% call macro.collapsible_section("Select order template", id="template-section-details") %}
+  <div id="template-list"
+       hx-get="/ot/templates"
+       hx-trigger="load, templatesChanged from:body"
+       name="templates"
+       hx-target="this"></div>
+  <hr class="horizontal-rule" />
+  <h5>Create/Update order template</h5>
+  <div id="template-form" class="template-form-layout">{% include "pvf/partials/order_templates/form.html" %}</div>
+{% endcall %}

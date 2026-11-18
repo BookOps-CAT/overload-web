@@ -23,11 +23,11 @@
     {% endif %}
   </div>
 {% endmacro %}
-{% macro select_field(field_id, data, field_input, form) %}
+{% macro select_field(field_id, data, field_input=None, form="") %}
   <div class="form-group">
     <label for="{{ field_id }}">{{ data.label }}</label>
     <select id="{{ field_id }}"
-            form="{{ form }}"
+            {% if form %}form="{{ form }}"{% endif %}
             class="form-control"
             name="{{ field_id }}">
       {% if field_input %}
@@ -43,17 +43,50 @@
     </select>
   </div>
 {% endmacro %}
-{% macro input_field(field_id, data, field_input, form) %}
+{% macro input_field(field_id, data, field_input=None, form="") %}
   <div class="form-group">
     <label for="{{ field_id }}">{{ data.label }}</label>
     <input id="{{ field_id }}"
            class="form-control"
            name="{{ field_id }}"
            type="text"
-           form="{{ form }}"
+           {% if form %}form="{{ form }}"{% endif %}
            placeholder=" "
-           value="{{ field_input if field_input else value|e }}" />
+           value="{{ field_input|e if field_input else '' }}" />
   </div>
+{% endmacro %}
+{% macro collapsible_section(title, id=None, open=True, title_class="") %}
+  <details {% if id %}id="{{ id }}"{% endif %}
+           class="collapsible-section"
+           {{ 'open' if open else '' }}>
+    <summary class="section-summary">
+      <h5 {% if title_class %}class="{{ title_class }}"{% endif %}>{{ title }}</h5>
+    </summary>
+    <div class="section-body">{{ caller() }}</div>
+  </details>
+{% endmacro %}
+{% macro report_section(title, report, empty_message) %}
+  <details class="collapsible-section" {{ 'open' if report else '' }}>
+    <summary class="section-summary">
+      <div class="section-summary-title">
+        <h5>{{ title }}</h5>
+        {% if report %}
+          <span class="status-badge status-badge-warn">{{ report | length }} found</span>
+        {% else %}
+          <span class="status-badge status-badge-ok">None</span>
+        {% endif %}
+      </div>
+    </summary>
+    <div class="section-body">
+      {% if report %}
+        {{ report_table(report) }}
+      {% else %}
+        <div class="empty-state-success">
+          <span>{{ empty_message }}</span>
+        </div>
+      {% endif %}
+    </div>
+  </details>
 {% endmacro %}
 {% macro report_table(report) %}
   <div class="table-container">
