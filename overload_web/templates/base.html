@@ -4,7 +4,6 @@
     {% block head %}
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <meta name="keywords" content="" />
       <meta name="description" content="BookOps cataloging toolkit" />
       <title>{{ application }}</title>
       <link rel="stylesheet" href="/static/css/style.css" />
@@ -21,7 +20,7 @@
             <h3><a href='{{ url_for("root") }}'>{{ application }}</a></h3>
           </div>
           <div class="nav-right" id="context-slot">
-            <div class="nav-logo" id="library-img"></div>
+            <div id="library-img"></div>
             <div class="nav-text-stacked">
               <div id="collection-display"></div>
               <div id="record-type-display"></div>
@@ -31,13 +30,11 @@
       </div>
     </header>
     <main class="main-content">
-      <div class="container">
+      <div class="container flex-col">
         <div class="page-title">
           {% block page_title %}{% endblock %}
         </div>
-        <div class="content-body flex-col">
-          {% block content %}{% endblock %}
-        </div>
+        {% block content %}{% endblock %}
       </div>
     </main>
   </body>

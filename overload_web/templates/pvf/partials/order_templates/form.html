@@ -39,23 +39,19 @@
     </div>
   </div>
 </div>
-<div class="flex-col template-form-actions">
-  <div hx-include="#template-form-fields">
-    <button class="btn-nypl w-full"
-            hx-post="/ot/template"
-            hx-target="#template-form"
-            type="button">Save Template as New</button>
-  </div>
-  <div hx-include="#template-form-fields">
-    <button class="btn-nypl w-full"
-            hx-patch="/ot/template"
-            hx-target="#template-form"
-            type="button">Update Template</button>
-  </div>
-  <div>
-    <button class="btn-nypl w-full"
-            hx-get="/ot/forms/templates"
-            hx-target="#template-form"
-            type="reset">Clear Template Form</button>
-  </div>
+<div class="grid-container template-form-actions">
+  <button class="btn-nypl"
+          hx-post="/ot/template"
+          hx-target="#template-form"
+          hx-include="#template-form-fields"
+          type="button">Save Template as New</button>
+  <button class="btn-nypl"
+          hx-patch="/ot/template"
+          hx-target="#template-form"
+          hx-include="#template-form-fields"
+          type="button">Update Template</button>
+  <button class="btn-nypl"
+          hx-get="/ot/forms/templates"
+          hx-target="#template-form"
+          type="reset">Clear Template Form</button>
 </div>

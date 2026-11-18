@@ -10,7 +10,7 @@
   </div>
 </div>
 <div class="grid-container" id="output-buttons">
-  <div class="flex-row" id="report-buttons">
+  <div class="flex-row">
     <button id="detailed-report-button"
             type="button"
             hx-get="/reports/detailed?workflow_id={{ workflow_id }}"
@@ -22,8 +22,6 @@
             hx-target="#detailed-report-container"
             hx-swap="beforeend"
             class="btn-nypl">Save Processing Statistics</button>
-  </div>
-  <div class="flex-row">
     <button type="button"
             class="btn-nypl"
             hx-get='{{ url_for("vendor_file_page") }}'

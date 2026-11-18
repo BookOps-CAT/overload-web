@@ -42,9 +42,7 @@
     </div>
   {% endif %}
 {% endcall %}
-<div class="flex-col">
-  <hr class="horizontal-rule" />
-  {{ macro.report_section("Duplicates Report", duplicate_report, "No duplicate records found!") }}
-  <hr class="horizontal-rule" />
-  {{ macro.report_section("Call Number Issues", call_number_report, "No call number issues found!") }}
-</div>
+<hr class="horizontal-rule" />
+{{ macro.report_section("Duplicates Report", duplicate_report, "No duplicate records found!") }}
+<hr class="horizontal-rule" />
+{{ macro.report_section("Call Number Issues", call_number_report, "No call number issues found!") }}
