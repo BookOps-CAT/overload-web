@@ -16,6 +16,13 @@ div:empty {
   display: none;
 }
 
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
 :root {
   --font:
     system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
@@ -47,16 +54,11 @@ div:empty {
 
   /* Semantic Statuses */
   --success-bg: #f0fdf4;
-  --success-border: #bbf7d0;
   --success-text: #166534;
-  --success-icon: #16a34a;
-
   --warning-bg: #fffbeb;
-  --warning-border: #fde68a;
   --warning-text: #b45309;
 
   --danger-bg: #fef2f2;
-  --danger-border: #fecaca;
   --danger-text: #991b1b;
 
   /* Spacing Scale (4px / 6px / 8px / 12px / 16px / 24px / 32px) */
@@ -84,6 +86,7 @@ div:empty {
 body {
   font-family: var(--font);
   font-size: var(--font-base);
+  line-height: 1.5;
   background-color: var(--surface-color);
   color: var(--main-text-color);
 }
@@ -318,7 +321,6 @@ h6 {
   flex-direction: column;
   justify-content: center;
   font-size: var(--font-base);
-  line-height: 1.4;
   width: 160px;
   text-align: left;
 }
@@ -332,15 +334,13 @@ h6 {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md);
   background-color: var(--surface-color);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
   min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
 }
 
 .card-title {
@@ -351,7 +351,6 @@ h6 {
 .card-text {
   color: var(--secondary-text-color);
   font-size: var(--font-base);
-  line-height: 1.5;
 }
 
 .card-hover {
@@ -405,27 +404,23 @@ h6 {
 }
 
 /* Buttons */
-.btn-nypl {
-  display: inline-block;
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
   padding: var(--spacing-xs) var(--spacing-md);
   font-size: var(--font-base);
   font-weight: 500;
   text-align: center;
   text-decoration: none;
   cursor: pointer;
-  color: var(--main-text-color);
-  background-color: transparent;
-  border: 2px solid var(--nypl-brand-color);
+  border: 1px solid transparent;
   border-radius: var(--radius-md);
   transition:
-    color 0.15s ease-in-out,
-    background-color 0.15s ease-in-out;
-}
-
-.btn-nypl:hover {
-  background-color: var(--brand-tint);
-  border-color: var(--nypl-brand-color);
-  color: var(--main-text-color);
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .btn-sm {
@@ -433,20 +428,19 @@ h6 {
   font-size: var(--font-sm);
 }
 
+.btn-nypl {
+  color: var(--main-text-color);
+  background-color: transparent;
+  border: 2px solid var(--nypl-brand-color);
+}
+
+.btn-nypl:hover {
+  background-color: var(--brand-tint);
+}
+
 .btn-download {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-2xs) var(--spacing-sm);
-  font-size: var(--font-sm);
-  font-weight: 500;
   color: var(--main-text-color);
   background-color: var(--brand-tint);
-  border-radius: var(--radius-md);
-  text-decoration: none;
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
 }
 
 .btn-download:hover {
@@ -551,7 +545,7 @@ input[type="checkbox"]:focus-visible {
   border-radius: var(--radius-md);
   background-color: var(--surface-subtle);
   cursor: pointer;
-  text-align: left;
+  text-align: center;
   transition: all 0.2s ease-in-out;
   gap: var(--spacing-md);
 }
@@ -603,11 +597,6 @@ input[type="checkbox"]:focus-visible {
 .table-container {
   width: 100%;
   max-width: 100%;
-  max-height: 16.25rem;
-  overflow: auto;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background-color: var(--surface-color);
 }
 
 .data-table {
@@ -616,22 +605,11 @@ input[type="checkbox"]:focus-visible {
   border-collapse: separate;
   border-spacing: 0;
   font-size: var(--font-md);
-  line-height: 1.35;
   text-align: left;
 }
 
 .data-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background-color: var(--surface-subtle);
-  color: var(--secondary-text-color);
-  font-size: var(--font-xs);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   padding: var(--spacing-sm) var(--spacing-md);
-  border-bottom: 1px solid var(--border-color);
   white-space: nowrap;
 }
 
@@ -651,20 +629,8 @@ input[type="checkbox"]:focus-visible {
   overflow-wrap: break-word;
 }
 
-.data-table tbody tr {
-  transition: background-color 0.15s ease;
-}
-
 .data-table tbody tr:last-child td {
   border-bottom: none;
-}
-
-.data-table tbody tr:nth-child(even) {
-  background-color: var(--surface-subtle);
-}
-
-.data-table tbody tr:hover {
-  background-color: var(--surface-hover);
 }
 
 .data-table .col-index {
@@ -705,7 +671,6 @@ input[type="checkbox"]:focus-visible {
   flex-shrink: 0;
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e");
   background-repeat: no-repeat;
-  background-position: center;
   background-size: 1.125rem 1.125rem;
   transition: transform 0.2s ease;
 }
@@ -741,13 +706,13 @@ input[type="checkbox"]:focus-visible {
 .status-badge-ok {
   color: var(--success-text);
   background-color: var(--success-bg);
-  border: 1px solid var(--success-border);
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
 }
 
 .status-badge-warn {
   color: var(--warning-text);
   background-color: var(--warning-bg);
-  border: 1px solid var(--warning-border);
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
 }
 
 .empty-state-success {
@@ -756,7 +721,7 @@ input[type="checkbox"]:focus-visible {
   gap: var(--spacing-md);
   padding: var(--spacing-lg);
   background-color: var(--success-bg);
-  border: 1px solid var(--success-border);
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
   border-radius: var(--radius-md);
   color: var(--success-text);
   font-size: var(--font-sm);
@@ -768,16 +733,17 @@ input[type="checkbox"]:focus-visible {
   width: 1.125rem;
   height: 1.125rem;
   flex-shrink: 0;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%2316a34a' viewBox='0 0 24 24'%3e%3cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 13l4 4L19 7'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 1.125rem 1.125rem;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='black' stroke-width='2' viewBox='0 0 24 24'%3e%3cpath stroke-linecap='round' stroke-linejoin='round' d='M5 13l4 4L19 7'/%3e%3c/svg%3e")
+    no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='black' stroke-width='2' viewBox='0 0 24 24'%3e%3cpath stroke-linecap='round' stroke-linejoin='round' d='M5 13l4 4L19 7'/%3e%3c/svg%3e")
+    no-repeat center / contain;
 }
 
 .alert-warning-banner {
   padding: var(--spacing-md) var(--spacing-lg);
   background-color: var(--danger-bg);
-  border: 1px solid var(--danger-border);
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
   border-radius: var(--radius-md);
   color: var(--danger-text);
   font-size: var(--font-md);
@@ -800,7 +766,6 @@ input[type="checkbox"]:focus-visible {
   min-width: 9.75rem;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
   gap: var(--spacing-xs);
   padding: var(--spacing-md) var(--spacing-lg);
   background-color: var(--surface-subtle);
@@ -814,8 +779,9 @@ input[type="checkbox"]:focus-visible {
 }
 
 .stat-box-warning {
+  color: var(--warning-text);
   background-color: var(--warning-bg);
-  border-color: var(--warning-border);
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
 }
 
 .stat-label {
@@ -834,7 +800,7 @@ input[type="checkbox"]:focus-visible {
 }
 
 .stat-box-warning .stat-value {
-  color: var(--warning-text);
+  color: inherit;
 }
 
 .file-pill-list {
@@ -842,7 +808,6 @@ input[type="checkbox"]:focus-visible {
   flex-wrap: wrap;
   gap: var(--spacing-xs);
   list-style: none;
-  margin: 0;
   padding: 0;
 }
 
@@ -863,21 +828,13 @@ input[type="checkbox"]:focus-visible {
 
 /* File Cards & Selected File Lists */
 .file-card {
-  display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: var(--spacing-md);
-  background-color: var(--surface-color);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
-  transition:
-    box-shadow 0.15s ease,
-    border-color 0.15s ease;
+  gap: var(--spacing-sm);
 }
 
 .file-card:hover {
   border-color: var(--border-strong);
-  box-shadow: var(--shadow-sm);
 }
 
 .file-card-body {
@@ -919,24 +876,18 @@ input[type="checkbox"]:focus-visible {
   min-width: 0;
 }
 
-/* Remote Vendor Files */
+/* Shared Scrollable Surface */
+.table-container,
 .remote-file-list {
+  max-height: 16.25rem;
+  overflow: auto;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  max-height: 16.25rem;
-  overflow-y: auto;
   background-color: var(--surface-color);
 }
 
-.remote-file-header,
-.remote-file-row {
-  display: grid;
-  grid-template-columns: 1rem minmax(0, 1fr) 6.5rem 4.5rem;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-sm) var(--spacing-md);
-}
-
+/* Shared Sticky Headers */
+.data-table thead th,
 .remote-file-header {
   position: sticky;
   top: 0;
@@ -949,23 +900,39 @@ input[type="checkbox"]:focus-visible {
   letter-spacing: 0.05em;
   color: var(--secondary-text-color);
 }
-
+/* Shared Row Striping & Hover */
+.data-table tbody tr,
 .remote-file-row {
-  border-bottom: 1px solid var(--border-color);
-  cursor: pointer;
   transition: background-color 0.15s ease;
 }
 
-.remote-file-row:last-child {
-  border-bottom: none;
-}
-
+.data-table tbody tr:nth-child(even),
 .remote-file-row:nth-child(odd) {
   background-color: var(--surface-subtle);
 }
 
+.data-table tbody tr:hover,
 .remote-file-row:hover {
   background-color: var(--surface-hover);
+}
+
+/* Remote Vendor Files */
+.remote-file-header,
+.remote-file-row {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr) 6.5rem 4.5rem;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.remote-file-row {
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+}
+
+.remote-file-row:last-child {
+  border-bottom: none;
 }
 
 .remote-file-name {

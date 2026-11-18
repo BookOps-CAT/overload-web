@@ -15,15 +15,15 @@
             type="button"
             hx-get="/reports/detailed?workflow_id={{ workflow_id }}"
             hx-target="#detailed-report-container"
-            class="btn-nypl">View detailed report</button>
+            class="btn btn-nypl">View detailed report</button>
     <button id="save-report-button"
             type="button"
             hx-post="/reports/write?workflow_id={{ workflow_id }}"
             hx-target="#detailed-report-container"
             hx-swap="beforeend"
-            class="btn-nypl">Save Processing Statistics</button>
+            class="btn btn-nypl">Save Processing Statistics</button>
     <button type="button"
-            class="btn-nypl"
+            class="btn btn-nypl"
             hx-get='{{ url_for("vendor_file_page") }}'
             hx-target="body"
             hx-push-url="true">Reset form</button>
