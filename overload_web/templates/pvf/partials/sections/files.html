@@ -39,13 +39,13 @@
                 name="vendor"
                 form="pvf-form"
                 hx-get="/files/remote/list"
-                hx-target="#file_list"
+                hx-target="#file-list"
                 hx-trigger="change">
           <option value="" selected></option>
           {% for id, name in vendors.items() %}<option value="{{ id }}">{{ name }}</option>{% endfor %}
         </select>
       </div>
-      <div id="file_list"></div>
+      <div id="file-list"></div>
     {% endcall %}
   </div>
   <div class="card">

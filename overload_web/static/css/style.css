@@ -57,7 +57,6 @@ textarea {
   --success-text: #166534;
   --warning-bg: #fffbeb;
   --warning-text: #b45309;
-
   --danger-bg: #fef2f2;
   --danger-text: #991b1b;
 
@@ -144,25 +143,6 @@ h6 {
    3. Layout & Grid Utilities
    ========================================================================== */
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 var(--spacing-xl);
-  width: 100%;
-}
-
-.main-content {
-  width: 100%;
-  background-color: var(--surface-color);
-  padding-top: var(--spacing-lg);
-  padding-bottom: var(--spacing-lg);
-}
-
-.page-title {
-  padding-top: var(--spacing-2xs);
-  padding-bottom: var(--spacing-sm);
-}
-
 .grid-container {
   display: grid;
   gap: var(--spacing-lg);
@@ -223,7 +203,7 @@ h6 {
   grid-column: 1 / -1;
 }
 
-@media (min-width: 992px) {
+@media (min-width: 62rem) {
   .lg-cols-1 {
     grid-template-columns: repeat(1, minmax(0, 1fr));
   }
@@ -264,19 +244,34 @@ h6 {
 }
 
 /* ==========================================================================
-   4. Navigation
+   4. Page Shell & Navigation
    ========================================================================== */
 
-.navbar {
+header {
   background-color: var(--nypl-brand-color);
   box-shadow: var(--shadow-md);
-  width: 100%;
   height: 180px;
   color: var(--surface-color);
 }
 
-.navbar-container {
+main {
+  background-color: var(--surface-color);
+  padding-top: var(--spacing-md);
+}
+
+.main-content,
+.navbar {
+  max-width: 1200px;
+  margin: 0 auto;
   display: flex;
+}
+
+.main-content {
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.navbar {
   justify-content: space-between;
   align-items: center;
   height: 100%;
@@ -640,6 +635,16 @@ input[type="checkbox"]:focus-visible {
   font-size: var(--font-sm);
 }
 
+/* Shared Scrollable Surface */
+.table-container,
+.remote-file-list {
+  max-height: 16.25rem;
+  overflow: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background-color: var(--surface-color);
+}
+
 /* Collapsible Sections */
 .collapsible-section {
   width: 100%;
@@ -865,16 +870,6 @@ input[type="checkbox"]:focus-visible {
   flex-direction: column;
   gap: var(--spacing-2xs);
   min-width: 0;
-}
-
-/* Shared Scrollable Surface */
-.table-container,
-.remote-file-list {
-  max-height: 16.25rem;
-  overflow: auto;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background-color: var(--surface-color);
 }
 
 /* Shared Sticky Headers */

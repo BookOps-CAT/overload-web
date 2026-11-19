@@ -13,8 +13,8 @@
     {% endblock %}
   </head>
   <body>
-    <header class="navbar">
-      <div class="container navbar-container">
+    <header>
+      <div class="navbar">
         {% block nav %}
           <div class="nav-left">
             <h3><a href='{{ url_for("root") }}'>{{ application }}</a></h3>
@@ -29,11 +29,9 @@
         {% endblock %}
       </div>
     </header>
-    <main class="main-content">
-      <div class="container flex-col">
-        <div class="page-title">
-          {% block page_title %}{% endblock %}
-        </div>
+    <main>
+      <div class="main-content">
+        {% block page_title %}<h2 id="page_title">{{ page_title }}</h2>{% endblock %}
         {% block content %}{% endblock %}
       </div>
     </main>
