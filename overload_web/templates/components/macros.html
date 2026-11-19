@@ -1,6 +1,6 @@
 {% macro app_card(title, text, href="#") %}
   <div class="card card-hover">
-    <h4>{{ title }}</h4>
+    <h5>{{ title }}</h5>
     <p class="card-text">{{ text }}</p>
     <a class="stretched-link" href="{{ href }}"></a>
   </div>
@@ -62,30 +62,26 @@
     <summary class="section-summary">
       <h5>{{ title }}</h5>
     </summary>
-    <div class="section-body">{{ caller() }}</div>
+    <div class="flex-col">{{ caller() }}</div>
   </details>
 {% endmacro %}
 {% macro report_section(title, report, empty_message) %}
   <details class="collapsible-section" {{ 'open' if report else '' }}>
     <summary class="section-summary">
-      <div class="section-summary-title">
-        <h5>{{ title }}</h5>
-        {% if report %}
-          <span class="status-badge status-badge-warn">{{ report | length }} found</span>
-        {% else %}
-          <span class="status-badge status-badge-ok">None</span>
-        {% endif %}
-      </div>
-    </summary>
-    <div class="section-body">
+      <h5>{{ title }}</h5>
       {% if report %}
-        {{ report_table(report) }}
+        <span class="status-badge status-badge-warn">{{ report | length }} found</span>
       {% else %}
-        <div class="empty-state-success">
-          <span>{{ empty_message }}</span>
-        </div>
+        <span class="status-badge status-badge-ok">None</span>
       {% endif %}
-    </div>
+    </summary>
+    {% if report %}
+      {{ report_table(report) }}
+    {% else %}
+      <div class="empty-state-success">
+        <span>{{ empty_message }}</span>
+      </div>
+    {% endif %}
   </details>
 {% endmacro %}
 {% macro report_table(report) %}

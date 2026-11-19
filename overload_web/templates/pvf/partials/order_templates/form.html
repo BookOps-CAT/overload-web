@@ -2,7 +2,7 @@
 {% if not template %}
   {% set template = {} %}
 {% endif %}
-<div id="template-form-fields" class="flex-col">
+<div id="template-form-fields" class="flex-col flex-1">
   <input id="template_id"
          name="template_id"
          type="hidden"
@@ -39,7 +39,8 @@
     </div>
   </div>
 </div>
-<div class="grid-container template-form-actions">
+<hr class="horizontal-rule responsive" />
+<div class="flex-col">
   <button class="btn btn-nypl"
           hx-post="/ot/template"
           hx-target="#template-form"

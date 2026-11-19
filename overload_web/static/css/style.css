@@ -218,6 +218,53 @@ h6 {
   grid-column: 1 / -1;
 }
 
+@media (min-width: 62rem) {
+  .lg-flex-row {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  .lg-cols-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+  .lg-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .lg-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .lg-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .lg-cols-5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .lg-cols-6 {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .lg-cols-12 {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .lg-col-span-2 {
+    grid-column: span 2 / span 2;
+  }
+  .lg-col-span-3 {
+    grid-column: span 3 / span 3;
+  }
+  .lg-col-span-4 {
+    grid-column: span 4 / span 4;
+  }
+  .lg-col-span-6 {
+    grid-column: span 6 / span 6;
+  }
+  .lg-col-span-full {
+    grid-column: 1 / -1;
+  }
+}
+.flex-1 {
+  flex: 1 1 0%;
+  min-width: 0;
+}
 /* ==========================================================================
    4. Page Shell & Navigation
    ========================================================================== */
@@ -344,6 +391,14 @@ main {
   width: 100%;
   background-color: currentColor;
   opacity: 0.25;
+}
+
+@media (min-width: 62rem) {
+  .responsive {
+    width: 1px;
+    height: auto;
+    align-self: stretch;
+  }
 }
 
 .divider-or {
@@ -556,12 +611,10 @@ input[type="checkbox"]:focus-visible {
 .section-summary {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--spacing-md);
   list-style: none;
   cursor: pointer;
   user-select: none;
-  padding: var(--spacing-2xs) var(--spacing-none);
 }
 
 .section-summary::-webkit-details-marker {
@@ -572,6 +625,7 @@ input[type="checkbox"]:focus-visible {
   content: "";
   width: 1.125rem;
   height: 1.125rem;
+  margin-left: auto;
   flex-shrink: 0;
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e");
   background-repeat: no-repeat;
@@ -581,18 +635,6 @@ input[type="checkbox"]:focus-visible {
 
 .collapsible-section[open] > .section-summary::after {
   transform: rotate(180deg);
-}
-
-.section-summary-title {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.section-body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
 }
 
 /* Status Badges & Feedback Banners */
@@ -886,30 +928,4 @@ input[type="checkbox"]:focus-visible {
 .dropzone-subtitle {
   font-size: var(--font-xs);
   color: var(--muted-text-color);
-}
-
-/* Order Template Form */
-.template-form-layout {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--spacing-lg);
-}
-
-.template-form-actions {
-  padding-top: var(--spacing-lg);
-  border-top: 1px solid var(--border-color);
-}
-
-@media (min-width: 62rem) {
-  .template-form-layout {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-  }
-
-  .template-form-actions {
-    padding-top: var(--spacing-none);
-    padding-left: var(--spacing-lg);
-    border-top: none;
-    border-left: 1px solid var(--border-color);
-  }
 }
