@@ -5,31 +5,27 @@
     <a class="stretched-link" href="{{ href }}"></a>
   </div>
 {% endmacro %}
-{% macro context_select(field_id, data, form, disabled=False) %}
+{% macro context_select(field_id, data, disabled=False) %}
   <div class="form-group">
     <label for="{{ field_id }}">{{ data.label }}</label>
     <select id="{{ field_id }}"
             class="form-control"
             name="{{ field_id }}"
             {{ 'disabled' if disabled else '' }}
-            form="{{ form }}"
             autocomplete="off"
             required>
       <option value="" selected></option>
       {% for k, v in data.options.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}
     </select>
     {% if disabled %}
-      <input type="hidden" name="{{ field_id }}" form="{{ form }}" value="" />
+      <input type="hidden" name="{{ field_id }}" value="" />
     {% endif %}
   </div>
 {% endmacro %}
-{% macro select_field(field_id, data, field_input=None, form="") %}
+{% macro select_field(field_id, data, field_input=None) %}
   <div class="form-group">
     <label for="{{ field_id }}">{{ data.label }}</label>
-    <select id="{{ field_id }}"
-            {% if form %}form="{{ form }}"{% endif %}
-            class="form-control"
-            name="{{ field_id }}">
+    <select id="{{ field_id }}" class="form-control" name="{{ field_id }}">
       {% if field_input %}
         <option value=""></option>
         <option value="{{ field_input }}" selected>{{ field_input }} ({{ data.options[field_input] }})</option>
@@ -43,14 +39,13 @@
     </select>
   </div>
 {% endmacro %}
-{% macro input_field(field_id, data, field_input=None, form="") %}
+{% macro input_field(field_id, data, field_input=None) %}
   <div class="form-group">
     <label for="{{ field_id }}">{{ data.label }}</label>
     <input id="{{ field_id }}"
            class="form-control"
            name="{{ field_id }}"
            type="text"
-           {% if form %}form="{{ form }}"{% endif %}
            placeholder=" "
            value="{{ field_input|e if field_input else '' }}" />
   </div>

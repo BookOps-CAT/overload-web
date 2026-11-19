@@ -32,7 +32,6 @@ def initialize_workflow(
     <input value={workflow_id}
        name="workflow_id"
        id="workflow_id"
-       form="pvf-form"
        type="hidden">"""
     html_str = safe_html(partial, workflow_id=workflow_id)
     return HTMLResponse(html_str)

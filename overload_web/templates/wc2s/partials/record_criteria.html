@@ -7,23 +7,18 @@
        hx-trigger="change delay:200ms"
        hx-include="this"
        hx-swap="none">
-    <div id="library-select">{{ macro.context_select("library", context_fields.library, "wc2s-form") }}</div>
-    <div id="collection-select">{{ macro.context_select("collection", context_fields.collection, "wc2s-form") }}</div>
+    <div id="library-select">{{ macro.context_select("library", context_fields.library) }}</div>
+    <div id="collection-select">{{ macro.context_select("collection", context_fields.collection) }}</div>
   </div>
   <h5>MARC Rules</h5>
   <div class="grid-container cols-2">
     {% for field_id, field_data in wc2sierra_fields.items() %}
-      <div class="col">{{ macro.select_field(field_id, field_data, form="wc2s-form") }}</div>
+      <div class="col">{{ macro.select_field(field_id, field_data) }}</div>
     {% endfor %}
   </div>
   <h5>Source Files</h5>
   <p class="card-text">Upload from your computer</p>
-  <input id="file"
-         class="form-control"
-         name="file"
-         type="file"
-         form="wc2s-form"
-         multiple />
+  <input id="file" class="form-control" name="file" type="file" multiple />
 </div>
 <div class="card">
   <h5>Search Results</h5>
