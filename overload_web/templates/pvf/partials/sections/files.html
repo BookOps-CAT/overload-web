@@ -3,7 +3,7 @@
      class="grid-container cols-2"
      hx-sync="#pvf-form:queue all">
   <div class="card">
-    {% call macro.collapsible_section("Vendor Files", id="files-section-details", title_class="card-title") %}
+    {% call macro.collapsible_section("Vendor Files", id="files-section-details") %}
       <div class="form-group">
         <span class="form-label">Upload local files</span>
         <label for="local_files"
@@ -31,7 +31,7 @@
                  multiple />
         </label>
       </div>
-      <div class="divider-or"><span>or</span></div>
+      <div class="divider-or uppercase"><span>or</span></div>
       <div class="form-group">
         <label for="vendor">Select files from vendor FTP</label>
         <select id="vendor"
@@ -49,7 +49,7 @@
     {% endcall %}
   </div>
   <div class="card">
-    {% call macro.collapsible_section("Selected Files", id="selected-files-section-details", title_class="card-title") %}
+    {% call macro.collapsible_section("Selected Files", id="selected-files-section-details") %}
       <div id="selected-files"
            hx-get="/files/list"
            hx-include="#workflow_id"

@@ -1,6 +1,6 @@
 {% if files %}
   <div class="remote-file-list">
-    <div class="remote-file-header" aria-hidden="true">
+    <div class="remote-file-header uppercase" aria-hidden="true">
       <span class="header-check"></span>
       <span>Filename</span>
       <span class="text-right">Date modified</span>
@@ -16,7 +16,7 @@
                hx-include="#workflow_id"
                hx-params="remote_file,workflow_id"
                hx-swap="none" />
-        <span class="remote-file-name" title="{{ file.filename }}">{{ file.filename }}</span>
+        <span class="remote-file-name truncate" title="{{ file.filename }}">{{ file.filename }}</span>
         <span class="remote-file-meta">{{ file.update_date_str }}</span>
         <span class="remote-file-meta">{{ file.formatted_bytes }}</span>
       </label>

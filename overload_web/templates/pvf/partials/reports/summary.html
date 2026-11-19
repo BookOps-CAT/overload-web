@@ -2,36 +2,36 @@
 {% call macro.collapsible_section("Processing Summary") %}
   <div class="summary-stats-grid">
     <div class="stat-box">
-      <span class="stat-label">Files Processed</span>
+      <span class="stat-label uppercase">Files Processed</span>
       <span class="stat-value">{{ total_files }}</span>
     </div>
     <div class="stat-box">
-      <span class="stat-label">Records Processed</span>
+      <span class="stat-label uppercase">Records Processed</span>
       <span class="stat-value">{{ total_records }}</span>
     </div>
     {% if missing_barcodes %}
       <div class="stat-box stat-box-warning">
-        <span class="stat-label">Missing Barcodes</span>
+        <span class="stat-label uppercase">Missing Barcodes</span>
         <span class="stat-value">{{ missing_barcodes }}</span>
       </div>
     {% endif %}
     {% if duplicate_bibs %}
       <div class="stat-box stat-box-warning">
-        <span class="stat-label">Duplicates</span>
+        <span class="stat-label uppercase">Duplicates</span>
         <span class="stat-value">{{ duplicate_bibs }}</span>
       </div>
     {% endif %}
     {% if file_names %}
       <div class="stat-box stat-box-sources">
-        <span class="stat-label">Source Files</span>
+        <span class="stat-label uppercase">Source Files</span>
         {% if file_names is iterable and file_names is not string %}
           <ul class="file-pill-list">
             {% for name in file_names %}
-              <li class="file-pill" title="{{ name }}">{{ name }}</li>
+              <li class="file-pill truncate" title="{{ name }}">{{ name }}</li>
             {% endfor %}
           </ul>
         {% else %}
-          <span class="file-pill" title="{{ file_names }}">{{ file_names }}</span>
+          <span class="file-pill truncate" title="{{ file_names }}">{{ file_names }}</span>
         {% endif %}
       </div>
     {% endif %}

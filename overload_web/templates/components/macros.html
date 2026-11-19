@@ -1,6 +1,6 @@
 {% macro app_card(title, text, href="#") %}
   <div class="card card-hover">
-    <h4 class="card-title">{{ title }}</h4>
+    <h4>{{ title }}</h4>
     <p class="card-text">{{ text }}</p>
     <a class="stretched-link" href="{{ href }}"></a>
   </div>
@@ -55,12 +55,12 @@
            value="{{ field_input|e if field_input else '' }}" />
   </div>
 {% endmacro %}
-{% macro collapsible_section(title, id=None, open=True, title_class="") %}
+{% macro collapsible_section(title, id=None, open=True) %}
   <details {% if id %}id="{{ id }}"{% endif %}
            class="collapsible-section"
            {{ 'open' if open else '' }}>
     <summary class="section-summary">
-      <h5 {% if title_class %}class="{{ title_class }}"{% endif %}>{{ title }}</h5>
+      <h5>{{ title }}</h5>
     </summary>
     <div class="section-body">{{ caller() }}</div>
   </details>
@@ -93,10 +93,11 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th scope="col" class="col-index">#</th>
+          <th scope="col" class="uppercase col-index">#</th>
           {% for key in report[0].keys() %}
             {% set is_wide = 'title' in key.lower() or 'description' in key.lower() or 'message' in key.lower() %}
-            <th scope="col" class="{{ 'col-title' if is_wide else '' }}">{{ " ".join(key.title().split("_")) }}</th>
+            <th scope="col"
+                class="uppercase {{ 'col-title' if is_wide else '' }}">{{ " ".join(key.title().split("_")) }}</th>
           {% endfor %}
         </tr>
       </thead>
