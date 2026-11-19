@@ -91,6 +91,6 @@ def save_processing_statistics(
     WriteOutputReport.execute(report_data=report_data, writer=writer)
     return templates.TemplateResponse(
         request=request,
-        name="pvf/partials/reports/detailed.html",
+        name="pvf/partials/reports/written.html",
         context={"written_report": True},
     )
