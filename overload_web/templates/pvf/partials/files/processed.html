@@ -1,15 +1,13 @@
 <div class="grid-container cols-3">
   {% for file in files %}
-    <div class="card file-card card-hover">
+    <div class="card file-card">
       <div class="file-card-body">
         <h4 class="file-title truncate" title="{{ file.filename }}">{{ file.filename }}</h4>
       </div>
-      <div class="file-card-actions">
-        <a href="/files/download/{{ file.id }}"
-           hx-boost="false"
-           download="{{ file.filename }}"
-           class="btn btn-download">Save</a>
-      </div>
+      <a href="/files/download/{{ file.id }}"
+         hx-boost="false"
+         download="{{ file.filename }}"
+         class="btn btn-download">Save</a>
     </div>
   {% endfor %}
 </div>

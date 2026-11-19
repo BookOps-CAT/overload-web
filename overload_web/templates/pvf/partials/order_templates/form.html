@@ -7,7 +7,7 @@
          name="template_id"
          type="hidden"
          form="pvf-form"
-         value='{{ template.get("id") }}' />
+         value='{{ template.get("id") or "" }}' />
   <div class="grid-container cols-2">
     {{ macro.input_field('name', {'label': 'Template Name'}, template.get('name'), "pvf-form") }}
     {{ macro.input_field('agent', {'label': 'User'}, template.get('agent'), "pvf-form") }}

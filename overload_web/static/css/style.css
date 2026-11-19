@@ -41,6 +41,7 @@ textarea {
   --main-text-color: #000000;
   --secondary-text-color: #475569;
   --muted-text-color: #64748b;
+  --download-text-color: #2563eb;
 
   /* Borders & Shadows */
   --border-color: #e2e8f0;
@@ -217,46 +218,6 @@ h6 {
   grid-column: 1 / -1;
 }
 
-@media (min-width: 62rem) {
-  .lg-cols-1 {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
-  .lg-cols-2 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .lg-cols-3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .lg-cols-4 {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .lg-cols-5 {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-  .lg-cols-6 {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-  .lg-cols-12 {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-  }
-
-  .lg-col-span-2 {
-    grid-column: span 2 / span 2;
-  }
-  .lg-col-span-3 {
-    grid-column: span 3 / span 3;
-  }
-  .lg-col-span-4 {
-    grid-column: span 4 / span 4;
-  }
-  .lg-col-span-6 {
-    grid-column: span 6 / span 6;
-  }
-  .lg-col-span-full {
-    grid-column: 1 / -1;
-  }
-}
-
 /* ==========================================================================
    4. Page Shell & Navigation
    ========================================================================== */
@@ -282,6 +243,7 @@ main {
 
 .main-content {
   flex-direction: column;
+  margin-bottom: var(--spacing-2xl);
   gap: var(--spacing-lg);
 }
 
@@ -339,7 +301,7 @@ main {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: var(--spacing-md);
+  padding: var(--spacing-lg);
   background-color: var(--surface-color);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
@@ -435,13 +397,12 @@ main {
 }
 
 .btn-download {
-  color: var(--main-text-color);
-  background-color: var(--brand-tint);
+  color: var(--download-text-color);
+  background-color: var(--surface-subtle);
 }
 
 .btn-download:hover {
-  background-color: var(--nypl-brand-color);
-  color: var(--surface-color);
+  background-color: var(--surface-hover);
 }
 
 .btn-download::before {
@@ -532,10 +493,6 @@ input[type="checkbox"]:focus-visible {
 }
 
 /* Tables */
-.table-container {
-  max-width: 100%;
-}
-
 .data-table {
   min-width: 100%;
   width: max-content;
@@ -622,10 +579,6 @@ input[type="checkbox"]:focus-visible {
   transition: transform 0.2s ease;
 }
 
-.section-summary:hover h5 {
-  color: var(--nypl-brand-color);
-}
-
 .collapsible-section[open] > .section-summary::after {
   transform: rotate(180deg);
 }
@@ -709,7 +662,6 @@ input[type="checkbox"]:focus-visible {
 }
 
 .stat-box {
-  flex: 0 0 auto;
   min-width: 9.75rem;
   display: flex;
   flex-direction: column;
@@ -770,6 +722,7 @@ input[type="checkbox"]:focus-visible {
   flex-direction: row;
   align-items: center;
   gap: var(--spacing-sm);
+  flex-shrink: 0;
 }
 
 .file-card-body {

@@ -24,15 +24,11 @@
     {% if file_names %}
       <div class="stat-box stat-box-sources">
         <span class="stat-label uppercase">Source Files</span>
-        {% if file_names is iterable and file_names is not string %}
-          <ul class="file-pill-list">
-            {% for name in file_names %}
-              <li class="file-pill truncate" title="{{ name }}">{{ name }}</li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <span class="file-pill truncate" title="{{ file_names }}">{{ file_names }}</span>
-        {% endif %}
+        <ul class="file-pill-list">
+          {% for name in file_names %}
+            <li class="file-pill truncate" title="{{ name }}">{{ name }}</li>
+          {% endfor %}
+        </ul>
       </div>
     {% endif %}
   </div>

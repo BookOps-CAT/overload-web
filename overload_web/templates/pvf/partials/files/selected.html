@@ -4,7 +4,7 @@
       <div id="file-{{ f.id }}" class="selected-file-item">
         <div class="selected-file-info">
           <input type="hidden" name="file_id" value="{{ f.id }}">
-          <strong>{{ f.filename }}</strong>
+          <strong class="truncate" title="{{ f.filename }}">{{ f.filename }}</strong>
           <small class="text-muted">
             {% if f.source == "local" %}
               Local file
