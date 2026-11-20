@@ -2,7 +2,7 @@
   <div class="flex-col gap-lg">
     {% for f in files %}
       <div id="file-{{ f.id }}" class="selected-file-item">
-        <div class="selected-file-info">
+        <div class="flex-col gap-2xs">
           <input type="hidden" name="file_id" value="{{ f.id }}">
           <strong class="truncate" title="{{ f.filename }}">{{ f.filename }}</strong>
           <span class="text-muted">{{ "Local file" if f.source == "local" else "FTP file" }}</span>

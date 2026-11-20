@@ -132,6 +132,10 @@ h6 {
   font-size: var(--font-base);
 }
 
+strong {
+  font-weight: var(--semi-bold);
+}
+
 .text-muted {
   color: var(--secondary-text-color);
   font-size: var(--font-sm);
@@ -388,9 +392,13 @@ main {
   flex-shrink: 0;
 }
 
+.nav-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .nav-text-stacked {
-  display: flex;
-  flex-direction: column;
   justify-content: center;
   flex-shrink: 1;
   min-width: 6.75rem;
@@ -767,13 +775,6 @@ input[type="checkbox"]:focus-visible {
   color: inherit;
 }
 
-.file-pill-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
-  list-style: none;
-}
-
 .file-pill {
   display: inline-block;
   max-width: 100%;
@@ -787,21 +788,8 @@ input[type="checkbox"]:focus-visible {
 
 /* File Cards & Selected File Lists */
 .file-card {
-  flex-direction: row;
   align-items: center;
-  gap: var(--spacing-sm);
   flex-shrink: 0;
-}
-
-.file-card-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.file-title {
-  font-size: var(--font-md);
-  font-weight: var(--semi-bold);
-  color: var(--main-text-color);
 }
 
 .selected-file-item {
@@ -813,13 +801,6 @@ input[type="checkbox"]:focus-visible {
   background-color: var(--surface-subtle);
   border: var(--border);
   border-radius: var(--radius-md);
-}
-
-.selected-file-info {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-2xs);
-  min-width: 0;
 }
 
 /* Shared Sticky Headers */
@@ -897,8 +878,6 @@ input[type="checkbox"]:focus-visible {
 
 /* File Drag & Drop */
 .file-dropzone {
-  display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: var(--spacing-xl) var(--spacing-lg);
@@ -908,7 +887,6 @@ input[type="checkbox"]:focus-visible {
   cursor: pointer;
   text-align: center;
   transition: all 0.2s ease-in-out;
-  gap: var(--spacing-md);
 }
 
 .file-dropzone:hover {

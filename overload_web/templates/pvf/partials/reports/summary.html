@@ -24,11 +24,11 @@
     {% if file_names %}
       <div class="stat-box stat-box-sources flex-col gap-xs">
         <span class="table-heading">Source Files</span>
-        <ul class="file-pill-list">
+        <div class="flex-row gap-xs">
           {% for name in file_names %}
-            <li class="file-pill truncate" title="{{ name }}">{{ name }}</li>
+            <span class="file-pill truncate" title="{{ name }}">{{ name }}</span>
           {% endfor %}
-        </ul>
+        </div>
       </div>
     {% endif %}
   </div>

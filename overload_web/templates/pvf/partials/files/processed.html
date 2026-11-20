@@ -1,8 +1,8 @@
 <div class="grid-container cols-3">
   {% for file in files %}
-    <div class="card file-card flex-col gap-md">
-      <div class="file-card-body">
-        <h4 class="file-title truncate" title="{{ file.filename }}">{{ file.filename }}</h4>
+    <div class="card file-card flex-row gap-sm">
+      <div class="flex-1">
+        <strong class="truncate" title="{{ file.filename }}">{{ file.filename }}</strong>
       </div>
       <a href="/files/download/{{ file.id }}"
          hx-boost="false"
