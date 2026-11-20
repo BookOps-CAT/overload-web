@@ -2,7 +2,7 @@
 {% if not template %}
   {% set template = {} %}
 {% endif %}
-<div id="template-form-fields" class="flex-col flex-1">
+<div id="template-form-fields" class="flex-col gap-lg flex-1">
   <input id="template_id"
          name="template_id"
          type="hidden"
@@ -24,11 +24,11 @@
     {% endfor %}
   </div>
   <div class="grid-container cols-4">
-    <div class="flex-col">
+    <div class="flex-col gap-lg">
       <h5>Sierra Bib Format</h5>
       {{ macro.select_field('material_form', bib_formats, template.get('material_form')) }}
     </div>
-    <div class="flex-col col-span-3">
+    <div class="flex-col gap-lg col-span-3">
       <h5>Sierra Matchpoints</h5>
       <div class="grid-container cols-3">
         {% for id, data in matchpoints.items() %}
@@ -39,7 +39,7 @@
   </div>
 </div>
 <hr class="horizontal-rule responsive" />
-<div class="flex-col">
+<div class="flex-col gap-lg">
   <button class="btn btn-nypl"
           hx-post="/ot/template"
           hx-target="#template-form"

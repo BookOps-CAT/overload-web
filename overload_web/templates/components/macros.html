@@ -1,12 +1,12 @@
 {% macro app_card(title, text, href="#") %}
-  <div class="card card-hover">
+  <div class="card card-hover flex-col gap-md">
     <h5>{{ title }}</h5>
     <p class="card-text">{{ text }}</p>
     <a class="stretched-link" href="{{ href }}"></a>
   </div>
 {% endmacro %}
 {% macro context_select(field_id, data, disabled=False) %}
-  <div class="form-group">
+  <div class="form-group flex-col">
     <label for="{{ field_id }}">{{ data.label }}</label>
     <select id="{{ field_id }}"
             class="form-control"
@@ -23,7 +23,7 @@
   </div>
 {% endmacro %}
 {% macro select_field(field_id, data, field_input=None) %}
-  <div class="form-group">
+  <div class="form-group flex-col">
     <label for="{{ field_id }}">{{ data.label }}</label>
     <select id="{{ field_id }}" class="form-control" name="{{ field_id }}">
       {% if field_input %}
@@ -40,13 +40,12 @@
   </div>
 {% endmacro %}
 {% macro input_field(field_id, data, field_input=None) %}
-  <div class="form-group">
+  <div class="form-group flex-col">
     <label for="{{ field_id }}">{{ data.label }}</label>
     <input id="{{ field_id }}"
            class="form-control"
            name="{{ field_id }}"
            type="text"
-           placeholder=" "
            value="{{ field_input|e if field_input else '' }}" />
   </div>
 {% endmacro %}
@@ -57,7 +56,7 @@
     <summary class="section-summary">
       <h5>{{ title }}</h5>
     </summary>
-    <div class="flex-col">{{ caller() }}</div>
+    <div class="flex-col gap-lg">{{ caller() }}</div>
   </details>
 {% endmacro %}
 {% macro report_section(title, report, empty_message) %}
@@ -65,9 +64,9 @@
     <summary class="section-summary">
       <h5>{{ title }}</h5>
       {% if report %}
-        <span class="status-badge status-badge-warn">{{ report | length }} found</span>
+        <span class="status-badge status-warn">{{ report | length }} found</span>
       {% else %}
-        <span class="status-badge status-badge-ok">None</span>
+        <span class="status-badge status-ok">None</span>
       {% endif %}
     </summary>
     {% if report %}
@@ -84,21 +83,18 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th scope="col" class="uppercase col-index">#</th>
+          <th scope="col" class="table-heading">#</th>
           {% for key in report[0].keys() %}
-            {% set is_wide = 'title' in key.lower() or 'description' in key.lower() or 'message' in key.lower() %}
-            <th scope="col"
-                class="uppercase {{ 'col-title' if is_wide else '' }}">{{ " ".join(key.title().split("_")) }}</th>
+            <th scope="col" class="table-heading">{{ " ".join(key.title().split("_")) }}</th>
           {% endfor %}
         </tr>
       </thead>
       <tbody>
         {% for row in report %}
           <tr>
-            <td class="col-index">{{ loop.index }}</td>
-            {% for key, value in row.items() %}
-              {% set is_wide = 'title' in key.lower() or 'description' in key.lower() or 'message' in key.lower() %}
-              <td class="{{ 'col-title' if is_wide else '' }}" title="{{ value }}">{{ value }}</td>
+            <td>{{ loop.index }}</td>
+            {% for value in row.values() %}
+              <td title="{{ value }}"><span class="cell-clamp">{{ value }}</span></td>
             {% endfor %}
           </tr>
         {% endfor %}

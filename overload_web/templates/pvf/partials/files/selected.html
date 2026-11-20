@@ -1,17 +1,11 @@
 {% if files %}
-  <div class="flex-col">
+  <div class="flex-col gap-lg">
     {% for f in files %}
       <div id="file-{{ f.id }}" class="selected-file-item">
         <div class="selected-file-info">
           <input type="hidden" name="file_id" value="{{ f.id }}">
           <strong class="truncate" title="{{ f.filename }}">{{ f.filename }}</strong>
-          <small class="text-muted">
-            {% if f.source == "local" %}
-              Local file
-            {% else %}
-              FTP file
-            {% endif %}
-          </small>
+          <span class="text-muted">{{ "Local file" if f.source == "local" else "FTP file" }}</span>
         </div>
         <button class="btn btn-nypl btn-sm"
                 type="button"
@@ -23,6 +17,4 @@
       </div>
     {% endfor %}
   </div>
-{% else %}
-  <p class="text-muted">No files selected</p>
 {% endif %}

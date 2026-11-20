@@ -1,29 +1,29 @@
 {% import "components/macros.html" as macro %}
 {% call macro.collapsible_section("Processing Summary") %}
   <div class="summary-stats-grid">
-    <div class="stat-box">
-      <span class="stat-label uppercase">Files Processed</span>
+    <div class="stat-box flex-col gap-xs">
+      <span class="table-heading">Files Processed</span>
       <span class="stat-value">{{ total_files }}</span>
     </div>
-    <div class="stat-box">
-      <span class="stat-label uppercase">Records Processed</span>
+    <div class="stat-box flex-col gap-xs">
+      <span class="table-heading">Records Processed</span>
       <span class="stat-value">{{ total_records }}</span>
     </div>
     {% if missing_barcodes %}
-      <div class="stat-box stat-box-warning">
-        <span class="stat-label uppercase">Missing Barcodes</span>
+      <div class="stat-box status-warn flex-col gap-xs">
+        <span class="table-heading">Missing Barcodes</span>
         <span class="stat-value">{{ missing_barcodes }}</span>
       </div>
     {% endif %}
     {% if duplicate_bibs %}
-      <div class="stat-box stat-box-warning">
-        <span class="stat-label uppercase">Duplicates</span>
+      <div class="stat-box status-warn flex-col gap-xs">
+        <span class="table-heading">Duplicates</span>
         <span class="stat-value">{{ duplicate_bibs }}</span>
       </div>
     {% endif %}
     {% if file_names %}
-      <div class="stat-box stat-box-sources">
-        <span class="stat-label uppercase">Source Files</span>
+      <div class="stat-box stat-box-sources flex-col gap-xs">
+        <span class="table-heading">Source Files</span>
         <ul class="file-pill-list">
           {% for name in file_names %}
             <li class="file-pill truncate" title="{{ name }}">{{ name }}</li>
@@ -33,7 +33,7 @@
     {% endif %}
   </div>
   {% if not processing_integrity %}
-    <div class="alert-warning-banner">
+    <div class="alert-status-warn-banner">
       <strong>Integrity of processed files:</strong> {{ processing_integrity }}
     </div>
   {% endif %}
