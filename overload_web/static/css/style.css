@@ -749,7 +749,7 @@ input[type="checkbox"]:focus-visible {
   min-width: 9.75rem;
   padding: var(--spacing-md) var(--spacing-lg);
   background-color: var(--surface-subtle);
-  border: var(--border-color);
+  border: var(--border);
   border-radius: var(--radius-md);
 }
 
