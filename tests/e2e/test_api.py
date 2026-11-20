@@ -169,25 +169,18 @@ class TestApp:
         assert response.context["page_title"] == "Process Vendor File"
 
     @pytest.mark.parametrize(
-        "library, collection, record_type, workflow, collection_disabled, template_enabled",
+        "library, collection, record_type, collection_disabled, template_enabled",
         [
-            ("nypl", "BL", "acq", "pvf", False, True),
-            ("nypl", "RL", "cat", "wc2s", False, False),
-            ("nypl", "", "cat", "pvf", False, False),
-            ("bpl", "", "sel", "wc2s", True, True),
+            ("nypl", "BL", "acq", False, True),
+            ("nypl", "RL", "cat", False, False),
+            ("bpl", "", "sel", True, True),
         ],
     )
     def test_frontend_router_get_context_update(
-        self,
-        library,
-        collection,
-        workflow,
-        record_type,
-        collection_disabled,
-        template_enabled,
+        self, library, collection, record_type, collection_disabled, template_enabled
     ):
         response = self.client.get(
-            f"/update-context?workflow={workflow}&library={library}&collection={collection}&record_type={record_type}"
+            f"/update-context?library={library}&collection={collection}&record_type={record_type}"
         )
         assert response.status_code == 200
         assert response.context["library"] == library
@@ -197,7 +190,7 @@ class TestApp:
         assert response.context["template_form_enabled"] == template_enabled
         assert (
             response.url
-            == f"{self.base_url}/update-context?workflow={workflow}&library={library}&collection={collection}&record_type={record_type}"
+            == f"{self.base_url}/update-context?library={library}&collection={collection}&record_type={record_type}"
         )
 
     def test_frontend_router_wc2sierra_page_get(self):
