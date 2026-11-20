@@ -141,6 +141,12 @@ strong {
   font-size: var(--font-sm);
 }
 
+.status-danger {
+  color: var(--danger-text);
+  background-color: var(--danger-bg);
+  border: var(--border-semantic);
+}
+
 .status-warn {
   color: var(--warning-text);
   background-color: var(--warning-bg);
@@ -326,6 +332,7 @@ strong {
 .gap-2xl {
   gap: var(--spacing-2xl);
 }
+
 /* ==========================================================================
    4. Page Shell & Navigation
    ========================================================================== */
@@ -337,32 +344,24 @@ header {
   color: var(--surface-color);
 }
 
-main {
-  padding-top: var(--spacing-md);
-  margin-bottom: var(--spacing-2xl);
-}
-
-.main-content,
+main,
 .navbar {
   max-width: 1200px;
   margin: 0 auto;
   display: flex;
 }
 
-.main-content {
+main {
   flex-direction: column;
   gap: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+  margin-bottom: var(--spacing-2xl);
 }
 
 .navbar {
   justify-content: space-between;
   align-items: center;
   height: 100%;
-}
-
-.nav-left {
-  align-self: center;
-  padding-bottom: 0;
 }
 
 .nav-left a {
@@ -388,7 +387,6 @@ main {
 .nav-logo {
   height: 3.75rem;
   width: 3.75rem;
-  object-fit: contain;
   flex-shrink: 0;
 }
 
@@ -399,8 +397,9 @@ main {
 }
 
 .nav-text-stacked {
+  display: flex;
+  flex-direction: column;
   justify-content: center;
-  flex-shrink: 1;
   min-width: 6.75rem;
   text-align: center;
 }
@@ -409,6 +408,7 @@ main {
 .nav-logo:empty {
   display: flex;
 }
+
 /* ==========================================================================
    5. Reusable Components
    ========================================================================== */
@@ -425,6 +425,7 @@ main {
 }
 
 .card-text {
+  margin-top: var(--spacing-md);
   color: var(--secondary-text-color);
   font-size: var(--font-base);
 }
@@ -455,6 +456,8 @@ main {
 .horizontal-rule {
   border: 0;
   border-top: var(--border);
+  height: 0;
+  overflow: visible;
   width: 100%;
   align-self: stretch;
   flex-shrink: 0;
@@ -464,12 +467,14 @@ main {
   .responsive {
     width: 0;
     height: auto;
+    align-self: stretch;
     border-top: 0;
     border-left: var(--border);
   }
 }
 
 .divider-or {
+  display: flex;
   align-items: center;
   gap: var(--spacing-md);
   color: var(--secondary-text-color);
@@ -543,6 +548,8 @@ main {
 
 /* Form Controls */
 .form-group {
+  display: flex;
+  flex-direction: column;
   gap: var(--spacing-xs);
   width: 100%;
 }
@@ -651,19 +658,26 @@ input[type="checkbox"]:focus-visible {
   overflow-wrap: break-word;
 }
 
-.data-table tbody tr:last-child td {
+.data-table tbody tr:last-child td,
+.data-table tbody tr:last-child th {
   border-bottom: none;
 }
 
 /* Collapsible Sections */
-.collapsible-section {
+details {
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
 }
 
-.section-summary {
+details[open] > summary {
+  margin-bottom: var(--spacing-lg);
+}
+
+details::details-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+details > summary {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
@@ -672,11 +686,11 @@ input[type="checkbox"]:focus-visible {
   user-select: none;
 }
 
-.section-summary::-webkit-details-marker {
+details > summary::-webkit-details-marker {
   display: none;
 }
 
-.section-summary::after {
+details > summary::after {
   content: "";
   width: 1.125rem;
   height: 1.125rem;
@@ -688,7 +702,7 @@ input[type="checkbox"]:focus-visible {
   transition: transform 0.2s ease;
 }
 
-.collapsible-section[open] > .section-summary::after {
+details[open] > summary::after {
   transform: rotate(180deg);
 }
 
@@ -700,19 +714,16 @@ input[type="checkbox"]:focus-visible {
   border-radius: var(--radius-pill);
 }
 
-.empty-state-success {
+.status-banner {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
   padding: var(--spacing-lg);
   font-size: var(--font-sm);
   border-radius: var(--radius-md);
-  color: var(--success-text);
-  background-color: var(--success-bg);
-  border: var(--border-semantic);
 }
 
-.empty-state-success::before {
+.status-banner.status-ok::before {
   content: "";
   width: 1.125rem;
   height: 1.125rem;
@@ -722,15 +733,6 @@ input[type="checkbox"]:focus-visible {
     no-repeat center / contain;
   mask: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='black' stroke-width='2' viewBox='0 0 24 24'%3e%3cpath stroke-linecap='round' stroke-linejoin='round' d='M5 13l4 4L19 7'/%3e%3c/svg%3e")
     no-repeat center / contain;
-}
-
-.alert-warning-banner {
-  padding: var(--spacing-md) var(--spacing-lg);
-  background-color: var(--danger-bg);
-  border: var(--border-semantic);
-  border-radius: var(--radius-md);
-  color: var(--danger-text);
-  font-size: var(--font-md);
 }
 
 /* ==========================================================================
@@ -746,6 +748,9 @@ input[type="checkbox"]:focus-visible {
 }
 
 .stat-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
   min-width: 9.75rem;
   padding: var(--spacing-md) var(--spacing-lg);
   background-color: var(--surface-subtle);
@@ -758,12 +763,6 @@ input[type="checkbox"]:focus-visible {
   min-width: 0;
 }
 
-.stat-box-warning {
-  color: var(--warning-text);
-  background-color: var(--warning-bg);
-  border: var(--border-semantic);
-}
-
 .stat-value {
   font-size: var(--font-lg);
   font-weight: var(--semi-bold);
@@ -771,7 +770,7 @@ input[type="checkbox"]:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
-.stat-box-warning .stat-value {
+.stat-box.status-warn .stat-value {
   color: inherit;
 }
 
@@ -788,8 +787,15 @@ input[type="checkbox"]:focus-visible {
 
 /* File Cards & Selected File Lists */
 .file-card {
+  display: flex;
   align-items: center;
+  gap: var(--spacing-sm);
   flex-shrink: 0;
+}
+
+.file-card strong {
+  flex: 1;
+  min-width: 0;
 }
 
 .selected-file-item {
@@ -812,6 +818,7 @@ input[type="checkbox"]:focus-visible {
   background-color: var(--surface-subtle);
   border-bottom: var(--border);
 }
+
 /* Shared Row Striping & Hover */
 .data-table tbody tr,
 .remote-file-row {
@@ -878,8 +885,11 @@ input[type="checkbox"]:focus-visible {
 
 /* File Drag & Drop */
 .file-dropzone {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: var(--spacing-md);
   padding: var(--spacing-xl) var(--spacing-lg);
   border: 2px dashed var(--border-color-strong);
   border-radius: var(--radius-md);

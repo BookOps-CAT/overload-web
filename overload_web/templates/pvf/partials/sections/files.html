@@ -2,12 +2,12 @@
 <div id="file-section"
      class="grid-container cols-2"
      hx-sync="#pvf-form:queue all">
-  <div class="card flex-col gap-md">
+  <div class="card">
     {% call macro.collapsible_section("Vendor Files", id="files-section-details") %}
-      <div class="form-group flex-col">
+      <div class="form-group">
         <span class="form-label">Upload local files</span>
         <label for="local_files"
-               class="file-dropzone flex-col gap-md"
+               class="file-dropzone"
                ondragover="event.preventDefault();"
                ondrop="
                  event.preventDefault();
@@ -31,8 +31,8 @@
                  multiple />
         </label>
       </div>
-      <div class="divider-or flex-row"><span>or</span></div>
-      <div class="form-group flex-col">
+      <div class="divider-or">or</div>
+      <div class="form-group">
         <label for="vendor">Select files from vendor FTP</label>
         <select id="vendor"
                 class="form-control"
@@ -47,7 +47,7 @@
       <div id="file-list"></div>
     {% endcall %}
   </div>
-  <div class="card flex-col gap-md">
+  <div class="card">
     {% call macro.collapsible_section("Selected Files", id="selected-files-section-details") %}
       <div id="selected-files"
            hx-get="/files/list"

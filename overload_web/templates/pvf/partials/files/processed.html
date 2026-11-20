@@ -1,9 +1,7 @@
 <div class="grid-container cols-3">
   {% for file in files %}
-    <div class="card file-card flex-row gap-sm">
-      <div class="flex-1">
-        <strong class="truncate" title="{{ file.filename }}">{{ file.filename }}</strong>
-      </div>
+    <div class="card file-card">
+      <strong class="truncate" title="{{ file.filename }}">{{ file.filename }}</strong>
       <a href="/files/download/{{ file.id }}"
          hx-boost="false"
          download="{{ file.filename }}"

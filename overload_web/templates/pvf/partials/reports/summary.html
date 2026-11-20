@@ -1,28 +1,28 @@
 {% import "components/macros.html" as macro %}
 {% call macro.collapsible_section("Processing Summary") %}
   <div class="summary-stats-grid">
-    <div class="stat-box flex-col gap-xs">
+    <div class="stat-box">
       <span class="table-heading">Files Processed</span>
       <span class="stat-value">{{ total_files }}</span>
     </div>
-    <div class="stat-box flex-col gap-xs">
+    <div class="stat-box">
       <span class="table-heading">Records Processed</span>
       <span class="stat-value">{{ total_records }}</span>
     </div>
     {% if missing_barcodes %}
-      <div class="stat-box status-warn flex-col gap-xs">
+      <div class="stat-box status-warn">
         <span class="table-heading">Missing Barcodes</span>
         <span class="stat-value">{{ missing_barcodes }}</span>
       </div>
     {% endif %}
     {% if duplicate_bibs %}
-      <div class="stat-box status-warn flex-col gap-xs">
+      <div class="stat-box status-warn">
         <span class="table-heading">Duplicates</span>
         <span class="stat-value">{{ duplicate_bibs }}</span>
       </div>
     {% endif %}
     {% if file_names %}
-      <div class="stat-box stat-box-sources flex-col gap-xs">
+      <div class="stat-box stat-box-sources">
         <span class="table-heading">Source Files</span>
         <div class="flex-row gap-xs">
           {% for name in file_names %}
@@ -33,7 +33,7 @@
     {% endif %}
   </div>
   {% if not processing_integrity %}
-    <div class="alert-warning-banner">
+    <div class="status-banner status-danger">
       <strong>Integrity of processed files:</strong> {{ processing_integrity }}
     </div>
   {% endif %}

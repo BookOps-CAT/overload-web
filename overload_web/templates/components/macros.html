@@ -1,12 +1,12 @@
 {% macro app_card(title, text, href="#") %}
-  <div class="card card-hover flex-col gap-md">
+  <div class="card card-hover">
     <h5>{{ title }}</h5>
     <p class="card-text">{{ text }}</p>
     <a class="stretched-link" href="{{ href }}"></a>
   </div>
 {% endmacro %}
 {% macro context_select(field_id, data, disabled=False) %}
-  <div class="form-group flex-col">
+  <div class="form-group">
     <label for="{{ field_id }}">{{ data.label }}</label>
     <select id="{{ field_id }}"
             class="form-control"
@@ -23,7 +23,7 @@
   </div>
 {% endmacro %}
 {% macro select_field(field_id, data, field_input=None) %}
-  <div class="form-group flex-col">
+  <div class="form-group">
     <label for="{{ field_id }}">{{ data.label }}</label>
     <select id="{{ field_id }}" class="form-control" name="{{ field_id }}">
       {% if field_input %}
@@ -40,7 +40,7 @@
   </div>
 {% endmacro %}
 {% macro input_field(field_id, data, field_input=None) %}
-  <div class="form-group flex-col">
+  <div class="form-group">
     <label for="{{ field_id }}">{{ data.label }}</label>
     <input id="{{ field_id }}"
            class="form-control"
@@ -50,18 +50,16 @@
   </div>
 {% endmacro %}
 {% macro collapsible_section(title, id=None, open=True) %}
-  <details {% if id %}id="{{ id }}"{% endif %}
-           class="collapsible-section"
-           {{ 'open' if open else '' }}>
-    <summary class="section-summary">
+  <details {% if id %}id="{{ id }}"{% endif %} {{ 'open' if open else '' }}>
+    <summary>
       <h5>{{ title }}</h5>
     </summary>
-    <div class="flex-col gap-lg">{{ caller() }}</div>
+    {{ caller() }}
   </details>
 {% endmacro %}
 {% macro report_section(title, report, empty_message) %}
-  <details class="collapsible-section" {{ 'open' if report else '' }}>
-    <summary class="section-summary">
+  <details {{ 'open' if report else '' }}>
+    <summary>
       <h5>{{ title }}</h5>
       {% if report %}
         <span class="status-badge status-warn">{{ report | length }} found</span>
@@ -72,7 +70,7 @@
     {% if report %}
       {{ report_table(report) }}
     {% else %}
-      <div class="empty-state-success">
+      <div class="status-banner status-ok">
         <span>{{ empty_message }}</span>
       </div>
     {% endif %}
@@ -92,7 +90,7 @@
       <tbody>
         {% for row in report %}
           <tr>
-            <td>{{ loop.index }}</td>
+            <th scope="row">{{ loop.index }}</th>
             {% for value in row.values() %}
               <td title="{{ value }}"><span class="cell-clamp">{{ value }}</span></td>
             {% endfor %}
