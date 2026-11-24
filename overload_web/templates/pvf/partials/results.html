@@ -4,15 +4,9 @@
     {% include "pvf/partials/files/processed.html" %}
   {% endcall %}
   <hr class="horizontal-rule" />
-  <div id="summary-report-container" class="flex-col gap-lg">{% include "pvf/partials/reports/summary.html" %}</div>
-  <div id="detailed-report-container" class="flex-col gap-lg"></div>
+  <div id="report-container" class="flex-col gap-lg">{% include "pvf/partials/reports/summary.html" %}</div>
 </section>
 <div class="flex-row gap-lg"  id="output-buttons">
-  <button id="detailed-report-button"
-          type="button"
-          hx-get="/reports/detailed?workflow_id={{ workflow_id }}"
-          hx-target="#detailed-report-container"
-          class="btn btn-nypl">View detailed report</button>
   <button id="save-report-button"
           type="button"
           hx-post="/reports/write?workflow_id={{ workflow_id }}"

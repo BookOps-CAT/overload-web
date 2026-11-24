@@ -124,6 +124,7 @@ def workflow_status_check(
                 "processing_integrity": batch.processing_integrity,
                 "call_number_report": batch.call_number_report,
                 "files": batch.files,
+                "detailed_report": batch.stats,
             },
             headers={"HX-Trigger": "workflowCompleted"},
         )

@@ -42,3 +42,7 @@
 {{ macro.report_section("Duplicates Report", duplicate_report, "No duplicate records found!") }}
 <hr class="horizontal-rule" />
 {{ macro.report_section("Call Number Issues", call_number_report, "No call number issues found!") }}
+<hr class="horizontal-rule" />
+{% call macro.collapsible_section("Detailed Report Data", None, open=False) %}
+  {{ macro.report_table(detailed_report) }}
+{% endcall %}

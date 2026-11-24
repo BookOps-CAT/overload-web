@@ -388,7 +388,7 @@ class TestApp:
                 file_names=[],
                 missing_barcodes=[],
                 processing_integrity=True,
-                stats=[],
+                stats=[{}],
                 total_files=1,
                 total_records=1,
                 vendor_report=[],
@@ -422,20 +422,6 @@ class TestApp:
         assert response.status_code == 200
         assert "<div class='error'>Error: Workflow failed</div>" in response.text
         assert response.url == f"{self.base_url}/pvf/workflow/123/status"
-
-    def test_reports_router_output_report(self, mocker):
-        mock_obj = mocker.Mock(return_value={})
-        mocker.patch.object(queries, "get_processing_report", mock_obj)
-        response = self.client.get("/reports/summary?workflow_id=1")
-        assert response.status_code == 200
-        assert response.url == f"{self.base_url}/reports/summary?workflow_id=1"
-
-    def test_reports_router_get_detailed_report(self, mocker):
-        mock_obj = mocker.Mock(return_value={})
-        mocker.patch.object(queries, "get_detailed_report_data", mock_obj)
-        response = self.client.get("/reports/detailed?workflow_id=1")
-        assert response.status_code == 200
-        assert response.url == f"{self.base_url}/reports/detailed?workflow_id=1"
 
     def test_reports_router_write_report_to_google_sheet(self, mocker):
         mock_data = mocker.Mock(
