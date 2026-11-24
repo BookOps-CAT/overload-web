@@ -22,7 +22,7 @@ def test_env(caplog, monkeypatch):
     monkeypatch.setenv("NYPL_PLATFORM_TARGET", "dev")
     monkeypatch.setenv("NSDROP_USER", "foo")
     monkeypatch.setenv("NSDROP_PASSWORD", "bar")
-    monkeypatch.setenv("NDSROP_HOST", "baz")
+    monkeypatch.setenv("NSDROP_HOST", "baz")
     monkeypatch.setenv("NSDROP_PORT", 22)
     monkeypatch.setenv("BPL_SOLR_CLIENT_KEY", "foo")
     monkeypatch.setenv("BPL_SOLR_TARGET", "test")
