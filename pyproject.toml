@@ -103,3 +103,6 @@ exclude_exact = [
     "overload_web.infrastructure",
     "overload_web.presentation",
 ]
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]

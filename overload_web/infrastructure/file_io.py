@@ -126,14 +126,22 @@ class SFTPFileRetriever(ports.FileRetriever):
     to connect to an FTP/SFTP server.
     """
 
-    def __init__(self, client: Client) -> None:
+    def __init__(
+        self, name: str, username: str, password: str, host: str, port: int
+    ) -> None:
         """Initialize `SFTPFileRetriever` instance.
 
         Args:
-            client: a `file_retriever.Client` object.
+            host: the client's host
+            name: the name of the SFTP client (ie. NSDROP)
+            password: the password to use when logging into the client
+            port: the client's port
+            username: the username to use when logging into the client
 
         """
-        self.client = client
+        self.client = Client(
+            name=name, username=username, password=password, host=host, port=port
+        )
 
     def list_file_info(self, dir: str) -> list[dict[str, Any]]:
         """List files in a remote directory."""
@@ -163,15 +171,3 @@ class SFTPFileRetriever(ports.FileRetriever):
         file.file_stream.seek(0)
         logger.info(f"File loaded: {name}")
         return file.file_stream.read()
-
-    @classmethod
-    def create_retriever_for_vendor(cls, vendor: str) -> SFTPFileRetriever:
-        """Create an `SFTPFileRetriever` for a specific vendor based on envars."""
-        client = Client(
-            name=vendor.upper(),
-            username=os.environ[f"{vendor.upper()}_USER"],
-            password=os.environ[f"{vendor.upper()}_PASSWORD"],
-            host=os.environ[f"{vendor.upper()}_HOST"],
-            port=os.environ[f"{vendor.upper()}_PORT"],
-        )
-        return SFTPFileRetriever(client=client)

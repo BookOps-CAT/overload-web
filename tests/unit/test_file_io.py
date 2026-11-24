@@ -67,6 +67,14 @@ class FakeSFTPClient:
         return ["foo.mrc"]
 
 
+@pytest.fixture
+def mock_client(monkeypatch):
+    def client(*args, **kwargs):
+        return FakeSFTPClient()
+
+    monkeypatch.setattr(file_io, "Client", client)
+
+
 class TestLocalFileRetriever:
     def test_local_download(self, tmp_path, tmp_files):
         retriever = file_io.LocalFileRetriever()
@@ -92,35 +100,37 @@ class TestLocalFileWriter:
 
 
 class TestSFTPFileRetriever:
-    def test_sftp_retriever(self):
-        retriever = file_io.SFTPFileRetriever(client=FakeSFTPClient())
+    def test_sftp_retriever(self, mock_client):
+        retriever = file_io.SFTPFileRetriever(
+            name="foo", username="bar", password="baz", host="qux", port=22
+        )
         assert hasattr(retriever, "list_file_info")
         assert hasattr(retriever, "list_files")
         assert hasattr(retriever, "download")
         assert retriever.client.name == "FOO"
 
-    def test_sftp_list_file_info(self):
-        retriever = file_io.SFTPFileRetriever(client=FakeSFTPClient())
+    def test_sftp_list_file_info(self, mock_client):
+        retriever = file_io.SFTPFileRetriever(
+            name="foo", username="bar", password="baz", host="qux", port=22
+        )
         file_list = retriever.list_file_info(dir="test")
         assert len(file_list) == 1
         assert file_list[0]["filename"] == "foo.mrc"
 
-    def test_sftp_list_files(self):
-        retriever = file_io.SFTPFileRetriever(client=FakeSFTPClient())
+    def test_sftp_list_files(self, mock_client):
+        retriever = file_io.SFTPFileRetriever(
+            name="foo", username="bar", password="baz", host="qux", port=22
+        )
         file_list = retriever.list_files(dir="test")
         assert len(file_list) == 1
         assert file_list[0] == "foo.mrc"
 
-    def test_sftp_download(self):
-        retriever = file_io.SFTPFileRetriever(client=FakeSFTPClient())
+    def test_sftp_download(self, mock_client):
+        retriever = file_io.SFTPFileRetriever(
+            name="foo", username="bar", password="baz", host="qux", port=22
+        )
         file = retriever.download(name="foo.mrc", dir="test")
         assert file == b""
-
-    def test_create_retriever_for_vendor(self, mocker):
-        client = mocker.Mock()
-        mocker.patch("file_retriever.Client._Client__connect_to_server", client)
-        retriever = file_io.SFTPFileRetriever.create_retriever_for_vendor(vendor="FOO")
-        assert retriever.client.name == "FOO"
 
 
 class TestLocalFileStorage:

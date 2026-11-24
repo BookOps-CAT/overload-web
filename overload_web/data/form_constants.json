@@ -4,14 +4,8 @@
       "label": "Department",
       "options": { "acq": "Acquisitions", "cat": "Cataloging", "sel": "Selection" }
     },
-    "library": {
-      "label": "Library System",
-      "options": { "bpl": "BPL", "nypl": "NYPL" }
-    },
-    "collection": {
-      "label": "Collection",
-      "options": { "BL": "Branches", "RL": "Research" }
-    }
+    "library": { "label": "Library System", "options": { "bpl": "BPL", "nypl": "NYPL" } },
+    "collection": { "label": "Collection", "options": { "BL": "Branches", "RL": "Research" } }
   },
   "fixed_fields": {
     "acquisition_type": {
@@ -1009,19 +1003,10 @@
         "e": "DOE Educator"
       }
     },
-    "order_code_3": {
-      "label": "Order Code 3",
-      "options": { "d": "DOMESTIC", "f": "FOREIGN", "-": "NO CODE" }
-    },
+    "order_code_3": { "label": "Order Code 3", "options": { "d": "DOMESTIC", "f": "FOREIGN", "-": "NO CODE" } },
     "order_code_4": {
       "label": "Audience",
-      "options": {
-        "-": "---",
-        "n": "Suppress",
-        "a": "Adult",
-        "j": "Juvenile",
-        "y": "Young Adult"
-      }
+      "options": { "-": "---", "n": "Suppress", "a": "Adult", "j": "Juvenile", "y": "Young Adult" }
     },
     "order_note": {
       "label": "Order Note",
@@ -1079,30 +1064,15 @@
   "matchpoints": {
     "primary_matchpoint": {
       "label": "Primary Matchpoint",
-      "options": {
-        "isbn": "020",
-        "bib_id": "Sierra ID",
-        "upc": "024",
-        "control_number": "001"
-      }
+      "options": { "isbn": "020", "bib_id": "Sierra ID", "upc": "024", "control_number": "001" }
     },
     "secondary_matchpoint": {
       "label": "Secondary Matchpoint",
-      "options": {
-        "isbn": "020",
-        "bib_id": "Sierra ID",
-        "upc": "024",
-        "control_number": "001"
-      }
+      "options": { "isbn": "020", "bib_id": "Sierra ID", "upc": "024", "control_number": "001" }
     },
     "tertiary_matchpoint": {
       "label": "Tertiary Matchpoint",
-      "options": {
-        "isbn": "020",
-        "bib_id": "Sierra ID",
-        "upc": "024",
-        "control_number": "001"
-      }
+      "options": { "isbn": "020", "bib_id": "Sierra ID", "upc": "024", "control_number": "001" }
     }
   },
   "material_form": {
@@ -1154,6 +1124,7 @@
     "amalivre_lpa": "Amalivre LPA",
     "amalivre_sasb": "Amalivre SASB",
     "amalivre_schomburg": "Amalivre Schomburg",
+    "amalivre_committed": "Amalivre ReCAP Committed",
     "ingram": "Ingram",
     "sulaiman": "Sulaiman",
     "eastview": "Eastview"
@@ -1167,22 +1138,10 @@
       "label": "Record Type",
       "options": { "any": "Any", "print": "Print", "large_print": "Large print", "dvd": "DVD", "bluray": "Blu-ray" }
     },
-    "action": {
-      "label": "Action",
-      "options": { "upgrade": "Upgrade", "catalog": "Catalog" }
-    },
-    "cat_rules": {
-      "label": "Cataloging Rules",
-      "options": { "any": "Any", "RDA": "RDA only" }
-    },
-    "cat_agency": {
-      "label": "Cataloging Source",
-      "options": { "any": "Any", "DLC": "DLC only" }
-    },
-    "data_source": {
-      "label": "Data Source",
-      "options": { "id": "ID List", "export": "Sierra Export" }
-    },
+    "action": { "label": "Action", "options": { "upgrade": "Upgrade", "catalog": "Catalog" } },
+    "cat_rules": { "label": "Cataloging Rules", "options": { "any": "Any", "RDA": "RDA only" } },
+    "cat_agency": { "label": "Cataloging Source", "options": { "any": "Any", "DLC": "DLC only" } },
+    "data_source": { "label": "Data Source", "options": { "id": "ID List", "export": "Sierra Export" } },
     "id_type": {
       "label": "ID Type",
       "options": { "isbn": "ISBN", "issn": "ISSN", "upc": "UPC", "lccn": "LCCN", "oclc_number": "OCLC Number" }

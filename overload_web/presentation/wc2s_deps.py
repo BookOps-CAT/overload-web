@@ -67,6 +67,8 @@ class UserCriteria(BaseModel):
 
 
 class SourceDataModel(BaseModel):
+    """Model representing specifications for Worldcat2Sierra searches."""
+
     id: str
     id_type: Literal["isbn", "issn", "lccn", "upc", "oclc_number"]
     library: Literal["nypl", "bpl"]

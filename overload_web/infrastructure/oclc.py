@@ -76,7 +76,7 @@ class OclcSession(MetadataSession):
     def _get_credentials(self, library: str) -> WorldcatAccessToken:
         lib = library.upper()
         return WorldcatAccessToken(
-            key=os.environ[f"{lib}_WORLDCAT_CLIENT"],
+            key=os.environ[f"{lib}_WORLDCAT_CLIENT_KEY"],
             secret=os.environ[f"{lib}_WORLDCAT_SECRET"],
             scopes="WorldCatMetadataAPI",
         )

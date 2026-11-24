@@ -5,10 +5,11 @@ from __future__ import annotations
 import json
 import logging
 import logging.config
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, AsyncGenerator
+from typing import Any
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -26,7 +27,7 @@ from overload_web.presentation import (
 
 BASE_DIR = Path(__file__).resolve().parent
 
-load_dotenv(dotenv_path="debug.env")
+load_dotenv(dotenv_path=".env")
 logger = logging.getLogger("overload_web")
 
 

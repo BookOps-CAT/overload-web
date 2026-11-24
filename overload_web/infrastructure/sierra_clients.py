@@ -154,7 +154,7 @@ class BPLSolrSession(SolrSession):
         )
 
     def _get_credentials(self) -> str:
-        return os.environ["BPL_SOLR_CLIENT"]
+        return os.environ["BPL_SOLR_CLIENT_KEY"]
 
     def _parse_response(self, response: requests.Response) -> list[dict[str, Any]]:
         """Parse solr response into list of `BPLSolrResponse` objects."""
@@ -220,10 +220,9 @@ class NYPLPlatformSession(PlatformSession):
 
     def _get_credentials(self) -> PlatformToken:
         return PlatformToken(
-            os.environ["NYPL_PLATFORM_CLIENT"],
+            os.environ["NYPL_PLATFORM_CLIENT_KEY"],
             os.environ["NYPL_PLATFORM_SECRET"],
             os.environ["NYPL_PLATFORM_OAUTH"],
-            os.environ["NYPL_PLATFORM_AGENT"],
         )
 
     def _parse_response(self, response: requests.Response) -> list[dict[str, Any]]:

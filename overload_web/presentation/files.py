@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import io
 import logging
-import os
 import urllib.parse
 from typing import Annotated, Any
 
@@ -42,9 +41,8 @@ def list_remote_files(
         the list of files wrapped in a `HTMLResponse` object
 
     """
-    files = ListVendorFiles.execute(
-        dir=os.environ[f"{vendor.upper()}_SRC"], retriever=retriever
-    )
+    vendor_dir = f"/NSDROP/vendor_records/{vendor.lower()}"
+    files = ListVendorFiles.execute(dir=vendor_dir, retriever=retriever)
     return templates.TemplateResponse(
         request=request,
         name="pvf/partials/files/remote_list.html",
@@ -71,7 +69,7 @@ def select_ftp_file(
         204 response with 'workflowFilesChanged' in headers for htmx trigger.
 
     """
-    vendor_dir = os.environ[f"{retriever.client.name.upper()}_SRC"]
+    vendor_dir = f"/NSDROP/vendor_records/{retriever.client.name.lower()}"
     file_content = DownloadVendorFile.execute(
         name=remote_file, dir=vendor_dir, retriever=retriever
     )

@@ -71,7 +71,13 @@ def local_file_storage() -> file_io.LocalFileStorage:
 
 def remote_file_retriever(vendor: str) -> file_io.SFTPFileRetriever:
     """Create an SFTP file retriever service."""
-    return file_io.SFTPFileRetriever.create_retriever_for_vendor(vendor=vendor)
+    return file_io.SFTPFileRetriever(
+        name=vendor.upper(),
+        username=os.environ["NSDROP_USER"],
+        password=os.environ["NSDROP_PASSWORD"],
+        host=os.environ["NSDROP_HOST"],
+        port=os.environ["NSDROP_PORT"],
+    )
 
 
 def get_report_writer() -> reporter.GoogleSheetsReporter:

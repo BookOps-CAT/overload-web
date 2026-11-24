@@ -46,7 +46,7 @@ class GoogleSheetsReporter(ports.ReportWriter):
             "token": os.getenv("GOOGLE_SHEET_TOKEN"),
             "refresh_token": os.getenv("GOOGLE_SHEET_REFRESH_TOKEN"),
             "token_uri": token_uri,
-            "client_id": os.getenv("GOOGLE_SHEET_CLIENT_ID"),
+            "client_id": os.getenv("GOOGLE_SHEET_CLIENT_KEY"),
             "client_secret": os.getenv("GOOGLE_SHEET_CLIENT_SECRET"),
             "scopes": scopes,
             "universe_domain": "googleapis.com",
@@ -55,7 +55,7 @@ class GoogleSheetsReporter(ports.ReportWriter):
         }
         flow_dict = {
             "installed": {
-                "client_id": os.getenv("GOOGLE_SHEET_CLIENT_ID"),
+                "client_id": os.getenv("GOOGLE_SHEET_CLIENT_KEY"),
                 "client_secret": os.getenv("GOOGLE_SHEET_CLIENT_SECRET"),
                 "project_id": "marc-record-validator",
                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",

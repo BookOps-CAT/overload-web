@@ -21,11 +21,6 @@ class FakeFTPClient:
         self.name = "foo"
 
 
-class FakeFileRetriever:
-    def __init__(self) -> None:
-        self.client = FakeFTPClient()
-
-
 class FakeFileStorage:
     def __init__(self) -> None:
         self.base_path = "temp/uploads"
@@ -42,8 +37,8 @@ def overrides(monkeypatch):
     def fetcher(*args, **kwargs):
         return FakeFetcher()
 
-    def retriever(*args, **kwargs):
-        return FakeFileRetriever()
+    def client(*args, **kwargs):
+        return FakeFTPClient()
 
     def storage(*args, **kwargs):
         return FakeFileStorage()
@@ -51,10 +46,7 @@ def overrides(monkeypatch):
     monkeypatch.setattr(
         "overload_web.infrastructure.sierra_clients.FetcherFactory.make", fetcher
     )
-    monkeypatch.setattr(
-        "overload_web.infrastructure.file_io.SFTPFileRetriever.create_retriever_for_vendor",
-        retriever,
-    )
+    monkeypatch.setattr("overload_web.infrastructure.file_io.Client", client)
     monkeypatch.setattr("overload_web.infrastructure.file_io.LocalFileStorage", storage)
 
 
